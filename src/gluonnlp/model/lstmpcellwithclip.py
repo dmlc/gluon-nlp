@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -28,18 +26,20 @@ class LSTMPCellWithClip(LSTMPCell):
 
     .. math::
 
-    \begin{array}{ll}
-    i_t = sigmoid(W_{ii} x_t + b_{ii} + W_{ri} r_{(t-1)} + b_{ri}) \\
-    f_t = sigmoid(W_{if} x_t + b_{if} + W_{rf} r_{(t-1)} + b_{rf}) \\
-    g_t = \tanh(W_{ig} x_t + b_{ig} + W_{rc} r_{(t-1)} + b_{rg}}) \\
-    o_t = sigmoid(W_{io} x_t + b_{io} + W_{ro} r_{(t-1)} + b_{ro}) \\
-    c_t = c_clip(f_t * c_{(t-1)} + i_t * g_t) \\
-    h_t = o_t * \tanh(c_t) \\
-    r_t = p_clip(W_{hr} h_t)
-    \end{array}
-    where :math:`c_clip` is the cell clip applied on the next cell;
+        \DeclareMathOperator{\sigmoid}{sigmoid}
+        \begin{array}{ll}
+        i_t = \sigmoid(W_{ii} x_t + b_{ii} + W_{ri} r_{(t-1)} + b_{ri}) \\
+        f_t = \sigmoid(W_{if} x_t + b_{if} + W_{rf} r_{(t-1)} + b_{rf}) \\
+        g_t = \tanh(W_{ig} x_t + b_{ig} + W_{rc} r_{(t-1)} + b_{rg}) \\
+        o_t = \sigmoid(W_{io} x_t + b_{io} + W_{ro} r_{(t-1)} + b_{ro}) \\
+        c_t = c_{\text{clip}}(f_t * c_{(t-1)} + i_t * g_t) \\
+        h_t = o_t * \tanh(c_t) \\
+        r_t = p_{\text{clip}}(W_{hr} h_t)
+        \end{array}
+
+    where :math:`c_{\text{clip}}` is the cell clip applied on the next cell;
     :math:`r_t` is the projected recurrent activation at time `t`,
-    :math:`p_clip` means apply projection clip on he projected output.
+    :math:`p_{\text{clip}}` means apply projection clip on he projected output.
     math:`h_t` is the hidden state at time `t`, :math:`c_t` is the
     cell state at time `t`, :math:`x_t` is the input at time `t`, and :math:`i_t`,
     :math:`f_t`, :math:`g_t`, :math:`o_t` are the input, forget, cell, and
@@ -73,9 +73,9 @@ class LSTMPCellWithClip(LSTMPCell):
         Container for weight sharing between cells.
         Created if `None`.
     cell_clip : float
-        Clip cell state between [-cellclip, cell_clip] in LSTMPCellWithClip cell
+        Clip cell state between `[-cell_clip, cell_clip]` in LSTMPCellWithClip cell
     projection_clip : float
-        Clip projection between [-projection_clip, projection_clip] in LSTMPCellWithClip cell
+        Clip projection between `[-projection_clip, projection_clip]` in LSTMPCellWithClip cell
     """
     def __init__(self, hidden_size, projection_size,
                  i2h_weight_initializer=None, h2h_weight_initializer=None,

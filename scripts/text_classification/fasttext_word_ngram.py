@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -42,6 +40,7 @@ import mxnet.gluon as gluon
 
 import gluonnlp
 
+gluonnlp.utils.check_version('0.7.1')
 
 class MeanPoolingLayer(gluon.HybridBlock):
     """A block for mean pooling of encoder features"""

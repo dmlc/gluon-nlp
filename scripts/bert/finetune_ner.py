@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-#  coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -19,7 +17,6 @@
 # under the License.
 """Provides command-line interace for training BERT-based named entity recognition model."""
 
-# coding: utf-8
 import argparse
 import logging
 import random
@@ -36,6 +33,7 @@ from model.ner import BERTTagger, attach_prediction
 # seqeval is a dependency that is specific to named entity recognition.
 import seqeval.metrics
 
+nlp.utils.check_version('0.7.0')
 
 def parse_args():
     """Parse command line arguments."""

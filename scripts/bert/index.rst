@@ -50,12 +50,36 @@ where **bert_12_768_12** refers to the BERT BASE model, and **bert_24_1024_16** 
 .. code-block:: python
 
     import gluonnlp as nlp; import mxnet as mx;
-    model, vocab = nlp.model.get_model('bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased', use_classifier=False);
+    model, vocab = nlp.model.get_model('bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased', use_classifier=False, use_decoder=False);
     tokenizer = nlp.data.BERTTokenizer(vocab, lower=True);
     transform = nlp.data.BERTSentenceTransform(tokenizer, max_seq_length=512, pair=False, pad=False);
     sample = transform(['Hello world!']);
     words, valid_len, segments = mx.nd.array([sample[0]]), mx.nd.array([sample[1]]), mx.nd.array([sample[2]]);
     seq_encoding, cls_encoding = model(words, segments, valid_len);
+
+
+The pretrained parameters for dataset_name
+'openwebtext_book_corpus_wiki_en_uncased' were obtained by running the GluonNLP
+BERT pre-training script on OpenWebText.
+
+The pretrained parameters for dataset_name 'scibert_scivocab_uncased',
+'scibert_scivocab_cased', 'scibert_basevocab_uncased', 'scibert_basevocab_cased'
+were obtained by converting the parameters published by "Beltagy, I., Cohan, A.,
+& Lo, K. (2019). Scibert: Pretrained contextualized embeddings for scientific
+text. arXiv preprint `arXiv:1903.10676 <https://arxiv.org/abs/1903.10676>`_."
+
+The pretrained parameters for dataset_name 'biobert_v1.0_pmc',
+'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc', 'biobert_v1.1_pubmed' were
+obtained by converting the parameters published by "Lee, J., Yoon, W., Kim, S.,
+Kim, D., Kim, S., So, C. H., & Kang, J. (2019). Biobert: pre-trained biomedical
+language representation model for biomedical text mining. arXiv preprint
+`arXiv:1901.08746 <https://arxiv.org/abs/1901.08746>`_."
+
+The pretrained parameters for dataset_name 'clinicalbert' were obtained by
+converting the parameters published by "Huang, K., Altosaar, J., & Ranganath, R.
+(2019). ClinicalBERT: Modeling Clinical Notes and Predicting Hospital
+Readmission. arXiv preprint `arXiv:1904.05342
+<https://arxiv.org/abs/1904.05342>`_."
 
 Additionally, GluonNLP supports the "`RoBERTa <https://arxiv.org/abs/1907.11692>`_" model:
 
@@ -68,25 +92,25 @@ Additionally, GluonNLP supports the "`RoBERTa <https://arxiv.org/abs/1907.11692>
 .. code-block:: python
 
     import gluonnlp as nlp; import mxnet as mx;
-    model, vocab = nlp.model.get_model('roberta_12_768_12', dataset_name='openwebtext_ccnews_stories_books_cased');
+    model, vocab = nlp.model.get_model('roberta_12_768_12', dataset_name='openwebtext_ccnews_stories_books_cased', use_decoder=False);
     tokenizer = nlp.data.GPT2BPETokenizer();
     text = [vocab.bos_token] + tokenizer('Hello world!') + [vocab.eos_token];
     seq_encoding = model(mx.nd.array([vocab[text]]))
 
 .. hint::
 
-   The pre-training, fine-tunining and export scripts are available `here. </model_zoo/bert.zip>`__
+   The pre-training, fine-tunining and export scripts are available `here. </_downloads/bert.zip>`__
 
 
-BERT for Sentence Classification
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sentence Classification
+~~~~~~~~~~~~~~~~~~~~~~~
 
 GluonNLP provides the following example script to fine-tune sentence classification with pre-trained
 BERT model.
 
-For all model settings above, we set learing rate = 2e-5, optimizer = bertadam, model = bert_12_768_12. Other tasks can be modeled with `--task_name` parameter.
-
 To enable mixed precision training with float16, set `--dtype` argument to `float16`.
+
+Results using `bert_12_768_12`:
 
 .. editing URL for the following table: https://tinyurl.com/y4n8q84w
 
@@ -100,11 +124,24 @@ To enable mixed precision training with float16, set `--dtype` argument to `floa
 | Command             | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_mrpc.sh>`__    | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_rte.sh>`__    | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_sst.sh>`__    | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_mnli.sh>`__    | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_xnli.sh>`__    |
 +---------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+
 
+Results using `roberta_12_768_12`:
+
+.. editing URL for the following table: https://www.shorturl.at/cjAO7
+
++---------------------+------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
+| Dataset             | SST-2                                                                                                | MNLI-M/MM                                                                                                        |
++=====================+======================================================================================================+==================================================================================================================+
+| Validation Accuracy | 95.3%                                                                                                | 87.69%, 87.23%                                                                                                   |
++---------------------+------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
+| Log                 | `log  <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/roberta/finetuned_sst.log>`__      | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/roberta/mnli_1e-5-32.log>`__          |
++---------------------+------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
+| Command             | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/roberta/finetuned_sst.sh>`__    | `command  <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/roberta/finetuned_mnli.sh>`__    |
++---------------------+------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------+
 
 .. editing URL for the following table: https://tinyurl.com/y5rrowj3
 
-BERT for Question Answering on SQuAD
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Question Answering on SQuAD
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 +---------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 | Dataset | SQuAD 1.1                                                                                                                               | SQuAD 1.1                                                                                                                                | SQuAD 2.0                                                                                                                                |
@@ -138,8 +175,8 @@ To get the score of the dev data, you need to download the dev dataset (`dev-v2.
     $ python evaluate-v2.0.py dev-v2.0.json predictions.json
 
 
-BERT Pre-training
-~~~~~~~~~~~~~~~~~
+Pre-training from Scratch
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We also provide scripts for pre-training BERT with masked language modeling and and next sentence prediction.
 
@@ -179,11 +216,21 @@ You can use the following command to run pre-training with 2 hosts, 8 GPUs each:
              --mca plm_rsh_agent 'ssh -q -o StrictHostKeyChecking=no' \
              -x NCCL_MIN_NRINGS=8 -x NCCL_DEBUG=INFO -x HOROVOD_HIERARCHICAL_ALLREDUCE=1 \
              -x MXNET_SAFE_ACCUMULATION=1 --tag-output \
-             python run_pretraining_hvd.py --data='folder1/*.txt,folder2/*.txt,' \
+             python run_pretraining.py --data='folder1/*.txt,folder2/*.txt,' \
              --data_eval='dev_folder/*.txt,' --num_steps 1000000 \
-             --lr 1e-4 --batch_size 4096 --accumulate 4 --use_avg_len --raw
+             --lr 1e-4 --total_batch_size 256 --accumulate 1 --raw --comm_backend horovod
 
-Note that the batch_size argument sets the per-GPU batch size. When multiple hosts are present, please make sure you can ssh to these nodes without password.
+If you see out-of-memory error, try increasing --accumulate for gradient accumulation.
+
+When multiple hosts are present, please make sure you can ssh to these nodes without password.
+
+Alternatively, if horovod is not available, you could run pre-training with the MXNet native parameter server by setting --comm_backend and --gpus.
+
+.. code-block:: console
+
+    $ MXNET_SAFE_ACCUMULATION=1 python run_pretraining.py --comm_backend device --gpus 0,1,2,3,4,5,6,7 ...
+
+The BERT base model produced by gluonnlp pre-training script (`log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/bert_base_pretrain.log>`__) achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set on the books corpus and English wikipedia dataset.
 
 Custom Vocabulary
 +++++++++++++++++
@@ -203,36 +250,11 @@ You can `train <//github.com/google/sentencepiece/tree/v0.1.82/python#model-trai
     import sentencepiece as spm
     spm.SentencePieceTrainer.Train('--input=a.txt,b.txt --unk_id=0 --pad_id=3 --model_prefix=my_vocab --vocab_size=30000 --model_type=BPE')
 
-To use sentencepiece vocab for pre-training, please set --sentencepiece=my_vocab.model when using run_pretraining_hvd.py.
+To use sentencepiece vocab for pre-training, please set --sentencepiece=my_vocab.model when using run_pretraining.py.
 
-Improve Training Speed
-++++++++++++++++++++++
 
-The `create_pretraining_data.py` file generates pre-training data from raw text documents, stored as npz files. They help reduce data loading overhead and improves training speed.
-
-.. code-block:: console
-
-    $ python create_pretraining_data.py --input_file folder1/*.txt,folder2/*.txt --output_dir out --dataset_name book_corpus_wiki_en_uncased --dupe_factor 10 --num_workers $(nproc)
-
-Optionally, if you are using a custom sentencepiece vocab to generate pre-training data, please set --sentencepiece=my_vocab.model.
-
-To use the generated npz files for pre-training, remove the **--raw** argument, and update the argument for **--data** and **--data_eval** with the paths to the npz files when using run_pretraining_hvd.py.
-
-Run without Horovod
-+++++++++++++++++++
-
-Alternatively, if horovod is not available, you could run pre-training with the MXNet native parameter server. As of now, the training script only supports pre-generated data.
-
-.. code-block:: console
-
-    $ MXNET_SAFE_ACCUMULATION=1 python run_pretraining.py --gpus 0,1,2,3,4,5,6,7 --batch_size 4096 --accumulate 4 --lr 1e-4 \
-                                                          --data '/path/to/generated/train/*.npz' --num_steps 1000000 --use_avg_len \
-                                                          --log_interval=250 --data_eval '/path/to/generated/dev/*.npz'
-
-The BERT base model produced by gluonnlp pre-training script (`log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/bert_base_pretrain.log>`__) achieves 83.6% on MNLI-mm, 93% on SST-2, 87.99% on MRPC and 80.99/88.60 on SQuAD 1.1 validation set on the books corpus and English wikipedia dataset.
-
-BERT for Named Entity Recognition
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Named Entity Recognition
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 GluonNLP provides training and prediction script for named entity recognition models.
 
@@ -262,14 +284,14 @@ This achieves Test F1 from `91.5` to `92.2` (`log <https://github.com/dmlc/web-d
 Export BERT for Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Current export/export.py support exporting BERT models. Supported values for --task argument include classification, regression and question_answering.
+Current export.py support exporting BERT models. Supported values for --task argument include classification, regression and question answering.
 
 .. code-block:: console
 
-    $ python export/export.py --task classification --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 128
+    $ python export.py --task classification --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 128
 
 This will export the BERT model for classification to a symbol.json file, saved to the directory specified by --output_dir.
-The --model_parameters argument is optional. If not set, the .params file saved in the output directory will be randomly intialized parameters.
+The --model_parameters argument is optional. If not set, the .params file saved in the output directory will be randomly initialized parameters.
 
 BERT for Sentence or Tokens Embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

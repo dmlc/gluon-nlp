@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -91,7 +89,7 @@ def get_cache_model(name, dataset_name='wikitext-2', window=2000,
     Block
         The model.
     """
-    lm_model, vocab = nlp.model.\
-        get_model(name, dataset_name=dataset_name, pretrained=True, ctx=ctx, **kwargs)
+    lm_model, vocab = nlp.model.get_model(name, dataset_name=dataset_name,
+                                          pretrained=True, ctx=ctx, **kwargs)
     cache_cell = CacheCell(lm_model, len(vocab), window, theta, lambdas)
     return cache_cell

@@ -36,6 +36,7 @@ setup(
     # Metadata
     name='gluonnlp',
     version=VERSION,
+    python_requires='>=3.6',
     author='Gluon NLP Toolkit Contributors',
     author_email='mxnet-gluon@amazon.com',
     url='https://github.com/dmlc/gluon-nlp',
@@ -56,15 +57,19 @@ setup(
     extras_require={
         'extras': [
             'spacy',
-            'nltk==3.2.5',
+            'nltk',
+            'sacremoses',
             'scipy',
-            'numba>=0.40.1',
+            'numba>=0.45',
             'jieba',
             'sentencepiece',
             'boto3',
+            'tqdm',
+            'sacremoses',
         ],
         'dev': [
             'pytest',
+            'pytest-env',
             'pylint',
             'pylint_quotes',
             'flake8',

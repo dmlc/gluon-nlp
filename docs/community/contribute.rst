@@ -44,8 +44,8 @@ Our package uses continuous integration and code coverage tools for verifying pu
 submitting, contributor should ensure that the following checks do not fail:
 
 - Lint (code style)
-- Unittest (running under Python 2 and Python 3)
-- Doctest (running under Python 2 and Python 3)
+- Unittest
+- Doctest
 
 The commands executed by the continuous integration server to perform the tests
 are listed in the `build_steps.groovy file

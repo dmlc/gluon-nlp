@@ -74,7 +74,7 @@ core_logic: {
                   --name GluonNLP-${env.BRANCH_NAME}-${env.BUILD_NUMBER} \
                   --save-path batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/docs/examples \
                   --work-dir . --source-ref refs/pull/${env.CHANGE_ID}/head \
-                  --command \"python3 docs/md2ipynb.py ${md_file} > ${stdout_file} 2> ${stderr_file} \"
+                  --command \"(python3 docs/md2ipynb.py ${md_file} | tee ${stdout_file}) 3>&1 1>&2 2>&3 | tee ${stderr_file} \"
                 BATCH_EXIT_CODE=\$?
 
                 aws s3api wait object-exists --bucket gluon-nlp-staging \
@@ -107,7 +107,7 @@ core_logic: {
                   --name GluonNLP-${env.BRANCH_NAME}-${env.BUILD_NUMBER} \
                   --save-path batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/docs/examples \
                   --work-dir . --source-ref ${env.BRANCH_NAME} \
-                  --command \"python3 docs/md2ipynb.py ${md_file} > ${stdout_file} 2> ${stderr_file} \"
+                  --command \"(python3 docs/md2ipynb.py ${md_file} | tee ${stdout_file}) 3>&1 1>&2 2>&3 | tee ${stderr_file} \"
                 BATCH_EXIT_CODE=\$?
 
                 aws s3api wait object-exists --bucket gluon-nlp-staging \

@@ -1,4 +1,3 @@
-# coding=utf-8
 # Copyright 2018 The Google AI Language Team Authors and DMLC.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +13,6 @@
 # limitations under the License.
 """BERT dataset transform."""
 
-from __future__ import absolute_import
 
 __all__ = ['BERTDatasetTransform']
 
@@ -30,6 +28,8 @@ class BERTDatasetTransform:
         Tokenizer for the sentences.
     max_seq_length : int.
         Maximum sequence length of the sentences.
+    vocab : Vocab or BERTVocab
+        The vocabulary.
     labels : list of int , float or None. defaults None
         List of all label ids for the classification task and regressing task.
         If labels is None, the default task is regression
@@ -45,6 +45,7 @@ class BERTDatasetTransform:
     def __init__(self,
                  tokenizer,
                  max_seq_length,
+                 vocab=None,
                  class_labels=None,
                  label_alias=None,
                  pad=True,
@@ -61,7 +62,7 @@ class BERTDatasetTransform:
                 for key in label_alias:
                     self._label_map[key] = self._label_map[label_alias[key]]
         self._bert_xform = BERTSentenceTransform(
-            tokenizer, max_seq_length, pad=pad, pair=pair)
+            tokenizer, max_seq_length, vocab=vocab, pad=pad, pair=pair)
 
     def __call__(self, line):
         """Perform transformation for sequence pairs or single sequences.

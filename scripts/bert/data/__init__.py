@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -19,4 +17,4 @@
 
 # pylint: disable=wildcard-import
 """BERT data."""
-from . import qa, classification, embedding, transform, ner, dataloader
+from . import qa, classification, embedding, transform, ner, dataloader, pretrain

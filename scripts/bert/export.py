@@ -1,22 +1,3 @@
-"""
-Export the BERT Model for Deployment
-
-====================================
-
-This script exports the BERT model to a hybrid model serialized as a symbol.json file,
-which is suitable for deployment, or use with MXNet Module API.
-
-@article{devlin2018bert,
-  title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
-  author={Devlin, Jacob and Chang, Ming- \
-      Wei and Lee, Kenton and Toutanova, Kristina},
-  journal={arXiv preprint arXiv:1810.04805},
-  year={2018}
-}
-"""
-
-# coding=utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -34,6 +15,21 @@ which is suitable for deployment, or use with MXNet Module API.
 # specific language governing permissions and limitations
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
+"""
+Export the BERT Model for Deployment
+====================================
+
+This script exports the BERT model to a hybrid model serialized as a symbol.json file,
+which is suitable for deployment, or use with MXNet Module API.
+
+@article{devlin2018bert,
+  title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
+  author={Devlin, Jacob and Chang, Ming- \
+      Wei and Lee, Kenton and Toutanova, Kristina},
+  journal={arXiv preprint arXiv:1810.04805},
+  year={2018}
+}
+"""
 
 import argparse
 import logging
@@ -43,8 +39,10 @@ import time
 
 import mxnet as mx
 import gluonnlp as nlp
-from hybrid_bert import get_hybrid_model
-from hybrid_bert import HybridBERTClassifier, HybridBERTRegression, HybridBERTForQA
+from gluonnlp.model import get_model, BERTClassifier
+from model.qa import BertForQA
+
+nlp.utils.check_version('0.8.1')
 
 parser = argparse.ArgumentParser(description='Export hybrid BERT base model.')
 
@@ -85,7 +83,7 @@ parser.add_argument('--output_dir',
 
 parser.add_argument('--seq_length',
                     type=int,
-                    default=384,
+                    default=64,
                     help='The maximum total input sequence length after WordPiece tokenization.'
                          'Sequences longer than this needs to be truncated, and sequences shorter '
                          'than this needs to be padded. Default is 384')
@@ -126,35 +124,32 @@ log.info(args)
 seq_length = args.seq_length
 
 if args.task == 'classification':
-    bert, _ = get_hybrid_model(
+    bert, _ = get_model(
         name=args.model_name,
         dataset_name=args.dataset_name,
         pretrained=False,
         use_pooler=True,
         use_decoder=False,
-        use_classifier=False,
-        seq_length=args.seq_length)
-    net = HybridBERTClassifier(bert, num_classes=2, dropout=args.dropout)
+        use_classifier=False)
+    net = BERTClassifier(bert, num_classes=2, dropout=args.dropout)
 elif args.task == 'regression':
-    bert, _ = get_hybrid_model(
+    bert, _ = get_model(
         name=args.model_name,
         dataset_name=args.dataset_name,
         pretrained=False,
         use_pooler=True,
         use_decoder=False,
-        use_classifier=False,
-        seq_length=args.seq_length)
-    net = HybridBERTRegression(bert, dropout=args.dropout)
+        use_classifier=False)
+    net = BERTClassifier(bert, num_classes=1, dropout=args.dropout)
 elif args.task == 'question_answering':
-    bert, _ = get_hybrid_model(
+    bert, _ = get_model(
         name=args.model_name,
         dataset_name=args.dataset_name,
         pretrained=False,
         use_pooler=False,
         use_decoder=False,
-        use_classifier=False,
-        seq_length=args.seq_length)
-    net = HybridBERTForQA(bert)
+        use_classifier=False)
+    net = BertForQA(bert)
 else:
     raise ValueError('unknown task: %s'%args.task)
 
@@ -163,7 +158,7 @@ if args.model_parameters:
 else:
     net.initialize()
     warnings.warn('--model_parameters is not provided. The parameter checkpoint (.params) '
-                  'file will be created based on default parameter intialization.')
+                  'file will be created based on default parameter initialization.')
 
 net.hybridize(static_alloc=True, static_shape=True)
 
@@ -188,7 +183,7 @@ def export(batch, prefix):
     assert os.path.isfile(prefix + '-symbol.json')
     assert os.path.isfile(prefix + '-0000.params')
 
-def infer(batch, prefix):
+def infer(prefix):
     """Evaluate the model on a mini-batch."""
     log.info('Start inference ... ')
 
@@ -196,16 +191,26 @@ def infer(batch, prefix):
     imported_net = mx.gluon.nn.SymbolBlock.imports(prefix + '-symbol.json',
                                                    ['data0', 'data1', 'data2'],
                                                    prefix + '-0000.params')
-    tic = time.time()
+
+    # exported model should be length-agnostic. Using a different seq_length should work
+    inputs = mx.nd.arange(test_batch_size * (seq_length + 10))
+    inputs = inputs.reshape(shape=(test_batch_size, seq_length + 10))
+    token_types = mx.nd.zeros_like(inputs)
+    valid_length = mx.nd.arange(test_batch_size)
+
     # run forward inference
-    inputs, token_types, valid_length = batch
+    imported_net(inputs, token_types, valid_length)
+    mx.nd.waitall()
+
+    # benchmark speed after warmup
+    tic = time.time()
     num_trials = 10
     for _ in range(num_trials):
         imported_net(inputs, token_types, valid_length)
     mx.nd.waitall()
     toc = time.time()
-    log.info('Inference time cost={:.2f} s, Thoughput={:.2f} samples/s'
-             .format(toc - tic, num_trials / (toc - tic)))
+    log.info('Batch size={}, Thoughput={:.2f} batches/s'
+             .format(test_batch_size, num_trials / (toc - tic)))
 
 
 ###############################################################################
@@ -214,4 +219,4 @@ def infer(batch, prefix):
 if __name__ == '__main__':
     prefix = os.path.join(args.output_dir, args.task)
     export(batch, prefix)
-    infer(batch, prefix)
+    infer(prefix)

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -24,7 +22,7 @@ __all__ = ['AWDRNN', 'StandardRNN', 'BigRNN', 'awd_lstm_lm_1150', 'awd_lstm_lm_6
 import os
 
 from mxnet.gluon import Block, nn, rnn, contrib
-from mxnet import nd, cpu, autograd
+from mxnet import nd, cpu, autograd, sym
 from mxnet.gluon.model_zoo import model_store
 
 from gluonnlp.model import train
@@ -71,7 +69,8 @@ class AWDRNN(train.AWDRNN):
                                      tie_weights, dropout, weight_drop,
                                      drop_h, drop_i, drop_e, **kwargs)
 
-    def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs, begin_state=None):
+        # pylint: disable=arguments-differ
         """Implement forward computation.
 
         Parameters
@@ -92,17 +91,24 @@ class AWDRNN(train.AWDRNN):
             output recurrent state tensor with length equals to num_layers.
             the state with shape `(1, batch_size, num_hidden)`
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        if isinstance(begin_state, list) and len(begin_state) == 0:
+            begin_state = None
+
         encoded = self.embedding(inputs)
-        if begin_state is None:
-            begin_state = self.begin_state(batch_size=inputs.shape[1])
+        if not begin_state:
+            if F == nd:
+                begin_state = self.begin_state(batch_size=inputs.shape[1])
+            else:
+                begin_state = self.begin_state(batch_size=0, func=sym.zeros)
         out_states = []
         for i, (e, s) in enumerate(zip(self.encoder, begin_state)):
             encoded, state = e(encoded, s)
             out_states.append(state)
             if self._drop_h and i != len(self.encoder)-1:
-                encoded = nd.Dropout(encoded, p=self._drop_h, axes=(0,))
+                encoded = F.Dropout(encoded, p=self._drop_h, axes=(0,))
         if self._dropout:
-            encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
+            encoded = F.Dropout(encoded, p=self._dropout, axes=(0,))
         with autograd.predict_mode():
             out = self.decoder(encoded)
         return out, out_states
@@ -137,7 +143,7 @@ class StandardRNN(train.StandardRNN):
         super(StandardRNN, self).__init__(mode, vocab_size, embed_size, hidden_size,
                                           num_layers, dropout, tie_weights, **kwargs)
 
-    def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation. Arguments can be either
         :py:class:`NDArray` or :py:class:`Symbol`.
 
@@ -159,9 +165,16 @@ class StandardRNN(train.StandardRNN):
             output recurrent state tensor with length equals to num_layers-1.
             the state with shape `(num_layers, batch_size, num_hidden)`
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        if isinstance(begin_state, list) and len(begin_state) == 0:
+            begin_state = None
+
         encoded = self.embedding(inputs)
-        if begin_state is None:
-            begin_state = self.begin_state(batch_size=inputs.shape[1])
+        if not begin_state:
+            if F == nd:
+                begin_state = self.begin_state(batch_size=inputs.shape[1])
+            else:
+                begin_state = self.begin_state(batch_size=0, func=sym.zeros)
         encoded, state = self.encoder(encoded, begin_state)
         if self._dropout:
             encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))

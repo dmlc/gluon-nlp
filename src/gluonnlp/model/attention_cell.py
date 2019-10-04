@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,8 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 """Attention cells."""
-from __future__ import absolute_import
-from __future__ import print_function
 
 __all__ = ['AttentionCell', 'MultiHeadAttentionCell', 'MLPAttentionCell', 'DotProductAttentionCell']
 
@@ -220,7 +216,7 @@ class MultiHeadAttentionCell(AttentionCell):
             with self.name_scope():
                 setattr(
                     self, 'proj_{}'.format(name),
-                    nn.Dense(units=self._query_units, use_bias=self._use_bias, flatten=False,
+                    nn.Dense(units=unit, use_bias=self._use_bias, flatten=False,
                              weight_initializer=weight_initializer,
                              bias_initializer=bias_initializer, prefix='{}_'.format(name)))
 

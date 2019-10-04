@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -31,7 +29,7 @@ from . import optimizer
 from . import initializer
 from .vocab import Vocab
 
-__version__ = '0.8.0.dev'
+__version__ = '0.8.1.dev'
 
 __all__ = ['data',
            'model',

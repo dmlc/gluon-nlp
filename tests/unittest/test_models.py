@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,14 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from __future__ import print_function
 
+import os
 import sys
 
 import mxnet as mx
-from mxnet import gluon
-import gluonnlp as nlp
 import pytest
+from mxnet import gluon
+
+import gluonnlp as nlp
+from gluonnlp.base import get_home_dir
 
 
 def eprint(*args, **kwargs):
@@ -41,7 +41,7 @@ def _test_pretrained_big_text_models():
         eprint('testing forward for %s' % model_name)
         pretrained_dataset = pretrained_to_test.get(model_name)
         model, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
-                                       pretrained=True, root='tests/data/model/')
+                                       pretrained=True)
 
         print(model)
         batch_size = 10
@@ -60,7 +60,7 @@ def test_big_text_models(wikitext2_val_and_counter):
 
     for model_name in text_models:
         eprint('testing forward for %s' % model_name)
-        model, _ = nlp.model.get_model(model_name, vocab=vocab, root='tests/data/model/')
+        model, _ = nlp.model.get_model(model_name, vocab=vocab)
 
         print(model)
         model.collect_params().initialize()
@@ -85,7 +85,7 @@ def test_transformer_models():
             pretrained_dataset = pretrained_to_test.get(model_name)
             model, _, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
                                               pretrained=pretrained_dataset is not None,
-                                              root='tests/data/model/', dropout=rate)
+                                              dropout=rate)
 
             print(model)
             if not pretrained_dataset:
@@ -98,7 +98,8 @@ def test_transformer_models():
 
 @pytest.mark.serial
 @pytest.mark.remote_required
-def test_pretrained_roberta_models():
+@pytest.mark.parametrize('wo_valid_len', [False, True])
+def test_pretrained_roberta_models(wo_valid_len):
     models = ['roberta_12_768_12', 'roberta_24_1024_16']
     pretrained_datasets = ['openwebtext_ccnews_stories_books_cased']
 
@@ -112,9 +113,7 @@ def test_pretrained_roberta_models():
             eprint('testing forward for %s on %s' % (model_name, dataset))
 
             model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
-                                               pretrained=True,
-                                               root='tests/data/model/')
-
+                                               pretrained=True)
             assert len(vocab) == vocab_size[dataset]
             for token in special_tokens:
                 assert token in vocab, "Token %s not found in the vocab" % token
@@ -124,7 +123,11 @@ def test_pretrained_roberta_models():
             assert vocab.bos_token == '<s>'
             assert vocab.eos_token == '</s>'
 
-            output = model(ones, valid_length, positions)
+            model.hybridize()
+            if wo_valid_len:
+                output = model(ones, masked_positions=positions)
+            else:
+                output = model(ones, valid_length, positions)
             output[0].wait_to_read()
             del model
             mx.nd.waitall()
@@ -175,24 +178,20 @@ def test_pretrained_bert_models(disable_missing_parameters):
 
             if not has_missing_params:
                 model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
-                                                   pretrained=True,
-                                                   root='tests/data/model/')
+                                                   pretrained=True)
             else:
                 with pytest.raises(AssertionError):
                     model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
-                                                       pretrained=True,
-                                                       root='tests/data/model/')
+                                                       pretrained=True)
 
                 if not disable_missing_parameters:
                     model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
                                                        pretrained=True,
-                                                       root='tests/data/model/',
                                                        pretrained_allow_missing=True)
                 elif 'biobert' in dataset:
                     # Biobert specific test case
                     model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
                                                        pretrained=True,
-                                                       root='tests/data/model/',
                                                        pretrained_allow_missing=True,
                                                        use_decoder=False,
                                                        use_classifier=False)
@@ -200,7 +199,6 @@ def test_pretrained_bert_models(disable_missing_parameters):
                     # Clinicalbert specific test case
                     model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
                                                        pretrained=True,
-                                                       root='tests/data/model/',
                                                        pretrained_allow_missing=True,
                                                        use_decoder=False)
                 else:
@@ -228,7 +226,8 @@ def test_pretrained_bert_models(disable_missing_parameters):
 
 @pytest.mark.serial
 @pytest.mark.remote_required
-def test_bert_models():
+@pytest.mark.parametrize('wo_valid_len', [False, True])
+def test_bert_models(wo_valid_len):
     models = ['bert_12_768_12', 'bert_24_1024_16']
     layers = [12, 24]
     attention_heads = [12, 16]
@@ -294,23 +293,32 @@ def test_bert_models():
              (batch_size, -1),
              (batch_size, 2),
              (batch_size, num_masks, vocab_size)],
-            [(batch_size, seq_len, -1)] + [(num_masks, head, seq_len, seq_len)] * layer,
-            [(batch_size, seq_len, -1)] * layer + [(num_masks, head, seq_len, seq_len)] * layer,
-            [(batch_size, seq_len, -1)] * layer + [(num_masks, head, seq_len, seq_len)] * layer +
+            [(batch_size, seq_len, -1)] + [(batch_size, head, seq_len, seq_len)] * layer,
+            [(batch_size, seq_len, -1)] * layer + [(batch_size, head, seq_len, seq_len)] * layer,
+            [(batch_size, seq_len, -1)] * layer + [(batch_size, head, seq_len, seq_len)] * layer +
             [(batch_size, -1)] + [(batch_size, 2)] + [(batch_size, num_masks, vocab_size)],
         ]
 
         for kwarg, expected_shape in zip(kwargs, expected_shapes):
+            eprint('testing forward for %s' % str(kwarg))
             expected_shape = infer_shape(expected_shape, unit)
             model, _ = nlp.model.get_model(model_name, dataset_name=dataset,
-                                           pretrained=False, root='tests/data/model/',
-                                           **kwarg)
+                                           pretrained=False, **kwarg)
             model.initialize()
+            model.hybridize()
+
             if kwarg['use_decoder']:
                 # position tensor is required for decoding
-                output = model(ones, ones, valid_length, positions)
+                if wo_valid_len:
+                    output = model(ones, ones, masked_positions=positions)
+                else:
+                    output = model(ones, ones, valid_length, positions)
             else:
-                output = model(ones, ones, valid_length)
+                if wo_valid_len:
+                    output = model(ones, ones)
+                else:
+                    output = model(ones, ones, valid_length)
+
             out_shapes = get_shapes(output)
             assert out_shapes == expected_shape, (out_shapes, expected_shape)
             sync_instance = output[0] if not isinstance(output[0], list) else output[0][0]
@@ -334,8 +342,7 @@ def test_language_models():
         eprint('testing forward for %s' % model_name)
         pretrained_dataset = pretrained_to_test.get(model_name)
         model, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
-                                       pretrained=pretrained_dataset is not None,
-                                       root='tests/data/model/')
+                                       pretrained=pretrained_dataset is not None)
 
         print(model)
         if not pretrained_dataset:
@@ -355,7 +362,7 @@ def test_cache_models():
     for name in cache_language_models:
         for dataset_name in datasets:
             cache_cell = nlp.model.train.get_cache_model(name, dataset_name, window=1, theta=0.6,
-                                                         lambdas=0.2, root='tests/data/model/')
+                                                         lambdas=0.2)
             outs, word_history, cache_history, hidden = cache_cell(mx.nd.arange(
                 10).reshape(10, 1), mx.nd.arange(10).reshape(10, 1), None, None)
             print(cache_cell)
@@ -379,19 +386,18 @@ def test_get_cache_model_noncache_models():
     datasets = ['wikitext-2']
     for name in language_models_params.keys():
         for dataset_name in datasets:
-            _, vocab = nlp.model.get_model(name=name, dataset_name=dataset_name, pretrained=True,
-                                           root='tests/data/model')
+            _, vocab = nlp.model.get_model(name=name, dataset_name=dataset_name, pretrained=True)
             ntokens = len(vocab)
 
             cache_cell_0 = nlp.model.train.get_cache_model(name, dataset_name, window=1, theta=0.6,
-                                                           lambdas=0.2, root='tests/data/model/')
+                                                           lambdas=0.2)
             print(cache_cell_0)
 
-            model, _ = nlp.model.get_model(name=name, dataset_name=dataset_name, pretrained=True,
-                                           root='tests/data/model/')
+            model, _ = nlp.model.get_model(name=name, dataset_name=dataset_name, pretrained=True)
             cache_cell_1 = nlp.model.train.CacheCell(
                 model, ntokens, window=1, theta=0.6, lambdas=0.2)
-            cache_cell_1.load_parameters('tests/data/model/' + language_models_params.get(name))
+            cache_cell_1.load_parameters(
+                os.path.join(get_home_dir(), 'models', language_models_params.get(name)))
             print(cache_cell_1)
 
             outs0, word_history0, cache_history0, hidden0 = cache_cell_0(
@@ -414,14 +420,16 @@ def test_save_load_cache_models():
     for name in cache_language_models:
         for dataset_name in datasets:
             cache_cell = nlp.model.train.get_cache_model(name, dataset_name, window=1, theta=0.6,
-                                                         lambdas=0.2, root='tests/data/model/')
+                                                         lambdas=0.2)
             print(cache_cell)
-            cache_cell.save_parameters('tests/data/model/' + name + '-' + dataset_name + '.params')
-            cache_cell.load_parameters('tests/data/model/' + name + '-' + dataset_name + '.params')
+            cache_cell.save_parameters(
+                os.path.join(get_home_dir(), 'models', name + '-' + dataset_name + '.params'))
+            cache_cell.load_parameters(
+                os.path.join(get_home_dir(), 'models', name + '-' + dataset_name + '.params'))
 
 
 @pytest.mark.serial
-def test_save_load_big_rnn_models():
+def test_save_load_big_rnn_models(tmp_path):
     ctx = mx.cpu()
     seq_len = 1
     batch_size = 1
@@ -456,7 +464,7 @@ def test_save_load_big_rnn_models():
         l = loss(pred, new_y)
     l.backward()
     mx.nd.waitall()
-    path = 'tests/data/model/test_save_load_big_rnn_models.params'
+    path = os.path.join(str(tmp_path), 'test_save_load_big_rnn_models.params')
     model.save_parameters(path)
     eval_model.load_parameters(path)
 

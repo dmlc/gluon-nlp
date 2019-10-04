@@ -77,7 +77,7 @@ docs: compile_notebooks distribute
 	sed -i.bak 's/2196f3/178dc9/g' docs/_build/html/_static/sphinx_materialdesign_theme.css;
 
 clean:
-	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/externaldata/*" --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda/"
+	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda/"
 
 compile_notebooks:
 	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \

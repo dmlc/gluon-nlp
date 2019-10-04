@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -20,11 +18,12 @@
 # pylint: disable=too-many-lines
 
 __all__ = ['BERTModel', 'RoBERTaModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
-           'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16',
+           'BERTLayerNorm', 'BERTClassifier', 'RoBERTaClassifier',
+           'bert_12_768_12', 'bert_24_1024_16',
            'ernie_12_768_12', 'roberta_12_768_12', 'roberta_24_1024_16']
 
 import os
-from mxnet.gluon import Block
+from mxnet.gluon import HybridBlock
 from mxnet.gluon import nn
 from mxnet.gluon.model_zoo import model_store
 import mxnet as mx
@@ -41,7 +40,6 @@ from ..base import get_home_dir
 
 class BERTLayerNorm(nn.LayerNorm):
     """BERT style Layer Normalization.
-
 
     Epsilon is added inside the square root and set to 1e-12 by default.
 
@@ -271,7 +269,7 @@ class BERTEncoderCell(BaseTransformerEncoderCell):
 #                                FULL MODEL                                   #
 ###############################################################################
 
-class BERTModel(Block):
+class BERTModel(HybridBlock):
     """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
 
     Parameters
@@ -330,7 +328,7 @@ class BERTModel(Block):
         - **attention_outputs**: output list of all intermediate encodings per layer
             Returned only if BERTEncoder.output_attention is True.
             List of num_layers length of tensors of shape
-            (num_masks, num_attention_heads, seq_length, seq_length)
+            (batch_size, num_attention_heads, seq_length, seq_length)
         - **pooled_output**: output tensor of pooled representation of the first tokens.
             Returned only if use_pooler is True. Shape (batch_size, units)
         - **next_sentence_classifier_output**: output tensor of next sentence classification.
@@ -350,6 +348,7 @@ class BERTModel(Block):
         self._use_pooler = use_pooler
         self._use_token_type_embed = use_token_type_embed
         self._vocab_size = vocab_size
+        self._units = units
         self.encoder = encoder
         # Construct word embedding
         self.word_embed = self._get_embed(word_embed, vocab_size, embed_size,
@@ -401,7 +400,7 @@ class BERTModel(Block):
                                            weight_initializer=initializer))
                     if dropout:
                         embed.add(nn.Dropout(rate=dropout))
-        assert isinstance(embed, Block)
+        assert isinstance(embed, HybridBlock)
         return embed
 
     def _get_pooler(self, units, prefix):
@@ -416,11 +415,28 @@ class BERTModel(Block):
                               prefix=prefix)
         return pooler
 
-    def forward(self, inputs, token_types=None, valid_length=None, masked_positions=None):  # pylint: disable=arguments-differ
+    def __call__(self, inputs, token_types, valid_length=None, masked_positions=None):
+        # pylint: disable=dangerous-default-value, arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
         """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        valid_length = [] if valid_length is None else valid_length
+        masked_positions = [] if masked_positions is None else masked_positions
+        return super(BERTModel, self).__call__(inputs, token_types,
+                                               valid_length, masked_positions)
+
+    def hybrid_forward(self, F, inputs, token_types, valid_length=None, masked_positions=None):
+        # pylint: disable=arguments-differ
+        """Generate the representation given the inputs.
+
+        This is used in training or fine-tuning a BERT model.
+        """
+        # XXX Temporary hack for hybridization as hybridblock does not support None
+        if isinstance(masked_positions, list) and len(masked_positions) == 0:
+            masked_positions = None
+
         outputs = []
         seq_out, attention_out = self._encode_sequence(inputs, token_types, valid_length)
         outputs.append(seq_out)
@@ -440,8 +456,10 @@ class BERTModel(Block):
             if self._use_classifier:
                 next_sentence_classifier_out = self.classifier(pooled_out)
                 outputs.append(next_sentence_classifier_out)
-        if self._use_decoder and masked_positions is not None:
-            decoder_out = self._decode(output, masked_positions)
+        if self._use_decoder:
+            assert masked_positions is not None, \
+                'masked_positions tensor is required for decoding masked language model'
+            decoder_out = self._decode(F, output, masked_positions)
             outputs.append(decoder_out)
         return tuple(outputs) if len(outputs) > 1 else outputs[0]
 
@@ -456,7 +474,7 @@ class BERTModel(Block):
             type_embedding = self.token_type_embed(token_types)
             embedding = embedding + type_embedding
         # encoding
-        outputs, additional_outputs = self.encoder(embedding, None, valid_length)
+        outputs, additional_outputs = self.encoder(embedding, valid_length=valid_length)
         return outputs, additional_outputs
 
     def _apply_pooling(self, sequence):
@@ -464,10 +482,23 @@ class BERTModel(Block):
 
         This is used for pre-training or fine-tuning a BERT model.
         """
-        outputs = sequence[:, 0, :]
+        outputs = sequence.slice(begin=(0, 0, 0), end=(None, 1, None))
+        outputs = outputs.reshape(shape=(-1, self._units))
         return self.pooler(outputs)
 
-    def _decode(self, sequence, masked_positions):
+    def _arange_like(self, F, inputs):
+        """Helper function to generate int32 indices of a range"""
+        inputs = inputs.reshape(-1)
+        if F == mx.ndarray:
+            seq_len = inputs.shape[0]
+            arange = F.arange(seq_len, dtype=inputs.dtype, ctx=inputs.context)
+        else:
+            zeros = F.zeros_like(inputs)
+            arange = F.arange(start=0, repeat=1, step=1, infer_range=True, dtype='int32')
+            arange = F.elemwise_add(arange, zeros)
+        return arange
+
+    def _decode(self, F, sequence, masked_positions):
         """Generate unnormalized prediction for the masked language model task.
 
         This is only used for pre-training the BERT model.
@@ -483,18 +514,18 @@ class BERTModel(Block):
             - **masked_lm_outputs**: output tensor of token predictions for target masked_positions.
                 Shape (batch_size, num_masked_positions, vocab_size).
         """
-        batch_size = sequence.shape[0]
-        num_masked_positions = masked_positions.shape[1]
-        ctx = masked_positions.context
-        dtype = masked_positions.dtype
-        # batch_idx = [0,0,0,1,1,1,2,2,2...]
-        # masked_positions = [1,2,4,0,3,4,2,3,5...]
-        batch_idx = mx.nd.arange(0, batch_size, repeat=num_masked_positions, dtype=dtype, ctx=ctx)
-        batch_idx = batch_idx.reshape((1, -1))
-        masked_positions = masked_positions.reshape((1, -1))
-        position_idx = mx.nd.Concat(batch_idx, masked_positions, dim=0)
-        encoded = mx.nd.gather_nd(sequence, position_idx)
-        encoded = encoded.reshape((batch_size, num_masked_positions, sequence.shape[-1]))
+        masked_positions = masked_positions.astype('int32')
+        mask_shape = masked_positions.shape_array()
+        num_masked_positions = mask_shape.slice(begin=(1,), end=(2,)).astype('int32')
+        idx_arange = self._arange_like(F, masked_positions)
+        batch_idx = F.broadcast_div(idx_arange, num_masked_positions)
+        # batch_idx_1d =        [0,0,0,1,1,1,2,2,2...]
+        # masked_positions_1d = [1,2,4,0,3,4,2,3,5...]
+        batch_idx_1d = batch_idx.reshape((1, -1))
+        masked_positions_1d = masked_positions.reshape((1, -1))
+        position_idx = F.concat(batch_idx_1d, masked_positions_1d, dim=0)
+        encoded = F.gather_nd(sequence, position_idx)
+        encoded = encoded.reshape_like(masked_positions, lhs_begin=-2, lhs_end=-1, rhs_begin=0)
         decoded = self.decoder(encoded)
         return decoded
 
@@ -549,7 +580,8 @@ class RoBERTaModel(BERTModel):
 
     def __init__(self, encoder, vocab_size=None, units=None,
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
-                 word_embed=None, use_decoder=True, prefix=None, params=None):
+                 word_embed=None, use_decoder=True,
+                 prefix=None, params=None):
         super(RoBERTaModel, self).__init__(encoder, vocab_size=vocab_size,
                                            token_type_vocab_size=None, units=units,
                                            embed_size=embed_size, embed_dropout=embed_dropout,
@@ -559,14 +591,186 @@ class RoBERTaModel(BERTModel):
                                            use_classifier=False, use_token_type_embed=False,
                                            prefix=prefix, params=params)
 
-    def forward(self, inputs, valid_length=None, masked_positions=None):  # pylint: disable=arguments-differ
+    def __call__(self, inputs, valid_length=None, masked_positions=None):
+        # pylint: disable=dangerous-default-value
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a BERT model.
         """
-        return super(RoBERTaModel, self).forward(inputs, token_types=None,
-                                                 valid_length=valid_length,
-                                                 masked_positions=masked_positions)
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        valid_length = [] if valid_length is None else valid_length
+        masked_positions = [] if masked_positions is None else masked_positions
+        return super(RoBERTaModel, self).__call__(inputs, [], valid_length=valid_length,
+                                                  masked_positions=masked_positions)
+
+
+class BERTClassifier(HybridBlock):
+    """Model for sentence (pair) classification task with BERT.
+
+    The model feeds token ids and token type ids into BERT to get the
+    pooled BERT sequence representation, then apply a Dense layer for
+    classification.
+
+    Parameters
+    ----------
+    bert: BERTModel
+        Bidirectional encoder with transformer.
+    num_classes : int, default is 2
+        The number of target classes.
+    dropout : float or None, default 0.0.
+        Dropout probability for the bert output.
+    prefix : str or None
+        See document of `mx.gluon.Block`.
+    params : ParameterDict or None
+        See document of `mx.gluon.Block`.
+    """
+
+    def __init__(self, bert, num_classes=2, dropout=0.0,
+                 prefix=None, params=None):
+        super(BERTClassifier, self).__init__(prefix=prefix, params=params)
+        self.bert = bert
+        with self.name_scope():
+            self.classifier = nn.HybridSequential(prefix=prefix)
+            if dropout:
+                self.classifier.add(nn.Dropout(rate=dropout))
+            self.classifier.add(nn.Dense(units=num_classes))
+
+    def __call__(self, inputs, token_types, valid_length=None):
+        # pylint: disable=dangerous-default-value, arguments-differ
+        """Generate the unnormalized score for the given the input sequences.
+
+        Parameters
+        ----------
+        inputs : NDArray or Symbol, shape (batch_size, seq_length)
+            Input words for the sequences.
+        token_types : NDArray or Symbol, shape (batch_size, seq_length)
+            Token types for the sequences, used to indicate whether the word belongs to the
+            first sentence or the second one.
+        valid_length : NDArray or Symbol, or None, shape (batch_size)
+            Valid length of the sequence. This is used to mask the padded tokens.
+
+        Returns
+        -------
+        outputs : NDArray or Symbol
+            Shape (batch_size, num_classes)
+        """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        valid_length = [] if valid_length is None else valid_length
+        return super(BERTClassifier, self).__call__(inputs, token_types, valid_length)
+
+    def hybrid_forward(self, F, inputs, token_types, valid_length=None):
+        # pylint: disable=arguments-differ
+        """Generate the unnormalized score for the given the input sequences.
+
+        Parameters
+        ----------
+        inputs : NDArray or Symbol, shape (batch_size, seq_length)
+            Input words for the sequences.
+        token_types : NDArray or Symbol, shape (batch_size, seq_length)
+            Token types for the sequences, used to indicate whether the word belongs to the
+            first sentence or the second one.
+        valid_length : NDArray or None, shape (batch_size)
+            Valid length of the sequence. This is used to mask the padded tokens.
+
+        Returns
+        -------
+        outputs : NDArray
+            Shape (batch_size, num_classes)
+        """
+        # XXX Temporary hack for hybridization as hybridblock does not support None
+        if isinstance(valid_length, list) and len(valid_length) == 0:
+            valid_length = None
+        _, pooler_out = self.bert(inputs, token_types, valid_length)
+        return self.classifier(pooler_out)
+
+class RoBERTaClassifier(HybridBlock):
+    """Model for sentence (pair) classification task with BERT.
+
+    The model feeds token ids and token type ids into BERT to get the
+    pooled BERT sequence representation, then apply a Dense layer for
+    classification.
+
+    Parameters
+    ----------
+    bert: RoBERTaModel
+        The RoBERTa model.
+    num_classes : int, default is 2
+        The number of target classes.
+    dropout : float or None, default 0.0.
+        Dropout probability for the bert output.
+    prefix : str or None
+        See document of `mx.gluon.Block`.
+    params : ParameterDict or None
+        See document of `mx.gluon.Block`.
+
+    Inputs:
+        - **inputs**: input sequence tensor, shape (batch_size, seq_length)
+        - **valid_length**: optional tensor of input sequence valid lengths.
+            Shape (batch_size, num_classes).
+
+    Outputs:
+        - **output**: Regression output, shape (batch_size, num_classes)
+    """
+
+    def __init__(self, roberta, num_classes=2, dropout=0.0,
+                 prefix=None, params=None):
+        super(RoBERTaClassifier, self).__init__(prefix=prefix, params=params)
+        self.roberta = roberta
+        self._units = roberta._units
+        with self.name_scope():
+            self.classifier = nn.HybridSequential(prefix=prefix)
+            if dropout:
+                self.classifier.add(nn.Dropout(rate=dropout))
+            self.classifier.add(nn.Dense(units=self._units, activation='tanh'))
+            if dropout:
+                self.classifier.add(nn.Dropout(rate=dropout))
+            self.classifier.add(nn.Dense(units=num_classes))
+
+    def __call__(self, inputs, valid_length=None):
+        # pylint: disable=dangerous-default-value, arguments-differ
+        """Generate the unnormalized score for the given the input sequences.
+
+        Parameters
+        ----------
+        inputs : NDArray or Symbol, shape (batch_size, seq_length)
+            Input words for the sequences.
+        valid_length : NDArray or Symbol, or None, shape (batch_size)
+            Valid length of the sequence. This is used to mask the padded tokens.
+
+        Returns
+        -------
+        outputs : NDArray or Symbol
+            Shape (batch_size, num_classes)
+        """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        valid_length = [] if valid_length is None else valid_length
+        return super(RoBERTaClassifier, self).__call__(inputs, valid_length)
+
+    def hybrid_forward(self, F, inputs, valid_length=None):
+        # pylint: disable=arguments-differ
+        """Generate the unnormalized score for the given the input sequences.
+
+        Parameters
+        ----------
+        inputs : NDArray or Symbol, shape (batch_size, seq_length)
+            Input words for the sequences.
+        valid_length : NDArray or Symbol, or None, shape (batch_size)
+            Valid length of the sequence. This is used to mask the padded tokens.
+
+        Returns
+        -------
+        outputs : NDArray or Symbol
+            Shape (batch_size, num_classes)
+        """
+        # XXX Temporary hack for hybridization as hybridblock does not support None
+        if isinstance(valid_length, list) and len(valid_length) == 0:
+            valid_length = None
+
+        seq_out = self.roberta(inputs, valid_length)
+        assert not isinstance(seq_out, (tuple, list)), 'Expected one output from RoBERTaModel'
+        outputs = seq_out.slice(begin=(0, 0, 0), end=(None, 1, None))
+        outputs = outputs.reshape(shape=(-1, self._units))
+        return self.classifier(outputs)
 
 ###############################################################################
 #                               GET MODEL                                     #
@@ -711,7 +915,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         'openwebtext_book_corpus_wiki_en_uncased',
         'wiki_multilingual_uncased', 'wiki_multilingual_cased',
         'scibert_scivocab_uncased', 'scibert_scivocab_cased',
-        'scibert_basevocab_uncased','scibert_basevocab_cased',
+        'scibert_basevocab_uncased', 'scibert_basevocab_cased',
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
         'biobert_v1.1_pubmed',
         'clinicalbert'
@@ -752,6 +956,30 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+
+    The pretrained parameters for dataset_name
+    'openwebtext_book_corpus_wiki_en_uncased' were obtained by running the
+    GluonNLP BERT pre-training script on OpenWebText.
+
+    The pretrained parameters for dataset_name 'scibert_scivocab_uncased',
+    'scibert_scivocab_cased', 'scibert_basevocab_uncased',
+    'scibert_basevocab_cased' were obtained by converting the parameters
+    published by "Beltagy, I., Cohan, A., & Lo, K. (2019). Scibert: Pretrained
+    contextualized embeddings for scientific text. arXiv preprint
+    arXiv:1903.10676."
+
+    The pretrained parameters for dataset_name 'biobert_v1.0_pmc',
+    'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc', 'biobert_v1.1_pubmed'
+    were obtained by converting the parameters published by "Lee, J., Yoon, W.,
+    Kim, S., Kim, D., Kim, S., So, C. H., & Kang, J. (2019). Biobert:
+    pre-trained biomedical language representation model for biomedical text
+    mining. arXiv preprint arXiv:1901.08746."
+
+    The pretrained parameters for dataset_name 'clinicalbert' were obtained by
+    converting the parameters published by "Huang, K., Altosaar, J., &
+    Ranganath, R. (2019). ClinicalBERT: Modeling Clinical Notes and Predicting
+    Hospital Readmission. arXiv preprint arXiv:1904.05342."
+
 
     Returns
     -------
@@ -889,7 +1117,8 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
     """
     return get_roberta_model(model_name='roberta_24_1024_16', vocab=vocab,
                              dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
-                             use_decoder=use_decoder, root=root, **kwargs)
+                             use_decoder=use_decoder,
+                             root=root, **kwargs)
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
@@ -939,8 +1168,9 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
 
 
 def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                      use_decoder=True, output_attention=False, output_all_encodings=False,
-                      root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                      use_decoder=True, output_attention=False,
+                      output_all_encodings=False, root=os.path.join(get_home_dir(), 'models'),
+                      **kwargs):
     """Any RoBERTa pretrained model.
 
     Parameters
