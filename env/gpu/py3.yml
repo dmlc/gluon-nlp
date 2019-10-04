@@ -10,6 +10,7 @@ dependencies:
   - spacy>2
   - nltk
   - pytest=4.5.0
+  - pytest-env
   - flaky=3.5.3
   - pytest-cov=2.7.1
   - mock<3

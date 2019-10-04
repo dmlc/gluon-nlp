@@ -66,6 +66,7 @@ setup(
         ],
         'dev': [
             'pytest',
+            'pytest-env',
             'pylint',
             'pylint_quotes',
             'flake8',
