@@ -36,7 +36,7 @@ setup(
     # Metadata
     name='gluonnlp',
     version=VERSION,
-    python_requires='>=3.6',
+    python_requires='>=3.5',
     author='Gluon NLP Toolkit Contributors',
     author_email='mxnet-gluon@amazon.com',
     url='https://github.com/dmlc/gluon-nlp',
