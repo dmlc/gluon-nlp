@@ -92,7 +92,7 @@ How to Contribute
 
 GluonNLP community welcomes contributions from anyone!
 
-There are lots of opportunities for you to become our `contributors <https://github.com/dmlc/gluon-nlp/blob/master/contributor.rst>`__:
+There are lots of opportunities for you to become our `contributors <https://github.com/dmlc/gluon-nlp/graphs/contributors>`__:
 
 - Ask or answer questions on `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
 - Propose ideas, or review proposed design ideas on `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
@@ -191,8 +191,8 @@ English word embeddings:
     <class 'mxnet.ndarray.ndarray.NDArray'>
     >>> glove['baby'].shape
     (50,)
-    
-    
+
+
 Reference Paper
 ===============
 
