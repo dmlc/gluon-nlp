@@ -71,7 +71,7 @@ class AttentionCell(HybridBlock):
 
         cell = AttentionCell()
         out = cell(query, key, value, mask)
-    
+
     Parameters
     ----------
     prefix : str or None, default None
@@ -220,8 +220,8 @@ class MultiHeadAttentionCell(AttentionCell):
     def __init__(self, base_cell, query_units, key_units, value_units, num_heads, use_bias=True,
                  weight_initializer=None, bias_initializer='zeros', prefix=None, params=None,
                  return_attention_scores=False):
-        super(MultiHeadAttentionCell, self).__init__(prefix=prefix, params=params,
-                                                     return_attention_scores=return_attention_scores)
+        super(MultiHeadAttentionCell, self).__init__(
+            prefix=prefix, params=params, return_attention_scores=return_attention_scores)
         self._base_cell = base_cell
         self._num_heads = num_heads
         self._use_bias = use_bias
@@ -461,8 +461,8 @@ class DotProductAttentionCell(AttentionCell):
     def __init__(self, units=None, luong_style=False, scaled=True, normalized=False, use_bias=True,
                  dropout=0.0, weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None, return_attention_scores=False):
-        super(DotProductAttentionCell, self).__init__(prefix=prefix, params=params,
-                                                      return_attention_scores=return_attention_scores)
+        super(DotProductAttentionCell, self).__init__(
+            prefix=prefix, params=params, return_attention_scores=return_attention_scores)
         self._units = units
         self._scaled = scaled
         self._normalized = normalized
