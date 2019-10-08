@@ -28,11 +28,11 @@ import numpy as np
 import torch
 
 import gluonnlp as nlp
-import pytorch_transformers
+import transformers
 
 
 def compare_xlnet(args):
-    model_p = pytorch_transformers.XLNetLMHeadModel.from_pretrained(
+    model_p = transformers.XLNetLMHeadModel.from_pretrained(
         'xlnet-base-cased'
         if args.model_name == 'xlnet_cased_L-12_H-768_A-12' else 'xlnet-large-cased', dropout=0)
     model_p.transformer.attentions = False  # no change of default
