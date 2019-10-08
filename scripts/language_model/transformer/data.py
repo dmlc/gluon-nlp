@@ -82,7 +82,7 @@ class XLNetTokenizer:
             outputs = ' '.join(sample.strip().split())
         else:
             outputs = sample
-        outputs = outputs.replace("``", '"').replace("''", '"')
+        outputs = outputs.replace('``', '"').replace('\'\'', '"')
 
         if not self._keep_accents:
             outputs = unicodedata.normalize('NFKD', outputs)

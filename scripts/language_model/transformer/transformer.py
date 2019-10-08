@@ -654,11 +654,13 @@ class XLNet((mx.gluon.Block)):
 
         if token_types is not None:
             if mlen > 0:
-                mem_pad = mx.nd.zeros([batch_size, mlen], dtype=token_types.dtype, ctx=token_types.context)
+                mem_pad = mx.nd.zeros([batch_size, mlen], dtype=token_types.dtype,
+                                      ctx=token_types.context)
                 mem_pad_token_types = mx.nd.concat(mem_pad, token_types, dim=1)
 
             # `1` indicates not in the same segment [qlen x klen x bsz]
-            segments = mx.nd.broadcast_not_equal(token_types.expand_dims(2), mem_pad_token_types.expand_dims(1))
+            segments = mx.nd.broadcast_not_equal(token_types.expand_dims(2),
+                                                 mem_pad_token_types.expand_dims(1))
             segments = mx.nd.one_hot(segments, 2, 1, 0)
         else:
             segments = None

@@ -22,7 +22,7 @@ import errno
 import os
 import time
 import zipfile
-from typing import Dict, Hashable, List, Optional
+from typing import Optional
 
 import mxnet as mx
 from mxnet.gluon.model_zoo import model_store
