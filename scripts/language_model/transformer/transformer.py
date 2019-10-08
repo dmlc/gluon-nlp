@@ -449,14 +449,19 @@ class XLNetCell(TransformerXLCell):
         inputs : Symbol or NDArray
             Input sequence. Shape (batch_size, length, C_in)
         mem_value : Symbol or NDArray
-            Memory value, i.e. output of the encoder. Shape (batch_size, mem_length, C_in)
+            Memory value, i.e. output of the encoder. Shape (batch_size,
+            memory__length, C_in)
         pos_emb : Symbol or NDArray
             Positional embeddings. Shape (mem_length, C_in)
         seg_emb : Symbol or NDArray
             Segment embeddings. Shape (mem_length, C_in)
-        mask : Symbol or NDArray or None
+        mask : Symbol or NDArray
             Attention mask of shape (batch_size, length, length + mem_length)
-        segments
+        segments : Symbol or NDArray
+            One-hot vector indicating if a query-key pair is in the same
+            segment or not. Shape [batch_size, query_length, query_length +
+            memory_length, 2]. `1` indicates that the pair is not in the same
+            segment.
 
         Returns
         -------
@@ -616,20 +621,20 @@ class XLNet((mx.gluon.Block)):
         ]
         return mems
 
-    def forward(self, step_input, segments, mems, mask=None):  # pylint: disable=arguments-differ
+    def forward(self, step_input, token_types, mems=None, mask=None):  # pylint: disable=arguments-differ
         """
 
         Parameters
         ----------
         step_input : NDArray or Symbol
-            Input of shape [batch_size, length]
-        segments : NDArray or Symbol
-            One-hot vector for segments of shape [batch_size, query_length,
-            key_length, 2]
+            Input of shape [batch_size, query_length]
+        token_types : NDArray or Symbol
+            Token types of the input tokens of shape [batch_size,
+            query_length], indicating various portions of the inputs.
         mems : List of NDArray or Symbol, optional
             Optional memory from previous forward passes containing
             `num_layers` `NDArray`s or `Symbol`s each of shape [batch_size,
-            mem_len, units].
+            memory_length, units].
 
         Returns
         -------
@@ -646,6 +651,17 @@ class XLNet((mx.gluon.Block)):
         batch_size, qlen = step_input.shape[:2]
         mlen = mems[0].shape[1] if mems is not None else 0
         klen = qlen + mlen
+
+        if token_types is not None:
+            if mlen > 0:
+                mem_pad = mx.nd.zeros([batch_size, mlen], dtype=token_types.dtype, ctx=token_types.context)
+                mem_pad_token_types = mx.nd.concat(mem_pad, token_types, dim=1)
+
+            # `1` indicates not in the same segment [qlen x klen x bsz]
+            segments = mx.nd.broadcast_not_equal(token_types.expand_dims(2), mem_pad_token_types.expand_dims(1))
+            segments = mx.nd.one_hot(segments, 2, 1, 0)
+        else:
+            segments = None
 
         pos_seq = mx.nd.arange(start=klen, stop=-qlen, step=-1, ctx=step_input.context)
 

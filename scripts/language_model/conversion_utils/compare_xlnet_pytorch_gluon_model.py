@@ -71,21 +71,13 @@ def compare_xlnet(args):
     batch_size, qlen, mlen = 2, 16, 100
     mems = model.begin_mems(batch_size, mlen, context=mx.cpu())
     x = mx.nd.ones(shape=(batch_size, qlen))
-
-    # Convert `token_type_ids` to one-hot `seg_mat`
-    token_type_ids = torch.ones([batch_size, qlen], dtype=torch.long)
-    token_type_ids_ = torch.ones([qlen, batch_size], dtype=torch.long)
-    mem_pad = torch.zeros([mlen, batch_size], dtype=torch.long)
-    cat_ids = torch.cat([mem_pad, token_type_ids_], dim=0)
-    seg_mat = (token_type_ids_[:, None] != cat_ids[None, :]).long()
-    seg_mat = torch.nn.functional.one_hot(seg_mat, num_classes=2)
-
-    segments = mx.nd.array(seg_mat.numpy()).transpose((2, 0, 1, 3))
-    output, new_mems = model(x, segments, mems)
+    token_types = mx.nd.ones(shape=(batch_size, qlen))
+    output, new_mems = model(x, token_types, mems)
 
     x_p = torch.tensor(x.asnumpy(), dtype=torch.long)
     mems_p = [torch.tensor(mems_i.transpose((1, 0, 2)).asnumpy()) for mems_i in mems]
-    output_p, new_mems_p, hids_p = model_p(x_p, token_type_ids=token_type_ids, mems=mems_p)
+    token_types_p = torch.tensor(token_types.asnumpy(), dtype=torch.long)
+    output_p, new_mems_p, hids_p = model_p(x_p, token_type_ids=token_types_p, mems=mems_p)
 
     for i in range(kwargs['num_layers']):
         a, b = new_mems[i][:, -qlen:].asnumpy(), hids_p[i].detach().numpy()
