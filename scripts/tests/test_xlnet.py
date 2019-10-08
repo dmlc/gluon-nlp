@@ -33,10 +33,9 @@ def test_xlnet_pretrained(modelname, hybridize, use_decoder):
 
     batch_size, qlen, mlen = 2, 16, 100
     mems = model.begin_mems(batch_size, mlen, context=mx.cpu())
-    x = mx.nd.ones(shape=(batch_size, qlen))
-    segments = mx.nd.zeros(shape=(batch_size, qlen, qlen + mlen, 2))
-
-    output, new_mems = model(x, segments, mems)
+    indices = mx.nd.ones(shape=(batch_size, qlen))
+    token_types = mx.nd.ones_like(indices)
+    output, new_mems = model(indices, token_types, mems)
     mx.nd.waitall()
 
     assert tokenizer('hello') == ['▁hello']
