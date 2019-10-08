@@ -183,3 +183,34 @@ The dataset used for training the models is Google's 1 billion words dataset.
 
    $ python large_word_language_model.py --gpus 0,1,2,3 --clip=10
    $ python large_word_language_model.py --gpus 4 --eval-only --batch-size=1
+
+
+XLNet: Generalized Autoregressive Pretraining for Language Understanding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Reference: Yang, Z., Dai, Z., Yang, Y., Carbonell, J., Salakhutdinov, R., &
+Le, Q. V. "`XLNet: Generalized Autoregressive Pretraining for Language
+Understanding. <https://arxiv.org/abs/1906.08237>`_" arXiv preprint
+arXiv:1906.08237 (2019).
+
+
+The following pre-trained XLNet models are available from the **get_model** API:
+
++-------------------+--------------------------+-----------------------------+
+|                   | xlnet_cased_l12_h768_a12 | xlnet_cased_l24_h1024_a16   |
++=========================================+================+=================+
+| 126gb             | ✓                        | ✓                           |
++-------------------+--------------------------+-----------------------------+
+
+where **126gb*** refers to the 126 GB large training dataset used by the XLNet
+paper authors.
+
+.. code-block:: python
+
+    import gluonnlp as nlp; import mxnet as mx
+    from transformer import get_model, XLNetTokenizer
+    model, vocab, tokenizer = get_model('xlnet_cased_l12_h768_a12', dataset_name='126gb', use_decoder=True)
+    indices = mx.nd.array([vocab.to_indices(tokenizer('Hello world'))])
+    token_types = mx.nd.ones_like(indices)
+    mems = model.begin_mems(batch_size=1, mem_len=500, context=indices.context)
+    output, new_mems = model(indices, token_types, mems)

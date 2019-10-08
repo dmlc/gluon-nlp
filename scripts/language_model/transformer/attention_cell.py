@@ -265,7 +265,9 @@ class RelativeSegmentEmbeddingPositionalEmbeddingMultiHeadAttentionCell(mx.gluon
             Only contains 0 or 1 where 0 means that the memory slot will not be used.
             If set to None. No mask will be used.
         segments : Symbol or NDArray
-            Segment indicator. Shape (batch_size, memory_length, value_dim)
+            One-hot vector indicating if a query-key pair is in the same
+            segment or not. Shape [batch_size, query_length, key_length , 2].
+            `1` indicates that the pair is not in the same segment.
 
         Returns
         -------
