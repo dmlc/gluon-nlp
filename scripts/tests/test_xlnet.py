@@ -23,6 +23,8 @@ import mxnet as mx
 from ..language_model.transformer import get_model
 
 
+@pytest.mark.serial
+@pytest.mark.remote_required
 @pytest.mark.parametrize('use_decoder', [True, False])
 @pytest.mark.parametrize('hybridize', [True, False])
 @pytest.mark.parametrize('modelname', ['xlnet_cased_l12_h768_a12', 'xlnet_cased_l24_h1024_a16'])

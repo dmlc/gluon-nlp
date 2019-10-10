@@ -28,6 +28,8 @@ from ..language_model.transformer import (AdaptiveEmbedding, AdaptiveLogSoftmaxW
                                           PositionalEmbeddingMultiHeadAttentionCell, TransformerXL)
 
 
+@pytest.mark.serial
+@pytest.mark.remote_required
 @pytest.mark.parametrize('d_head', [5])
 @pytest.mark.parametrize('num_heads', [1, 3])
 @pytest.mark.parametrize('query_length', [10, 5, 1])
