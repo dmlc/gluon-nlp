@@ -159,7 +159,7 @@ class AttentionCell(HybridBlock):
             Shape (batch_size, query_length, context_vec_dim)
         att_weights : Symbol or NDArray
             Attention weights. Shape (batch_size, query_length, memory_length)
-        [att_scores]: Symbol or NDArray
+        att_scores: Symbol or NDArray
             Attention scores. Shape (batch_size, query_length, memory_length)
         """
         return super(AttentionCell, self).__call__(query, key, value, mask)
