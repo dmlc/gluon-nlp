@@ -421,9 +421,6 @@ class BERTModel(HybridBlock):
 
         This is used in training or fine-tuning a BERT model.
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        valid_length = [] if valid_length is None else valid_length
-        masked_positions = [] if masked_positions is None else masked_positions
         return super(BERTModel, self).__call__(inputs, token_types,
                                                valid_length, masked_positions)
 
@@ -433,10 +430,6 @@ class BERTModel(HybridBlock):
 
         This is used in training or fine-tuning a BERT model.
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None
-        if isinstance(masked_positions, list) and len(masked_positions) == 0:
-            masked_positions = None
-
         outputs = []
         seq_out, attention_out = self._encode_sequence(inputs, token_types, valid_length)
         outputs.append(seq_out)
@@ -597,9 +590,6 @@ class RoBERTaModel(BERTModel):
 
         This is used in training or fine-tuning a BERT model.
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        valid_length = [] if valid_length is None else valid_length
-        masked_positions = [] if masked_positions is None else masked_positions
         return super(RoBERTaModel, self).__call__(inputs, [], valid_length=valid_length,
                                                   masked_positions=masked_positions)
 
@@ -654,8 +644,6 @@ class BERTClassifier(HybridBlock):
         outputs : NDArray or Symbol
             Shape (batch_size, num_classes)
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        valid_length = [] if valid_length is None else valid_length
         return super(BERTClassifier, self).__call__(inputs, token_types, valid_length)
 
     def hybrid_forward(self, F, inputs, token_types, valid_length=None):
@@ -677,9 +665,6 @@ class BERTClassifier(HybridBlock):
         outputs : NDArray
             Shape (batch_size, num_classes)
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None
-        if isinstance(valid_length, list) and len(valid_length) == 0:
-            valid_length = None
         _, pooler_out = self.bert(inputs, token_types, valid_length)
         return self.classifier(pooler_out)
 
@@ -742,8 +727,6 @@ class RoBERTaClassifier(HybridBlock):
         outputs : NDArray or Symbol
             Shape (batch_size, num_classes)
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        valid_length = [] if valid_length is None else valid_length
         return super(RoBERTaClassifier, self).__call__(inputs, valid_length)
 
     def hybrid_forward(self, F, inputs, valid_length=None):
@@ -762,10 +745,6 @@ class RoBERTaClassifier(HybridBlock):
         outputs : NDArray or Symbol
             Shape (batch_size, num_classes)
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None
-        if isinstance(valid_length, list) and len(valid_length) == 0:
-            valid_length = None
-
         seq_out = self.roberta(inputs, valid_length)
         assert not isinstance(seq_out, (tuple, list)), 'Expected one output from RoBERTaModel'
         outputs = seq_out.slice(begin=(0, 0, 0), end=(None, 1, None))
