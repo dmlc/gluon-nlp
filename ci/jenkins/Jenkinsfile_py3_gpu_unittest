@@ -31,31 +31,31 @@ node {
 }
 utils.assign_node_labels(linux_gpu: 'linux-gpu', linux_cpu: 'linux-cpu')
 
-utils.main_wrapper(
-core_logic: {
-  utils.parallel_stage('Sanity', [
-    build_steps.sanity_lint('gluon-nlp-gpu-py3', 'gpu/py3', 'src/gluonnlp')
-  ])
+// utils.main_wrapper(
+// core_logic: {
+//   utils.parallel_stage('Sanity', [
+//     build_steps.sanity_lint('gluon-nlp-gpu-py3', 'gpu/py3', 'src/gluonnlp')
+//   ])
 
-  utils.parallel_stage('Tests', [
-    build_steps.test_unittest('gluon-nlp-gpu-py3', 'gpu/py3',
-                              'tests/unittest', 'src/gluonnlp',
-                              'gpu and not serial',
-                              4, true, false),
-    build_steps.test_unittest('gluon-nlp-gpu-py3', 'gpu/py3',
-                              'tests/unittest', 'src/gluonnlp',
-                              'gpu and serial',
-                              0, true, false),
-    build_steps.test_unittest('gluon-nlp-gpu-py3', 'gpu/py3',
-                              'scripts/tests', 'src/gluonnlp',
-                              'gpu and not (serial or integration)',
-                              4, true, false),
-    build_steps.test_unittest('gluon-nlp-gpu-py3', 'gpu/py3',
-                              'scripts/tests', 'src/gluonnlp',
-                              'gpu and serial and not integration',
-                              0, true, false)
-  ])
-}
-,
-failure_handler: {}
-)
+//   utils.parallel_stage('Tests', [
+//     build_steps.test_unittest('gluon-nlp-gpu-py3', 'gpu/py3',
+//                               'tests/unittest', 'src/gluonnlp',
+//                               'gpu and not serial',
+//                               4, true, false),
+//     build_steps.test_unittest('gluon-nlp-gpu-py3', 'gpu/py3',
+//                               'tests/unittest', 'src/gluonnlp',
+//                               'gpu and serial',
+//                               0, true, false),
+//     build_steps.test_unittest('gluon-nlp-gpu-py3', 'gpu/py3',
+//                               'scripts/tests', 'src/gluonnlp',
+//                               'gpu and not (serial or integration)',
+//                               4, true, false),
+//     build_steps.test_unittest('gluon-nlp-gpu-py3', 'gpu/py3',
+//                               'scripts/tests', 'src/gluonnlp',
+//                               'gpu and serial and not integration',
+//                               0, true, false)
+//   ])
+// }
+// ,
+// failure_handler: {}
+// )
