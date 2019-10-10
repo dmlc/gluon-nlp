@@ -234,6 +234,9 @@ def setup(app):
             }, True)
     app.add_transform(AutoStructify)
     app.add_javascript('google_analytics.js')
+    app.add_javascript('hidebib.js')
+    app.add_javascript('install-options.js')
+    app.add_stylesheet('custom.css')
 
 
 sphinx_gallery_conf = {
