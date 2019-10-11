@@ -75,7 +75,7 @@ class Vocab:
         example, it is valid to only set the `unknown_token` index to 10
         (instead of the default of 0) with `token_to_idx = {'<unk>': 10}`,
         assuming that there are at least 10 tokens in the vocabulary.
-    **kwargs
+    ``**kwargs``
         Keyword arguments of the format `xxx_token` can be used to specify
         further special tokens that will be exposed as attribute of the
         vocabulary and associated with an index.
