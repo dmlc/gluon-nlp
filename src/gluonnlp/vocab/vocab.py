@@ -86,9 +86,6 @@ class Vocab:
         just as if it was listed in the `reserved_tokens` argument. The
         specified tokens are listed together with reserved tokens in the
         `reserved_tokens` attribute of the vocabulary object.
-
-    Deprecated Parameters
-    ---------------------
     deprecated_padding_token
         The representation for the special token of padding token. Default:
         '<pad>'. Specifying padding_token as positional argument is deprecated
