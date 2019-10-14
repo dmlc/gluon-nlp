@@ -75,7 +75,7 @@ class Vocab:
         example, it is valid to only set the `unknown_token` index to 10
         (instead of the default of 0) with `token_to_idx = {'<unk>': 10}`,
         assuming that there are at least 10 tokens in the vocabulary.
-    ``**kwargs``
+    `**kwargs`
         Keyword arguments of the format `xxx_token` can be used to specify
         further special tokens that will be exposed as attribute of the
         vocabulary and associated with an index.
@@ -93,17 +93,17 @@ class Vocab:
         The representation for the special token of padding token. Default:
         '<pad>'. Specifying padding_token as positional argument is deprecated
         and support will be removed. Specify it as keyword argument instead
-        (see documentation of **kwargs above)
+        (see documentation of `**kwargs` above)
     deprecated_bos_token
         The representation for the special token of beginning-of-sequence
         token. Default: '<bos>'. Specifying bos_token as positional argument is
         deprecated and support will be removed. Specify it as keyword argument
-        instead (see documentation of **kwargs above)
+        instead (see documentation of `**kwargs` above)
     deprecated_eos_token
         The representation for the special token of end-of-sequence token.
         Default: '<eos>'. Specifying eos_token as positional argument is
         deprecated and support will be removed. Specify it as keyword argument
-        instead (see documentation of **kwargs above)
+        instead (see documentation of `**kwargs` above)
 
     Attributes
     ----------
