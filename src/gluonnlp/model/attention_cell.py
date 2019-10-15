@@ -25,6 +25,38 @@ from mxnet.gluon.block import HybridBlock
 from mxnet.gluon import nn
 from .block import L2Normalization
 
+
+def _apply_mask(F, att_score, mask, dtype):
+    """Fill in the masked scores with a very small value
+
+    Parameters
+    ----------
+    F : symbol or ndarray
+    att_score : Symbol or NDArray
+        Shape (batch_size, query_length, memory_length)
+    mask : Symbol or NDArray or None
+        Shape (batch_size, query_length, memory_length)
+    Returns
+    -------
+    att_score : Symbol or NDArray
+        Shape (batch_size, query_length, memory_length)
+    """
+    # Fill in the masked scores with a very small value
+    neg = -1e18
+    if np.dtype(dtype) == np.float16:
+        neg = -1e4
+    else:
+        try:
+            # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
+            from mxnet.contrib import amp
+            if amp.amp._amp_initialized:
+                neg = -1e4
+        except ImportError:
+            pass
+    att_score = F.where(mask, att_score, neg * F.ones_like(att_score))
+    return att_score
+
+
 # TODO(sxjscience) Add mask flag to softmax operator. Think about how to accelerate the kernel
 def _masked_softmax(F, att_score, mask, dtype):
     """Ignore the masked elements when calculating the softmax
@@ -40,27 +72,14 @@ def _masked_softmax(F, att_score, mask, dtype):
     -------
     att_weights : Symbol or NDArray
         Shape (batch_size, query_length, memory_length)
-    att_score : Symbol or NDArray
-        Shape (batch_size, query_length, memory_length)
     """
     if mask is not None:
         # Fill in the masked scores with a very small value
-        neg = -1e18
-        if np.dtype(dtype) == np.float16:
-            neg = -1e4
-        else:
-            try:
-                # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
-                from mxnet.contrib import amp
-                if amp.amp._amp_initialized:
-                    neg = -1e4
-            except ImportError:
-                pass
-        att_score = F.where(mask, att_score, neg * F.ones_like(att_score))
+        att_score = _apply_mask(F, att_score, mask, dtype)
         att_weights = F.softmax(att_score, axis=-1) * mask
     else:
         att_weights = F.softmax(att_score, axis=-1)
-    return att_weights, att_score
+    return att_weights
 
 
 # TODO(sxjscience) In the future, we should support setting mask/att_weights as sparse tensors
@@ -72,19 +91,10 @@ class AttentionCell(HybridBlock):
         cell = AttentionCell()
         out = cell(query, key, value, mask)
 
-    Parameters
-    ----------
-    prefix : str or None, default None
-        See document of `Block`.
-    params : str or None, default None
-        See document of `Block`.
-    return_attention_scores: bool, default False
-        Return also the raw attention scores if True
     """
-    def __init__(self, prefix=None, params=None, return_attention_scores=False):
+    def __init__(self, prefix=None, params=None):
         self._dtype = np.float32
         super(AttentionCell, self).__init__(prefix=prefix, params=params)
-        self._return_attention_scores = return_attention_scores
 
     def cast(self, dtype):
         self._dtype = dtype
@@ -159,8 +169,6 @@ class AttentionCell(HybridBlock):
             Shape (batch_size, query_length, context_vec_dim)
         att_weights : Symbol or NDArray
             Attention weights. Shape (batch_size, query_length, memory_length)
-        att_scores: Symbol or NDArray
-            Attention scores. Shape (batch_size, query_length, memory_length)
         """
         return super(AttentionCell, self).__call__(query, key, value, mask)
 
@@ -173,12 +181,9 @@ class AttentionCell(HybridBlock):
             return super(AttentionCell, self).forward(query, key, value, mask)
 
     def hybrid_forward(self, F, query, key, value, mask=None):  # pylint: disable=arguments-differ
-        att_weights, att_scores = self._compute_weight(F, query, key, mask)
+        att_weights = self._compute_weight(F, query, key, mask)
         context_vec = self._read_by_weight(F, att_weights, value)
-        if self._return_attention_scores:
-            return context_vec, att_weights, att_scores
-        else:
-            return context_vec, att_weights
+        return context_vec, att_weights
 
 
 class MultiHeadAttentionCell(AttentionCell):
@@ -214,14 +219,10 @@ class MultiHeadAttentionCell(AttentionCell):
         See document of `Block`.
     params : str or None, default None
         See document of `Block`.
-    return_attention_scores: bool, default False
-        Return also the raw attention scores if True
     """
     def __init__(self, base_cell, query_units, key_units, value_units, num_heads, use_bias=True,
-                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None,
-                 return_attention_scores=False):
-        super(MultiHeadAttentionCell, self).__init__(
-            prefix=prefix, params=params, return_attention_scores=return_attention_scores)
+                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
+        super(MultiHeadAttentionCell, self).__init__(prefix=prefix, params=params)
         self._base_cell = base_cell
         self._num_heads = num_heads
         self._use_bias = use_bias
@@ -264,8 +265,6 @@ class MultiHeadAttentionCell(AttentionCell):
         att_weights : Symbol or NDArray
             Attention weights of multiple heads.
             Shape (batch_size, num_heads, query_length, memory_length)
-        [att_scores]: Symbol or NDArray
-            Attention scores. Shape (batch_size, query_length, memory_length)
         """
         return super(MultiHeadAttentionCell, self).__call__(query, key, value, mask)
 
@@ -285,10 +284,8 @@ class MultiHeadAttentionCell(AttentionCell):
             mask = F.broadcast_axis(F.expand_dims(mask, axis=1),
                                     axis=1, size=self._num_heads)\
                     .reshape(shape=(-1, 0, 0), reverse=True)
-        att_weights, att_scores = self._base_cell._compute_weight(F, query, key, mask)
-        att_scores = att_scores.reshape(shape=(-1, self._num_heads, 0, 0), reverse=True)
-        att_weights = att_weights.reshape(shape=(-1, self._num_heads, 0, 0), reverse=True)
-        return att_weights, att_scores
+        att_weights = self._base_cell._compute_weight(F, query, key, mask)
+        return att_weights.reshape(shape=(-1, self._num_heads, 0, 0), reverse=True)
 
     def _read_by_weight(self, F, att_weights, value):
         att_weights = att_weights.reshape(shape=(-1, 0, 0), reverse=True)
@@ -335,13 +332,10 @@ class MLPAttentionCell(AttentionCell):
         See document of `Block`.
     params : ParameterDict or None, default None
         See document of `Block`.
-    return_attention_scores: bool, default False
-        Return also the raw attention scores if True
     """
 
     def __init__(self, units, act=nn.Activation('tanh'), normalized=False, dropout=0.0,
-                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None,
-                 return_attention_scores=False):
+                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
         # Define a temporary class to implement the normalized version
         # TODO(sxjscience) Find a better solution
         class _NormalizedScoreProj(HybridBlock):
@@ -361,8 +355,7 @@ class MLPAttentionCell(AttentionCell):
                                        flatten=False, name='fwd')
                 return out
 
-        super(MLPAttentionCell, self).__init__(prefix=prefix, params=params,
-                                               return_attention_scores=return_attention_scores)
+        super(MLPAttentionCell, self).__init__(prefix=prefix, params=params)
         self._units = units
         self._act = act
         self._normalized = normalized
@@ -387,16 +380,24 @@ class MLPAttentionCell(AttentionCell):
                                                  weight_initializer=weight_initializer,
                                                  prefix='score_')
 
-    def _compute_weight(self, F, query, key, mask=None):
+    def _compute_score(self, F, query, key, mask=None):
         mapped_query = self._query_mid_layer(query)
         mapped_key = self._key_mid_layer(key)
         mid_feat = F.broadcast_add(F.expand_dims(mapped_query, axis=2),
                                    F.expand_dims(mapped_key, axis=1))
         mid_feat = self._act(mid_feat)
         att_score = self._attention_score(mid_feat).reshape(shape=(0, 0, 0))
-        att_weights, att_score = _masked_softmax(F, att_score, mask, self._dtype)
+        if mask is not None:
+            att_score = _apply_mask(F, att_score, mask, self._dtype)
+        return att_score
+
+    def _compute_weight(self, F, query, key, mask=None):
+        att_score = self._compute_score(F, query, key, mask)
+        att_weights = F.softmax(att_score, axis=-1)
+        if mask is not None:
+            att_weights = att_weights * mask
         att_weights = self._dropout_layer(att_weights)
-        return att_weights, att_score
+        return att_weights
 
 
 class DotProductAttentionCell(AttentionCell):
@@ -455,14 +456,11 @@ class DotProductAttentionCell(AttentionCell):
         See document of `Block`.
     params : str or None, default None
         See document of `Block`.
-    return_attention_scores: bool, default False
-        Return also the raw attention scores if True
     """
     def __init__(self, units=None, luong_style=False, scaled=True, normalized=False, use_bias=True,
                  dropout=0.0, weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None, return_attention_scores=False):
-        super(DotProductAttentionCell, self).__init__(
-            prefix=prefix, params=params, return_attention_scores=return_attention_scores)
+                 prefix=None, params=None):
+        super(DotProductAttentionCell, self).__init__(prefix=prefix, params=params)
         self._units = units
         self._scaled = scaled
         self._normalized = normalized
@@ -487,7 +485,7 @@ class DotProductAttentionCell(AttentionCell):
             with self.name_scope():
                 self._l2_norm = L2Normalization(axis=-1)
 
-    def _compute_weight(self, F, query, key, mask=None):
+    def _compute_score(self, F, query, key, mask=None):
         if self._units is not None:
             query = self._proj_query(query)
             if not self._luong_style:
@@ -504,6 +502,14 @@ class DotProductAttentionCell(AttentionCell):
             query = F.contrib.div_sqrt_dim(query)
 
         att_score = F.batch_dot(query, key, transpose_b=True)
-        att_weights, att_score = _masked_softmax(F, att_score, mask, self._dtype)
+        if mask is not None:
+            att_score = _apply_mask(F, att_score, mask, self._dtype)
+        return att_score
+
+    def _compute_weight(self, F, query, key, mask=None):
+        att_score = self._compute_score(F, query, key, mask)
+        att_weights = F.softmax(att_score, axis=-1)
+        if mask is not None:
+            att_weights = att_weights * mask
         att_weights = self._dropout_layer(att_weights)
-        return att_weights, att_score
+        return att_weights
