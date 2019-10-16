@@ -31,7 +31,7 @@ import torch
 from absl import flags
 
 import gluonnlp as nlp
-import pytorch_transformers
+import transformers
 from utils import read_tf_checkpoint, to_gluon_kwargs
 
 
@@ -42,7 +42,8 @@ def get_kwargs_and_corpus(args):
     tf_checkpoint_file = os.path.expanduser(
         os.path.join(args.tf_checkpoint_dir, args.tf_model_prefix))
     tf_tensors = read_tf_checkpoint(tf_checkpoint_file)
-    return to_gluon_kwargs(tf_tensors), corpus
+    kwargs, _ = to_gluon_kwargs(tf_tensors)
+    return kwargs, corpus
 
 
 def get_data(args):
@@ -79,7 +80,7 @@ def compare_transformerxl(args, kwargs, corpus):
     np_features, np_labels, batch_size, tgt_len = get_data(args)
 
     # Models
-    model_p = pytorch_transformers.TransfoXLLMHeadModel.from_pretrained('transfo-xl-wt103')
+    model_p = transformers.TransfoXLLMHeadModel.from_pretrained('transfo-xl-wt103')
     model_p.crit.keep_order = True
     model_p.transformer.output_attentions = False  # no change of default; breaks model if changed
     model_p.transformer.output_hidden_states = True

@@ -1,6 +1,8 @@
 #!/bin/bash
 env_name=$1
 
+echo Preparing clean environment on $(hostname) in $(ls -id $(pwd))
+
 export LD_LIBRARY_PATH=/usr/local/cuda/lib64
 export CUDA_VISIBLE_DEVICES=$EXECUTOR_NUMBER
 export CONDA_ENVS_PATH=$PWD/conda
