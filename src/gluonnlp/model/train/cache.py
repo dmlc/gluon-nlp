@@ -122,8 +122,6 @@ class CacheCell(HybridBlock):
             The hidden states to be kept in the memory for look up
             (size is equal to the window size)
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        begin_state = [] if begin_state is None else begin_state
         return super(CacheCell, self).__call__(inputs, target, next_word_history,
                                                cache_history, begin_state)
 
@@ -158,10 +156,6 @@ class CacheCell(HybridBlock):
             The hidden states to be kept in the memory for look up
             (size is equal to the window size)
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        if isinstance(begin_state, list) and len(begin_state) == 0:
-            begin_state = None
-
         output, hidden, encoder_hs, _ = super(self.lm_model.__class__, self.lm_model).\
                                         hybrid_forward(F, inputs, begin_state)
         encoder_h = encoder_hs[-1].reshape(-3, -2)

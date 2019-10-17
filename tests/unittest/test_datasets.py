@@ -268,7 +268,7 @@ def test_simlex999():
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 10, 14),
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 10, 21),
                     reason="simverb temporarily unavailable.")
 def test_simverb3500():
     data = nlp.data.SimVerb3500()

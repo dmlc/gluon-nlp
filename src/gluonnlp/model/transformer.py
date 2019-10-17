@@ -437,9 +437,6 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             - outputs of the transformer encoder. Shape (batch_size, length, C_out)
             - additional_outputs of all the transformer encoder
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        valid_length = [] if valid_length is None else valid_length
-        states = [] if states is None else states
         return super(BaseTransformerEncoder, self).__call__(inputs, states, valid_length)
 
     def _arange_like(self, F, inputs, axis):
@@ -492,12 +489,6 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             (batch_size, num_heads, length, length)
 
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        if isinstance(valid_length, list) and len(valid_length) == 0:
-            valid_length = None
-        if isinstance(states, list) and len(states) == 0:
-            states = None
-
         steps = self._arange_like(F, inputs, axis=1)
         if valid_length is not None:
             ones = F.ones_like(steps)
