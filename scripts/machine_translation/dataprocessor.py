@@ -279,6 +279,6 @@ def write_sentences(sentences, file_path):
     with io.open(file_path, 'w', encoding='utf-8') as of:
         for sent in sentences:
             if isinstance(sent, (list, tuple)):
-                of.write(u' '.join(sent) + u'\n')
+                of.write(' '.join(sent) + '\n')
             else:
-                of.write(sent + u'\n')
+                of.write(sent + '\n')

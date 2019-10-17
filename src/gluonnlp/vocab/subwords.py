@@ -228,7 +228,7 @@ class NGramHashes(SubwordFunction):
 
     def _word_to_hashes(self, word):
         if word not in self.special_tokens:
-            word_enc = bytearray((u'<' + word + u'>').encode('utf-8'))
+            word_enc = bytearray(('<' + word + '>').encode('utf-8'))
             hashes = _fasttext_ngram_hashes(
                 memoryview(word_enc), ns=self._ngrams,
                 bucket_size=self.num_subwords)

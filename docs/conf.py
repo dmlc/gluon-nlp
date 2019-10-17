@@ -31,9 +31,9 @@ version = nlp.__version__
 release = nlp.__version__
 
 # General information about the project.
-project = u'gluonnlp'
-author = u'%s developers' % project
-copyright = u'2018, %s' % author
+project = 'gluonnlp'
+author = '%s developers' % project
+copyright = '2019, %s' % author
 github_doc_root = 'http://gluon-nlp.mxnet.io/{}/'.format(str(version))
 
 # add markdown parser

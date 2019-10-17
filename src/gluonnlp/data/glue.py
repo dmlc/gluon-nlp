@@ -683,7 +683,7 @@ class GlueMRPC(TSVDataset):
                         dev_fh.write(header)
                         for row in data_fh:
                             label, id1, id2, s1, s2 = row.strip().split('\t')
-                            example = u'%s\t%s\t%s\t%s\t%s\n'%(label, id1, id2, s1, s2)
+                            example = '%s\t%s\t%s\t%s\t%s\n'%(label, id1, id2, s1, s2)
                             if [id1, id2] in dev_ids:
                                 dev_fh.write(example)
                             else:
@@ -695,7 +695,7 @@ class GlueMRPC(TSVDataset):
             with io.open(raw_path, encoding='utf8') as data_fh:
                 with io.open(data_path, 'w', encoding='utf8') as test_fh:
                     header = data_fh.readline()
-                    test_fh.write(u'index\t#1 ID\t#2 ID\t#1 String\t#2 String\n')
+                    test_fh.write('index\t#1 ID\t#2 ID\t#1 String\t#2 String\n')
                     for idx, row in enumerate(data_fh):
                         label, id1, id2, s1, s2 = row.strip().split('\t')
-                        test_fh.write(u'%d\t%s\t%s\t%s\t%s\n'%(idx, id1, id2, s1, s2))
+                        test_fh.write('%d\t%s\t%s\t%s\t%s\n'%(idx, id1, id2, s1, s2))
