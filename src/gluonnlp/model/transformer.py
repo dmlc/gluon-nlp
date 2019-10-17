@@ -439,20 +439,6 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         """
         return super(BaseTransformerEncoder, self).__call__(inputs, states, valid_length)
 
-    def _arange_like(self, F, inputs, axis):
-        """Helper function to generate indices of a range"""
-        if F == mx.ndarray:
-            seq_len = inputs.shape[axis]
-            arange = F.arange(seq_len, dtype=inputs.dtype, ctx=inputs.context)
-        else:
-            input_axis = inputs.slice(begin=(0, 0, 0), end=(1, None, 1)).reshape((-1))
-            zeros = F.zeros_like(input_axis)
-            arange = F.arange(start=0, repeat=1, step=1,
-                              infer_range=True, dtype=self._dtype)
-            arange = F.elemwise_add(arange, zeros)
-        return arange
-
-
     def hybrid_forward(self, F, inputs, states=None, valid_length=None, position_weight=None):
         # pylint: disable=arguments-differ
         """Encode the inputs given the states and valid sequence length.
@@ -489,7 +475,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             (batch_size, num_heads, length, length)
 
         """
-        steps = self._arange_like(F, inputs, axis=1)
+        steps = F.contrib.arange_like(inputs, axis=1)
         if valid_length is not None:
             ones = F.ones_like(steps)
             mask = F.broadcast_lesser(F.reshape(steps, shape=(1, -1)),

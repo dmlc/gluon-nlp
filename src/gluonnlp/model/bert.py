@@ -479,18 +479,6 @@ class BERTModel(HybridBlock):
         outputs = outputs.reshape(shape=(-1, self._units))
         return self.pooler(outputs)
 
-    def _arange_like(self, F, inputs):
-        """Helper function to generate int32 indices of a range"""
-        inputs = inputs.reshape(-1)
-        if F == mx.ndarray:
-            seq_len = inputs.shape[0]
-            arange = F.arange(seq_len, dtype=inputs.dtype, ctx=inputs.context)
-        else:
-            zeros = F.zeros_like(inputs)
-            arange = F.arange(start=0, repeat=1, step=1, infer_range=True, dtype='int32')
-            arange = F.elemwise_add(arange, zeros)
-        return arange
-
     def _decode(self, F, sequence, masked_positions):
         """Generate unnormalized prediction for the masked language model task.
 
@@ -510,7 +498,7 @@ class BERTModel(HybridBlock):
         masked_positions = masked_positions.astype('int32')
         mask_shape = masked_positions.shape_array()
         num_masked_positions = mask_shape.slice(begin=(1,), end=(2,)).astype('int32')
-        idx_arange = self._arange_like(F, masked_positions)
+        idx_arange = F.contrib.arange_like(masked_positions, axis=0)
         batch_idx = F.broadcast_div(idx_arange, num_masked_positions)
         # batch_idx_1d =        [0,0,0,1,1,1,2,2,2...]
         # masked_positions_1d = [1,2,4,0,3,4,2,3,5...]
