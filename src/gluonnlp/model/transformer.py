@@ -500,6 +500,8 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                 states = [mask]
             else:
                 states.append(mask)
+        else:
+            mask = None
 
         if self._scale_embed:
             # XXX: input.shape[-1] and self._units are expected to be the same
@@ -510,11 +512,10 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         else:
             states.append(steps)
 
-        if states is not None:
-            steps = states[-1]
-            # positional encoding
-            positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
-            inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
+        # positional encoding
+        positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
+        inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
+
         if self._dropout:
             if self._use_layer_norm_before_dropout:
                 inputs = self.layer_norm(inputs)
@@ -525,10 +526,6 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         else:
             inputs = self.layer_norm(inputs)
         outputs = inputs
-        if valid_length is not None:
-            mask = states[-2]
-        else:
-            mask = None
 
         all_encodings_outputs = []
         additional_outputs = []
@@ -544,7 +541,8 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             if self._output_attention:
                 additional_outputs.append(attention_weights)
 
-        if valid_length is not None:
+        if valid_length is not None and not self._output_all_encodings:
+            # if self._output_all_encodings, SequenceMask is already applied above
             outputs = F.SequenceMask(outputs, sequence_length=valid_length,
                                      use_sequence_length=True, axis=1)
 
