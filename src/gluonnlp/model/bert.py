@@ -498,7 +498,7 @@ class BERTModel(HybridBlock):
         masked_positions = masked_positions.astype('int32')
         mask_shape = masked_positions.shape_array()
         num_masked_positions = mask_shape.slice(begin=(1,), end=(2,)).astype('int32')
-        idx_arange = F.contrib.arange_like(masked_positions, axis=0)
+        idx_arange = F.contrib.arange_like(masked_positions.reshape((-1, )), axis=0)
         batch_idx = F.broadcast_div(idx_arange, num_masked_positions)
         # batch_idx_1d =        [0,0,0,1,1,1,2,2,2...]
         # masked_positions_1d = [1,2,4,0,3,4,2,3,5...]
