@@ -808,7 +808,7 @@ class BERTTokenizer:
 
     """
 
-    _special_prefix = u'##'
+    _special_prefix = '##'
 
     def __init__(self, vocab, lower=True, max_input_chars_per_word=200):
         self.vocab = vocab
@@ -967,7 +967,7 @@ class BERTSPTokenizer(BERTTokenizer):
     ['▁better', '▁is', '▁to', '▁b', 'ow', '▁than', '▁brea', 'k', '▁', '.']
     """
 
-    _special_prefix = u'▁'
+    _special_prefix = '▁'
 
     def __init__(self,
                  path,
@@ -1206,9 +1206,9 @@ class BERTSentenceTransform:
 class _GPT2BPE:
     """Base class for GPT-2 BPE tokenizer and detokenizer."""
     def __init__(self):
-        codes = list(range(ord(u'!'), ord(u'~') + 1)) +\
-                list(range(ord(u'¡'), ord(u'¬') + 1)) +\
-                list(range(ord(u'®'), ord(u'ÿ') + 1))
+        codes = list(range(ord('!'), ord('~') + 1)) +\
+                list(range(ord('¡'), ord('¬') + 1)) +\
+                list(range(ord('®'), ord('ÿ') + 1))
         chr_fn = chr
         try:
             chr_fn(256)
