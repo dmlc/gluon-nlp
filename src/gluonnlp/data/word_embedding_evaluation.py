@@ -540,13 +540,14 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
 
     Examples
     --------
-    >>> semeval17task2 = gluonnlp.data.SemEval17Task2(root='./datasets/semeval17task2')
+    >>> semeval17task2 = gluonnlp.data.SemEval17Task2()  # doctest: +SKIP
     -etc-
-    >>> len(semeval17task2)
+    >>> len(semeval17task2)  # doctest: +SKIP
     18
-    >>> semeval17task2[0]
+    >>> semeval17task2[0]  # doctest: +SKIP
     ['sunset', 'string', 0.05]
     """
+    # TODO: reenable doctest once semeval17task2 is available again
     _url = 'http://alt.qcri.org/semeval2017/task2/data/uploads/semeval2017-task2.zip'
     _archive_file = ('semeval2017-task2.zip',
                      'b29860553f98b057303815817dfb60b9fe79cfba')

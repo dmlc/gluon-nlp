@@ -28,6 +28,8 @@ from ..language_model.transformer import (AdaptiveEmbedding, AdaptiveLogSoftmaxW
                                           PositionalEmbeddingMultiHeadAttentionCell, TransformerXL)
 
 
+@pytest.mark.serial
+@pytest.mark.remote_required
 @pytest.mark.parametrize('d_head', [5])
 @pytest.mark.parametrize('num_heads', [1, 3])
 @pytest.mark.parametrize('query_length', [10, 5, 1])
@@ -47,7 +49,7 @@ def test_positional_embedding_multihead_attention_cell(d_head, num_heads, query_
     query_nd = mx.nd.random.normal(0, 1, (batch_size, query_length, d_head))
     key_nd = mx.nd.random.normal(0, 1, (batch_size, memory_length, d_head))
     value_nd = mx.nd.random.normal(0, 1, (batch_size, memory_length, d_head))
-    emb_nd = mx.nd.array(_position_encoding_init(memory_length, d_head))
+    emb_nd = mx.nd.array(_position_encoding_init(memory_length + 1, d_head))
 
     read_value, att_weights = attention_cell(query_nd, key_nd, value_nd, emb_nd, mask_nd)
 

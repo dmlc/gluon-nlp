@@ -151,15 +151,9 @@ class AttentionCell(HybridBlock):
         """
         return super(AttentionCell, self).__call__(query, key, value, mask)
 
-    def forward(self, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
         if value is None:
             value = key
-        if mask is None:
-            return super(AttentionCell, self).forward(query, key, value)
-        else:
-            return super(AttentionCell, self).forward(query, key, value, mask)
-
-    def hybrid_forward(self, F, query, key, value, mask=None):  # pylint: disable=arguments-differ
         att_weights = self._compute_weight(F, query, key, mask)
         context_vec = self._read_by_weight(F, att_weights, value)
         return context_vec, att_weights
