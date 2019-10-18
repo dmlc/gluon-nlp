@@ -293,7 +293,6 @@ def train_valid_split(dataset, valid_ratio=0.05, stratify=None):
         for idx in range(n_classes):
             indices = np.nonzero(stratify == classes[idx])[0]
             np.random.shuffle(indices)
-
             valid += [dataset[indices[i]] for i in range(num_valid[idx])]
             train += [dataset[indices[i + num_valid[idx]]]
                       for i in range(num_class[idx] - num_valid[idx])]
