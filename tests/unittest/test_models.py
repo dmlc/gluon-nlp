@@ -73,30 +73,27 @@ def test_big_text_models(wikitext2_val_and_counter):
 
 @pytest.mark.serial
 @pytest.mark.remote_required
-def test_transformer_models():
-    models = ['transformer_en_de_512']
-    pretrained_to_test = {'transformer_en_de_512': 'WMT2014'}
-    dropout_rates = [0.1, 0.0]
+@pytest.mark.parametrize('dropout_rate', [0.1, 0.0])
+@pytest.mark.parametrize('model_dataset', [('transformer_en_de_512', 'WMT2014')])
+def test_transformer_models(dropout_rate, model_dataset):
+    model_name, pretrained_dataset = model_dataset
     src = mx.nd.ones((2, 10))
     tgt = mx.nd.ones((2, 8))
     valid_len = mx.nd.ones((2,))
-    for model_name in models:
-        for rate in dropout_rates:
-            eprint('testing forward for %s, dropout rate %f' % (model_name, rate))
-            pretrained_dataset = pretrained_to_test.get(model_name)
-            with warnings.catch_warnings():  # TODO https://github.com/dmlc/gluon-nlp/issues/978
-                warnings.simplefilter("ignore")
-                model, _, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
-                                                  pretrained=pretrained_dataset is not None,
-                                                  dropout=rate)
+    eprint('testing forward for %s, dropout rate %f' % (model_name, dropout_rate))
+    with warnings.catch_warnings():  # TODO https://github.com/dmlc/gluon-nlp/issues/978
+        warnings.simplefilter("ignore")
+        model, _, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
+                                          pretrained=pretrained_dataset is not None,
+                                          dropout=dropout_rate)
 
-            print(model)
-            if not pretrained_dataset:
-                model.initialize()
-            output, state = model(src, tgt, src_valid_length=valid_len, tgt_valid_length=valid_len)
-            output.wait_to_read()
-            del model
-            mx.nd.waitall()
+    print(model)
+    if not pretrained_dataset:
+        model.initialize()
+    output, state = model(src, tgt, src_valid_length=valid_len, tgt_valid_length=valid_len)
+    output.wait_to_read()
+    del model
+    mx.nd.waitall()
 
 
 @pytest.mark.serial
