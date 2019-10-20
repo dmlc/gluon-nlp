@@ -1,3 +1,5 @@
+# coding: utf-8
+
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -15,31 +17,24 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=wildcard-import
-"""NLP toolkit."""
+from mxnet import gluon
 
-from . import loss
-from . import data
-from . import embedding
-from . import model
-from . import metric
-from . import utils
-from . import vocab
-from . import optimizer
-from . import initializer
-from .vocab import Vocab
-from . import lr_scheduler
+import gluonnlp as nlp
 
-__version__ = '0.8.1.dev'
 
-__all__ = ['data',
-           'model',
-           'embedding',
-           'Vocab',
-           'vocab',
-           'loss',
-           'initializer',
-           'optimizer',
-           'utils',
-           'metric',
-           'lr_scheduler']
+def testReduceLROnPlateau():
+    model = gluon.nn.Dense(2)
+    model.initialize()
+    trainer = gluon.Trainer(model.collect_params(), 'SGD')
+    scheduler = nlp.lr_scheduler.ReduceLROnPlateau(trainer,
+                                                   'min',
+                                                   patience=0,
+                                                   factor=0.1)
+    base_loss = 0.1
+    scheduler.step(base_loss)
+    base_lr = scheduler.trainer.learning_rate
+    next_loss = 0.11
+    scheduler.step(next_loss)
+    next_lr = scheduler.trainer.learning_rate
+    expected_lr = base_lr * 0.1
+    assert expected_lr == next_lr
