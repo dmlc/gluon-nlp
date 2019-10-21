@@ -18,6 +18,8 @@
 # pylint: disable=wildcard-import
 """NLP toolkit."""
 
+import warnings
+
 from . import loss
 from . import data
 from . import embedding
@@ -41,3 +43,5 @@ __all__ = ['data',
            'optimizer',
            'utils',
            'metric']
+
+warnings.filterwarnings(module='gluonnlp', action='default', category=DeprecationWarning)

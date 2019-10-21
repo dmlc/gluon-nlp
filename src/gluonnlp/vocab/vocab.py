@@ -16,7 +16,6 @@
 # under the License.
 
 # pylint: disable=consider-iterating-dictionary
-
 """Vocabulary."""
 __all__ = ['Vocab']
 
@@ -33,6 +32,9 @@ from .. import embedding as emb
 from ..data.utils import Counter, DefaultLookupDict, count_tokens
 
 UNK_IDX = 0
+_DEPR_PAD = object()
+_DEPR_BOS = object()
+_DEPR_EOS = object()
 
 
 class Vocab:
@@ -60,12 +62,6 @@ class Vocab:
         `None`, looking up any token that is not part of the vocabulary and
         thus considered unknown will return the index of `unknown_token`. If
         None, looking up an unknown token will result in `KeyError`.
-    padding_token
-        The representation for the special token of padding token.
-    bos_token
-        The representation for the special token of beginning-of-sequence token.
-    eos_token
-        The representation for the special token of end-of-sequence token.
     reserved_tokens
         A list specifying additional tokens to be added to the vocabulary.
         `reserved_tokens` must not contain the value of `unknown_token` or
@@ -79,7 +75,7 @@ class Vocab:
         example, it is valid to only set the `unknown_token` index to 10
         (instead of the default of 0) with `token_to_idx = {'<unk>': 10}`,
         assuming that there are at least 10 tokens in the vocabulary.
-    **kwargs
+    `**kwargs`
         Keyword arguments of the format `xxx_token` can be used to specify
         further special tokens that will be exposed as attribute of the
         vocabulary and associated with an index.
@@ -90,6 +86,21 @@ class Vocab:
         just as if it was listed in the `reserved_tokens` argument. The
         specified tokens are listed together with reserved tokens in the
         `reserved_tokens` attribute of the vocabulary object.
+    deprecated_padding_token
+        The representation for the special token of padding token. Default:
+        '<pad>'. Specifying padding_token as positional argument is deprecated
+        and support will be removed. Specify it as keyword argument instead
+        (see documentation of `**kwargs` above)
+    deprecated_bos_token
+        The representation for the special token of beginning-of-sequence
+        token. Default: '<bos>'. Specifying bos_token as positional argument is
+        deprecated and support will be removed. Specify it as keyword argument
+        instead (see documentation of `**kwargs` above)
+    deprecated_eos_token
+        The representation for the special token of end-of-sequence token.
+        Default: '<eos>'. Specifying eos_token as positional argument is
+        deprecated and support will be removed. Specify it as keyword argument
+        instead (see documentation of `**kwargs` above)
 
     Attributes
     ----------
@@ -173,14 +184,33 @@ class Vocab:
 
     def __init__(self, counter: Optional[Counter] = None, max_size: Optional[int] = None,
                  min_freq: int = 1, unknown_token: Optional[Hashable] = C.UNK_TOKEN,
+                 deprecated_padding_token: Optional[Hashable] = _DEPR_PAD,
+                 deprecated_bos_token: Optional[Hashable] = _DEPR_BOS,
+                 deprecated_eos_token: Optional[Hashable] = _DEPR_EOS,
+                 reserved_tokens: Optional[List[Hashable]] = None,
+                 token_to_idx: Optional[Dict[Hashable, int]] = None, *,
                  padding_token: Optional[Hashable] = C.PAD_TOKEN,
                  bos_token: Optional[Hashable] = C.BOS_TOKEN,
-                 eos_token: Optional[Hashable] = C.EOS_TOKEN,
-                 reserved_tokens: Optional[List[Hashable]] = None,
-                 token_to_idx: Optional[Dict[Hashable, int]] = None, **kwargs):
+                 eos_token: Optional[Hashable] = C.EOS_TOKEN, **kwargs):
 
         # Sanity checks.
         assert min_freq > 0, '`min_freq` must be set to a positive value.'
+
+        # Deprecation checks and warnings
+        combs = ((deprecated_padding_token, 'padding_token', _DEPR_PAD, padding_token),
+                 (deprecated_bos_token, 'bos_token', _DEPR_BOS, bos_token),
+                 (deprecated_eos_token, 'eos_token', _DEPR_EOS, eos_token))
+        for depr_pos_arg, name, indicator, value in combs:
+            if depr_pos_arg != indicator:
+                warnings.warn(
+                    'Specifying `{n}` as positional argument is deprecated and '
+                    'support will be removed. Please specify `{n}` as keyword argument instead, '
+                    'for example `Vocab(counter, {n}={v})`'.format(n=name, v=depr_pos_arg),
+                    DeprecationWarning)
+                # Store positional argument value in kwargs
+                kwargs[name] = depr_pos_arg
+            elif name not in kwargs:  # Store keyword argument value in kwargs
+                kwargs[name] = value
 
         # Set up idx_to_token and token_to_idx based on presence of unknown token
         self._unknown_token = unknown_token
@@ -189,10 +219,6 @@ class Vocab:
             self._token_to_idx = DefaultLookupDict(UNK_IDX)
         else:
             self._token_to_idx = {}
-
-        kwargs['padding_token'] = padding_token
-        kwargs['bos_token'] = bos_token
-        kwargs['eos_token'] = eos_token
 
         # Handle special tokens
         special_tokens = []
