@@ -38,9 +38,10 @@ import time
 import random
 import os
 import logging
+import warnings
 import numpy as np
 import mxnet as mx
-from mxnet import gluon
+from mxnet import gluon, ndarray
 import gluonnlp as nlp
 
 from gluonnlp.model.translation import NMTModel
@@ -59,47 +60,68 @@ nlp.utils.check_version('0.7.0')
 
 parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
                                              'We train the Google NMT model')
-parser.add_argument('--dataset', type=str, default='IWSLT2015', help='Dataset to use.')
-parser.add_argument('--src_lang', type=str, default='en', help='Source language')
-parser.add_argument('--tgt_lang', type=str, default='vi', help='Target language')
-parser.add_argument('--epochs', type=int, default=40, help='upper epoch limit')
-parser.add_argument('--num_hidden', type=int, default=128, help='Dimension of the embedding '
-                                                                'vectors and states.')
+parser.add_argument('--dataset', type=str, default='IWSLT2015',
+                    help='Dataset to use, default is IWSLT2015.')
+parser.add_argument('--src_lang', type=str, default='en', help='Source language, '
+                                                               'default is en.')
+parser.add_argument('--tgt_lang', type=str, default='vi', help='Target language, '
+                                                               'default is vi.')
+parser.add_argument('--epochs', type=int, default=40, help='upper epoch limit, , '
+                                                           'default is 40.')
+parser.add_argument('--num_hidden', type=int, default=128,
+                    help='Dimension of the rnn hidden states. default is 128.')
+parser.add_argument('--num_embedding', type=int, default=128,
+                    help='Dimension of the embedding, default is 128. vectors and states.')
+parser.add_argument('--attention_type', type=str, default='scaled_luong',
+                    help=' Attention type, default \'is scaled_luong\'.')
 parser.add_argument('--dropout', type=float, default=0.2,
-                    help='dropout applied to layers (0 = no dropout)')
-parser.add_argument('--num_layers', type=int, default=2, help='number of layers in the encoder'
-                                                              ' and decoder')
+                    help='dropout applied to layers (0 = no dropout), default is 0.2.')
+parser.add_argument('--num_layers', type=int, default=2,
+                    help='number of layers in the encoder and decoder, default is 2.')
 parser.add_argument('--num_bi_layers', type=int, default=1,
-                    help='number of bidirectional layers in the encoder and decoder')
-parser.add_argument('--batch_size', type=int, default=128, help='Batch size')
-parser.add_argument('--beam_size', type=int, default=4, help='Beam size')
+                    help='number of bidirectional layers in the encoder and decoder, '
+                         'default is 1.')
+parser.add_argument('--batch_size', type=int, default=128,
+                    help='Batch size, default is 128.')
+parser.add_argument('--beam_size', type=int, default=4, help='Beam size, default is 4.')
 parser.add_argument('--lp_alpha', type=float, default=1.0,
-                    help='Alpha used in calculating the length penalty')
-parser.add_argument('--lp_k', type=int, default=5, help='K used in calculating the length penalty')
-parser.add_argument('--test_batch_size', type=int, default=32, help='Test batch size')
-parser.add_argument('--num_buckets', type=int, default=5, help='Bucket number')
+                    help='Alpha used in calculating the length penalty, default is 1.0.')
+parser.add_argument('--lp_k', type=int, default=5,
+                    help='K used in calculating the length penalty, default is 5.')
+parser.add_argument('--test_batch_size', type=int, default=32,
+                    help='Test batch size, default is 32.')
+parser.add_argument('--num_buckets', type=int, default=5,
+                    help='Bucket number, default is 5.')
 parser.add_argument('--bucket_scheme', type=str, default='constant',
                     help='Strategy for generating bucket keys. It supports: '
                          '"constant": all the buckets have the same width; '
                          '"linear": the width of bucket increases linearly; '
-                         '"exp": the width of bucket increases exponentially')
-parser.add_argument('--bucket_ratio', type=float, default=0.0, help='Ratio for increasing the '
-                                                                    'throughput of the bucketing')
-parser.add_argument('--src_max_len', type=int, default=50, help='Maximum length of the source '
-                                                                'sentence')
-parser.add_argument('--tgt_max_len', type=int, default=50, help='Maximum length of the target '
-                                                                'sentence')
-parser.add_argument('--optimizer', type=str, default='adam', help='optimization algorithm')
-parser.add_argument('--lr', type=float, default=1E-3, help='Initial learning rate')
+                         '"exp": the width of bucket increases exponentially'
+                         'default is "constant".')
+parser.add_argument('--bucket_ratio', type=float, default=0.0,
+                    help='Ratio for increasing the throughput of the bucketing '
+                         'default is 0.0.')
+parser.add_argument('--src_max_len', type=int, default=50,
+                    help='Maximum length of the source sentence, default is 50.')
+parser.add_argument('--tgt_max_len', type=int, default=50,
+                    help='Maximum length of the target sentence, default is 50.')
+parser.add_argument('--optimizer', type=str, default='adam',
+                    help='optimization algorithm, default is adam.')
+parser.add_argument('--lr', type=float, default=1E-3,
+                    help='Initial learning rate, default is 1E-3.')
 parser.add_argument('--lr_update_factor', type=float, default=0.5,
-                    help='Learning rate decay factor')
-parser.add_argument('--clip', type=float, default=5.0, help='gradient clipping')
+                    help='Learning rate decay factor, default is 0.5.')
+parser.add_argument('--clip', type=float, default=5.0,
+                    help='gradient clipping, default is 5.0.')
 parser.add_argument('--log_interval', type=int, default=100, metavar='N',
-                    help='report interval')
+                    help='report interval, default is 100.')
 parser.add_argument('--save_dir', type=str, default='out_dir',
-                    help='directory path to save the final model and training log')
-parser.add_argument('--gpu', type=int, default=None,
-                    help='id of the gpu to use. Set it to empty means to use cpu.')
+                    help='directory path to save the final model and training log, '
+                         'default is \'out_dir\'.')
+parser.add_argument('--gpus', type=str, default=None,
+                    help='id of the gpus to use, eg:0,1,2,3 means use 4 GPUs. '
+                         'Set it to empty means to use cpu.')
+
 args = parser.parse_args()
 print(args)
 logging_config(args.save_dir)
@@ -116,19 +138,23 @@ data_val = gluon.data.SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), 
                                      for i, ele in enumerate(data_val)])
 data_test = gluon.data.SimpleDataset([(ele[0], ele[1], len(ele[0]), len(ele[1]), i)
                                       for i, ele in enumerate(data_test)])
-if args.gpu is None:
-    ctx = mx.cpu()
-    print('Use CPU')
-else:
-    ctx = mx.gpu(args.gpu)
 
+context = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
+    [mx.gpu(int(x)) for x in args.gpus.split(',')]
+ctx = context[0]
+
+# load GNMT model
 encoder, decoder = get_gnmt_encoder_decoder(hidden_size=args.num_hidden,
                                             dropout=args.dropout,
                                             num_layers=args.num_layers,
-                                            num_bi_layers=args.num_bi_layers)
+                                            num_bi_layers=args.num_bi_layers,
+                                            attention_cell=args.attention_type)
+
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
-                 embed_size=args.num_hidden, prefix='gnmt_')
-model.initialize(init=mx.init.Uniform(0.1), ctx=ctx)
+                 embed_size=args.num_embedding, prefix='gnmt_')
+
+
+model.initialize(init=mx.init.Uniform(0.1), ctx=context)
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
 logging.info(model)
@@ -146,11 +172,9 @@ loss_function.hybridize(static_alloc=static_alloc)
 
 def evaluate(data_loader):
     """Evaluate given the data loader
-
     Parameters
     ----------
     data_loader : DataLoader
-
     Returns
     -------
     avg_loss : float
@@ -190,43 +214,94 @@ def evaluate(data_loader):
     return avg_loss, real_translation_out
 
 
+def clip_global_norm(arrays, max_norm, context_len=len(context)):
+    """Enable the clip_global_norm function at multi contexts.
+       Reference to gluon.utils.clip_global_norm()
+
+    """
+    def _norm(array):
+        if array.stype == 'default':
+            x = array.reshape((-1,))
+            return ndarray.dot(x, x)
+        return array.norm().square()
+
+    assert len(arrays) > 0
+    assert context_len >= 1
+
+    ctx = arrays[0].context
+    arrays_at_all_context = arrays[0]
+    # multi GPUs need to sum up each row(parameters at each context) first
+    if context_len > 1:
+        for i in range(context_len):
+            arrays_at_all_context += arrays[i]
+
+    total_norm = ndarray.add_n(*[_norm(arr).as_in_context(ctx) for arr in arrays_at_all_context])
+    total_norm = ndarray.sqrt(total_norm).asscalar()
+    if not np.isfinite(total_norm):
+        warnings.warn(UserWarning('nan or inf is detected. Clipping results will be undefined.'),
+                      stacklevel=2)
+    scale = max_norm * len(context) / (total_norm + 1e-8)
+    if scale < 1.0:
+        for arr in arrays:
+            arr *= scale
+    return total_norm
+
+
 def train():
     """Training function."""
     trainer = gluon.Trainer(model.collect_params(), args.optimizer, {'learning_rate': args.lr})
 
     train_data_loader, val_data_loader, test_data_loader \
-        = dataprocessor.make_dataloader(data_train, data_val, data_test, args)
+        = dataprocessor.make_dataloader(data_train, data_val, data_test,
+                                        args, num_shards=len(context))
 
     best_valid_bleu = 0.0
     for epoch_id in range(args.epochs):
         log_avg_loss = 0
         log_avg_gnorm = 0
         log_wc = 0
+        loss_denom = 0
+        step_loss = 0
+
         log_start_time = time.time()
-        for batch_id, (src_seq, tgt_seq, src_valid_length, tgt_valid_length)\
+        for batch_id, seqs \
                 in enumerate(train_data_loader):
-            # logging.info(src_seq.context) Context suddenly becomes GPU.
-            src_seq = src_seq.as_in_context(ctx)
-            tgt_seq = tgt_seq.as_in_context(ctx)
-            src_valid_length = src_valid_length.as_in_context(ctx)
-            tgt_valid_length = tgt_valid_length.as_in_context(ctx)
+
+            src_wc, tgt_wc, bs = np.sum([(shard[2].sum(), shard[3].sum(), shard[0].shape[0])
+                                         for shard in seqs], axis=0)
+            src_wc = src_wc.asscalar()
+            tgt_wc = tgt_wc.asscalar()
+
+            loss_denom += tgt_wc - bs
+
+            seqs = [[seq.as_in_context(_context) for seq in shard]
+                    for _context, shard in zip(context, seqs)]
+
+            LS = []
             with mx.autograd.record():
-                out, _ = model(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
-                loss = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean()
-                loss = loss * (tgt_seq.shape[1] - 1) / (tgt_valid_length - 1).mean()
-                loss.backward()
-            grads = [p.grad(ctx) for p in model.collect_params().values()]
-            gnorm = gluon.utils.clip_global_norm(grads, args.clip)
-            trainer.step(1)
-            src_wc = src_valid_length.sum().asscalar()
-            tgt_wc = (tgt_valid_length - 1).sum().asscalar()
-            step_loss = loss.asscalar()
-            log_avg_loss += step_loss
+                for src_seq, tgt_seq, src_valid_length, tgt_valid_length in seqs:
+                    out, _ = model(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
+
+                    ls = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).sum()
+                    LS.append(ls * (tgt_seq.shape[1] - 1) / float(loss_denom))
+            for L in LS:
+                L.backward()
+
+            grads = [p.grad(c) for p in model.collect_params().values() for c in context]
+            gnorm = clip_global_norm(grads, args.clip, context_len=len(context))
             log_avg_gnorm += gnorm
+
+            trainer.step(1.0)
+
             log_wc += src_wc + tgt_wc
+            step_loss += sum([L.asscalar() for L in LS])
+            log_avg_loss += step_loss
+            loss_denom = 0
+            step_loss = 0
+
             if (batch_id + 1) % args.log_interval == 0:
                 wps = log_wc / (time.time() - log_start_time)
-                logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, gnorm={:.4f}, '
+                logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, gnorm={:.4f} '
                              'throughput={:.2f}K wps, wc={:.2f}K'
                              .format(epoch_id, batch_id + 1, len(train_data_loader),
                                      log_avg_loss / args.log_interval,
@@ -235,8 +310,9 @@ def train():
                                      wps / 1000, log_wc / 1000))
                 log_start_time = time.time()
                 log_avg_loss = 0
-                log_avg_gnorm = 0
                 log_wc = 0
+                log_avg_gnorm = 0
+
         valid_loss, valid_translation_out = evaluate(val_data_loader)
         valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out)
         logging.info('[Epoch {}] valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
