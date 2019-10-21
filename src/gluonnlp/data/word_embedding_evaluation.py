@@ -461,9 +461,8 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
     >>> simverb3500[0] #doctest:+SKIP
     ['take', 'remove', 6.81]
     """
-    _url = 'http://people.ds.cam.ac.uk/dsg40/paper/simverb/simverb-3500-data.zip'
-    _archive_file = ('simverb-3500-data.zip',
-                     '8c43b0a34823def29ad4c4f4d7e9d3b91acf8b8d')
+    _url = 'https://www.aclweb.org/anthology/attachments/D16-1235.Attachment.zip'
+    _archive_file = ('D16-1235.Attachment.zip', '7bcfff115ca3e4c909b3763a2ba35e83992f2a2f')
     _checksums = {
         'data/README.txt':
         'fc2645b30a291a7486015c3e4b51d8eb599f7c7e',
