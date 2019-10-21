@@ -20,18 +20,24 @@ def test_named_tuple():
     b = MyNamedTuple([5, 7], 1)
     c = MyNamedTuple([1, 2, 3, 4, 5, 6, 7], 0)
     with pytest.raises(ValueError):
-        wrong_batchify_fn = batchify.NamedTuple(MyNamedTuple, {'data0': batchify.Pad(), 'label': batchify.Stack()})
+        wrong_batchify_fn = batchify.NamedTuple(MyNamedTuple, {
+            'data0': batchify.Pad(pad_val=0),
+            'label': batchify.Stack()
+        })
     with pytest.raises(ValueError):
-        wrong_batchify_fn = batchify.NamedTuple(MyNamedTuple, [batchify.Pad(), batchify.Stack(), batchify.Stack()])
+        wrong_batchify_fn = batchify.NamedTuple(
+            MyNamedTuple,
+            [batchify.Pad(pad_val=0), batchify.Stack(),
+             batchify.Stack()])
     with pytest.raises(ValueError):
-        wrong_batchify_fn = batchify.NamedTuple(MyNamedTuple, (batchify.Pad(),))
+        wrong_batchify_fn = batchify.NamedTuple(MyNamedTuple, (batchify.Pad(pad_val=0), ))
     with pytest.raises(ValueError):
         wrong_batchify_fn = batchify.NamedTuple(MyNamedTuple, [1, 2])
-    for batchify_fn in [batchify.NamedTuple(MyNamedTuple, {'data': batchify.Pad(), 'label': batchify.Stack()}),
-                        batchify.NamedTuple(MyNamedTuple, [batchify.Pad(), batchify.Stack()]),
-                        batchify.NamedTuple(MyNamedTuple, (batchify.Pad(), batchify.Stack()))]:
+    for batchify_fn in [batchify.NamedTuple(MyNamedTuple, {'data': batchify.Pad(pad_val=0), 'label': batchify.Stack()}),
+                        batchify.NamedTuple(MyNamedTuple, [batchify.Pad(pad_val=0), batchify.Stack()]),
+                        batchify.NamedTuple(MyNamedTuple, (batchify.Pad(pad_val=0), batchify.Stack()))]:
         sample = batchify_fn([a, b, c])
-        gt_data = batchify.Pad()([a[0], b[0], c[0]])
+        gt_data = batchify.Pad(pad_val=0)([a[0], b[0], c[0]])
         gt_label = batchify.Stack()([a[1], b[1], c[1]])
         assert isinstance(sample, MyNamedTuple)
         assert_allclose(sample.data.asnumpy(), gt_data.asnumpy())
@@ -45,12 +51,12 @@ def test_dict():
     b = {'data': [5, 7], 'label': 1}
     c = {'data': [1, 2, 3, 4, 5, 6, 7], 'label': 0}
     with pytest.raises(ValueError):
-        wrong_batchify_fn = batchify.Dict([batchify.Pad(), batchify.Stack()])
+        wrong_batchify_fn = batchify.Dict([batchify.Pad(pad_val=0), batchify.Stack()])
     with pytest.raises(ValueError):
         wrong_batchify_fn = batchify.NamedTuple(MyNamedTuple, {'a': 1, 'b': 2})
-    batchify_fn = batchify.Dict({'data': batchify.Pad(), 'label': batchify.Stack()})
+    batchify_fn = batchify.Dict({'data': batchify.Pad(pad_val=0), 'label': batchify.Stack()})
     sample = batchify_fn([a, b, c])
-    gt_data = batchify.Pad()([a['data'], b['data'], c['data']])
+    gt_data = batchify.Pad(pad_val=0)([a['data'], b['data'], c['data']])
     gt_label = batchify.Stack()([a['label'], b['label'], c['label']])
     assert isinstance(sample, dict)
     assert_allclose(sample['data'].asnumpy(), gt_data.asnumpy())
@@ -175,4 +181,3 @@ def test_pad_wrap_batchify():
                             assert_allclose(valid_length_use_mx.asnumpy(), valid_length.asnumpy())
                             assert batch_data.dtype == batch_data_use_mx.dtype == _dtype
                             assert valid_length.dtype == valid_length_use_mx.dtype == np.int32
-

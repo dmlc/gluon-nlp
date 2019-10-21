@@ -109,7 +109,7 @@ For more advanced usage examples of the DataLoader object, check out the
 
 ```{.python .input}
 batch_size = 2
-dataset_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(),
+dataset_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(pad_val=0),
                                               nlp.data.batchify.Stack())
 data_loader = gluon.data.DataLoader(dataset,
                                     batch_size=batch_size,

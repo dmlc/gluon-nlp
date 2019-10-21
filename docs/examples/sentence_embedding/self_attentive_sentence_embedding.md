@@ -172,7 +172,7 @@ def get_dataloader():
 
     # Construct the DataLoader Pad data, stack label and lengths
     batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0),
+        nlp.data.batchify.Pad(axis=0, pad_val=0),
         nlp.data.batchify.Stack())
 
     # In this example, we use a FixedBucketSampler,
