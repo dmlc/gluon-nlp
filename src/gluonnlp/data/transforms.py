@@ -1026,7 +1026,7 @@ class BERTSPTokenizer(BERTTokenizer):
         Examples
         --------
         >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
-        >>> f = gluon.utils.download(url, overwrite=True)
+        >>> f = gluon.utils.download(url, sha1sum='682b5d159a036e984bd0053fa92162bbd926cab8')
         -etc-
         >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
         >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
