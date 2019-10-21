@@ -277,9 +277,9 @@ class GlueQQP(_GlueDataset):
     Examples
     --------
     >>> with warnings.catch_warnings():
-    >>>     # Ignore warnings triggered by invalid entries in GlueQQP dev set
-    >>>     warnings.simplefilter("ignore")
-    >>>     qqp_dev = gluonnlp.data.GlueQQP('dev', root='./datasets/qqp')
+    ...     # Ignore warnings triggered by invalid entries in GlueQQP dev set
+    ...     warnings.simplefilter("ignore")
+    ...     qqp_dev = gluonnlp.data.GlueQQP('dev', root='./datasets/qqp')
     -etc-
     >>> len(qqp_dev)
     40430
