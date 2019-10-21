@@ -277,7 +277,7 @@ def test_simverb3500():
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 10, 21), reason='website down')
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 11, 21), reason='website down')
 def test_semeval17task2():
     for segment, length in [("trial", 18), ("test", 500)]:
         data = nlp.data.SemEval17Task2(segment=segment)
