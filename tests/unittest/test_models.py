@@ -504,7 +504,6 @@ def test_big_rnn_model_share_params():
     eval_model = nlp.model.language_model.BigRNN(vocab_size, 2, 3, 4, 5, 0.1, prefix='bigrnn',
                                                  params=model.collect_params())
     eval_model.hybridize()
-    eval_model.initialize(mx.init.Xavier(), ctx=ctx)
     pred, hidden = eval_model(x, hidden)
     assert pred.shape == (seq_len, batch_size, vocab_size)
     mx.nd.waitall()
