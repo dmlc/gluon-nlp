@@ -555,6 +555,7 @@ def test_load_dev_squad():
 ###############################################################################
 # Intent Classification and Slot Labeling
 ###############################################################################
+@pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.parametrize('dataset,segment,expected_samples', [
     ('atis', 'train', 4478),
