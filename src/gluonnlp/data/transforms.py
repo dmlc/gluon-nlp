@@ -39,8 +39,8 @@ import zipfile
 from typing import List, Optional
 
 import mxnet as mx
-import numpy as np
 from mxnet.gluon.utils import _get_repo_url, check_sha1, download
+import numpy as np
 
 from ..base import get_home_dir
 from ..vocab import Vocab
@@ -849,8 +849,9 @@ class BERTTokenizer:
 
         return split_tokens
 
-    def _word_to_wordpiece_optimized(self, text):
-        return wordpiece_tokenize(text, self.vocab, self.vocab.unknown_token, self.max_input_chars_per_word)
+    def _word_to_wordpiece_optimized(self, text):  # pylint: disable=method-hidden
+        return wordpiece_tokenize(text, self.vocab, self.vocab.unknown_token,
+                                  self.max_input_chars_per_word)
 
     def _tokenize_wordpiece(self, text):
         """Tokenizes a piece of text into its word pieces.
