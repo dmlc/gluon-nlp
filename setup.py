@@ -4,8 +4,7 @@ import os
 import re
 import shutil
 import sys
-from setuptools import setup, find_packages
-from Cython.Build import cythonize
+from setuptools import setup, find_packages, Extension
 
 
 def read(*names, **kwargs):
@@ -55,6 +54,11 @@ setup(
     package_dir={"": "src"},
     zip_safe=True,
     include_package_data=True,
+    setup_requires=[
+        # Setuptools 18.0 properly handles Cython extensions.
+        'setuptools>=18.0',
+        'cython',
+    ],
     install_requires=requirements,
     extras_require={
         'extras': [
@@ -84,5 +88,7 @@ setup(
             'flaky',
         ],
     },
-    ext_modules=cythonize("src/gluonnlp/data/*.pyx")
+    ext_modules=[
+        Extension('gluonnlp.data.wordpiece', sources=['src/gluonnlp/data/wordpiece.pyx']),
+    ],
 )
