@@ -31,6 +31,7 @@ VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
 requirements = [
     'numpy',
+    'cython'
 ]
 
 setup(
