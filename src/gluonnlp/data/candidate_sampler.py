@@ -108,11 +108,11 @@ class UnigramCandidateSampler(mx.gluon.HybridBlock):
             are sampled based on the weights specified on creation of the
             UnigramCandidateSampler.
         """
-        candidates_flat = candidates_like.reshape((-1, ))
-        idx = F.random.uniform_like(candidates_flat, low=0, high=self.N, dtype='float64').floor()
+        candidates_flat = candidates_like.reshape((-1, )).astype('float64')
+        idx = F.random.uniform_like(candidates_flat, low=0, high=self.N).floor()
         prob = F.gather_nd(prob, idx.reshape((1, -1)))
         alias = F.gather_nd(alias, idx.reshape((1, -1)))
-        where = F.random.uniform_like(candidates_flat, dtype='float64') < prob
+        where = F.random.uniform_like(candidates_flat) < prob
         hit = idx * where
         alt = alias * (1 - where)
         candidates = (hit + alt).reshape_like(candidates_like)
