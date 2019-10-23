@@ -43,7 +43,7 @@ from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 import numpy as np
 
 from ..base import get_home_dir
-from ..vocab import Vocab
+from ..vocab.vocab import Vocab
 from .utils import _extract_archive
 from .wordpiece import tokenize as wordpiece_tokenize
 
