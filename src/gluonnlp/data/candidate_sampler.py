@@ -18,9 +18,6 @@
 
 __all__ = ['UnigramCandidateSampler']
 
-import functools
-import operator
-
 import mxnet as mx
 import numpy as np
 
@@ -43,7 +40,7 @@ class UnigramCandidateSampler(mx.gluon.HybridBlock):
 
     """
 
-    def __init__(self, weights, shape, dtype='float32'):
+    def __init__(self, weights, dtype='float32'):
         super(UnigramCandidateSampler, self).__init__()
         self._dtype = dtype
         self.N = weights.size
