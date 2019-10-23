@@ -43,6 +43,7 @@ import numpy as np
 from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 
 from ..base import get_home_dir
+from ..vocab import Vocab
 from .utils import _extract_archive
 from .wordpiece import tokenize as wordpiece_tokenize
 
@@ -815,8 +816,8 @@ class BERTTokenizer:
 
     _special_prefix = '##'
 
-    def __init__(self, vocab: 'gluonnlp.Vocab', lower: bool = True,
-                 max_input_chars_per_word: int = 200, lru_cache_size: Optional[int] = None):
+    def __init__(self, vocab: Vocab, lower: bool = True, max_input_chars_per_word: int = 200,
+                 lru_cache_size: Optional[int] = None):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
         self.basic_tokenizer = BERTBasicTokenizer(lower=lower)
