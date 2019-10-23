@@ -521,7 +521,6 @@ class SentencepieceTokenizer(_SentencepieceProcessor):
     >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-0690baed.bpe'
     >>> sha1 = '0690baed966b28dc38330b122d4d51b7e41b4efe'  # optionally specify expected hash
     >>> f = gluon.utils.download(url, sha1_hash=sha1)
-    -etc-
     >>> tokenizer = gluonnlp.data.SentencepieceTokenizer(f)
     >>> detokenizer = gluonnlp.data.SentencepieceDetokenizer(f)
     >>> sentence = 'This is a very awesome, life-changing sentence.'
@@ -572,7 +571,6 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
     >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-0690baed.bpe'
     >>> sha1 = '0690baed966b28dc38330b122d4d51b7e41b4efe'  # optionally specify expected hash
     >>> f = gluon.utils.download(url, sha1_hash=sha1)
-    -etc-
     >>> tokenizer = gluonnlp.data.SentencepieceTokenizer(f)
     >>> detokenizer = gluonnlp.data.SentencepieceDetokenizer(f)
     >>> sentence = 'This is a very awesome, life-changing sentence.'
@@ -962,7 +960,6 @@ class BERTSPTokenizer(BERTTokenizer):
     >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
     >>> sha1 = '682b5d159a036e984bd0053fa92162bbd926cab8'  # optionally specify expected hash
     >>> f = gluon.utils.download(url, sha1_hash=sha1)
-    -etc-
     >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
     >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
     >>> sentence = 'Better is to bow than break.'
@@ -1031,7 +1028,6 @@ class BERTSPTokenizer(BERTTokenizer):
         >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
         >>> sha1 = '682b5d159a036e984bd0053fa92162bbd926cab8'  # optionally specify expected hash
         >>> f = gluon.utils.download(url, sha1_hash=sha1)
-        -etc-
         >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
         >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
         >>> sp_tokenizer('Better is to bow than break.')
