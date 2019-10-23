@@ -24,7 +24,7 @@ from gluonnlp.model.transformer import TransformerDecoder
 
 
 def test_gnmt_encoder():
-    ctx = mx.Context.current_context()
+    ctx = mx.current_context()
     for cell_type in ["lstm", "gru", "relu_rnn", "tanh_rnn"]:
         for num_layers, num_bi_layers in [(2, 1), (3, 0)]:
             for use_residual in [False, True]:
@@ -51,7 +51,7 @@ def test_gnmt_encoder():
 
 
 def test_gnmt_encoder_decoder():
-    ctx = mx.Context.current_context()
+    ctx = mx.current_context()
     num_hidden = 8
     encoder = GNMTEncoder(cell_type="lstm", num_layers=3, num_bi_layers=1, hidden_size=num_hidden,
                           dropout=0.0, use_residual=True, prefix='gnmt_encoder_')
@@ -99,7 +99,7 @@ def test_gnmt_encoder_decoder():
                         assert(len(additional_outputs) == 0)
 
 def test_transformer_encoder():
-    ctx = mx.Context.current_context()
+    ctx = mx.current_context()
     for num_layers in range(1, 3):
         for output_attention in [True, False]:
             for use_residual in [False, True]:
@@ -137,7 +137,7 @@ def test_transformer_encoder():
                             assert(len(additional_outputs) == 0)
 
 def test_transformer_encoder_decoder():
-    ctx = mx.Context.current_context()
+    ctx = mx.current_context()
     units = 16
     encoder = TransformerEncoder(num_layers=3, units=units, hidden_size=32, num_heads=8, max_length=10,
                                  dropout=0.0, use_residual=True, prefix='transformer_encoder_')
