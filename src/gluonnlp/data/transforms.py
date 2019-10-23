@@ -42,7 +42,6 @@ import mxnet as mx
 import numpy as np
 from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 
-from .._constants import DEFAULT_CACHE_SIZE
 from ..base import get_home_dir
 from .utils import _extract_archive
 from .wordpiece import tokenize as wordpiece_tokenize
@@ -791,14 +790,17 @@ class BERTTokenizer:
 
     Parameters
     ----------
-    vocab : gluonnlp.Vocab or None, default None
+    vocab
         Vocabulary for the corpus.
-    lower : bool, default True
+    lower
         whether the text strips accents and convert to lower case.
         If you use the BERT pre-training model,
         lower is set to Flase when using the cased model,
         otherwise it is set to True.
-    max_input_chars_per_word : int, default 200
+    max_input_chars_per_word
+    lru_cache_size
+        Maximum size of a least-recently-used cache to speed up tokenization.
+        Use size of 2**20 for example.
 
     Examples
     --------
@@ -813,10 +815,14 @@ class BERTTokenizer:
 
     _special_prefix = '##'
 
-    def __init__(self, vocab, lower=True, max_input_chars_per_word=200):
+    def __init__(self, vocab: 'gluonnlp.Vocab', lower: bool = True,
+                 max_input_chars_per_word: int = 200, lru_cache_size: Optional[int] = None):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
         self.basic_tokenizer = BERTBasicTokenizer(lower=lower)
+        if lru_cache_size:
+            self._word_to_wordpiece_optimized = functools.lru_cache(maxsize=lru_cache_size)(
+                self._word_to_wordpiece_optimized)
 
     def __call__(self, sample):
         """
@@ -842,7 +848,6 @@ class BERTTokenizer:
 
         return split_tokens
 
-    @functools.lru_cache(maxsize=DEFAULT_CACHE_SIZE)
     def _word_to_wordpiece_optimized(self, text):
         return wordpiece_tokenize(text, self.vocab, self.vocab.unknown_token, self.max_input_chars_per_word)
 
