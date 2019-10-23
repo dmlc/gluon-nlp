@@ -45,7 +45,7 @@ from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 from .._constants import DEFAULT_CACHE_SIZE
 from ..base import get_home_dir
 from .utils import _extract_archive
-from .wordpiece import tokenize
+from .wordpiece import tokenize as wordpiece_tokenize
 
 
 class ClipSequence:
@@ -813,11 +813,10 @@ class BERTTokenizer:
 
     _special_prefix = '##'
 
-    def __init__(self, vocab, lower=True, max_input_chars_per_word=200, optimize=False):
+    def __init__(self, vocab, lower=True, max_input_chars_per_word=200):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
         self.basic_tokenizer = BERTBasicTokenizer(lower=lower)
-        self.optimize = optimize
 
     def __call__(self, sample):
         """
@@ -845,7 +844,7 @@ class BERTTokenizer:
 
     @functools.lru_cache(maxsize=DEFAULT_CACHE_SIZE)
     def _word_to_wordpiece_optimized(self, text):
-        return tokenize(text, self.vocab, self.vocab.unknown_token, self.max_input_chars_per_word)
+        return wordpiece_tokenize(text, self.vocab, self.vocab.unknown_token, self.max_input_chars_per_word)
 
     def _tokenize_wordpiece(self, text):
         """Tokenizes a piece of text into its word pieces.
@@ -869,41 +868,12 @@ class BERTTokenizer:
 
         # case where text is a single token
         whitespace_tokenized_tokens = self.basic_tokenizer._whitespace_tokenize(text)
-        if self.optimize and len(whitespace_tokenized_tokens) == 1:
+        if len(whitespace_tokenized_tokens) == 1:
             return self._word_to_wordpiece_optimized(whitespace_tokenized_tokens[0])
 
         output_tokens = []
         for token in whitespace_tokenized_tokens:
-            if self.optimize:
-                output_tokens.extend(self._word_to_wordpiece_optimized(token))
-                continue
-            chars = list(token)
-            if len(chars) > self.max_input_chars_per_word:
-                output_tokens.append(self.vocab.unknown_token)
-                continue
-            is_bad = False
-            start = 0
-            sub_tokens = []
-            while start < len(chars):
-                end = len(chars)
-                cur_substr = None
-                while start < end:
-                    substr = ''.join(chars[start:end])
-                    if start > 0:
-                        substr = self._special_prefix + substr
-                    if substr in self.vocab:
-                        cur_substr = substr
-                        break
-                    end -= 1
-                if cur_substr is None:
-                    is_bad = True
-                    break
-                sub_tokens.append(cur_substr)
-                start = end
-            if is_bad:
-                output_tokens.append(self.vocab.unknown_token)
-            else:
-                output_tokens.extend(sub_tokens)
+            output_tokens.extend(self._word_to_wordpiece_optimized(token))
         return output_tokens
 
     def convert_tokens_to_ids(self, tokens):
