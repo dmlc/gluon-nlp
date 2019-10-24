@@ -59,9 +59,11 @@ mx.random.seed(10000)
 
 nlp.utils.check_version('0.7.0')
 
-parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
-                                             'We train the Transformer Model')
-parser.add_argument('--dataset', type=str, default='WMT2016BPE', help='Dataset to use.')
+parser = argparse.ArgumentParser(
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    description='Neural Machine Translation Example with the Transformer Model.')
+parser.add_argument('--dataset', type=str.upper, default='WMT2016BPE', help='Dataset to use.',
+                    choices=['IWSLT2015', 'WMT2016BPE', 'WMT2014BPE', 'TOY'])
 parser.add_argument('--src_lang', type=str, default='en', help='Source language')
 parser.add_argument('--tgt_lang', type=str, default='de', help='Target language')
 parser.add_argument('--epochs', type=int, default=10, help='upper epoch limit')
@@ -181,8 +183,9 @@ encoder, decoder = get_transformer_encoder_decoder(units=args.num_units,
                                                    max_tgt_length=max(tgt_max_len, 500),
                                                    scaled=args.scaled)
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
-                 share_embed=args.dataset != 'TOY', embed_size=args.num_units,
-                 tie_weights=args.dataset != 'TOY', embed_initializer=None, prefix='transformer_')
+                 share_embed=args.dataset not in ('TOY', 'IWSLT2015'), embed_size=args.num_units,
+                 tie_weights=args.dataset not in ('TOY', 'IWSLT2015'), embed_initializer=None,
+                 prefix='transformer_')
 model.initialize(init=mx.init.Xavier(magnitude=args.magnitude), ctx=ctx)
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)

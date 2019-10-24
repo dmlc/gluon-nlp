@@ -437,24 +437,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             - outputs of the transformer encoder. Shape (batch_size, length, C_out)
             - additional_outputs of all the transformer encoder
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        valid_length = [] if valid_length is None else valid_length
-        states = [] if states is None else states
         return super(BaseTransformerEncoder, self).__call__(inputs, states, valid_length)
-
-    def _arange_like(self, F, inputs, axis):
-        """Helper function to generate indices of a range"""
-        if F == mx.ndarray:
-            seq_len = inputs.shape[axis]
-            arange = F.arange(seq_len, dtype=inputs.dtype, ctx=inputs.context)
-        else:
-            input_axis = inputs.slice(begin=(0, 0, 0), end=(1, None, 1)).reshape((-1))
-            zeros = F.zeros_like(input_axis)
-            arange = F.arange(start=0, repeat=1, step=1,
-                              infer_range=True, dtype=self._dtype)
-            arange = F.elemwise_add(arange, zeros)
-        return arange
-
 
     def hybrid_forward(self, F, inputs, states=None, valid_length=None, position_weight=None):
         # pylint: disable=arguments-differ
@@ -492,13 +475,7 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             (batch_size, num_heads, length, length)
 
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        if isinstance(valid_length, list) and len(valid_length) == 0:
-            valid_length = None
-        if isinstance(states, list) and len(states) == 0:
-            states = None
-
-        steps = self._arange_like(F, inputs, axis=1)
+        steps = F.contrib.arange_like(inputs, axis=1)
         if valid_length is not None:
             ones = F.ones_like(steps)
             mask = F.broadcast_lesser(F.reshape(steps, shape=(1, -1)),
@@ -509,6 +486,8 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
                 states = [mask]
             else:
                 states.append(mask)
+        else:
+            mask = None
 
         if self._scale_embed:
             # XXX: input.shape[-1] and self._units are expected to be the same
@@ -519,11 +498,10 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         else:
             states.append(steps)
 
-        if states is not None:
-            steps = states[-1]
-            # positional encoding
-            positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
-            inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
+        # positional encoding
+        positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
+        inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
+
         if self._dropout:
             if self._use_layer_norm_before_dropout:
                 inputs = self.layer_norm(inputs)
@@ -534,10 +512,6 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
         else:
             inputs = self.layer_norm(inputs)
         outputs = inputs
-        if valid_length is not None:
-            mask = states[-2]
-        else:
-            mask = None
 
         all_encodings_outputs = []
         additional_outputs = []
@@ -553,7 +527,8 @@ class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
             if self._output_attention:
                 additional_outputs.append(attention_weights)
 
-        if valid_length is not None:
+        if valid_length is not None and not self._output_all_encodings:
+            # if self._output_all_encodings, SequenceMask is already applied above
             outputs = F.SequenceMask(outputs, sequence_length=valid_length,
                                      use_sequence_length=True, axis=1)
 

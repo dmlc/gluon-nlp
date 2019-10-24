@@ -76,6 +76,8 @@ setup(
             'recommonmark',
             'sphinx-gallery',
             'sphinx_rtd_theme',
+            'mxtheme',
+            'sphinx-autodoc-typehints',
             'nbsphinx',
             'flaky',
         ],
