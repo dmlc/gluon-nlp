@@ -20,6 +20,7 @@ import datetime
 import os
 import io
 import random
+import warnings
 
 from flaky import flaky
 import mxnet as mx
@@ -476,7 +477,9 @@ def test_wmt2016bpe():
     newstest_2012_2015 = nlp.data.WMT2016BPE(segment=['newstest%d' %i for i in range(2012, 2016)],
                                              src_lang='en', tgt_lang='de')
     assert len(newstest_2012_2015) == 3003 + 3000 + 3003 + 2169
-    en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
+    with warnings.catch_warnings():  # TODO https://github.com/dmlc/gluon-nlp/issues/978
+        warnings.simplefilter("ignore")
+        en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
     assert len(en_vocab) == 36548
     assert len(de_vocab) == 36548
 
@@ -513,7 +516,9 @@ def test_wmt2014bpe():
     newstest_2009_2013 = nlp.data.WMT2014BPE(segment=['newstest%d' %i for i in range(2009, 2014)],
                                              src_lang='en', tgt_lang='de')
     assert len(newstest_2009_2013) == 2525 + 2489 + 3003 + 3003 + 3000
-    en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
+    with warnings.catch_warnings():  # TODO https://github.com/dmlc/gluon-nlp/issues/978
+        warnings.simplefilter("ignore")
+        en_vocab, de_vocab = train.src_vocab, train.tgt_vocab
     assert len(en_vocab) == 36794
     assert len(de_vocab) == 36794
 
@@ -698,7 +703,10 @@ def test_numpy_dataset():
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_glue_data(cls, name, segment, length, fields):
-    dataset = cls(segment=segment)
+    with warnings.catch_warnings():
+        if cls is nlp.data.GlueQQP:  # QQP contains incomplete samples and raises warnings
+            warnings.simplefilter("ignore")
+        dataset = cls(segment=segment)
     assert len(dataset) == length, len(dataset)
 
     for i, x in enumerate(dataset):

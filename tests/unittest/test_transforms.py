@@ -253,7 +253,10 @@ def test_bert_sentences_transform():
 @pytest.mark.remote_required
 def test_bert_sentencepiece_sentences_transform():
     url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
-    f = download(url, overwrite=True)
+    with warnings.catch_warnings():
+        # UserWarning: File test-682b5d15.bpe exists in file system so the downloaded file is deleted
+        warnings.simplefilter("ignore")
+        f = download(url, overwrite=True)
     bert_vocab = BERTVocab.from_sentencepiece(f)
     bert_tokenizer = t.BERTSPTokenizer(f, bert_vocab, lower=True)
     assert bert_tokenizer.is_first_subword(u'▁this')
