@@ -896,11 +896,7 @@ def test_token_embedding_from_S3_fasttext_with_ngrams(load_ngrams):
     embed = nlp.embedding.create('fasttext', source='wiki.simple',
                                  load_ngrams=load_ngrams, unknown_token=None)
     if load_ngrams:
-        with warnings.catch_warnings():
-            #  'RuntimeWarning: overflow encountered in uint_scalars' is
-            #  expected when running without numba
-            warnings.simplefilter("ignore")
-            embed['$$$unknownword$$$']
+        embed['$$$unknownword$$$']
     else:
         with pytest.raises(KeyError):
             embed['$$$unknownword$$$']
@@ -1200,18 +1196,15 @@ def test_subword_function_ngramhashes():
     sf = nlp.vocab.create_subword_function('NGramHashes', ngrams=[3, 4, 5, 6],
                                            num_subwords=num_subwords)
 
-    with warnings.catch_warnings():  # 'RuntimeWarning: overflow encountered in
-                                     # uint_scalars' expected with numba
-        warnings.simplefilter("ignore")
-        assert set([8, 195, 271, 500, 201, 445, 379, 831, 617, 851]) == set(sf(['test'])[0])
-        assert set([8, 195, 271, 500, 201, 445, 379, 831, 617, 851]) == set(sf([u'test'])[0])
-        assert set([429, 793, 101, 334, 295, 474, 145, 524, 388, 790]) == set(sf([u'τεστ'])[0])
-        assert 1669484008 == sf.fasttext_hash_asbytes('<te')
-        assert 1669484008 == sf.fasttext_hash_asbytes(u'<te')
-        assert 2688791429 == sf.fasttext_hash_asbytes(u'<τε')
-        assert 1669484008 % num_subwords == next(iter(sf.subwords_to_indices(['<te'])))
-        assert 1669484008 % num_subwords == next(iter(sf.subwords_to_indices([u'<te'])))
-        assert 2688791429 % num_subwords == next(iter(sf.subwords_to_indices([u'<τε'])))
+    assert set([8, 195, 271, 500, 201, 445, 379, 831, 617, 851]) == set(sf(['test'])[0])
+    assert set([8, 195, 271, 500, 201, 445, 379, 831, 617, 851]) == set(sf([u'test'])[0])
+    assert set([429, 793, 101, 334, 295, 474, 145, 524, 388, 790]) == set(sf([u'τεστ'])[0])
+    assert 1669484008 == sf.fasttext_hash_asbytes('<te')
+    assert 1669484008 == sf.fasttext_hash_asbytes(u'<te')
+    assert 2688791429 == sf.fasttext_hash_asbytes(u'<τε')
+    assert 1669484008 % num_subwords == next(iter(sf.subwords_to_indices(['<te'])))
+    assert 1669484008 % num_subwords == next(iter(sf.subwords_to_indices([u'<te'])))
+    assert 2688791429 % num_subwords == next(iter(sf.subwords_to_indices([u'<τε'])))
 
 
 @pytest.mark.parametrize('unknown_token', ['<unk>', None])

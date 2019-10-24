@@ -1310,7 +1310,7 @@ class Word2Vec(TokenEmbedding):
                     warnings.warn('line {} in {}: failed to decode. Skipping.'
                                   .format(line_num, pretrained_file_path))
                     continue
-                elems = np.fromstring(f.read(binary_len), dtype=np.float32)
+                elems = np.frombuffer(f.read(binary_len), dtype=np.float32)
 
                 assert len(elems) > 1, 'line {} in {}: unexpected data format.'.format(
                     line_num, pretrained_file_path)
