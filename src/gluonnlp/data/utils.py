@@ -270,7 +270,6 @@ def train_valid_split(dataset, valid_ratio=0.05, stratify=None):
         indices = np.arange(num_train)
 
         np.random.shuffle(indices)
-
         valid = SimpleDataset([dataset[indices[i]] for i in range(num_valid)])
         train = SimpleDataset(
             [dataset[indices[i + num_valid]] for i in range(num_train - num_valid)])
