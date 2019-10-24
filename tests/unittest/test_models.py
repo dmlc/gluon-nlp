@@ -18,6 +18,7 @@
 
 import os
 import sys
+import warnings
 
 import mxnet as mx
 import pytest
@@ -83,9 +84,11 @@ def test_transformer_models():
         for rate in dropout_rates:
             eprint('testing forward for %s, dropout rate %f' % (model_name, rate))
             pretrained_dataset = pretrained_to_test.get(model_name)
-            model, _, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
-                                              pretrained=pretrained_dataset is not None,
-                                              dropout=rate)
+            with warnings.catch_warnings():  # TODO https://github.com/dmlc/gluon-nlp/issues/978
+                warnings.simplefilter("ignore")
+                model, _, _ = nlp.model.get_model(model_name, dataset_name=pretrained_dataset,
+                                                  pretrained=pretrained_dataset is not None,
+                                                  dropout=rate)
 
             print(model)
             if not pretrained_dataset:

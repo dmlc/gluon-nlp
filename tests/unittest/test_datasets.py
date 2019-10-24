@@ -437,12 +437,16 @@ def test_iwlst2015():
     assert len(val_en_vi) == 1553
     assert len(test_en_vi) == 1268
 
-    en_vocab, vi_vocab = train_en_vi.src_vocab, train_en_vi.tgt_vocab
+    with warnings.catch_warnings():  # TODO https://github.com/dmlc/gluon-nlp/issues/978
+        warnings.simplefilter("ignore")
+        en_vocab, vi_vocab = train_en_vi.src_vocab, train_en_vi.tgt_vocab
     assert len(en_vocab) == 17191
     assert len(vi_vocab) == 7709
 
     train_vi_en = nlp.data.IWSLT2015(segment='train', src_lang='vi', tgt_lang='en')
-    vi_vocab, en_vocab = train_vi_en.src_vocab, train_vi_en.tgt_vocab
+    with warnings.catch_warnings():  # TODO https://github.com/dmlc/gluon-nlp/issues/978
+        warnings.simplefilter("ignore")
+        vi_vocab, en_vocab = train_vi_en.src_vocab, train_vi_en.tgt_vocab
     assert len(en_vocab) == 17191
     assert len(vi_vocab) == 7709
     for i in range(10):
