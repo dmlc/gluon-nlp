@@ -624,7 +624,6 @@ class BakerVerb143(WordSimilarityEvaluationDataset):
         'verb_similarity dataset.txt':
         'd7e4820c7504cbae56898353e4d94e6408c330fc'
     }
-    _verify_ssl = False  # ie.technion.ac.il serves an invalid cert as of 2018-04-16
 
     min = 0
     max = 1
