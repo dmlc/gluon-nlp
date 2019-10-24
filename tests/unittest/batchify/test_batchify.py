@@ -187,8 +187,10 @@ def test_pad_wrap_batchify():
                                                for shape in shapes]
                             batchify_fn = batchify.Pad(axis=axis, pad_val=pad_val, ret_length=True, dtype=_dtype)
                             batch_data, valid_length = batchify_fn(random_data_npy)
-                            batch_data_use_mx, valid_length_use_mx = batchify_fn(
-                                [mx.nd.array(ele, dtype=dtype) for ele in random_data_npy])
+                            with pytest.warns(UserWarning):
+                                # UserWarning: Using Pad with NDArrays is discouraged for speed reasons.
+                                batch_data_use_mx, valid_length_use_mx = batchify_fn(
+                                    [mx.nd.array(ele, dtype=dtype) for ele in random_data_npy])
                             assert_allclose(valid_length_use_mx.asnumpy(), valid_length.asnumpy())
                             assert batch_data.dtype == batch_data_use_mx.dtype == _dtype
                             assert valid_length.dtype == valid_length_use_mx.dtype == np.int32
