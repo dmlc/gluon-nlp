@@ -782,7 +782,8 @@ def test_vocab_set_embedding_with_subword_lookup_only_token_embedding(
     if initialize and unknown_token:
         e[e.unknown_token] = nd.zeros(embsize)
     elif initialize and allow_extend:
-        e["hello"] = e.unknown_lookup["hello"]
+        with pytest.warns(UserWarning):  # encouraged to batch their updates
+            e["hello"] = e.unknown_lookup["hello"]
     else:  # Cannot initialize, even if initialize is True
         with pytest.raises(AssertionError):
             v.set_embedding(e)

@@ -150,9 +150,11 @@ def test_pad_wrap_batchify():
                                         batchify_fn.append(batchify.Stack(dtype=_dtype))
                                 batchify_fn = batchify.Tuple(batchify_fn)
                                 ret_use_npy = batchify_fn(random_data_npy)
-                                ret_use_mx = batchify_fn(
-                                    [tuple(mx.nd.array(ele[i], dtype=dtype) for i in range(TOTAL_ELE_NUM)) for ele in
-                                     random_data_npy])
+                                with pytest.warns(UserWarning):
+                                    # Using Pad with NDArrays is discouraged for speed reasons.
+                                    ret_use_mx = batchify_fn([tuple(mx.nd.array(ele[i], dtype=dtype)
+                                                                    for i in range(TOTAL_ELE_NUM))
+                                                              for ele in random_data_npy])
                                 for i in range(TOTAL_ELE_NUM):
                                     if i in pad_index:
                                         assert ret_use_npy[i][0].dtype == ret_use_mx[i][0].dtype == dtype
