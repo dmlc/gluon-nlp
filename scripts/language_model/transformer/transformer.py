@@ -489,7 +489,7 @@ class _BaseXLNet(mx.gluon.HybridBlock):
     """
     Parameters
     ----------
-    vocab_size : int or None, default None
+    vocab_size : int
         The size of the vocabulary.
     num_layers : int
     units : int
@@ -568,11 +568,10 @@ class _BaseXLNet(mx.gluon.HybridBlock):
                     params=self.word_embed.params if tie_decoder_weight else None)
 
     def hybrid_forward(self, F, step_input, segments, mask, pos_seq, mems, mask_embed):  #pylint: disable=arguments-differ
-       """Transformer Decoder Attention Cell.
-
+       """
         Parameters
         ----------
-        step_input : NDArray
+        step_input : Symbol or NDArray
             Input of shape [batch_size, query_length]
         segments : Symbol or NDArray
             One-hot vector indicating if a query-key pair is in the same
