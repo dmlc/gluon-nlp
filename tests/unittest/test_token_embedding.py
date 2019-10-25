@@ -62,7 +62,11 @@ def test_token_embedding_constructor(unknown_token, init_unknown_vec, allow_exte
 
     def test_serialization(emb, tmp_path=tmp_path):
         emb_path = os.path.join(str(tmp_path), "emb.npz")
-        emb.serialize(emb_path)
+        if unknown_lookup:
+            with pytest.warns(UserWarning):  # UserWarning: Serialization of `unknown_lookup` is not supported
+                emb.serialize(emb_path)
+        else:
+            emb.serialize(emb_path)
         loaded_emb = nlp.embedding.TokenEmbedding.deserialize(emb_path)
         assert loaded_emb == emb
 
@@ -85,12 +89,18 @@ def test_token_embedding_constructor(unknown_token, init_unknown_vec, allow_exte
 
         if allow_extend:
             emb = TokenEmbedding()
-            emb[unknown_token] = mx.nd.zeros(embsize) - 1
+            if not unknown_token:
+                with pytest.warns(UserWarning):  # UserWarning: encouraged to batch updates
+                    emb[unknown_token] = mx.nd.zeros(embsize) - 1
+            else:
+                emb[unknown_token] = mx.nd.zeros(embsize) - 1
             assert emb.idx_to_vec.shape[1] == embsize
             test_serialization(emb)
 
             emb = TokenEmbedding()
-            emb['<some_token>'] = mx.nd.zeros(embsize) - 1
+            with pytest.warns(UserWarning):  # UserWarning: encouraged to batch updates
+                val = mx.nd.zeros(embsize) - 1
+                emb['<some_token>'] = val
             assert emb.idx_to_vec.shape[0] == 2 if unknown_token else emb.idx_to_vec.shape[0] == 1
             assert (emb['<some_token>'].asnumpy() == (mx.nd.zeros(embsize) - 1).asnumpy()).all()
             test_serialization(emb)
@@ -110,12 +120,17 @@ def test_token_embedding_constructor(unknown_token, init_unknown_vec, allow_exte
 
         if allow_extend:
             emb = TokenEmbedding()
-            emb[unknown_token] = mx.nd.zeros(embsize) - 1
+            if not unknown_token:
+                with pytest.warns(UserWarning):  # UserWarning: encouraged to batch updates
+                    emb[unknown_token] = mx.nd.zeros(embsize) - 1
+            else:
+                emb[unknown_token] = mx.nd.zeros(embsize) - 1
             assert emb.idx_to_vec.shape[1] == embsize
             test_serialization(emb)
 
             emb = TokenEmbedding()
-            emb['<some_token>'] = mx.nd.zeros(embsize) - 1
+            with pytest.warns(UserWarning):  # UserWarning: encouraged to batch updates
+                emb['<some_token>'] = mx.nd.zeros(embsize) - 1
             assert (emb['<some_token>'].asnumpy() == (mx.nd.zeros(embsize) - 1).asnumpy()).all()
 
             if unknown_token and unknown_token not in idx_to_token:

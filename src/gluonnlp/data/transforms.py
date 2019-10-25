@@ -519,7 +519,7 @@ class SentencepieceTokenizer(_SentencepieceProcessor):
     Examples
     --------
     >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-0690baed.bpe'
-    >>> f = gluon.utils.download(url, overwrite=True)
+    >>> f = gluon.utils.download(url)
     -etc-
     >>> tokenizer = gluonnlp.data.SentencepieceTokenizer(f)
     >>> detokenizer = gluonnlp.data.SentencepieceDetokenizer(f)
@@ -528,6 +528,7 @@ class SentencepieceTokenizer(_SentencepieceProcessor):
     ['▁This', '▁is', '▁a', '▁very', '▁awesome', ',', '▁life', '-', 'ch', 'anging', '▁sentence', '.']
     >>> detokenizer(tokenizer(sentence))
     'This is a very awesome, life-changing sentence.'
+    >>> os.remove('test-0690baed.bpe')
 
     """
 
@@ -569,7 +570,7 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
     Examples
     --------
     >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-0690baed.bpe'
-    >>> f = gluon.utils.download(url, overwrite=True)
+    >>> f = gluon.utils.download(url)
     -etc-
     >>> tokenizer = gluonnlp.data.SentencepieceTokenizer(f)
     >>> detokenizer = gluonnlp.data.SentencepieceDetokenizer(f)
@@ -578,6 +579,7 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
     ['▁This', '▁is', '▁a', '▁very', '▁awesome', ',', '▁life', '-', 'ch', 'anging', '▁sentence', '.']
     >>> detokenizer(tokenizer(sentence))
     'This is a very awesome, life-changing sentence.'
+    >>> os.remove('test-0690baed.bpe')
 
     """
 
@@ -958,13 +960,14 @@ class BERTSPTokenizer(BERTTokenizer):
     Examples
     --------
     >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
-    >>> f = gluon.utils.download(url, overwrite=True)
+    >>> f = gluon.utils.download(url)
     -etc-
     >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
     >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
     >>> sentence = 'Better is to bow than break.'
     >>> sp_tokenizer(sentence)
     ['▁better', '▁is', '▁to', '▁b', 'ow', '▁than', '▁brea', 'k', '▁', '.']
+    >>> os.remove('test-682b5d15.bpe')
     """
 
     _special_prefix = '▁'
@@ -1026,7 +1029,7 @@ class BERTSPTokenizer(BERTTokenizer):
         Examples
         --------
         >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
-        >>> f = gluon.utils.download(url, overwrite=True)
+        >>> f = gluon.utils.download(url)
         -etc-
         >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
         >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
@@ -1036,6 +1039,7 @@ class BERTSPTokenizer(BERTTokenizer):
         True
         >>> sp_tokenizer.is_first_subword('ow')
         False
+        >>> os.remove('test-682b5d15.bpe')
         """
         return token.startswith(BERTSPTokenizer._special_prefix)
 

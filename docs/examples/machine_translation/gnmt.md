@@ -277,12 +277,12 @@ is to construct the sampler and `DataLoader`. The first step is to use the `batc
 function, which pads and stacks sequences to form mini-batches.
 
 ```{.python .input}
-train_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(),
-                                            nlp.data.batchify.Pad(),
+train_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(pad_val=0),
+                                            nlp.data.batchify.Pad(pad_val=0),
                                             nlp.data.batchify.Stack(dtype='float32'),
                                             nlp.data.batchify.Stack(dtype='float32'))
-test_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(),
-                                           nlp.data.batchify.Pad(),
+test_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(pad_val=0),
+                                           nlp.data.batchify.Pad(pad_val=0),
                                            nlp.data.batchify.Stack(dtype='float32'),
                                            nlp.data.batchify.Stack(dtype='float32'),
                                            nlp.data.batchify.Stack())

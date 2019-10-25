@@ -187,7 +187,7 @@ class Pad:
     >>> a = [1, 2, 3, 4]
     >>> b = [4, 5, 6]
     >>> c = [8, 2]
-    >>> bf.Pad()([a, b, c])
+    >>> bf.Pad(pad_val=0)([a, b, c])
     <BLANKLINE>
     [[1. 2. 3. 4.]
      [4. 5. 6. 0.]
@@ -197,7 +197,7 @@ class Pad:
     >>> a = [1, 2, 3, 4]
     >>> b = [4, 5, 6]
     >>> c = [8, 2]
-    >>> batch, length = bf.Pad(ret_length=True)([a, b, c])
+    >>> batch, length = bf.Pad(pad_val=0, ret_length=True)([a, b, c])
     >>> batch
     <BLANKLINE>
     [[1. 2. 3. 4.]
@@ -306,7 +306,7 @@ class Tuple:
     >>> a = ([1, 2, 3, 4], 0)
     >>> b = ([5, 7], 1)
     >>> c = ([1, 2, 3, 4, 5, 6, 7], 0)
-    >>> f1, f2 = bf.Tuple(bf.Pad(), bf.Stack())([a, b])
+    >>> f1, f2 = bf.Tuple(bf.Pad(pad_val=0), bf.Stack())([a, b])
     >>> f1
     <BLANKLINE>
     [[1. 2. 3. 4.]
@@ -404,7 +404,7 @@ class Dict:
     >>> a = {'data': [1, 2, 3, 4], 'label': 0}
     >>> b = {'data': [5, 7], 'label': 1}
     >>> c = {'data': [1, 2, 3, 4, 5, 6, 7], 'label': 0}
-    >>> batchify_fn = Dict({'data': Pad(), 'label': Stack()})
+    >>> batchify_fn = Dict({'data': Pad(pad_val=0), 'label': Stack()})
     >>> sample = batchify_fn([a, b, c])
     >>> sample['data']
     <BLANKLINE>
@@ -474,7 +474,7 @@ class NamedTuple:
     >>> a = SampleData([1, 2, 3, 4], 0)
     >>> b = SampleData([5, 7], 1)
     >>> c = SampleData([1, 2, 3, 4, 5, 6, 7], 0)
-    >>> batchify_fn = NamedTuple(SampleData, {'data': Pad(), 'label': Stack()})
+    >>> batchify_fn = NamedTuple(SampleData, {'data': Pad(pad_val=0), 'label': Stack()})
     >>> sample = batchify_fn([a, b, c])
     >>> sample
     SampleData(data=
@@ -491,7 +491,7 @@ class NamedTuple:
      [1. 2. 3. 4. 5. 6. 7.]]
     <NDArray 3x7 @cpu_shared(0)>
     >>> # Let's consider to use a list
-    >>> batchify_fn = NamedTuple(SampleData, [Pad(), Stack()])
+    >>> batchify_fn = NamedTuple(SampleData, [Pad(pad_val=0), Stack()])
     >>> batchify_fn([a, b, c])
     SampleData(data=
     [[1. 2. 3. 4. 0. 0. 0.]
