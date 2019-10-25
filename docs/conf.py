@@ -170,7 +170,7 @@ html_theme_options = {
     'primary_color': 'blue',
     'accent_color': 'deep_orange',
     'header_links' : [
-        ('Install', 'install', False, ''),
+        ('Install', 'install/install-more', False, ''),
         ('API', 'api/index', False, ''),
         ('Community', 'community/index', False, ''),
         ('Contribute', 'community/contribute', False, ''),
@@ -234,6 +234,9 @@ def setup(app):
             }, True)
     app.add_transform(AutoStructify)
     app.add_javascript('google_analytics.js')
+    app.add_javascript('hidebib.js')
+    app.add_javascript('install-options.js')
+    app.add_stylesheet('custom.css')
 
 
 sphinx_gallery_conf = {
