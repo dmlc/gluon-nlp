@@ -91,8 +91,6 @@ class PositionwiseFFN(HybridBlock):
                  ffn1_dropout=False, activation='relu', layer_norm_eps=1e-5,
                  weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
-        self._hidden_size = hidden_size
-        self._units = units
         self._use_residual = use_residual
         self._dropout = dropout
         self._ffn1_dropout = ffn1_dropout
@@ -197,8 +195,6 @@ class TransformerEncoderCell(HybridBlock):
                  weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None, activation='relu', layer_norm_eps=1e-5):
         super().__init__(prefix=prefix, params=params)
-        self._units = units
-        self._num_heads = num_heads
         self._dropout = dropout
         self._use_residual = use_residual
         self._output_attention = output_attention
@@ -314,17 +310,11 @@ class TransformerEncoder(HybridBlock):
             'In TransformerEncoder, The units should be divided exactly ' \
             'by the number of heads. Received units={}, num_heads={}' \
             .format(units, num_heads)
-        self._num_layers = num_layers
         self._max_length = max_length
-        self._num_heads = num_heads
         self._units = units
-        self._hidden_size = hidden_size
         self._output_attention = output_attention
         self._output_all_encodings = output_all_encodings
         self._dropout = dropout
-        self._use_residual = use_residual
-        self._scaled = scaled
-        self._dtype = 'float32'
 
         with self.name_scope():
             if dropout:
@@ -340,11 +330,6 @@ class TransformerEncoder(HybridBlock):
                     scaled=scaled, output_attention=output_attention, prefix='transformer%d_' % i,
                     activation=activation, layer_norm_eps=layer_norm_eps)
                 self.transformer_cells.add(cell)
-
-    def cast(self, dtype):
-        """Cast the data type of the parameters"""
-        self._dtype = dtype
-        super().cast(dtype)
 
     def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
         """Encode the inputs given the states and valid sequence length.
