@@ -89,31 +89,32 @@ class L2Normalization(HybridBlock):
         ret = F.broadcast_div(x, F.norm(x, axis=self._axis, keepdims=True) + self._eps)
         return ret
 
+
 class GELU(HybridBlock):
-    r"""Gaussian Error Linear Unit.
+    """Gaussian Error Linear Unit.
 
     This is a smoother version of the RELU.
     https://arxiv.org/abs/1606.08415
 
-    Parameters
-    ----------
-    Inputs:
-        - **data**: input tensor with arbitrary shape.
-    Outputs:
-        - **out**: output tensor with the same shape as `data`.
     """
-    def __init__(self, **kwargs):
-        super(GELU, self).__init__(**kwargs)
-        # Always True as GluonNLP requires sufficiently recent MXNet. Not
-        # deleting, as gpt script relies on overwriting this internal variable
-        self._support_erf = bool(ndarray.erf)
 
+    def __init__(self, use_erf=True, prefix=None, params=None):
+        super().__init__(prefix=prefix, params=params)
+        self._use_erf = use_erf
 
-    def hybrid_forward(self, F, x): # pylint: disable=arguments-differ
-        if self._support_erf:
+    def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
+        """
+
+        Parameters
+        ----------
+        Inputs:
+            - **data**: input tensor with arbitrary shape.
+        Outputs:
+            - **out**: output tensor with the same shape as `data`.
+        """
+        if self._use_erf:
             return x * 0.5 * (1.0 + F.erf(x / math.sqrt(2.0)))
         else:
-            # approximate GELU if erf is not supported
             return 0.5 * x * (1 + F.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * (x ** 3))))
 
     def __repr__(self):

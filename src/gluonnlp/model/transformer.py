@@ -113,6 +113,8 @@ class PositionwiseFFN(HybridBlock):
         if isinstance(act, str):
             if act.lower() == 'gelu':
                 return GELU()
+            elif act.lower() == 'gelutanh':
+                return GELU(use_erf=False)
             else:
                 return gluon.nn.Activation(act)
         assert isinstance(act, gluon.Block)
@@ -420,10 +422,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
 
         if self._dropout:
             inputs = self.dropout_layer(inputs)
-            inputs = self.layer_norm(inputs)
-        else:
-            inputs = self.layer_norm(inputs)
-        outputs = inputs
+        inputs = self.layer_norm(inputs)
 
         all_encodings_outputs = []
         additional_outputs = []
