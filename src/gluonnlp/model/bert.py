@@ -23,7 +23,6 @@ __all__ = ['BERTModel', 'RoBERTaModel', 'BERTEncoder', 'BERTEncoderCell',
            'ernie_12_768_12', 'roberta_12_768_12', 'roberta_24_1024_16']
 
 import os
-import warnings
 
 import mxnet as mx
 from mxnet.gluon import HybridBlock, nn
@@ -31,15 +30,15 @@ from mxnet.gluon.model_zoo import model_store
 
 from ..base import get_home_dir
 from .block import GELU
+from .seq2seq_encoder_decoder import Seq2SeqEncoder, _get_attention_cell
 from .transformer import PositionwiseFFN
-from .seq2seq_encoder_decoder import _get_attention_cell
 from .utils import _load_pretrained_params, _load_vocab
 
 ###############################################################################
 #                              COMPONENTS                                     #
 ###############################################################################
 
-class BERTEncoder(HybridBlock):
+class BERTEncoder(HybridBlock, Seq2SeqEncoder):
     """Structure of the BERT Encoder.
 
     Different from the original encoder for transformer, `BERTEncoder` uses
@@ -99,12 +98,11 @@ class BERTEncoder(HybridBlock):
 
     """
 
-    def __init__(self, attention_cell='multi_head', num_layers=2,
-                 units=512, hidden_size=2048, max_length=50,
-                 num_heads=4, scaled=True, dropout=0.0,
-                 use_residual=True, output_attention=False, output_all_encodings=False,
-                 weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None, activation='gelu', layer_norm_eps=1e-12):
+    def __init__(self, *, attention_cell='multi_head', num_layers=2, units=512, hidden_size=2048,
+                 max_length=50, num_heads=4, scaled=True, dropout=0.0, use_residual=True,
+                 output_attention=False, output_all_encodings=False, weight_initializer=None,
+                 bias_initializer='zeros', prefix=None, params=None, activation='gelu',
+                 layer_norm_eps=1e-12):
         super().__init__(prefix=prefix, params=params)
         assert units % num_heads == 0,\
             'In BERTEncoder, The units should be divided exactly ' \
@@ -284,13 +282,11 @@ class BERTEncoderCell(HybridBlock):
 
     """
 
-    def __init__(self, attention_cell='multi_head', units=128, hidden_size=512, num_heads=4,
+    def __init__(self, *, attention_cell='multi_head', units=128, hidden_size=512, num_heads=4,
                  scaled=True, dropout=0.0, use_residual=True, output_attention=False,
                  weight_initializer=None, bias_initializer='zeros', prefix=None, params=None,
                  activation='gelu', layer_norm_eps=1e-12):
         super().__init__(prefix=prefix, params=params)
-        self._units = units
-        self._num_heads = num_heads
         self._dropout = dropout
         self._use_residual = use_residual
         self._output_attention = output_attention
@@ -425,7 +421,6 @@ class BERTModel(HybridBlock):
         self._use_classifier = use_classifier
         self._use_pooler = use_pooler
         self._use_token_type_embed = use_token_type_embed
-        self._vocab_size = vocab_size
         self._units = units
         self.encoder = encoder
         # Construct word embedding

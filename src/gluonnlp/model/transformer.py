@@ -87,7 +87,7 @@ class PositionwiseFFN(HybridBlock):
         Created if `None`.
     """
 
-    def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
+    def __init__(self, *, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
                  ffn1_dropout=False, activation='relu', layer_norm_eps=1e-5,
                  weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
@@ -189,11 +189,11 @@ class TransformerEncoderCell(HybridBlock):
             Shape (batch_size, length, C_out)
         - **additional_outputs**: the additional output of all the transformer encoder cell.
     """
-    def __init__(self, attention_cell='multi_head', units=128,
-                 hidden_size=512, num_heads=4, scaled=True,
-                 dropout=0.0, use_residual=True, output_attention=False,
-                 weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None, activation='relu', layer_norm_eps=1e-5):
+
+    def __init__(self, *, attention_cell='multi_head', units=128, hidden_size=512, num_heads=4,
+                 scaled=True, dropout=0.0, use_residual=True, output_attention=False,
+                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None,
+                 activation='relu', layer_norm_eps=1e-5):
         super().__init__(prefix=prefix, params=params)
         self._dropout = dropout
         self._use_residual = use_residual
@@ -213,7 +213,8 @@ class TransformerEncoderCell(HybridBlock):
                                  bias_initializer=bias_initializer,
                                  prefix='proj_')
             self.ffn = PositionwiseFFN(units=units, hidden_size=hidden_size, dropout=dropout,
-                                       use_residual=use_residual, weight_initializer=weight_initializer,
+                                       use_residual=use_residual,
+                                       weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer, activation=activation,
                                        layer_norm_eps=layer_norm_eps)
             self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=layer_norm_eps)
@@ -250,7 +251,7 @@ class TransformerEncoderCell(HybridBlock):
             additional_outputs.append(attention_weights)
         return outputs, additional_outputs
 
-class TransformerEncoder(HybridBlock):
+class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
     """Structure of the Transformer Encoder.
 
     Parameters
@@ -274,8 +275,10 @@ class TransformerEncoder(HybridBlock):
     dropout : float
         Dropout probability of the attention probabilities.
     use_residual : bool
-    output_attention: bool
+    output_attention: bool, default False
         Whether to output the attention weights
+    output_all_encodings: bool, default False
+        Whether to output encodings of all encoder's cells, or only the last one
     weight_initializer : str or Initializer
         Initializer for the input weights matrix, used for the linear
         transformation of the inputs.
@@ -299,12 +302,11 @@ class TransformerEncoder(HybridBlock):
             The attention weights will have shape (batch_size, length, mem_length) or
             (batch_size, num_heads, length, mem_length)
     """
-    def __init__(self, attention_cell='multi_head', num_layers=2,
-                 units=512, hidden_size=2048, max_length=50,
-                 num_heads=4, scaled=True, dropout=0.0,
-                 use_residual=True, output_attention=False,
-                 weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
+
+    def __init__(self, *, attention_cell='multi_head', num_layers=2, units=512, hidden_size=2048,
+                 max_length=50, num_heads=4, scaled=True, dropout=0.0, use_residual=True,
+                 output_attention=False, output_all_encodings=False, weight_initializer=None,
+                 bias_initializer='zeros', prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         assert units % num_heads == 0,\
             'In TransformerEncoder, The units should be divided exactly ' \
@@ -320,15 +322,15 @@ class TransformerEncoder(HybridBlock):
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
             self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=1e-5)
-            self.position_weight = self.params.get_constant('const', _position_encoding_init(max_length, units))
+            self.position_weight = self.params.get_constant(
+                'const', _position_encoding_init(max_length, units))
             self.transformer_cells = nn.HybridSequential()
             for i in range(num_layers):
                 cell = TransformerEncoderCell(
                     units=units, hidden_size=hidden_size, num_heads=num_heads,
                     attention_cell=attention_cell, weight_initializer=weight_initializer,
                     bias_initializer=bias_initializer, dropout=dropout, use_residual=use_residual,
-                    scaled=scaled, output_attention=output_attention, prefix='transformer%d_' % i,
-                    activation=activation, layer_norm_eps=layer_norm_eps)
+                    scaled=scaled, output_attention=output_attention, prefix='transformer%d_' % i)
                 self.transformer_cells.add(cell)
 
     def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
