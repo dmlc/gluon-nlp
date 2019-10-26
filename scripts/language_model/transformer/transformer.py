@@ -586,7 +586,7 @@ class _BaseXLNet(mx.gluon.HybridBlock):
             Memory from previous forward passes containing
             `num_layers` `NDArray`s or `Symbol`s each of shape [batch_size,
             memory_length, units].
-            
+
         Returns
         -------
         core_out : NDArray or Symbol
