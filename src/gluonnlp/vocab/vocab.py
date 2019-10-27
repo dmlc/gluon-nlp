@@ -512,8 +512,9 @@ class Vocab:
         return self[tokens]
 
     def __repr__(self):
-        return 'Vocab(size={}, unk="{}", reserved="{}")'.format(len(self), self._unknown_token,
-                                                                self._reserved_tokens)
+        unk = '"{}"'.format(self._unknown_token) if self._unknown_token else 'None'
+        reserved = '"{}"'.format(self._reserved_tokens) if self._reserved_tokens else 'None'
+        return 'Vocab(size={}, unk={}, reserved={})'.format(len(self), unk, reserved)
 
     def to_json(self):
         """Serialize Vocab object to json string.
