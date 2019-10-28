@@ -37,9 +37,11 @@ class NMTModel(Block):
     encoder : Seq2SeqEncoder
         Encoder that encodes the input sentence.
     decoder : Seq2SeqDecoder
-        Decoder that generates the predictions based on the output of the encoder.
+        Decoder used during training phase. The decoder generates predictions
+        based on the output of the encoder.
     one_step_ahead_decoder : Seq2SeqOneStepDecoder
-        Decoder that generates the one-step ahead prediction based on the output of the encoder.
+        One-step ahead decoder used during inference phase. The decoder
+        generates predictions based on the output of the encoder.
     embed_size : int or None, default None
         Size of the embedding vectors. It is used to generate the source and target embeddings
         if src_embed and tgt_embed are None.

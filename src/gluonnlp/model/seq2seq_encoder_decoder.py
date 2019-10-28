@@ -130,6 +130,7 @@ def _nested_sequence_last(data, valid_length):
 class Seq2SeqEncoder(Block):
     r"""Base class of the encoders in sequence to sequence learning models.
     """
+
     def __call__(self, inputs, valid_length=None, states=None):  #pylint: disable=arguments-differ
         """Encode the input sequence.
 
@@ -155,13 +156,14 @@ class Seq2SeqEncoder(Block):
 
 
 class Seq2SeqDecoder(Block):
-    """Base class of the decoders in sequence to sequence learning models.
+    """Base class of the decoders for sequence to sequence learning models.
 
     Given the inputs and the context computed by the encoder, generate the new
-    states. This is usually used in the training phase where we set the inputs
-    to be the target sequence.
+    states. Used in the training phase where we set the inputs to be the target
+    sequence.
 
     """
+
     def init_state_from_encoder(self, encoder_outputs, encoder_valid_length=None):
         r"""Generates the initial decoder states based on the encoder outputs.
 
@@ -177,9 +179,10 @@ class Seq2SeqDecoder(Block):
         raise NotImplementedError
 
     def forward(self, step_input, states, valid_length=None):  #pylint: disable=arguments-differ
-        """Given the inputs and the context computed by the encoder,
-        generate the new states. This is usually used in the training phase where we set the inputs
-        to be the target sequence.
+        """Given the inputs and the context computed by the encoder, generate the new states.
+
+        Used in the training phase where we set the inputs to be the target
+        sequence.
 
         Parameters
         ----------
@@ -197,6 +200,7 @@ class Seq2SeqDecoder(Block):
             The new states of the decoder
         additional_outputs : list
             Additional outputs of the decoder, e.g, the attention weights
+
         """
         raise NotImplementedError
 
@@ -207,6 +211,7 @@ class Seq2SeqOneStepDecoder(Block):
     In the forward function, it generates the one-step-ahead decoding output.
 
     """
+
     def init_state_from_encoder(self, encoder_outputs, encoder_valid_length=None):
         r"""Generates the initial decoder states based on the encoder outputs.
 
