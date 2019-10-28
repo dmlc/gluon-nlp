@@ -69,15 +69,19 @@ class CacheCell(HybridBlock):
         with self.name_scope():
             self.lm_model = lm_model
 
-    def save_parameters(self, filename):
+    def save_parameters(self, filename, deduplicate=False):
         """Save parameters to file.
 
         filename : str
             Path to file.
+        deduplicate : bool, default False
+            If True, save shared parameters only once. Otherwise, if a Block
+            contains multiple sub-blocks that share parameters, each of the
+            shared parameters will be separately saved for every sub-block.
         """
-        self.lm_model.save_parameters(filename)
+        self.lm_model.save_parameters(filename, deduplicate=deduplicate)
 
-    def load_parameters(self, filename, ctx=mx.cpu()): # pylint: disable=arguments-differ
+    def load_parameters(self, filename, ctx=mx.cpu()):  # pylint: disable=arguments-differ
         """Load parameters from file.
 
         filename : str
