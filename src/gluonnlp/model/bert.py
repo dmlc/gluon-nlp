@@ -17,9 +17,8 @@
 """BERT models."""
 # pylint: disable=too-many-lines
 
-__all__ = ['BERTModel', 'RoBERTaModel', 'BERTEncoder', 'BERTEncoderCell',
-           'BERTClassifier', 'RoBERTaClassifier',
-           'bert_12_768_12', 'bert_24_1024_16',
+__all__ = ['BERTModel', 'RoBERTaModel', 'BERTEncoder', 'BERTClassifier',
+           'RoBERTaClassifier', 'bert_12_768_12', 'bert_24_1024_16',
            'ernie_12_768_12', 'roberta_12_768_12', 'roberta_24_1024_16']
 
 import os
@@ -30,8 +29,8 @@ from mxnet.gluon.model_zoo import model_store
 
 from ..base import get_home_dir
 from .block import GELU
-from .seq2seq_encoder_decoder import Seq2SeqEncoder, _get_attention_cell
-from .transformer import PositionwiseFFN
+from .seq2seq_encoder_decoder import Seq2SeqEncoder
+from .transformer import TransformerEncoderCell
 from .utils import _load_pretrained_params, _load_vocab
 
 ###############################################################################
@@ -122,11 +121,12 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
                                                    init=weight_initializer)
             self.transformer_cells = nn.HybridSequential()
             for i in range(num_layers):
-                cell = BERTEncoderCell(
+                cell = TransformerEncoderCell(
                     units=units, hidden_size=hidden_size, num_heads=num_heads,
                     attention_cell=attention_cell, weight_initializer=weight_initializer,
                     bias_initializer=bias_initializer, dropout=dropout, use_residual=use_residual,
-                    scaled=scaled, output_attention=output_attention, prefix='transformer%d_' % i,
+                    attention_proj_use_bias=True, attention_use_bias=True, scaled=scaled,
+                    output_attention=output_attention, prefix='transformer%d_' % i,
                     activation=activation, layer_norm_eps=layer_norm_eps)
                 self.transformer_cells.add(cell)
 
@@ -240,103 +240,6 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         else:
             return outputs, additional_outputs
 
-
-class BERTEncoderCell(HybridBlock):
-    """BERT Encoder Cell.
-
-    Different from the original encoder for transformer, `BERTEncoderCell` uses
-    learnable positional embedding, a 'gelu' activation functions and a
-    separate epsilon value for LayerNorm.
-
-    Parameters
-    ----------
-    attention_cell : AttentionCell or str, default 'multi_head'
-        Arguments of the attention cell.
-        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
-    units : int
-        Number of units for the output
-    hidden_size : int
-        number of units in the hidden layer of position-wise feed-forward networks
-    num_heads : int
-        Number of heads in multi-head attention
-    scaled : bool
-        Whether to scale the softmax input by the sqrt of the input dimension
-        in multi-head attention
-    dropout : float
-    use_residual : bool
-    output_attention: bool
-        Whether to output the attention weights
-    weight_initializer : str or Initializer
-        Initializer for the input weights matrix, used for the linear
-        transformation of the inputs.
-    bias_initializer : str or Initializer
-        Initializer for the bias vector.
-    prefix : str, default None
-        Prefix for name of `Block`s. (and name of weight if params is `None`).
-    params : Parameter or None
-        Container for weight sharing between cells. Created if `None`.
-    activation : str, default 'gelu'
-        Activation method parameter passed to PositionwiseFFN
-    layer_norm_eps : float, default 1e-12
-        Epsilon parameter passed to for mxnet.gluon.nn.LayerNorm
-
-    """
-
-    def __init__(self, *, attention_cell='multi_head', units=128, hidden_size=512, num_heads=4,
-                 scaled=True, dropout=0.0, use_residual=True, output_attention=False,
-                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None,
-                 activation='gelu', layer_norm_eps=1e-12):
-        super().__init__(prefix=prefix, params=params)
-        self._dropout = dropout
-        self._use_residual = use_residual
-        self._output_attention = output_attention
-        with self.name_scope():
-            if dropout:
-                self.dropout_layer = nn.Dropout(rate=dropout)
-            self.attention_cell = _get_attention_cell(attention_cell, units=units,
-                                                      num_heads=num_heads, scaled=scaled,
-                                                      dropout=dropout, use_bias=True)
-            self.proj = nn.Dense(units=units, flatten=False, use_bias=True,
-                                 weight_initializer=weight_initializer,
-                                 bias_initializer=bias_initializer, prefix='proj_')
-            self.ffn = PositionwiseFFN(units=units, hidden_size=hidden_size, dropout=dropout,
-                                       use_residual=use_residual,
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer, activation=activation,
-                                       layer_norm_eps=layer_norm_eps)
-            self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=layer_norm_eps)
-
-    def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=arguments-differ
-        # pylint: disable=unused-argument
-        """Transformer Encoder Attention Cell.
-
-        Parameters
-        ----------
-        inputs : Symbol or NDArray
-            Input sequence. Shape (batch_size, length, C_in)
-        mask : Symbol or NDArray or None
-            Mask for inputs. Shape (batch_size, length, length)
-
-        Returns
-        -------
-        encoder_cell_outputs: list
-            Outputs of the encoder cell. Contains:
-
-            - outputs of the transformer encoder cell. Shape (batch_size, length, C_out)
-            - additional_outputs of all the transformer encoder cell
-        """
-        outputs, attention_weights = self.attention_cell(inputs, inputs, inputs, mask)
-        outputs = self.proj(outputs)
-        if self._dropout:
-            outputs = self.dropout_layer(outputs)
-        if self._use_residual:
-            outputs = outputs + inputs
-        outputs = self.layer_norm(outputs)
-        outputs = self.ffn(outputs)
-        additional_outputs = []
-        if self._output_attention:
-            additional_outputs.append(attention_weights)
-        return outputs, additional_outputs
 
 ###############################################################################
 #                                FULL MODEL                                   #

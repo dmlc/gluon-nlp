@@ -168,6 +168,10 @@ class TransformerEncoderCell(HybridBlock):
     use_residual : bool
     output_attention: bool
         Whether to output the attention weights
+    attention_use_bias : bool, default False
+        Whether to use bias when projecting the query/key/values in the attention cell.
+    attention_proj_use_bias : bool, default False
+        Whether to use bias when projecting the output of the attention cell.
     weight_initializer : str or Initializer
         Initializer for the input weights matrix, used for the linear
         transformation of the inputs.
@@ -194,8 +198,9 @@ class TransformerEncoderCell(HybridBlock):
 
     def __init__(self, *, attention_cell='multi_head', units=128, hidden_size=512, num_heads=4,
                  scaled=True, dropout=0.0, use_residual=True, output_attention=False,
-                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None,
-                 activation='relu', layer_norm_eps=1e-5):
+                 attention_proj_use_bias=False, attention_use_bias=False, weight_initializer=None,
+                 bias_initializer='zeros', prefix=None, params=None, activation='relu',
+                 layer_norm_eps=1e-5):
         super().__init__(prefix=prefix, params=params)
         self._dropout = dropout
         self._use_residual = use_residual
@@ -203,17 +208,12 @@ class TransformerEncoderCell(HybridBlock):
         with self.name_scope():
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
-            self.attention_cell = _get_attention_cell(attention_cell,
-                                                      units=units,
-                                                      num_heads=num_heads,
-                                                      scaled=scaled,
-                                                      dropout=dropout,
-                                                      use_bias=False)
-            self.proj = nn.Dense(units=units, flatten=False,
-                                 use_bias=False,
+            self.attention_cell = _get_attention_cell(attention_cell, units=units,
+                                                      num_heads=num_heads, scaled=scaled,
+                                                      dropout=dropout, use_bias=attention_use_bias)
+            self.proj = nn.Dense(units=units, flatten=False, use_bias=attention_proj_use_bias,
                                  weight_initializer=weight_initializer,
-                                 bias_initializer=bias_initializer,
-                                 prefix='proj_')
+                                 bias_initializer=bias_initializer, prefix='proj_')
             self.ffn = PositionwiseFFN(units=units, hidden_size=hidden_size, dropout=dropout,
                                        use_residual=use_residual,
                                        weight_initializer=weight_initializer,

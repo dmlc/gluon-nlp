@@ -72,7 +72,6 @@ Components
 
     BERTModel
     BERTEncoder
-    BERTEncoderCell
 
 Pre-defined models
 
