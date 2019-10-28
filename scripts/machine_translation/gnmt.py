@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Encoder and decoder usded in sequence-to-sequence learning."""
-__all__ = ['GNMTEncoder', 'GNMTDecoder', 'get_gnmt_encoder_decoder']
+__all__ = ['GNMTEncoder', 'GNMTDecoder', 'GNMTOneStepDecoder', 'get_gnmt_encoder_decoder']
 
 import mxnet as mx
 from mxnet.base import _as_list
