@@ -113,7 +113,7 @@ class PositionwiseFFN(HybridBlock):
         if isinstance(act, str):
             if act.lower() == 'gelu':
                 return GELU()
-            elif act.lower() == 'gelutanh':
+            elif act.lower() == 'approx_gelu':
                 return GELU(use_erf=False)
             else:
                 return gluon.nn.Activation(act)
