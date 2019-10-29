@@ -519,9 +519,9 @@ class _BaseXLNet(mx.gluon.HybridBlock):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    prefix : str, default 'rnn_'
+    prefix : str, default None
         Prefix for name of `Block`s (and name of weight if params is `None`).
-    params : Parameter or None
+    params : ParameterDict or None
         Container for weight sharing between cells. Created if `None`.
 
     """
