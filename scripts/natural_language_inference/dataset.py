@@ -66,7 +66,7 @@ def prepare_data_loader(args, dataset, vocab, test=False):
                                 lazy=False)
 
     # Batching
-    batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(), btf.Stack(dtype='int32'))
+    batchify_fn = btf.Tuple(btf.Pad(pad_val=0), btf.Pad(pad_val=0), btf.Stack(dtype='int32'))
     data_lengths = [max(len(d[0]), len(d[1])) for d in dataset]
     batch_sampler = nlp.data.FixedBucketSampler(lengths=data_lengths,
                                                 batch_size=args.batch_size,

@@ -19,6 +19,7 @@ import functools
 import os
 import random
 import re
+import warnings
 
 import numpy as np
 import pytest
@@ -406,7 +407,8 @@ def test_token_embedding_from_file(tmpdir, allow_extend):
     my_embed['a'] = nd.array([1, 2, 3, 4, 5])
     assert_almost_equal(my_embed['a'].asnumpy(), np.array([1, 2, 3, 4, 5]))
     if allow_extend:
-        my_embed['unknown$$$'] = nd.array([0, 0, 0, 0, 0])
+        with pytest.warns(UserWarning):  # Should add multiple new tokens at a time
+            my_embed['unknown$$$'] = nd.array([0, 0, 0, 0, 0])
         assert_almost_equal(my_embed['unknown$$$'].asnumpy(), np.array([0, 0, 0, 0, 0]))
     else:
         with pytest.raises(KeyError):
@@ -780,7 +782,8 @@ def test_vocab_set_embedding_with_subword_lookup_only_token_embedding(
     if initialize and unknown_token:
         e[e.unknown_token] = nd.zeros(embsize)
     elif initialize and allow_extend:
-        e["hello"] = e.unknown_lookup["hello"]
+        with pytest.warns(UserWarning):  # encouraged to batch their updates
+            e["hello"] = e.unknown_lookup["hello"]
     else:  # Cannot initialize, even if initialize is True
         with pytest.raises(AssertionError):
             v.set_embedding(e)
@@ -893,7 +896,6 @@ def test_token_embedding_from_file_S3_with_custom_unknown_token(unknown_token):
 def test_token_embedding_from_S3_fasttext_with_ngrams(load_ngrams):
     embed = nlp.embedding.create('fasttext', source='wiki.simple',
                                  load_ngrams=load_ngrams, unknown_token=None)
-
     if load_ngrams:
         embed['$$$unknownword$$$']
     else:
@@ -979,7 +981,8 @@ def test_token_embedding_unknown_lookup(setinconstructor, lookup,
         assert 'hello' not in token_embedding.token_to_idx
 
         if allow_extend:
-            token_embedding['hello'] = token_embedding.unknown_lookup['hello']
+            with pytest.warns(UserWarning):  # encouraged to batch their updates
+                token_embedding['hello'] = token_embedding.unknown_lookup['hello']
             assert 'hello' in token_embedding.token_to_idx
             assert np.all(np.isclose(1, token_embedding['hello'].asnumpy()))
 
@@ -1012,11 +1015,13 @@ def test_token_embedding_manual_extension(initializeidxtovecbyextending,
 
     # Uninitialized token_embedding._idx_to_vec based
     token_embedding = TokEmb()
-    token_embedding['hello'] = nd.zeros(shape=(1, 5))
+    with pytest.warns(UserWarning):  # encouraged to batch their updates
+        token_embedding['hello'] = nd.zeros(shape=(1, 5))
     assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
 
     token_embedding = TokEmb()
-    token_embedding['hello'] = nd.zeros(shape=(5, ))
+    with pytest.warns(UserWarning):  # encouraged to batch their updates
+        token_embedding['hello'] = nd.zeros(shape=(5, ))
     assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
 
     token_embedding = TokEmb()
@@ -1035,34 +1040,35 @@ def test_token_embedding_manual_extension(initializeidxtovecbyextending,
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_token_embedding_serialization():
-    @nlp.embedding.register
-    class Test(nlp.embedding.TokenEmbedding):
-        # 33 bytes.
-        source_file_hash = \
-                {'embedding_test': ('embedding_test.vec',
-                                    '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8')}
-        namespace = 'test'
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        # UserWarning: New token embedding test_vocab_embed.Test registered
+        # with name test isoverriding existing token embedding
+        # test_vocab_embed.Test
 
-        def __init__(self, embedding_root=os.path.join(get_home_dir(), 'embedding'), **kwargs):
-            source = 'embedding_test'
-            Test._check_source(self.source_file_hash, source)
+        @nlp.embedding.register
+        class Test(nlp.embedding.TokenEmbedding):
+            # 33 bytes.
+            source_file_hash = \
+                    {'embedding_test': ('embedding_test.vec',
+                                        '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8')}
+            namespace = 'test'
 
-            file_path = Test._get_file_path(self.source_file_hash,
-                                            embedding_root, source)
+            def __init__(self, embedding_root=os.path.join(get_home_dir(), 'embedding'), **kwargs):
+                source = 'embedding_test'
+                Test._check_source(self.source_file_hash, source)
 
-            unknown_token = kwargs.pop('unknown_token', '<unk>')
-            init_unknown_vec = kwargs.pop('init_unknown_vec', nd.zeros)
-            idx_to_token, idx_to_vec, unknown_token = self._load_embedding(
-                file_path,
-                elem_delim=' ',
-                unknown_token=unknown_token,
-                init_unknown_vec=init_unknown_vec)
+                file_path = Test._get_file_path(self.source_file_hash, embedding_root, source)
 
-            super(Test, self).__init__(unknown_token=unknown_token,
-                                       init_unknown_vec=None,
-                                       idx_to_token=idx_to_token,
-                                       idx_to_vec=idx_to_vec,
-                                       **kwargs)
+                unknown_token = kwargs.pop('unknown_token', '<unk>')
+                init_unknown_vec = kwargs.pop('init_unknown_vec', nd.zeros)
+                idx_to_token, idx_to_vec, unknown_token = self._load_embedding(
+                    file_path, elem_delim=' ', unknown_token=unknown_token,
+                    init_unknown_vec=init_unknown_vec)
+
+                super(Test,
+                      self).__init__(unknown_token=unknown_token, init_unknown_vec=None,
+                                     idx_to_token=idx_to_token, idx_to_vec=idx_to_vec, **kwargs)
 
 
     emb = nlp.embedding.create('test')
@@ -1419,7 +1425,8 @@ def test_vocab_duplicate_special_tokens(unknown_token, padding_token,
 
 def test_vocab_backwards_compatibility_prior_v0_7_corrupted_index_bug():
     with open('tests/data/vocab/backward_compat_0_7_corrupted_index', 'r') as f:
-        v = nlp.Vocab.from_json(f.read())
+        with pytest.warns(UserWarning):  # Detected a corrupted index in the deserialize vocabulary
+            v = nlp.Vocab.from_json(f.read())
 
     assert len(set(v.idx_to_token)) == len(v.token_to_idx)
     assert v['<unk>'] == 0
@@ -1429,7 +1436,7 @@ def test_vocab_backwards_compatibility_prior_v0_7_corrupted_index_bug():
 
     assert v.idx_to_token[0] == '<unk>'
     assert v.idx_to_token[1] == '<eos>'  # corruption preserved for backward
-                                         # compatibility
+    # compatibility
     assert v.idx_to_token[2] == '<bos>'
     assert v.idx_to_token[3] == '<eos>'
     assert v.idx_to_token[4] == 'token'

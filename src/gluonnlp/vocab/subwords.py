@@ -224,14 +224,16 @@ class NGramHashes(SubwordFunction):
     @staticmethod
     def fasttext_hash_asbytes(ngram, encoding='utf-8'):
         ngram_enc = memoryview(ngram.encode(encoding))
-        return _fasttext_hash(ngram_enc)
+        with np.errstate(over='ignore'):  # overflow in uint_scalars is expected
+            return _fasttext_hash(ngram_enc)
 
     def _word_to_hashes(self, word):
         if word not in self.special_tokens:
             word_enc = bytearray(('<' + word + '>').encode('utf-8'))
-            hashes = _fasttext_ngram_hashes(
-                memoryview(word_enc), ns=self._ngrams,
-                bucket_size=self.num_subwords)
+            with np.errstate(over='ignore'):  # overflow in uint_scalars is expected
+                hashes = _fasttext_ngram_hashes(
+                    memoryview(word_enc), ns=self._ngrams,
+                    bucket_size=self.num_subwords)
         else:
             hashes = []
         return hashes
