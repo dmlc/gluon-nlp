@@ -33,25 +33,25 @@ This example shows how to implement the Transformer model with Gluon NLP Toolkit
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import argparse
-import time
-import random
-import os
 import logging
 import math
+import os
+import random
+import time
+
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
+
 import gluonnlp as nlp
-
-from gluonnlp.loss import MaskedSoftmaxCELoss, LabelSmoothing
+from gluonnlp.loss import LabelSmoothing, MaskedSoftmaxCELoss
+from gluonnlp.model.transformer import ParallelTransformer, get_transformer_encoder_decoder
 from gluonnlp.model.translation import NMTModel
-from gluonnlp.model.transformer import get_transformer_encoder_decoder, ParallelTransformer
 from gluonnlp.utils.parallel import Parallel
-from translation import BeamSearchTranslator
-
-from utils import logging_config
-from bleu import _bpe_to_words, compute_bleu
 import dataprocessor
+from bleu import _bpe_to_words, compute_bleu
+from translation import BeamSearchTranslator
+from utils import logging_config
 
 np.random.seed(100)
 random.seed(100)
@@ -174,15 +174,12 @@ if args.tgt_max_len > 0:
     tgt_max_len = args.tgt_max_len
 else:
     tgt_max_len = max_len[1]
-encoder, decoder = get_transformer_encoder_decoder(units=args.num_units,
-                                                   hidden_size=args.hidden_size,
-                                                   dropout=args.dropout,
-                                                   num_layers=args.num_layers,
-                                                   num_heads=args.num_heads,
-                                                   max_src_length=max(src_max_len, 500),
-                                                   max_tgt_length=max(tgt_max_len, 500),
-                                                   scaled=args.scaled)
+encoder, decoder, one_step_ahead_decoder = get_transformer_encoder_decoder(
+    units=args.num_units, hidden_size=args.hidden_size, dropout=args.dropout,
+    num_layers=args.num_layers, num_heads=args.num_heads, max_src_length=max(src_max_len, 500),
+    max_tgt_length=max(tgt_max_len, 500), scaled=args.scaled)
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
+                 one_step_ahead_decoder=one_step_ahead_decoder,
                  share_embed=args.dataset not in ('TOY', 'IWSLT2015'), embed_size=args.num_units,
                  tie_weights=args.dataset not in ('TOY', 'IWSLT2015'), embed_initializer=None,
                  prefix='transformer_')

@@ -154,17 +154,14 @@ if args.tgt_max_len > 0:
 else:
     tgt_max_len = max_len[1]
 
-encoder, decoder = get_transformer_encoder_decoder(units=args.num_units,
-                                                   hidden_size=args.hidden_size,
-                                                   dropout=args.dropout,
-                                                   num_layers=args.num_layers,
-                                                   num_heads=args.num_heads,
-                                                   max_src_length=max(src_max_len, 500),
-                                                   max_tgt_length=max(tgt_max_len, 500),
-                                                   scaled=args.scaled)
+encoder, decoder, one_step_ahead_decoder = get_transformer_encoder_decoder(
+    units=args.num_units, hidden_size=args.hidden_size, dropout=args.dropout,
+    num_layers=args.num_layers, num_heads=args.num_heads, max_src_length=max(src_max_len, 500),
+    max_tgt_length=max(tgt_max_len, 500), scaled=args.scaled)
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
-                 share_embed=args.dataset != 'TOY', embed_size=args.num_units,
-                 tie_weights=args.dataset != 'TOY', embed_initializer=None, prefix='transformer_')
+                 one_step_ahead_decoder=one_step_ahead_decoder, share_embed=args.dataset != 'TOY',
+                 embed_size=args.num_units, tie_weights=args.dataset != 'TOY',
+                 embed_initializer=None, prefix='transformer_')
 
 param_name = args.model_parameter
 if (not os.path.exists(param_name)):
