@@ -599,7 +599,7 @@ def train(metric):
         # assuming higher score stands for better model quality
         metric_history.sort(key=lambda x: x[2][0], reverse=True)
         epoch_id, metric_nm, metric_val = metric_history[0]
-        ckpt_name = 'model_bert_{0}_{1}.params'.format(task_name, epoch_id)
+        ckpt_name = 'model_xlnet_{0}_{1}.params'.format(task_name, epoch_id)
         params_saved = os.path.join(output_dir, ckpt_name)
         nlp.utils.load_parameters(model, params_saved)
         metric_str = 'Best model at epoch {}. Validation metrics:'.format(epoch_id)
