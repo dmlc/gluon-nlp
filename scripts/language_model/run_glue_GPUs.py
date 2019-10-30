@@ -563,7 +563,8 @@ def train(metric):
                     if accumulate and accumulate > 1:
                         # set grad to zero for gradient accumulation
                         all_model_params.zero_grad()
-                batch_loss = mx.ndarray.sum(batch_loss, axis=-1)
+
+                batch_loss = mx.ndarray.sum(mx.ndarray(batch_loss), axis=-1)
                 step_loss += batch_loss.asscalar()
                 metric.update(label_list, out_list)
                 if (batch_id + 1) % (args.log_interval) == 0:
@@ -634,7 +635,7 @@ def evaluate(loader_dev, metric, segment):
             out_list.append(o)
             label_list.append(label)
 
-        batch_loss = mx.ndarray.sum(batch_loss, axis=-1)
+        batch_loss = mx.ndarray.sum(mx.ndarray(batch_loss), axis=-1)
         step_loss += batch_loss.asscalar()
         metric.update(label_list, out_list)
 
