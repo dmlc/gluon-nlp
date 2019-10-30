@@ -96,11 +96,16 @@ class GELU(HybridBlock):
     This is a smoother version of the RELU.
     https://arxiv.org/abs/1606.08415
 
+    Parameters
+    ----------
+    approximate : bool, default False
+        If True, use tanh approximation to calculate gelu. If False, use erf.
+
     """
 
-    def __init__(self, use_erf=True, prefix=None, params=None):
+    def __init__(self, approximate=False, prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
-        self._use_erf = use_erf
+        self._approximate = approximate
 
     def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
         """
@@ -112,7 +117,7 @@ class GELU(HybridBlock):
         Outputs:
             - **out**: output tensor with the same shape as `data`.
         """
-        if self._use_erf:
+        if not self._approximate:
             return x * 0.5 * (1.0 + F.erf(x / math.sqrt(2.0)))
         else:
             return 0.5 * x * (1 + F.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * (x ** 3))))

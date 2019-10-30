@@ -114,7 +114,7 @@ class PositionwiseFFN(HybridBlock):
             if act.lower() == 'gelu':
                 return GELU()
             elif act.lower() == 'approx_gelu':
-                return GELU(use_erf=False)
+                return GELU(approximate=True)
             else:
                 return gluon.nn.Activation(act)
         assert isinstance(act, gluon.Block)
