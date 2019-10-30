@@ -416,7 +416,7 @@ def test(loader_test, segment):
     tic = time.time()
     results = []
     for _, seqs in enumerate(loader_test):
-        batch_loss = 0
+        batch_loss = []
         out_list = []
         label_list = []
         # forward and backward
@@ -425,7 +425,7 @@ def test(loader_test, segment):
             parallel.put(data_list[i])
         for i in range(len(data_list)):
             ls_p, o, label = parallel.get()
-            batch_loss += ls_p
+            batch_loss.append(ls_p)
             out_list.append(o)
             label_list.append(label)
         out = mx.ndarray.stack(out_list)
@@ -531,7 +531,7 @@ def train(metric):
                     offset = non_warmup_steps / (num_train_steps - num_warmup_steps)
                     new_lr = lr - offset * lr
                 trainer.set_learning_rate(new_lr)
-                batch_loss = 0
+                batch_loss = []
                 out_list = []
                 label_list = []
                 # forward and backward
@@ -545,7 +545,7 @@ def train(metric):
                         parallel.put(data_list[i])
                     for i in range(len(data_list)):
                         ls_p, o, label = parallel.get()
-                        batch_loss += ls_p
+                        batch_loss.append(ls_p)
                         out_list.append(o)
                         label_list.append(label)
                     # if args.dtype == 'float16':
@@ -563,7 +563,7 @@ def train(metric):
                     if accumulate and accumulate > 1:
                         # set grad to zero for gradient accumulation
                         all_model_params.zero_grad()
-
+                batch_loss = mx.ndarray.sum(batch_loss, axis=-1)
                 step_loss += batch_loss.asscalar()
                 metric.update(label_list, out_list)
                 if (batch_id + 1) % (args.log_interval) == 0:
@@ -617,7 +617,7 @@ def evaluate(loader_dev, metric, segment):
     step_loss = 0
     tic = time.time()
     for batch_id, seqs in enumerate(loader_dev):
-        batch_loss = 0
+        batch_loss = []
         out_list = []
         label_list = []
         # forward and backward
@@ -630,10 +630,11 @@ def evaluate(loader_dev, metric, segment):
             parallel.put(data_list[i])
         for i in range(len(data_list)):
             ls_p, o, label = parallel.get()
-            batch_loss += ls_p
+            batch_loss.append(ls_p)
             out_list.append(o)
             label_list.append(label)
 
+        batch_loss = mx.ndarray.sum(batch_loss, axis=-1)
         step_loss += batch_loss.asscalar()
         metric.update(label_list, out_list)
 
