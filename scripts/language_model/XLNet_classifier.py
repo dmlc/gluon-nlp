@@ -21,7 +21,7 @@ class XLNetClassifier(Block):
             self.pooler = nn.Dense(units=units, flatten=False, activation='tanh',
                               prefix=prefix)
 
-    def __call__(self, inputs, token_types, mems = None, valid_length=None):
+    def __call__(self, inputs, token_types, valid_length=None,mems = None):
         # pylint: disable=dangerous-default-value, arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
@@ -40,7 +40,7 @@ class XLNetClassifier(Block):
         outputs : NDArray or Symbol
             Shape (batch_size, num_classes)
         """
-        return super(XLNetClassifier, self).__call__(inputs, token_types, mems, valid_length)
+        return super(XLNetClassifier, self).__call__(inputs, token_types, valid_length, mems)
 
     def _apply_pooling(self, sequence):
         """Generate the representation given the inputs.
@@ -49,10 +49,12 @@ class XLNetClassifier(Block):
         """
         # for xlnet, we take the last hidden state
         outputs = sequence.slice(begin=(0, -1, 0), end=(None, -2, None), step=(None, -1, None))
+        #print("pooling: ", outputs.shape)
         outputs = outputs.reshape(shape=(-1, self._units))
         return self.pooler(outputs)
 
     def _padding_mask(self, inputs, valid_length_start):
+        #we are using left pad
         F = mx.ndarray
         valid_length_start = valid_length_start.astype('int32')
         steps = F.contrib.arange_like(inputs, axis=1)
@@ -63,7 +65,7 @@ class XLNetClassifier(Block):
                                F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
         return mask
 
-    def forward(self, inputs, token_types, mems = None , valid_length=None):
+    def forward(self, inputs, token_types, valid_length=None,mems = None):
         # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 

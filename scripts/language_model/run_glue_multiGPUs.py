@@ -97,10 +97,10 @@ parser.add_argument(
     help='The number of batches for gradients accumulation to simulate large batch size. '
          'Default is None')
 parser.add_argument(
-    '--gpu', type=int, default=None, help='Which gpu for finetuning.')
+    '--gpu', type=int, default=None, help='Number of gpus for finetuning.')
 parser.add_argument(
     '--task_name',
-    default='MRPC',
+    default='QQP',
     type=str,
     help='The name of the task to fine-tune.')
 
@@ -178,8 +178,9 @@ np.random.seed(args.seed)
 random.seed(args.seed)
 mx.random.seed(args.seed)
 
-ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
+#ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 
+ctx = mx.cpu(0)
 task = tasks[task_name]
 
 # data type with mixed precision training
@@ -352,7 +353,7 @@ def test(loader_test, segment):
         input_ids, valid_length, segment_ids = seqs
         input_ids = input_ids.as_in_context(ctx)
         valid_length = valid_length.as_in_context(ctx).astype('float32')
-        out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
+        out = model(input_ids, segment_ids.as_in_context(ctx), valid_length=valid_length)
 
         if not task.class_labels:
             # regression task
@@ -442,58 +443,54 @@ def train(metric):
         if args.early_stop and patience == 0:
             logging.info('Early stopping at epoch %d', epoch_id)
             break
-        if not only_inference:
-            metric.reset()
-            step_loss = 0
-            tic = time.time()
-            all_model_params.zero_grad()
-            for batch_id, seqs in enumerate(train_data):
-                # learning rate schedule
-                if step_num < num_warmup_steps:
-                    new_lr = lr * step_num / num_warmup_steps
-                else:
-                    non_warmup_steps = step_num - num_warmup_steps
-                    offset = non_warmup_steps / (num_train_steps - num_warmup_steps)
-                    new_lr = lr - offset * lr
-                trainer.set_learning_rate(new_lr)
-
-                # forward and backward
-                with mx.autograd.record():
-                    input_ids, valid_length, segment_ids, label = seqs
-                    input_ids = input_ids.as_in_context(ctx)
-                    valid_length = valid_length.as_in_context(ctx).astype('float32')
-                    segment_ids = segment_ids.as_in_context(ctx)
-                    label = label.as_in_context(ctx)
-                    # print(input_ids[0])
-                    # print(segment_ids[0])
-                    # print(valid_length[0])
-                    # print(label.shape)
-                    # assert 1==2
-                    out = model(input_ids, segment_ids, valid_length=valid_length)
-                    ls = loss_function(out, label).mean()
-                    if args.dtype == 'float16':
-                        with amp.scale_loss(ls, trainer) as scaled_loss:
-                            mx.autograd.backward(scaled_loss)
-                    else:
-                        ls.backward()
-
-                # update
-                if not accumulate or (batch_id + 1) % accumulate == 0:
-                    trainer.allreduce_grads()
-                    nlp.utils.clip_grad_global_norm(params, 1)
-                    trainer.update(accumulate if accumulate else 1)
-                    step_num += 1
-                    if accumulate and accumulate > 1:
-                        # set grad to zero for gradient accumulation
-                        all_model_params.zero_grad()
-
-                step_loss += ls.asscalar()
-                metric.update([label], [out])
-                if (batch_id + 1) % (args.log_interval) == 0:
-                    log_train(batch_id, len(train_data), metric, step_loss, args.log_interval,
-                              epoch_id, trainer.learning_rate)
-                    step_loss = 0
-            mx.nd.waitall()
+        # if not only_inference:
+        #     metric.reset()
+        #     step_loss = 0
+        #     tic = time.time()
+        #     all_model_params.zero_grad()
+        #     for batch_id, seqs in enumerate(train_data):
+        #         # learning rate schedule
+        #         if step_num < num_warmup_steps:
+        #             new_lr = lr * step_num / num_warmup_steps
+        #         else:
+        #             non_warmup_steps = step_num - num_warmup_steps
+        #             offset = non_warmup_steps / (num_train_steps - num_warmup_steps)
+        #             new_lr = lr - offset * lr
+        #         trainer.set_learning_rate(new_lr)
+        #
+        #         # forward and backward
+        #         with mx.autograd.record():
+        #             input_ids, valid_length, segment_ids, label = seqs
+        #             input_ids = input_ids.as_in_context(ctx)
+        #             valid_length = valid_length.as_in_context(ctx).astype('float32')
+        #             segment_ids = segment_ids.as_in_context(ctx)
+        #             label = label.as_in_context(ctx)
+        #
+        #             out = model(input_ids, segment_ids, valid_length=valid_length)
+        #             ls = loss_function(out, label).mean()
+        #             if args.dtype == 'float16':
+        #                 with amp.scale_loss(ls, trainer) as scaled_loss:
+        #                     mx.autograd.backward(scaled_loss)
+        #             else:
+        #                 ls.backward()
+        #
+        #         # update
+        #         if not accumulate or (batch_id + 1) % accumulate == 0:
+        #             trainer.allreduce_grads()
+        #             nlp.utils.clip_grad_global_norm(params, 1)
+        #             trainer.update(accumulate if accumulate else 1)
+        #             step_num += 1
+        #             if accumulate and accumulate > 1:
+        #                 # set grad to zero for gradient accumulation
+        #                 all_model_params.zero_grad()
+        #
+        #         step_loss += ls.asscalar()
+        #         metric.update([label], [out])
+        #         if (batch_id + 1) % (args.log_interval) == 0:
+        #             log_train(batch_id, len(train_data), metric, step_loss, args.log_interval,
+        #                       epoch_id, trainer.learning_rate)
+        #             step_loss = 0
+        #     mx.nd.waitall()
 
         # inference on dev data
         for segment, dev_data in dev_data_list:
@@ -544,7 +541,7 @@ def evaluate(loader_dev, metric, segment):
         input_ids = input_ids.as_in_context(ctx)
         valid_length = valid_length.as_in_context(ctx).astype('float32')
         label = label.as_in_context(ctx)
-        out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
+        out = model(input_ids, segment_ids.as_in_context(ctx), valid_length=valid_length)
         ls = loss_function(out, label).mean()
 
         step_loss += ls.asscalar()
