@@ -274,9 +274,15 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
     scaled : bool
         Whether to scale the softmax input by the sqrt of the input dimension
         in multi-head attention
+    scale_inputs : bool, default True
+        Whether to scale the input embeddings by the sqrt of the `units`.
+    norm_inputs : bool, default True
+        Whether to normalize the input embeddings with Layernorm. If dropout is
+        enabled, normalization happens after dropout is applied to inputs.
     dropout : float
         Dropout probability of the attention probabilities.
     use_residual : bool
+        Whether to use residual connection.
     output_attention: bool, default False
         Whether to output the attention weights
     output_all_encodings: bool, default False
@@ -306,9 +312,9 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
     """
 
     def __init__(self, *, attention_cell='multi_head', num_layers=2, units=512, hidden_size=2048,
-                 max_length=50, num_heads=4, scaled=True, dropout=0.0, use_residual=True,
-                 output_attention=False, output_all_encodings=False, weight_initializer=None,
-                 bias_initializer='zeros', prefix=None, params=None):
+                 max_length=50, num_heads=4, scaled=True, scale_inputs=True, norm_inputs=True,
+                 dropout=0.0, use_residual=True, output_attention=False, output_all_encodings=False,
+                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         assert units % num_heads == 0,\
             'In TransformerEncoder, The units should be divided exactly ' \
@@ -319,6 +325,8 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         self._output_attention = output_attention
         self._output_all_encodings = output_all_encodings
         self._dropout = dropout
+        self._scale_inputs = scale_inputs
+        self._norm_inputs = norm_inputs
 
         with self.name_scope():
             if dropout:
@@ -407,22 +415,22 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         else:
             mask = None
 
-        # XXX: input.shape[-1] and self._units are expected to be the same
-        # Scale embedding
-        inputs = inputs * math.sqrt(self._units)
-
         if states is None:
             states = [steps]
         else:
             states.append(steps)
 
-        # positional encoding
+        if self._scale_inputs:
+            inputs = inputs * math.sqrt(self._units)
+        # Positional encoding
         positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
         inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
 
         if self._dropout:
             inputs = self.dropout_layer(inputs)
-        inputs = self.layer_norm(inputs)
+
+        if self._norm_inputs:
+            inputs = self.layer_norm(inputs)
 
         all_encodings_outputs = []
         additional_outputs = []
@@ -445,8 +453,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
 
         if self._output_all_encodings:
             return all_encodings_outputs, additional_outputs
-        else:
-            return outputs, additional_outputs
+        return outputs, additional_outputs
 
 ###############################################################################
 #                                DECODER                                      #

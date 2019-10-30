@@ -211,9 +211,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
 
         if self._dropout:
             inputs = self.dropout_layer(inputs)
-            inputs = self.layer_norm(inputs)
-        else:
-            inputs = self.layer_norm(inputs)
+        inputs = self.layer_norm(inputs)
         outputs = inputs
 
         all_encodings_outputs = []
@@ -237,8 +235,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
 
         if self._output_all_encodings:
             return all_encodings_outputs, additional_outputs
-        else:
-            return outputs, additional_outputs
+        return outputs, additional_outputs
 
 
 ###############################################################################
