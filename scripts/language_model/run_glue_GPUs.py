@@ -553,7 +553,7 @@ def train(metric):
                     #         mx.autograd.backward(scaled_loss)
                     # else:
                     #     ls.backward()
-                    
+
                 batch_loss = sum([ls.asscalar() for ls in batch_loss])
                 # print(batch_loss)
                 step_loss += batch_loss
@@ -561,7 +561,7 @@ def train(metric):
                 if not accumulate or (batch_id + 1) % accumulate == 0:
                     trainer.allreduce_grads()
                     nlp.utils.clip_grad_global_norm(params, 1)
-                    trainer.update(accumulate if accumulate else 1)
+                    trainer.update(accumulate if accumulate else 1,ignore_stale_grad=True)
                     step_num += 1
                     if accumulate and accumulate > 1:
                         # set grad to zero for gradient accumulation
