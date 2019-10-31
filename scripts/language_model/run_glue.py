@@ -548,10 +548,10 @@ def train(metric):
                 batch_loss = []
                 out_list = []
                 label_list = []
-                data_len = len(data_list)
                 # forward and backward
                 with mx.autograd.record():
                     data_list = list(split_and_load(seqs, ctxs))
+                    data_len = len(data_list)
                     for splited_data in enumerate(data_list):
                         parallel.put(splited_data)
                     for _ in range(data_len):
