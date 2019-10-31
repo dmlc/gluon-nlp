@@ -177,10 +177,12 @@ class DataParallelXLNet(nlp.utils.Parallelizable):
     def forward_backward(self, x):
         """forward backward implementation"""
         input_ids, valid_length, segment_ids, label = x
-
         valid_length = valid_length.astype(args.dtype, copy=False)
         with mx.autograd.record():
             out = self._model(input_ids, segment_ids, valid_length=valid_length)
+            if label is None:
+                #test mode
+                return out
             ls = loss_function(out, label).mean()
         if self._trainer:
             self._trainer.backward(ls)
@@ -416,26 +418,27 @@ def test(loader_test, segment):
     tic = time.time()
     results = []
     for _, seqs in enumerate(loader_test):
-        batch_loss = []
-        out_list = []
-        label_list = []
-        # forward and backward
+        #input_ids, valid_length, segment_ids = seqs
         data_list = list(split_and_load(seqs, ctxs))
+        out_list = []
         for i in range(len(data_list)):
-            parallel.put(data_list[i])
+            input_ids, valid_length, segment_ids = data_list[i]
+            feed = (input_ids, valid_length, segment_ids, None)
+            parallel.put(feed)
         for i in range(len(data_list)):
-            ls_p, o, label = parallel.get()
-            batch_loss.append(ls_p)
+            o = parallel.get()
             out_list.append(o)
-            label_list.append(label)
-        out = mx.ndarray.stack(out_list)
+        out_list = np.array([o.asnumpy() for o in out_list])
         if not task.class_labels:
+            print("here!")
                 # regression task
-            for result in out.asnumpy().reshape(-1).tolist():
+            for result in out_list.reshape(-1).tolist():
                 results.append('{:.3f}'.format(result))
             else:
                 # classification task
-                indices = mx.nd.topk(out, k=1, ret_typ='indices', dtype='int32').asnumpy()
+                out = out_list.reshape(-1, out_list.shape[-1])
+                indices = out.argmax(axis = -1)
+                #indices = mx.nd.topk(out, k=1, ret_typ='indices', dtype='int32').asnumpy()
                 for index in indices:
                     results.append(task.class_labels[int(index)])
 
@@ -513,6 +516,10 @@ def train(metric):
     patience = args.early_stop
 
     tic = time.time()
+
+    for segment, test_data in test_data_list:
+        test(test_data, segment)
+
     for epoch_id in range(args.epochs):
         if args.early_stop and patience == 0:
             logging.info('Early stopping at epoch %d', epoch_id)
@@ -554,9 +561,6 @@ def train(metric):
                     # else:
                     #     ls.backward()
 
-                batch_loss = sum([ls.asscalar() for ls in batch_loss])
-                # print(batch_loss)
-                step_loss += batch_loss
                 # update
                 if not accumulate or (batch_id + 1) % accumulate == 0:
                     trainer.allreduce_grads()
@@ -566,7 +570,8 @@ def train(metric):
                     if accumulate and accumulate > 1:
                         # set grad to zero for gradient accumulation
                         all_model_params.zero_grad()
-
+                batch_loss = sum([ls.asscalar() for ls in batch_loss])
+                step_loss += batch_loss
 
                 metric.update(label_list, out_list)
                 if (batch_id + 1) % (args.log_interval) == 0:
