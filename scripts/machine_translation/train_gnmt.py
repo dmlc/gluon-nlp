@@ -122,12 +122,12 @@ if args.gpu is None:
 else:
     ctx = mx.gpu(args.gpu)
 
-encoder, decoder = get_gnmt_encoder_decoder(hidden_size=args.num_hidden,
-                                            dropout=args.dropout,
-                                            num_layers=args.num_layers,
-                                            num_bi_layers=args.num_bi_layers)
+encoder, decoder, one_step_ahead_decoder = get_gnmt_encoder_decoder(
+    hidden_size=args.num_hidden, dropout=args.dropout, num_layers=args.num_layers,
+    num_bi_layers=args.num_bi_layers)
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
-                 embed_size=args.num_hidden, prefix='gnmt_')
+                 one_step_ahead_decoder=one_step_ahead_decoder, embed_size=args.num_hidden,
+                 prefix='gnmt_')
 model.initialize(init=mx.init.Uniform(0.1), ctx=ctx)
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
@@ -175,8 +175,8 @@ def evaluate(data_loader):
         avg_loss += loss * (tgt_seq.shape[1] - 1)
         avg_loss_denom += (tgt_seq.shape[1] - 1)
         # Translate
-        samples, _, sample_valid_length =\
-            translator.translate(src_seq=src_seq, src_valid_length=src_valid_length)
+        samples, _, sample_valid_length = translator.translate(
+            src_seq=src_seq, src_valid_length=src_valid_length)
         max_score_sample = samples[:, 0, :].asnumpy()
         sample_valid_length = sample_valid_length[:, 0].asnumpy()
         for i in range(max_score_sample.shape[0]):

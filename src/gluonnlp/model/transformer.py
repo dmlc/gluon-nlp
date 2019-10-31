@@ -20,22 +20,24 @@
 __all__ = ['TransformerEncoder', 'PositionwiseFFN', 'TransformerEncoderCell',
            'transformer_en_de_512']
 
+import math
 import os
 
-import math
 import numpy as np
 import mxnet as mx
 from mxnet import cpu, gluon
 from mxnet.gluon import nn
 from mxnet.gluon.block import HybridBlock
 from mxnet.gluon.model_zoo import model_store
-from gluonnlp.utils.parallel import Parallelizable
-from .seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
-from .block import GELU
-from .translation import NMTModel
-from .utils import _load_vocab, _load_pretrained_params
-from ..base import get_home_dir
 
+from ..base import get_home_dir
+from ..utils.parallel import Parallelizable
+from .block import GELU
+from .seq2seq_encoder_decoder import (Seq2SeqDecoder, Seq2SeqEncoder,
+                                      Seq2SeqOneStepDecoder,
+                                      _get_attention_cell)
+from .translation import NMTModel
+from .utils import _load_pretrained_params, _load_vocab
 
 ###############################################################################
 #                               BASE ENCODER  BLOCKS                          #
@@ -758,7 +760,9 @@ class TransformerDecoderCell(HybridBlock):
         Whether to scale the softmax input by the sqrt of the input dimension
         in multi-head attention
     dropout : float
+        Dropout probability.
     use_residual : bool
+        Whether to use residual connection.
     output_attention: bool
         Whether to output the attention weights
     weight_initializer : str or Initializer
@@ -866,50 +870,12 @@ class TransformerDecoderCell(HybridBlock):
         return outputs, additional_outputs
 
 
-class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
-    """Structure of the Transformer Decoder.
-
-    Parameters
-    ----------
-    attention_cell : AttentionCell or str, default 'multi_head'
-        Arguments of the attention cell.
-        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
-    num_layers : int
-    units : int
-    hidden_size : int
-        number of units in the hidden layer of position-wise feed-forward networks
-    max_length : int
-        Maximum length of the input sequence. This is used for constructing position encoding
-    num_heads : int
-        Number of heads in multi-head attention
-    scaled : bool
-        Whether to scale the softmax input by the sqrt of the input dimension
-        in multi-head attention
-    dropout : float
-    use_residual : bool
-    output_attention: bool
-        Whether to output the attention weights
-    weight_initializer : str or Initializer
-        Initializer for the input weights matrix, used for the linear
-        transformation of the inputs.
-    bias_initializer : str or Initializer
-        Initializer for the bias vector.
-    scale_embed : bool, default True
-        Scale the input embeddings by sqrt(embed_size).
-    prefix : str, default 'rnn_'
-        Prefix for name of `Block`s
-        (and name of weight if params is `None`).
-    params : Parameter or None
-        Container for weight sharing between cells.
-        Created if `None`.
-    """
-    def __init__(self, attention_cell='multi_head', num_layers=2,
-                 units=128, hidden_size=2048, max_length=50,
-                 num_heads=4, scaled=True, dropout=0.0,
-                 use_residual=True, output_attention=False,
-                 weight_initializer=None, bias_initializer='zeros',
+class _BaseTransformerDecoder(HybridBlock):
+    def __init__(self, attention_cell='multi_head', num_layers=2, units=128, hidden_size=2048,
+                 max_length=50, num_heads=4, scaled=True, dropout=0.0, use_residual=True,
+                 output_attention=False, weight_initializer=None, bias_initializer='zeros',
                  scale_embed=True, prefix=None, params=None):
-        super(TransformerDecoder, self).__init__(prefix=prefix, params=params)
+        super().__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, 'In TransformerDecoder, the units should be divided ' \
                                        'exactly by the number of heads. Received units={}, ' \
                                        'num_heads={}'.format(units, num_heads)
@@ -928,22 +894,17 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                 self.dropout_layer = nn.Dropout(rate=dropout)
             self.layer_norm = nn.LayerNorm()
             encoding = _position_encoding_init(max_length, units)
-            self.position_weight = self.params.get_constant('const', encoding)
+            self.position_weight = self.params.get_constant('const', encoding.astype(np.float32))
             self.transformer_cells = nn.HybridSequential()
             for i in range(num_layers):
                 self.transformer_cells.add(
-                    TransformerDecoderCell(
-                        units=units,
-                        hidden_size=hidden_size,
-                        num_heads=num_heads,
-                        attention_cell=attention_cell,
-                        weight_initializer=weight_initializer,
-                        bias_initializer=bias_initializer,
-                        dropout=dropout,
-                        scaled=scaled,
-                        use_residual=use_residual,
-                        output_attention=output_attention,
-                        prefix='transformer%d_' % i))
+                    TransformerDecoderCell(units=units, hidden_size=hidden_size,
+                                           num_heads=num_heads, attention_cell=attention_cell,
+                                           weight_initializer=weight_initializer,
+                                           bias_initializer=bias_initializer, dropout=dropout,
+                                           scaled=scaled, use_residual=use_residual,
+                                           output_attention=output_attention,
+                                           prefix='transformer%d_' % i))
 
     def init_state_from_encoder(self, encoder_outputs, encoder_valid_length=None):
         """Initialize the state from the encoder outputs.
@@ -959,7 +920,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
             The decoder states, includes:
 
             - mem_value : NDArray
-            - mem_masks : NDArray, optional
+            - mem_masks : NDArray or None
         """
         mem_value = encoder_outputs
         decoder_states = [mem_value]
@@ -971,10 +932,12 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                 mx.nd.arange(mem_length, ctx=ctx, dtype=dtype).reshape((1, -1)),
                 encoder_valid_length.reshape((-1, 1)))
             decoder_states.append(mem_masks)
-        self._encoder_valid_length = encoder_valid_length
+        else:
+            decoder_states.append(None)
         return decoder_states
 
-    def decode_seq(self, inputs, states, valid_length=None):
+    def hybrid_forward(self, F, inputs, states, valid_length=None, position_weight=None):
+        #pylint: disable=arguments-differ
         """Decode the decoder inputs. This function is only used for training.
 
         Parameters
@@ -990,58 +953,180 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         -------
         output : NDArray, Shape (batch_size, length, C_out)
         states : list
-            The decoder states, includes:
-
+            The decoder states:
             - mem_value : NDArray
-            - mem_masks : NDArray, optional
+            - mem_masks : NDArray or None
         additional_outputs : list of list
             Either be an empty list or contains the attention weights in this step.
             The attention weights will have shape (batch_size, length, mem_length) or
             (batch_size, num_heads, length, mem_length)
         """
-        batch_size = inputs.shape[0]
-        length = inputs.shape[1]
-        length_array = mx.nd.arange(length, ctx=inputs.context, dtype=inputs.dtype)
-        mask = mx.nd.broadcast_lesser_equal(
-            length_array.reshape((1, -1)),
-            length_array.reshape((-1, 1)))
-        if valid_length is not None:
-            arange = mx.nd.arange(length, ctx=valid_length.context, dtype=valid_length.dtype)
-            batch_mask = mx.nd.broadcast_lesser(
-                arange.reshape((1, -1)),
-                valid_length.reshape((-1, 1)))
-            mask = mx.nd.broadcast_mul(mx.nd.expand_dims(batch_mask, -1),
-                                       mx.nd.expand_dims(mask, 0))
-        else:
-            mask = mx.nd.broadcast_axes(mx.nd.expand_dims(mask, axis=0), axis=0, size=batch_size)
-        states = [None] + states
-        output, states, additional_outputs = self.forward(inputs, states, mask)
-        states = states[1:]
-        if valid_length is not None:
-            output = mx.nd.SequenceMask(output,
-                                        sequence_length=valid_length,
-                                        use_sequence_length=True,
-                                        axis=1)
-        return output, states, additional_outputs
 
-    def __call__(self, step_input, states): #pylint: disable=arguments-differ
+        length_array = F.contrib.arange_like(inputs, axis=1)
+        mask = F.broadcast_lesser_equal(length_array.reshape((1, -1)),
+                                        length_array.reshape((-1, 1)))
+        if valid_length is not None:
+            batch_mask = F.broadcast_lesser(length_array.reshape((1, -1)),
+                                            valid_length.reshape((-1, 1)))
+            batch_mask = F.expand_dims(batch_mask, -1)
+            mask = F.broadcast_mul(batch_mask, F.expand_dims(mask, 0))
+        else:
+            mask = F.expand_dims(mask, axis=0)
+            mask = F.broadcast_like(mask, inputs, lhs_axes=(0, ), rhs_axes=(0, ))
+
+        mem_value, mem_mask = states
+        if mem_mask is not None:
+            mem_mask = F.expand_dims(mem_mask, axis=1)
+            mem_mask = F.broadcast_like(mem_mask, inputs, lhs_axes=(1, ), rhs_axes=(1, ))
+
+        if self._scale_embed:
+            # XXX: input.shape[-1] and self._units are expected to be the same
+            inputs = inputs * math.sqrt(self._units)
+
+        # Positional Encoding
+        steps = F.contrib.arange_like(inputs, axis=1)
+        positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
+        inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
+
+        if self._dropout:
+            inputs = self.dropout_layer(inputs)
+        inputs = self.layer_norm(inputs)
+        additional_outputs = []
+        attention_weights_l = []
+        outputs = inputs
+        for cell in self.transformer_cells:
+            outputs, attention_weights = cell(outputs, mem_value, mask, mem_mask)
+            if self._output_attention:
+                attention_weights_l.append(attention_weights)
+        if self._output_attention:
+            additional_outputs.extend(attention_weights_l)
+
+        if valid_length is not None:
+            outputs = F.SequenceMask(outputs, sequence_length=valid_length,
+                                     use_sequence_length=True, axis=1)
+        return outputs, states, additional_outputs
+
+
+class TransformerDecoder(_BaseTransformerDecoder, Seq2SeqDecoder):
+    """Transformer Decoder.
+
+    Multi-step ahead decoder for use during training with teacher forcing.
+
+    Parameters
+    ----------
+    attention_cell : AttentionCell or str, default 'multi_head'
+        Arguments of the attention cell.
+        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
+    num_layers : int
+        Number of attention layers.
+    units : int
+        Number of units for the output.
+    hidden_size : int
+        number of units in the hidden layer of position-wise feed-forward networks
+    max_length : int
+        Maximum length of the input sequence. This is used for constructing position encoding
+    num_heads : int
+        Number of heads in multi-head attention
+    scaled : bool
+        Whether to scale the softmax input by the sqrt of the input dimension
+        in multi-head attention
+    dropout : float
+        Dropout probability.
+    use_residual : bool
+        Whether to use residual connection.
+    output_attention: bool
+        Whether to output the attention weights
+    weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    scale_embed : bool, default True
+        Scale the input embeddings by sqrt(embed_size).
+    prefix : str, default 'rnn_'
+        Prefix for name of `Block`s
+        (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells.
+        Created if `None`.
+    """
+
+
+class TransformerOneStepDecoder(_BaseTransformerDecoder, Seq2SeqOneStepDecoder):
+    """Transformer Decoder.
+
+    One-step ahead decoder for use during inference.
+
+    Parameters
+    ----------
+    attention_cell : AttentionCell or str, default 'multi_head'
+        Arguments of the attention cell.
+        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
+    num_layers : int
+        Number of attention layers.
+    units : int
+        Number of units for the output.
+    hidden_size : int
+        number of units in the hidden layer of position-wise feed-forward networks
+    max_length : int
+        Maximum length of the input sequence. This is used for constructing position encoding
+    num_heads : int
+        Number of heads in multi-head attention
+    scaled : bool
+        Whether to scale the softmax input by the sqrt of the input dimension
+        in multi-head attention
+    dropout : float
+        Dropout probability.
+    use_residual : bool
+        Whether to use residual connection.
+    output_attention: bool
+        Whether to output the attention weights
+    weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    scale_embed : bool, default True
+        Scale the input embeddings by sqrt(embed_size).
+    prefix : str, default 'rnn_'
+        Prefix for name of `Block`s
+        (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells.
+        Created if `None`.
+    """
+
+    def forward(self, step_input, states):  # pylint: disable=arguments-differ
+        # We implement forward, as the number of states changes between the
+        # first and later calls of the one-step ahead Transformer decoder. This
+        # is due to the lack of numpy shape semantics. Once we enable numpy
+        # shape semantic in the GluonNLP code-base, the number of states should
+        # stay constant, but the first state element will be an array of shape
+        # (batch_size, 0, C_in) at the first call.
+        if len(states) == 3:  # step_input from prior call is included
+            last_embeds, _, _ = states
+            inputs = mx.nd.concat(last_embeds, mx.nd.expand_dims(step_input, axis=1), dim=1)
+            states = states[1:]
+        else:
+            inputs = mx.nd.expand_dims(step_input, axis=1)
+        return super().forward(inputs, states)
+
+    def hybrid_forward(self, F, inputs, states, position_weight):
+        # pylint: disable=arguments-differ
         """One-step-ahead decoding of the Transformer decoder.
 
         Parameters
         ----------
-        step_input : NDArray
+        step_input : NDArray, Shape (batch_size, C_in)
         states : list of NDArray
 
         Returns
         -------
         step_output : NDArray
-            The output of the decoder.
-            In the train mode, Shape is (batch_size, length, C_out)
-            In the test mode, Shape is (batch_size, C_out)
+            The output of the decoder. Shape is (batch_size, C_out)
         new_states: list
             Includes
             - last_embeds : NDArray or None
-                It is only given during testing
             - mem_value : NDArray
             - mem_masks : NDArray, optional
 
@@ -1050,107 +1135,15 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
             The attention weights will have shape (batch_size, length, mem_length) or
             (batch_size, num_heads, length, mem_length)
         """
-        return super(TransformerDecoder, self).__call__(step_input, states)
+        outputs, states, additional_outputs = super().hybrid_forward(
+            F, inputs, states, valid_length=None, position_weight=position_weight)
 
-    def forward(self, step_input, states, mask=None):  #pylint: disable=arguments-differ, missing-docstring
-        input_shape = step_input.shape
-        mem_mask = None
-        # If it is in testing, transform input tensor to a tensor with shape NTC
-        # Otherwise remove the None in states.
-        if len(input_shape) == 2:
-            if self._encoder_valid_length is not None:
-                has_last_embeds = len(states) == 3
-            else:
-                has_last_embeds = len(states) == 2
-            if has_last_embeds:
-                last_embeds = states[0]
-                step_input = mx.nd.concat(last_embeds,
-                                          mx.nd.expand_dims(step_input, axis=1),
-                                          dim=1)
-                states = states[1:]
-            else:
-                step_input = mx.nd.expand_dims(step_input, axis=1)
-        elif states[0] is None:
-            states = states[1:]
-        has_mem_mask = (len(states) == 2)
-        if has_mem_mask:
-            _, mem_mask = states
-            augmented_mem_mask = mx.nd.expand_dims(mem_mask, axis=1)\
-                .broadcast_axes(axis=1, size=step_input.shape[1])
-            states[-1] = augmented_mem_mask
-        if mask is None:
-            length_array = mx.nd.arange(step_input.shape[1], ctx=step_input.context,
-                                        dtype=step_input.dtype)
-            mask = mx.nd.broadcast_lesser_equal(
-                length_array.reshape((1, -1)),
-                length_array.reshape((-1, 1)))
-            mask = mx.nd.broadcast_axes(mx.nd.expand_dims(mask, axis=0),
-                                        axis=0, size=step_input.shape[0])
-        steps = mx.nd.arange(step_input.shape[1], ctx=step_input.context)
-        states.append(steps)
-        if self._scale_embed:
-            scaled_step_input = step_input * math.sqrt(step_input.shape[-1])
-        # pylint: disable=too-many-function-args
-        step_output, step_additional_outputs = \
-            super(TransformerDecoder, self).forward(scaled_step_input, states, mask)
-        states = states[:-1]
-        if has_mem_mask:
-            states[-1] = mem_mask
-        new_states = [step_input] + states
-        # If it is in testing, only output the last one
-        if len(input_shape) == 2:
-            step_output = step_output[:, -1, :]
-        return step_output, new_states, step_additional_outputs
+        # Append inputs to states: They are needed in the next one-step ahead decoding step
+        new_states = [inputs] + states
+        # Only return one-step ahead
+        step_output = F.slice_axis(outputs, axis=1, begin=-1, end=None).reshape((0, -1))
 
-    def hybrid_forward(self, F, step_input, states, mask=None, position_weight=None):
-        #pylint: disable=arguments-differ
-        """
-
-        Parameters
-        ----------
-        step_input : NDArray or Symbol, Shape (batch_size, length, C_in)
-        states : list of NDArray or Symbol
-        mask : NDArray or Symbol
-        position_weight : NDArray or Symbol
-
-        Returns
-        -------
-        step_output : NDArray or Symbol
-            The output of the decoder. Shape is (batch_size, length, C_out)
-        step_additional_outputs : list
-            Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, length, mem_length) or
-            (batch_size, num_heads, length, mem_length)
-
-        """
-        has_mem_mask = (len(states) == 3)
-        if has_mem_mask:
-            mem_value, mem_mask, steps = states
-        else:
-            mem_value, steps = states
-            mem_mask = None
-        # Positional Encoding
-        step_input = F.broadcast_add(step_input,
-                                     F.expand_dims(F.Embedding(steps,
-                                                               position_weight,
-                                                               self._max_length,
-                                                               self._units),
-                                                   axis=0))
-        if self._dropout:
-            step_input = self.dropout_layer(step_input)
-        step_input = self.layer_norm(step_input)
-        inputs = step_input
-        outputs = inputs
-        step_additional_outputs = []
-        attention_weights_l = []
-        for cell in self.transformer_cells:
-            outputs, attention_weights = cell(inputs, mem_value, mask, mem_mask)
-            if self._output_attention:
-                attention_weights_l.append(attention_weights)
-            inputs = outputs
-        if self._output_attention:
-            step_additional_outputs.extend(attention_weights_l)
-        return outputs, step_additional_outputs
+        return step_output, new_states, additional_outputs
 
 
 
@@ -1193,40 +1186,35 @@ def get_transformer_encoder_decoder(num_layers=2,
     Returns
     -------
     encoder : TransformerEncoder
-    decoder :TransformerDecoder
+    decoder : TransformerDecoder
+    one_step_ahead_decoder : TransformerOneStepDecoder
     """
-    encoder = TransformerEncoder(num_layers=num_layers,
-                                 num_heads=num_heads,
-                                 max_length=max_src_length,
-                                 units=units,
-                                 hidden_size=hidden_size,
-                                 dropout=dropout,
-                                 scaled=scaled,
-                                 use_residual=use_residual,
-                                 weight_initializer=weight_initializer,
-                                 bias_initializer=bias_initializer,
-                                 prefix=prefix + 'enc_', params=params)
-    decoder = TransformerDecoder(num_layers=num_layers,
-                                 num_heads=num_heads,
-                                 max_length=max_tgt_length,
-                                 units=units,
-                                 hidden_size=hidden_size,
-                                 dropout=dropout,
-                                 scaled=scaled,
-                                 use_residual=use_residual,
-                                 weight_initializer=weight_initializer,
-                                 bias_initializer=bias_initializer,
-                                 prefix=prefix + 'dec_', params=params)
-    return encoder, decoder
+    encoder = TransformerEncoder(
+        num_layers=num_layers, num_heads=num_heads, max_length=max_src_length, units=units,
+        hidden_size=hidden_size, dropout=dropout, scaled=scaled, use_residual=use_residual,
+        weight_initializer=weight_initializer, bias_initializer=bias_initializer,
+        prefix=prefix + 'enc_', params=params)
+    decoder = TransformerDecoder(
+        num_layers=num_layers, num_heads=num_heads, max_length=max_tgt_length, units=units,
+        hidden_size=hidden_size, dropout=dropout, scaled=scaled, use_residual=use_residual,
+        weight_initializer=weight_initializer, bias_initializer=bias_initializer,
+        prefix=prefix + 'dec_', params=params)
+    one_step_ahead_decoder = TransformerOneStepDecoder(
+        num_layers=num_layers, num_heads=num_heads, max_length=max_tgt_length, units=units,
+        hidden_size=hidden_size, dropout=dropout, scaled=scaled, use_residual=use_residual,
+        weight_initializer=weight_initializer, bias_initializer=bias_initializer,
+        prefix=prefix + 'dec_', params=decoder.collect_params())
+    return encoder, decoder, one_step_ahead_decoder
 
 
-def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_vocab,
-                           encoder, decoder, share_embed, embed_size, tie_weights,
+def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_vocab, encoder,
+                           decoder, one_step_ahead_decoder, share_embed, embed_size, tie_weights,
                            embed_initializer, pretrained, ctx, root, **kwargs):
     src_vocab = _load_vocab(dataset_name + '_src', src_vocab, root)
     tgt_vocab = _load_vocab(dataset_name + '_tgt', tgt_vocab, root)
     kwargs['encoder'] = encoder
     kwargs['decoder'] = decoder
+    kwargs['one_step_ahead_decoder'] = one_step_ahead_decoder
     kwargs['src_vocab'] = src_vocab
     kwargs['tgt_vocab'] = tgt_vocab
     kwargs['share_embed'] = share_embed
@@ -1279,16 +1267,13 @@ def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pre
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
-    encoder, decoder = get_transformer_encoder_decoder(units=predefined_args['num_units'],
-                                                       hidden_size=predefined_args['hidden_size'],
-                                                       dropout=predefined_args['dropout'],
-                                                       num_layers=predefined_args['num_layers'],
-                                                       num_heads=predefined_args['num_heads'],
-                                                       max_src_length=530,
-                                                       max_tgt_length=549,
-                                                       scaled=predefined_args['scaled'])
-    return _get_transformer_model(NMTModel, 'transformer_en_de_512', dataset_name,
-                                  src_vocab, tgt_vocab, encoder, decoder,
+    encoder, decoder, one_step_ahead_decoder = get_transformer_encoder_decoder(
+        units=predefined_args['num_units'], hidden_size=predefined_args['hidden_size'],
+        dropout=predefined_args['dropout'], num_layers=predefined_args['num_layers'],
+        num_heads=predefined_args['num_heads'], max_src_length=530, max_tgt_length=549,
+        scaled=predefined_args['scaled'])
+    return _get_transformer_model(NMTModel, 'transformer_en_de_512', dataset_name, src_vocab,
+                                  tgt_vocab, encoder, decoder, one_step_ahead_decoder,
                                   predefined_args['share_embed'], predefined_args['embed_size'],
                                   predefined_args['tie_weights'],
                                   predefined_args['embed_initializer'], pretrained, ctx, root)
