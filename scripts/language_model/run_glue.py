@@ -255,6 +255,7 @@ mx.random.seed(args.seed)
 
 backend = args.comm_backend
 store, num_workers, rank, local_rank, is_master_node, ctxs = init_comm(backend)
+num_workers = 0
 task = tasks[task_name]
 
 # data type with mixed precision training
@@ -371,7 +372,7 @@ def preprocess_data(_tokenizer, _task, _batch_size, _dev_batch_size, max_len, _v
     # data loader for training
     loader_train = gluon.data.DataLoader(
         dataset=data_train,
-        num_workers=4,
+        num_workers= num_workers,
         batch_sampler=batch_sampler,
         batchify_fn=batchify_fn)
 
@@ -384,7 +385,7 @@ def preprocess_data(_tokenizer, _task, _batch_size, _dev_batch_size, max_len, _v
         loader_dev = mx.gluon.data.DataLoader(
             data_dev,
             batch_size=_dev_batch_size,
-            num_workers=4,
+            num_workers=num_workers,
             shuffle=False,
             batchify_fn=batchify_fn)
         loader_dev_list.append((segment, loader_dev))
@@ -409,7 +410,7 @@ def preprocess_data(_tokenizer, _task, _batch_size, _dev_batch_size, max_len, _v
         loader_test = mx.gluon.data.DataLoader(
             data_test,
             batch_size=_dev_batch_size,
-            num_workers=4,
+            num_workers=num_workers,
             shuffle=False,
             batchify_fn=test_batchify_fn)
         loader_test_list.append((segment, loader_test))
