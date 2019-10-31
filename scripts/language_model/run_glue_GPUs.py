@@ -430,17 +430,16 @@ def test(loader_test, segment):
             out_list.append(o)
         out_list = np.array([o.asnumpy() for o in out_list])
         if not task.class_labels:
-            print("here!")
-                # regression task
+            # regression task
             for result in out_list.reshape(-1).tolist():
                 results.append('{:.3f}'.format(result))
-            else:
-                # classification task
-                out = out_list.reshape(-1, out_list.shape[-1])
-                indices = out.argmax(axis = -1)
-                #indices = mx.nd.topk(out, k=1, ret_typ='indices', dtype='int32').asnumpy()
-                for index in indices:
-                    results.append(task.class_labels[int(index)])
+        else:
+            # classification task
+            out = out_list.reshape(-1, out_list.shape[-1])
+            indices = out.argmax(axis = -1)
+            #indices = mx.nd.topk(out, k=1, ret_typ='indices', dtype='int32').asnumpy()
+            for index in indices:
+                results.append(task.class_labels[int(index)])
 
     mx.nd.waitall()
     toc = time.time()
