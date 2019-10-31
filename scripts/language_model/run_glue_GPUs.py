@@ -99,6 +99,8 @@ parser.add_argument(
 parser.add_argument(
     '--gpu', type=int, default=None, help='Number of gpus for finetuning.')
 parser.add_argument(
+    '--cpu', type=int, default=None, help='Number of cpus for finetuning.')
+parser.add_argument(
     '--task_name',
     default='MRPC',
     type=str,
@@ -214,8 +216,11 @@ def init_comm(backend):
         rank = store.rank
         local_rank = 0
         is_master_node = rank == local_rank
-        ctxs = [mx.cpu()] if args.gpu is None or args.gpu == '' else \
-               [mx.gpu(int(x)) for x in range(args.gpu)]
+        if args.cpu:
+            ctxs = [mx.cpu(int(x)) for x in range(args.cpu)]
+        else:
+            ctxs = [mx.cpu()] if args.gpu is None or args.gpu == '' else \
+                   [mx.gpu(int(x)) for x in range(args.gpu)]
     return store, num_workers, rank, local_rank, is_master_node, ctxs
 
 logging.getLogger().setLevel(logging.INFO)
@@ -428,7 +433,7 @@ def test(loader_test, segment):
         for i in range(len(data_list)):
             o = parallel.get()
             out_list.append(o)
-        out_list = np.array([o.asnumpy() for o in out_list])
+        out_list = np.vstack([o.asnumpy() for o in out_list])
         if not task.class_labels:
             # regression task
             for result in out_list.reshape(-1).tolist():
@@ -437,7 +442,6 @@ def test(loader_test, segment):
             # classification task
             out = out_list.reshape(-1, out_list.shape[-1])
             indices = out.argmax(axis = -1)
-            #indices = mx.nd.topk(out, k=1, ret_typ='indices', dtype='int32').asnumpy()
             for index in indices:
                 results.append(task.class_labels[int(index)])
 
@@ -543,10 +547,6 @@ def train(metric):
                 # forward and backward
                 with mx.autograd.record():
                     data_list = list(split_and_load(seqs, ctxs))
-                    # input_ids, valid_length, segment_ids, label = seqs
-                    # input_ids = input_ids.as_in_context(ctx)
-                    # valid_length = valid_length.as_in_context(ctx).astype('float32')
-                    # segment_ids = segment_ids.as_in_context(ctx)
                     for i in range(len(data_list)):
                         parallel.put(data_list[i])
                     for i in range(len(data_list)):
