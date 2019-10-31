@@ -255,7 +255,7 @@ mx.random.seed(args.seed)
 
 backend = args.comm_backend
 store, num_workers, rank, local_rank, is_master_node, ctxs = init_comm(backend)
-num_workers = 0
+
 task = tasks[task_name]
 
 # data type with mixed precision training
@@ -307,7 +307,7 @@ else:
     num_classes = len(task.class_labels)
     loss_function = gluon.loss.SoftmaxCELoss()
 # reuse the XLnetClassifier class with num_classes=1 for regression
-model = XLNetClassifier(xlnet_base, ctxs, dropout=0.1, num_classes=num_classes)
+model = XLNetClassifier(xlnet_base, dropout=0.1, num_classes=num_classes)
 
 parallel_model = DataParallelXLNet(model)
 num_ctxes = len(ctxs)
@@ -616,7 +616,7 @@ def train(metric):
     # inference on test data
     for segment, test_data in test_data_list:
         test(test_data, segment)
-    print("finish test!")
+    print('finish test!')
 
 def evaluate(loader_dev, metric, segment):
     """Evaluate the model on validation dataset."""

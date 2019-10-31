@@ -8,11 +8,10 @@ import mxnet as mx
 class XLNetClassifier(Block):
     """XLNet Classifier
     """
-    def __init__(self, xl, ctx, units=768, num_classes=2, dropout=0.0,
+    def __init__(self, xl, units=768, num_classes=2, dropout=0.0,
                  prefix=None, params=None):
         super(XLNetClassifier, self).__init__(prefix=prefix, params=params)
         self.xlnet = xl
-        self.ctx = ctx
         self._units = units
         with self.name_scope():
             self.classifier = nn.HybridSequential(prefix=prefix)
