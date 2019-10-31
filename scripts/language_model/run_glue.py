@@ -413,6 +413,7 @@ def preprocess_data(_tokenizer, _task, _batch_size, _dev_batch_size, max_len, _v
             shuffle=False,
             batchify_fn=test_batchify_fn)
         loader_test_list.append((segment, loader_test))
+    pool.close()
     return loader_train, loader_dev_list, loader_test_list, len(data_train)
 
 
@@ -614,6 +615,7 @@ def train(metric):
     # inference on test data
     for segment, test_data in test_data_list:
         test(test_data, segment)
+    print("finish test!")
 
 def evaluate(loader_dev, metric, segment):
     """Evaluate the model on validation dataset."""
