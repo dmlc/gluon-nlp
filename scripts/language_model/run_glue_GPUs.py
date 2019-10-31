@@ -289,7 +289,6 @@ get_model_params = {
 }
 
 xlnet_base, vocab, tokenizer = model.get_model(**get_model_params)
-print(xlnet_base)
 # initialize the rest of the parameters
 initializer = mx.init.Normal(0.02)
 
@@ -459,6 +458,7 @@ def test(loader_test, segment):
         f.write(u'index\tprediction\n')
         for i, pred in enumerate(results):
             f.write(u'%d\t%s\n'%(i, str(pred)))
+    print("finish test!")
 
 
 def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, learning_rate):
@@ -551,12 +551,6 @@ def train(metric):
                         batch_loss.append(ls_p)
                         out_list.append(o)
                         label_list.append(label)
-                    # if args.dtype == 'float16':
-                    #     with amp.scale_loss(ls, trainer) as scaled_loss:
-                    #         mx.autograd.backward(scaled_loss)
-                    # else:
-                    #     ls.backward()
-
                 # update
                 if not accumulate or (batch_id + 1) % accumulate == 0:
                     trainer.allreduce_grads()
@@ -585,6 +579,7 @@ def train(metric):
             else:
                 if args.early_stop is not None:
                     patience -= 1
+            print(epoch_id, metric_nm, metric_val)
             metric_history.append((epoch_id, metric_nm, metric_val))
 
         if not only_inference:
@@ -603,6 +598,7 @@ def train(metric):
         # assuming higher score stands for better model quality
         metric_history.sort(key=lambda x: x[2][0], reverse=True)
         epoch_id, metric_nm, metric_val = metric_history[0]
+        print(epoch_id, metric_nm, metric_val)
         ckpt_name = 'model_xlnet_{0}_{1}.params'.format(task_name, epoch_id)
         params_saved = os.path.join(output_dir, ckpt_name)
         nlp.utils.load_parameters(model, params_saved)
@@ -626,10 +622,6 @@ def evaluate(loader_dev, metric, segment):
         label_list = []
         # forward and backward
         data_list = list(split_and_load(seqs, ctxs))
-        # input_ids, valid_length, segment_ids, label = seqs
-        # input_ids = input_ids.as_in_context(ctx)
-        # valid_length = valid_length.as_in_context(ctx).astype('float32')
-        # segment_ids = segment_ids.as_in_context(ctx)
         for i in range(len(data_list)):
             parallel.put(data_list[i])
         for i in range(len(data_list)):
