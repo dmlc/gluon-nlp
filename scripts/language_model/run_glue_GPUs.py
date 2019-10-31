@@ -136,7 +136,7 @@ parser.add_argument(
     help='The data type for training.')
 
 parser.add_argument(
-    '--meters',
+    '--model_parameters',
     type=str,
     default=None,
     help='A parameter file for the model that is loaded into the model'
