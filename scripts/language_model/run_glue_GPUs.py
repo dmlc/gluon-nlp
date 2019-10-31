@@ -586,7 +586,6 @@ def train(metric):
             # save params
             ckpt_name = 'model_xlnet_{0}_{1}.params'.format(task_name, epoch_id)
             params_saved = os.path.join(output_dir, ckpt_name)
-
             nlp.utils.save_parameters(model, params_saved)
             logging.info('params saved in: %s', params_saved)
             toc = time.time()
@@ -598,7 +597,6 @@ def train(metric):
         # assuming higher score stands for better model quality
         metric_history.sort(key=lambda x: x[2][0], reverse=True)
         epoch_id, metric_nm, metric_val = metric_history[0]
-        print(epoch_id, metric_nm, metric_val)
         ckpt_name = 'model_xlnet_{0}_{1}.params'.format(task_name, epoch_id)
         params_saved = os.path.join(output_dir, ckpt_name)
         nlp.utils.load_parameters(model, params_saved)
@@ -652,3 +650,5 @@ def evaluate(loader_dev, metric, segment):
 
 if __name__ == '__main__':
     train(task.metrics)
+    print("finish!")
+    exit(0)
