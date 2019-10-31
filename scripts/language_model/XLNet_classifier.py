@@ -1,13 +1,14 @@
-import os
-from mxnet.gluon import HybridBlock, Block
+"""Model for sentence (pair) classification task/ regression with XLnet.
+"""
+from mxnet.gluon import Block
 from mxnet.gluon import nn
-from mxnet.gluon.model_zoo import model_store
 import mxnet as mx
 
 
 class XLNetClassifier(Block):
-
-    def __init__(self, xl,ctx, units = 768, num_classes=2, dropout=0.0,
+    """XLNet Classifier
+    """
+    def __init__(self, xl, ctx, units=768, num_classes=2, dropout=0.0,
                  prefix=None, params=None):
         super(XLNetClassifier, self).__init__(prefix=prefix, params=params)
         self.xlnet = xl
@@ -18,10 +19,9 @@ class XLNetClassifier(Block):
             if dropout:
                 self.classifier.add(nn.Dropout(rate=dropout))
             self.classifier.add(nn.Dense(units=num_classes))
-            self.pooler = nn.Dense(units=units, flatten=False, activation='tanh',
-                              prefix=prefix)
+            self.pooler = nn.Dense(units=units, flatten=False, activation='tanh', prefix=prefix)
 
-    def __call__(self, inputs, token_types, valid_length=None,mems = None):
+    def __call__(self, inputs, token_types, valid_length=None, mems=None):
         # pylint: disable=dangerous-default-value, arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
@@ -60,12 +60,12 @@ class XLNetClassifier(Block):
         steps = F.contrib.arange_like(inputs, axis=1)
         ones = F.ones_like(steps)
         mask = F.broadcast_greater(F.reshape(steps, shape=(1, -1)),
-                                  F.reshape(valid_length_start, shape=(-1, 1)))
+                                   F.reshape(valid_length_start, shape=(-1, 1)))
         mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
                                F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
         return mask
 
-    def forward(self, inputs, token_types, valid_length=None,mems = None):
+    def forward(self, inputs, token_types, valid_length=None, mems=None):
         # pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences.
 
@@ -88,7 +88,7 @@ class XLNetClassifier(Block):
         #print(inputs.shape)
         valid_length_start = inputs.shape[1] - valid_length
         attention_mask = self._padding_mask(inputs, valid_length_start)
-        output, _ = self.xlnet(inputs, token_types,mems,attention_mask)
+        output, _ = self.xlnet(inputs, token_types, mems, attention_mask)
         output = self._apply_pooling(output)
         pooler_out = self.pooler(output)
         return self.classifier(pooler_out)

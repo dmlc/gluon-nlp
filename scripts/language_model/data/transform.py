@@ -1,4 +1,4 @@
-
+"""XLNet dataset transform."""
 __all__ = ['XLNetSentenceTransform', 'XLNetDatasetTransform']
 import numpy as np
 
@@ -150,6 +150,27 @@ class XLNetSentenceTransform:
                 tokens_b.pop()
 
 class XLNetDatasetTransform:
+    """Dataset transformation for XLNet-style sentence classification or regression.
+
+        Parameters
+        ----------
+        tokenizer : BERTTokenizer.
+            Tokenizer for the sentences.
+        max_seq_length : int.
+            Maximum sequence length of the sentences.
+        vocab : Vocab or BERTVocab
+            The vocabulary.
+        labels : list of int , float or None. defaults None
+            List of all label ids for the classification task and regressing task.
+            If labels is None, the default task is regression
+        pad : bool, default True
+            Whether to pad the sentences to maximum length.
+        pair : bool, default True
+            Whether to transform sentences or sentence pairs.
+        label_dtype: int32 or float32, default float32
+            label_dtype = int32 for classification task
+            label_dtype = float32 for regression task
+    """
     def __init__(self,
                  tokenizer,
                  max_seq_length,
@@ -170,7 +191,7 @@ class XLNetDatasetTransform:
                 for key in label_alias:
                     self._label_map[key] = self._label_map[label_alias[key]]
         self._xl_xform = XLNetSentenceTransform(
-            tokenizer,  max_seq_length= max_seq_length, vocab=vocab, pad=pad, pair=pair)
+            tokenizer, max_seq_length=max_seq_length, vocab=vocab, pad=pad, pair=pair)
 
     def __call__(self, line):
         """Perform transformation for sequence pairs or single sequences.

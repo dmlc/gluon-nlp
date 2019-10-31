@@ -1,3 +1,6 @@
+"""
+Sentence Pair Classification with XLNet
+"""
 import io
 import os
 import time
@@ -5,18 +8,20 @@ import argparse
 import random
 import logging
 import warnings
+import sys
 import multiprocessing
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
-from data.transform import XLNetDatasetTransform
 from XLNet_classifier import XLNetClassifier
 from transformer import model
-from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask
-from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
-from data.classification import LCQMCTask, ChnSentiCorpTask
-import sys
+from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask, \
+     QNLITask, CoLATask, MNLITask, WNLITask, XNLITask, LCQMCTask, ChnSentiCorpTask
+from data.transform import XLNetDatasetTransform
+
+
+
 
 
 tasks = {
@@ -85,7 +90,8 @@ parser.add_argument(
     '--pad',
     default=True,
     action='store_true',
-    help='Whether to pad to maximum length when preparing data batches. Default is False.')
+    help='Whether to pad to maximum length when preparing data batches. '
+         'Have to be true currently due to left padding')
 
 parser.add_argument(
     '--seed', type=int, default=2, help='Random seed')
@@ -111,6 +117,7 @@ parser.add_argument(
     type=str,
     default='xlnet_cased_l12_h768_a12',
     help='The name of pre-trained XLNet model to fine-tune')
+
 parser.add_argument(
     '--dataset',
     type=str,
@@ -157,6 +164,13 @@ parser.add_argument('--comm_backend', type=str, default='device',
 
 args = parser.parse_args()
 
+if args.comm_backend == 'horovod':
+    try:
+        import horovod.mxnet as hvd
+    except ImportError:
+        logging.info('horovod must be installed.')
+        sys.exit()
+
 def split_and_load(arrs, ctx):
     """split and load arrays to a list of contexts"""
     assert isinstance(arrs, (list, tuple))
@@ -172,8 +186,8 @@ class DataParallelXLNet(nlp.utils.Parallelizable):
     model : Block
         The xlnet model.
     """
-    def __init__(self, model, trainer = None):
-        self._model = model
+    def __init__(self, m, trainer=None):
+        self._model = m
         self._trainer = trainer
 
     def forward_backward(self, x):
@@ -193,35 +207,30 @@ class DataParallelXLNet(nlp.utils.Parallelizable):
 
         return ls, out, label
 
-def init_comm(backend):
+def init_comm(Backend):
     """Init communication backend"""
     # backend specific implementation
-    if backend == 'horovod':
-        try:
-            import horovod.mxnet as hvd
-        except ImportError:
-            logging.info('horovod must be installed.')
-            exit()
+    if Backend == 'horovod':
         hvd.init()
-        store = None
-        num_workers = hvd.size()
-        rank = hvd.rank()
-        local_rank = hvd.local_rank()
-        is_master_node = rank == local_rank
-        ctxs = [mx.gpu(local_rank)]
+        Store = None
+        _num_workers = hvd.size()
+        _rank = hvd.rank()
+        _local_rank = hvd.local_rank()
+        _is_master_node = _rank == _local_rank
+        _ctxs = [mx.gpu(_local_rank)]
     else:
         # kvstore
-        store = mx.kv.create(backend)
-        num_workers = store.num_workers
-        rank = store.rank
-        local_rank = 0
-        is_master_node = rank == local_rank
+        Store = mx.kv.create(Backend)
+        _num_workers = Store.num_workers
+        _rank = Store.rank
+        _local_rank = 0
+        _is_master_node = _rank == _local_rank
         if args.cpu:
-            ctxs = [mx.cpu(int(x)) for x in range(args.cpu)]
+            _ctxs = [mx.cpu(int(x)) for x in range(args.cpu)]
         else:
-            ctxs = [mx.cpu()] if args.gpu is None or args.gpu == '' else \
+            _ctxs = [mx.cpu()] if args.gpu is None or args.gpu == '' else \
                    [mx.gpu(int(x)) for x in range(args.gpu)]
-    return store, num_workers, rank, local_rank, is_master_node, ctxs
+    return Store, _num_workers, _rank, _local_rank, _is_master_node, _ctxs
 
 logging.getLogger().setLevel(logging.INFO)
 logging.captureWarnings(True)
@@ -246,9 +255,6 @@ mx.random.seed(args.seed)
 
 backend = args.comm_backend
 store, num_workers, rank, local_rank, is_master_node, ctxs = init_comm(backend)
-#ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
-
-#ctx = ctxs
 task = tasks[task_name]
 
 # data type with mixed precision training
@@ -266,7 +272,7 @@ if args.dtype == 'float16':
         # amp is not available
         logging.info('Mixed precision training with float16 requires MXNet >= '
                      '1.5.0b20190627. Please consider upgrading your MXNet version.')
-        exit()
+        sys.exit()
 
 # model and loss
 only_inference = args.only_inference
@@ -309,8 +315,8 @@ parallel = nlp.utils.Parallel(num_ctxes if num_ctxes > 1 else 0, parallel_model)
 
 # initialize classifier
 if not model_parameters:
-    model.classifier.initialize(init = initializer, ctx=ctxs)
-    model.pooler.initialize(init = initializer, ctx = ctxs)
+    model.classifier.initialize(init=initializer, ctx=ctxs)
+    model.pooler.initialize(init=initializer, ctx=ctxs)
 
 # load checkpointing
 output_dir = args.output_dir
@@ -329,35 +335,36 @@ loss_function.hybridize(static_alloc=True)
 do_lower_case = 'uncased' in dataset
 
 
-def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab, pad=False):
+def preprocess_data(_tokenizer, _task, _batch_size, _dev_batch_size, max_len, _vocab, pad=False):
     """Train/eval Data preparation function."""
     pool = multiprocessing.Pool()
 
     # transformation for data train and dev
-    label_dtype = 'float32' if not task.class_labels else 'int32'
-    trans = XLNetDatasetTransform(tokenizer, max_len,
-                                 vocab=vocab,
-                                 class_labels=task.class_labels,
-                                 label_alias=task.label_alias,
-                                 pad=pad, pair=task.is_pair,
-                                 has_label=True)
+    label_dtype = 'float32' if not _task.class_labels else 'int32'
+    trans = XLNetDatasetTransform(_tokenizer, max_len,
+                                  vocab=_vocab,
+                                  class_labels=_task.class_labels,
+                                  label_alias=_task.label_alias,
+                                  pad=pad, pair=_task.is_pair,
+                                  has_label=True)
 
     # data train
-    # task.dataset_train returns (segment_name, dataset)
-    train_tsv = task.dataset_train()[1]
+    # _task.dataset_train returns (segment_name, dataset)
+    train_tsv = _task.dataset_train()[1]
     data_train = mx.gluon.data.SimpleDataset(pool.map(trans, train_tsv))
     data_train_len = data_train.transform(
         lambda input_id, length, segment_id, label_id: length, lazy=False)
     # bucket sampler for training
-    pad_val = vocab[vocab.padding_token]
+    pad_val = _vocab[_vocab.padding_token]
     batchify_fn = nlp.data.batchify.Tuple(
         nlp.data.batchify.Pad(axis=0, pad_val=pad_val), # input
         nlp.data.batchify.Stack(),                      # length
         nlp.data.batchify.Pad(axis=0, pad_val=0),       # segment
         nlp.data.batchify.Stack(label_dtype))           # label
+
     batch_sampler = nlp.data.sampler.FixedBucketSampler(
         data_train_len,
-        batch_size=batch_size,
+        batch_size=_batch_size,
         num_buckets=10,
         ratio=0,
         shuffle=True)
@@ -369,14 +376,14 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
         batchify_fn=batchify_fn)
 
     # data dev. For MNLI, more than one dev set is available
-    dev_tsv = task.dataset_dev()
+    dev_tsv = _task.dataset_dev()
     dev_tsv_list = dev_tsv if isinstance(dev_tsv, list) else [dev_tsv]
     loader_dev_list = []
     for segment, data in dev_tsv_list:
         data_dev = mx.gluon.data.SimpleDataset(pool.map(trans, data))
         loader_dev = mx.gluon.data.DataLoader(
             data_dev,
-            batch_size=dev_batch_size,
+            batch_size=_dev_batch_size,
             num_workers=4,
             shuffle=False,
             batchify_fn=batchify_fn)
@@ -387,21 +394,21 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
         nlp.data.batchify.Pad(axis=0, pad_val=pad_val), nlp.data.batchify.Stack(),
         nlp.data.batchify.Pad(axis=0, pad_val=0))
     # transform for data test
-    test_trans = XLNetDatasetTransform(tokenizer, max_len,
-                                      vocab=vocab,
-                                      class_labels=None,
-                                      pad=pad, pair=task.is_pair,
-                                      has_label=False)
+    test_trans = XLNetDatasetTransform(_tokenizer, max_len,
+                                       vocab=_vocab,
+                                       class_labels=None,
+                                       pad=pad, pair=_task.is_pair,
+                                       has_label=False)
 
     # data test. For MNLI, more than one test set is available
-    test_tsv = task.dataset_test()
+    test_tsv = _task.dataset_test()
     test_tsv_list = test_tsv if isinstance(test_tsv, list) else [test_tsv]
     loader_test_list = []
     for segment, data in test_tsv_list:
         data_test = mx.gluon.data.SimpleDataset(pool.map(test_trans, data))
         loader_test = mx.gluon.data.DataLoader(
             data_test,
-            batch_size=dev_batch_size,
+            batch_size=_dev_batch_size,
             num_workers=4,
             shuffle=False,
             batchify_fn=test_batchify_fn)
@@ -425,11 +432,12 @@ def test(loader_test, segment):
         #input_ids, valid_length, segment_ids = seqs
         data_list = list(split_and_load(seqs, ctxs))
         out_list = []
-        for i in range(len(data_list)):
-            input_ids, valid_length, segment_ids = data_list[i]
+        data_len = len(data_list)
+        for splited_data in enumerate(data_list):
+            input_ids, valid_length, segment_ids = splited_data
             feed = (input_ids, valid_length, segment_ids, None)
             parallel.put(feed)
-        for i in range(len(data_list)):
+        for i in range(data_len):
             o = parallel.get()
             out_list.append(o)
         out_list = np.vstack([o.asnumpy() for o in out_list])
@@ -440,7 +448,7 @@ def test(loader_test, segment):
         else:
             # classification task
             out = out_list.reshape(-1, out_list.shape[-1])
-            indices = out.argmax(axis = -1)
+            indices = out.argmax(axis=-1)
             for index in indices:
                 results.append(task.class_labels[int(index)])
 
@@ -458,10 +466,9 @@ def test(loader_test, segment):
         f.write(u'index\tprediction\n')
         for i, pred in enumerate(results):
             f.write(u'%d\t%s\n'%(i, str(pred)))
-    print("finish test!")
 
 
-def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, learning_rate):
+def log_train(batch_id, batch_num, metric, step_loss, _log_interval, epoch_id, learning_rate):
     """Generate and print out the log message for training. """
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
@@ -470,10 +477,10 @@ def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, le
     train_str = '[Epoch %d Batch %d/%d] loss=%.4f, lr=%.7f, metrics:' + \
                 ','.join([i + ':%.4f' for i in metric_nm])
     logging.info(train_str, epoch_id + 1, batch_id + 1, batch_num,
-                 step_loss / log_interval, learning_rate, *metric_val)
+                 step_loss / _log_interval, learning_rate, *metric_val)
 
 
-def log_eval(batch_id, batch_num, metric, step_loss, log_interval):
+def log_eval(batch_id, batch_num, metric, step_loss, _log_interval):
     """Generate and print out the log message for inference. """
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
@@ -482,7 +489,7 @@ def log_eval(batch_id, batch_num, metric, step_loss, log_interval):
     eval_str = '[Batch %d/%d] loss=%.4f, metrics:' + \
                ','.join([i + ':%.4f' for i in metric_nm])
     logging.info(eval_str, batch_id + 1, batch_num,
-                 step_loss / log_interval, *metric_val)
+                 step_loss / _log_interval, *metric_val)
 
 
 def train(metric):
@@ -541,12 +548,13 @@ def train(metric):
                 batch_loss = []
                 out_list = []
                 label_list = []
+                data_len = len(data_list)
                 # forward and backward
                 with mx.autograd.record():
                     data_list = list(split_and_load(seqs, ctxs))
-                    for i in range(len(data_list)):
-                        parallel.put(data_list[i])
-                    for i in range(len(data_list)):
+                    for splited_data in enumerate(data_list):
+                        parallel.put(splited_data)
+                    for _ in range(data_len):
                         ls_p, o, label = parallel.get()
                         batch_loss.append(ls_p)
                         out_list.append(o)
@@ -555,7 +563,7 @@ def train(metric):
                 if not accumulate or (batch_id + 1) % accumulate == 0:
                     trainer.allreduce_grads()
                     nlp.utils.clip_grad_global_norm(params, 1)
-                    trainer.update(accumulate if accumulate else 1,ignore_stale_grad=True)
+                    trainer.update(accumulate if accumulate else 1, ignore_stale_grad=True)
                     step_num += 1
                     if accumulate and accumulate > 1:
                         # set grad to zero for gradient accumulation
@@ -619,9 +627,9 @@ def evaluate(loader_dev, metric, segment):
         label_list = []
         # forward and backward
         data_list = list(split_and_load(seqs, ctxs))
-        for i in range(len(data_list)):
-            parallel.put(data_list[i])
-        for i in range(len(data_list)):
+        for splited_data in enumerate(data_list):
+            parallel.put(splited_data)
+        for _ in range(len(data_list)):
             ls_p, o, label = parallel.get()
             batch_loss.append(ls_p)
             out_list.append(o)
@@ -649,5 +657,5 @@ def evaluate(loader_dev, metric, segment):
 
 if __name__ == '__main__':
     train(task.metrics)
-    print("finish!")
-    sys.exit()
+
+sys.exit()
