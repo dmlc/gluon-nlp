@@ -433,7 +433,7 @@ def test(loader_test, segment):
         data_list = list(split_and_load(seqs, ctxs))
         out_list = []
         data_len = len(data_list)
-        for splited_data in enumerate(data_list):
+        for splited_data in data_list:
             input_ids, valid_length, segment_ids = splited_data
             feed = (input_ids, valid_length, segment_ids, None)
             parallel.put(feed)
@@ -552,7 +552,7 @@ def train(metric):
                 with mx.autograd.record():
                     data_list = list(split_and_load(seqs, ctxs))
                     data_len = len(data_list)
-                    for splited_data in enumerate(data_list):
+                    for splited_data in data_list:
                         parallel.put(splited_data)
                     for _ in range(data_len):
                         ls_p, o, label = parallel.get()
@@ -627,7 +627,7 @@ def evaluate(loader_dev, metric, segment):
         label_list = []
         # forward and backward
         data_list = list(split_and_load(seqs, ctxs))
-        for splited_data in enumerate(data_list):
+        for splited_data in data_list:
             parallel.put(splited_data)
         for _ in range(len(data_list)):
             ls_p, o, label = parallel.get()
