@@ -520,9 +520,6 @@ def train(metric):
 
     tic = time.time()
 
-    for segment, test_data in test_data_list:
-        test(test_data, segment)
-
     for epoch_id in range(args.epochs):
         if args.early_stop and patience == 0:
             logging.info('Early stopping at epoch %d', epoch_id)
