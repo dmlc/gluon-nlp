@@ -16,7 +16,7 @@ from transformer import model
 from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask
 from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
 from data.classification import LCQMCTask, ChnSentiCorpTask
-
+import sys
 
 
 tasks = {
@@ -136,7 +136,7 @@ parser.add_argument(
     help='The data type for training.')
 
 parser.add_argument(
-    '--model_parameters',
+    '--meters',
     type=str,
     default=None,
     help='A parameter file for the model that is loaded into the model'
@@ -579,7 +579,6 @@ def train(metric):
             else:
                 if args.early_stop is not None:
                     patience -= 1
-            print(epoch_id, metric_nm, metric_val)
             metric_history.append((epoch_id, metric_nm, metric_val))
 
         if not only_inference:
@@ -600,7 +599,7 @@ def train(metric):
         ckpt_name = 'model_xlnet_{0}_{1}.params'.format(task_name, epoch_id)
         params_saved = os.path.join(output_dir, ckpt_name)
         nlp.utils.load_parameters(model, params_saved)
-        metric_str = 'Best model at epoch {}. Validation metrics:'.format(epoch_id)
+        metric_str = 'Best model at epoch {}. Validation metrics:'.format(epoch_id + 1)
         metric_str += ','.join([i + ':%.4f' for i in metric_nm])
         logging.info(metric_str, *metric_val)
 
@@ -651,4 +650,4 @@ def evaluate(loader_dev, metric, segment):
 if __name__ == '__main__':
     train(task.metrics)
     print("finish!")
-    exit(0)
+    sys.exit()
