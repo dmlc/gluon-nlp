@@ -140,7 +140,7 @@ parser.add_argument(
     type=str,
     default='float32',
     choices=['float32', 'float16'],
-    help='The data type for training.')
+    help='The data type for training. Doesnt support float16 currently')
 
 parser.add_argument(
     '--model_parameters',
@@ -160,7 +160,7 @@ parser.add_argument(
 
 parser.add_argument('--comm_backend', type=str, default='device',
                     choices=['horovod', 'dist_sync_device', 'device'],
-                    help='Communication backend.')
+                    help='Communication backend. Only have been tested on device yet.')
 
 args = parser.parse_args()
 
