@@ -383,14 +383,6 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
 
         Returns
         -------
-        encoder_outputs: list
-            Outputs of the encoder. Contains:
-
-            - outputs of the transformer encoder. Shape (batch_size, length, C_out)
-            - additional_outputs of all the transformer encoder
-
-        Returns
-        -------
         outputs : NDArray or Symbol, or List[NDArray] or List[Symbol]
             If output_all_encodings flag is False, then the output of the last encoder.
             If output_all_encodings flag is True, then the list of all outputs of all encoders.
