@@ -274,10 +274,10 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
     scaled : bool
         Whether to scale the softmax input by the sqrt of the input dimension
         in multi-head attention
-    scale_inputs : bool, default True
+    scale_embed : bool, default True
         Whether to scale the input embeddings by the sqrt of the `units`.
     norm_inputs : bool, default True
-        Whether to normalize the input embeddings with Layernorm. If dropout is
+        Whether to normalize the input embeddings with LayerNorm. If dropout is
         enabled, normalization happens after dropout is applied to inputs.
     dropout : float
         Dropout probability of the attention probabilities.
@@ -312,7 +312,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
     """
 
     def __init__(self, *, attention_cell='multi_head', num_layers=2, units=512, hidden_size=2048,
-                 max_length=50, num_heads=4, scaled=True, scale_inputs=True, norm_inputs=True,
+                 max_length=50, num_heads=4, scaled=True, scale_embed=True, norm_inputs=True,
                  dropout=0.0, use_residual=True, output_attention=False, output_all_encodings=False,
                  weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
@@ -325,7 +325,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         self._output_attention = output_attention
         self._output_all_encodings = output_all_encodings
         self._dropout = dropout
-        self._scale_inputs = scale_inputs
+        self._scale_embed = scale_embed
         self._norm_inputs = norm_inputs
 
         with self.name_scope():
@@ -412,7 +412,7 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         else:
             states.append(steps)
 
-        if self._scale_inputs:
+        if self._scale_embed:
             inputs = inputs * math.sqrt(self._units)
         # Positional encoding
         positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
@@ -581,9 +581,9 @@ class TransformerDecoderCell(HybridBlock):
 
 class _BaseTransformerDecoder(HybridBlock):
     def __init__(self, attention_cell='multi_head', num_layers=2, units=128, hidden_size=2048,
-                 max_length=50, num_heads=4, scaled=True, dropout=0.0, use_residual=True,
-                 output_attention=False, weight_initializer=None, bias_initializer='zeros',
-                 scale_embed=True, prefix=None, params=None):
+                 max_length=50, num_heads=4, scaled=True, scale_embed=True, norm_inputs=True,
+                 dropout=0.0, use_residual=True, output_attention=False, weight_initializer=None,
+                 bias_initializer='zeros', prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, 'In TransformerDecoder, the units should be divided ' \
                                        'exactly by the number of heads. Received units={}, ' \
@@ -598,6 +598,7 @@ class _BaseTransformerDecoder(HybridBlock):
         self._output_attention = output_attention
         self._scaled = scaled
         self._scale_embed = scale_embed
+        self._norm_inputs = norm_inputs
         with self.name_scope():
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
@@ -689,7 +690,6 @@ class _BaseTransformerDecoder(HybridBlock):
             mem_mask = F.broadcast_like(mem_mask, inputs, lhs_axes=(1, ), rhs_axes=(1, ))
 
         if self._scale_embed:
-            # XXX: input.shape[-1] and self._units are expected to be the same
             inputs = inputs * math.sqrt(self._units)
 
         # Positional Encoding
@@ -699,7 +699,10 @@ class _BaseTransformerDecoder(HybridBlock):
 
         if self._dropout:
             inputs = self.dropout_layer(inputs)
-        inputs = self.layer_norm(inputs)
+
+        if self._norm_inputs:
+            inputs = self.layer_norm(inputs)
+
         additional_outputs = []
         attention_weights_l = []
         outputs = inputs
@@ -739,6 +742,11 @@ class TransformerDecoder(_BaseTransformerDecoder, Seq2SeqDecoder):
     scaled : bool
         Whether to scale the softmax input by the sqrt of the input dimension
         in multi-head attention
+    scale_embed : bool, default True
+        Whether to scale the input embeddings by the sqrt of the `units`.
+    norm_inputs : bool, default True
+        Whether to normalize the input embeddings with LayerNorm. If dropout is
+        enabled, normalization happens after dropout is applied to inputs.
     dropout : float
         Dropout probability.
     use_residual : bool
@@ -750,8 +758,6 @@ class TransformerDecoder(_BaseTransformerDecoder, Seq2SeqDecoder):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    scale_embed : bool, default True
-        Scale the input embeddings by sqrt(embed_size).
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
@@ -784,6 +790,11 @@ class TransformerOneStepDecoder(_BaseTransformerDecoder, Seq2SeqOneStepDecoder):
     scaled : bool
         Whether to scale the softmax input by the sqrt of the input dimension
         in multi-head attention
+    scale_embed : bool, default True
+        Whether to scale the input embeddings by the sqrt of the `units`.
+    norm_inputs : bool, default True
+        Whether to normalize the input embeddings with LayerNorm. If dropout is
+        enabled, normalization happens after dropout is applied to inputs.
     dropout : float
         Dropout probability.
     use_residual : bool
@@ -795,8 +806,6 @@ class TransformerOneStepDecoder(_BaseTransformerDecoder, Seq2SeqOneStepDecoder):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    scale_embed : bool, default True
-        Scale the input embeddings by sqrt(embed_size).
     prefix : str, default 'rnn_'
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
