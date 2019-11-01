@@ -142,6 +142,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         valid_length : NDArray or Symbol
             Valid lengths of each sequence. This is usually used when part of sequence has
             been padded. Shape (batch_size,)
+
         Returns
         -------
         encoder_outputs: list
