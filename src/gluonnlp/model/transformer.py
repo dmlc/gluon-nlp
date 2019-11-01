@@ -331,7 +331,8 @@ class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
         with self.name_scope():
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
-            self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=1e-5)
+            if self._norm_inputs:
+                self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=1e-5)
             self.position_weight = self.params.get_constant(
                 'const', _position_encoding_init(max_length, units))
             self.transformer_cells = nn.HybridSequential()
@@ -602,7 +603,8 @@ class _BaseTransformerDecoder(HybridBlock):
         with self.name_scope():
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
-            self.layer_norm = nn.LayerNorm()
+            if self._norm_inputs:
+                self.layer_norm = nn.LayerNorm()
             encoding = _position_encoding_init(max_length, units)
             self.position_weight = self.params.get_constant('const', encoding.astype(np.float32))
             self.transformer_cells = nn.HybridSequential()
