@@ -82,7 +82,6 @@ class XLNetClassifier(Block):
         outputs : NDArray
             Shape (batch_size, num_classes)
         """
-        
         valid_length_start = inputs.shape[1] - valid_length
         attention_mask = self._padding_mask(inputs, valid_length_start).astype('float32')
         output, _ = self.xlnet(inputs, token_types, mems, attention_mask)
