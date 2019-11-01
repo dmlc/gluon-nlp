@@ -474,7 +474,6 @@ class XLNetCell(TransformerXLCell):
         key_value = inputs
         if mem_value is not None:
             key_value = F.concat(mem_value, inputs, dim=1)
-        mask = mask.astype('float32')
         outputs, attention_outputs = self.attention_cell(inputs, key_value, key_value, pos_emb,
                                                          mask, segments)
 

@@ -86,7 +86,7 @@ class XLNetClassifier(Block):
         #print(inputs)
         #print(inputs.shape)
         valid_length_start = inputs.shape[1] - valid_length
-        attention_mask = self._padding_mask(inputs, valid_length_start)
+        attention_mask = self._padding_mask(inputs, valid_length_start).astype('float32')
         output, _ = self.xlnet(inputs, token_types, mems, attention_mask)
         output = self._apply_pooling(output)
         pooler_out = self.pooler(output)
