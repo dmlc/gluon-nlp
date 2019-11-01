@@ -16,7 +16,10 @@ from mxnet import gluon
 import gluonnlp as nlp
 from XLNet_classifier import XLNetClassifier
 from transformer import model
-from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask, \
+
+sys.path.append('../bert/data')
+#pylint: disable=wrong-import-position
+from classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask, \
      QNLITask, CoLATask, MNLITask, WNLITask, XNLITask, LCQMCTask, ChnSentiCorpTask
 from data.transform import XLNetDatasetTransform
 
@@ -158,18 +161,9 @@ parser.add_argument(
          'The provided value is the patience. ')
 
 
-parser.add_argument('--comm_backend', type=str, default='device',
-                    choices=['horovod', 'dist_sync_device', 'device'],
-                    help='Communication backend. Only have been tested on device yet.')
-
 args = parser.parse_args()
 
-if args.comm_backend == 'horovod':
-    try:
-        import horovod.mxnet as hvd
-    except ImportError:
-        logging.info('horovod must be installed.')
-        sys.exit()
+
 
 def split_and_load(arrs, ctx):
     """split and load arrays to a list of contexts"""
@@ -178,59 +172,6 @@ def split_and_load(arrs, ctx):
     loaded_arrs = [mx.gluon.utils.split_and_load(arr, ctx, even_split=False) for arr in arrs]
     return zip(*loaded_arrs)
 
-class DataParallelXLNet(nlp.utils.Parallelizable):
-    """Data parallel XLNet model.
-
-    Parameters
-    ----------
-    model : Block
-        The xlnet model.
-    """
-    def __init__(self, m, trainer=None):
-        self._model = m
-        self._trainer = trainer
-
-    def forward_backward(self, x):
-        """forward backward implementation"""
-        input_ids, valid_length, segment_ids, label = x
-        valid_length = valid_length.astype(args.dtype, copy=False)
-        with mx.autograd.record():
-            out = self._model(input_ids, segment_ids, valid_length=valid_length)
-            if label is None:
-                #test mode
-                return out
-            ls = loss_function(out, label).mean()
-        if self._trainer:
-            self._trainer.backward(ls)
-        else:
-            ls.backward()
-
-        return ls, out, label
-
-def init_comm(Backend):
-    """Init communication backend"""
-    # backend specific implementation
-    if Backend == 'horovod':
-        hvd.init()
-        Store = None
-        _num_workers = hvd.size()
-        _rank = hvd.rank()
-        _local_rank = hvd.local_rank()
-        _is_master_node = _rank == _local_rank
-        _ctxs = [mx.gpu(_local_rank)]
-    else:
-        # kvstore
-        Store = mx.kv.create(Backend)
-        _num_workers = Store.num_workers
-        _rank = Store.rank
-        _local_rank = 0
-        _is_master_node = _rank == _local_rank
-        if args.cpu:
-            _ctxs = [mx.cpu(int(x)) for x in range(args.cpu)]
-        else:
-            _ctxs = [mx.cpu()] if args.gpu is None or args.gpu == '' else \
-                   [mx.gpu(int(x)) for x in range(args.gpu)]
-    return Store, _num_workers, _rank, _local_rank, _is_master_node, _ctxs
 
 logging.getLogger().setLevel(logging.INFO)
 logging.captureWarnings(True)
@@ -253,8 +194,9 @@ np.random.seed(args.seed)
 random.seed(args.seed)
 mx.random.seed(args.seed)
 
-backend = args.comm_backend
-store, num_workers, rank, local_rank, is_master_node, ctxs = init_comm(backend)
+
+num_workers = 0
+ctxs = [mx.cpu(0)] if not args.gpu else [mx.gpu(i) for i in range(args.gpu)]
 
 task = tasks[task_name]
 
@@ -309,9 +251,9 @@ else:
 # reuse the XLnetClassifier class with num_classes=1 for regression
 model = XLNetClassifier(xlnet_base, dropout=0.1, num_classes=num_classes)
 
-parallel_model = DataParallelXLNet(model)
+
 num_ctxes = len(ctxs)
-parallel = nlp.utils.Parallel(num_ctxes if num_ctxes > 1 else 0, parallel_model)
+
 
 
 # initialize classifier
@@ -372,7 +314,7 @@ def preprocess_data(_tokenizer, _task, _batch_size, _dev_batch_size, max_len, _v
     # data loader for training
     loader_train = gluon.data.DataLoader(
         dataset=data_train,
-        num_workers= num_workers,
+        num_workers=num_workers,
         batch_sampler=batch_sampler,
         batchify_fn=batchify_fn)
 
@@ -434,14 +376,10 @@ def test(loader_test, segment):
         #input_ids, valid_length, segment_ids = seqs
         data_list = list(split_and_load(seqs, ctxs))
         out_list = []
-        data_len = len(data_list)
         for splited_data in data_list:
             input_ids, valid_length, segment_ids = splited_data
-            feed = (input_ids, valid_length, segment_ids, None)
-            parallel.put(feed)
-        for i in range(data_len):
-            o = parallel.get()
-            out_list.append(o)
+            out = model(input_ids, segment_ids, valid_length=valid_length)
+            out_list.append(out)
         out_list = np.vstack([o.asnumpy() for o in out_list])
         if not task.class_labels:
             # regression task
@@ -553,14 +491,12 @@ def train(metric):
                 # forward and backward
                 with mx.autograd.record():
                     data_list = list(split_and_load(seqs, ctxs))
-                    data_len = len(data_list)
                     for splited_data in data_list:
-                        parallel.put(splited_data)
-                    for _ in range(data_len):
-                        ls_p, o, label = parallel.get()
-                        batch_loss.append(ls_p)
-                        out_list.append(o)
+                        input_ids, valid_length, segment_ids, label = splited_data
+                        out = model(input_ids, segment_ids, valid_length=valid_length)
+                        out_list.append(out)
                         label_list.append(label)
+                        batch_loss.append(loss_function(out, label).mean())
                 # update
                 if not accumulate or (batch_id + 1) % accumulate == 0:
                     trainer.allreduce_grads()
@@ -572,7 +508,6 @@ def train(metric):
                         all_model_params.zero_grad()
                 batch_loss = sum([ls.asscalar() for ls in batch_loss])
                 step_loss += batch_loss
-
                 metric.update(label_list, out_list)
                 if (batch_id + 1) % (args.log_interval) == 0:
                     log_train(batch_id, len(train_data), metric, step_loss, args.log_interval,
@@ -629,14 +564,18 @@ def evaluate(loader_dev, metric, segment):
         out_list = []
         label_list = []
         # forward and backward
+        batch_loss = []
+        out_list = []
+        label_list = []
+        # forward and backward
         data_list = list(split_and_load(seqs, ctxs))
         for splited_data in data_list:
-            parallel.put(splited_data)
-        for _ in range(len(data_list)):
-            ls_p, o, label = parallel.get()
-            batch_loss.append(ls_p)
-            out_list.append(o)
+            input_ids, valid_length, segment_ids, label = splited_data
+            out = model(input_ids, segment_ids, valid_length=valid_length)
+            out_list.append(out)
             label_list.append(label)
+            batch_loss.append(loss_function(out, label).mean())
+            #batch_loss.append(loss_function(out, label).means())
 
         batch_loss = sum([ls.asscalar() for ls in batch_loss])
         step_loss += batch_loss

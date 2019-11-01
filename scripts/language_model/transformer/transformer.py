@@ -474,7 +474,6 @@ class XLNetCell(TransformerXLCell):
         key_value = inputs
         if mem_value is not None:
             key_value = F.concat(mem_value, inputs, dim=1)
-        mask = mask.astype('float32')
         outputs, attention_outputs = self.attention_cell(inputs, key_value, key_value, pos_emb,
                                                          mask, segments)
 
@@ -523,9 +522,9 @@ class _BaseXLNet(mx.gluon.HybridBlock):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    prefix : str, default 'rnn_'
+    prefix : str, default None
         Prefix for name of `Block`s (and name of weight if params is `None`).
-    params : Parameter or None
+    params : ParameterDict or None
         Container for weight sharing between cells. Created if `None`.
 
     """
@@ -670,9 +669,9 @@ class XLNet((mx.gluon.Block)):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    prefix : str, default 'rnn_'
+    prefix : str, default None
         Prefix for name of `Block`s (and name of weight if params is `None`).
-    params : Parameter or None
+    params : ParameterDict or None
         Container for weight sharing between cells. Created if `None`.
 
     """
