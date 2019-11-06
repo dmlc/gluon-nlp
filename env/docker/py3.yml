@@ -3,6 +3,7 @@ channels:
 dependencies:
   - python=3.6
   - pip=18.1
+  - cython
   - perl
   - pylint=1.9.2
   - flake8

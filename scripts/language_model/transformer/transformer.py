@@ -127,9 +127,6 @@ class TransformerXLCell(mx.gluon.HybridBlock):
                                                  weight_initializer=weight_initializer,
                                                  bias_initializer=bias_initializer,
                                                  layer_norm_eps=1e-12)
-            if activation == 'gelu':  # XLNet uses OpenAI GPT's gelu
-                assert hasattr(self.ffn.activation, '_support_erf')
-                self.ffn.activation._support_erf = False
             self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=1e-12)
 
     def hybrid_forward(self, F, inputs, pos_emb, mem_value, mask):
@@ -530,7 +527,7 @@ class _BaseXLNet(mx.gluon.HybridBlock):
     """
 
     def __init__(self, vocab_size, num_layers=2, units=128, hidden_size=2048, num_heads=4,
-                 activation='gelu', two_stream: bool = False, scaled=True, dropout=0.0,
+                 activation='approx_gelu', two_stream: bool = False, scaled=True, dropout=0.0,
                  attention_dropout=0.0, use_residual=True, clamp_len: typing.Optional[int] = None,
                  use_decoder=True, tie_decoder_weight=True, weight_initializer=None,
                  bias_initializer='zeros', prefix=None, params=None):

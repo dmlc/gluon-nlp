@@ -225,7 +225,7 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.remote_required
 @pytest.mark.integration
 @pytest.mark.parametrize('backend', ['horovod', 'device'])
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 10, 31),
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 11, 30),
                     reason="mxnet nightly incompatible with horovod")
 def test_bert_pretrain(backend):
     # test data creation
