@@ -71,10 +71,7 @@ Components
     :nosignatures:
 
     BERTModel
-    BERTLayerNorm
     BERTEncoder
-    BERTEncoderCell
-    BERTPositionwiseFFN
 
 Pre-defined models
 

@@ -18,9 +18,6 @@
 
 __all__ = ['UnigramCandidateSampler']
 
-import functools
-import operator
-
 import mxnet as mx
 import numpy as np
 
@@ -36,10 +33,6 @@ class UnigramCandidateSampler(mx.gluon.HybridBlock):
     weights : mx.nd.NDArray
         Unnormalized class probabilities. Samples are drawn and returned on the
         same context as weights.context.
-    shape : int or tuple of int
-        Shape of data to be sampled.
-        TODO: Specifying the shape is only a workaround until random_like
-        operators are available in mxnet
     dtype : str or np.dtype, default 'float32'
         Data type of the candidates. Make sure that the dtype precision is
         large enough to represent the size of your weights array precisely. For
@@ -47,9 +40,8 @@ class UnigramCandidateSampler(mx.gluon.HybridBlock):
 
     """
 
-    def __init__(self, weights, shape, dtype='float32'):
+    def __init__(self, weights, dtype='float32'):
         super(UnigramCandidateSampler, self).__init__()
-        self._shape = shape
         self._dtype = dtype
         self.N = weights.size
 
@@ -108,8 +100,6 @@ class UnigramCandidateSampler(mx.gluon.HybridBlock):
         ----------
         candidates_like: mxnet.nd.NDArray or mxnet.sym.Symbol
             This input specifies the shape of the to be sampled candidates. #
-            TODO shape selection is not yet supported. Shape must be specified
-            in the constructor.
 
         Returns
         -------
@@ -118,15 +108,13 @@ class UnigramCandidateSampler(mx.gluon.HybridBlock):
             are sampled based on the weights specified on creation of the
             UnigramCandidateSampler.
         """
-        flat_shape = functools.reduce(operator.mul, self._shape)
-        idx = F.random.uniform(low=0, high=self.N, shape=flat_shape,
-                               dtype='float64').floor()
+        candidates_flat = candidates_like.reshape((-1, )).astype('float64')
+        idx = F.random.uniform_like(candidates_flat, low=0, high=self.N).floor()
         prob = F.gather_nd(prob, idx.reshape((1, -1)))
         alias = F.gather_nd(alias, idx.reshape((1, -1)))
-        where = F.random.uniform(shape=flat_shape,
-                                 dtype='float64') < prob
+        where = F.random.uniform_like(candidates_flat) < prob
         hit = idx * where
         alt = alias * (1 - where)
-        candidates = (hit + alt).reshape(self._shape)
+        candidates = (hit + alt).reshape_like(candidates_like)
 
         return candidates.astype(self._dtype)

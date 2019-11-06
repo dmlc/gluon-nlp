@@ -109,9 +109,8 @@ parser.add_argument('--log_interval', type=int, default=100, metavar='N',
                     help='report interval')
 parser.add_argument('--save_dir', type=str, default='transformer_out',
                     help='directory path to save the final model and training log')
-parser.add_argument('--gpus', type=str,
-                    help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.'
-                         '(using single gpu is suggested)')
+parser.add_argument('--gpu', type=int,
+                    help='gpu id, e.g. 0 or 1. Unspecified means using cpu.')
 parser.add_argument('--model_parameter', type=str, default=' ', required=True,
                     help='model parameter for inference, must be provided.')
 
@@ -138,9 +137,7 @@ data_train_lengths, data_val_lengths, data_test_lengths = [dataprocessor.get_dat
 detokenizer = nlp.data.SacreMosesDetokenizer()
 
 # model prepare
-ctx = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
-    [mx.gpu(int(x)) for x in args.gpus.split(',')]
-num_ctxs = len(ctx)
+ctx = [mx.cpu()] if args.gpu is None else [mx.gpu(args.gpu)]
 
 if args.src_max_len <= 0 or args.tgt_max_len <= 0:
     max_len = np.max(
@@ -157,17 +154,14 @@ if args.tgt_max_len > 0:
 else:
     tgt_max_len = max_len[1]
 
-encoder, decoder = get_transformer_encoder_decoder(units=args.num_units,
-                                                   hidden_size=args.hidden_size,
-                                                   dropout=args.dropout,
-                                                   num_layers=args.num_layers,
-                                                   num_heads=args.num_heads,
-                                                   max_src_length=max(src_max_len, 500),
-                                                   max_tgt_length=max(tgt_max_len, 500),
-                                                   scaled=args.scaled)
+encoder, decoder, one_step_ahead_decoder = get_transformer_encoder_decoder(
+    units=args.num_units, hidden_size=args.hidden_size, dropout=args.dropout,
+    num_layers=args.num_layers, num_heads=args.num_heads, max_src_length=max(src_max_len, 500),
+    max_tgt_length=max(tgt_max_len, 500), scaled=args.scaled)
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
-                 share_embed=args.dataset != 'TOY', embed_size=args.num_units,
-                 tie_weights=args.dataset != 'TOY', embed_initializer=None, prefix='transformer_')
+                 one_step_ahead_decoder=one_step_ahead_decoder, share_embed=args.dataset != 'TOY',
+                 embed_size=args.num_units, tie_weights=args.dataset != 'TOY',
+                 embed_initializer=None, prefix='transformer_')
 
 param_name = args.model_parameter
 if (not os.path.exists(param_name)):

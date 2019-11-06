@@ -82,7 +82,6 @@ class _MultiWorkerIter:
                  dataset_fn, sampler_fn, dataloader_fn, prefetch):
         self._worker_pool = worker_pool
         self._worker_fn = worker_fn
-        self._dataset = dataset
         self._dataset_fn = dataset_fn
         self._sampler_fn = sampler_fn
         self._dataloader_fn = dataloader_fn
@@ -93,7 +92,7 @@ class _MultiWorkerIter:
         self._sent_idx = 0
         self._data_buffer = {}
 
-        self._dataset_iter = iter(file_sampler)
+        self._dataset = [dataset[i] for i in iter(file_sampler)]
         self._num_datasets = len(self._dataset)
 
         # need to keep a reference of the dataloader

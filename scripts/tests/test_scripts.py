@@ -195,7 +195,7 @@ def test_transformer(bleu):
                                      '--bleu', '13a', 
                                      '--log_interval', '10', 
                                      '--model_parameter', './scripts/machine_translation/transformer_en_de_u512/valid_best.params', 
-                                     '--gpus', '0'
+                                     '--gpu', '0'
                                      ])
     time.sleep(5)
 
@@ -225,6 +225,8 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.remote_required
 @pytest.mark.integration
 @pytest.mark.parametrize('backend', ['horovod', 'device'])
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 11, 30),
+                    reason="mxnet nightly incompatible with horovod")
 def test_bert_pretrain(backend):
     # test data creation
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
@@ -315,7 +317,7 @@ def test_finetune_train(early_stop, bert_model, dataset, dtype):
 @pytest.mark.integration
 @pytest.mark.parametrize('task', ['classification', 'regression', 'question_answering'])
 def test_export(task):
-    process = subprocess.check_call([sys.executable, './scripts/bert/export/export.py',
+    process = subprocess.check_call([sys.executable, './scripts/bert/export.py',
                                      '--task', task])
 
 @pytest.mark.serial

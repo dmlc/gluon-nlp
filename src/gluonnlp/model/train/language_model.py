@@ -144,8 +144,6 @@ class AWDRNN(HybridBlock):
             to num_layers. The shape of every encoder's dropped output
             `(sequence_length, batch_size, num_hidden)`
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        begin_state = [] if begin_state is None else begin_state
         return super(AWDRNN, self).__call__(inputs, begin_state)
 
     def hybrid_forward(self, F, inputs, begin_state=None): # pylint: disable=arguments-differ
@@ -176,10 +174,6 @@ class AWDRNN(HybridBlock):
             to num_layers. The shape of every encoder's dropped output
             `(sequence_length, batch_size, num_hidden)`
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        if isinstance(begin_state, list) and len(begin_state) == 0:
-            begin_state = None
-
         encoded = self.embedding(inputs)
         if not begin_state:
             if F == nd:
@@ -302,9 +296,6 @@ class StandardRNN(HybridBlock):
             The list of last output with dropout of the model's encoder.
             the shape of last encoder's dropped output `(sequence_length, batch_size, num_hidden)`
         """
-        print('called train.__call__')
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        begin_state = [] if begin_state is None else begin_state
         return super(StandardRNN, self).__call__(inputs, begin_state)
 
     def hybrid_forward(self, F, inputs, begin_state=None): # pylint: disable=arguments-differ
@@ -335,11 +326,6 @@ class StandardRNN(HybridBlock):
             The list of last output with dropout of the model's encoder.
             the shape of last encoder's dropped output `(sequence_length, batch_size, num_hidden)`
         """
-        print('called train.hybrid_forward')
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        if isinstance(begin_state, list) and len(begin_state) == 0:
-            begin_state = None
-
         encoded = self.embedding(inputs)
         if not begin_state:
             if F == nd:

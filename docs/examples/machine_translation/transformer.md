@@ -121,8 +121,8 @@ Now, we have obtained the transformed datasets. The next step is to construct th
 
 ```{.python .input}
 wmt_test_batchify_fn = nlp.data.batchify.Tuple(
-    nlp.data.batchify.Pad(),
-    nlp.data.batchify.Pad(),
+    nlp.data.batchify.Pad(pad_val=0),
+    nlp.data.batchify.Pad(pad_val=0),
     nlp.data.batchify.Stack(dtype='float32'),
     nlp.data.batchify.Stack(dtype='float32'),
     nlp.data.batchify.Stack())

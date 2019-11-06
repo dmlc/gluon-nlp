@@ -91,10 +91,6 @@ class AWDRNN(train.AWDRNN):
             output recurrent state tensor with length equals to num_layers.
             the state with shape `(1, batch_size, num_hidden)`
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        if isinstance(begin_state, list) and len(begin_state) == 0:
-            begin_state = None
-
         encoded = self.embedding(inputs)
         if not begin_state:
             if F == nd:
@@ -165,10 +161,6 @@ class StandardRNN(train.StandardRNN):
             output recurrent state tensor with length equals to num_layers-1.
             the state with shape `(num_layers, batch_size, num_hidden)`
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        if isinstance(begin_state, list) and len(begin_state) == 0:
-            begin_state = None
-
         encoded = self.embedding(inputs)
         if not begin_state:
             if F == nd:
