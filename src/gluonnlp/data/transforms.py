@@ -30,6 +30,7 @@ __all__ = [
 ]
 
 import errno
+import functools
 import io
 import os
 import time
@@ -42,7 +43,9 @@ from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 import numpy as np
 
 from ..base import get_home_dir
+from ..vocab.vocab import Vocab
 from .utils import _extract_archive
+from .wordpiece import tokenize as wordpiece_tokenize
 
 
 class ClipSequence:
@@ -790,14 +793,17 @@ class BERTTokenizer:
 
     Parameters
     ----------
-    vocab : gluonnlp.Vocab or None, default None
+    vocab
         Vocabulary for the corpus.
-    lower : bool, default True
+    lower
         whether the text strips accents and convert to lower case.
         If you use the BERT pre-training model,
         lower is set to Flase when using the cased model,
         otherwise it is set to True.
-    max_input_chars_per_word : int, default 200
+    max_input_chars_per_word
+    lru_cache_size
+        Maximum size of a least-recently-used cache to speed up tokenization.
+        Use size of 2**20 for example.
 
     Examples
     --------
@@ -812,10 +818,14 @@ class BERTTokenizer:
 
     _special_prefix = '##'
 
-    def __init__(self, vocab, lower=True, max_input_chars_per_word=200):
+    def __init__(self, vocab: Vocab, lower: bool = True, max_input_chars_per_word: int = 200,
+                 lru_cache_size: Optional[int] = None):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
         self.basic_tokenizer = BERTBasicTokenizer(lower=lower)
+        if lru_cache_size:
+            self._word_to_wordpiece_optimized = functools.lru_cache(maxsize=lru_cache_size)(
+                self._word_to_wordpiece_optimized)
 
     def __call__(self, sample):
         """
@@ -841,6 +851,10 @@ class BERTTokenizer:
 
         return split_tokens
 
+    def _word_to_wordpiece_optimized(self, text):  # pylint: disable=method-hidden
+        return wordpiece_tokenize(text, self.vocab, self.vocab.unknown_token,
+                                  self.max_input_chars_per_word)
+
     def _tokenize_wordpiece(self, text):
         """Tokenizes a piece of text into its word pieces.
 
@@ -861,35 +875,14 @@ class BERTTokenizer:
         ret : A list of wordpiece tokens.
         """
 
+        # case where text is a single token
+        whitespace_tokenized_tokens = self.basic_tokenizer._whitespace_tokenize(text)
+        if len(whitespace_tokenized_tokens) == 1:
+            return self._word_to_wordpiece_optimized(whitespace_tokenized_tokens[0])
+
         output_tokens = []
-        for token in self.basic_tokenizer._whitespace_tokenize(text):
-            chars = list(token)
-            if len(chars) > self.max_input_chars_per_word:
-                output_tokens.append(self.vocab.unknown_token)
-                continue
-            is_bad = False
-            start = 0
-            sub_tokens = []
-            while start < len(chars):
-                end = len(chars)
-                cur_substr = None
-                while start < end:
-                    substr = ''.join(chars[start:end])
-                    if start > 0:
-                        substr = self._special_prefix + substr
-                    if substr in self.vocab:
-                        cur_substr = substr
-                        break
-                    end -= 1
-                if cur_substr is None:
-                    is_bad = True
-                    break
-                sub_tokens.append(cur_substr)
-                start = end
-            if is_bad:
-                output_tokens.append(self.vocab.unknown_token)
-            else:
-                output_tokens.extend(sub_tokens)
+        for token in whitespace_tokenized_tokens:
+            output_tokens.extend(self._word_to_wordpiece_optimized(token))
         return output_tokens
 
     def convert_tokens_to_ids(self, tokens):
