@@ -18,11 +18,13 @@
 __all__ = ['Seq2SeqEncoder']
 
 from functools import partial
+
 import mxnet as mx
 from mxnet.gluon import rnn
 from mxnet.gluon.block import Block
-from gluonnlp.model import AttentionCell, MLPAttentionCell, DotProductAttentionCell, \
-    MultiHeadAttentionCell
+
+from .attention_cell import (AttentionCell, DotProductAttentionCell,
+                             MLPAttentionCell, MultiHeadAttentionCell)
 
 
 def _get_cell_type(cell_type):
@@ -128,6 +130,7 @@ def _nested_sequence_last(data, valid_length):
 class Seq2SeqEncoder(Block):
     r"""Base class of the encoders in sequence to sequence learning models.
     """
+
     def __call__(self, inputs, valid_length=None, states=None):  #pylint: disable=arguments-differ
         """Encode the input sequence.
 
@@ -153,11 +156,14 @@ class Seq2SeqEncoder(Block):
 
 
 class Seq2SeqDecoder(Block):
-    r"""Base class of the decoders in sequence to sequence learning models.
+    """Base class of the decoders for sequence to sequence learning models.
 
-    In the forward function, it generates the one-step-ahead decoding output.
+    Given the inputs and the context computed by the encoder, generate the new
+    states. Used in the training phase where we set the inputs to be the target
+    sequence.
 
     """
+
     def init_state_from_encoder(self, encoder_outputs, encoder_valid_length=None):
         r"""Generates the initial decoder states based on the encoder outputs.
 
@@ -172,10 +178,11 @@ class Seq2SeqDecoder(Block):
         """
         raise NotImplementedError
 
-    def decode_seq(self, inputs, states, valid_length=None):
-        r"""Given the inputs and the context computed by the encoder,
-        generate the new states. This is usually used in the training phase where we set the inputs
-        to be the target sequence.
+    def forward(self, step_input, states, valid_length=None):  #pylint: disable=arguments-differ
+        """Given the inputs and the context computed by the encoder, generate the new states.
+
+        Used in the training phase where we set the inputs to be the target
+        sequence.
 
         Parameters
         ----------
@@ -193,11 +200,34 @@ class Seq2SeqDecoder(Block):
             The new states of the decoder
         additional_outputs : list
             Additional outputs of the decoder, e.g, the attention weights
+
         """
         raise NotImplementedError
 
-    def __call__(self, step_input, states):  #pylint: disable=arguments-differ
-        r"""One-step decoding of the input
+
+class Seq2SeqOneStepDecoder(Block):
+    r"""Base class of the decoders in sequence to sequence learning models.
+
+    In the forward function, it generates the one-step-ahead decoding output.
+
+    """
+
+    def init_state_from_encoder(self, encoder_outputs, encoder_valid_length=None):
+        r"""Generates the initial decoder states based on the encoder outputs.
+
+        Parameters
+        ----------
+        encoder_outputs : list of NDArrays
+        encoder_valid_length : NDArray or None
+
+        Returns
+        -------
+        decoder_states : list
+        """
+        raise NotImplementedError
+
+    def forward(self, step_input, states):  #pylint: disable=arguments-differ
+        """One-step decoding of the input
 
         Parameters
         ----------
@@ -213,7 +243,4 @@ class Seq2SeqDecoder(Block):
         step_additional_outputs : list
             Additional outputs of the step, e.g, the attention weights
         """
-        return super(Seq2SeqDecoder, self).__call__(step_input, states)
-
-    def forward(self, step_input, states):  #pylint: disable=arguments-differ
         raise NotImplementedError

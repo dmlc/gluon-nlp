@@ -1,9 +1,11 @@
-import pytest
+import warnings
+
 import numpy as np
+import pytest
 from mxnet.gluon import data
+
 import gluonnlp as nlp
 from gluonnlp.data import sampler as s
-
 
 N = 1000
 def test_sorted_sampler():
@@ -27,13 +29,13 @@ def test_sorted_sampler():
 @pytest.mark.parametrize('num_shards', range(4))
 def test_fixed_bucket_sampler(seq_lengths, ratio, shuffle, num_buckets, bucket_scheme,
                               use_average_length, num_shards):
-    sampler = s.FixedBucketSampler(seq_lengths,
-                                   batch_size=8,
-                                   num_buckets=num_buckets,
-                                   ratio=ratio, shuffle=shuffle,
-                                   use_average_length=use_average_length,
-                                   bucket_scheme=bucket_scheme,
-                                   num_shards=num_shards)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        sampler = s.FixedBucketSampler(seq_lengths, batch_size=8, num_buckets=num_buckets,
+                                       ratio=ratio, shuffle=shuffle,
+                                       use_average_length=use_average_length,
+                                       bucket_scheme=bucket_scheme, num_shards=num_shards)
+
     print(sampler.stats())
     total_sampled_ids = []
     for batch_sample_ids in sampler:
@@ -49,8 +51,10 @@ def test_fixed_bucket_sampler(seq_lengths, ratio, shuffle, num_buckets, bucket_s
 @pytest.mark.parametrize('shuffle', [False, True])
 def test_fixed_bucket_sampler_with_single_key(bucket_keys, ratio, shuffle):
     seq_lengths = [np.random.randint(10, 100) for _ in range(N)]
-    sampler = s.FixedBucketSampler(seq_lengths, batch_size=8, num_buckets=None,
-                                   bucket_keys=bucket_keys, ratio=ratio, shuffle=shuffle)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        sampler = s.FixedBucketSampler(seq_lengths, batch_size=8, num_buckets=None,
+                                       bucket_keys=bucket_keys, ratio=ratio, shuffle=shuffle)
     print(sampler.stats())
     total_sampled_ids = []
     for batch_sample_ids in sampler:
@@ -64,8 +68,10 @@ def test_fixed_bucket_sampler_with_single_key(bucket_keys, ratio, shuffle):
 @pytest.mark.parametrize('shuffle', [False, True])
 def test_fixed_bucket_sampler_with_single_key(bucket_keys, ratio, shuffle):
     seq_lengths = [(np.random.randint(10, 100), np.random.randint(10, 100)) for _ in range(N)]
-    sampler = s.FixedBucketSampler(seq_lengths, batch_size=8, num_buckets=None,
-                                   bucket_keys=bucket_keys, ratio=ratio, shuffle=shuffle)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        sampler = s.FixedBucketSampler(seq_lengths, batch_size=8, num_buckets=None,
+                                       bucket_keys=bucket_keys, ratio=ratio, shuffle=shuffle)
     print(sampler.stats())
     total_sampled_ids = []
     for batch_sample_ids in sampler:
