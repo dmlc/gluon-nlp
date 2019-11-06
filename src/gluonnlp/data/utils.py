@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -18,12 +16,9 @@
 # under the License.
 
 """Utility classes and functions. They help organize and keep statistics of datasets."""
-from __future__ import absolute_import, print_function
-
 import collections
 import errno
 import os
-import sys
 import tarfile
 import zipfile
 import time
@@ -38,6 +33,7 @@ __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
     'line_splitter', 'whitespace_splitter', 'Splitter'
 ]
+
 
 class Counter(collections.Counter):  # pylint: disable=abstract-method
     """Counter class for keeping token frequencies."""
@@ -239,8 +235,9 @@ _vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
                'biobert_v1.0_pubmed_pmc_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
                'biobert_v1.1_pubmed_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
                'clinicalbert_uncased': '80ef760a6bdafec68c99b691c94ebbb918c90d02',
-               'baidu_ernie_uncased' :'223553643220255e2a0d4c60e946f4ad7c719080',
-               'openai_webtext': 'f917dc7887ce996068b0a248c8d89a7ec27b95a1'}
+               'baidu_ernie_uncased': '223553643220255e2a0d4c60e946f4ad7c719080',
+               'openai_webtext': 'f917dc7887ce996068b0a248c8d89a7ec27b95a1',
+               'xlnet_126gb': '0d74490383bbc5c62b8bcea74d8b74a1bb1280b3'}
 
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
@@ -437,35 +434,3 @@ class Splitter:
             List of strings. Obtained by calling s.split(separator).
         """
         return s.split(self._separator)
-
-
-def _convert_to_unicode(text):
-    """Converts `text` to Unicode.
-
-    Parameters
-    ----------
-    text : str or bytes
-        text to be converted to unicode
-
-    Returns
-    -------
-    str
-        unicode string
-    """
-    py_version = sys.version_info[0]
-    if py_version == 3:
-        if isinstance(text, str):
-            return text
-        elif isinstance(text, bytes):
-            return text.decode('utf-8', 'ignore')
-        else:
-            raise ValueError('Unsupported string type: %s' % (type(text)))
-    elif py_version == 2:
-        if isinstance(text, str):
-            return text.decode('utf-8', 'ignore')
-        elif isinstance(text, unicode):  # noqa: F821
-            return text
-        else:
-            raise ValueError('Unsupported string type: %s' % (type(text)))
-    else:
-        raise ValueError('Not running on Python2 or Python 3?')

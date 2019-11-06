@@ -4,7 +4,7 @@ import os
 import re
 import shutil
 import sys
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 
 
 def read(*names, **kwargs):
@@ -30,12 +30,14 @@ VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
 requirements = [
     'numpy',
+    'cython'
 ]
 
 setup(
     # Metadata
     name='gluonnlp',
     version=VERSION,
+    python_requires='>=3.6',
     author='Gluon NLP Toolkit Contributors',
     author_email='mxnet-gluon@amazon.com',
     url='https://github.com/dmlc/gluon-nlp',
@@ -52,27 +54,41 @@ setup(
     package_dir={"": "src"},
     zip_safe=True,
     include_package_data=True,
+    setup_requires=[
+        # Setuptools 18.0 properly handles Cython extensions.
+        'setuptools>=18.0',
+        'cython',
+    ],
     install_requires=requirements,
     extras_require={
         'extras': [
             'spacy',
-            'nltk==3.2.5',
+            'nltk',
+            'sacremoses',
             'scipy',
-            'numba>=0.40.1',
+            'numba>=0.45',
             'jieba',
             'sentencepiece',
             'boto3',
+            'tqdm',
+            'sacremoses',
         ],
         'dev': [
             'pytest',
+            'pytest-env',
             'pylint',
             'pylint_quotes',
             'flake8',
             'recommonmark',
             'sphinx-gallery',
             'sphinx_rtd_theme',
+            'mxtheme',
+            'sphinx-autodoc-typehints',
             'nbsphinx',
             'flaky',
         ],
     },
+    ext_modules=[
+        Extension('gluonnlp.data.wordpiece', sources=['src/gluonnlp/data/wordpiece.pyx']),
+    ],
 )

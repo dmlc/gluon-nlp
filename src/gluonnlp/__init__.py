@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -20,6 +18,8 @@
 # pylint: disable=wildcard-import
 """NLP toolkit."""
 
+import warnings
+
 from . import loss
 from . import data
 from . import embedding
@@ -31,7 +31,7 @@ from . import optimizer
 from . import initializer
 from .vocab import Vocab
 
-__version__ = '0.8.0.dev'
+__version__ = '0.9.0.dev'
 
 __all__ = ['data',
            'model',
@@ -43,3 +43,5 @@ __all__ = ['data',
            'optimizer',
            'utils',
            'metric']
+
+warnings.filterwarnings(module='gluonnlp', action='default', category=DeprecationWarning)

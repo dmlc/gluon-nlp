@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -463,9 +461,8 @@ class SimVerb3500(WordSimilarityEvaluationDataset):
     >>> simverb3500[0] #doctest:+SKIP
     ['take', 'remove', 6.81]
     """
-    _url = 'http://people.ds.cam.ac.uk/dsg40/paper/simverb/simverb-3500-data.zip'
-    _archive_file = ('simverb-3500-data.zip',
-                     '8c43b0a34823def29ad4c4f4d7e9d3b91acf8b8d')
+    _url = 'https://www.aclweb.org/anthology/attachments/D16-1235.Attachment.zip'
+    _archive_file = ('D16-1235.Attachment.zip', '7bcfff115ca3e4c909b3763a2ba35e83992f2a2f')
     _checksums = {
         'data/README.txt':
         'fc2645b30a291a7486015c3e4b51d8eb599f7c7e',
@@ -542,13 +539,14 @@ class SemEval17Task2(WordSimilarityEvaluationDataset):
 
     Examples
     --------
-    >>> semeval17task2 = gluonnlp.data.SemEval17Task2(root='./datasets/semeval17task2')
+    >>> semeval17task2 = gluonnlp.data.SemEval17Task2()  # doctest: +SKIP
     -etc-
-    >>> len(semeval17task2)
+    >>> len(semeval17task2)  # doctest: +SKIP
     18
-    >>> semeval17task2[0]
+    >>> semeval17task2[0]  # doctest: +SKIP
     ['sunset', 'string', 0.05]
     """
+    # TODO: reenable doctest once semeval17task2 is available again
     _url = 'http://alt.qcri.org/semeval2017/task2/data/uploads/semeval2017-task2.zip'
     _archive_file = ('semeval2017-task2.zip',
                      'b29860553f98b057303815817dfb60b9fe79cfba')
@@ -625,7 +623,6 @@ class BakerVerb143(WordSimilarityEvaluationDataset):
         'verb_similarity dataset.txt':
         'd7e4820c7504cbae56898353e4d94e6408c330fc'
     }
-    _verify_ssl = False  # ie.technion.ac.il serves an invalid cert as of 2018-04-16
 
     min = 0
     max = 1

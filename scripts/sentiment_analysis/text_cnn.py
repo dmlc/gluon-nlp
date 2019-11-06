@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -22,6 +20,8 @@ import mxnet as mx
 from mxnet import gluon
 from mxnet.gluon import HybridBlock
 import gluonnlp as nlp
+
+nlp.utils.check_version('0.7.0')
 
 class SentimentNet(HybridBlock):
     """Network for sentiment analysis."""

@@ -26,6 +26,7 @@ import io
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
+nlp.utils.check_version('0.7.0')
 ```
 
 ## Preprocess the data
@@ -74,11 +75,11 @@ In our case, transforming the dataset consists of tokenization and numericalizat
 #### Tokenization
 
 The ELMo pre-trained models are trained on Google 1-Billion Words dataset, which was tokenized with the Moses Tokenizer.
-In GluonNLP, using either [NLTKMosesTokenizer](../../api/modules/data.rst#gluonnlp.data.NLTKMosesTokenizer) or [SacreMosesTokenizer](../../api/modules/data.rst#gluonnlp.data.SacreMosesTokenizer) should do the trick.
+In GluonNLP, using [SacreMosesTokenizer](../../api/modules/data.rst#gluonnlp.data.SacreMosesTokenizer) should do the trick.
 Once tokenized, we can add markers, or tokens, for the beginning and end of sentences. BOS means beginning of sentence, and EOS means the end of a sentence.
 
 ```{.python .input}
-tokenizer = nlp.data.NLTKMosesTokenizer()
+tokenizer = nlp.data.SacreMosesTokenizer()
 dataset = dataset.transform(tokenizer)
 dataset = dataset.transform(lambda x: ['<bos>'] + x + ['<eos>'])
 print(dataset[2]) # print the same tokenized sentence as above
@@ -108,7 +109,7 @@ For more advanced usage examples of the DataLoader object, check out the
 
 ```{.python .input}
 batch_size = 2
-dataset_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(),
+dataset_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(pad_val=0),
                                               nlp.data.batchify.Stack())
 data_loader = gluon.data.DataLoader(dataset,
                                     batch_size=batch_size,

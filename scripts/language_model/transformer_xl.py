@@ -14,8 +14,6 @@ Toolkit.
 
 """
 
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -40,9 +38,9 @@ import sys
 import time
 
 import mxnet as mx
-
 import gluonnlp as nlp
 
+nlp.utils.check_version('0.8.0')
 
 def evaluate(data_iter):
     """Evaluate the model on the dataset."""

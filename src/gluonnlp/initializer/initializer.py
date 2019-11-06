@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -19,8 +17,6 @@
 
 # pylint: disable=
 """Highway layer initializer."""
-from __future__ import absolute_import, print_function
-
 __all__ = ['HighwayBias', 'TruncNorm']
 
 import mxnet

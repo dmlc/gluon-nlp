@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -19,10 +17,11 @@
 """Utilities for Language Models based on the Transformer architecture."""
 
 from .attention_cell import *
+from .data import *
 from .embedding import *
+from .model import *
 from .softmax import *
 from .transformer import *
-from .model import *
 
 __all__ = attention_cell.__all__ + embedding.__all__ + softmax.__all__ + \
-    transformer.__all__ + model.__all__
+    transformer.__all__ + model.__all__ + data.__all__

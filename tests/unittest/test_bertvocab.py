@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -40,32 +38,27 @@ def test_bertvocab():
     bert_base1, vocab1 = nlp.model.get_model('bert_12_768_12',
                                              dataset_name='book_corpus_wiki_en_cased',
                                              pretrained=True, ctx=ctx, use_pooler=True,
-                                             use_decoder=False, use_classifier=False,
-                                             root='tests/data/model/')
+                                             use_decoder=False, use_classifier=False)
 
     bert_base2, vocab2 = nlp.model.get_model('bert_12_768_12',
                                              dataset_name='book_corpus_wiki_en_uncased',
                                              pretrained=True, ctx=ctx, use_pooler=True,
-                                             use_decoder=False, use_classifier=False,
-                                             root='tests/data/model/')
+                                             use_decoder=False, use_classifier=False)
 
     bert_base3, vocab3 = nlp.model.get_model('bert_12_768_12',
                                              dataset_name='wiki_multilingual_cased',
                                              pretrained=True, ctx=ctx, use_pooler=True,
-                                             use_decoder=False, use_classifier=False,
-                                             root='tests/data/model/')
+                                             use_decoder=False, use_classifier=False)
 
     bert_base4, vocab4 = nlp.model.get_model('bert_12_768_12',
                                              dataset_name='wiki_multilingual_uncased',
                                              pretrained=True, ctx=ctx, use_pooler=True,
-                                             use_decoder=False, use_classifier=False,
-                                             root='tests/data/model/')
+                                             use_decoder=False, use_classifier=False)
 
     bert_base5, vocab5 = nlp.model.get_model('bert_12_768_12',
                                              dataset_name='wiki_cn_cased',
                                              pretrained=True, ctx=ctx, use_pooler=True,
-                                             use_decoder=False, use_classifier=False,
-                                             root='tests/data/model/')
+                                             use_decoder=False, use_classifier=False)
 
     assert vocab1.cls_token == vocab2.cls_token == vocab3.cls_token == \
         vocab4.cls_token == vocab5.cls_token == nlp.vocab.bert.CLS_TOKEN
@@ -95,9 +88,8 @@ def test_bert_vocab_from_sentencepiece():
     spm.Load(f)
 
     # check special tokens
-    from gluonnlp.data.utils import _convert_to_unicode
-    assert _convert_to_unicode(spm.IdToPiece(spm.unk_id())) == bert_vocab.unknown_token
-    assert _convert_to_unicode(spm.IdToPiece(spm.pad_id())) == bert_vocab.padding_token
+    assert spm.IdToPiece(spm.unk_id()) == bert_vocab.unknown_token
+    assert spm.IdToPiece(spm.pad_id()) == bert_vocab.padding_token
     assert None == bert_vocab.bos_token
     assert u'<eos>' == bert_vocab.eos_token
     assert u'<eos>' in bert_vocab
@@ -106,7 +98,7 @@ def test_bert_vocab_from_sentencepiece():
     assert all(t in bert_vocab.reserved_tokens for t in reserved_tokens)
     num_tokens = len(spm)
     for i in range(num_tokens):
-        token = _convert_to_unicode(spm.IdToPiece(i))
+        token = spm.IdToPiece(i)
         assert bert_vocab[token] == i
 
 

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -324,7 +322,7 @@ class BiaffineParser(nn.Block):
             return arc_accuracy, rel_accuracy, overall_accuracy, outputs
         return outputs
 
-    def save_parameters(self, filename):
+    def save_parameters(self, filename):  # pylint: disable=arguments-differ
         """Save model
 
         Parameters
