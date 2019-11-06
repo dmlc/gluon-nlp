@@ -20,14 +20,16 @@ __all__ = ['GPT2Model', 'GPT2SelfAttentionLayer', 'GPT2FFNLayer',
            'gpt2_117m', 'gpt2_345m']
 
 import os
-import numpy as np
+
 import mxnet as mx
-from mxnet.gluon import nn, Block, HybridBlock
+from mxnet.gluon import Block, HybridBlock, nn
 from mxnet.gluon.model_zoo import model_store
+import numpy as np
+
+from gluonnlp.base import get_home_dir
 from gluonnlp.model.attention_cell import DotProductAttentionCell
 from gluonnlp.model.block import GELU
-from gluonnlp.model.utils import _load_vocab, _load_pretrained_params
-from gluonnlp.base import get_home_dir
+from gluonnlp.model.utils import _load_pretrained_params, _load_vocab
 
 
 class GPT2SelfAttentionLayer(Block):
@@ -177,7 +179,7 @@ class GPT2FFNLayer(HybridBlock):
             self._out_map = nn.Dense(flatten=False, units=units,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer)
-            self._act = GELU()
+            self._act = GELU(approximate=True)
 
     def hybrid_forward(self, F, data): # pylint: disable=arguments-differ
         out = self._out_map(self._act(self._hidden_map(data)))
@@ -420,6 +422,4 @@ def _get_gpt2_model(model_name=None, dataset_name=None, vocab=None, pretrained=T
                     **kwargs)
     if pretrained:
         _load_pretrained_params(net, model_name, dataset_name, root, ctx)
-    for i in range(net._num_layers):
-        net._ffn_layers[i]._act._support_erf = False
     return net, vocab

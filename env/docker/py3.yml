@@ -3,6 +3,7 @@ channels:
 dependencies:
   - python=3.6
   - pip=18.1
+  - cython
   - perl
   - pylint=1.9.2
   - flake8
@@ -10,6 +11,7 @@ dependencies:
   - spacy>2
   - nltk
   - pytest=4.5.0
+  - pytest-env
   - flaky=3.5.3
   - pytest-cov=2.7.1
   - mock<3
@@ -29,7 +31,7 @@ dependencies:
   - scikit-learn=0.21.3
   - pip:
     - pylint-quotes<0.2
-    - mxnet-cu101mkl>=1.5.0
+    - mxnet-cu100>=1.6.0b20191027
     - sacremoses
     - sentencepiece<0.2
     - https://github.com/szha/mx-theme/tarball/master

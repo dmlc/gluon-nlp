@@ -33,6 +33,11 @@ import gluonnlp
 import pytest
 
 
+def pytest_sessionfinish(session, exitstatus):
+    if exitstatus == 5:  # Don't fail if no tests were run
+        session.exitstatus = 0
+
+
 # * Random seed setup
 def pytest_configure():
     """Pytest configuration hook to help reproduce test segfaults

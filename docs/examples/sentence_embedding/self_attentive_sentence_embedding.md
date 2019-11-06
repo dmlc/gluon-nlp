@@ -172,7 +172,7 @@ def get_dataloader():
 
     # Construct the DataLoader Pad data, stack label and lengths
     batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0),
+        nlp.data.batchify.Pad(axis=0, pad_val=0),
         nlp.data.batchify.Stack())
 
     # In this example, we use a FixedBucketSampler,
@@ -256,24 +256,24 @@ When the number of samples for labels are very unbalanced, applying different we
 
 ```{.python .input}
 
-class WeightedSoftmaxCE(nn.HybridBlock):
+class WeightedSoftmaxCE(nn.Block):
     def __init__(self, sparse_label=True, from_logits=False,  **kwargs):
         super(WeightedSoftmaxCE, self).__init__(**kwargs)
         with self.name_scope():
             self.sparse_label = sparse_label
             self.from_logits = from_logits
 
-    def hybrid_forward(self, F, pred, label, class_weight, depth=None):
+    def forward(self, pred, label, class_weight, depth=None):
         if self.sparse_label:
-            label = F.reshape(label, shape=(-1, ))
-            label = F.one_hot(label, depth)
+            label = nd.reshape(label, shape=(-1, ))
+            label = nd.one_hot(label, depth)
         if not self.from_logits:
-            pred = F.log_softmax(pred, -1)
+            pred = nd.log_softmax(pred, -1)
 
-        weight_label = F.broadcast_mul(label, class_weight)
-        loss = -F.sum(pred * weight_label, axis=-1)
+        weight_label = nd.broadcast_mul(label, class_weight)
+        loss = -nd.sum(pred * weight_label, axis=-1)
 
-        # return F.mean(loss, axis=0, exclude=True)
+        # return nd.mean(loss, axis=0, exclude=True)
         return loss
 
 ```

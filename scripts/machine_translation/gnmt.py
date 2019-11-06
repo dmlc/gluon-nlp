@@ -15,14 +15,14 @@
 # specific language governing permissions and limitations
 # under the License.
 """Encoder and decoder usded in sequence-to-sequence learning."""
-__all__ = ['GNMTEncoder', 'GNMTDecoder', 'get_gnmt_encoder_decoder']
+__all__ = ['GNMTEncoder', 'GNMTDecoder', 'GNMTOneStepDecoder', 'get_gnmt_encoder_decoder']
 
 import mxnet as mx
 from mxnet.base import _as_list
 from mxnet.gluon import nn, rnn
 from mxnet.gluon.block import HybridBlock
 from gluonnlp.model.seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, \
-     _get_attention_cell, _get_cell_type, _nested_sequence_last
+     Seq2SeqOneStepDecoder, _get_attention_cell, _get_cell_type, _nested_sequence_last
 
 
 class GNMTEncoder(Seq2SeqEncoder):
@@ -158,48 +158,14 @@ class GNMTEncoder(Seq2SeqEncoder):
         return [outputs, new_states], []
 
 
-class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
-    """Structure of the RNN Encoder similar to that used in the
-    Google Neural Machine Translation paper.
-
-    We use gnmt_v2 strategy in tensorflow/nmt
-
-    Parameters
-    ----------
-    cell_type : str or type
-    attention_cell : AttentionCell or str
-        Arguments of the attention cell.
-        Can be 'scaled_luong', 'normed_mlp', 'dot'
-    num_layers : int
-    hidden_size : int
-    dropout : float
-    use_residual : bool
-    output_attention: bool
-        Whether to output the attention weights
-    i2h_weight_initializer : str or Initializer
-        Initializer for the input weights matrix, used for the linear
-        transformation of the inputs.
-    h2h_weight_initializer : str or Initializer
-        Initializer for the recurrent weights matrix, used for the linear
-        transformation of the recurrent state.
-    i2h_bias_initializer : str or Initializer
-        Initializer for the bias vector.
-    h2h_bias_initializer : str or Initializer
-        Initializer for the bias vector.
-    prefix : str, default 'rnn_'
-        Prefix for name of `Block`s
-        (and name of weight if params is `None`).
-    params : Parameter or None
-        Container for weight sharing between cells.
-        Created if `None`.
-    """
+class _BaseGNMTDecoder(HybridBlock):
     def __init__(self, cell_type='lstm', attention_cell='scaled_luong',
                  num_layers=2, hidden_size=128,
                  dropout=0.0, use_residual=True, output_attention=False,
                  i2h_weight_initializer=None, h2h_weight_initializer=None,
                  i2h_bias_initializer='zeros', h2h_bias_initializer='zeros',
                  prefix=None, params=None):
-        super(GNMTDecoder, self).__init__(prefix=prefix, params=params)
+        super().__init__(prefix=prefix, params=params)
         self._cell_type = _get_cell_type(cell_type)
         self._num_layers = num_layers
         self._hidden_size = hidden_size
@@ -249,59 +215,7 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
             decoder_states.append(mem_masks)
         return decoder_states
 
-    def decode_seq(self, inputs, states, valid_length=None):
-        """Decode the decoder inputs. This function is only used for training.
-
-        Parameters
-        ----------
-        inputs : NDArray, Shape (batch_size, length, C_in)
-        states : list of NDArrays or None
-            Initial states. The list of initial decoder states
-        valid_length : NDArray or None
-            Valid lengths of each sequence. This is usually used when part of sequence has
-            been padded. Shape (batch_size,)
-
-        Returns
-        -------
-        output : NDArray, Shape (batch_size, length, C_out)
-        states : list
-            The decoder states, includes:
-
-            - rnn_states : NDArray
-            - attention_vec : NDArray
-            - mem_value : NDArray
-            - mem_masks : NDArray, optional
-        additional_outputs : list
-            Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, length, mem_length) or
-            (batch_size, num_heads, length, mem_length)
-        """
-        length = inputs.shape[1]
-        output = []
-        additional_outputs = []
-        inputs = _as_list(mx.nd.split(inputs, num_outputs=length, axis=1, squeeze_axis=True))
-        rnn_states_l = []
-        attention_output_l = []
-        fixed_states = states[2:]
-        for i in range(length):
-            ele_output, states, ele_additional_outputs = self.forward(inputs[i], states)
-            rnn_states_l.append(states[0])
-            attention_output_l.append(states[1])
-            output.append(ele_output)
-            additional_outputs.extend(ele_additional_outputs)
-        output = mx.nd.stack(*output, axis=1)
-        if valid_length is not None:
-            states = [_nested_sequence_last(rnn_states_l, valid_length),
-                      _nested_sequence_last(attention_output_l, valid_length)] + fixed_states
-            output = mx.nd.SequenceMask(output,
-                                        sequence_length=valid_length,
-                                        use_sequence_length=True,
-                                        axis=1)
-        if self._output_attention:
-            additional_outputs = [mx.nd.concat(*additional_outputs, dim=-2)]
-        return output, states, additional_outputs
-
-    def __call__(self, step_input, states): #pylint: disable=arguments-differ
+    def forward(self, step_input, states):  # pylint: disable=arguments-differ
         """One-step-ahead decoding of the GNMT decoder.
 
         Parameters
@@ -326,11 +240,7 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
             The attention weights will have shape (batch_size, 1, mem_length) or
             (batch_size, num_heads, 1, mem_length)
         """
-        return super(GNMTDecoder, self).__call__(step_input, states)
-
-    def forward(self, step_input, states):  #pylint: disable=arguments-differ, missing-docstring
-        step_output, new_states, step_additional_outputs =\
-            super(GNMTDecoder, self).forward(step_input, states)
+        step_output, new_states, step_additional_outputs = super().forward(step_input, states)
         # In hybrid_forward, only the rnn_states and attention_vec are calculated.
         # We directly append the mem_value and mem_masks in the forward() function.
         # We apply this trick because the memory value/mask can be directly appended to the next
@@ -402,6 +312,148 @@ class GNMTDecoder(HybridBlock, Seq2SeqDecoder):
         return rnn_out, new_states, step_additional_outputs
 
 
+class GNMTOneStepDecoder(_BaseGNMTDecoder, Seq2SeqOneStepDecoder):
+    """RNN Encoder similar to that used in the Google Neural Machine Translation paper.
+
+    One-step ahead decoder used during inference.
+
+    We use gnmt_v2 strategy in tensorflow/nmt
+
+    Parameters
+    ----------
+    cell_type : str or type
+        Can be "lstm", "gru" or constructor functions that can be directly called,
+         like rnn.LSTMCell
+    attention_cell : AttentionCell or str
+        Arguments of the attention cell.
+        Can be 'scaled_luong', 'normed_mlp', 'dot'
+    num_layers : int
+        Total number of layers
+    hidden_size : int
+        Number of hidden units
+    dropout : float
+        The dropout rate
+    use_residual : bool
+        Whether to use residual connection. Residual connection will be added in the
+        uni-directional RNN layers
+    output_attention: bool
+        Whether to output the attention weights
+    i2h_weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    h2h_weight_initializer : str or Initializer
+        Initializer for the recurrent weights matrix, used for the linear
+        transformation of the recurrent state.
+    i2h_bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    h2h_bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    prefix : str, default 'rnn_'
+        Prefix for name of `Block`s
+        (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells.
+        Created if `None`.
+    """
+
+
+class GNMTDecoder(_BaseGNMTDecoder, Seq2SeqDecoder):
+    """RNN Encoder similar to that used in the Google Neural Machine Translation paper.
+
+    Multi-step decoder used during training with teacher forcing.
+
+    We use gnmt_v2 strategy in tensorflow/nmt
+
+    Parameters
+    ----------
+    cell_type : str or type
+        Can be "lstm", "gru" or constructor functions that can be directly called,
+         like rnn.LSTMCell
+    attention_cell : AttentionCell or str
+        Arguments of the attention cell.
+        Can be 'scaled_luong', 'normed_mlp', 'dot'
+    num_layers : int
+        Total number of layers
+    hidden_size : int
+        Number of hidden units
+    dropout : float
+        The dropout rate
+    use_residual : bool
+        Whether to use residual connection. Residual connection will be added in the
+        uni-directional RNN layers
+    output_attention: bool
+        Whether to output the attention weights
+    i2h_weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    h2h_weight_initializer : str or Initializer
+        Initializer for the recurrent weights matrix, used for the linear
+        transformation of the recurrent state.
+    i2h_bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    h2h_bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    prefix : str, default 'rnn_'
+        Prefix for name of `Block`s
+        (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells.
+        Created if `None`.
+    """
+
+    def forward(self, inputs, states, valid_length=None):  # pylint: disable=arguments-differ
+        """Decode the decoder inputs. This function is only used for training.
+
+        Parameters
+        ----------
+        inputs : NDArray, Shape (batch_size, length, C_in)
+        states : list of NDArrays or None
+            Initial states. The list of initial decoder states
+        valid_length : NDArray or None
+            Valid lengths of each sequence. This is usually used when part of sequence has
+            been padded. Shape (batch_size,)
+
+        Returns
+        -------
+        output : NDArray, Shape (batch_size, length, C_out)
+        states : list
+            The decoder states, includes:
+
+            - rnn_states : NDArray
+            - attention_vec : NDArray
+            - mem_value : NDArray
+            - mem_masks : NDArray, optional
+        additional_outputs : list
+            Either be an empty list or contains the attention weights in this step.
+            The attention weights will have shape (batch_size, length, mem_length) or
+            (batch_size, num_heads, length, mem_length)
+        """
+        length = inputs.shape[1]
+        output = []
+        additional_outputs = []
+        inputs = _as_list(mx.nd.split(inputs, num_outputs=length, axis=1, squeeze_axis=True))
+        rnn_states_l = []
+        attention_output_l = []
+        fixed_states = states[2:]
+        for i in range(length):
+            ele_output, states, ele_additional_outputs = super().forward(inputs[i], states)
+            rnn_states_l.append(states[0])
+            attention_output_l.append(states[1])
+            output.append(ele_output)
+            additional_outputs.extend(ele_additional_outputs)
+        output = mx.nd.stack(*output, axis=1)
+        if valid_length is not None:
+            states = [_nested_sequence_last(rnn_states_l, valid_length),
+                      _nested_sequence_last(attention_output_l, valid_length)] + fixed_states
+            output = mx.nd.SequenceMask(output,
+                                        sequence_length=valid_length,
+                                        use_sequence_length=True,
+                                        axis=1)
+        if self._output_attention:
+            additional_outputs = [mx.nd.concat(*additional_outputs, dim=-2)]
+        return output, states, additional_outputs
+
+
 def get_gnmt_encoder_decoder(cell_type='lstm', attention_cell='scaled_luong', num_layers=2,
                              num_bi_layers=1, hidden_size=128, dropout=0.0, use_residual=False,
                              i2h_weight_initializer=None, h2h_weight_initializer=None,
@@ -435,19 +487,24 @@ def get_gnmt_encoder_decoder(cell_type='lstm', attention_cell='scaled_luong', nu
     decoder : GNMTDecoder
     """
     encoder = GNMTEncoder(cell_type=cell_type, num_layers=num_layers, num_bi_layers=num_bi_layers,
-                          hidden_size=hidden_size, dropout=dropout,
-                          use_residual=use_residual,
+                          hidden_size=hidden_size, dropout=dropout, use_residual=use_residual,
                           i2h_weight_initializer=i2h_weight_initializer,
                           h2h_weight_initializer=h2h_weight_initializer,
                           i2h_bias_initializer=i2h_bias_initializer,
-                          h2h_bias_initializer=h2h_bias_initializer,
-                          prefix=prefix + 'enc_', params=params)
+                          h2h_bias_initializer=h2h_bias_initializer, prefix=prefix + 'enc_',
+                          params=params)
     decoder = GNMTDecoder(cell_type=cell_type, attention_cell=attention_cell, num_layers=num_layers,
-                          hidden_size=hidden_size, dropout=dropout,
-                          use_residual=use_residual,
+                          hidden_size=hidden_size, dropout=dropout, use_residual=use_residual,
                           i2h_weight_initializer=i2h_weight_initializer,
                           h2h_weight_initializer=h2h_weight_initializer,
                           i2h_bias_initializer=i2h_bias_initializer,
-                          h2h_bias_initializer=h2h_bias_initializer,
-                          prefix=prefix + 'dec_', params=params)
-    return encoder, decoder
+                          h2h_bias_initializer=h2h_bias_initializer, prefix=prefix + 'dec_',
+                          params=params)
+    one_step_ahead_decoder = GNMTOneStepDecoder(
+        cell_type=cell_type, attention_cell=attention_cell, num_layers=num_layers,
+        hidden_size=hidden_size, dropout=dropout, use_residual=use_residual,
+        i2h_weight_initializer=i2h_weight_initializer,
+        h2h_weight_initializer=h2h_weight_initializer, i2h_bias_initializer=i2h_bias_initializer,
+        h2h_bias_initializer=h2h_bias_initializer, prefix=prefix + 'dec_',
+        params=decoder.collect_params())
+    return encoder, decoder, one_step_ahead_decoder

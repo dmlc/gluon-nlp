@@ -15,16 +15,18 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import pytest
+
 import numpy as np
 import mxnet as mx
 from mxnet.test_utils import assert_almost_equal
 from ..machine_translation.gnmt import *
 from gluonnlp.model.transformer import *
-from gluonnlp.model.transformer import TransformerDecoder
+from gluonnlp.model.transformer import TransformerDecoder, TransformerOneStepDecoder
 
 
 def test_gnmt_encoder():
-    ctx = mx.Context.default_ctx
+    ctx = mx.current_context()
     for cell_type in ["lstm", "gru", "relu_rnn", "tanh_rnn"]:
         for num_layers, num_bi_layers in [(2, 1), (3, 0)]:
             for use_residual in [False, True]:
@@ -51,7 +53,7 @@ def test_gnmt_encoder():
 
 
 def test_gnmt_encoder_decoder():
-    ctx = mx.Context.default_ctx
+    ctx = mx.current_context()
     num_hidden = 8
     encoder = GNMTEncoder(cell_type="lstm", num_layers=3, num_bi_layers=1, hidden_size=num_hidden,
                           dropout=0.0, use_residual=True, prefix='gnmt_encoder_')
@@ -63,6 +65,11 @@ def test_gnmt_encoder_decoder():
                                   output_attention=output_attention, use_residual=use_residual, prefix='gnmt_decoder_')
             decoder.initialize(ctx=ctx)
             decoder.hybridize()
+            one_step_decoder = GNMTOneStepDecoder(cell_type="lstm", num_layers=3, hidden_size=num_hidden,
+                                                  dropout=0.0, output_attention=output_attention,
+                                                  use_residual=use_residual, prefix='gnmt_decoder_',
+                                                  params=decoder.collect_params())
+            one_step_decoder.hybridize()
             for batch_size in [4]:
                 for src_seq_length, tgt_seq_length in [(5, 10), (10, 5)]:
                     src_seq_nd = mx.nd.random.normal(0, 1, shape=(batch_size, src_seq_length, 4), ctx=ctx)
@@ -75,9 +82,7 @@ def test_gnmt_encoder_decoder():
                     decoder_states = decoder.init_state_from_encoder(encoder_outputs, src_valid_length_nd)
 
                     # Test multi step forwarding
-                    output, new_states, additional_outputs = decoder.decode_seq(tgt_seq_nd,
-                                                                                decoder_states,
-                                                                                tgt_valid_length_nd)
+                    output, new_states, additional_outputs = decoder(tgt_seq_nd, decoder_states, tgt_valid_length_nd)
                     assert(output.shape == (batch_size, tgt_seq_length, num_hidden))
                     output_npy = output.asnumpy()
                     for i in range(batch_size):
@@ -98,8 +103,27 @@ def test_gnmt_encoder_decoder():
                     else:
                         assert(len(additional_outputs) == 0)
 
+                    # Test one-step forwarding
+                    output, new_states, additional_outputs = one_step_decoder(
+                        tgt_seq_nd[:, 0, :], decoder_states)
+                    assert(output.shape == (batch_size, num_hidden))
+                    if output_attention:
+                        assert(len(additional_outputs) == 1)
+                        attention_out = additional_outputs[0].asnumpy()
+                        assert(attention_out.shape == (batch_size, 1, src_seq_length))
+                        for i in range(batch_size):
+                            mem_v_len = int(src_valid_length_npy[i])
+                            if mem_v_len < src_seq_length - 1:
+                                assert((attention_out[i, :, mem_v_len:] == 0).all())
+                            if mem_v_len > 0:
+                                assert_almost_equal(attention_out[i, :, :].sum(axis=-1),
+                                                    np.ones(attention_out.shape[1]))
+                    else:
+                        assert(len(additional_outputs) == 0)
+
+
 def test_transformer_encoder():
-    ctx = mx.Context.default_ctx
+    ctx = mx.current_context()
     for num_layers in range(1, 3):
         for output_attention in [True, False]:
             for use_residual in [False, True]:
@@ -136,51 +160,77 @@ def test_transformer_encoder():
                         else:
                             assert(len(additional_outputs) == 0)
 
-def test_transformer_encoder_decoder():
-    ctx = mx.Context.default_ctx
+@pytest.mark.parametrize('output_attention', [False, True])
+@pytest.mark.parametrize('use_residual', [False, True])
+@pytest.mark.parametrize('batch_size', [4])
+@pytest.mark.parametrize('src_tgt_seq_len', [(5, 10), (10, 5)])
+def test_transformer_encoder_decoder(output_attention, use_residual, batch_size, src_tgt_seq_len):
+    ctx = mx.current_context()
     units = 16
     encoder = TransformerEncoder(num_layers=3, units=units, hidden_size=32, num_heads=8, max_length=10,
                                  dropout=0.0, use_residual=True, prefix='transformer_encoder_')
     encoder.initialize(ctx=ctx)
     encoder.hybridize()
-    for output_attention in [True, False]:
-        for use_residual in [True, False]:
-            decoder = TransformerDecoder(num_layers=3, units=units, hidden_size=32, num_heads=8, max_length=10, dropout=0.0,
-                                         output_attention=output_attention, use_residual=use_residual, prefix='transformer_decoder_')
-            decoder.initialize(ctx=ctx)
-            decoder.hybridize()
-            for batch_size in [4]:
-                for src_seq_length, tgt_seq_length in [(5, 10), (10, 5)]:
-                    src_seq_nd = mx.nd.random.normal(0, 1, shape=(batch_size, src_seq_length, units), ctx=ctx)
-                    tgt_seq_nd = mx.nd.random.normal(0, 1, shape=(batch_size, tgt_seq_length, units), ctx=ctx)
-                    src_valid_length_nd = mx.nd.array(np.random.randint(1, src_seq_length, size=(batch_size,)), ctx=ctx)
-                    tgt_valid_length_nd = mx.nd.array(np.random.randint(1, tgt_seq_length, size=(batch_size,)), ctx=ctx)
-                    src_valid_length_npy = src_valid_length_nd.asnumpy()
-                    tgt_valid_length_npy = tgt_valid_length_nd.asnumpy()
-                    encoder_outputs, _ = encoder(src_seq_nd, valid_length=src_valid_length_nd)
-                    decoder_states = decoder.init_state_from_encoder(encoder_outputs, src_valid_length_nd)
+    decoder = TransformerDecoder(num_layers=3, units=units, hidden_size=32,
+                                 num_heads=8, max_length=10, dropout=0.0,
+                                 output_attention=output_attention,
+                                 use_residual=use_residual,
+                                 prefix='transformer_decoder_')
+    decoder.initialize(ctx=ctx)
+    decoder.hybridize()
 
-                    # Test multi step forwarding
-                    output, new_states, additional_outputs = decoder.decode_seq(tgt_seq_nd,
-                                                                                decoder_states,
-                                                                                tgt_valid_length_nd)
-                    assert(output.shape == (batch_size, tgt_seq_length, units))
-                    output_npy = output.asnumpy()
-                    for i in range(batch_size):
-                        tgt_v_len = int(tgt_valid_length_npy[i])
-                        if tgt_v_len < tgt_seq_length - 1:
-                            assert((output_npy[i, tgt_v_len:, :] == 0).all())
-                    if output_attention:
-                        assert(len(additional_outputs) == 3)
-                        attention_out = additional_outputs[0][1].asnumpy()
-                        assert(attention_out.shape == (batch_size, 8, tgt_seq_length, src_seq_length))
-                        for i in range(batch_size):
-                            mem_v_len = int(src_valid_length_npy[i])
-                            if mem_v_len < src_seq_length - 1:
-                                assert((attention_out[i, :, :, mem_v_len:] == 0).all())
-                            if mem_v_len > 0:
-                                assert_almost_equal(attention_out[i, :, :, :].sum(axis=-1),
-                                                    np.ones(attention_out.shape[1:3]))
-                    else:
-                        assert(len(additional_outputs) == 0)
+    src_seq_length, tgt_seq_length = src_tgt_seq_len
+    src_seq_nd = mx.nd.random.normal(0, 1, shape=(batch_size, src_seq_length, units), ctx=ctx)
+    tgt_seq_nd = mx.nd.random.normal(0, 1, shape=(batch_size, tgt_seq_length, units), ctx=ctx)
+    src_valid_length_nd = mx.nd.array(np.random.randint(1, src_seq_length, size=(batch_size,)), ctx=ctx)
+    tgt_valid_length_nd = mx.nd.array(np.random.randint(1, tgt_seq_length, size=(batch_size,)), ctx=ctx)
+    src_valid_length_npy = src_valid_length_nd.asnumpy()
+    tgt_valid_length_npy = tgt_valid_length_nd.asnumpy()
+    encoder_outputs, _ = encoder(src_seq_nd, valid_length=src_valid_length_nd)
+    decoder_states = decoder.init_state_from_encoder(encoder_outputs, src_valid_length_nd)
 
+    # Test multi step forwarding
+    output, new_states, additional_outputs = decoder(tgt_seq_nd, decoder_states, tgt_valid_length_nd)
+    assert(output.shape == (batch_size, tgt_seq_length, units))
+    output_npy = output.asnumpy()
+    for i in range(batch_size):
+        tgt_v_len = int(tgt_valid_length_npy[i])
+        if tgt_v_len < tgt_seq_length - 1:
+            assert((output_npy[i, tgt_v_len:, :] == 0).all())
+    if output_attention:
+        assert(len(additional_outputs) == 3)
+        attention_out = additional_outputs[0][1].asnumpy()
+        assert(attention_out.shape == (batch_size, 8, tgt_seq_length, src_seq_length))
+        for i in range(batch_size):
+            mem_v_len = int(src_valid_length_npy[i])
+            if mem_v_len < src_seq_length - 1:
+                assert((attention_out[i, :, :, mem_v_len:] == 0).all())
+            if mem_v_len > 0:
+                assert_almost_equal(attention_out[i, :, :, :].sum(axis=-1),
+                                    np.ones(attention_out.shape[1:3]))
+    else:
+        assert(len(additional_outputs) == 0)
+
+    # Test one step forwarding
+    decoder = TransformerOneStepDecoder(num_layers=3, units=units, hidden_size=32,
+                                        num_heads=8, max_length=10, dropout=0.0,
+                                        output_attention=output_attention,
+                                        use_residual=use_residual,
+                                        prefix='transformer_decoder_',
+                                        params=decoder.collect_params())
+    decoder.hybridize()
+    output, new_states, additional_outputs = decoder(tgt_seq_nd[:, 0, :], decoder_states)
+    assert(output.shape == (batch_size, units))
+    if output_attention:
+        assert(len(additional_outputs) == 3)
+        attention_out = additional_outputs[0][1].asnumpy()
+        assert(attention_out.shape == (batch_size, 8, 1, src_seq_length))
+        for i in range(batch_size):
+            mem_v_len = int(src_valid_length_npy[i])
+            if mem_v_len < src_seq_length - 1:
+                assert((attention_out[i, :, :, mem_v_len:] == 0).all())
+            if mem_v_len > 0:
+                assert_almost_equal(attention_out[i, :, :, :].sum(axis=-1),
+                                    np.ones(attention_out.shape[1:3]))
+    else:
+        assert(len(additional_outputs) == 0)

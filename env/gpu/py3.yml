@@ -3,6 +3,7 @@ channels:
 dependencies:
   - python=3.6
   - pip=18.1
+  - cython
   - perl
   - pylint=2.3.1
   - flake8
@@ -10,6 +11,7 @@ dependencies:
   - spacy>2
   - nltk
   - pytest=4.5.0
+  - pytest-env
   - flaky=3.5.3
   - pytest-cov=2.7.1
   - mock<3

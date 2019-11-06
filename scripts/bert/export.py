@@ -39,8 +39,7 @@ import time
 
 import mxnet as mx
 import gluonnlp as nlp
-from gluonnlp.model import get_model
-from model.classification import BERTClassifier, BERTRegression
+from gluonnlp.model import get_model, BERTClassifier
 from model.qa import BertForQA
 
 nlp.utils.check_version('0.8.1')
@@ -84,7 +83,7 @@ parser.add_argument('--output_dir',
 
 parser.add_argument('--seq_length',
                     type=int,
-                    default=384,
+                    default=64,
                     help='The maximum total input sequence length after WordPiece tokenization.'
                          'Sequences longer than this needs to be truncated, and sequences shorter '
                          'than this needs to be padded. Default is 384')
@@ -131,8 +130,7 @@ if args.task == 'classification':
         pretrained=False,
         use_pooler=True,
         use_decoder=False,
-        use_classifier=False,
-        seq_length=args.seq_length)
+        use_classifier=False)
     net = BERTClassifier(bert, num_classes=2, dropout=args.dropout)
 elif args.task == 'regression':
     bert, _ = get_model(
@@ -141,9 +139,8 @@ elif args.task == 'regression':
         pretrained=False,
         use_pooler=True,
         use_decoder=False,
-        use_classifier=False,
-        seq_length=args.seq_length)
-    net = BERTRegression(bert, dropout=args.dropout)
+        use_classifier=False)
+    net = BERTClassifier(bert, num_classes=1, dropout=args.dropout)
 elif args.task == 'question_answering':
     bert, _ = get_model(
         name=args.model_name,
@@ -151,8 +148,7 @@ elif args.task == 'question_answering':
         pretrained=False,
         use_pooler=False,
         use_decoder=False,
-        use_classifier=False,
-        seq_length=args.seq_length)
+        use_classifier=False)
     net = BertForQA(bert)
 else:
     raise ValueError('unknown task: %s'%args.task)
@@ -187,7 +183,7 @@ def export(batch, prefix):
     assert os.path.isfile(prefix + '-symbol.json')
     assert os.path.isfile(prefix + '-0000.params')
 
-def infer(batch, prefix):
+def infer(prefix):
     """Evaluate the model on a mini-batch."""
     log.info('Start inference ... ')
 
@@ -195,16 +191,26 @@ def infer(batch, prefix):
     imported_net = mx.gluon.nn.SymbolBlock.imports(prefix + '-symbol.json',
                                                    ['data0', 'data1', 'data2'],
                                                    prefix + '-0000.params')
-    tic = time.time()
+
+    # exported model should be length-agnostic. Using a different seq_length should work
+    inputs = mx.nd.arange(test_batch_size * (seq_length + 10))
+    inputs = inputs.reshape(shape=(test_batch_size, seq_length + 10))
+    token_types = mx.nd.zeros_like(inputs)
+    valid_length = mx.nd.arange(test_batch_size)
+
     # run forward inference
-    inputs, token_types, valid_length = batch
+    imported_net(inputs, token_types, valid_length)
+    mx.nd.waitall()
+
+    # benchmark speed after warmup
+    tic = time.time()
     num_trials = 10
     for _ in range(num_trials):
         imported_net(inputs, token_types, valid_length)
     mx.nd.waitall()
     toc = time.time()
-    log.info('Inference time cost={:.2f} s, Thoughput={:.2f} samples/s'
-             .format(toc - tic, num_trials / (toc - tic)))
+    log.info('Batch size={}, Thoughput={:.2f} batches/s'
+             .format(test_batch_size, num_trials / (toc - tic)))
 
 
 ###############################################################################
@@ -213,4 +219,4 @@ def infer(batch, prefix):
 if __name__ == '__main__':
     prefix = os.path.join(args.output_dir, args.task)
     export(batch, prefix)
-    infer(batch, prefix)
+    infer(prefix)
