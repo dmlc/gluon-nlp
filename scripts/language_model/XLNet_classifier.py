@@ -44,9 +44,9 @@ class XLNetClassifier(Block):
     def _apply_pooling(self, sequence):
         """Generate the representation given the inputs.
 
-        This is used for pre-training or fine-tuning a BERT model.
+        This is used for pre-training or fine-tuning a XLNet model.
         """
-        # for xlnet, we take the last hidden state
+        # Note that we are using left pad so we always take the last hidden state
         outputs = sequence.slice(begin=(0, -1, 0), end=(None, -2, None), step=(None, -1, None))
         outputs = outputs.reshape(shape=(-1, self._units))
         return self.pooler(outputs)

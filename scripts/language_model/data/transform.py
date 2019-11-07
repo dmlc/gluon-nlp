@@ -2,58 +2,57 @@
 __all__ = ['XLNetSentenceTransform', 'XLNetDatasetTransform']
 import numpy as np
 
-
-
 class XLNetSentenceTransform:
     r"""XLNet style data transformation.
-        The transformation is processed in the following steps:
-        - tokenize the input sequences
-        - insert [CLS], [SEP] as necessary
-        - generate type ids to indicate whether a token belongs to the first
-          sequence or the second sequence.
-        - generate valid length
+    The transformation is processed in the following steps:
+    - tokenize the input sequences
+    - insert [CLS], [SEP] as necessary. Note that the [CLS] token is inserted
+    to the end in XLNet(which is to the beginning in Bert)
+    - generate type ids to indicate whether a token belongs to the first
+      sequence or the second sequence.
+    - generate valid length
+    - pad the sequence to max_length. Note that we use left pad in XLNet
+    For sequence pairs, the input is a tuple of 3 strings:
+    text_a, text_b and label.
 
-        For sequence pairs, the input is a tuple of 3 strings:
-        text_a, text_b and label.
+    Inputs:
+        text_a: 'is this jacksonville ?'
+        text_b: 'no it is not'
+        label: '0'
+    Tokenization:
+        text_a: 'is this jack ##son ##ville ?'
+        text_b: 'no it is not .'
+    Processed:
+        tokens:  'is this jack ##son ##ville ? [SEP] no it is not . [SEP] [CLS]'
+        type_ids: 0  0    0    0     0       0 0     1  1  1  1   1 1      1
+        valid_length: 14
+        label: 0
 
-        Inputs:
-            text_a: 'is this jacksonville ?'
-            text_b: 'no it is not'
-            label: '0'
-        Tokenization:
-            text_a: 'is this jack ##son ##ville ?'
-            text_b: 'no it is not .'
-        Processed:
-            tokens:  'is this jack ##son ##ville ? [SEP] no it is not . [SEP] [CLS]'
-            type_ids: 0  0    0    0     0       0 0     1  1  1  1   1 1      1
-            valid_length: 14
-            label: 0
+    For single sequences, the input is a tuple of 2 strings: text_a and label.
+    Inputs:
+        text_a: 'the dog is hairy .'
+        label: '1'
+    Tokenization:
+        text_a: 'the dog is hairy .'
+    Processed:
+        text_a:  'the dog is hairy . [SEP] [CLS]'
+        type_ids: 0   0   0  0     0 0      0
+        valid_length: 7
+        label: 1
 
-        For single sequences, the input is a tuple of 2 strings: text_a and label.
-        Inputs:
-            text_a: 'the dog is hairy .'
-            label: '1'
-        Tokenization:
-            text_a: 'the dog is hairy .'
-        Processed:
-            text_a:  'the dog is hairy . [SEP] [CLS]'
-            type_ids: 0   0   0  0     0 0      0
-            valid_length: 7
-            label: 1
+    Parameters
+    ----------
+    line: tuple of str
+        Input strings. For sequence pairs, the input is a tuple of 3 strings:
+        (text_a, text_b, label). For single sequences, the input is a tuple
+        of 2 strings: (text_a, label).
 
-        Parameters
-        ----------
-        line: tuple of str
-            Input strings. For sequence pairs, the input is a tuple of 3 strings:
-            (text_a, text_b, label). For single sequences, the input is a tuple
-            of 2 strings: (text_a, label).
-
-        Returns
-        -------
-        np.array: input token ids in 'int32', shape (batch_size, seq_length)
-        np.array: valid length in 'int32', shape (batch_size,)
-        np.array: input token type ids in 'int32', shape (batch_size, seq_length)
-        """
+    Returns
+    -------
+    np.array: input token ids in 'int32', shape (batch_size, seq_length)
+    np.array: valid length in 'int32', shape (batch_size,)
+    np.array: input token type ids in 'int32', shape (batch_size, seq_length)
+    """
 
     def __init__(self, tokenizer, max_seq_length=None, vocab=None, pad=True, pair=True):
         self._tokenizer = tokenizer
@@ -151,25 +150,24 @@ class XLNetSentenceTransform:
 
 class XLNetDatasetTransform:
     """Dataset transformation for XLNet-style sentence classification or regression.
-
-        Parameters
-        ----------
-        tokenizer : BERTTokenizer.
-            Tokenizer for the sentences.
-        max_seq_length : int.
-            Maximum sequence length of the sentences.
-        vocab : Vocab or BERTVocab
-            The vocabulary.
-        labels : list of int , float or None. defaults None
-            List of all label ids for the classification task and regressing task.
-            If labels is None, the default task is regression
-        pad : bool, default True
-            Whether to pad the sentences to maximum length.
-        pair : bool, default True
-            Whether to transform sentences or sentence pairs.
-        label_dtype: int32 or float32, default float32
-            label_dtype = int32 for classification task
-            label_dtype = float32 for regression task
+    Parameters
+    ----------
+    tokenizer : BERTTokenizer.
+        Tokenizer for the sentences.
+    max_seq_length : int.
+        Maximum sequence length of the sentences.
+    vocab : Vocab or BERTVocab
+        The vocabulary.
+    labels : list of int , float or None. defaults None
+        List of all label ids for the classification task and regressing task.
+        If labels is None, the default task is regression
+    pad : bool, default True
+        Whether to pad the sentences to maximum length.
+    pair : bool, default True
+        Whether to transform sentences or sentence pairs.
+    label_dtype: int32 or float32, default float32
+        label_dtype = int32 for classification task
+        label_dtype = float32 for regression task
     """
     def __init__(self,
                  tokenizer,
