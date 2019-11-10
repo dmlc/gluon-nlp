@@ -626,8 +626,9 @@ class BERTBasicTokenizer:
 
     """
 
-    def __init__(self, lower=True):
+    def __init__(self, lower=True, split_on_punc=True):
         self.lower = lower
+        self.split_on_punc = split_on_punc
 
     def __call__(self, sample):
         """
@@ -661,7 +662,11 @@ class BERTBasicTokenizer:
             if self.lower:
                 token = token.lower()
                 token = self._run_strip_accents(token)
-            split_tokens.extend(self._run_split_on_punc(token))
+            if self.split_on_punc:
+                split_tokens.extend(self._run_split_on_punc(token))
+            else:
+                split_tokens.extend([token])
+
 
         output_tokens = self._whitespace_tokenize(' '.join(split_tokens))
         return output_tokens
@@ -795,6 +800,10 @@ class BERTTokenizer:
     ----------
     vocab
         Vocabulary for the corpus.
+    vocab_from
+        Where vocabulary was created. 'BERT' or 'SentencePiece'.
+        'SentencePiece' can be set,
+        if you have vocabulary from https://github.com/google/sentencepiece.
     lower
         whether the text strips accents and convert to lower case.
         If you use the BERT pre-training model,
@@ -816,13 +825,16 @@ class BERTTokenizer:
 
     """
 
-    _special_prefix = '##'
-
     def __init__(self, vocab: Vocab, lower: bool = True, max_input_chars_per_word: int = 200,
-                 lru_cache_size: Optional[int] = None):
+                 vocab_from: str = 'BERT', lru_cache_size: Optional[int] = None):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
-        self.basic_tokenizer = BERTBasicTokenizer(lower=lower)
+        self.vocab_from = vocab_from.lower()
+        self.basic_tokenizer = BERTBasicTokenizer(lower=lower, split_on_punc=True if self.vocab_from == 'bert' else False)
+        if self.vocab_from == 'sentencepiece':
+            self._special_prefix = '▁'
+        else:
+            self._special_prefix = '##'
         if lru_cache_size:
             self._word_to_wordpiece_optimized = functools.lru_cache(maxsize=lru_cache_size)(
                 self._word_to_wordpiece_optimized)
@@ -853,7 +865,7 @@ class BERTTokenizer:
 
     def _word_to_wordpiece_optimized(self, text):  # pylint: disable=method-hidden
         return wordpiece_tokenize(text, self.vocab, self.vocab.unknown_token,
-                                  self.max_input_chars_per_word)
+                                  self.max_input_chars_per_word, vocab_from=self.vocab_from)
 
     def _tokenize_wordpiece(self, text):
         """Tokenizes a piece of text into its word pieces.
@@ -889,8 +901,7 @@ class BERTTokenizer:
         """Converts a sequence of tokens into ids using the vocab."""
         return self.vocab.to_indices(tokens)
 
-    @staticmethod
-    def is_first_subword(token):
+    def is_first_subword(self, token):
         """Check if a token is the beginning of subwords.
 
         Parameters
@@ -915,7 +926,10 @@ class BERTTokenizer:
         >>> tokenizer.is_first_subword('##uo')
         False
         """
-        return not token.startswith(BERTTokenizer._special_prefix)
+        if self.vocab_from == 'sentencepiece':
+            return token.startswith(self._special_prefix)
+        else:
+            return not token.startswith(self._special_prefix)
 
 
 class BERTSPTokenizer(BERTTokenizer):

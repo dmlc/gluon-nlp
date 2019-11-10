@@ -5,12 +5,18 @@ import cython
 __all__ = ['tokenize']
 
 
-def tokenize(text: str, vocab: Dict[str, int], unknown_token: str, max_input_chars_per_word: cython.int = 200):
+def tokenize(text: str, vocab: Dict[str, int], unknown_token: str, max_input_chars_per_word: cython.int = 200,
+    vocab_from: str = 'bert'):
     """
     Cython implementation of single token tokenization. Average latency
     decreases to 95ms (from 144ms using original Python code).
     """
+    is_sp = False
     output_tokens: List[str] = []
+    if vocab_from == 'sentencepiece':
+        text = '▁' + text
+        is_sp = True
+
     token_size: cython.int = len(text)
     if token_size > max_input_chars_per_word:
         output_tokens.append(unknown_token)
@@ -23,7 +29,7 @@ def tokenize(text: str, vocab: Dict[str, int], unknown_token: str, max_input_cha
         cur_substr: str = None
         while start < end:
             substr = text[start:end]
-            if start > 0:
+            if not is_sp and start > 0:
                 substr = '##' + substr
             if substr in vocab:
                 cur_substr = substr
