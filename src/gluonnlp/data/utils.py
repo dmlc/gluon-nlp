@@ -28,6 +28,8 @@ from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 
 from .. import _constants as C
+from ..vocab import BERTVocab
+from ..data import SentencepieceTokenizer
 
 __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
@@ -212,32 +214,33 @@ def _slice_pad_length(num_items, length, overlap=0):
     else:
         return 0
 
-
-_vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
-               'gbw': 'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f',
-               'WMT2014_src': '230ebb817b1d86950d71e2e765f192a4e4f34415',
-               'WMT2014_tgt': '230ebb817b1d86950d71e2e765f192a4e4f34415',
-               'book_corpus_wiki_en_cased': '2d62af22535ed51f35cc8e2abb607723c89c2636',
-               'book_corpus_wiki_en_uncased': 'a66073971aa0b1a262453fe51342e57166a8abcf',
+# name:[sha hash, file extention]
+_vocab_sha1 = {'wikitext-2': ['be36dc5238c2e7d69720881647ab72eb506d0131', '.vocab'],
+               'gbw': ['ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f', '.vocab'],
+               'WMT2014_src': ['230ebb817b1d86950d71e2e765f192a4e4f34415', '.vocab'],
+               'WMT2014_tgt': ['230ebb817b1d86950d71e2e765f192a4e4f34415', '.vocab'],
+               'book_corpus_wiki_en_cased': ['2d62af22535ed51f35cc8e2abb607723c89c2636', '.vocab'],
+               'book_corpus_wiki_en_uncased': ['a66073971aa0b1a262453fe51342e57166a8abcf', '.vocab'],
                'openwebtext_book_corpus_wiki_en_uncased':
-               'a66073971aa0b1a262453fe51342e57166a8abcf',
+               ['a66073971aa0b1a262453fe51342e57166a8abcf', '.vocab'],
                'openwebtext_ccnews_stories_books_cased':
-               '2b804f8f90f9f93c07994b703ce508725061cf43',
-               'wiki_multilingual_cased': '0247cb442074237c38c62021f36b7a4dbd2e55f7',
-               'wiki_cn_cased': 'ddebd8f3867bca5a61023f73326fb125cf12b4f5',
-               'wiki_multilingual_uncased': '2b2514cc539047b9179e9d98a4e68c36db05c97a',
-               'scibert_scivocab_uncased': '2d2566bfc416790ab2646ab0ada36ba628628d60',
-               'scibert_scivocab_cased': '2c714475b521ab8542cb65e46259f6bfeed8041b',
-               'scibert_basevocab_uncased': '80ef760a6bdafec68c99b691c94ebbb918c90d02',
-               'scibert_basevocab_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
-               'biobert_v1.0_pmc_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
-               'biobert_v1.0_pubmed_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
-               'biobert_v1.0_pubmed_pmc_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
-               'biobert_v1.1_pubmed_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
-               'clinicalbert_uncased': '80ef760a6bdafec68c99b691c94ebbb918c90d02',
-               'baidu_ernie_uncased': '223553643220255e2a0d4c60e946f4ad7c719080',
-               'openai_webtext': 'f917dc7887ce996068b0a248c8d89a7ec27b95a1',
-               'xlnet_126gb': '0d74490383bbc5c62b8bcea74d8b74a1bb1280b3'}
+               ['2b804f8f90f9f93c07994b703ce508725061cf43', '.vocab'],
+               'wiki_multilingual_cased': ['0247cb442074237c38c62021f36b7a4dbd2e55f7', '.vocab'],
+               'wiki_cn_cased': ['ddebd8f3867bca5a61023f73326fb125cf12b4f5', '.vocab'],
+               'wiki_multilingual_uncased': ['2b2514cc539047b9179e9d98a4e68c36db05c97a', '.vocab'],
+               'scibert_scivocab_uncased': ['2d2566bfc416790ab2646ab0ada36ba628628d60', '.vocab'],
+               'scibert_scivocab_cased': ['2c714475b521ab8542cb65e46259f6bfeed8041b', '.vocab'],
+               'scibert_basevocab_uncased': ['80ef760a6bdafec68c99b691c94ebbb918c90d02', '.vocab'],
+               'scibert_basevocab_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab'],
+               'biobert_v1.0_pmc_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab'],
+               'biobert_v1.0_pubmed_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab'],
+               'biobert_v1.0_pubmed_pmc_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab'],
+               'biobert_v1.1_pubmed_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab'],
+               'clinicalbert_uncased': ['80ef760a6bdafec68c99b691c94ebbb918c90d02', '.vocab'],
+               'baidu_ernie_uncased': ['223553643220255e2a0d4c60e946f4ad7c719080', '.vocab'],
+               'openai_webtext': ['f917dc7887ce996068b0a248c8d89a7ec27b95a1', '.vocab'],
+               'xlnet_126gb': ['0d74490383bbc5c62b8bcea74d8b74a1bb1280b3', '.vocab'],
+               'kobert_news_wiki_ko_cased':['f86b1a8355819ba5ab55e7ea4a4ec30fdb5b084f','.spiece']}
 
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
@@ -278,7 +281,7 @@ def short_hash(name):
         raise ValueError('Vocabulary for {name} is not available. '
                          'Hosted vocabularies include: {vocabs}'.format(name=name,
                                                                         vocabs=vocabs))
-    return _vocab_sha1[name][:8]
+    return _vocab_sha1[name][0][:8]
 
 
 def _load_pretrained_vocab(name, root, cls=None):
@@ -294,14 +297,15 @@ def _load_pretrained_vocab(name, root, cls=None):
 
     Returns
     -------
-    Vocab or nlp.vocab.BERTVocab
+    Vocab or nlp.vocab.BERTVocab, Tokenizer or None
         Loaded vocabulary object for the pre-trained model.
     """
     file_name = '{name}-{short_hash}'.format(name=name,
                                              short_hash=short_hash(name))
     root = os.path.expanduser(root)
-    file_path = os.path.join(root, file_name + '.vocab')
-    sha1_hash = _vocab_sha1[name]
+    sha1_hash = _vocab_sha1[name][0]
+    file_ext = _vocab_sha1[name][1]
+    file_path = os.path.join(root, file_name + file_ext)
     if os.path.exists(file_path):
         if check_sha1(file_path, sha1_hash):
             return _load_vocab_file(file_path, cls)
@@ -321,9 +325,8 @@ def _load_pretrained_vocab(name, root, cls=None):
 
     prefix = str(time.time())
     zip_file_path = os.path.join(root, prefix + file_name + '.zip')
-    repo_url = _get_repo_url()
-    if repo_url[-1] != '/':
-        repo_url = repo_url + '/'
+    # will be fixed after merge
+    repo_url = _get_repo_url() if name.startswith() != 'kobert' else 'https://kobert.blob.core.windows.net/models/kobert/tokenizer/'
     download(_url_format.format(repo_url=repo_url, file_name=file_name),
              path=zip_file_path,
              overwrite=True)
@@ -338,7 +341,6 @@ def _load_pretrained_vocab(name, root, cls=None):
             pass
         else:
             raise e
-
     if check_sha1(file_path, sha1_hash):
         return _load_vocab_file(file_path, cls)
     else:
@@ -350,8 +352,10 @@ def _load_vocab_file(file_path, cls):
         if cls is None:
             from ..vocab import Vocab
             cls = Vocab
-
-        return cls.from_json(f.read())
+        if file_path.startswith('.spiece'):
+            return BERTVocab.from_sentencepiece(file_path, padding_token='[PAD]'), SentencepieceTokenizer(file_path)
+        else:
+            return cls.from_json(f.read()), None
 
 
 def _extract_archive(file, target_dir):  # pylint: disable=redefined-builtin

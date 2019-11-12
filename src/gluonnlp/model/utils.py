@@ -266,10 +266,11 @@ def _load_vocab(dataset_name, vocab, root, cls=None):
             warnings.warn('Both dataset_name and vocab are specified. '
                           'Loading vocab based on dataset_name. '
                           'Input "vocab" argument will be ignored.')
-        vocab = _load_pretrained_vocab(dataset_name, root, cls)
+        vocab, tokenizer = _load_pretrained_vocab(dataset_name, root, cls)
     else:
+        tokenizer = None
         assert vocab is not None, 'Must specify vocab if not loading from predefined datasets.'
-    return vocab
+    return vocab, tokenizer
 
 
 def _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=False,
