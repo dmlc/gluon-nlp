@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,59 +14,47 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-import os
+import nltk
 import pytest
+from mxnet.gluon.data import DataLoader
 
-from mxnet.gluon.data import DataLoader, SimpleDataset
-
-from gluonnlp.data import SQuAD
-from ..question_answering.data_processing import SQuADTransform, VocabProvider
-
-question_max_length = 30
-context_max_length = 256
+from ..question_answering.data_pipeline import SQuADDataLoaderTransformer
 
 
 @pytest.mark.remote_required
-def test_transform_to_nd_array():
-    dataset = SQuAD(segment='dev', version='1.1', root='tests/data/squad')
-    vocab_provider = VocabProvider(dataset)
-    transformer = SQuADTransform(
-        vocab_provider, question_max_length, context_max_length)
-    record = dataset[0]
+@pytest.mark.serial
+def test_data_loader_able_to_read_spacy(squad_dev_and_vocab_spacy_provider):
+    _, _, train_dataset, dev_dataset, word_vocab, char_vocab = squad_dev_and_vocab_spacy_provider
+    dataloader = DataLoader(train_dataset.transform(SQuADDataLoaderTransformer()), batch_size=1)
 
-    transformed_record = transformer(*record)
-    assert transformed_record is not None
-    assert len(transformed_record) == 7
+    assert word_vocab is not None
+    assert char_vocab is not None
 
-
-@pytest.mark.remote_required
-def test_data_loader_able_to_read():
-    dataset = SQuAD(segment='dev', root='tests/data/squad')
-    vocab_provider = VocabProvider(dataset)
-    transformer = SQuADTransform(
-        vocab_provider, question_max_length, context_max_length)
-    record = dataset[0]
-
-    processed_dataset = SimpleDataset([transformer(*record)])
-    loadable_data = SimpleDataset(
-        [(r[0], r[2], r[3], r[4], r[5], r[6]) for r in processed_dataset])
-    dataloader = DataLoader(loadable_data, batch_size=1)
-
-    for data in dataloader:
-        record_index, question_words, context_words, question_chars, context_chars, answers = data
-
+    for record_index, context, query, context_char, query_char, begin, end in dataloader:
         assert record_index is not None
-        assert question_words is not None
-        assert context_words is not None
-        assert question_chars is not None
-        assert context_chars is not None
-        assert answers is not None
+        assert context is not None
+        assert query is not None
+        assert context_char is not None
+        assert query_char is not None
+        assert begin is not None
+        assert end is not None
+        break
 
 
-@pytest.mark.remote_required
-def test_load_vocabs():
-    dataset = SQuAD(segment='dev', root='tests/data/squad')
-    vocab_provider = VocabProvider(dataset)
+def test_data_loader_able_to_read_nltk(squad_dev_and_vocab_nltk_provider):
+    nltk.download('punkt')
+    _, _, train_dataset, dev_dataset, word_vocab, char_vocab = squad_dev_and_vocab_nltk_provider
+    dataloader = DataLoader(train_dataset.transform(SQuADDataLoaderTransformer()), batch_size=1)
 
-    assert vocab_provider.get_word_level_vocab() is not None
-    assert vocab_provider.get_char_level_vocab() is not None
+    assert word_vocab is not None
+    assert char_vocab is not None
+
+    for record_index, context, query, context_char, query_char, begin, end in dataloader:
+        assert record_index is not None
+        assert context is not None
+        assert query is not None
+        assert context_char is not None
+        assert query_char is not None
+        assert begin is not None
+        assert end is not None
+        break

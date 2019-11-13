@@ -15,9 +15,9 @@ GluonNLP: Your Choice of Deep Learning for NLP
 
 .. raw:: html
 
-   <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='https://img.shields.io/badge/python-2.7%2C%203.6-blue.svg'></a>
+   <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='https://img.shields.io/badge/python-3.6%2C3.7-blue.svg'></a>
    <a href='https://codecov.io/gh/dmlc/gluon-nlp'><img src='https://codecov.io/gh/dmlc/gluon-nlp/branch/master/graph/badge.svg'></a>
-   <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='http://ci.mxnet.io/job/gluon-nlp/job/master/badge/icon'></a>
+   <a href='http://ci.mxnet.io/job/gluonnlp-py3-master-gpu-doc/job/master/'><img src='http://ci.mxnet.io/buildStatus/icon?job=gluonnlp-py3-master-gpu-doc%2Fmaster'></a>
    <a href='https://pypi.org/project/gluonnlp/#history'><img src='https://img.shields.io/pypi/v/gluonnlp.svg'></a>
 
 GluonNLP is a toolkit that enables easy text preprocessing, datasets
@@ -30,15 +30,22 @@ Language Processing (NLP) research.
 News
 ====
 
-- GluonNLP is featured in:
+- Tutorial proposal for GluonNLP is accepted at `EMNLP 2019 <https://www.emnlp-ijcnlp2019.org>`__, Hong Kong.
 
+- GluonNLP was featured in:
+
+  - **KDD 2019 Alaska**! Check out our tutorial: `From Shallow to Deep Language Representations: Pre-training, Fine-tuning, and Beyond <http://kdd19.mxnet.io>`__.
+  - **JSALT 2019 in Montreal, 2019-6-14**! Checkout **https://jsalt19.mxnet.io**.
   - **AWS re:invent 2018 in Las Vegas, 2018-11-28**! Checkout `details <https://www.portal.reinvent.awsevents.com/connect/sessionDetail.ww?SESSION_ID=88736>`_.
+  - **PyData 2018 NYC, 2018-10-18**! Checkout the `awesome talk <https://pydata.org/nyc2018/schedule/presentation/76/>`__ by Sneha Jha.
   - **KDD 2018 London, 2018-08-21, Apache MXNet Gluon tutorial**! Check out **https://kdd18.mxnet.io**.
 
 Installation
 ============
 
-Make sure you have Python 2.7 or Python 3.6 and recent version of MXNet.
+Make sure you have Python 3.6 or newer and a recent version of MXNet (our CI
+server runs the testsuite with Python 3.6).
+
 You can install ``MXNet`` and ``GluonNLP`` using pip.
 
 ``GluonNLP`` is based on the most recent version of ``MXNet``.
@@ -48,7 +55,7 @@ In particular, if you want to install the most recent ``MXNet`` release:
 
 ::
 
-    pip install --upgrade mxnet>=1.3.0
+    pip install --upgrade mxnet>=1.5.0
 
 Else, if you want to install the most recent ``MXNet`` nightly build:
 
@@ -85,7 +92,7 @@ How to Contribute
 
 GluonNLP community welcomes contributions from anyone!
 
-There are lots of opportunities for you to become our `contributors <https://github.com/dmlc/gluon-nlp/blob/master/contributor.rst>`__:
+There are lots of opportunities for you to become our `contributors <https://github.com/dmlc/gluon-nlp/graphs/contributors>`__:
 
 - Ask or answer questions on `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
 - Propose ideas, or review proposed design ideas on `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
@@ -134,7 +141,7 @@ Load the Wikitext-2 dataset, for example:
 
     >>> import gluonnlp as nlp
     >>> train = nlp.data.WikiText2(segment='train')
-    >>> train[0][0:5]
+    >>> train[0:5]
     ['=', 'Valkyria', 'Chronicles', 'III', '=']
 
 `Vocabulary Construction <http://gluon-nlp.mxnet.io/master/api/modules/vocab.html>`__
@@ -144,7 +151,7 @@ Build vocabulary based on the above dataset, for example:
 
 .. code:: python
 
-    >>> vocab = nlp.Vocab(counter=nlp.data.Counter(train[0]))
+    >>> vocab = nlp.Vocab(counter=nlp.data.Counter(train))
     >>> vocab
     Vocab(size=33280, unk="<unk>", reserved="['<pad>', '<bos>', '<eos>']")
 
@@ -184,6 +191,21 @@ English word embeddings:
     <class 'mxnet.ndarray.ndarray.NDArray'>
     >>> glove['baby'].shape
     (50,)
+
+
+Reference Paper
+===============
+
+The bibtex entry for the `reference paper <https://arxiv.org/abs/1907.04433>`__ of GluonNLP is:
+
+.. code::
+
+   @article{gluoncvnlp2019,
+     title={GluonCV and GluonNLP: Deep Learning in Computer Vision and Natural Language Processing},
+     author={Guo, Jian and He, He and He, Tong and Lausen, Leonard and Li, Mu and Lin, Haibin and Shi, Xingjian and Wang, Chenguang and Xie, Junyuan and Zha, Sheng and Zhang, Aston and Zhang, Hang and Zhang, Zhi and Zhang, Zhongyue and Zheng, Shuai},
+     journal={arXiv preprint arXiv:1907.04433},
+     year={2019}
+   }
 
 
 New to Deep Learning or NLP?

@@ -42,39 +42,7 @@ computes the cosine similarity between two words.
 And more in :doc:`tutorials <examples/index>`.
 
 
-Installation
-------------
-
-GluonNLP relies on the recent version of MXNet. The easiest way to install MXNet
-is through `pip <https://pip.pypa.io/en/stable/installing/>`_. The following
-command installs the latest version of MXNet.
-
-.. code-block:: console
-
-   pip install --upgrade mxnet>=1.3.0
-
-.. note::
-
-   There are other pre-build MXNet packages that enable GPU supports and
-   accelerate CPU performance, please refer to `this page
-   <http://beta.mxnet.io/install.html>`_ for details. Some
-   training scripts are recommended to run on GPUs, if you don't have a GPU
-   machine at hand, you may consider `running on AWS
-   <http://d2l.ai/chapter_appendix/aws.html>`_.
-
-
-After installing MXNet, you can install the GluonNLP toolkit by
-
-.. code-block:: console
-
-   pip install gluonnlp
-
-
-.. hint::
-
-   For more detailed guide on installing pre-release from latest master branch,
-   install from local copy of GluonNLP source code, etc.,
-   click the :doc:`install <install>` link in the top navigation bar.
+.. include:: install.rst
 
 
 About GluonNLP
@@ -99,8 +67,9 @@ This toolkit assumes that users have basic knowledge about deep learning and
 NLP. Otherwise, please refer to an introductory course such as
 `Dive into Deep Learning <https://www.d2l.ai/>`_ or
 `Stanford CS224n <http://web.stanford.edu/class/cs224n/>`_.
-If you are not familiar with Gluon, check out the
-`60-min Gluon crash course <http://beta.mxnet.io/guide/crash-course/index.html>`_.
+If you are not familiar with Gluon, check out the `Gluon documentation
+<http://mxnet.apache.org/versions/master/tutorials/index.html#python-tutorials>`__.
+You may find the 60-min Gluon crash course linked from there especially helpful.
 
 
 .. toctree::
@@ -111,3 +80,4 @@ If you are not familiar with Gluon, check out the
    examples/index
    api/index
    community/index
+   genindex

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,26 +15,25 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from __future__ import absolute_import
-from __future__ import print_function
-
-import re
-import os
-import sys
 import functools
+import os
+import random
+import re
+import warnings
 
+import numpy as np
 import pytest
-
-import gluonnlp as nlp
 from mxnet import ndarray as nd
 from mxnet.test_utils import *
-import numpy as np
 
-if sys.version_info[0] == 3:
-    _str_types = (str, )
-else:
-    _str_types = (str, unicode)
+import gluonnlp as nlp
+from gluonnlp.base import get_home_dir
 
+
+@pytest.fixture
+def counter():
+    return nlp.data.utils.Counter( ['a', 'b', 'b', 'c', 'c', 'c',
+                                    'some_word$'])
 
 def _get_test_str_of_tokens(token_delim, seq_delim):
     seq1 = token_delim + token_delim.join(['Life', 'is', 'great', '!']) + token_delim + seq_delim
@@ -80,9 +77,7 @@ def test_count_tokens():
     _test_count_tokens('IS', 'LIFE')
 
 
-def test_vocabulary_getitem():
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
-
+def test_vocabulary_getitem(counter):
     vocab = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>',
                       bos_token=None, eos_token=None, reserved_tokens=None)
 
@@ -115,9 +110,7 @@ def test_vocabulary_getitem():
             no_unk_vocab.to_indices(words)
 
 
-def test_vocabulary_to_tokens():
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
-
+def test_vocabulary_to_tokens(counter):
     vocab = nlp.Vocab(counter, max_size=None, min_freq=1,unknown_token='<unknown>',
                       bos_token=None, eos_token=None, reserved_tokens=None)
     i1 = vocab.to_tokens(2)
@@ -137,9 +130,7 @@ def test_vocabulary_to_tokens():
             vocab.to_tokens(indices)
 
 
-def test_vocabulary():
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
-
+def test_vocabulary(counter):
     v1 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>',
                    padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
     assert len(v1) == 5
@@ -416,7 +407,8 @@ def test_token_embedding_from_file(tmpdir, allow_extend):
     my_embed['a'] = nd.array([1, 2, 3, 4, 5])
     assert_almost_equal(my_embed['a'].asnumpy(), np.array([1, 2, 3, 4, 5]))
     if allow_extend:
-        my_embed['unknown$$$'] = nd.array([0, 0, 0, 0, 0])
+        with pytest.warns(UserWarning):  # Should add multiple new tokens at a time
+            my_embed['unknown$$$'] = nd.array([0, 0, 0, 0, 0])
         assert_almost_equal(my_embed['unknown$$$'].asnumpy(), np.array([0, 0, 0, 0, 0]))
     else:
         with pytest.raises(KeyError):
@@ -477,7 +469,7 @@ def test_embedding_get_and_pretrain_file_names():
 
 
 @pytest.mark.parametrize('allow_extend', [True, False])
-def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend):
+def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend, counter):
     embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
@@ -488,8 +480,6 @@ def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend):
     _mk_my_pretrain_file(os.path.join(embed_root, embed_name), elem_delim, pretrain_file)
 
     pretrain_file_path = os.path.join(embed_root, embed_name, pretrain_file)
-
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
 
     v1 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>',
                    padding_token=None, bos_token=None, eos_token=None, reserved_tokens=['<pad>'])
@@ -617,7 +607,7 @@ def test_vocab_set_embedding_with_one_custom_embedding(tmpdir, allow_extend):
 
 
 @pytest.mark.parametrize('allow_extend', [True, False])
-def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir, allow_extend):
+def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir, allow_extend, counter):
     embed_root = str(tmpdir)
     embed_name = 'my_embed'
     elem_delim = '\t'
@@ -634,8 +624,6 @@ def test_vocab_set_embedding_with_two_custom_embeddings(tmpdir, allow_extend):
 
     my_embed1 = from_file(pretrain_file_path1, elem_delim, init_unknown_vec=nd.ones)
     my_embed2 = from_file(pretrain_file_path2, elem_delim)
-
-    counter = nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
 
     v1 = nlp.Vocab(counter, max_size=None, min_freq=1, unknown_token='<unk>',
                    padding_token=None, bos_token=None, eos_token=None, reserved_tokens=None)
@@ -770,12 +758,12 @@ def test_vocab_set_embedding_with_subword_lookup_only_token_embedding(
         allow_extend, unknown_token, vocab_unknown_token, initialize):
     embsize = 5
 
-    class NaiveLookup(object):
+    class NaiveLookup:
         def __contains__(self, token):
             return True
 
         def __getitem__(self, tokens):
-            if isinstance(tokens, _str_types):
+            if isinstance(tokens, str):
                 return nd.ones(embsize)
             else:
                 return nd.ones((len(tokens), embsize))
@@ -794,7 +782,8 @@ def test_vocab_set_embedding_with_subword_lookup_only_token_embedding(
     if initialize and unknown_token:
         e[e.unknown_token] = nd.zeros(embsize)
     elif initialize and allow_extend:
-        e["hello"] = e.unknown_lookup["hello"]
+        with pytest.warns(UserWarning):  # encouraged to batch their updates
+            e["hello"] = e.unknown_lookup["hello"]
     else:  # Cannot initialize, even if initialize is True
         with pytest.raises(AssertionError):
             v.set_embedding(e)
@@ -820,18 +809,27 @@ def test_download_embed():
                                     '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8')}
         namespace = 'test'
 
-        def __init__(self, embedding_root='embedding', init_unknown_vec=nd.zeros, **kwargs):
+        def __init__(self, embedding_root=os.path.join(get_home_dir(), 'embedding'),
+                     init_unknown_vec=nd.zeros, **kwargs):
             source = 'embedding_test'
             Test._check_source(self.source_file_hash, source)
 
-            super(Test, self).__init__(**kwargs)
-
             file_path = Test._get_file_path(self.source_file_hash,
                                             embedding_root, source)
+            unknown_token = kwargs.pop('unknown_token', '<unk>')
+            idx_to_token, idx_to_vec, unknown_token = self._load_embedding(
+                file_path,
+                elem_delim=' ',
+                unknown_token=unknown_token,
+                init_unknown_vec=init_unknown_vec)
 
-            self._load_embedding(file_path, ' ')
+            return super(Test, self).__init__(unknown_token=unknown_token,
+                                              init_unknown_vec=None,
+                                              idx_to_token=idx_to_token,
+                                              idx_to_vec=idx_to_vec,
+                                              **kwargs)
 
-    test_embed = nlp.embedding.create('test', embedding_root='tests/data/embedding')
+    test_embed = nlp.embedding.create('test')
     assert_almost_equal(test_embed['hello'].asnumpy(), (nd.arange(5) + 1).asnumpy())
     assert_almost_equal(test_embed['world'].asnumpy(), (nd.arange(5) + 6).asnumpy())
     assert_almost_equal(test_embed['<unk>'].asnumpy(), nd.zeros((5,)).asnumpy())
@@ -889,8 +887,7 @@ def test_token_embedding_from_serialized_file(tmpdir):
 @pytest.mark.remote_required
 def test_token_embedding_from_file_S3_with_custom_unknown_token(unknown_token):
     nlp.embedding.create('glove', source='glove.6B.50d',
-                         unknown_token=unknown_token,
-                         embedding_root='tests/data/embedding')
+                         unknown_token=unknown_token)
 
 
 @pytest.mark.parametrize('load_ngrams', [True, False])
@@ -898,9 +895,7 @@ def test_token_embedding_from_file_S3_with_custom_unknown_token(unknown_token):
 @pytest.mark.remote_required
 def test_token_embedding_from_S3_fasttext_with_ngrams(load_ngrams):
     embed = nlp.embedding.create('fasttext', source='wiki.simple',
-                                 load_ngrams=load_ngrams, unknown_token=None,
-                                 embedding_root='tests/data/embedding')
-
+                                 load_ngrams=load_ngrams, unknown_token=None)
     if load_ngrams:
         embed['$$$unknownword$$$']
     else:
@@ -916,19 +911,19 @@ def test_token_embedding_from_S3_fasttext_with_ngrams(load_ngrams):
 def test_token_embedding_unknown_lookup(setinconstructor, lookup,
                                         initializetokenembedding,
                                         unknown_token, allow_extend, tmpdir):
-    class NaiveLookup(object):
+    class NaiveLookup:
         dim = 5  # Must match _mk_my_pretrain_file
 
         def __contains__(self, token):
             return True
 
         def __getitem__(self, tokens):
-            if isinstance(tokens, _str_types):
+            if isinstance(tokens, str):
                 return nd.ones(self.dim)
             else:
                 return nd.ones((len(tokens), self.dim))
 
-    class IncapableLookup(object):
+    class IncapableLookup:
         def __contains__(self, token):
             return False
 
@@ -986,7 +981,8 @@ def test_token_embedding_unknown_lookup(setinconstructor, lookup,
         assert 'hello' not in token_embedding.token_to_idx
 
         if allow_extend:
-            token_embedding['hello'] = token_embedding.unknown_lookup['hello']
+            with pytest.warns(UserWarning):  # encouraged to batch their updates
+                token_embedding['hello'] = token_embedding.unknown_lookup['hello']
             assert 'hello' in token_embedding.token_to_idx
             assert np.all(np.isclose(1, token_embedding['hello'].asnumpy()))
 
@@ -1019,11 +1015,13 @@ def test_token_embedding_manual_extension(initializeidxtovecbyextending,
 
     # Uninitialized token_embedding._idx_to_vec based
     token_embedding = TokEmb()
-    token_embedding['hello'] = nd.zeros(shape=(1, 5))
+    with pytest.warns(UserWarning):  # encouraged to batch their updates
+        token_embedding['hello'] = nd.zeros(shape=(1, 5))
     assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
 
     token_embedding = TokEmb()
-    token_embedding['hello'] = nd.zeros(shape=(5, ))
+    with pytest.warns(UserWarning):  # encouraged to batch their updates
+        token_embedding['hello'] = nd.zeros(shape=(5, ))
     assert np.all(np.isclose(0, token_embedding['hello'].asnumpy()))
 
     token_embedding = TokEmb()
@@ -1042,26 +1040,38 @@ def test_token_embedding_manual_extension(initializeidxtovecbyextending,
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_token_embedding_serialization():
-    @nlp.embedding.register
-    class Test(nlp.embedding.TokenEmbedding):
-        # 33 bytes.
-        source_file_hash = \
-                {'embedding_test': ('embedding_test.vec',
-                                    '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8')}
-        namespace = 'test'
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        # UserWarning: New token embedding test_vocab_embed.Test registered
+        # with name test isoverriding existing token embedding
+        # test_vocab_embed.Test
 
-        def __init__(self, embedding_root='tests/data/embedding', **kwargs):
-            source = 'embedding_test'
-            Test._check_source(self.source_file_hash, source)
+        @nlp.embedding.register
+        class Test(nlp.embedding.TokenEmbedding):
+            # 33 bytes.
+            source_file_hash = \
+                    {'embedding_test': ('embedding_test.vec',
+                                        '29b9a6511cf4b5aae293c44a9ec1365b74f2a2f8')}
+            namespace = 'test'
 
-            super(Test, self).__init__(**kwargs)
+            def __init__(self, embedding_root=os.path.join(get_home_dir(), 'embedding'), **kwargs):
+                source = 'embedding_test'
+                Test._check_source(self.source_file_hash, source)
 
-            file_path = Test._get_file_path(self.source_file_hash,
-                                            embedding_root, source)
+                file_path = Test._get_file_path(self.source_file_hash, embedding_root, source)
 
-            self._load_embedding(file_path, ' ')
+                unknown_token = kwargs.pop('unknown_token', '<unk>')
+                init_unknown_vec = kwargs.pop('init_unknown_vec', nd.zeros)
+                idx_to_token, idx_to_vec, unknown_token = self._load_embedding(
+                    file_path, elem_delim=' ', unknown_token=unknown_token,
+                    init_unknown_vec=init_unknown_vec)
 
-    emb = nlp.embedding.create('test', embedding_root='tests/data/embedding')
+                super(Test,
+                      self).__init__(unknown_token=unknown_token, init_unknown_vec=None,
+                                     idx_to_token=idx_to_token, idx_to_vec=idx_to_vec, **kwargs)
+
+
+    emb = nlp.embedding.create('test')
 
     # Test uncompressed serialization
     file_path = os.path.join('tests', 'data', 'embedding', 'embeddings.npz')
@@ -1080,7 +1090,7 @@ def test_word_embedding_evaluation_registry():
     with pytest.raises(RuntimeError):
 
         @nlp.embedding.evaluation.register
-        class InvalidEvaluationFunction(object):
+        class InvalidEvaluationFunction:
             pass
 
     with pytest.raises(KeyError):
@@ -1108,9 +1118,7 @@ def test_word_embedding_similarity_evaluation_models(similarity_function):
 
     counter = nlp.data.utils.Counter(w for wpair in dataset for w in wpair[:2])
     vocab = nlp.vocab.Vocab(counter)
-    vocab.set_embedding(
-        nlp.embedding.create('fasttext', source='wiki.simple',
-                             embedding_root='tests/data/embedding'))
+    vocab.set_embedding(nlp.embedding.create('fasttext', source='wiki.simple'))
 
     data = [[vocab[d[0]], vocab[d[1]], d[2]] for d in dataset]
     words1, words2, scores = zip(*data)
@@ -1136,15 +1144,14 @@ def test_word_embedding_analogy_evaluation_models(analogy_function):
     dataset = nlp.data.GoogleAnalogyTestSet()
     dataset = [d for i, d in enumerate(dataset) if i < 10]
 
-    embedding = nlp.embedding.create('fasttext', source='wiki.simple',
-                                     embedding_root='tests/data/embedding')
+    embedding = nlp.embedding.create('fasttext', source='wiki.simple')
     counter = nlp.data.utils.Counter(embedding.idx_to_token)
     vocab = nlp.vocab.Vocab(counter)
     vocab.set_embedding(embedding)
 
     dataset_coded = [[vocab[d[0]], vocab[d[1]], vocab[d[2]], vocab[d[3]]]
                      for d in dataset]
-    dataset_coded_nd = nd.array(dataset_coded)
+    dataset_coded_nd = nd.array(dataset_coded, dtype=np.int64)
 
     for k in [1, 3]:
         for exclude_question_words in [True, False]:
@@ -1157,17 +1164,17 @@ def test_word_embedding_analogy_evaluation_models(analogy_function):
             words1 = dataset_coded_nd[:, 0]
             words2 = dataset_coded_nd[:, 1]
             words3 = dataset_coded_nd[:, 2]
-            pred_idxs = evaluator(words1, words2, words3)
+            pred_idxs = evaluator(words1, words2, words3).astype(np.int64)
 
             # If we don't exclude inputs most predictions should be wrong
             words4 = dataset_coded_nd[:, 3]
-            accuracy = nd.mean(pred_idxs[:, 0] == nd.array(words4))
+            accuracy = (pred_idxs[:, 0] == words4).astype(np.float64).mean()
             accuracy = accuracy.asscalar()
             if not exclude_question_words:
                 assert accuracy <= 0.1
 
                 # Instead the model would predict W3 most of the time
-                accuracy_w3 = nd.mean(pred_idxs[:, 0] == nd.array(words3))
+                accuracy_w3 = (pred_idxs[:, 0] == words3).astype(np.float64).mean()
                 assert accuracy_w3.asscalar() >= 0.89
 
             else:
@@ -1199,3 +1206,254 @@ def test_subword_function_ngramhashes():
     assert 1669484008 % num_subwords == next(iter(sf.subwords_to_indices(['<te'])))
     assert 1669484008 % num_subwords == next(iter(sf.subwords_to_indices([u'<te'])))
     assert 2688791429 % num_subwords == next(iter(sf.subwords_to_indices([u'<τε'])))
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', None])
+@pytest.mark.parametrize('padding_token', ['<pad>', '<eos>', None])  # padding_token == eos_token
+@pytest.mark.parametrize('eos_token', ['<eos>', None])
+@pytest.mark.parametrize('reserved_tokens', [['<tok>'], []])
+def test_vocab_duplicate_special_tokens(unknown_token, padding_token,
+                                        eos_token, reserved_tokens):
+    """Different special tokens are allowed to map to the same representations.
+
+    Special tokens are a subset of the reserved tokens. In general reserved
+    tokens must not contain duplicates; however, it is allowed that multiple
+    special tokens use the same reserved token.
+
+    """
+    counter = nlp.data.utils.Counter(
+        ['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
+
+    Vocab = functools.partial(nlp.Vocab,
+                              counter,
+                              max_size=None,
+                              min_freq=1,
+                              unknown_token=unknown_token,
+                              padding_token=padding_token,
+                              bos_token=None,
+                              eos_token=eos_token)
+
+    v = Vocab(reserved_tokens=reserved_tokens)
+
+    # Duplicate special tokens must not corrupt the index
+    # (Broken before GluonNLP 0.7)
+    if eos_token is not None and padding_token == eos_token:
+        # padding_token == eos_token; there should only be a single index for
+        # <eos>
+        # Before GluonNLP 0.7, idx_to_token looked like
+        # ['<unk>', '<eos>', '<eos>', 'c', 'b', 'a']
+        # But it should look like
+        # ['<unk>', '<eos>', 'c', 'b', 'a']
+        assert len(v.idx_to_token) == len(v.token_to_idx)
+        assert len(v.idx_to_token) == len(set(v.idx_to_token))
+
+    # Specifying a special tokens as reserved tokens is counted as duplicate
+    if eos_token is not None:
+        with pytest.raises(AssertionError):
+            Vocab(reserved_tokens=reserved_tokens + [eos_token])
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', None])
+@pytest.mark.parametrize('padding_token', ['<pad>', None])
+def test_vocab_identifiers_to_tokens_sanity_checks(unknown_token,
+                                                   padding_token, counter):
+    Vocab = functools.partial(nlp.Vocab,
+                              counter,
+                              max_size=None,
+                              min_freq=1,
+                              unknown_token=unknown_token,
+                              bos_token=None,
+                              eos_token=None)
+    # Special tokens are automatically added
+    v = Vocab(my_token='<does_not_exist_yet>')
+    assert v.my_token == '<does_not_exist_yet>'
+
+    # Special token names must end in _token
+    with pytest.raises(ValueError):
+        Vocab(special_tok='<token>')
+
+    # Cannot set internals
+    with pytest.raises(ValueError):
+        Vocab(_private_token='<token>')
+
+    # Enforces uniqueness requirement of reserved_tokens argument
+    with pytest.raises(AssertionError):
+        Vocab(reserved_tokens=['<token>'], special_token='<token>')
+
+    # Many-to-one mapping is allowed
+    v = Vocab(first_name_of_token='<token>', second_name_of_token='<token>')
+    assert v.first_name_of_token == '<token>'
+    assert v.second_name_of_token == '<token>'
+    if unknown_token:
+        v = Vocab(unk_token=unknown_token)
+        assert v.unk_token == unknown_token
+        assert v.unk_token == v.unknown_token
+    if padding_token:
+        v = Vocab(pad_token=padding_token)
+        assert v.pad_token == padding_token
+        assert v.pad_token == v.padding_token
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', None])
+@pytest.mark.parametrize('padding_token', ['<pad>', None])
+@pytest.mark.parametrize('identifiers_to_tokens', [{
+    'important_token': '<imp>'
+}, {}])
+@pytest.mark.parametrize('test_serialization', [True, False])
+def test_vocab_identifiers_to_tokens(unknown_token, padding_token,
+                                     identifiers_to_tokens, test_serialization,
+                                     counter):
+    vocab = nlp.Vocab(counter,
+                      max_size=None,
+                      min_freq=1,
+                      unknown_token=unknown_token,
+                      padding_token=padding_token,
+                      bos_token=None,
+                      eos_token=None,
+                      **identifiers_to_tokens)
+
+    if test_serialization:
+        vocab = nlp.Vocab.from_json(vocab.to_json())
+
+    if identifiers_to_tokens:
+        for identifier, token in identifiers_to_tokens.items():
+            assert hasattr(vocab, identifier)
+            assert getattr(vocab, identifier) == token
+            assert token in vocab.reserved_tokens
+
+    assert getattr(vocab, 'unknown_token') == unknown_token
+    assert getattr(vocab, 'padding_token') == padding_token
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', None])
+@pytest.mark.parametrize('padding_token', ['<pad>', None])
+def test_vocab_token_to_idx(unknown_token, padding_token, counter):
+    reserved_tokens = ['<tok>']
+    Vocab = functools.partial(nlp.Vocab,
+                              counter,
+                              max_size=None,
+                              min_freq=1,
+                              unknown_token=unknown_token,
+                              padding_token=padding_token,
+                              bos_token=None,
+                              eos_token=None,
+                              reserved_tokens=reserved_tokens)
+    tokens = set(counter)
+    if unknown_token is not None:
+        tokens.add(unknown_token)
+    if padding_token is not None:
+        tokens.add(padding_token)
+    if isinstance(reserved_tokens, dict):
+        tokens.update(reserved_tokens.values())
+    elif isinstance(reserved_tokens, list):
+        tokens.update(reserved_tokens)
+
+    # Test sanity-checks
+    valid_token = next(counter.elements())
+    invalid_token = 'token_that_does_not_occur_in_vocab'
+    assert invalid_token not in counter
+    with pytest.raises(ValueError):
+        Vocab(token_to_idx={invalid_token: 0})
+    with pytest.raises(ValueError):
+        Vocab(token_to_idx={valid_token: -1})
+    with pytest.raises(ValueError):
+        Vocab(token_to_idx={valid_token: len(tokens)})
+
+    def token_idx_check(token, idx):
+        assert v[token] == idx
+        assert v.token_to_idx[token] == idx
+        assert v.idx_to_token[idx] == token
+
+    def consistency_check(v):
+        assert set(v.idx_to_token) == set(v.token_to_idx.keys())
+        assert set(v.token_to_idx.keys()) == set(tokens)
+        assert set(v.token_to_idx.values()) == set(range(len(tokens)))
+
+    # Manual checks with special tokens
+    if unknown_token:
+        v = Vocab(token_to_idx={unknown_token: len(tokens) - 1})
+        consistency_check(v)
+        token_idx_check(unknown_token, len(tokens) -1)
+    if padding_token:
+        v = Vocab(token_to_idx={padding_token: len(tokens) - 1})
+        consistency_check(v)
+        token_idx_check(padding_token, len(tokens) -1)
+
+    # Test 10 random user-specified indices for a subset of tokens
+    for i in range(10):
+        k = random.randint(0, len(tokens) - 1)
+        token_to_idx = {
+            k: v
+            for k, v in zip(random.sample(tokens, k), random.sample(
+                range(k), k))
+        }
+        v = Vocab(token_to_idx=token_to_idx)
+        consistency_check(v)
+        for token, idx in token_to_idx.items():
+            token_idx_check(token, idx)
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', None])
+@pytest.mark.parametrize('padding_token', ['<pad>', '<eos>', None])
+@pytest.mark.parametrize('eos_token', ['<eos>', None])
+@pytest.mark.parametrize('reserved_tokens', [['<tok>'], []])
+def test_vocab_duplicate_special_tokens(unknown_token, padding_token,
+                                        eos_token, reserved_tokens, counter):
+    """Different special tokens are allowed to map to the same representations.
+
+    Special tokens are a subset of the reserved tokens. In general reserved
+    tokens must not contain duplicates; however, it is allowed that multiple
+    special tokens use the same reserved token.
+
+    """
+    Vocab = functools.partial(nlp.Vocab,counter,
+                  max_size=None,
+                  min_freq=1,
+                  unknown_token=unknown_token,
+                  padding_token=padding_token,
+                  bos_token=None,
+                  eos_token=eos_token
+                  )
+
+    v = Vocab(reserved_tokens=reserved_tokens)
+
+    # Specifying a special tokens as reserved tokens is counted as duplicate
+    if eos_token is not None:
+        with pytest.raises(AssertionError):
+            Vocab(reserved_tokens=reserved_tokens + [eos_token])
+
+
+def test_vocab_backwards_compatibility_prior_v0_7_corrupted_index_bug():
+    with open('tests/data/vocab/backward_compat_0_7_corrupted_index', 'r') as f:
+        with pytest.warns(UserWarning):  # Detected a corrupted index in the deserialize vocabulary
+            v = nlp.Vocab.from_json(f.read())
+
+    assert len(set(v.idx_to_token)) == len(v.token_to_idx)
+    assert v['<unk>'] == 0
+    assert v['<bos>'] == 2
+    assert v['<eos>'] == 3
+    assert v['token'] == 4
+
+    assert v.idx_to_token[0] == '<unk>'
+    assert v.idx_to_token[1] == '<eos>'  # corruption preserved for backward
+    # compatibility
+    assert v.idx_to_token[2] == '<bos>'
+    assert v.idx_to_token[3] == '<eos>'
+    assert v.idx_to_token[4] == 'token'
+
+
+@pytest.mark.parametrize('unknown_token', ['<unk>', '<UNK>'])
+@pytest.mark.parametrize('padding_token', ['<pad>', '<eos>', None])
+@pytest.mark.parametrize('eos_token', ['<eos>', None])
+@pytest.mark.parametrize('reserved_tokens', [['<tok>'], []])
+def test_vocab_remapped_unknown_token_idx(unknown_token, padding_token, eos_token, reserved_tokens,
+                                          counter):
+    Vocab = functools.partial(nlp.Vocab, counter, max_size=None, min_freq=1,
+                              unknown_token=unknown_token, padding_token=padding_token,
+                              bos_token=None, eos_token=eos_token)
+
+    v = Vocab()
+    assert v['UNKNOWNWORD'] == 0
+
+    v = Vocab(token_to_idx={unknown_token: 1})
+    assert v['UNKNOWNWORD'] == 1

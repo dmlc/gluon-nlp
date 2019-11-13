@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -21,28 +19,36 @@
 """Transformer API. It provides tools for common transformation on samples in text dataset, such as
 clipping, padding, and tokenization."""
 
-from __future__ import absolute_import
-from __future__ import print_function
-from __future__ import division
 
-__all__ = ['ClipSequence', 'PadSequence', 'SacreMosesTokenizer', 'NLTKMosesTokenizer',
-           'SpacyTokenizer', 'SacreMosesDetokenizer', 'NLTKMosesDetokenizer', 'JiebaTokenizer',
-           'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
-           'SentencepieceDetokenizer', 'BERTBasicTokenizer', 'BERTTokenizer',
-           'BERTSentenceTransform']
+__all__ = [
+    'ClipSequence', 'PadSequence', 'SacreMosesTokenizer',
+    'SpacyTokenizer', 'SacreMosesDetokenizer',
+    'JiebaTokenizer', 'NLTKStanfordSegmenter', 'SentencepieceTokenizer',
+    'SentencepieceDetokenizer', 'BERTBasicTokenizer', 'BERTTokenizer',
+    'BERTSentenceTransform', 'BERTSPTokenizer',
+    'GPT2BPETokenizer', 'GPT2BPEDetokenizer'
+]
 
+import errno
+import functools
+import io
 import os
-import warnings
+import time
 import unicodedata
+import zipfile
+from typing import List, Optional
 
-import numpy as np
 import mxnet as mx
-from mxnet.gluon.utils import download, check_sha1
-from .utils import _extract_archive
+from mxnet.gluon.utils import _get_repo_url, check_sha1, download
+import numpy as np
+
 from ..base import get_home_dir
+from ..vocab.vocab import Vocab
+from .utils import _extract_archive
+from .wordpiece import tokenize as wordpiece_tokenize
 
 
-class ClipSequence(object):
+class ClipSequence:
     """Clip the sequence to have length no more than `length`.
 
     Parameters
@@ -75,7 +81,7 @@ class ClipSequence(object):
         return sample[:min(len(sample), self._length)]
 
 
-class PadSequence(object):
+class PadSequence:
     """Pad the sequence.
 
     Pad the sequence to the given `length` by inserting `pad_val`. If `clip` is set,
@@ -126,83 +132,31 @@ class PadSequence(object):
             if isinstance(sample, mx.nd.NDArray):
                 # TODO(sxjscience) Use this trick for padding because mx.pad currently only supports
                 # 4D/5D inputs
-                new_sample_shape = (self._length,) + sample.shape[1:]
-                ret = mx.nd.full(shape=new_sample_shape, val=self._pad_val, ctx=sample.context,
+                new_sample_shape = (self._length, ) + sample.shape[1:]
+                ret = mx.nd.full(shape=new_sample_shape,
+                                 val=self._pad_val,
+                                 ctx=sample.context,
                                  dtype=sample.dtype)
                 ret[:sample_length] = sample
                 return ret
             elif isinstance(sample, np.ndarray):
                 pad_width = [(0, self._length - sample_length)] +\
                             [(0, 0) for _ in range(sample.ndim - 1)]
-                return np.pad(sample, mode='constant', constant_values=self._pad_val,
+                return np.pad(sample,
+                              mode='constant',
+                              constant_values=self._pad_val,
                               pad_width=pad_width)
             elif isinstance(sample, list):
-                return sample + [self._pad_val for _ in range(self._length - sample_length)]
+                return sample + [
+                    self._pad_val for _ in range(self._length - sample_length)
+                ]
             else:
-                raise NotImplementedError('The input must be 1) list or 2) numpy.ndarray or 3) '
-                                          'mxnet.NDArray, received type=%s' % str(type(sample)))
+                raise NotImplementedError(
+                    'The input must be 1) list or 2) numpy.ndarray or 3) '
+                    'mxnet.NDArray, received type=%s' % str(type(sample)))
 
 
-class NLTKMosesTokenizer(object):
-    """Apply the Moses Tokenizer implemented in NLTK.
-
-    Users of this class are required to install `NLTK <https://www.nltk.org/install.html>`_
-    and install relevant NLTK packages, such as
-    :samp:`python -m nltk.downloader perluniprops nonbreaking_prefixes`.
-
-    Examples
-    --------
-    >>> tokenizer = gluonnlp.data.NLTKMosesTokenizer()
-    >>> tokenizer("Gluon NLP toolkit provides a suite of text processing tools.")
-    ['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of', 'text', 'processing', 'tools', '.']
-    >>> tokenizer("Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools "
-    ...           "zur Verfügung.")
-    ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
-'zur', 'Verf\xfcgung', '.']
-    """
-
-    def __init__(self):
-        try:
-            from nltk.tokenize.moses import MosesTokenizer
-        except ImportError:
-            warnings.warn('NLTK or relevant packages are not installed. '
-                          'Due to the LGPL 2.1+, moses has been deprecated in NLTK since 3.3.0. '
-                          'You must install NLTK <= 3.2.5 in order to use the '
-                          'NLTKMosesTokenizer. You can refer to the official '
-                          'installation guide in https://www.nltk.org/install.html .'
-                          ' Now try SacreMosesTokenizer using sacremoses ...')
-            try:
-                from sacremoses import MosesTokenizer
-            except ImportError:
-                raise ImportError('sacremoses is also not installed. '
-                                  'Please use sacremoses or older nltk version, e.g. 3.2.5. '
-                                  'To install sacremoses, use pip install -U sacremoses')
-        try:
-            self._tokenizer = MosesTokenizer()
-        except ValueError:
-            raise ValueError('The instantiation of MosesTokenizer in sacremoses is'
-                             ' currently only supported in python3.')
-
-    def __call__(self, sample, return_str=False):
-        """
-
-        Parameters
-        ----------
-        sample: str
-            The sentence to tokenize
-        return_str: bool, default False
-            True: return a single string
-            False: return a list of tokens
-
-        Returns
-        -------
-        ret : list of strs or str
-            List of tokens or tokenized text
-        """
-        return self._tokenizer.tokenize(sample, return_str=return_str)
-
-
-class SacreMosesTokenizer(object):
+class SacreMosesTokenizer:
     """Apply the Moses Tokenizer implemented in sacremoses.
 
     Users of this class are required to install
@@ -215,44 +169,26 @@ class SacreMosesTokenizer(object):
     Examples
     --------
     >>> tokenizer = gluonnlp.data.SacreMosesTokenizer()
-    >>> tokenizer("Gluon NLP toolkit provides a suite of text processing tools.")
+    >>> tokenizer('Gluon NLP toolkit provides a suite of text processing tools.')
     ['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of', 'text', 'processing', 'tools', '.']
-    >>> tokenizer("Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools "
-    ...           "zur Verfügung.")
+    >>> tokenizer('Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools '
+    ...           'zur Verfügung.')
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
 'zur', 'Verf\xfcgung', '.']
     """
 
     def __init__(self):
-        try:
-            from sacremoses import MosesTokenizer
-            self._tokenizer = MosesTokenizer()
-        except (ImportError, TypeError) as err:
-            if isinstance(err, TypeError):
-                warnings.warn('The instantiation of MosesTokenizer in sacremoses is'
-                              ' currently only supported in python3.'
-                              ' Now try NLTKMosesTokenizer using NLTK ...')
-            else:
-                warnings.warn('sacremoses is not installed. '
-                              'To install sacremoses, use pip install -U sacremoses'
-                              ' Now try NLTKMosesTokenizer using NLTK ...')
-            try:
-                from nltk.tokenize.moses import MosesTokenizer
-                self._tokenizer = MosesTokenizer()
-            except ImportError:
-                raise ImportError('NLTK is also not installed. '
-                                  'You must install NLTK <= 3.2.5 in order to use the '
-                                  'NLTKMosesTokenizer. You can refer to the official '
-                                  'installation guide in https://www.nltk.org/install.html .')
+        from sacremoses import MosesTokenizer
+        self._tokenizer = MosesTokenizer()
 
-    def __call__(self, sample, return_str=False):
-        """
+    def __call__(self, sample: str, return_str: bool = False):
+        """Tokenize a sample.
 
         Parameters
         ----------
-        sample: str
+        sample
             The sentence to tokenize
-        return_str: bool, default False
+        return_str
             True: return a single string
             False: return a list of tokens
 
@@ -264,7 +200,7 @@ class SacreMosesTokenizer(object):
         return self._tokenizer.tokenize(sample, return_str=return_str)
 
 
-class SpacyTokenizer(object):
+class SpacyTokenizer:
     """Apply the Spacy Tokenizer.
 
     Users of this class are required to install `spaCy <https://spacy.io/usage/>`_
@@ -275,38 +211,41 @@ class SpacyTokenizer(object):
     Parameters
     ----------
     lang : str
-        The language to tokenize. Default is "en", i.e, English.
+        The language to tokenize. Default is 'en', i.e, English.
         You may refer to https://spacy.io/usage/models for supported languages.
 
     Examples
     --------
     >>> tokenizer = gluonnlp.data.SpacyTokenizer()
-    >>> tokenizer(u"Gluon NLP toolkit provides a suite of text processing tools.")
+    >>> tokenizer('Gluon NLP toolkit provides a suite of text processing tools.')
     ['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of', 'text', 'processing', 'tools', '.']
     >>> tokenizer = gluonnlp.data.SpacyTokenizer('de')
-    >>> tokenizer(u"Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools"
-    ...            " zur Verfügung.")
+    >>> tokenizer('Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools'
+    ...           ' zur Verfügung.')
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
 'zur', 'Verf\xfcgung', '.']
     """
 
-    def __init__(self, lang='en'):
+    def __init__(self, lang='en_core_web_sm'):
         try:
             import spacy
             from pkg_resources import parse_version
             assert parse_version(spacy.__version__) >= parse_version('2.0.0'),\
                 'We only support spacy>=2.0.0'
         except ImportError:
-            raise ImportError('spaCy is not installed. You must install spaCy in order to use the '
-                              'SpacyTokenizer. You can refer to the official installation guide '
-                              'in https://spacy.io/usage/.')
+            raise ImportError(
+                'spaCy is not installed. You must install spaCy in order to use the '
+                'SpacyTokenizer. You can refer to the official installation guide '
+                'in https://spacy.io/usage/.')
         try:
             self._nlp = spacy.load(lang, disable=['parser', 'tagger', 'ner'])
         except IOError:
-            raise IOError('SpaCy Model for the specified language="{lang}" has not been '
-                          'downloaded. You need to check the installation guide in '
-                          'https://spacy.io/usage/models. Usually, the installation command '
-                          'should be `python -m spacy download {lang}`.'.format(lang=lang))
+            raise IOError(
+                'SpaCy Model for the specified language="{lang}" has not been '
+                'downloaded. You need to check the installation guide in '
+                'https://spacy.io/usage/models. Usually, the installation command '
+                'should be `python -m spacy download {lang}`.'.format(
+                    lang=lang))
 
     def __call__(self, sample):
         """
@@ -324,66 +263,7 @@ class SpacyTokenizer(object):
         return [tok.text for tok in self._nlp(sample)]
 
 
-class NLTKMosesDetokenizer(object):
-    r"""Apply the Moses Detokenizer implemented in NLTK.
-
-    Users of this class are required to `install NLTK <https://www.nltk.org/install.html>`_
-    and install relevant NLTK packages, such as
-    :samp:`python -m nltk.downloader perluniprops nonbreaking_prefixes`
-
-    Examples
-    --------
-    >>> detokenizer = gluonnlp.data.NLTKMosesDetokenizer()
-    >>> detokenizer(['Gluon', 'NLP', 'toolkit', 'provides', 'a', 'suite', 'of',
-    ...              'text', 'processing', 'tools', '.'], return_str=True)
-    'Gluon NLP toolkit provides a suite of text processing tools.'
-    >>> detokenizer(['Das', 'Gluon','NLP-Toolkit','stellt','eine','Reihe','von',
-    ...              'Textverarbeitungstools','zur','Verfügung','.'], return_str=True)
-    'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
-    """
-
-    def __init__(self):
-        try:
-            from nltk.tokenize.moses import MosesDetokenizer
-        except ImportError:
-            warnings.warn('NLTK or relevant packages are not installed. '
-                          'Due to the LGPL 2.1+, moses has been deprecated in NLTK since 3.3.0. '
-                          'You must install NLTK <= 3.2.5 in order to use the '
-                          'NLTKMosesDetokenizer. You can refer to the official '
-                          'installation guide in https://www.nltk.org/install.html .'
-                          ' Now try SacreMosesDetokenizer using sacremoses ...')
-            try:
-                from sacremoses import MosesDetokenizer
-            except ImportError:
-                raise ImportError('sacremoses is also not installed. '
-                                  'Please use sacremoses or older nltk version, e.g. 3.2.5. '
-                                  'To install sacremoses, use pip install -U sacremoses')
-        try:
-            self._detokenizer = MosesDetokenizer()
-        except ValueError:
-            raise ValueError('The instantiation of MosesDetokenizer in sacremoses is'
-                             ' currently only supported in python3.')
-
-    def __call__(self, sample, return_str=False):
-        """
-
-        Parameters
-        ----------
-        sample: list(str)
-            The sentence to detokenize
-        return_str: bool, default False
-            True: return a single string
-            False: return a list of words
-
-        Returns
-        -------
-        ret : list of strs or str
-            List of words or detokenized text
-        """
-        return self._detokenizer.detokenize(sample, return_str=return_str)
-
-
-class SacreMosesDetokenizer(object):
+class SacreMosesDetokenizer:
     r"""Apply the Moses Detokenizer implemented in sacremoses.
 
     Users of this class are required to `install sacremoses
@@ -392,6 +272,12 @@ class SacreMosesDetokenizer(object):
 
     .. note::
         sacremoses carries an LGPL 2.1+ license.
+
+    Parameters
+    ----------
+    return_str: bool, default False
+        True: return a single string
+        False: return a list of words
 
     Examples
     --------
@@ -404,53 +290,33 @@ class SacreMosesDetokenizer(object):
     'Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools zur Verfügung.'
     """
 
-    def __init__(self):
-        try:
-            from sacremoses import MosesDetokenizer
-            self._detokenizer = MosesDetokenizer()
-        except (ImportError, TypeError) as err:
-            if isinstance(err, TypeError):
-                warnings.warn('The instantiation of MosesDetokenizer in sacremoses is'
-                              ' currently only supported in python3.'
-                              ' Now try NLTKMosesDetokenizer using NLTK ...')
-            else:
-                warnings.warn('sacremoses is not installed. '
-                              'To install sacremoses, use pip install -U sacremoses'
-                              ' Now try NLTKMosesDetokenizer using NLTK ...')
-            try:
-                import nltk
-                try:
-                    nltk.data.find('perluniprops')
-                except LookupError:
-                    nltk.download('perluniprops')
-                from nltk.tokenize.moses import MosesDetokenizer
-                self._detokenizer = MosesDetokenizer()
-            except ImportError:
-                raise ImportError('NLTK is not installed. '
-                                  'You must install NLTK <= 3.2.5 in order to use the '
-                                  'NLTKMosesDetokenizer. You can refer to the official '
-                                  'installation guide in https://www.nltk.org/install.html .')
+    def __init__(self, return_str=True):
+        self._return_str = return_str
+        from sacremoses import MosesDetokenizer
+        self._detokenizer = MosesDetokenizer()
 
-    def __call__(self, sample, return_str=False):
+    def __call__(self, sample: List[str], return_str: Optional[bool] = None):
         """
 
         Parameters
         ----------
-        sample: list(str)
+        sample
             The sentence to detokenize
-        return_str: bool, default False
+        return_str
             True: return a single string
             False: return a list of words
+            None: use constructor setting
 
         Returns
         -------
         ret : list of strs or str
             List of words or detokenized text
         """
-        return self._detokenizer.detokenize(sample, return_str=return_str)
+        ret_str = self._return_str if return_str is None else return_str
+        return self._detokenizer.detokenize(sample, return_str=ret_str)
 
 
-class JiebaTokenizer(object):
+class JiebaTokenizer:
     r"""Apply the jieba Tokenizer.
 
     Users of this class are required to `install jieba <https://github.com/fxsjy/jieba>`_
@@ -463,9 +329,9 @@ class JiebaTokenizer(object):
     Examples
     --------
     >>> tokenizer = gluonnlp.data.JiebaTokenizer()
-    >>> tokenizer(u"我来到北京清华大学")
+    >>> tokenizer('我来到北京清华大学')
     ['我', '来到', '北京', '清华大学']
-    >>> tokenizer(u"小明硕士毕业于中国科学院计算所，后在日本京都大学深造")
+    >>> tokenizer('小明硕士毕业于中国科学院计算所，后在日本京都大学深造')
     ['小明', '硕士', '毕业', '于', '中国科学院', '计算所', '，', '后', '在', '日本京都大学', '深造']
 
     """
@@ -474,9 +340,10 @@ class JiebaTokenizer(object):
         try:
             import jieba
         except ImportError:
-            raise ImportError('jieba is not installed. You must install jieba in order to use the '
-                              'JiebaTokenizer. You can refer to the official installation guide '
-                              'in https://github.com/fxsjy/jieba')
+            raise ImportError(
+                'jieba is not installed. You must install jieba in order to use the '
+                'JiebaTokenizer. You can refer to the official installation guide '
+                'in https://github.com/fxsjy/jieba')
         self._tokenizer = jieba
 
     def __call__(self, sample):
@@ -494,10 +361,13 @@ class JiebaTokenizer(object):
             List of tokens
         """
         # we use default cutting mode provided by jieba, i.e., accurate mode
-        return [tok for tok in self._tokenizer.cut(sample) if tok != ' ' and tok != '']
+        return [
+            tok for tok in self._tokenizer.cut(sample)
+            if tok not in (' ', '')
+        ]
 
 
-class NLTKStanfordSegmenter(object):
+class NLTKStanfordSegmenter:
     r"""Apply the Stanford Chinese Word Segmenter implemented in NLTK.
 
     Users of this class are required to install Java, NLTK and download Stanford Word Segmenter
@@ -518,14 +388,16 @@ class NLTKStanfordSegmenter(object):
     Examples
     --------
     >>> tokenizer = gluonnlp.data.NLTKStanfordSegmenter() #doctest:+SKIP
-    >>> tokenizer(u"我来到北京清华大学")
+    >>> tokenizer('我来到北京清华大学') #doctest:+SKIP
     ['我', '来到', '北京', '清华大学']
-    >>> tokenizer(u"小明硕士毕业于中国科学院计算所，后在日本京都大学深造")
+    >>> tokenizer('小明硕士毕业于中国科学院计算所，后在日本京都大学深造') #doctest:+SKIP
     ['小明', '硕士', '毕业', '于', '中国科学院', '计算所', '，', '后', '在', '日本京都大学', '深造']
 
     """
 
-    def __init__(self, segmenter_root=os.path.join(get_home_dir(), 'stanford-segmenter'),
+    def __init__(self,
+                 segmenter_root=os.path.join(get_home_dir(),
+                                             'stanford-segmenter'),
                  slf4j_root=os.path.join(get_home_dir(), 'slf4j'),
                  java_class='edu.stanford.nlp.ie.crf.CRFClassifier'):
         is_java_exist = os.system('java -version')
@@ -534,20 +406,26 @@ class NLTKStanfordSegmenter(object):
         try:
             from nltk.tokenize import StanfordSegmenter
         except ImportError:
-            raise ImportError('NLTK or relevant packages are not installed. You must install NLTK '
-                              'in order to use the NLTKStanfordSegmenter. You can refer to the '
-                              'official installation guide in https://www.nltk.org/install.html.')
-        path_to_jar = os.path.join(segmenter_root, 'stanford-segmenter-2018-02-27',
+            raise ImportError(
+                'NLTK or relevant packages are not installed. You must install NLTK '
+                'in order to use the NLTKStanfordSegmenter. You can refer to the '
+                'official installation guide in https://www.nltk.org/install.html.'
+            )
+        path_to_jar = os.path.join(segmenter_root,
+                                   'stanford-segmenter-2018-02-27',
                                    'stanford-segmenter-3.9.1.jar')
-        path_to_model = os.path.join(segmenter_root, 'stanford-segmenter-2018-02-27',
-                                     'data', 'pku.gz')
-        path_to_dict = os.path.join(segmenter_root, 'stanford-segmenter-2018-02-27',
-                                    'data', 'dict-chris6.ser.gz')
-        path_to_sihan_corpora_dict = os.path.join(segmenter_root,
-                                                  'stanford-segmenter-2018-02-27', 'data')
+        path_to_model = os.path.join(segmenter_root,
+                                     'stanford-segmenter-2018-02-27', 'data',
+                                     'pku.gz')
+        path_to_dict = os.path.join(segmenter_root,
+                                    'stanford-segmenter-2018-02-27', 'data',
+                                    'dict-chris6.ser.gz')
+        path_to_sihan_corpora_dict = os.path.join(
+            segmenter_root, 'stanford-segmenter-2018-02-27', 'data')
         segmenter_url = 'https://nlp.stanford.edu/software/stanford-segmenter-2018-02-27.zip'
         segmenter_sha1 = 'aa27a6433704b7b4c6a14be1c126cb4b14b8f57b'
-        stanford_segmenter = os.path.join(segmenter_root, 'stanford-segmenter-2018-02-27.zip')
+        stanford_segmenter = os.path.join(segmenter_root,
+                                          'stanford-segmenter-2018-02-27.zip')
         if not os.path.exists(path_to_jar) or \
                 not os.path.exists(path_to_model) or \
                 not os.path.exists(path_to_dict) or \
@@ -556,10 +434,14 @@ class NLTKStanfordSegmenter(object):
             # automatically download the files from the website and place them to stanford_root
             if not os.path.exists(segmenter_root):
                 os.mkdir(segmenter_root)
-            download(url=segmenter_url, path=segmenter_root, sha1_hash=segmenter_sha1)
-            _extract_archive(file=stanford_segmenter, target_dir=segmenter_root)
+            download(url=segmenter_url,
+                     path=segmenter_root,
+                     sha1_hash=segmenter_sha1)
+            _extract_archive(file=stanford_segmenter,
+                             target_dir=segmenter_root)
 
-        path_to_slf4j = os.path.join(slf4j_root, 'slf4j-1.7.25', 'slf4j-api-1.7.25.jar')
+        path_to_slf4j = os.path.join(slf4j_root, 'slf4j-1.7.25',
+                                     'slf4j-api-1.7.25.jar')
         slf4j_url = 'https://www.slf4j.org/dist/slf4j-1.7.25.zip'
         slf4j_sha1 = '89ea41ad6ebe1b190139421bb7c8d981e9df1625'
         slf4j = os.path.join(slf4j_root, 'slf4j-1.7.25.zip')
@@ -570,10 +452,13 @@ class NLTKStanfordSegmenter(object):
                 os.mkdir(slf4j_root)
             download(url=slf4j_url, path=slf4j_root, sha1_hash=slf4j_sha1)
             _extract_archive(file=slf4j, target_dir=slf4j_root)
-        self._tokenizer = StanfordSegmenter(java_class=java_class, path_to_jar=path_to_jar,
-                                            path_to_slf4j=path_to_slf4j, path_to_dict=path_to_dict,
-                                            path_to_sihan_corpora_dict=path_to_sihan_corpora_dict,
-                                            path_to_model=path_to_model)
+        self._tokenizer = StanfordSegmenter(
+            java_class=java_class,
+            path_to_jar=path_to_jar,
+            path_to_slf4j=path_to_slf4j,
+            path_to_dict=path_to_dict,
+            path_to_sihan_corpora_dict=path_to_sihan_corpora_dict,
+            path_to_model=path_to_model)
 
     def __call__(self, sample):
         """
@@ -592,15 +477,16 @@ class NLTKStanfordSegmenter(object):
         return [tok for tok in self._tokenizer.segment(sample).strip().split()]
 
 
-class _SentencepieceProcessor(object):
+class _SentencepieceProcessor:
     def __init__(self, path):
         try:
             import sentencepiece
         except ImportError:
-            raise ImportError('sentencepiece is not installed. You must install sentencepiece '
-                              'in order to use the Sentencepiece tokenizer and detokenizer. '
-                              'You can refer to the official installation guide '
-                              'in https://github.com/google/sentencepiece#installation')
+            raise ImportError(
+                'sentencepiece is not installed. You must install sentencepiece '
+                'in order to use the Sentencepiece tokenizer and detokenizer. '
+                'You can refer to the official installation guide '
+                'in https://github.com/google/sentencepiece#installation')
         self._processor = sentencepiece.SentencePieceProcessor()
         self._processor.Load(path)
 
@@ -630,13 +516,13 @@ class SentencepieceTokenizer(_SentencepieceProcessor):
         If num_best < 0, then assume that num_best is infinite and
         samples from the all hypothesis (lattice) using forward-filtering-and-backward-sampling
         algorithm.
-    alpha : float
+    alpha : float, default 1.0
         A scalar for a smoothing parameter. Inverse temperature for probability rescaling.
 
     Examples
     --------
     >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-0690baed.bpe'
-    >>> f = gluon.utils.download(url, overwrite=True)
+    >>> f = gluon.utils.download(url)
     -etc-
     >>> tokenizer = gluonnlp.data.SentencepieceTokenizer(f)
     >>> detokenizer = gluonnlp.data.SentencepieceDetokenizer(f)
@@ -645,6 +531,7 @@ class SentencepieceTokenizer(_SentencepieceProcessor):
     ['▁This', '▁is', '▁a', '▁very', '▁awesome', ',', '▁life', '-', 'ch', 'anging', '▁sentence', '.']
     >>> detokenizer(tokenizer(sentence))
     'This is a very awesome, life-changing sentence.'
+    >>> os.remove('test-0690baed.bpe')
 
     """
 
@@ -666,7 +553,8 @@ class SentencepieceTokenizer(_SentencepieceProcessor):
         ret : list of strs
             List of tokens
         """
-        return self._processor.SampleEncodeAsPieces(sample, self._nbest, self._alpha)
+        return self._processor.SampleEncodeAsPieces(sample, self._nbest,
+                                                    self._alpha)
 
 
 class SentencepieceDetokenizer(_SentencepieceProcessor):
@@ -685,7 +573,7 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
     Examples
     --------
     >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-0690baed.bpe'
-    >>> f = gluon.utils.download(url, overwrite=True)
+    >>> f = gluon.utils.download(url)
     -etc-
     >>> tokenizer = gluonnlp.data.SentencepieceTokenizer(f)
     >>> detokenizer = gluonnlp.data.SentencepieceDetokenizer(f)
@@ -694,6 +582,7 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
     ['▁This', '▁is', '▁a', '▁very', '▁awesome', ',', '▁life', '-', 'ch', 'anging', '▁sentence', '.']
     >>> detokenizer(tokenizer(sentence))
     'This is a very awesome, life-changing sentence.'
+    >>> os.remove('test-0690baed.bpe')
 
     """
 
@@ -713,7 +602,7 @@ class SentencepieceDetokenizer(_SentencepieceProcessor):
         return self._processor.DecodePieces(sample)
 
 
-class BERTBasicTokenizer():
+class BERTBasicTokenizer:
     r"""Runs basic tokenization
 
     performs invalid character removal (e.g. control chars) and whitespace.
@@ -729,10 +618,10 @@ class BERTBasicTokenizer():
     Examples
     --------
     >>> tokenizer = gluonnlp.data.BERTBasicTokenizer(lower=True)
-    >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
+    >>> tokenizer(' \tHeLLo!how  \n Are yoU?  ')
     ['hello', '!', 'how', 'are', 'you', '?']
     >>> tokenizer = gluonnlp.data.BERTBasicTokenizer(lower=False)
-    >>> tokenizer(u" \tHeLLo!how  \n Are yoU?  ")
+    >>> tokenizer(' \tHeLLo!how  \n Are yoU?  ')
     ['HeLLo', '!', 'how', 'Are', 'yoU', '?']
 
     """
@@ -745,7 +634,7 @@ class BERTBasicTokenizer():
 
         Parameters
         ----------
-        sample:  str (unicode for Python 2)
+        sample:  str
             The string to tokenize. Must be unicode.
 
         Returns
@@ -824,14 +713,10 @@ class BERTBasicTokenizer():
         # as is Japanese Hiragana and Katakana. Those alphabets are used to write
         # space-separated words, so they are not treated specially and handled
         # like the all of the other languages.
-        if ((cp >= 0x4E00 and cp <= 0x9FFF)
-                or (cp >= 0x3400 and cp <= 0x4DBF)
-                or (cp >= 0x20000 and cp <= 0x2A6DF)
-                or (cp >= 0x2A700 and cp <= 0x2B73F)
-                or (cp >= 0x2B740 and cp <= 0x2B81F)
-                or (cp >= 0x2B820 and cp <= 0x2CEAF)
-                or (cp >= 0xF900 and cp <= 0xFAFF)
-                or (cp >= 0x2F800 and cp <= 0x2FA1F)):
+        if ((0x4E00 <= cp <= 0x9FFF) or (0x3400 <= cp <= 0x4DBF) or (0x20000 <= cp <= 0x2A6DF)
+                or (0x2A700 <= cp <= 0x2B73F) or (0x2B740 <= cp <= 0x2B81F)
+                or (0x2B820 <= cp <= 0x2CEAF) or (0xF900 <= cp <= 0xFAFF)
+                or (0x2F800 <= cp <= 0x2FA1F)):
             return True
 
         return False
@@ -874,10 +759,10 @@ class BERTBasicTokenizer():
         # Characters such as "^", "$", and "`" are not in the Unicode
         # Punctuation class but we treat them as punctuation anyways, for
         # consistency.
-        group0 = cp >= 33 and cp <= 47
-        group1 = cp >= 58 and cp <= 64
-        group2 = cp >= 91 and cp <= 96
-        group3 = cp >= 123 and cp <= 126
+        group0 = 33 <= cp <= 47
+        group1 = 58 <= cp <= 64
+        group2 = 91 <= cp <= 96
+        group3 = 123 <= cp <= 126
         if (group0 or group1 or group2 or group3):
             return True
         cat = unicodedata.category(char)
@@ -903,19 +788,22 @@ class BERTBasicTokenizer():
         return tokens
 
 
-class BERTTokenizer(object):
+class BERTTokenizer:
     r"""End-to-end tokenization for BERT models.
 
     Parameters
     ----------
-    vocab : gluonnlp.Vocab or None, default None
+    vocab
         Vocabulary for the corpus.
-    lower : bool, default True
+    lower
         whether the text strips accents and convert to lower case.
         If you use the BERT pre-training model,
         lower is set to Flase when using the cased model,
         otherwise it is set to True.
-    max_input_chars_per_word : int, default 200
+    max_input_chars_per_word
+    lru_cache_size
+        Maximum size of a least-recently-used cache to speed up tokenization.
+        Use size of 2**20 for example.
 
     Examples
     --------
@@ -923,23 +811,29 @@ class BERTTokenizer(object):
     ...                                          pretrained=False, root='./model')
     -etc-
     >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocab)
-    >>> tokenizer(u"gluonnlp: 使NLP变得简单。")
+    >>> tokenizer('gluonnlp: 使NLP变得简单。')
     ['gl', '##uo', '##nn', '##lp', ':', '使', 'nl', '##p', '变', '得', '简', '单', '。']
 
     """
 
-    def __init__(self, vocab, lower=True, max_input_chars_per_word=200):
+    _special_prefix = '##'
+
+    def __init__(self, vocab: Vocab, lower: bool = True, max_input_chars_per_word: int = 200,
+                 lru_cache_size: Optional[int] = None):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
         self.basic_tokenizer = BERTBasicTokenizer(lower=lower)
+        if lru_cache_size:
+            self._word_to_wordpiece_optimized = functools.lru_cache(maxsize=lru_cache_size)(
+                self._word_to_wordpiece_optimized)
 
     def __call__(self, sample):
         """
 
         Parameters
         ----------
-        sample: str (unicode for Python 2)
-            The string to tokenize. Must be unicode.
+        sample: str
+            The string to tokenize.
 
         Returns
         -------
@@ -957,6 +851,10 @@ class BERTTokenizer(object):
 
         return split_tokens
 
+    def _word_to_wordpiece_optimized(self, text):  # pylint: disable=method-hidden
+        return wordpiece_tokenize(text, self.vocab, self.vocab.unknown_token,
+                                  self.max_input_chars_per_word)
+
     def _tokenize_wordpiece(self, text):
         """Tokenizes a piece of text into its word pieces.
 
@@ -967,51 +865,179 @@ class BERTTokenizer(object):
           input = "unaffable"
           output = ["un", "##aff", "##able"]
 
-        Args:
-          text: A single token or whitespace separated tokens. This should have
-            already been passed through `BERTBasicTokenizer.
+        Parameters
+        ----------
+        text : A single token or whitespace separated tokens. This should have
+               already been passed through `BERTBasicTokenizer.
 
-        Returns:
-          A list of wordpiece tokens.
+        Returns
+        -------
+        ret : A list of wordpiece tokens.
         """
 
+        # case where text is a single token
+        whitespace_tokenized_tokens = self.basic_tokenizer._whitespace_tokenize(text)
+        if len(whitespace_tokenized_tokens) == 1:
+            return self._word_to_wordpiece_optimized(whitespace_tokenized_tokens[0])
+
         output_tokens = []
-        for token in self.basic_tokenizer._whitespace_tokenize(text):
-            chars = list(token)
-            if len(chars) > self.max_input_chars_per_word:
-                output_tokens.append(self.vocab.unknown_token)
-                continue
-            is_bad = False
-            start = 0
-            sub_tokens = []
-            while start < len(chars):
-                end = len(chars)
-                cur_substr = None
-                while start < end:
-                    substr = ''.join(chars[start:end])
-                    if start > 0:
-                        substr = '##' + substr
-                    if substr in self.vocab:
-                        cur_substr = substr
-                        break
-                    end -= 1
-                if cur_substr is None:
-                    is_bad = True
-                    break
-                sub_tokens.append(cur_substr)
-                start = end
-            if is_bad:
-                output_tokens.append(self.vocab.unknown_token)
-            else:
-                output_tokens.extend(sub_tokens)
+        for token in whitespace_tokenized_tokens:
+            output_tokens.extend(self._word_to_wordpiece_optimized(token))
         return output_tokens
 
     def convert_tokens_to_ids(self, tokens):
         """Converts a sequence of tokens into ids using the vocab."""
         return self.vocab.to_indices(tokens)
 
+    @staticmethod
+    def is_first_subword(token):
+        """Check if a token is the beginning of subwords.
 
-class BERTSentenceTransform(object):
+        Parameters
+        ----------
+        token : str
+            The input token.
+
+        Returns
+        -------
+        ret : True if the token is the beginning of a serious of wordpieces.
+
+        Examples
+        --------
+        >>> _, vocab = gluonnlp.model.bert_12_768_12(dataset_name='wiki_multilingual_uncased',
+        ...                                          pretrained=False, root='./bert_tokenizer')
+        -etc-
+        >>> tokenizer = gluonnlp.data.BERTTokenizer(vocab=vocab)
+        >>> tokenizer('gluonnlp: 使NLP变得简单。')
+        ['gl', '##uo', '##nn', '##lp', ':', '使', 'nl', '##p', '变', '得', '简', '单', '。']
+        >>> tokenizer.is_first_subword('gl')
+        True
+        >>> tokenizer.is_first_subword('##uo')
+        False
+        """
+        return not token.startswith(BERTTokenizer._special_prefix)
+
+
+class BERTSPTokenizer(BERTTokenizer):
+    r"""End-to-end SentencePiece tokenization for BERT models.
+
+    It works best with BERTSentenceTransform().
+
+    .. note::
+
+        BERTSPTokenizer depends on the sentencepiece library. For multi-processing
+        with BERTSPTokenizer, making an extra copy of the BERTSPTokenizer instance
+        is recommended before using it.
+
+    Parameters
+    ----------
+    path : str
+        Path to the pre-trained subword tokenization model.
+    vocab : gluonnlp.Vocab
+        Vocabulary for the corpus.
+    num_best : int, default 0
+        A scalar for sampling subwords. If num_best = {0,1}, no sampling is performed.
+        If num_best > 1, then samples from the num_best results.
+        If num_best < 0, then assume that num_best is infinite and
+        samples from the all hypothesis (lattice) using forward-filtering-and-backward-sampling
+        algorithm.
+    alpha : float
+        A scalar for a smoothing parameter. Inverse temperature for probability rescaling.
+    lower : bool, default True
+        Whether the text strips accents and convert to lower case.
+        If you use the BERT pre-training model,
+        lower is set to False when using the cased model,
+        otherwise it is set to True.
+    max_input_chars_per_word : int, default 200
+
+    Examples
+    --------
+    >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
+    >>> f = gluon.utils.download(url)
+    -etc-
+    >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
+    >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
+    >>> sentence = 'Better is to bow than break.'
+    >>> sp_tokenizer(sentence)
+    ['▁better', '▁is', '▁to', '▁b', 'ow', '▁than', '▁brea', 'k', '▁', '.']
+    >>> os.remove('test-682b5d15.bpe')
+    """
+
+    _special_prefix = '▁'
+
+    def __init__(self,
+                 path,
+                 vocab,
+                 num_best=0,
+                 alpha=1.0,
+                 lower=True,
+                 max_input_chars_per_word=200):
+        super(BERTSPTokenizer, self).__init__(vocab, lower,
+                                              max_input_chars_per_word)
+        self._path = path
+        self._num_best = num_best
+        self._alpha = alpha
+        self.sentencepiece = None
+
+    def _activate_sp(self):
+        self.sentencepiece = SentencepieceTokenizer(self._path, self._num_best,
+                                                    self._alpha)
+
+    def _tokenize_wordpiece(self, text):
+        """Tokenizes a piece of text into its word pieces.
+
+        This use Google's SentencePiece tokenizer model file
+
+        For example:
+          input = "unaffable"
+          output = ["▁un", "aff", "able"]
+
+        Args:
+          text: A single token or whitespace separated tokens. This should have
+            already been passed through `BERTBasicTokenizer.
+
+        Returns:
+          A list of sentencepieced tokens.
+        """
+        # Swig object can not be pickled when multiprocessing.
+        if self.sentencepiece is None:
+            self._activate_sp()
+        output_tokens = self.sentencepiece(text)
+        return output_tokens
+
+    @staticmethod
+    def is_first_subword(token):
+        """Check if a string token is a subword following a previous subword,
+        instead of the beginning of a word.
+
+        Parameters
+        ----------
+        token : str
+            The input token.
+
+        Returns
+        -------
+        ret : True if the token is the beginning of a series of subwords,
+
+        Examples
+        --------
+        >>> url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
+        >>> f = gluon.utils.download(url)
+        -etc-
+        >>> bert_vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(f)
+        >>> sp_tokenizer = BERTSPTokenizer(f, bert_vocab, lower=True)
+        >>> sp_tokenizer('Better is to bow than break.')
+        ['▁better', '▁is', '▁to', '▁b', 'ow', '▁than', '▁brea', 'k', '▁', '.']
+        >>> sp_tokenizer.is_first_subword('▁better')
+        True
+        >>> sp_tokenizer.is_first_subword('ow')
+        False
+        >>> os.remove('test-682b5d15.bpe')
+        """
+        return token.startswith(BERTSPTokenizer._special_prefix)
+
+
+class BERTSentenceTransform:
     r"""BERT style data transformation.
 
     Parameters
@@ -1020,17 +1046,32 @@ class BERTSentenceTransform(object):
         Tokenizer for the sentences.
     max_seq_length : int.
         Maximum sequence length of the sentences.
+    vocab : Vocab
+        The vocabulary which has cls_token and sep_token registered.
+        If vocab.cls_token is not present, vocab.bos_token is used instead.
+        If vocab.sep_token is not present, vocab.eos_token is used instead.
     pad : bool, default True
         Whether to pad the sentences to maximum length.
     pair : bool, default True
         Whether to transform sentences or sentence pairs.
     """
 
-    def __init__(self, tokenizer, max_seq_length, pad=True, pair=True):
+    def __init__(self, tokenizer, max_seq_length, vocab=None, pad=True, pair=True):
         self._tokenizer = tokenizer
         self._max_seq_length = max_seq_length
         self._pad = pad
         self._pair = pair
+        self._vocab = self._tokenizer.vocab if vocab is None else vocab
+        # RoBERTa does not register CLS token and SEP token
+        if hasattr(self._vocab, 'cls_token'):
+            self._cls_token = self._vocab.cls_token
+        else:
+            self._cls_token = self._vocab.bos_token
+        if hasattr(self._vocab, 'sep_token'):
+            self._sep_token = self._vocab.sep_token
+        else:
+            self._sep_token = self._vocab.eos_token
+        self._padding_token = self._vocab.padding_token
 
     def __call__(self, line):
         """Perform transformation for sequence pairs or single sequences.
@@ -1068,6 +1109,9 @@ class BERTSentenceTransform(object):
             type_ids: 0     0   0   0  0     0 0
             valid_length: 7
 
+        If vocab.cls_token and vocab.sep_token are not present,
+        vocab.bos_token and vocab.eos_token are used instead.
+
         Parameters
         ----------
         line: tuple of str
@@ -1099,7 +1143,8 @@ class BERTSentenceTransform(object):
             # Modifies `tokens_a` and `tokens_b` in place so that the total
             # length is less than the specified length.
             # Account for [CLS], [SEP], [SEP] with "- 3"
-            self._truncate_seq_pair(tokens_a, tokens_b, self._max_seq_length - 3)
+            self._truncate_seq_pair(tokens_a, tokens_b,
+                                    self._max_seq_length - 3)
         else:
             # Account for [CLS] and [SEP] with "- 2"
             if len(tokens_a) > self._max_seq_length - 2:
@@ -1114,19 +1159,18 @@ class BERTSentenceTransform(object):
         # For classification tasks, the first vector (corresponding to [CLS]) is
         # used as as the "sentence vector". Note that this only makes sense because
         # the entire model is fine-tuned.
-        vocab = self._tokenizer.vocab
         tokens = []
-        tokens.append(vocab.cls_token)
+        tokens.append(self._cls_token)
         tokens.extend(tokens_a)
-        tokens.append(vocab.sep_token)
+        tokens.append(self._sep_token)
         segment_ids = [0] * len(tokens)
 
         if tokens_b:
             tokens.extend(tokens_b)
-            tokens.append(vocab.sep_token)
+            tokens.append(self._sep_token)
             segment_ids.extend([1] * (len(tokens) - len(segment_ids)))
 
-        input_ids = self._tokenizer.convert_tokens_to_ids(tokens)
+        input_ids = self._vocab[tokens]
 
         # The valid length of sentences. Only real  tokens are attended to.
         valid_length = len(input_ids)
@@ -1135,7 +1179,7 @@ class BERTSentenceTransform(object):
             # Zero-pad up to the sequence length.
             padding_length = self._max_seq_length - valid_length
             # use padding tokens for the rest
-            input_ids.extend([vocab[vocab.padding_token]] * padding_length)
+            input_ids.extend([self._vocab[self._padding_token]] * padding_length)
             segment_ids.extend([0] * padding_length)
 
         return np.array(input_ids, dtype='int32'), np.array(valid_length, dtype='int32'),\
@@ -1155,3 +1199,181 @@ class BERTSentenceTransform(object):
                 tokens_a.pop()
             else:
                 tokens_b.pop()
+
+class _GPT2BPE:
+    """Base class for GPT-2 BPE tokenizer and detokenizer."""
+    def __init__(self):
+        codes = list(range(ord('!'), ord('~') + 1)) +\
+                list(range(ord('¡'), ord('¬') + 1)) +\
+                list(range(ord('®'), ord('ÿ') + 1))
+        chr_fn = chr
+        try:
+            chr_fn(256)
+        except ValueError:
+            chr_fn = unichr # noqa: F821
+        byte_encoder = {code: chr_fn(code) for code in codes}
+        shift = 0
+        for code in range(2 ** 8):
+            if code not in byte_encoder:
+                byte_encoder[code] = chr_fn(2 ** 8 + shift)
+                shift += 1
+        self._byte_encoder = byte_encoder
+
+
+class GPT2BPETokenizer(_GPT2BPE):
+    """BPE tokenizer used in OpenAI GPT-2 model.
+
+    Parameters
+    ----------
+    root : str, default '$MXNET_HOME/models'
+        Location for keeping the BPE rank file.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
+    bpe_ranks_file_hash = ('openai_webtext_bpe_ranks-396d4d8e.json',
+                           '396d4d8ec90cb02f4d56e049e0e4add868bcd943')
+    bpe_ranks_archive_hash = ('openai_webtext_bpe_ranks-396d4d8e.zip',
+                              '1a770728fd102bc9dc332f322e6bfb294767a685')
+    def __init__(self, root=os.path.join(get_home_dir(), 'models')):
+        try:
+            import regex as re
+        except ImportError:
+            raise ImportError(
+                'GPT2BPETokenizer requires regex. '
+                'To install regex, use pip install -U regex')
+        super(GPT2BPETokenizer, self).__init__()
+        root = os.path.expanduser(root)
+        file_name, sha1_hash = self.bpe_ranks_file_hash
+        file_path = os.path.join(root, file_name)
+        if not os.path.exists(file_path) or not check_sha1(file_path, sha1_hash):
+            if os.path.exists(file_path):
+                print('Detected mismatch in the content of BPE rank file. Downloading again.')
+            else:
+                print('BPE rank file is not found. Downloading.')
+            if not os.path.exists(root):
+                try:
+                    os.makedirs(root)
+                except OSError as e:
+                    if e.errno == errno.EEXIST and os.path.isdir(root):
+                        pass
+                    else:
+                        raise e
+
+            prefix = str(time.time())
+            zip_file_path = os.path.join(root, prefix + file_name)
+            repo_url = _get_repo_url()
+            if repo_url[-1] != '/':
+                repo_url = repo_url + '/'
+            archive_name, archive_hash = self.bpe_ranks_archive_hash
+            _url_format = '{repo_url}gluon/dataset/vocab/{file_name}'
+            download(_url_format.format(repo_url=repo_url, file_name=archive_name),
+                     path=zip_file_path,
+                     sha1_hash=archive_hash,
+                     overwrite=True)
+            with zipfile.ZipFile(zip_file_path) as zf:
+                if not os.path.exists(file_path):
+                    zf.extractall(root)
+            try:
+                os.remove(zip_file_path)
+            except OSError as e:
+                # file has already been removed.
+                if e.errno == 2:
+                    pass
+                else:
+                    raise e
+
+            if not check_sha1(file_path, sha1_hash):
+                raise ValueError('Downloaded file has different hash. Please try again.')
+        self._read_bpe_ranks(file_path)
+        self._cache = {}
+        self._token_pattern = re.compile(
+            r'\'s|\'t|\'re|\'ve|\'m|\'ll|\'d| ?\p{L}+'
+            r'| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+')
+
+    def _read_bpe_ranks(self, file_path):
+        with io.open(file_path, 'r', encoding='utf-8') as f:
+            bpe_data = f.read()
+            self._bpe_ranks = {
+                tuple(merge_str.split()): i for i, merge_str
+                in enumerate(bpe_data.split('\n')[1:-1])}
+
+    def get_bpe_subword(self, token):
+        """ Encode the word token into BPE subwords
+
+        Parameters
+        ----------
+        token : str
+
+        Returns
+        -------
+        chars : list(str)
+        """
+        if token in self._cache:
+            return self._cache[token]
+        chars = list(token)
+        while len(chars) > 0:
+            min_pair, min_rank = None, float('inf')
+            # Find the pair with the minimum rank
+            for i in range(1, len(chars)):
+                pair = (chars[i - 1], chars[i])
+                rank = self._bpe_ranks.get(pair, float('inf'))
+                if rank < min_rank:
+                    min_rank = rank
+                    min_pair = pair
+            if min_pair is None or min_pair not in self._bpe_ranks:
+                break
+            # Merge the pair
+            last, tail = chars[0], 1
+            for index in range(1, len(chars)):
+                if (last, chars[index]) == min_pair:
+                    chars[tail - 1] = last + chars[index]
+                    last = last + chars[index]
+                else:
+                    chars[tail - 1] = last
+                    tail += 1
+                    last = chars[index]
+            chars[tail - 1] = last
+            chars = chars[:tail]
+        self._cache[token] = chars
+        return chars
+
+    def __call__(self, sample):
+        """
+
+        Parameters
+        ----------
+        sample : str
+
+        Returns
+        -------
+        ret : list(str)
+        """
+        import regex as re
+        ret = []
+        for word_token in re.findall(self._token_pattern, sample):
+            word_token = bytearray(word_token.encode('utf-8'))
+            word_token = ''.join(self._byte_encoder[code] for code in word_token)
+            ret.extend(self.get_bpe_subword(word_token))
+        return ret
+
+
+class GPT2BPEDetokenizer(_GPT2BPE):
+    """BPE detokenizer used in OpenAI GPT-2 model."""
+    def __init__(self):
+        super(GPT2BPEDetokenizer, self).__init__()
+        self._byte_decoder = {v: k for k, v in self._byte_encoder.items()}
+
+    def __call__(self, sample):
+        """
+
+        Parameters
+        ----------
+        sample : list(str)
+
+        Returns
+        -------
+        ret : str
+        """
+        text = ''.join(sample)
+        ret = bytearray(
+            [self._byte_decoder[byte] for byte in text]).decode('utf-8', errors='replace')
+        return ret

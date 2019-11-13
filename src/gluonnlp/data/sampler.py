@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -71,16 +69,16 @@ def _bucket_stats(bucket_sample_ids, seq_lengths):
     return (bucket_average_lengths, bucket_length_stds)
 
 
-class BucketScheme(object):
+class BucketScheme:
     r"""Base class for generating bucket keys."""
     def __call__(self, max_lengths, min_lengths, num_buckets):
         """Generate bucket keys based on the lengths of sequences and number of buckets.
 
         Parameters
         ----------
-        max_lengths : int of list of int
+        max_lengths : int or list of int
             Maximum of lengths of sequences.
-        min_lengths : int of list of int
+        min_lengths : int or list of int
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
@@ -100,9 +98,9 @@ class ConstWidthBucket(BucketScheme):
 
         Parameters
         ----------
-        max_lengths : int of list of int
+        max_lengths : int or list of int
             Maximum of lengths of sequences.
-        min_lengths : int of list of int
+        min_lengths : int or list of int
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
@@ -136,9 +134,9 @@ class LinearWidthBucket(BucketScheme):
 
         Parameters
         ----------
-        max_lengths : int of list of int
+        max_lengths : int or list of int
             Maximum of lengths of sequences.
-        min_lengths : int of list of int
+        min_lengths : int or list of int
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
@@ -186,9 +184,9 @@ class ExpWidthBucket(BucketScheme):
 
         Parameters
         ----------
-        max_lengths : int of list of int
+        max_lengths : int or list of int
             Maximum of lengths of sequences.
-        min_lengths : int of list of int
+        min_lengths : int or list of int
             Minimum of lengths of sequences.
         num_buckets : int
             Number of buckets
@@ -516,6 +514,9 @@ class SplitSampler(Sampler):
       The index of the part to read from
     """
     def __init__(self, length, num_parts=1, part_index=0):
+        assert length >= num_parts, \
+            'Length (%d) must be greater than or equal to the number of partitions (%d).'%\
+            (length, num_parts)
         # Compute the length of each partition
         part_len = length // num_parts
         # Compute the start index for this partition

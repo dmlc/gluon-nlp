@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -65,7 +63,7 @@ def _load_cached_dataset(prefix):
         return None
 
 
-class TrainValDataTransform(object):
+class TrainValDataTransform:
     """Transform the machine translation dataset.
 
     Clip source and the target sentences to the maximum length. For the source sentence, append the
@@ -176,7 +174,7 @@ def load_translation_data(dataset, bleu, args):
         fetch_tgt_sentence = lambda src, tgt: tgt.split()
         val_tgt_sentences = list(data_val.transform(fetch_tgt_sentence))
         test_tgt_sentences = list(data_test.transform(fetch_tgt_sentence))
-    elif bleu == '13a' or bleu == 'intl':
+    elif bleu in ('13a', 'intl'):
         fetch_tgt_sentence = lambda src, tgt: tgt
         if dataset == 'WMT2016BPE':
             val_text = nlp.data.WMT2016('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
@@ -185,7 +183,7 @@ def load_translation_data(dataset, bleu, args):
             val_text = nlp.data.WMT2014('newstest2013', src_lang=src_lang, tgt_lang=tgt_lang)
             test_text = nlp.data.WMT2014('newstest2014', src_lang=src_lang, tgt_lang=tgt_lang,
                                          full=args.full)
-        elif dataset == 'IWSLT2015' or dataset == 'TOY':
+        elif dataset in ('IWSLT2015', 'TOY'):
             val_text = data_val
             test_text = data_test
         else:
@@ -202,20 +200,11 @@ def get_data_lengths(dataset):
     get_lengths = lambda *args: (args[2], args[3])
     return list(dataset.transform(get_lengths))
 
-
-def make_dataloader(data_train, data_val, data_test, args,
-                    use_average_length=False, num_shards=0, num_workers=8):
+def get_dataloader(data_set, args, dataset_type,
+                   use_average_length=False, num_shards=0, num_workers=8):
     """Create data loaders for training/validation/test."""
-    data_train_lengths = get_data_lengths(data_train)
-    data_val_lengths = get_data_lengths(data_val)
-    data_test_lengths = get_data_lengths(data_test)
-    train_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
-                                  btf.Stack(dtype='float32'), btf.Stack(dtype='float32'))
-    test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
-                                 btf.Stack(dtype='float32'), btf.Stack(dtype='float32'),
-                                 btf.Stack())
-    target_val_lengths = list(map(lambda x: x[-1], data_val_lengths))
-    target_test_lengths = list(map(lambda x: x[-1], data_test_lengths))
+    assert dataset_type in ['train', 'val', 'test']
+
     if args.bucket_scheme == 'constant':
         bucket_scheme = nlp.data.ConstWidthBucket()
     elif args.bucket_scheme == 'linear':
@@ -224,44 +213,65 @@ def make_dataloader(data_train, data_val, data_test, args,
         bucket_scheme = nlp.data.ExpWidthBucket(bucket_len_step=1.2)
     else:
         raise NotImplementedError
-    train_batch_sampler = nlp.data.FixedBucketSampler(lengths=data_train_lengths,
-                                                      batch_size=args.batch_size,
-                                                      num_buckets=args.num_buckets,
-                                                      ratio=args.bucket_ratio,
-                                                      shuffle=True,
-                                                      use_average_length=use_average_length,
-                                                      num_shards=num_shards,
-                                                      bucket_scheme=bucket_scheme)
-    logging.info('Train Batch Sampler:\n%s', train_batch_sampler.stats())
-    train_data_loader = nlp.data.ShardedDataLoader(data_train,
-                                                   batch_sampler=train_batch_sampler,
-                                                   batchify_fn=train_batchify_fn,
-                                                   num_workers=num_workers)
 
-    val_batch_sampler = nlp.data.FixedBucketSampler(lengths=target_val_lengths,
-                                                    batch_size=args.test_batch_size,
-                                                    num_buckets=args.num_buckets,
-                                                    ratio=args.bucket_ratio,
-                                                    shuffle=False,
-                                                    use_average_length=use_average_length,
-                                                    bucket_scheme=bucket_scheme)
-    logging.info('Valid Batch Sampler:\n%s', val_batch_sampler.stats())
-    val_data_loader = gluon.data.DataLoader(data_val,
-                                            batch_sampler=val_batch_sampler,
+    data_lengths = get_data_lengths(data_set)
+
+    if dataset_type == 'train':
+        train_batchify_fn = btf.Tuple(btf.Pad(pad_val=0), btf.Pad(pad_val=0),
+                                      btf.Stack(dtype='float32'), btf.Stack(dtype='float32'))
+
+    else:
+        data_lengths = list(map(lambda x: x[-1], data_lengths))
+        test_batchify_fn = btf.Tuple(btf.Pad(pad_val=0), btf.Pad(pad_val=0),
+                                     btf.Stack(dtype='float32'), btf.Stack(dtype='float32'),
+                                     btf.Stack())
+
+    batch_sampler = nlp.data.FixedBucketSampler(lengths=data_lengths,
+                                                batch_size=(args.batch_size \
+                                                            if dataset_type == 'train' \
+                                                            else args.test_batch_size),
+                                                num_buckets=args.num_buckets,
+                                                ratio=args.bucket_ratio,
+                                                shuffle=(dataset_type == 'train'),
+                                                use_average_length=use_average_length,
+                                                num_shards=num_shards,
+                                                bucket_scheme=bucket_scheme)
+
+    if dataset_type == 'train':
+        logging.info('Train Batch Sampler:\n%s', batch_sampler.stats())
+        data_loader = nlp.data.ShardedDataLoader(data_set,
+                                                 batch_sampler=batch_sampler,
+                                                 batchify_fn=train_batchify_fn,
+                                                 num_workers=num_workers)
+    else:
+        if dataset_type == 'val':
+            logging.info('Valid Batch Sampler:\n%s', batch_sampler.stats())
+        else:
+            logging.info('Test Batch Sampler:\n%s', batch_sampler.stats())
+
+        data_loader = gluon.data.DataLoader(data_set,
+                                            batch_sampler=batch_sampler,
                                             batchify_fn=test_batchify_fn,
                                             num_workers=num_workers)
-    test_batch_sampler = nlp.data.FixedBucketSampler(lengths=target_test_lengths,
-                                                     batch_size=args.test_batch_size,
-                                                     num_buckets=args.num_buckets,
-                                                     ratio=args.bucket_ratio,
-                                                     shuffle=False,
-                                                     use_average_length=use_average_length,
-                                                     bucket_scheme=bucket_scheme)
-    logging.info('Test Batch Sampler:\n%s', test_batch_sampler.stats())
-    test_data_loader = gluon.data.DataLoader(data_test,
-                                             batch_sampler=test_batch_sampler,
-                                             batchify_fn=test_batchify_fn,
-                                             num_workers=num_workers)
+
+    return data_loader
+
+def make_dataloader(data_train, data_val, data_test, args,
+                    use_average_length=False, num_shards=0, num_workers=8):
+    """Create data loaders for training/validation/test."""
+    train_data_loader = get_dataloader(data_train, args, dataset_type='train',
+                                       use_average_length=use_average_length,
+                                       num_shards=num_shards,
+                                       num_workers=num_workers)
+
+    val_data_loader = get_dataloader(data_val, args, dataset_type='val',
+                                     use_average_length=use_average_length,
+                                     num_workers=num_workers)
+
+    test_data_loader = get_dataloader(data_test, args, dataset_type='test',
+                                      use_average_length=use_average_length,
+                                      num_workers=num_workers)
+
     return train_data_loader, val_data_loader, test_data_loader
 
 
@@ -269,6 +279,6 @@ def write_sentences(sentences, file_path):
     with io.open(file_path, 'w', encoding='utf-8') as of:
         for sent in sentences:
             if isinstance(sent, (list, tuple)):
-                of.write(u' '.join(sent) + u'\n')
+                of.write(' '.join(sent) + '\n')
             else:
-                of.write(sent + u'\n')
+                of.write(sent + '\n')

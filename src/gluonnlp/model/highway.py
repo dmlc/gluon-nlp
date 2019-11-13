@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -19,8 +17,6 @@
 
 """Highway layer."""
 
-from __future__ import absolute_import
-from __future__ import print_function
 
 __all__ = ['Highway']
 
@@ -99,8 +95,7 @@ class Highway(gluon.HybridBlock):
                                            flatten=False))
             self._activation = nn.Activation(activation)
 
-    def hybrid_forward(self, F, inputs, **kwargs):
-        # pylint: disable=unused-argument
+    def hybrid_forward(self, F, inputs, **kwargs): # pylint: disable=arguments-differ
         r"""
         Forward computation for highway layer
 

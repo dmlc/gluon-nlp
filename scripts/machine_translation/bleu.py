@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -110,7 +108,7 @@ def _tokenize_mteval_13a(segment):
     return norm
 
 
-class UnicodeRegex(object):
+class UnicodeRegex:
     """Ad-hoc hack to recognize all punctuation and symbols.
     """
     def __init__(self):

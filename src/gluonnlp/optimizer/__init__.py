@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -21,5 +19,6 @@
 """NLP optimizer."""
 
 from .bert_adam import *
+from .lamb import *
 
-__all__ = bert_adam.__all__
+__all__ = bert_adam.__all__ + lamb.__all__

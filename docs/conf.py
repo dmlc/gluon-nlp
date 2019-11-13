@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 # documentation build configuration file, created by
 # sphinx-quickstart on Thu Jul 23 19:40:08 2015.
 #
@@ -33,16 +31,14 @@ version = nlp.__version__
 release = nlp.__version__
 
 # General information about the project.
-project = u'gluonnlp'
-author = u'%s developers' % project
-copyright = u'2018, %s' % author
+project = 'gluonnlp'
+author = '%s developers' % project
+copyright = '2019, %s' % author
 github_doc_root = 'http://gluon-nlp.mxnet.io/{}/'.format(str(version))
 
 # add markdown parser
 CommonMarkParser.github_doc_root = github_doc_root
-source_parsers = {
-    '.md': CommonMarkParser
-}
+extensions = ['recommonmark']
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones
@@ -53,22 +49,13 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
     'sphinx.ext.napoleon',
+    'sphinx_autodoc_typehints',
     'sphinx.ext.mathjax',
     'sphinx_gallery.gen_gallery',
     'nbsphinx',
     'IPython.sphinxext.ipython_console_highlighting',
     'IPython.sphinxext.ipython_directive',
-    'sphinx_autorun',
 ]
-
-doctest_global_setup = '''
-import gluonnlp
-import mxnet as mx
-from mxnet import gluon
-import numpy as np
-import doctest
-doctest.ELLIPSIS_MARKER = '-etc-'
-'''
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -93,7 +80,7 @@ nbsphinx_prolog = """
 
 .. only:: html
 
-    :download:`[Download] <{{ "../%s.zip"|format(paths[1]) }}>`
+    :download:`Download this tutorial <{{ "../%s.zip"|format(paths[1]) }}>`
 """
 
 # The suffix(es) of source filenames.
@@ -134,7 +121,8 @@ html_favicon = '_static/gluon.ico'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ['_build', '**.ipynb_checkpoints', 'examples/*/*/**.rst', 'model_zoo/*/*/**.rst']
+exclude_patterns = ['_build', '**.ipynb_checkpoints', 'examples/*/*/**.rst', 'model_zoo/*/*/**.rst',
+                    'model_zoo/word_embeddings/tools/extern/*/**.md']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -182,7 +170,7 @@ html_theme_options = {
     'primary_color': 'blue',
     'accent_color': 'deep_orange',
     'header_links' : [
-        ('Install', 'install', False, ''),
+        ('Install', 'install/install-more', False, ''),
         ('API', 'api/index', False, ''),
         ('Community', 'community/index', False, ''),
         ('Contribute', 'community/contribute', False, ''),
@@ -221,7 +209,7 @@ htmlhelp_basename = project + 'doc'
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/{.major}'.format(sys.version_info), None),
-    'mxnet': ('https://mxnet.apache.org/', None),
+    'mxnet': ('https://beta.mxnet.io/', None),
     'numpy': ('http://docs.scipy.org/doc/numpy/', None),
     'scipy': ('http://docs.scipy.org/doc/scipy/reference', None),
     'matplotlib': ('http://matplotlib.org/', None),
@@ -246,6 +234,9 @@ def setup(app):
             }, True)
     app.add_transform(AutoStructify)
     app.add_javascript('google_analytics.js')
+    app.add_javascript('hidebib.js')
+    app.add_javascript('install-options.js')
+    app.add_stylesheet('custom.css')
 
 
 sphinx_gallery_conf = {
@@ -264,6 +255,7 @@ sphinx_gallery_conf = {
 
 # Napoleon settings
 napoleon_use_ivar = True
+napoleon_use_param = True  # Required for compatibility with sphinx-autodoc-typehints
 
 # linkcheck settings
 import multiprocessing

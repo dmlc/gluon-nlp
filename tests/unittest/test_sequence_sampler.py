@@ -27,26 +27,35 @@ def test_beam_search_score(length, alpha, K):
     lp = (K + length) ** alpha / (K + 1) ** alpha
     assert_allclose(scores.asnumpy(), sum_log_probs.asnumpy() / lp, 1E-5, 1E-5)
 
-def test_sequence_sampler():
+@pytest.mark.skip_master
+@pytest.mark.serial
+@pytest.mark.parametrize('top_k', [None, 5])
+def test_sequence_sampler(top_k):
     vocab_size = np.random.randint(5, 20)
     batch_size = 1000
     dist = mx.random.uniform(shape=(vocab_size,))
     def context_free_distribution(step_input, states):
         batch_size = step_input.shape[0]
         return dist.expand_dims(0).broadcast_to(shape=(batch_size, vocab_size)), states
-    sampler = model.SequenceSampler(2, context_free_distribution, vocab_size+1, max_length=500)
+    sampler = model.SequenceSampler(2, context_free_distribution, vocab_size+1, max_length=500,
+                                    top_k=top_k)
     samples, _, _ = sampler(mx.nd.ones((batch_size,)), mx.nd.ones((batch_size,)))
     freq = collections.Counter(samples.asnumpy().flatten().tolist())
     emp_dist = [0] * vocab_size
     N = float(len(list(freq.elements())))
     for i in range(vocab_size):
         emp_dist[i] = freq[i] / N
-    assert_allclose(dist.softmax().asnumpy(), np.array(emp_dist), atol=0.01, rtol=0.1)
+    if top_k is None:
+        true_dist = dist.softmax().asnumpy()
+    else:
+        ranks = dist.argsort(is_ascend=False, dtype='int32')
+        dist = mx.nd.where(ranks < top_k, dist, mx.nd.ones_like(dist)*-99999)
+        true_dist = dist.softmax().asnumpy()
+    assert_allclose(true_dist, np.array(emp_dist), atol=0.01, rtol=0.1)
 
 @pytest.mark.seed(1)
 @pytest.mark.parametrize('hybridize', [False, True])
-@pytest.mark.parametrize('sampler_cls', [model.HybridBeamSearchSampler,
-                                         model.BeamSearchSampler])
+@pytest.mark.parametrize('sampler_cls', [model.BeamSearchSampler, model.HybridBeamSearchSampler])
 def test_beam_search(hybridize, sampler_cls):
     def _get_new_states(states, state_info, sel_beam_ids):
         assert not state_info or isinstance(state_info, (type(states), dict)), \
@@ -168,8 +177,8 @@ def test_beam_search(hybridize, sampler_cls):
             self._vocab_size = vocab_size
             with self.name_scope():
                 self._embed = nn.Embedding(input_dim=vocab_size, output_dim=hidden_size)
-                self._rnn = rnn.RNNCell(hidden_size=hidden_size)
-                self._map_to_vocab = nn.Dense(vocab_size)
+                self._rnn = rnn.RNNCell(input_size=hidden_size, hidden_size=hidden_size)
+                self._map_to_vocab = nn.Dense(vocab_size, in_units=hidden_size)
 
         def begin_state(self, batch_size):
             return self._rnn.begin_state(batch_size=batch_size,
@@ -187,9 +196,9 @@ def test_beam_search(hybridize, sampler_cls):
             self._use_tuple = use_tuple
             with self.name_scope():
                 self._embed = nn.Embedding(input_dim=vocab_size, output_dim=hidden_size)
-                self._rnn1 = rnn.RNNCell(hidden_size=hidden_size)
-                self._rnn2 = rnn.RNNCell(hidden_size=hidden_size)
-                self._map_to_vocab = nn.Dense(vocab_size)
+                self._rnn1 = rnn.RNNCell(input_size=hidden_size, hidden_size=hidden_size)
+                self._rnn2 = rnn.RNNCell(input_size=hidden_size, hidden_size=hidden_size)
+                self._map_to_vocab = nn.Dense(vocab_size, in_units=hidden_size)
 
         def begin_state(self, batch_size):
             ret = [self._rnn1.begin_state(batch_size=batch_size,
@@ -221,8 +230,8 @@ def test_beam_search(hybridize, sampler_cls):
             self._vocab_size = vocab_size
             with self.name_scope():
                 self._embed = nn.Embedding(input_dim=vocab_size, output_dim=hidden_size)
-                self._rnn = rnn.RNN(hidden_size=hidden_size, num_layers=1, activation='tanh')
-                self._map_to_vocab = nn.Dense(vocab_size, flatten=False)
+                self._rnn = rnn.RNN(input_size=hidden_size, hidden_size=hidden_size, num_layers=1, activation='tanh')
+                self._map_to_vocab = nn.Dense(vocab_size, flatten=False, in_units=hidden_size)
 
         def begin_state(self, batch_size):
             return self._rnn.begin_state(batch_size=batch_size,

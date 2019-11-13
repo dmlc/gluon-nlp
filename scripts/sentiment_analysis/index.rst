@@ -1,7 +1,7 @@
 Sentiment Analysis
 ------------------
 
-:download:`[Download] </model_zoo/sentiment_analysis.zip>`
+:download:`Download scripts </model_zoo/sentiment_analysis.zip>`
 
 Through Fine-tuning Word Language Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -33,169 +33,215 @@ Kim, Y. (2014). Convolutional neural networks for sentence classification. arXiv
 
 epoch:
 
-+----------------+--------+---------+---------+--------+--------+
-|                | MR     | SST-1   | SST-2   | Subj   | TREC   |
-+================+========+=========+=========+========+========+
-| rand           |   60   |   40    |   40    |   40   |   40   |
-+----------------+--------+---------+---------+--------+--------+
-| static         |   60   |   40    |   40    |   40   |   40   |
-+----------------+--------+---------+---------+--------+--------+
-| non-static     |   60   |   40    |   40    |   40   |   40   |
-+----------------+--------+---------+---------+--------+--------+
-| multichannel   |   60   |   40    |   40    |   40   |   40   |
-+----------------+--------+---------+---------+--------+--------+
-
++----------------+--------+---------+---------+--------+--------+--------+--------+
+|                | MR     | SST-1   | SST-2   | Subj   | TREC   |   CR   |  MPQA  |
++================+========+=========+=========+========+========+========+========+
+| rand           |   200  |   200   |   200   |   200  |   200  |   200  |   200  |
++----------------+--------+---------+---------+--------+--------+--------+--------+
+| static         |   200  |   200   |   200   |   200  |   200  |   200  |   200  |
++----------------+--------+---------+---------+--------+--------+--------+--------+
+| non-static     |   200  |   200   |   200   |   200  |   200  |   200  |   200  |
++----------------+--------+---------+---------+--------+--------+--------+--------+
+| multichannel   |   200  |   200   |   200   |   200  |   200  |   200  |   200  |
++----------------+--------+---------+---------+--------+--------+--------+--------+
 
 log:
 
 
-+----------------+----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+
-|                | MR                                                                                                       | SST-1                                                                                                       | SST-2                                                                                                        | Subj                                                                                                        | TREC                                                                                                        |
-+================+==========================================================================================================+=============================================================================================================+==============================================================================================================+=============================================================================================================+=============================================================================================================+
-| rand           | [1]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/MR_rand.log>`__           | [5]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-1_rand.log>`__           | [9]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-2_rand.log>`__            | [13]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/Subj_rand.log>`__           | [17]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/TREC_rand.log>`__           |
-+----------------+----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+
-| static         | [2]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/MR_static.log>`__         | [6]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-1_static.log>`__         | [10]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-2_static.log>`__         | [14]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/Subj_static.log>`__         | [18]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/TREC_static.log>`__         |
-+----------------+----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+
-| non-static     | [3]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/MR_non-static.log>`__     | [7]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-1_non-static.log>`__     | [11]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-2_non-static.log>`__     | [15]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/Subj_non-static.log>`__     | [19]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/TREC_non-static.log>`__     |
-+----------------+----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+
-| multichannel   | [4]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/MR_multichannel.log>`__   | [8]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-1_multichannel.log>`__   | [12]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-2_multichannel.log>`__   | [16]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/Subj_multichannel.log>`__   | [20]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/TREC_multichannel.log>`__   |
-+----------------+----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+
++----------------+----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+
+|                | MR                                                                                                       | SST-1                                                                                                       | SST-2                                                                                                        | Subj                                                                                                        | TREC                                                                                                        | CR                                                                                                        | MPQA                                                                                                        |
++================+==========================================================================================================+=============================================================================================================+==============================================================================================================+=============================================================================================================+=============================================================================================================+===========================================================================================================+=============================================================================================================+
+| rand           | [1]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/MR_rand.log>`__           | [5]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-1_rand.log>`__           | [9]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-2_rand.log>`__            | [13]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/Subj_rand.log>`__           | [17]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/TREC_rand.log>`__           | [21]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/CR_rand.log>`__           | [25]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/MPQA_rand.log>`__           |
++----------------+----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+
+| static         | [2]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/MR_static.log>`__         | [6]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-1_static.log>`__         | [10]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-2_static.log>`__         | [14]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/Subj_static.log>`__         | [18]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/TREC_static.log>`__         | [22]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/CR_static.log>`__         | [26]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/MPQA_static.log>`__         |
++----------------+----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+
+| non-static     | [3]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/MR_non-static.log>`__     | [7]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-1_non-static.log>`__     | [11]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-2_non-static.log>`__     | [15]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/Subj_non-static.log>`__     | [19]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/TREC_non-static.log>`__     | [23]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/CR_non-static.log>`__     | [27]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/MPQA_non-static.log>`__     |
++----------------+----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+
+| multichannel   | [4]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/MR_multichannel.log>`__   | [8]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-1_multichannel.log>`__   | [12]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/SST-2_multichannel.log>`__   | [16]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/Subj_multichannel.log>`__   | [20]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/TREC_multichannel.log>`__   | [24]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/CR_multichannel.log>`__   | [28]/`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/sentiment/MPQA_multichannel.log>`__   |
++----------------+----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+
 
 
-test accuracy (SST-1, SST-2, and TREC) or cross-validation accuracy (MR and Subj):
+test accuracy (SST-1, SST-2, and TREC) or cross-validation accuracy (MR, Subj, CR and MPQA):
 
-
-+----------------+----------+-----------+-----------+----------+----------+
-|                |   MR     |   SST-1   |   SST-2   |   Subj   |   TREC   |
-+================+==========+===========+===========+==========+==========+
-| rand           | 0.7683   | 0.5412    | 0.9358    | 0.8984   | 0.9780   |
-+----------------+----------+-----------+-----------+----------+----------+
-| static         | 0.7927   | 0.5421    | 0.9450    | 0.9226   | 0.9840   |
-+----------------+----------+-----------+-----------+----------+----------+
-| non-static     | 0.7960   | 0.5534    | 0.9387    | 0.9206   | 0.9800   |
-+----------------+----------+-----------+-----------+----------+----------+
-| multichannel   | 0.7999   | 0.5581    | 0.9393    | 0.9249   | 0.9900   |
-+----------------+----------+-----------+-----------+----------+----------+
++----------------+----------+-----------+-----------+----------+----------+----------+----------+
+|                |   MR     |   SST-1   |   SST-2   |   Subj   |   TREC   |    CR    |   MPQA   |
++================+==========+===========+===========+==========+==========+==========+==========+
+| rand           |   75.8   |   44.3    |   82.1    |   89.3   |   90.2   |   79.5   |   85.3   |
++----------------+----------+-----------+-----------+----------+----------+----------+----------+
+| static         |   79.4   |   48.1    |   87.1    |   91.8   |   91.4   |   83.1   |   89.6   |
++----------------+----------+-----------+-----------+----------+----------+----------+----------+
+| non-static     |   80.0   |   47.0    |   85.6    |   91.9   |   93.2   |   82.9   |   89.2   |
++----------------+----------+-----------+-----------+----------+----------+----------+----------+
+| multichannel   |   80.0   |   48.1    |   85.8    |   92.1   |   93.2   |   83.3   |   89.6   |
++----------------+----------+-----------+-----------+----------+----------+----------+----------+
 
 [1]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name MR
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name MR
 
 [2]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode static --data_name MR
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name MR
 
 
 [3]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name MR
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name MR
 
 
 [4]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 60 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name MR
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name MR
 
 [5]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name SST-1
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name SST-1
 
 [6]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name SST-1
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name SST-1
 
 [7]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name SST-1
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name SST-1
 
 [8]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name SST-1
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name SST-1
 
 [9]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name SST-2
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name SST-2
 
 [10]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name SST-2
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name SST-2
 
 [11]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name SST-2
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name SST-2
 
 [12]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name SST-2
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name SST-2
 
 [13]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name Subj
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name Subj
 
 [14]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name Subj
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name Subj
 
 [15]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name Subj
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name Subj
 
 [16]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name Subj
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name Subj
 
 [17]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode rand --data_name TREC
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name TREC
 
 [18]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode static --data_name TREC
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name TREC
 
 [19]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode non-static --data_name TREC
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name TREC
 
 [20]:
 
 .. code-block:: console
 
-   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 40 --dropout 0.5 --lr 0.0001 --model_mode multichannel --data_name TREC
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name TREC
+   
+[21]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name CR
+
+[22]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name CR
+
+[23]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name CR
+
+[24]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name CR
+   
+[25]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode rand --data_name MPQA
+
+[26]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode static --data_name MPQA
+
+[27]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode non-static --data_name MPQA
+
+[28]:
+
+.. code-block:: console
+
+   $ python sentiment_analysis_cnn.py --gpu 0 --batch_size 50 --epochs 200 --dropout 0.5 --model_mode multichannel --data_name MPQA
 

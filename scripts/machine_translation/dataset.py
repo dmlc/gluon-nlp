@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -25,10 +23,8 @@ __all__ = ['TOY']
 import os
 from gluonnlp.base import get_home_dir
 from gluonnlp.data.translation import _TranslationDataset, _get_pair_key
-from gluonnlp.data.registry import register
 
 
-@register(segment=['train', 'val', 'test'])
 class TOY(_TranslationDataset):
     """A Small Translation Dataset for Testing Scripts.
 

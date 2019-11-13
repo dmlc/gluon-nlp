@@ -3,7 +3,7 @@ Contribute
 
 GluonNLP community welcomes contributions from anyone! Latest documentation can be found `here <http://gluon-nlp.mxnet.io/master/index.html>`__.
 
-There are lots of opportunities for you to become our `contributors <https://github.com/dmlc/gluon-nlp/blob/master/contributor.rst>`__:
+There are lots of opportunities for you to become our `contributors <https://github.com/dmlc/gluon-nlp/graphs/contributors>`__:
 
 - Ask or answer questions on `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
 - Propose ideas, or review proposed design ideas on `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
@@ -41,10 +41,15 @@ Make changes
 ------------
 
 Our package uses continuous integration and code coverage tools for verifying pull requests. Before
-submitting, contributor should perform the following checks:
+submitting, contributor should ensure that the following checks do not fail:
 
-- `Lint (code style) check <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L5>`__.
-- `Py2 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L18>`__ and `Py3 <https://github.com/dmlc/gluon-nlp/blob/master/Jenkinsfile#L28>`__ tests.
+- Lint (code style)
+- Unittest
+- Doctest
+
+The commands executed by the continuous integration server to perform the tests
+are listed in the `build_steps.groovy file
+<https://github.com/dmlc/gluon-nlp/blob/master/ci/jenkins/build_steps.groovy>`__.
 
 Contribute to model zoo
 -----------------------

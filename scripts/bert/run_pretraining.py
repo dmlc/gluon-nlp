@@ -10,8 +10,6 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 }
 """
 
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -31,174 +29,122 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import os
-
-import argparse
 import random
+import warnings
 import logging
-import glob
+import functools
 import time
-import numpy as np
+import argparse
 
 import mxnet as mx
-from mxnet import gluon
-from mxnet.gluon.data import DataLoader
-
 import gluonnlp as nlp
-from gluonnlp.utils import Parallelizable, Parallel
-from gluonnlp.metric import MaskedAccuracy
-from gluonnlp.model import bert_12_768_12
-from gluonnlp.data.batchify import Tuple, Stack, Pad
-from gluonnlp.data import SimpleDatasetStream, FixedBucketSampler, NumpyDataset, BERTTokenizer
-from utils import profile
-from fp16_utils import FP16Trainer
+try:
+    import horovod.mxnet as hvd
+except ImportError:
+    pass
 
+from fp16_utils import FP16Trainer
+from pretraining_utils import get_model_loss, get_pretrain_data_npz, get_dummy_dataloader
+from pretraining_utils import split_and_load, log, log_noacc, evaluate
+from pretraining_utils import save_parameters, save_states, profile
+from pretraining_utils import get_pretrain_data_text, generate_dev_set
+
+# parser
 parser = argparse.ArgumentParser(description='BERT pretraining example.')
-parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
-parser.add_argument('--num_buckets', type=int, default=1,
-                    help='Number of buckets for variable length sequence sampling')
-parser.add_argument('--dtype', type=str, default='float32', help='data dtype')
-parser.add_argument('--batch_size', type=int, default=8, help='Batch size per GPU.')
-parser.add_argument('--accumulate', type=int, default=1,
-                    help='Number of batches for gradient accumulation.')
-parser.add_argument('--batch_size_eval', type=int, default=8,
-                    help='Batch size per GPU for evaluation.')
-parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_uncased',
-                    help='The dataset from which the vocabulary is created. '
-                         'Options include book_corpus_wiki_en_uncased, book_corpus_wiki_en_cased. '
-                         'Default is book_corpus_wiki_en_uncased')
-parser.add_argument('--pretrained', action='store_true',
-                    help='Load the pretrained model released by Google.')
-parser.add_argument('--data', type=str, default=None, help='Path to training data.')
-parser.add_argument('--data_eval', type=str, default=None, help='Path to evaluation data.')
-parser.add_argument('--ckpt_dir', type=str, required=True,
+# logging and serialization
+parser.add_argument('--ckpt_dir', type=str, default='./ckpt_dir',
                     help='Path to checkpoint directory')
+parser.add_argument('--log_interval', type=int, default=250, help='Report interval')
+parser.add_argument('--ckpt_interval', type=int, default=25000, help='Checkpoint interval')
+# model
+parser.add_argument('--pretrained', action='store_true',
+                    help='Initialize the model with pretrained weights')
+parser.add_argument('--model', type=str, default='bert_12_768_12',
+                    choices=['bert_12_768_12', 'bert_24_1024_16'],
+                    help='Model to pre-train.')
+parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_uncased',
+                    choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
+                             'wiki_multilingual_uncased', 'wiki_multilingual_cased',
+                             'wiki_cn_cased'],
+                    help='The pre-defined dataset from which the vocabulary is created.')
+# training
+parser.add_argument('--data', type=str, default=None,
+                    help='Path to training data file. File name with wildcard such as '
+                         'dir/*.train is accepted.')
+parser.add_argument('--total_batch_size', type=int, default=256,
+                    help='Global effective batch size. '
+                         'total_batch_size = batch_size_per_worker * num_worker * accumulate.')
+parser.add_argument('--accumulate', type=int, default=1,
+                    help='Number of batches for gradient accumulation. '
+                         'total_batch_size = batch_size_per_worker * num_worker * accumulate.')
+parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
 parser.add_argument('--start_step', type=int, default=0,
                     help='Start optimization step from the checkpoint.')
 parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
-parser.add_argument('--warmup_ratio', type=float, default=0.1,
+parser.add_argument('--warmup_ratio', type=float, default=0.01,
                     help='ratio of warmup steps used in NOAM\'s stepsize schedule')
-parser.add_argument('--log_interval', type=int, default=10, help='Report interval')
-parser.add_argument('--ckpt_interval', type=int, default=250000, help='Checkpoint interval')
-parser.add_argument('--gpus', type=str, default='0', help='List of GPUs to use. e.g. 1,3')
-parser.add_argument('--kvstore', type=str, default='device', help='KVStore type')
-parser.add_argument('--seed', type=int, default=0, help='Random seed')
+parser.add_argument('--dtype', type=str, default='float16', help='data dtype')
+parser.add_argument('--no_compute_acc', action='store_true',
+                    help='skip accuracy metric computation during training')
+# validation
+parser.add_argument('--eval_interval', type=int, default=50000, help='Evaluation interval')
+parser.add_argument('--total_batch_size_eval', type=int, default=256,
+                    help='Global batch size for evaluation. total_batch_size_eval = '
+                         'batch_size_eval_per_worker * num_worker * accumulate.')
+parser.add_argument('--data_eval', type=str, required=True,
+                    help='Path to evaluation data file. File name with wildcard such as '
+                         'dir/*.dev is accepted.')
+parser.add_argument('--eval_use_npz', action='store_true',
+                    help='Set to True if --data_eval provides npz files instead of raw text files')
+# debugging
+parser.add_argument('--synthetic_data', action='store_true',
+                    help='If provided, synthetic data is used for training')
 parser.add_argument('--verbose', action='store_true', help='verbose logging')
-parser.add_argument('--profile', action='store_true', help='profile the program')
-parser.add_argument('--by-token', action='store_true',
-                    help='set batch size by the number of tokens in the batch')
+parser.add_argument('--profile', type=str, default=None,
+                    help='output profiling result to the provided file path')
+# data pre-processing
+parser.add_argument('--num_buckets', type=int, default=1,
+                    help='Number of buckets for variable length sequence sampling')
+parser.add_argument('--raw', action='store_true',
+                    help='If set, both training and dev samples are generated on-the-fly '
+                         'from raw texts instead of pre-processed npz files. ')
+parser.add_argument('--max_seq_length', type=int, default=512,
+                    help='Maximum input sequence length. Effective only if --raw is set.')
+parser.add_argument('--short_seq_prob', type=float, default=0,
+                    help='The probability of producing sequences shorter than max_seq_length. '
+                         'Effective only if --raw is set.')
+parser.add_argument('--masked_lm_prob', type=float, default=0.15,
+                    help='Probability for masks. Effective only if --raw is set.')
+parser.add_argument('--max_predictions_per_seq', type=int, default=80,
+                    help='Maximum number of predictions per sequence. '
+                         'Effective only if --raw is set.')
+parser.add_argument('--cased', action='store_true',
+                    help='Whether to tokenize with cased characters. '
+                         'Effective only if --raw is set.')
+parser.add_argument('--whole_word_mask', action='store_true',
+                    help='Whether to use whole word masking rather than per-subword masking.'
+                         'Effective only if --raw is set.')
+parser.add_argument('--sentencepiece', default=None, type=str,
+                    help='Path to the sentencepiece .model file for both tokenization and vocab. '
+                         'Effective only if --raw is set.')
+parser.add_argument('--num_data_workers', type=int, default=8,
+                    help='Number of workers to pre-process data.')
+# communication
+parser.add_argument('--comm_backend', type=str, default='device',
+                    choices=['horovod', 'dist_sync_device', 'device'],
+                    help='Communication backend.')
+parser.add_argument('--gpus', type=str, default=None,
+                    help='List of gpus to run when device or dist_sync_device is used for '
+                         'communication, e.g. 0 or 0,2,5. empty means using cpu.')
 args = parser.parse_args()
-
-os.environ['MXNET_KVSTORE_USETREE'] = '1'
 
 # logging
 level = logging.DEBUG if args.verbose else logging.INFO
 logging.getLogger().setLevel(level)
 logging.info(args)
+os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
-def get_model(ctx):
-    """get model"""
-    # model
-    pretrained = args.pretrained
-    dataset = args.dataset_name
-    model, vocabulary = bert_12_768_12(dataset_name=dataset,
-                                       pretrained=pretrained, ctx=ctx)
-    if not pretrained:
-        model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
-
-    if args.ckpt_dir and args.start_step:
-        param_path = os.path.join(args.ckpt_dir, '%07d.params'%args.start_step)
-        model.load_parameters(param_path, ctx=ctx)
-        logging.info('Loading step %d checkpoints from %s.', args.start_step, param_path)
-
-    model.cast(args.dtype)
-    model.hybridize(static_alloc=True)
-
-    # losses
-    nsp_loss = gluon.loss.SoftmaxCELoss()
-    mlm_loss = gluon.loss.SoftmaxCELoss()
-    nsp_loss.hybridize(static_alloc=True)
-    mlm_loss.hybridize(static_alloc=True)
-
-    return model, nsp_loss, mlm_loss, vocabulary
-
-def get_dataset(data, batch_size, num_ctxes, is_train, store):
-    """create dataset"""
-    data = data
-    split_sampler = nlp.data.SplitSampler(len(glob.glob(data)), num_parts=store.num_workers,
-                                          part_index=store.rank)
-    stream = SimpleDatasetStream(NumpyDataset, data, split_sampler)
-
-    def get_dataloader(dataset):
-        """create data loader based on the dataset chunk"""
-        t0 = time.time()
-        lengths = dataset.get_field('valid_lengths')
-        logging.debug('Num samples = %d', len(lengths))
-        # A batch includes: input_id, masked_id, masked_position, masked_weight,
-        #                   next_sentence_label, segment_id, valid_length
-        batchify_fn = Tuple(Pad(), Pad(), Pad(), Pad(), Stack(), Pad(), Stack())
-        if args.by_token:
-            # sharded data loader
-            sampler = nlp.data.FixedBucketSampler(lengths=lengths,
-                                                  # batch_size per shard
-                                                  batch_size=batch_size,
-                                                  num_buckets=args.num_buckets,
-                                                  shuffle=is_train,
-                                                  use_average_length=True,
-                                                  num_shards=num_ctxes)
-            dataloader = nlp.data.ShardedDataLoader(dataset,
-                                                    batch_sampler=sampler,
-                                                    batchify_fn=batchify_fn,
-                                                    num_workers=num_ctxes)
-            logging.debug('Batch Sampler:\n%s', sampler.stats())
-        else:
-            sampler = FixedBucketSampler(lengths,
-                                         batch_size=batch_size * num_ctxes,
-                                         num_buckets=args.num_buckets,
-                                         ratio=0,
-                                         shuffle=is_train)
-            dataloader = DataLoader(dataset=dataset,
-                                    batch_sampler=sampler,
-                                    batchify_fn=batchify_fn,
-                                    num_workers=1)
-            logging.debug('Batch Sampler:\n%s', sampler.stats())
-        t1 = time.time()
-        logging.debug('Dataloader creation cost = %.2f s', t1 - t0)
-        return dataloader
-
-    stream = stream.transform(get_dataloader)
-    return stream
-
-def split_and_load(arrs, ctx):
-    """split and load arrays to a list of contexts"""
-    assert isinstance(arrs, (list, tuple))
-    if len(ctx) == 1:
-        return [[arr.as_in_context(ctx[0]) for arr in arrs]]
-    else:
-        # split and load
-        loaded_arrs = [gluon.utils.split_and_load(arr, ctx, even_split=False) for arr in arrs]
-        return zip(*loaded_arrs)
-
-def forward(data, model, mlm_loss, nsp_loss, vocab_size):
-    """forward computation for evaluation"""
-    (input_id, masked_id, masked_position, masked_weight, \
-     next_sentence_label, segment_id, valid_length) = data
-    num_masks = masked_weight.sum() + 1e-8
-    valid_length = valid_length.reshape(-1)
-    masked_id = masked_id.reshape(-1)
-    valid_length_typed = valid_length.astype(args.dtype, copy=False)
-    _, _, classified, decoded = model(input_id, segment_id, valid_length_typed,
-                                      masked_position)
-    decoded = decoded.reshape((-1, vocab_size))
-    ls1 = mlm_loss(decoded.astype('float32', copy=False),
-                   masked_id, masked_weight.reshape((-1, 1)))
-    ls2 = nsp_loss(classified.astype('float32', copy=False), next_sentence_label)
-    ls1 = ls1.sum() / num_masks
-    ls2 = ls2.mean()
-    ls = ls1 + ls2
-    return ls, next_sentence_label, classified, masked_id, decoded, \
-           masked_weight, ls1, ls2, valid_length.astype('float32', copy=False)
-
-class ParallelBERT(Parallelizable):
+class DataParallelBERT(nlp.utils.Parallelizable):
     """Data parallel BERT model.
 
     Parameters
@@ -206,247 +152,296 @@ class ParallelBERT(Parallelizable):
     model : Block
         The BERT model.
     """
-    def __init__(self, model, mlm_loss, nsp_loss, vocab_size, rescale_factor, trainer=None):
+    def __init__(self, model, trainer):
         self._model = model
-        self._mlm_loss = mlm_loss
-        self._nsp_loss = nsp_loss
-        self._vocab_size = vocab_size
-        self._rescale_factor = rescale_factor
         self._trainer = trainer
 
     def forward_backward(self, x):
         """forward backward implementation"""
+        (input_id, masked_id, masked_position, masked_weight, \
+         next_sentence_label, segment_id, valid_length) = x
+
+        valid_length = valid_length.astype(args.dtype, copy=False)
         with mx.autograd.record():
-            (ls, next_sentence_label, classified, masked_id, decoded, \
-             masked_weight, ls1, ls2, valid_length) = forward(x, self._model, self._mlm_loss,
-                                                              self._nsp_loss, self._vocab_size)
-            ls = ls / self._rescale_factor
-        if args.dtype == 'float16':
+            out = self._model(input_id, masked_id, masked_position, masked_weight,
+                              next_sentence_label, segment_id, valid_length)
+            classified, decoded, ls1, ls2 = out
+            ls = ls1 + ls2
+            ls = ls / args.accumulate
+        if self._trainer:
             self._trainer.backward(ls)
         else:
             ls.backward()
-        return ls, next_sentence_label, classified, masked_id, decoded, \
+
+        masked_id = masked_id.reshape(-1)
+        valid_length = valid_length.astype('float32', copy=False)
+        return next_sentence_label, classified, masked_id, decoded, \
                masked_weight, ls1, ls2, valid_length
 
-def evaluate(data_eval, model, nsp_loss, mlm_loss, vocab_size, ctx):
-    """Evaluation function."""
-    mlm_metric = MaskedAccuracy()
-    nsp_metric = MaskedAccuracy()
-    mlm_metric.reset()
-    nsp_metric.reset()
+def init_comm(backend):
+    """Init communication backend"""
+    # backend specific implementation
+    if backend == 'horovod':
+        try:
+            import horovod.mxnet as hvd
+        except ImportError:
+            logging.info('horovod must be installed.')
+            exit()
+        hvd.init()
+        store = None
+        num_workers = hvd.size()
+        rank = hvd.rank()
+        local_rank = hvd.local_rank()
+        is_master_node = rank == local_rank
+        ctxs = [mx.gpu(local_rank)]
+    else:
+        # kvstore
+        store = mx.kv.create(backend)
+        num_workers = store.num_workers
+        rank = store.rank
+        local_rank = 0
+        is_master_node = rank == local_rank
+        ctxs = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
+               [mx.gpu(int(x)) for x in args.gpus.split(',')]
+    return store, num_workers, rank, local_rank, is_master_node, ctxs
 
-    eval_begin_time = time.time()
-    begin_time = time.time()
-    step_num = 0
-    local_mlm_loss = local_nsp_loss = 0
-    total_mlm_loss = total_nsp_loss = 0
-    local_num_tks = 0
-    for _, dataloader in enumerate(data_eval):
-        for _, data in enumerate(dataloader):
-            step_num += 1
+backend = args.comm_backend
+store, num_workers, rank, local_rank, is_master_node, ctxs = init_comm(backend)
+assert args.total_batch_size % (args.accumulate * num_workers) == 0
+assert args.total_batch_size_eval % (args.accumulate * num_workers) == 0
+batch_size = int(args.total_batch_size / num_workers / args.accumulate)
+batch_size_eval = int(args.total_batch_size_eval / num_workers / args.accumulate)
+assert batch_size > 0
+assert batch_size_eval > 0
 
-            data_list = split_and_load(data, ctx)
-            loss_list = []
-            ns_label_list, ns_pred_list = [], []
-            mask_label_list, mask_pred_list, mask_weight_list = [], [], []
-            for data in data_list:
-                out = forward(data, model, mlm_loss, nsp_loss, vocab_size)
-                (ls, next_sentence_label, classified, masked_id,
-                 decoded, masked_weight, ls1, ls2, valid_length) = out
-                loss_list.append(ls)
-                ns_label_list.append(next_sentence_label)
-                ns_pred_list.append(classified)
-                mask_label_list.append(masked_id)
-                mask_pred_list.append(decoded)
-                mask_weight_list.append(masked_weight)
-
-                local_mlm_loss += ls1.as_in_context(mx.cpu())
-                local_nsp_loss += ls2.as_in_context(mx.cpu())
-                local_num_tks += valid_length.sum().as_in_context(mx.cpu())
-            nsp_metric.update(ns_label_list, ns_pred_list)
-            mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
-
-            # logging
-            if (step_num + 1) % (args.log_interval) == 0:
-                total_mlm_loss += local_mlm_loss
-                total_nsp_loss += local_nsp_loss
-                log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss,
-                    step_num, mlm_metric, nsp_metric, None)
-                begin_time = time.time()
-                local_mlm_loss = local_nsp_loss = local_num_tks = 0
-                mlm_metric.reset_local()
-                nsp_metric.reset_local()
-
-    mx.nd.waitall()
-    eval_end_time = time.time()
-    total_mlm_loss /= step_num
-    total_nsp_loss /= step_num
-    logging.info('mlm_loss={:.3f}\tmlm_acc={:.1f}\tnsp_loss={:.3f}\tnsp_acc={:.1f}\t'
-                 .format(total_mlm_loss.asscalar(), mlm_metric.get_global()[1] * 100,
-                         total_nsp_loss.asscalar(), nsp_metric.get_global()[1] * 100))
-    logging.info('Eval cost={:.1f}s'.format(eval_end_time - eval_begin_time))
-
-def log(begin_time, local_num_tks, local_mlm_loss, local_nsp_loss, step_num,
-        mlm_metric, nsp_metric, trainer):
-    end_time = time.time()
-    duration = end_time - begin_time
-    throughput = local_num_tks / duration / 1000.0
-    local_mlm_loss = local_mlm_loss / args.log_interval
-    local_nsp_loss = local_nsp_loss / args.log_interval
-    lr = trainer.learning_rate if trainer else 0
-    # pylint: disable=line-too-long
-    logging.info('[step {}]\tmlm_loss={:.5f}\tmlm_acc={:.5f}\tnsp_loss={:.5f}\tnsp_acc={:.3f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}'
-                 .format(step_num, local_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, local_nsp_loss.asscalar(),
-                         nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration))
-    # pylint: enable=line-too-long
-
-def save_params(step_num, args, model, trainer):
-    param_path = os.path.join(args.ckpt_dir, '%07d.params'%step_num)
-    trainer_path = os.path.join(args.ckpt_dir, '%07d.states'%step_num)
-    logging.info('[step %d] Saving checkpoints to %s, %s.',
-                 step_num, param_path, trainer_path)
-    model.save_parameters(param_path)
-    trainer.save_states(trainer_path)
-
-def train(data_train, model, nsp_loss, mlm_loss, vocab_size, ctx, store):
+def train(data_train, data_eval, model):
     """Training function."""
-    mlm_metric = MaskedAccuracy()
-    nsp_metric = MaskedAccuracy()
+    # backend specific implementation
+    param_dict = model.bert.collect_params()
+    if backend == 'horovod':
+        hvd.broadcast_parameters(param_dict, root_rank=0)
+
+    mlm_metric = nlp.metric.MaskedAccuracy()
+    nsp_metric = nlp.metric.MaskedAccuracy()
     mlm_metric.reset()
     nsp_metric.reset()
 
+    logging.debug('Creating distributed trainer...')
     lr = args.lr
     optim_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
     if args.dtype == 'float16':
         optim_params['multi_precision'] = True
 
-    trainer = gluon.Trainer(model.collect_params(), 'bertadam', optim_params,
-                            update_on_kvstore=False, kvstore=store)
     dynamic_loss_scale = args.dtype == 'float16'
-    fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale)
+    if dynamic_loss_scale:
+        loss_scale_param = {'scale_window': 2000 / num_workers}
+    else:
+        loss_scale_param = None
 
-    if args.ckpt_dir and args.start_step:
-        trainer.load_states(os.path.join(args.ckpt_dir, '%07d.states'%args.start_step))
+    # backend specific implementation
+    if backend == 'horovod':
+        trainer = hvd.DistributedTrainer(param_dict, 'bertadam', optim_params)
+    else:
+        trainer = mx.gluon.Trainer(param_dict, 'bertadam', optim_params,
+                                   update_on_kvstore=False)
+    fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale,
+                               loss_scaler_params=loss_scale_param)
+
+    if args.start_step:
+        state_path = os.path.join(args.ckpt_dir, '%07d.states.%02d'%(args.start_step, local_rank))
+        logging.info('Loading trainer state from %s', state_path)
+        nlp.utils.load_states(trainer, state_path)
 
     accumulate = args.accumulate
     num_train_steps = args.num_steps
     warmup_ratio = args.warmup_ratio
     num_warmup_steps = int(num_train_steps * warmup_ratio)
-    params = [p for p in model.collect_params().values() if p.grad_req != 'null']
+    params = [p for p in param_dict.values() if p.grad_req != 'null']
 
     # Do not apply weight decay on LayerNorm and bias terms
     for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
-    for p in params:
-        p.grad_req = 'add'
+    if accumulate > 1:
+        for p in params:
+            p.grad_req = 'add'
 
     train_begin_time = time.time()
     begin_time = time.time()
-    local_mlm_loss = 0
-    local_nsp_loss = 0
-    local_num_tks = 0
+    running_mlm_loss, running_nsp_loss = 0, 0
+    running_num_tks = 0
     batch_num = 0
     step_num = args.start_step
 
-    parallel_model = ParallelBERT(model, mlm_loss, nsp_loss, vocab_size,
-                                  store.num_workers * accumulate, trainer=fp16_trainer)
-    num_ctxes = len(ctx)
-    parallel = Parallel(num_ctxes, parallel_model)
+    logging.debug('Training started')
+
+    # create dummy data loader if needed
+    parallel_model = DataParallelBERT(model, trainer=fp16_trainer)
+    num_ctxes = len(ctxs)
+    parallel = nlp.utils.Parallel(num_ctxes if num_ctxes > 1 else 0, parallel_model)
 
     while step_num < num_train_steps:
-        for _, dataloader in enumerate(data_train):
+
+        data_train_iter = iter(data_train)
+        end_of_batch = False
+        next_data_batch = next(data_train_iter)
+        while not end_of_batch:
+            data_batch = next_data_batch
             if step_num >= num_train_steps:
                 break
-            for _, data_batch in enumerate(dataloader):
-                if step_num >= num_train_steps:
-                    break
-                if batch_num % accumulate == 0:
-                    step_num += 1
-                    # zero grad
-                    model.collect_params().zero_grad()
-                    # update learning rate
-                    if step_num <= num_warmup_steps:
-                        new_lr = lr * step_num / num_warmup_steps
-                    else:
-                        offset = lr * step_num / num_train_steps
-                        new_lr = lr - offset
-                    trainer.set_learning_rate(new_lr)
-                    if args.profile:
-                        profile(step_num, 10, 12)
-                if args.by_token:
-                    data_list = [[seq.as_in_context(context) for seq in shard]
-                                 for context, shard in zip(ctx, data_batch)]
+            if batch_num % accumulate == 0:
+                step_num += 1
+                # if accumulate > 1, grad_req is set to 'add', and zero_grad is required
+                if accumulate > 1:
+                    param_dict.zero_grad()
+                # update learning rate
+                if step_num <= num_warmup_steps:
+                    new_lr = lr * step_num / num_warmup_steps
                 else:
-                    if data_batch[0].shape[0] < len(ctx):
-                        continue
-                    data_list = split_and_load(data_batch, ctx)
+                    offset = lr * step_num / num_train_steps
+                    new_lr = lr - offset
+                trainer.set_learning_rate(new_lr)
+                if args.profile:
+                    profile(step_num, 10, 14, profile_name=args.profile + str(rank))
 
-                ns_label_list, ns_pred_list = [], []
-                mask_label_list, mask_pred_list, mask_weight_list = [], [], []
+            # load data
+            data_list = list(split_and_load(data_batch, ctxs))
 
-                # parallel forward / backward
-                for data in data_list:
-                    parallel.put(data)
-                for _ in range(len(ctx)):
-                    (_, next_sentence_label, classified, masked_id,
+            ns_label_list, ns_pred_list = [], []
+            mask_label_list, mask_pred_list, mask_weight_list = [], [], []
+
+            with mx.autograd.record():
+                num_data = len(data_list)
+                for i in range(num_data):
+                    parallel.put(data_list[i])
+                for _ in range(num_data):
+                    (next_sentence_label, classified, masked_id,
                      decoded, masked_weight, ls1, ls2, valid_length) = parallel.get()
                     ns_label_list.append(next_sentence_label)
                     ns_pred_list.append(classified)
                     mask_label_list.append(masked_id)
                     mask_pred_list.append(decoded)
                     mask_weight_list.append(masked_weight)
-                    local_mlm_loss += ls1.as_in_context(mx.cpu()) / num_ctxes
-                    local_nsp_loss += ls2.as_in_context(mx.cpu()) / num_ctxes
-                    local_num_tks += valid_length.sum().as_in_context(mx.cpu())
+                    running_mlm_loss += ls1.as_in_context(mx.cpu()) / len(ctxs)
+                    running_nsp_loss += ls2.as_in_context(mx.cpu()) / len(ctxs)
+                    running_num_tks += valid_length.sum().as_in_context(mx.cpu())
+            # pre fetch next batch
+            try:
+                next_data_batch = next(data_train_iter)
+            except StopIteration:
+                end_of_batch = True
 
-                # update
-                if (batch_num + 1) % accumulate == 0:
-                    fp16_trainer.step(1, max_norm=1)
+            # update
+            if (batch_num + 1) % accumulate == 0:
+                fp16_trainer.step(1, max_norm=1.0 * num_workers)
+            # update metrics
+            if args.no_compute_acc:
+                mask_pred_list[0].wait_to_read()
+            else:
                 nsp_metric.update(ns_label_list, ns_pred_list)
                 mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
-                # logging
-                if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
-                    log(begin_time, local_num_tks, local_mlm_loss / accumulate,
-                        local_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric, trainer)
-                    begin_time = time.time()
-                    local_mlm_loss = local_nsp_loss = local_num_tks = 0
+
+            # logging
+            if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
+                if args.no_compute_acc:
+                    log_noacc(begin_time, running_num_tks, running_mlm_loss / accumulate,
+                              running_nsp_loss / accumulate, step_num,
+                              trainer, args.log_interval)
+                else:
+                    log(begin_time, running_num_tks, running_mlm_loss / accumulate,
+                        running_nsp_loss / accumulate, step_num, mlm_metric, nsp_metric,
+                        trainer, args.log_interval)
                     mlm_metric.reset_local()
                     nsp_metric.reset_local()
+                begin_time = time.time()
+                running_mlm_loss = running_nsp_loss = running_num_tks = 0
 
-                # saving checkpoints
-                if args.ckpt_dir and (step_num + 1) % (args.ckpt_interval) == 0 \
-                   and (batch_num + 1) % accumulate == 0:
-                    save_params(step_num, args, model, trainer)
-                batch_num += 1
-    save_params(step_num, args, model, trainer)
+            # saving checkpoints
+            if (step_num + 1) % args.ckpt_interval == 0 and (batch_num + 1) % accumulate == 0:
+                if is_master_node:
+                    save_states(step_num, trainer, args.ckpt_dir, local_rank)
+                    if local_rank == 0:
+                        save_parameters(step_num, model.bert, args.ckpt_dir)
+                if (step_num + 1) % args.eval_interval == 0 and data_eval:
+                    # eval data is always based on a fixed npz file.
+                    dataset_eval = get_pretrain_data_npz(data_eval, batch_size_eval,
+                                                         1, False, 1, vocab)
+                    evaluate(dataset_eval, model, ctxs, args.log_interval, args.dtype)
+
+            batch_num += 1
+
+    if is_master_node:
+        save_states(step_num, trainer, args.ckpt_dir, local_rank)
+        if local_rank == 0:
+            save_parameters(step_num, model, args.ckpt_dir)
     mx.nd.waitall()
     train_end_time = time.time()
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))
 
 if __name__ == '__main__':
-    # random seed
-    seed = args.seed
-    np.random.seed(seed)
-    random.seed(seed)
-    mx.random.seed(seed)
+    random_seed = random.randint(0, 1000)
+    nlp.utils.mkdir(args.ckpt_dir)
 
-    ctx = [mx.cpu()] if args.gpus is None or args.gpus == '' else \
-          [mx.gpu(int(x)) for x in args.gpus.split(',')]
+    dataset_name, vocab = args.dataset_name, None
+    if args.sentencepiece:
+        logging.info('loading vocab file from sentence piece model: %s', args.sentencepiece)
+        if args.dataset_name:
+            warnings.warn('Both --dataset_name and --sentencepiece are provided. '
+                          'The vocabulary will be loaded based on --sentencepiece')
+            dataset_name = None
+        vocab = nlp.vocab.BERTVocab.from_sentencepiece(args.sentencepiece)
 
-    model, nsp_loss, mlm_loss, vocabulary = get_model(ctx)
+    model, vocab = get_model_loss(ctxs, args.model, args.pretrained,
+                                  dataset_name, vocab, args.dtype,
+                                  ckpt_dir=args.ckpt_dir,
+                                  start_step=args.start_step)
+    logging.debug('Model created')
+    data_eval = args.data_eval
 
-    lower = 'uncased' in args.dataset_name
-    tokenizer = BERTTokenizer(vocabulary, lower=lower)
-    store = mx.kv.create(args.kvstore)
+    if args.raw:
+        if args.sentencepiece:
+            tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab,
+                                                 lower=not args.cased)
+        else:
+            tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=not args.cased)
 
-    if args.ckpt_dir:
-        ckpt_dir = os.path.expanduser(args.ckpt_dir)
-        if not os.path.exists(ckpt_dir):
-            os.makedirs(ckpt_dir)
+        cache_dir = os.path.join(args.ckpt_dir, 'data_eval_cache')
+        cache_file = os.path.join(cache_dir, 'part-000.npz')
+        nlp.utils.mkdir(cache_dir)
+
+        # generate dev dataset from the raw text if needed
+        if not args.eval_use_npz:
+            data_eval = cache_file
+            if not os.path.isfile(cache_file) and rank == 0:
+                generate_dev_set(tokenizer, vocab, cache_file, args)
+
+    logging.debug('Random seed set to %d', random_seed)
+    mx.random.seed(random_seed)
 
     if args.data:
-        data_train = get_dataset(args.data, args.batch_size, len(ctx), True, store)
-        train(data_train, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx, store)
-    if args.data_eval:
-        data_eval = get_dataset(args.data_eval, args.batch_size_eval, len(ctx), False, store)
-        evaluate(data_eval, model, nsp_loss, mlm_loss, len(tokenizer.vocab), ctx)
+        if args.raw:
+            get_dataset_fn = functools.partial(get_pretrain_data_text,
+                                               max_seq_length=args.max_seq_length,
+                                               short_seq_prob=args.short_seq_prob,
+                                               masked_lm_prob=args.masked_lm_prob,
+                                               max_predictions_per_seq=args.max_predictions_per_seq,
+                                               whole_word_mask=args.whole_word_mask,
+                                               tokenizer=tokenizer)
+        else:
+            get_dataset_fn = get_pretrain_data_npz
+
+        if args.synthetic_data:
+            data_train = get_dummy_dataloader(batch_size, args.max_seq_length,
+                                              args.max_predictions_per_seq)
+        else:
+            shuffle = True
+            data_train = get_dataset_fn(args.data, batch_size,
+                                        len(ctxs), shuffle, args.num_buckets, vocab,
+                                        num_parts=num_workers, part_idx=rank,
+                                        num_workers=args.num_data_workers)
+        train(data_train, data_eval, model)
+    if data_eval:
+        # eval data is always based on a fixed npz file.
+        shuffle = False
+        dataset_eval = get_pretrain_data_npz(data_eval, batch_size_eval,
+                                             len(ctxs), shuffle, 1, vocab)
+        evaluate(dataset_eval, model, ctxs, args.log_interval, args.dtype)

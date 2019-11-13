@@ -1,17 +1,39 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
 """BERT embedding."""
+
 import argparse
 import io
+import logging
+import os
 
 import numpy as np
 import mxnet as mx
+
 from mxnet.gluon.data import DataLoader
+
 import gluonnlp
 from gluonnlp.data import BERTTokenizer, BERTSentenceTransform
+from gluonnlp.base import get_home_dir
 
 try:
-    from dataset import BertEmbeddingDataset
+    from data.embedding import BertEmbeddingDataset
 except ImportError:
-    from .dataset import BertEmbeddingDataset
+    from .data.embedding import BertEmbeddingDataset
 
 try:
     unicode
@@ -28,7 +50,10 @@ def to_unicode(s):
 __all__ = ['BertEmbedding']
 
 
-class BertEmbedding(object):
+logger = logging.getLogger(__name__)
+
+
+class BertEmbedding:
     """
     Encoding from BERT model.
 
@@ -36,44 +61,51 @@ class BertEmbedding(object):
     ----------
     ctx : Context.
         running BertEmbedding on which gpu device id.
+    dtype: str
+        data type to use for the model.
     model : str, default bert_12_768_12.
         pre-trained BERT model
     dataset_name : str, default book_corpus_wiki_en_uncased.
         pre-trained model dataset
+    params_path: str, default None
+        path to a parameters file to load instead of the pretrained model.
     max_seq_length : int, default 25
         max length of each sequence
     batch_size : int, default 256
         batch size
+    root : str, default '$MXNET_HOME/models' with MXNET_HOME defaults to '~/.mxnet'
+        Location for keeping the model parameters.
     """
-
-    def __init__(self, ctx=mx.cpu(), model='bert_12_768_12',
-                 dataset_name='book_corpus_wiki_en_uncased',
-                 max_seq_length=25, batch_size=256):
-        """
-        Encoding from BERT model.
-
-        Parameters
-        ----------
-        ctx : Context.
-            running BertEmbedding on which gpu device id.
-        model : str, default bert_12_768_12.
-            pre-trained BERT model
-        dataset_name : str, default book_corpus_wiki_en_uncased.
-            pre-trained model dataset
-        max_seq_length : int, default 25
-            max length of each sequence
-        batch_size : int, default 256
-            batch size
-        """
+    def __init__(self, ctx=mx.cpu(), dtype='float32', model='bert_12_768_12',
+                 dataset_name='book_corpus_wiki_en_uncased', params_path=None,
+                 max_seq_length=25, batch_size=256,
+                 root=os.path.join(get_home_dir(), 'models')):
         self.ctx = ctx
+        self.dtype = dtype
         self.max_seq_length = max_seq_length
         self.batch_size = batch_size
+        self.dataset_name = dataset_name
+
+        # Don't download the pretrained models if we have a parameter path
         self.bert, self.vocab = gluonnlp.model.get_model(model,
-                                                         dataset_name=dataset_name,
-                                                         pretrained=True, ctx=self.ctx,
+                                                         dataset_name=self.dataset_name,
+                                                         pretrained=params_path is None,
+                                                         ctx=self.ctx,
                                                          use_pooler=False,
                                                          use_decoder=False,
-                                                         use_classifier=False)
+                                                         use_classifier=False,
+                                                         root=root)
+        self.bert.cast(self.dtype)
+
+        if params_path:
+            logger.info('Loading params from %s', params_path)
+            self.bert.load_parameters(params_path, ctx=ctx, ignore_extra=True)
+
+        lower = 'uncased' in self.dataset_name
+        self.tokenizer = BERTTokenizer(self.vocab, lower=lower)
+        self.transform = BERTSentenceTransform(tokenizer=self.tokenizer,
+                                               max_seq_length=self.max_seq_length,
+                                               pair=False)
 
     def __call__(self, sentences, oov_way='avg'):
         return self.embedding(sentences, oov_way='avg')
@@ -102,23 +134,20 @@ class BertEmbedding(object):
             valid_length = valid_length.as_in_context(self.ctx)
             token_types = token_types.as_in_context(self.ctx)
             sequence_outputs = self.bert(token_ids, token_types,
-                                         valid_length.astype('float32'))
+                                         valid_length.astype(self.dtype))
             for token_id, sequence_output in zip(token_ids.asnumpy(),
                                                  sequence_outputs.asnumpy()):
                 batches.append((token_id, sequence_output))
         return self.oov(batches, oov_way)
 
     def data_loader(self, sentences, shuffle=False):
-        tokenizer = BERTTokenizer(self.vocab)
-        transform = BERTSentenceTransform(tokenizer=tokenizer,
-                                          max_seq_length=self.max_seq_length,
-                                          pair=False)
-        dataset = BertEmbeddingDataset(sentences, transform)
+        """Load, tokenize and prepare the input sentences."""
+        dataset = BertEmbeddingDataset(sentences, self.transform)
         return DataLoader(dataset=dataset, batch_size=self.batch_size, shuffle=shuffle)
 
     def oov(self, batches, oov_way='avg'):
         """
-        How to handle oov
+        How to handle oov. Also filter out [CLS], [SEP] tokens.
 
         Parameters
         ----------
@@ -144,8 +173,10 @@ class BertEmbedding(object):
             oov_len = 1
             for token_id, sequence_output in zip(token_ids, sequence_outputs):
                 if token_id == 1:
+                    # [PAD] token, sequence is finished.
                     break
                 if token_id in (2, 3):
+                    # [CLS], [SEP]
                     continue
                 token = self.vocab.idx_to_token[token_id]
                 if token.startswith('##'):
@@ -175,10 +206,13 @@ if __name__ == '__main__':
                                      formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument('--gpu', type=int, default=None,
                         help='id of the gpu to use. Set it to empty means to use cpu.')
+    parser.add_argument('--dtype', type=str, default='float32', help='data dtype')
     parser.add_argument('--model', type=str, default='bert_12_768_12',
                         help='pre-trained model')
     parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_uncased',
                         help='dataset')
+    parser.add_argument('--params_path', type=str, default=None,
+                        help='path to a params file to load instead of the pretrained model.')
     parser.add_argument('--max_seq_length', type=int, default=25,
                         help='max length of each sequence')
     parser.add_argument('--batch_size', type=int, default=256,
@@ -192,9 +226,17 @@ if __name__ == '__main__':
                         help='sentence for encoding')
     parser.add_argument('--file', type=str, default=None,
                         help='file for encoding')
-
+    parser.add_argument('--verbose', action='store_true', help='verbose logging')
     args = parser.parse_args()
-    context = mx.gpu(args.gpu) if args.gpu else mx.cpu()
+
+    level = logging.DEBUG if args.verbose else logging.INFO
+    logging.getLogger().setLevel(level)
+    logging.info(args)
+
+    if args.gpu is not None:
+        context = mx.gpu(args.gpu)
+    else:
+        context = mx.cpu()
     bert_embedding = BertEmbedding(ctx=context, model=args.model, dataset_name=args.dataset_name,
                                    max_seq_length=args.max_seq_length, batch_size=args.batch_size)
     result = []
@@ -208,7 +250,7 @@ if __name__ == '__main__':
                 sents.append(line.strip())
         result = bert_embedding(sents, oov_way=args.oov_way)
     else:
-        print('Please specify --sentence or --file')
+        logger.error('Please specify --sentence or --file')
 
     if result:
         for sent, embeddings in zip(sents, result):

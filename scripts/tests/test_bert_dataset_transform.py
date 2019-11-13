@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -18,13 +16,12 @@
 # under the License.
 
 """Test BERTDatasetTransform."""
-from __future__ import print_function
 
 import numpy as np
 from gluonnlp.vocab import BERTVocab
 from gluonnlp.data import count_tokens, BERTTokenizer
 
-from ..bert.dataset import BERTDatasetTransform
+from ..bert.data.transform import BERTDatasetTransform
 
 
 def test_bert_dataset_transform():
@@ -38,8 +35,8 @@ def test_bert_dataset_transform():
 
     # test BERTDatasetTransform for classification task
     bert_cls_dataset_t = BERTDatasetTransform(tokenizer, 15,
-                                              labels=[label_cls], pad=True,
-                                              pair=True, label_dtype='int32')
+                                              class_labels=[label_cls], pad=True,
+                                              pair=True)
     token_ids, length, type_ids, label_ids = bert_cls_dataset_t((text_a, text_b, label_cls))
 
     text_a_tokens = ['is', 'this', 'jack', '##son', '##ville', '?']
@@ -67,8 +64,7 @@ def test_bert_dataset_transform():
 
     # test BERTDatasetTransform for regression task
     label_reg = 0.2
-    bert_reg_dataset_t = BERTDatasetTransform(tokenizer, 15, pad=True,
-                                              pair=True, label_dtype='float32')
+    bert_reg_dataset_t = BERTDatasetTransform(tokenizer, 15, pad=True, pair=True)
     token_ids, length, type_ids, label_reg_val = bert_reg_dataset_t((text_a, text_b, label_reg))
     assert all(token_ids == valid_token_ids)
     assert length == len(vocab_tokens) + 3

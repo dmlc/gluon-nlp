@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,8 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 """Implements the beam search sampler."""
-from __future__ import absolute_import
-from __future__ import print_function
 
 __all__ = ['BeamSearchScorer', 'BeamSearchSampler', 'HybridBeamSearchSampler', 'SequenceSampler']
 
@@ -73,7 +69,7 @@ class BeamSearchScorer(HybridBlock):
         """
         return super(BeamSearchScorer, self).__call__(outputs, scores, step)
 
-    def hybrid_forward(self, F, outputs, scores, step):
+    def hybrid_forward(self, F, outputs, scores, step): # pylint: disable=arguments-differ
         if not self._from_logits:
             outputs = outputs.log_softmax()
         prev_lp = (self._K + step - 1) ** self._alpha / (self._K + 1) ** self._alpha
@@ -207,6 +203,8 @@ def _expand_to_beam_size(data, beam_size, batch_size, state_info=None):
         return data.expand_dims(batch_axis+1)\
                    .broadcast_axes(axis=batch_axis+1, size=beam_size)\
                    .reshape(new_shape)
+    elif data is None:
+        return None
     else:
         raise NotImplementedError
 
@@ -366,11 +364,12 @@ class _BeamSearchStepUpdate(HybridBlock):
 
 
 class _SamplingStepUpdate(HybridBlock):
-    def __init__(self, beam_size, eos_id, temperature=1.0, prefix=None, params=None):
+    def __init__(self, beam_size, eos_id, temperature=1.0, top_k=None, prefix=None, params=None):
         super(_SamplingStepUpdate, self).__init__(prefix, params)
         self._beam_size = beam_size
         self._eos_id = eos_id
         self._temperature = temperature
+        self._top_k = top_k
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
     # pylint: disable=arguments-differ
@@ -412,6 +411,9 @@ class _SamplingStepUpdate(HybridBlock):
         beam_size = self._beam_size
         # outputs: (batch_size, beam_size, vocab_size)
         outputs = outputs.reshape(shape=(-4, -1, beam_size, 0))
+        if self._top_k:
+            ranks = outputs.argsort(is_ascend=False, dtype='int32')
+            outputs = F.where(ranks < self._top_k, outputs, F.ones_like(outputs)*-99999)
         smoothed_probs = (outputs / self._temperature).softmax(axis=2)
         log_probs = F.log_softmax(outputs, axis=2).reshape(-3, -1)
 
@@ -442,7 +444,7 @@ class _SamplingStepUpdate(HybridBlock):
                chosen_word_ids, beam_alive_mask, new_states
 
 
-class BeamSearchSampler(object):
+class BeamSearchSampler:
     r"""Draw samples from the decoder by beam search.
 
     Parameters
@@ -709,7 +711,7 @@ class HybridBeamSearchSampler(HybridBlock):
             F.contrib.cond(F.sum(new_beam_alive_mask) == 0, _then_func, _else_func)
         return new_samples, new_scores, new_new_valid_length
 
-class SequenceSampler(object):
+class SequenceSampler:
     r"""Draw samples from the decoder according to the step-wise distribution.
 
     Parameters
@@ -733,16 +735,20 @@ class SequenceSampler(object):
         The maximum search length.
     temperature : float, default 1.0
         Softmax temperature.
+    top_k : int or None, default None
+        Sample only from the top-k candidates. If None, all candidates are considered.
     """
-    def __init__(self, beam_size, decoder, eos_id, max_length=100, temperature=1.0):
+    def __init__(self, beam_size, decoder, eos_id, max_length=100, temperature=1.0, top_k=None):
         self._beam_size = beam_size
         self._decoder = decoder
         self._eos_id = eos_id
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
         self._max_length = max_length
+        self._top_k = top_k
         self._updater = _SamplingStepUpdate(beam_size=beam_size,
                                             eos_id=eos_id,
-                                            temperature=temperature)
+                                            temperature=temperature,
+                                            top_k=top_k)
 
     def __call__(self, inputs, states):
         """Sample by beam search.
@@ -781,7 +787,6 @@ class SequenceSampler(object):
         beam_alive_mask = mx.nd.ones(shape=(batch_size, beam_size), ctx=ctx, dtype=np.int32)
         valid_length = mx.nd.ones(shape=(batch_size, beam_size), ctx=ctx, dtype=np.int32)
         scores = mx.nd.zeros(shape=(batch_size, beam_size), ctx=ctx)
-        scores = 0.
         samples = step_input.reshape((batch_size, beam_size, 1)).astype(np.int32)
         for _ in range(self._max_length):
             outputs, new_states = self._decoder(step_input, states)

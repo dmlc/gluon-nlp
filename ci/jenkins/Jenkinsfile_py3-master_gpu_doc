@@ -1,0 +1,168 @@
+// -*- mode: groovy -*-
+
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+//
+// Jenkins pipeline
+// See documents at https://jenkins.io/doc/book/pipeline/jenkinsfile/
+
+// timeout in minutes
+max_time = 120
+
+node {
+  // Loading the utilities requires a node context unfortunately
+  checkout scm
+  utils = load('ci/jenkins/utils.groovy')
+  build_steps = load('ci/jenkins/build_steps.groovy')
+}
+utils.assign_node_labels(linux_gpu: 'linux-gpu', linux_cpu: 'linux-cpu')
+
+utils.main_wrapper(
+core_logic: {
+  utils.parallel_stage('Doc Test', [
+    build_steps.test_doctest('gluon-nlp-cpu-py3', 'cpu/py3',
+                 'src/gluonnlp', 'src/gluonnlp', 4)
+  ])
+
+  // Compile example notebooks, Doctest & Create Website
+  node {  // Single node parallelism
+    ws('gluon-nlp-cpu-py3') {
+      stage("Prepare conda environment for website") {
+        utils.init_git()
+        // Require a full environment here due to sphinx build step
+        // after compiling and downloading the notebooks
+        sh 'source ci/prepare_clean_env.sh cpu/py3'
+      }
+
+      stage("Create Website") {
+        def tests = [:]
+        for (f in findFiles(glob: '**/docs/examples/*/*.md')) {
+          def md_file = f.toString()  // Convert FileWrapper to String
+          def short_name = md_file["docs/examples/".length()..-1]
+          tests[short_name] = { ->
+            def base_name = md_file[0..-4] + ''
+            def ipynb_file = base_name + '.ipynb'
+            def stdout_file = base_name + '.stdout.log'
+            def stderr_file = base_name + '.stderr.log'
+            stage(short_name) {  // remove common path from name
+              // Submit AWS Batch jobs for each example notebook
+              // The converted notebooks and the conversion logs are
+              // saved to S3 and retrieved on the CI server once the jobs
+              // finished.
+
+              if (env.BRANCH_NAME.startsWith('PR-')){
+                sh """
+                set +e
+                conda activate ./conda/cpu/py3
+
+                python3 ci/batch/submit-job.py --region us-east-1 --wait \
+                  --timeout 1800 --saved-output ./docs/examples --conda-env docker/py3 \
+                  --name GluonNLP-${env.BRANCH_NAME}-${env.BUILD_NUMBER} \
+                  --save-path batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/docs/examples \
+                  --work-dir . --source-ref refs/pull/${env.CHANGE_ID}/head \
+                  --command \"(python3 docs/md2ipynb.py ${md_file} | tee ${stdout_file}) 3>&1 1>&2 2>&3 | tee ${stderr_file} \"
+                BATCH_EXIT_CODE=\$?
+
+                aws s3api wait object-exists --bucket gluon-nlp-staging \
+                  --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stderr_file}
+                aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stderr_file} ${stderr_file}
+                cat ${stderr_file}
+
+                aws s3api wait object-exists --bucket gluon-nlp-staging \
+                  --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stdout_file}
+                aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stdout_file} ${stdout_file}
+                cat ${stdout_file}
+
+                if [ \$BATCH_EXIT_CODE -ne 0 ]; then
+                  echo AWS Batch Task Failed
+                else
+                  aws s3api wait object-exists --bucket gluon-nlp-staging \
+                    --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${ipynb_file}
+                  aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${ipynb_file} ${ipynb_file}
+                fi
+
+                exit \$BATCH_EXIT_CODE
+                """
+              } else {
+                sh """
+                set +e
+                conda activate ./conda/cpu/py3
+
+                python3 ci/batch/submit-job.py --region us-east-1 --wait \
+                  --timeout 1800 --saved-output ./docs/examples --conda-env docker/py3 \
+                  --name GluonNLP-${env.BRANCH_NAME}-${env.BUILD_NUMBER} \
+                  --save-path batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/docs/examples \
+                  --work-dir . --source-ref ${env.BRANCH_NAME} \
+                  --command \"(python3 docs/md2ipynb.py ${md_file} | tee ${stdout_file}) 3>&1 1>&2 2>&3 | tee ${stderr_file} \"
+                BATCH_EXIT_CODE=\$?
+
+                aws s3api wait object-exists --bucket gluon-nlp-staging \
+                  --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stderr_file}
+                aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stderr_file} ${stderr_file}
+                cat ${stderr_file}
+
+                aws s3api wait object-exists --bucket gluon-nlp-staging \
+                  --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stdout_file}
+                aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${stdout_file} ${stdout_file}
+                cat ${stdout_file}
+
+                if [ \$BATCH_EXIT_CODE -ne 0 ]; then
+                  echo AWS Batch Task Failed
+                else
+                  aws s3api wait object-exists --bucket gluon-nlp-staging \
+                    --key batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${ipynb_file}
+                  aws s3 cp s3://gluon-nlp-staging/batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/${ipynb_file} ${ipynb_file}
+                fi
+
+                exit \$BATCH_EXIT_CODE
+                """
+              }
+            }
+          }
+        }
+
+        parallel tests
+      }
+
+      stage("Upload Website") {
+        if (env.BRANCH_NAME.startsWith('PR-')){
+          bucket = 'gluon-nlp-staging'
+          path = env.BRANCH_NAME+'/'+env.BUILD_NUMBER
+        } else {
+          bucket = 'gluon-nlp'
+          path = env.BRANCH_NAME
+        }
+        sh """
+        conda activate ./conda/cpu/py3
+        make docs
+        ci/upload_doc.sh ${bucket} ${path}
+        """
+      }
+    }
+  }
+
+  utils.parallel_stage('Documentation', [
+    build_steps.website_linkcheck('gluon-nlp-cpu-py3', 'cpu/py3')
+  ])
+
+  utils.parallel_stage('Deploy', [
+    build_steps.post_website_link()
+  ])
+}
+,
+failure_handler: {}
+)

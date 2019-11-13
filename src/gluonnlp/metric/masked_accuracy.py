@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -23,7 +21,7 @@ from mxnet.metric import check_label_shapes
 
 __all__ = ['EvalMetric', 'MaskedAccuracy']
 
-class EvalMetric(object):
+class EvalMetric:
     """Base class for all evaluation metrics.
 
     .. note::
@@ -214,12 +212,12 @@ class MaskedAccuracy(EvalMetric):
     >>> masks    = [mx.nd.array([1, 1, 0])]
     >>> acc = MaskedAccuracy()
     >>> acc.update(preds=predicts, labels=labels, masks=masks)
-    >>> print acc.get()
-    ('accuracy', 0.5)
+    >>> acc.get()
+    ('masked-accuracy', 0.5)
     >>> acc2 = MaskedAccuracy()
     >>> acc2.update(preds=predicts, labels=labels)
-    >>> print acc2.get()
-    ('accuracy', 0.6666667)
+    >>> acc2.get()
+    ('masked-accuracy', 0.6666666666666666)
     """
     def __init__(self, axis=1, name='masked-accuracy',
                  output_names=None, label_names=None):

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -18,25 +16,23 @@
 # under the License.
 
 """Utility classes and functions. They help organize and keep statistics of datasets."""
-from __future__ import absolute_import
-from __future__ import print_function
+import collections
+import errno
+import os
+import tarfile
+import zipfile
+import time
+
+import numpy as np
+from mxnet.gluon.data import SimpleDataset
+from mxnet.gluon.utils import _get_repo_url, check_sha1, download
+
+from .. import _constants as C
 
 __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
     'line_splitter', 'whitespace_splitter', 'Splitter'
 ]
-
-import os
-import collections
-import zipfile
-import tarfile
-import numpy as np
-
-from mxnet.gluon.data import SimpleDataset
-from mxnet.gluon.utils import _get_repo_url, download, check_sha1
-
-from .. import _constants as C
-from ..base import get_home_dir
 
 
 class Counter(collections.Counter):  # pylint: disable=abstract-method
@@ -223,11 +219,25 @@ _vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
                'WMT2014_tgt': '230ebb817b1d86950d71e2e765f192a4e4f34415',
                'book_corpus_wiki_en_cased': '2d62af22535ed51f35cc8e2abb607723c89c2636',
                'book_corpus_wiki_en_uncased': 'a66073971aa0b1a262453fe51342e57166a8abcf',
-               'wiki_multilingual_cased': '71bb9e248dc75dce9227d3c8c16fde3993588b9e',
-               'wiki_cn_cased': 'a1e06f8e39ae51ab8a92b8458e6a658b8b1f72bf',
-               'wiki_cn': 'a1e06f8e39ae51ab8a92b8458e6a658b8b1f72bf',
+               'openwebtext_book_corpus_wiki_en_uncased':
+               'a66073971aa0b1a262453fe51342e57166a8abcf',
+               'openwebtext_ccnews_stories_books_cased':
+               '2b804f8f90f9f93c07994b703ce508725061cf43',
+               'wiki_multilingual_cased': '0247cb442074237c38c62021f36b7a4dbd2e55f7',
+               'wiki_cn_cased': 'ddebd8f3867bca5a61023f73326fb125cf12b4f5',
                'wiki_multilingual_uncased': '2b2514cc539047b9179e9d98a4e68c36db05c97a',
-               'wiki_multilingual': '2b2514cc539047b9179e9d98a4e68c36db05c97a'}
+               'scibert_scivocab_uncased': '2d2566bfc416790ab2646ab0ada36ba628628d60',
+               'scibert_scivocab_cased': '2c714475b521ab8542cb65e46259f6bfeed8041b',
+               'scibert_basevocab_uncased': '80ef760a6bdafec68c99b691c94ebbb918c90d02',
+               'scibert_basevocab_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
+               'biobert_v1.0_pmc_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
+               'biobert_v1.0_pubmed_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
+               'biobert_v1.0_pubmed_pmc_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
+               'biobert_v1.1_pubmed_cased': 'a4ff6fe1f85ba95f3010742b9abc3a818976bb2c',
+               'clinicalbert_uncased': '80ef760a6bdafec68c99b691c94ebbb918c90d02',
+               'baidu_ernie_uncased': '223553643220255e2a0d4c60e946f4ad7c719080',
+               'openai_webtext': 'f917dc7887ce996068b0a248c8d89a7ec27b95a1',
+               'xlnet_126gb': '0d74490383bbc5c62b8bcea74d8b74a1bb1280b3'}
 
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
@@ -238,7 +248,7 @@ def train_valid_split(dataset, valid_ratio=0.05):
 
     Parameters
     ----------
-    train : list
+    dataset : list
         A list of training samples.
     valid_ratio : float, default 0.05
         Proportion of training samples to use for validation set
@@ -264,25 +274,27 @@ def train_valid_split(dataset, valid_ratio=0.05):
 
 def short_hash(name):
     if name not in _vocab_sha1:
-        raise ValueError('Vocabulary for {name} is not available.'.format(name=name))
+        vocabs = list(_vocab_sha1.keys())
+        raise ValueError('Vocabulary for {name} is not available. '
+                         'Hosted vocabularies include: {vocabs}'.format(name=name,
+                                                                        vocabs=vocabs))
     return _vocab_sha1[name][:8]
 
 
-def _load_pretrained_vocab(name, root=os.path.join(get_home_dir(), 'models'), cls=None):
+def _load_pretrained_vocab(name, root, cls=None):
     """Load the accompanying vocabulary object for pre-trained model.
 
     Parameters
     ----------
     name : str
         Name of the vocabulary, usually the name of the dataset.
-    root : str, default '$MXNET_HOME/models'
-        Location for keeping the model parameters.
-        MXNET_HOME defaults to '~/.mxnet'.
+    root : str
+        Location for keeping the model vocabulary.
     cls : nlp.Vocab or nlp.vocab.BERTVocab, default nlp.Vocab
 
     Returns
     -------
-    Vocab or nlp.bert.BERTVocab
+    Vocab or nlp.vocab.BERTVocab
         Loaded vocabulary object for the pre-trained model.
     """
     file_name = '{name}-{short_hash}'.format(name=name,
@@ -299,9 +311,16 @@ def _load_pretrained_vocab(name, root=os.path.join(get_home_dir(), 'models'), cl
         print('Vocab file is not found. Downloading.')
 
     if not os.path.exists(root):
-        os.makedirs(root)
+        try:
+            os.makedirs(root)
+        except OSError as e:
+            if e.errno == errno.EEXIST and os.path.isdir(root):
+                pass
+            else:
+                raise e
 
-    zip_file_path = os.path.join(root, file_name + '.zip')
+    prefix = str(time.time())
+    zip_file_path = os.path.join(root, prefix + file_name + '.zip')
     repo_url = _get_repo_url()
     if repo_url[-1] != '/':
         repo_url = repo_url + '/'
@@ -309,8 +328,16 @@ def _load_pretrained_vocab(name, root=os.path.join(get_home_dir(), 'models'), cl
              path=zip_file_path,
              overwrite=True)
     with zipfile.ZipFile(zip_file_path) as zf:
-        zf.extractall(root)
-    os.remove(zip_file_path)
+        if not os.path.exists(file_path):
+            zf.extractall(root)
+    try:
+        os.remove(zip_file_path)
+    except OSError as e:
+        # file has already been removed.
+        if e.errno == 2:
+            pass
+        else:
+            raise e
 
     if check_sha1(file_path, sha1_hash):
         return _load_vocab_file(file_path, cls)
@@ -327,7 +354,7 @@ def _load_vocab_file(file_path, cls):
         return cls.from_json(f.read())
 
 
-def _extract_archive(file, target_dir):
+def _extract_archive(file, target_dir):  # pylint: disable=redefined-builtin
     """Extract archive file
 
     Parameters
@@ -381,7 +408,7 @@ def whitespace_splitter(s):
     return s.split()
 
 
-class Splitter(object):
+class Splitter:
     """Split a string based on a separator.
 
     Parameters

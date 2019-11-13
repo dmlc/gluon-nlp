@@ -6,8 +6,6 @@ This example shows how to load a language model pre-trained on wikitext-2 in Glu
 zoo, and reuse the language model encoder for sentiment analysis on IMDB movie reviews dataset.
 """
 
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -39,6 +37,8 @@ from mxnet.gluon import HybridBlock
 from mxnet.gluon.data import DataLoader
 
 import gluonnlp as nlp
+
+nlp.utils.check_version('0.7.0')
 
 np.random.seed(100)
 random.seed(100)
@@ -182,7 +182,7 @@ valid_dataset, valid_data_lengths = preprocess_dataset(valid_dataset)
 test_dataset, test_data_lengths = preprocess_dataset(test_dataset)
 
 # Construct the DataLoader. Pad data and stack label
-batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0, ret_length=True),
+batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0, pad_val=0, ret_length=True),
                                       nlp.data.batchify.Stack(dtype='float32'))
 if args.bucket_type is None:
     print('Bucketing strategy is not used!')

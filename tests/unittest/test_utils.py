@@ -1,4 +1,6 @@
 import pytest
+import os
+import io
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
@@ -95,3 +97,44 @@ def test_clip_grad_norm(max_norm, check_isfinite):
         else:
             assert net.weight.grad(ctx).reshape(-1) < 2
             assert net.bias.grad(ctx).reshape(-1) < 2
+
+@pytest.mark.parametrize('filename', ['net.params', './net.params'])
+def test_save_parameters(filename):
+    net = mx.gluon.nn.Dense(1, in_units=1)
+    net.initialize()
+    nlp.utils.save_parameters(net, filename)
+    nlp.utils.load_parameters(net, filename)
+
+@pytest.mark.parametrize('filename', ['net.states', './net.states'])
+def test_save_states(filename):
+    net = mx.gluon.nn.Dense(1, in_units=1)
+    net.initialize()
+    trainer = mx.gluon.Trainer(net.collect_params(), 'sgd',
+                               update_on_kvstore=False)
+    nlp.utils.save_states(trainer, filename)
+    assert os.path.isfile(filename)
+    nlp.utils.load_states(trainer, filename)
+
+@pytest.mark.parametrize('dirname', ['~/dir1', '~/dir1/dir2'])
+def test_mkdir(dirname):
+    nlp.utils.mkdir(dirname)
+    assert os.path.isdir(os.path.expanduser(dirname))
+
+def test_glob():
+    f0 = io.open('test_glob_00', 'w')
+    f1 = io.open('test_glob_01', 'w')
+    f2 = io.open('test_glob_11', 'w')
+    files = nlp.utils.glob('test_glob_0*,test_glob_1*')
+    assert len(files) == 3
+    files_fake = nlp.utils.glob('fake_glob')
+    assert len(files_fake) == 0
+
+def test_version():
+    future_version = '10.11.12'
+    past_version = '0.1.2'
+    with pytest.raises(AssertionError):
+        nlp.utils.check_version(future_version, warning_only=False)
+    with pytest.raises(UserWarning):
+        nlp.utils.check_version(future_version, warning_only=True)
+    nlp.utils.check_version(past_version, warning_only=False)
+    nlp.utils.check_version(past_version, warning_only=True)

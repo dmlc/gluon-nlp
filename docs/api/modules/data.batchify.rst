@@ -14,7 +14,10 @@ Batch Loaders
 
     Stack
     Pad
+    List
     Tuple
+    NamedTuple
+    Dict
 
 
 Language Modeling

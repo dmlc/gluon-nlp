@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -30,15 +28,13 @@ EOS_TOKEN = '<eos>'
 
 PAD_TOKEN = '<pad>'
 
-UNK_IDX = 0   # This should not be changed as long as serialized token
-              # embeddings redistributed on S3 contain an unknown token.
-              # Blame this code change and see commit for more context.
-
 LARGE_POSITIVE_FLOAT = 1e18
 
 LARGE_NEGATIVE_FLOAT = -LARGE_POSITIVE_FLOAT
 
 INT_TYPES = mx.base.integer_types
+
+S3_PREFIX = 's3://'
 
 GLOVE_NPZ_SHA1 = \
     {'glove.42B.300d': ('glove.42B.300d.npz',

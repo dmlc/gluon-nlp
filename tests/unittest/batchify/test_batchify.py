@@ -1,14 +1,80 @@
 import numpy as np
 from numpy.testing import assert_allclose
+from collections import namedtuple
 import mxnet as mx
 from gluonnlp.data import batchify
 
 import pytest
 
 
+def test_list():
+    data = [object() for _ in range(5)]
+    passthrough = batchify.List()(data)
+    assert passthrough == data
+
+MyNamedTuple = namedtuple('MyNamedTuple', ['data', 'label'])
+
+
+def test_named_tuple():
+    a = MyNamedTuple([1, 2, 3, 4], 0)
+    b = MyNamedTuple([5, 7], 1)
+    c = MyNamedTuple([1, 2, 3, 4, 5, 6, 7], 0)
+    with pytest.raises(ValueError):
+        wrong_batchify_fn = batchify.NamedTuple(MyNamedTuple, {
+            'data0': batchify.Pad(pad_val=0),
+            'label': batchify.Stack()
+        })
+    with pytest.raises(ValueError):
+        wrong_batchify_fn = batchify.NamedTuple(
+            MyNamedTuple,
+            [batchify.Pad(pad_val=0), batchify.Stack(),
+             batchify.Stack()])
+    with pytest.raises(ValueError):
+        wrong_batchify_fn = batchify.NamedTuple(MyNamedTuple, (batchify.Pad(pad_val=0), ))
+    with pytest.raises(ValueError):
+        wrong_batchify_fn = batchify.NamedTuple(MyNamedTuple, [1, 2])
+    for batchify_fn in [batchify.NamedTuple(MyNamedTuple, {'data': batchify.Pad(pad_val=0), 'label': batchify.Stack()}),
+                        batchify.NamedTuple(MyNamedTuple, [batchify.Pad(pad_val=0), batchify.Stack()]),
+                        batchify.NamedTuple(MyNamedTuple, (batchify.Pad(pad_val=0), batchify.Stack()))]:
+        sample = batchify_fn([a, b, c])
+        gt_data = batchify.Pad(pad_val=0)([a[0], b[0], c[0]])
+        gt_label = batchify.Stack()([a[1], b[1], c[1]])
+        assert isinstance(sample, MyNamedTuple)
+        assert_allclose(sample.data.asnumpy(), gt_data.asnumpy())
+        assert_allclose(sample.label.asnumpy(), gt_label.asnumpy())
+        with pytest.raises(ValueError):
+            batchify_fn([1, 2, 3])
+
+
+def test_dict():
+    a = {'data': [1, 2, 3, 4], 'label': 0}
+    b = {'data': [5, 7], 'label': 1}
+    c = {'data': [1, 2, 3, 4, 5, 6, 7], 'label': 0}
+    with pytest.raises(ValueError):
+        wrong_batchify_fn = batchify.Dict([batchify.Pad(pad_val=0), batchify.Stack()])
+    with pytest.raises(ValueError):
+        wrong_batchify_fn = batchify.NamedTuple(MyNamedTuple, {'a': 1, 'b': 2})
+    batchify_fn = batchify.Dict({'data': batchify.Pad(pad_val=0), 'label': batchify.Stack()})
+    sample = batchify_fn([a, b, c])
+    gt_data = batchify.Pad(pad_val=0)([a['data'], b['data'], c['data']])
+    gt_label = batchify.Stack()([a['label'], b['label'], c['label']])
+    assert isinstance(sample, dict)
+    assert_allclose(sample['data'].asnumpy(), gt_data.asnumpy())
+    assert_allclose(sample['label'].asnumpy(), gt_label.asnumpy())
+
+
 def test_pad():
-    padded = batchify.Pad(pad_val=-1)([mx.nd.array([]), mx.nd.arange(1)]).asnumpy().flatten().tolist()
+    with pytest.warns(UserWarning):
+        # UserWarning: Using Pad with NDArrays is discouraged for speed reasons.
+        padded = batchify.Pad(pad_val=-1)([mx.nd.array([]),
+                                           mx.nd.arange(1)]).asnumpy().flatten().tolist()
     assert padded == [-1.0, 0.0]
+    with pytest.warns(UserWarning):
+        # UserWarning: Using Pad with NDArrays is discouraged for speed reasons.
+        padded = batchify.Pad(pad_val=-1,
+                              round_to=2)([mx.nd.array([]),
+                                           mx.nd.arange(1)]).asnumpy().flatten().tolist()
+    assert padded == [-1.0, -1.0, 0.0, -1.0]
 
 
 @pytest.mark.parametrize('odtype', [np.uint8, np.int32, np.int64,
@@ -51,8 +117,10 @@ def test_pad_wrap_batchify():
                                                for shape in shapes]
                             batchify_fn = batchify.Pad(axis=axis, pad_val=pad_val, ret_length=True, dtype=_dtype)
                             batch_data, valid_length = batchify_fn(random_data_npy)
-                            batch_data_use_mx, valid_length_use_mx = batchify_fn(
-                                [mx.nd.array(ele, dtype=dtype) for ele in random_data_npy])
+                            with pytest.warns(UserWarning):
+                                # UserWarning: Using Pad with NDArrays is discouraged for speed reasons.
+                                batch_data_use_mx, valid_length_use_mx = batchify_fn(
+                                    [mx.nd.array(ele, dtype=dtype) for ele in random_data_npy])
                             assert_allclose(batch_data_use_mx.asnumpy(), batch_data.asnumpy())
                             assert_allclose(valid_length_use_mx.asnumpy(), valid_length.asnumpy())
                             assert batch_data.dtype == batch_data_use_mx.dtype == dtype
@@ -82,9 +150,11 @@ def test_pad_wrap_batchify():
                                         batchify_fn.append(batchify.Stack(dtype=_dtype))
                                 batchify_fn = batchify.Tuple(batchify_fn)
                                 ret_use_npy = batchify_fn(random_data_npy)
-                                ret_use_mx = batchify_fn(
-                                    [tuple(mx.nd.array(ele[i], dtype=dtype) for i in range(TOTAL_ELE_NUM)) for ele in
-                                     random_data_npy])
+                                with pytest.warns(UserWarning):
+                                    # Using Pad with NDArrays is discouraged for speed reasons.
+                                    ret_use_mx = batchify_fn([tuple(mx.nd.array(ele[i], dtype=dtype)
+                                                                    for i in range(TOTAL_ELE_NUM))
+                                                              for ele in random_data_npy])
                                 for i in range(TOTAL_ELE_NUM):
                                     if i in pad_index:
                                         assert ret_use_npy[i][0].dtype == ret_use_mx[i][0].dtype == dtype
@@ -117,9 +187,10 @@ def test_pad_wrap_batchify():
                                                for shape in shapes]
                             batchify_fn = batchify.Pad(axis=axis, pad_val=pad_val, ret_length=True, dtype=_dtype)
                             batch_data, valid_length = batchify_fn(random_data_npy)
-                            batch_data_use_mx, valid_length_use_mx = batchify_fn(
-                                [mx.nd.array(ele, dtype=dtype) for ele in random_data_npy])
+                            with pytest.warns(UserWarning):
+                                # UserWarning: Using Pad with NDArrays is discouraged for speed reasons.
+                                batch_data_use_mx, valid_length_use_mx = batchify_fn(
+                                    [mx.nd.array(ele, dtype=dtype) for ele in random_data_npy])
                             assert_allclose(valid_length_use_mx.asnumpy(), valid_length.asnumpy())
                             assert batch_data.dtype == batch_data_use_mx.dtype == _dtype
                             assert valid_length.dtype == valid_length_use_mx.dtype == np.int32
-

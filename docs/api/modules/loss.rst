@@ -1,14 +1,32 @@
 gluonnlp.loss
-======================
+=============
 
 GluonNLP Toolkit provides tools for easily setting up task specific loss.
 
 .. currentmodule:: gluonnlp.loss
 
-Activation Regularizers
---------------------------
+Masked Loss
+-----------
 
-We now provide activation regularization and temporal activation regularization defined in the following work.
+.. autosummary::
+    :nosignatures:
+
+    MaskedSoftmaxCrossEntropyLoss
+
+
+Label Smoothing
+---------------
+
+.. autosummary::
+    :nosignatures:
+
+    LabelSmoothing
+
+
+Activation Regularizers
+-----------------------
+
+Activation regularization and temporal activation regularization defined in the following work:
 
 .. code-block:: none
 
@@ -23,6 +41,7 @@ We now provide activation regularization and temporal activation regularization 
 
     ActivationRegularizationLoss
     TemporalActivationRegularizationLoss
+
 
 API Reference
 -------------
