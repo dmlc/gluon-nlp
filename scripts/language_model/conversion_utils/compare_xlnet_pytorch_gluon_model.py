@@ -42,7 +42,7 @@ def compare_xlnet(args):
         kwargs = {
             'hidden_size': 3072,
             'units': 768,
-            'activation': 'gelu',
+            'activation': 'approx_gelu',
             'num_heads': 12,
             'num_layers': 12,
             'vocab_size': 32000
@@ -51,7 +51,7 @@ def compare_xlnet(args):
         kwargs = {
             'hidden_size': 4096,
             'units': 1024,
-            'activation': 'gelu',
+            'activation': 'approx_gelu',
             'num_heads': 16,
             'num_layers': 24,
             'vocab_size': 32000
