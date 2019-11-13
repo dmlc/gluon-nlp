@@ -123,6 +123,7 @@ def compare_transformerxl(args, kwargs, corpus):
         stdev = np.std(a_b)
         print('Loss: Maximum error {err:.2e} at position {pos}. stdev={stdev:.2e}'.format(
             i=i, err=max_error, pos=np.unravel_index(argmax_error, shape=a_b.shape), stdev=stdev))
+        assert max_error < 5e-5
 
 
 if __name__ == '__main__':
