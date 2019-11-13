@@ -85,6 +85,8 @@ class TransformerXLCell(mx.gluon.HybridBlock):
         in multi-head attention
     dropout : float
     attention_dropout : float
+    layer_norm_eps : float, default 1e-5
+        Epsilon parameter passed to for mxnet.gluon.nn.LayerNorm
     use_residual : bool
     output_attention: bool
         Whether to output the attention weights
@@ -103,8 +105,8 @@ class TransformerXLCell(mx.gluon.HybridBlock):
 
     def __init__(self, attention_cell: PositionalEmbeddingMultiHeadAttentionCell, units=128,
                  hidden_size=512, num_heads=4, activation='relu', scaled=True, dropout=0.0,
-                 use_residual=True, output_attention=False, weight_initializer=None,
-                 bias_initializer='zeros', prefix=None, params=None):
+                 layer_norm_eps=1e-5, output_attention=False, use_residual=True,
+                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         self._units = units
         self._num_heads = num_heads
@@ -126,8 +128,8 @@ class TransformerXLCell(mx.gluon.HybridBlock):
                                                  ffn1_dropout=True, activation=activation,
                                                  weight_initializer=weight_initializer,
                                                  bias_initializer=bias_initializer,
-                                                 layer_norm_eps=1e-12)
-            self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=1e-12)
+                                                 layer_norm_eps=layer_norm_eps)
+            self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=layer_norm_eps)
 
     def hybrid_forward(self, F, inputs, pos_emb, mem_value, mask):
         #  pylint: disable=arguments-differ
@@ -555,7 +557,7 @@ class _BaseXLNet(mx.gluon.HybridBlock):
                     dropout=attention_dropout)
                 self.transformer_cells.add(
                     XLNetCell(attention_cell=attention_cell, units=units, hidden_size=hidden_size,
-                              num_heads=num_heads, activation=activation,
+                              num_heads=num_heads, activation=activation, layer_norm_eps=1e-12,
                               weight_initializer=weight_initializer,
                               bias_initializer=bias_initializer, dropout=dropout, scaled=scaled,
                               use_residual=use_residual, prefix='transformer%d_' % i))
