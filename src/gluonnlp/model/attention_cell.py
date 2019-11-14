@@ -121,6 +121,10 @@ class AttentionCell(HybridBlock):
         att_weights : Symbol or NDArray
             For single-head attention, Shape (batch_size, query_length, memory_length)
             For multi-head attention, Shape (batch_size, num_heads, query_length, memory_length)
+        att_score : Symbol or NDArray
+            unnormalized weight matrix.
+            For single-head attention, Shape (batch_size, query_length, memory_length)
+            For multi-head attention, Shape (batch_size, num_heads, query_length, memory_length)
         """
         raise NotImplementedError
 
@@ -285,7 +289,9 @@ class MultiHeadAttentionCell(AttentionCell):
                     .reshape(shape=(-1, 0, 0), reverse=True)
         att_weights, att_score = self._base_cell._compute_weight(F, query, key, mask)
         return att_weights.reshape(shape=(-1, self._num_heads, 0, 0),
-                                reverse=True), att_score
+                                   reverse=True), att_score.reshape(
+                                       shape=(-1, self._num_heads, 0, 0),
+                                       reverse=True)
 
     def _read_by_weight(self, F, att_weights, value):
         att_weights = att_weights.reshape(shape=(-1, 0, 0), reverse=True)
