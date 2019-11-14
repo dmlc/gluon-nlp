@@ -92,8 +92,9 @@ class AttentionCell(HybridBlock):
         out = cell(query, key, value, mask)
 
     """
-    def __init__(self, prefix=None, params=None):
+    def __init__(self,unnormalized_score=False, prefix=None, params=None):
         self._dtype = np.float32
+        self._unnormalized_score = unnormalized_score
         super(AttentionCell, self).__init__(prefix=prefix, params=params)
 
     def cast(self, dtype):
@@ -209,6 +210,8 @@ class MultiHeadAttentionCell(AttentionCell):
         Initializer of the weights.
     bias_initializer : str or `Initializer`, default 'zeros'
         Initializer of the bias.
+    unnormalized_score: bool, default False
+        Whether to return an unnormalized weight matrix
     prefix : str or None, default None
         See document of `Block`.
     params : str or None, default None
@@ -216,7 +219,8 @@ class MultiHeadAttentionCell(AttentionCell):
     """
     def __init__(self, base_cell, query_units, key_units, value_units, num_heads, use_bias=True,
                  weight_initializer=None, bias_initializer='zeros',unnormalized_score=False, prefix=None, params=None):
-        super(MultiHeadAttentionCell, self).__init__(prefix=prefix, params=params)
+        super(MultiHeadAttentionCell,
+              self).__init__(unnormalized_score=unnormalized_score,prefix=prefix, params=params)
         self._base_cell = base_cell
         self._num_heads = num_heads
         self._use_bias = use_bias
@@ -324,6 +328,8 @@ class MLPAttentionCell(AttentionCell):
         Initializer of the weights.
     bias_initializer : str or `Initializer`, default 'zeros'
         Initializer of the bias.
+    unnormalized_score: bool, default False
+        Whether to return an unnormalized weight matrix
     prefix : str or None, default None
         See document of `Block`.
     params : ParameterDict or None, default None
@@ -351,7 +357,10 @@ class MLPAttentionCell(AttentionCell):
                                        flatten=False, name='fwd')
                 return out
 
-        super(MLPAttentionCell, self).__init__(prefix=prefix, params=params)
+        super(MLPAttentionCell,
+              self).__init__(unnormalized_score=unnormalized_score,
+                             prefix=prefix,
+                             params=params)
         self._units = units
         self._act = act
         self._normalized = normalized
@@ -449,6 +458,8 @@ class DotProductAttentionCell(AttentionCell):
         Initializer of the weights
     bias_initializer : str or `Initializer`, default 'zeros'
         Initializer of the bias
+    unnormalized_score: bool, default False
+        Whether to return an unnormalized weight matrix
     prefix : str or None, default None
         See document of `Block`.
     params : str or None, default None
@@ -457,7 +468,10 @@ class DotProductAttentionCell(AttentionCell):
     def __init__(self, units=None, luong_style=False, scaled=True, normalized=False, use_bias=True,
                  dropout=0.0, weight_initializer=None, bias_initializer='zeros',unnormalized_score=False,
                  prefix=None, params=None):
-        super(DotProductAttentionCell, self).__init__(prefix=prefix, params=params)
+        super(DotProductAttentionCell,
+              self).__init__(unnormalized_score=unnormalized_score,
+                             prefix=prefix,
+                             params=params)
         self._units = units
         self._scaled = scaled
         self._normalized = normalized
