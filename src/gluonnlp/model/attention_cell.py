@@ -175,9 +175,9 @@ class AttentionCell(HybridBlock):
     def hybrid_forward(self, F, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
         if value is None:
             value = key
-        att_weights = self._compute_weight(F, query, key, mask)
+        att_weights, att_score = self._compute_weight(F, query, key, mask)
         context_vec = self._read_by_weight(F, att_weights, value)
-        return context_vec, att_weights
+        return context_vec, att_score if self._unnormalized_score else att_weights
 
 
 class MultiHeadAttentionCell(AttentionCell):
@@ -215,11 +215,12 @@ class MultiHeadAttentionCell(AttentionCell):
         See document of `Block`.
     """
     def __init__(self, base_cell, query_units, key_units, value_units, num_heads, use_bias=True,
-                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
+                 weight_initializer=None, bias_initializer='zeros',unnormalized_score=False, prefix=None, params=None):
         super(MultiHeadAttentionCell, self).__init__(prefix=prefix, params=params)
         self._base_cell = base_cell
         self._num_heads = num_heads
         self._use_bias = use_bias
+        self._unnormalized_score = unnormalized_score
         units = {'query': query_units, 'key': key_units, 'value': value_units}
         for name, unit in units.items():
             if unit % self._num_heads != 0:
@@ -278,8 +279,9 @@ class MultiHeadAttentionCell(AttentionCell):
             mask = F.broadcast_axis(F.expand_dims(mask, axis=1),
                                     axis=1, size=self._num_heads)\
                     .reshape(shape=(-1, 0, 0), reverse=True)
-        att_weights = self._base_cell._compute_weight(F, query, key, mask)
-        return att_weights.reshape(shape=(-1, self._num_heads, 0, 0), reverse=True)
+        att_weights, att_score = self._base_cell._compute_weight(F, query, key, mask)
+        return att_weights.reshape(shape=(-1, self._num_heads, 0, 0),
+                                reverse=True), att_score
 
     def _read_by_weight(self, F, att_weights, value):
         att_weights = att_weights.reshape(shape=(-1, 0, 0), reverse=True)
@@ -329,7 +331,7 @@ class MLPAttentionCell(AttentionCell):
     """
 
     def __init__(self, units, act=nn.Activation('tanh'), normalized=False, dropout=0.0,
-                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
+                 weight_initializer=None, bias_initializer='zeros', unnormalized_score=False,prefix=None, params=None):
         # Define a temporary class to implement the normalized version
         # TODO(sxjscience) Find a better solution
         class _NormalizedScoreProj(HybridBlock):
@@ -354,6 +356,7 @@ class MLPAttentionCell(AttentionCell):
         self._act = act
         self._normalized = normalized
         self._dropout = dropout
+        self._unnormalized_score = unnormalized_score
         with self.name_scope():
             self._dropout_layer = nn.Dropout(dropout)
             self._query_mid_layer = nn.Dense(units=self._units, flatten=False, use_bias=True,
@@ -391,7 +394,7 @@ class MLPAttentionCell(AttentionCell):
         if mask is not None:
             att_weights = att_weights * mask
         att_weights = self._dropout_layer(att_weights)
-        return att_weights
+        return att_weights,att_score
 
 
 class DotProductAttentionCell(AttentionCell):
@@ -452,7 +455,7 @@ class DotProductAttentionCell(AttentionCell):
         See document of `Block`.
     """
     def __init__(self, units=None, luong_style=False, scaled=True, normalized=False, use_bias=True,
-                 dropout=0.0, weight_initializer=None, bias_initializer='zeros',
+                 dropout=0.0, weight_initializer=None, bias_initializer='zeros',unnormalized_score=False,
                  prefix=None, params=None):
         super(DotProductAttentionCell, self).__init__(prefix=prefix, params=params)
         self._units = units
@@ -461,6 +464,7 @@ class DotProductAttentionCell(AttentionCell):
         self._use_bias = use_bias
         self._luong_style = luong_style
         self._dropout = dropout
+        self._unnormalized_score = unnormalized_score
         if self._luong_style:
             assert units is not None, 'Luong style attention is not available without explicitly ' \
                                       'setting the units'
@@ -506,4 +510,76 @@ class DotProductAttentionCell(AttentionCell):
         if mask is not None:
             att_weights = att_weights * mask
         att_weights = self._dropout_layer(att_weights)
-        return att_weights
+        return att_weights, att_score
+
+
+def _get_attention_cell(attention_cell,
+                        units=None,
+                        scaled=True,
+                        num_heads=None,
+                        use_bias=False,
+                        dropout=0.0,
+                        unnormalized_score=False):
+    """
+
+    Parameters
+    ----------
+    attention_cell : AttentionCell or str
+    units : int or None
+
+    Returns
+    -------
+    attention_cell : AttentionCell
+    """
+    if isinstance(attention_cell, str):
+        if attention_cell == 'scaled_luong':
+            return DotProductAttentionCell(units=units,
+                                           scaled=True,
+                                           normalized=False,
+                                           use_bias=use_bias,
+                                           dropout=dropout,
+                                           luong_style=True)
+        elif attention_cell == 'scaled_dot':
+            return DotProductAttentionCell(units=units,
+                                           scaled=True,
+                                           normalized=False,
+                                           use_bias=use_bias,
+                                           dropout=dropout,
+                                           luong_style=False)
+        elif attention_cell == 'dot':
+            return DotProductAttentionCell(units=units,
+                                           scaled=False,
+                                           normalized=False,
+                                           use_bias=use_bias,
+                                           dropout=dropout,
+                                           luong_style=False)
+        elif attention_cell == 'cosine':
+            return DotProductAttentionCell(units=units,
+                                           scaled=False,
+                                           use_bias=use_bias,
+                                           dropout=dropout,
+                                           normalized=True)
+        elif attention_cell == 'mlp':
+            return MLPAttentionCell(units=units, normalized=False)
+        elif attention_cell == 'normed_mlp':
+            return MLPAttentionCell(units=units, normalized=True)
+        elif attention_cell == 'multi_head':
+            base_cell = DotProductAttentionCell(
+                scaled=scaled,
+                dropout=dropout,
+                unnormalized_score=unnormalized_score)
+            return MultiHeadAttentionCell(
+                base_cell=base_cell,
+                query_units=units,
+                use_bias=use_bias,
+                key_units=units,
+                value_units=units,
+                num_heads=num_heads,
+                unnormalized_score=unnormalized_score)
+        else:
+            raise NotImplementedError
+    else:
+        assert isinstance(attention_cell, AttentionCell),\
+            'attention_cell must be either string or AttentionCell. Received attention_cell={}'\
+                .format(attention_cell)
+        return attention_cell
