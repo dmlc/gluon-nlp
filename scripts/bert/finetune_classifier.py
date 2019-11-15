@@ -43,6 +43,7 @@ import multiprocessing
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
+from mxnet.contrib.amp import amp
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
@@ -208,7 +209,6 @@ task = tasks[task_name]
 # data type with mixed precision training
 if args.dtype == 'float16':
     try:
-        from mxnet.contrib import amp # pylint: disable=ungrouped-imports
         # monkey patch amp list since topk does not support fp16
         amp.lists.symbol.FP32_FUNCS.append('topk')
         amp.lists.symbol.FP16_FP32_FUNCS.remove('topk')
@@ -216,11 +216,6 @@ if args.dtype == 'float16':
     except ValueError:
         # topk is already in the FP32_FUNCS list
         amp.init()
-    except ImportError:
-        # amp is not available
-        logging.info('Mixed precision training with float16 requires MXNet >= '
-                     '1.5.0b20190627. Please consider upgrading your MXNet version.')
-        exit()
 
 # model and loss
 only_inference = args.only_inference
