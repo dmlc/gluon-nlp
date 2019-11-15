@@ -80,7 +80,7 @@ class TruncNorm(Initializer):
     def __init__(self, mean=0, stdev=0.01, **kwargs):
         super(TruncNorm, self).__init__(**kwargs)
         try:
-            from scipy.stats import truncnorm
+            from scipy.stats import truncnorm  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise ImportError('SciPy is not installed. '
                               'You must install SciPy >= 1.0.0 in order to use the '

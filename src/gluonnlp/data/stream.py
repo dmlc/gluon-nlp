@@ -270,8 +270,7 @@ class _Prefetcher:
                 c = self._controlq.get(False)
                 if c is None:
                     break
-                else:
-                    raise RuntimeError('Got unexpected control code {}'.format(repr(c)))
+                raise RuntimeError('Got unexpected control code {}'.format(repr(c)))
             except queue.Empty:
                 pass
             except RuntimeError as e:
