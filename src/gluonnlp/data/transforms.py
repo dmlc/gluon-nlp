@@ -178,7 +178,7 @@ class SacreMosesTokenizer:
     """
 
     def __init__(self):
-        from sacremoses import MosesTokenizer
+        from sacremoses import MosesTokenizer  # pylint: disable=import-outside-toplevel
         self._tokenizer = MosesTokenizer()
 
     def __call__(self, sample: str, return_str: bool = False):
@@ -228,8 +228,8 @@ class SpacyTokenizer:
 
     def __init__(self, lang='en_core_web_sm'):
         try:
-            import spacy
-            from pkg_resources import parse_version
+            import spacy  # pylint: disable=import-outside-toplevel
+            from pkg_resources import parse_version  # pylint: disable=import-outside-toplevel
             assert parse_version(spacy.__version__) >= parse_version('2.0.0'),\
                 'We only support spacy>=2.0.0'
         except ImportError:
@@ -292,7 +292,7 @@ class SacreMosesDetokenizer:
 
     def __init__(self, return_str=True):
         self._return_str = return_str
-        from sacremoses import MosesDetokenizer
+        from sacremoses import MosesDetokenizer  # pylint: disable=import-outside-toplevel
         self._detokenizer = MosesDetokenizer()
 
     def __call__(self, sample: List[str], return_str: Optional[bool] = None):
@@ -338,7 +338,7 @@ class JiebaTokenizer:
 
     def __init__(self):
         try:
-            import jieba
+            import jieba  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise ImportError(
                 'jieba is not installed. You must install jieba in order to use the '
@@ -404,7 +404,7 @@ class NLTKStanfordSegmenter:
         assert is_java_exist == 0, 'Java is not installed. You must install Java 8.0' \
                                    'in order to use the NLTKStanfordSegmenter'
         try:
-            from nltk.tokenize import StanfordSegmenter
+            from nltk.tokenize import StanfordSegmenter  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise ImportError(
                 'NLTK or relevant packages are not installed. You must install NLTK '
@@ -474,13 +474,13 @@ class NLTKStanfordSegmenter:
         ret : list of strs
             List of tokens
         """
-        return [tok for tok in self._tokenizer.segment(sample).strip().split()]
+        return self._tokenizer.segment(sample).strip().split()
 
 
 class _SentencepieceProcessor:
     def __init__(self, path):
         try:
-            import sentencepiece
+            import sentencepiece  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise ImportError(
                 'sentencepiece is not installed. You must install sentencepiece '
@@ -1235,7 +1235,8 @@ class GPT2BPETokenizer(_GPT2BPE):
                               '1a770728fd102bc9dc332f322e6bfb294767a685')
     def __init__(self, root=os.path.join(get_home_dir(), 'models')):
         try:
-            import regex as re
+            import regex  # pylint: disable=import-outside-toplevel
+            self._regex = regex
         except ImportError:
             raise ImportError(
                 'GPT2BPETokenizer requires regex. '
@@ -1285,7 +1286,7 @@ class GPT2BPETokenizer(_GPT2BPE):
                 raise ValueError('Downloaded file has different hash. Please try again.')
         self._read_bpe_ranks(file_path)
         self._cache = {}
-        self._token_pattern = re.compile(
+        self._token_pattern = self._regex.compile(
             r'\'s|\'t|\'re|\'ve|\'m|\'ll|\'d| ?\p{L}+'
             r'| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+')
 
@@ -1347,9 +1348,8 @@ class GPT2BPETokenizer(_GPT2BPE):
         -------
         ret : list(str)
         """
-        import regex as re
         ret = []
-        for word_token in re.findall(self._token_pattern, sample):
+        for word_token in self._regex.findall(self._token_pattern, sample):
             word_token = bytearray(word_token.encode('utf-8'))
             word_token = ''.join(self._byte_encoder[code] for code in word_token)
             ret.extend(self.get_bpe_subword(word_token))

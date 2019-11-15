@@ -597,10 +597,9 @@ class Vocab:
                     if idx == token_to_idx[token]:
                         # Valid idx
                         continue
-                    else:
-                        # Introduce temporary token
-                        token_to_idx.update({str(uuid.uuid4()): idx})
-                        corrected_token_to_idx[token].append(idx)
+                    # Introduce temporary token
+                    token_to_idx.update({str(uuid.uuid4()): idx})
+                    corrected_token_to_idx[token].append(idx)
 
         vocab = cls(
             counter=count_tokens(token_to_idx.keys()),

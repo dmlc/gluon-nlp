@@ -348,6 +348,7 @@ def _load_pretrained_vocab(name, root, cls=None):
 def _load_vocab_file(file_path, cls):
     with open(file_path, 'r') as f:
         if cls is None:
+            # pylint: disable=import-outside-toplevel
             from ..vocab import Vocab
             cls = Vocab
 
