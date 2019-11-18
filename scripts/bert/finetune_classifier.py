@@ -39,10 +39,10 @@ import argparse
 import random
 import logging
 import warnings
-import multiprocessing
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
+from mxnet.contrib.amp import amp
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
@@ -148,11 +148,14 @@ task = tasks[args.task_name]
 
 # data type with mixed precision training
 if args.dtype == 'float16':
-    from mxnet.contrib import amp  # pylint: disable=ungrouped-imports
-    # monkey patch amp list since topk does not support fp16
-    amp.lists.symbol.FP32_FUNCS.append('topk')
-    amp.lists.symbol.FP16_FP32_FUNCS.remove('topk')
-    amp.init()
+    try:
+        # monkey patch amp list since topk does not support fp16
+        amp.lists.symbol.FP32_FUNCS.append('topk')
+        amp.lists.symbol.FP16_FP32_FUNCS.remove('topk')
+        amp.init()
+    except ValueError:
+        # topk is already in the FP32_FUNCS list
+        amp.init()
 
 # model and loss
 if args.only_inference and not args.model_parameters:
@@ -222,8 +225,6 @@ else:
 
 def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab, pad=False):
     """Train/eval Data preparation function."""
-    pool = multiprocessing.Pool()
-
     # transformation for data train and dev
     label_dtype = 'float32' if not task.class_labels else 'int32'
     trans = BERTDatasetTransform(tokenizer, max_len, vocab=vocab, class_labels=task.class_labels,
@@ -233,9 +234,9 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
     # data train
     # task.dataset_train returns (segment_name, dataset)
     train_tsv = task.dataset_train()[1]
-    data_train = mx.gluon.data.SimpleDataset(pool.map(trans, train_tsv))
-    data_train_len = data_train.transform(lambda input_id, length, segment_id, label_id: length,
-                                          lazy=False)
+    data_train = mx.gluon.data.SimpleDataset(list(map(trans, train_tsv)))
+    data_train_len = data_train.transform(
+        lambda input_id, length, segment_id, label_id: length, lazy=False)
     # bucket sampler for training
     pad_val = vocabulary[vocabulary.padding_token]
     batchify_fn = nlp.data.batchify.Tuple(
@@ -254,9 +255,13 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
     dev_tsv_list = dev_tsv if isinstance(dev_tsv, list) else [dev_tsv]
     loader_dev_list = []
     for segment, data in dev_tsv_list:
-        data_dev = mx.gluon.data.SimpleDataset(pool.map(trans, data))
-        loader_dev = mx.gluon.data.DataLoader(data_dev, batch_size=dev_batch_size, num_workers=4,
-                                              shuffle=False, batchify_fn=batchify_fn)
+        data_dev = mx.gluon.data.SimpleDataset(list(map(trans, data)))
+        loader_dev = mx.gluon.data.DataLoader(
+            data_dev,
+            batch_size=dev_batch_size,
+            num_workers=4,
+            shuffle=False,
+            batchify_fn=batchify_fn)
         loader_dev_list.append((segment, loader_dev))
 
     # batchify for data test
@@ -272,9 +277,13 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
     test_tsv_list = test_tsv if isinstance(test_tsv, list) else [test_tsv]
     loader_test_list = []
     for segment, data in test_tsv_list:
-        data_test = mx.gluon.data.SimpleDataset(pool.map(test_trans, data))
-        loader_test = mx.gluon.data.DataLoader(data_test, batch_size=dev_batch_size, num_workers=4,
-                                               shuffle=False, batchify_fn=test_batchify_fn)
+        data_test = mx.gluon.data.SimpleDataset(list(map(test_trans, data)))
+        loader_test = mx.gluon.data.DataLoader(
+            data_test,
+            batch_size=dev_batch_size,
+            num_workers=4,
+            shuffle=False,
+            batchify_fn=test_batchify_fn)
         loader_test_list.append((segment, loader_test))
     return loader_train, loader_dev_list, loader_test_list, len(data_train)
 

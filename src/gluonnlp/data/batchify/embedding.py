@@ -206,20 +206,20 @@ def _context_generator(sentence_boundaries, window, batch_size,
                     # In SkipGram mode, there may be some leftover contexts
                     # form the last batch
                     continue
-                elif i < num_rows:
-                    num_context_skip = 0
-                    context_row.append(i)
-                    context_col.append(context)
-                    if cbow:
-                        context_data.append(1.0 / len(contexts))
-                    else:
-                        center_batch.append(center)
-                        context_data.append(1)
-                        i += 1
-                else:
+                if i >= num_rows:
                     num_context_skip = j
                     assert not cbow
                     break
+
+                num_context_skip = 0
+                context_row.append(i)
+                context_col.append(context)
+                if cbow:
+                    context_data.append(1.0 / len(contexts))
+                else:
+                    center_batch.append(center)
+                    context_data.append(1)
+                    i += 1
 
             if cbow:
                 center_batch.append(center)

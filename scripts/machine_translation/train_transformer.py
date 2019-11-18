@@ -57,7 +57,7 @@ np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
 
-nlp.utils.check_version('0.7.0')
+nlp.utils.check_version('0.9.0')
 
 parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,

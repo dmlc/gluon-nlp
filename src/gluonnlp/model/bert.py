@@ -1162,7 +1162,7 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
                           activation=predefined_args.get('activation', 'gelu'),
                           layer_norm_eps=predefined_args.get('layer_norm_eps', 1e-5))
 
-    from ..vocab import Vocab
+    from ..vocab import Vocab  # pylint: disable=import-outside-toplevel
     bert_vocab = _load_vocab(dataset_name, vocab, root, cls=Vocab)
     # BERT
     net = RoBERTaModel(encoder, len(bert_vocab),
@@ -1270,7 +1270,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
                           activation=predefined_args.get('activation', 'gelu'),
                           layer_norm_eps=predefined_args.get('layer_norm_eps', 1e-12))
 
-    from ..vocab import BERTVocab
+    from ..vocab import BERTVocab  # pylint: disable=import-outside-toplevel
     # bert_vocab
     bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     # BERT
