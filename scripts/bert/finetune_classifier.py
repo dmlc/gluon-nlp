@@ -43,9 +43,11 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 from mxnet.contrib.amp import amp
+from mxnet.contrib.quantization import *
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
+from gluonnlp.calibration import BertLayerCollector
 
 from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask
 from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
@@ -178,6 +180,20 @@ parser.add_argument(
     default=None,
     help='Whether to perform early stopping based on the metric on dev set. '
          'The provided value is the patience. ')
+parser.add_argument('--deploy', action='store_true',
+                    help='whether load static model for deployment')
+parser.add_argument('--model_prefix', type=str, required=False,
+                    help='load static model as hybridblock.')
+parser.add_argument('--only_calibration', action='store_true',
+                    help='quantize model')
+parser.add_argument('--num_calib_batches', type=int, default=5,
+                    help='number of batches for calibration')
+parser.add_argument('--quantized_dtype', type=str, default='auto', 
+                    choices=['auto', 'int8', 'uint8'],
+                    help='quantization destination data type for input data')
+parser.add_argument('--calib_mode', type=str, default='customize',
+                    choices=['none', 'naive', 'entropy', 'customize'],
+                    help='calibration mode used for generating calibration table for the quantized symbol.')
 
 args = parser.parse_args()
 
@@ -215,6 +231,11 @@ model_name = args.bert_model
 dataset = args.bert_dataset
 pretrained_bert_parameters = args.pretrained_bert_parameters
 model_parameters = args.model_parameters
+
+# load symbolic model
+deploy = args.deploy
+model_prefix = args.model_prefix
+
 if only_inference and not model_parameters:
     warnings.warn('model_parameters is not set. '
                   'Randomly initialized model will be used for inference.')
@@ -268,6 +289,11 @@ if model_parameters:
     nlp.utils.load_parameters(model, model_parameters, ctx=ctx, cast_dtype=True)
 nlp.utils.mkdir(output_dir)
 
+if deploy:
+    logging.info('load symbol file directly as SymbolBlock for model deployment')
+    model = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(args.model_prefix),
+            ['data0', 'data1', 'data2'], '{}-0000.params'.format(args.model_prefix))
+
 logging.debug(model)
 model.hybridize(static_alloc=True)
 loss_function.hybridize(static_alloc=True)
@@ -278,6 +304,12 @@ if use_roberta:
     bert_tokenizer = nlp.data.GPT2BPETokenizer()
 else:
     bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
+
+# calibration config
+only_calibration = args.only_calibration
+num_calib_batches = args.num_calib_batches
+quantized_dtype = args.quantized_dtype
+calib_mode = args.calib_mode
 
 def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab, pad=False):
     """Train/eval Data preparation function."""
@@ -295,13 +327,13 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
     train_tsv = task.dataset_train()[1]
     data_train = mx.gluon.data.SimpleDataset(list(map(trans, train_tsv)))
     data_train_len = data_train.transform(
-        lambda input_id, length, segment_id, label_id: length, lazy=False)
+        lambda input_id, segment_id, length, label_id: length, lazy=False)
     # bucket sampler for training
     pad_val = vocabulary[vocabulary.padding_token]
     batchify_fn = nlp.data.batchify.Tuple(
         nlp.data.batchify.Pad(axis=0, pad_val=pad_val), # input
-        nlp.data.batchify.Stack(),                      # length
         nlp.data.batchify.Pad(axis=0, pad_val=0),       # segment
+        nlp.data.batchify.Stack(),                      # length
         nlp.data.batchify.Stack(label_dtype))           # label
     batch_sampler = nlp.data.sampler.FixedBucketSampler(
         data_train_len,
@@ -332,8 +364,9 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
 
     # batchify for data test
     test_batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0, pad_val=pad_val), nlp.data.batchify.Stack(),
-        nlp.data.batchify.Pad(axis=0, pad_val=0))
+        nlp.data.batchify.Pad(axis=0, pad_val=pad_val),
+        nlp.data.batchify.Pad(axis=0, pad_val=0),
+        nlp.data.batchify.Stack())
     # transform for data test
     test_trans = BERTDatasetTransform(tokenizer, max_len,
                                       vocab=vocab,
@@ -362,6 +395,30 @@ logging.info('processing dataset...')
 train_data, dev_data_list, test_data_list, num_train_examples = preprocess_data(
     bert_tokenizer, task, batch_size, dev_batch_size, args.max_len, vocabulary, args.pad)
 
+def calibration(net, dev_data_list, num_calib_batches, quantized_dtype, calib_mode):
+    """calibration function on the dev dataset."""
+    assert len(dev_data_list) == 1, \
+        "Currectly, MNLI not supported."
+    assert ctx == mx.cpu(), \
+        "Currently only supports CPU with MKL-DNN backend."
+    logging.info('Now we are doing calibration on dev with %s.', ctx)
+    for _, dev_data in dev_data_list:
+        collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=logging)
+        net = quantize_net(net, quantized_dtype=quantized_dtype,
+                           exclude_layers=[],
+                           exclude_layers_match=['elemwise_add'],
+                           calib_data=dev_data,
+                           calib_mode=calib_mode,
+                           num_calib_examples=dev_batch_size * num_calib_batches,
+                           ctx=ctx,
+                           LayerOutputCollector=collector,
+                           logger=logging)
+        # save params
+        ckpt_name = 'model_bert_{0}_quantized_{1}'.format(task_name, calib_mode)
+        params_saved = os.path.join(output_dir, ckpt_name)
+        net.export(params_saved, epoch=0)
+        logging.info('Saving quantized model at %s' % output_dir)
+
 
 def test(loader_test, segment):
     """Inference function on the test dataset."""
@@ -370,7 +427,7 @@ def test(loader_test, segment):
     tic = time.time()
     results = []
     for _, seqs in enumerate(loader_test):
-        input_ids, valid_length, segment_ids = seqs
+        input_ids, segment_ids, valid_length = seqs
         input_ids = input_ids.as_in_context(ctx)
         valid_length = valid_length.as_in_context(ctx).astype('float32')
         if use_roberta:
@@ -483,7 +540,7 @@ def train(metric):
 
                 # forward and backward
                 with mx.autograd.record():
-                    input_ids, valid_length, segment_ids, label = seqs
+                    input_ids, segment_ids, valid_length, label = seqs
                     input_ids = input_ids.as_in_context(ctx)
                     valid_length = valid_length.as_in_context(ctx).astype('float32')
                     label = label.as_in_context(ctx)
@@ -563,7 +620,7 @@ def evaluate(loader_dev, metric, segment):
     label_list = []
     out_list = []
     for batch_id, seqs in enumerate(loader_dev):
-        input_ids, valid_length, segment_ids, label = seqs
+        input_ids, segment_ids, valid_length, label = seqs
         input_ids = input_ids.as_in_context(ctx)
         valid_length = valid_length.as_in_context(ctx).astype('float32')
         label = label.as_in_context(ctx)
@@ -598,4 +655,11 @@ def evaluate(loader_dev, metric, segment):
 
 
 if __name__ == '__main__':
-    train(task.metrics)
+    if only_calibration:
+        calibration(model,
+                    dev_data_list,
+                    num_calib_batches,
+                    quantized_dtype,
+                    calib_mode)
+    else:
+        train(task.metrics)
