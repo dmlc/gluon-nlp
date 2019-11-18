@@ -14,7 +14,7 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
-from XLNet_classifier import XLNetClassifier
+from model.XLNet_classifier import XLNetClassifier
 from transformer import model
 
 sys.path.append('../bert/data')
@@ -89,9 +89,6 @@ parser.add_argument(
     '--only_inference', action='store_true',
     help='If set, we skip training and only perform inference on dev and test data.')
 
-parser.add_argument('--dtype', type=str, default='float32', choices=['float32', 'float16'],
-                    help='The data type for training. Doesnt support float16 currently')
-
 parser.add_argument(
     '--model_parameters', type=str, default=None,
     help='A parameter file for the model that is loaded into the model'
@@ -103,6 +100,8 @@ parser.add_argument(
     help='Whether to perform early stopping based on the metric on dev set. '
     'The provided value is the patience. ')
 
+parser.add_argument('--dropout', type=float, default=0.1, help='dropout')
+parser.add_argument('--attention_dropout', type=float, default=0.1, help='attention dropout')
 args = parser.parse_args()
 
 
@@ -144,13 +143,6 @@ ctxs = [mx.cpu(0)] if not args.gpu else [mx.gpu(i) for i in range(args.gpu)]
 
 task = tasks[args.task_name]
 
-# data type with mixed precision training
-if args.dtype == 'float16':
-    from mxnet.contrib import amp  # pylint: disable=ungrouped-imports
-    # monkey patch amp list since topk does not support fp16
-    amp.lists.symbol.FP32_FUNCS.append('topk')
-    amp.lists.symbol.FP16_FP32_FUNCS.remove('topk')
-    amp.init()
 
 # model and loss
 if args.only_inference and not args.model_parameters:
@@ -165,6 +157,8 @@ get_model_params = {
     'pretrained': get_pretrained,
     'ctx': ctxs,
     'use_decoder': False,
+    'dropout': args.dropout,
+    'attention_dropout': args.attention_dropout
 }
 
 xlnet_base, vocab, tokenizer = model.get_model(**get_model_params)
@@ -346,10 +340,8 @@ def train(metric):
         logging.info('Now we are doing XLNet classification training on %s!', ctxs)
 
     all_model_params = model.collect_params()
-    optimizer_params = {'learning_rate': args.lr, 'epsilon': args.epsilon, 'wd': 0.01}
+    optimizer_params = {'learning_rate': args.lr, 'epsilon': args.epsilon, 'wd': 0}
     trainer = gluon.Trainer(all_model_params, 'adam', optimizer_params, update_on_kvstore=False)
-    if args.dtype == 'float16':
-        amp.init_trainer(trainer)
 
     step_size = args.batch_size * args.accumulate if args.accumulate else args.batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
@@ -373,7 +365,6 @@ def train(metric):
     patience = args.early_stop
 
     tic = time.time()
-
     for epoch_id in range(args.epochs):
         if args.early_stop and patience == 0:
             logging.info('Early stopping at epoch %d', epoch_id)
@@ -403,7 +394,7 @@ def train(metric):
                         out = model(input_ids, segment_ids, valid_length=valid_length)
                         out_list.append(out)
                         label_list.append(label)
-                        ls = loss_function(out, label).mean()
+                        ls = loss_function(out, label).mean() / len(ctxs)
                         ls.backward()
                         batch_loss.append(ls)
                 # update
@@ -485,8 +476,7 @@ def evaluate(loader_dev, metric, segment):
             out = model(input_ids, segment_ids, valid_length=valid_length)
             out_list.append(out)
             label_list.append(label)
-            batch_loss.append(loss_function(out, label).mean())
-            #batch_loss.append(loss_function(out, label).means())
+            batch_loss.append(loss_function(out, label).mean() / len(ctxs))
 
         batch_loss = sum([ls.asscalar() for ls in batch_loss])
         step_loss += batch_loss
