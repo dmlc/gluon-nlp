@@ -93,7 +93,7 @@ class GPT2SelfAttentionLayer(HybridBlock):
             prev_key, prev_value = states
 
             prev_len_range = F.contrib.arange_like(prev_key, axis=2)
-            data_len_range = F.contrib.arange_like(data, axis=2)
+            data_len_range = F.contrib.arange_like(data, axis=1)
             prev_len = F.broadcast_add(F.slice_axis(prev_len_range, axis=0, begin=-1, end=None),
                                        F.ones((1, )))
 
@@ -258,15 +258,16 @@ class GPT2Model(HybridBlock):
         """
         new_states = []
         if states is not None:
-            prev_key, _ = states
-            prev_len_range = F.contrib.arange_like(prev_key, axis=2)
+            prev_len_range = F.contrib.arange_like(states[0], axis=1).astype('int32')
             prev_len = F.broadcast_add(F.slice_axis(prev_len_range, axis=0, begin=-1, end=None),
-                                       F.ones((1, )))
-            data_pos = F.broadcast_add(F.contrib.arange_like(data, axis=1), prev_len)
+                                       F.ones((1, ), dtype='int32'))
+            data_pos = F.broadcast_add(
+                F.contrib.arange_like(data, axis=1).astype('int32'), prev_len)
         else:
-            data_pos = F.contrib.arange_like(data, axis=1)
+            data_pos = F.contrib.arange_like(data, axis=1).astype('int32')
         if F is mx.nd:
-            assert data.shape[1] + prev_key.shape[2] <= self._max_length
+            length = data.shape[1] + (states[0].shape[1] if states is not None else 0)
+            assert length <= self._max_length
         data_pos = F.broadcast_like(F.expand_dims(data_pos, axis=0), data,
                                     lhs_axes=(0, ), rhs_axes=(0, ))
         out = self._embed(data) + self._pos_embed(data_pos)
