@@ -30,6 +30,7 @@ __all__ = [
 ]
 
 import errno
+import functools
 import io
 import os
 import time
@@ -42,7 +43,9 @@ from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 import numpy as np
 
 from ..base import get_home_dir
+from ..vocab.vocab import Vocab
 from .utils import _extract_archive
+from .wordpiece import tokenize as wordpiece_tokenize
 
 
 class ClipSequence:
@@ -175,7 +178,7 @@ class SacreMosesTokenizer:
     """
 
     def __init__(self):
-        from sacremoses import MosesTokenizer
+        from sacremoses import MosesTokenizer  # pylint: disable=import-outside-toplevel
         self._tokenizer = MosesTokenizer()
 
     def __call__(self, sample: str, return_str: bool = False):
@@ -225,8 +228,8 @@ class SpacyTokenizer:
 
     def __init__(self, lang='en_core_web_sm'):
         try:
-            import spacy
-            from pkg_resources import parse_version
+            import spacy  # pylint: disable=import-outside-toplevel
+            from pkg_resources import parse_version  # pylint: disable=import-outside-toplevel
             assert parse_version(spacy.__version__) >= parse_version('2.0.0'),\
                 'We only support spacy>=2.0.0'
         except ImportError:
@@ -289,7 +292,7 @@ class SacreMosesDetokenizer:
 
     def __init__(self, return_str=True):
         self._return_str = return_str
-        from sacremoses import MosesDetokenizer
+        from sacremoses import MosesDetokenizer  # pylint: disable=import-outside-toplevel
         self._detokenizer = MosesDetokenizer()
 
     def __call__(self, sample: List[str], return_str: Optional[bool] = None):
@@ -335,7 +338,7 @@ class JiebaTokenizer:
 
     def __init__(self):
         try:
-            import jieba
+            import jieba  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise ImportError(
                 'jieba is not installed. You must install jieba in order to use the '
@@ -401,7 +404,7 @@ class NLTKStanfordSegmenter:
         assert is_java_exist == 0, 'Java is not installed. You must install Java 8.0' \
                                    'in order to use the NLTKStanfordSegmenter'
         try:
-            from nltk.tokenize import StanfordSegmenter
+            from nltk.tokenize import StanfordSegmenter  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise ImportError(
                 'NLTK or relevant packages are not installed. You must install NLTK '
@@ -471,13 +474,13 @@ class NLTKStanfordSegmenter:
         ret : list of strs
             List of tokens
         """
-        return [tok for tok in self._tokenizer.segment(sample).strip().split()]
+        return self._tokenizer.segment(sample).strip().split()
 
 
 class _SentencepieceProcessor:
     def __init__(self, path):
         try:
-            import sentencepiece
+            import sentencepiece  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise ImportError(
                 'sentencepiece is not installed. You must install sentencepiece '
@@ -790,14 +793,17 @@ class BERTTokenizer:
 
     Parameters
     ----------
-    vocab : gluonnlp.Vocab or None, default None
+    vocab
         Vocabulary for the corpus.
-    lower : bool, default True
+    lower
         whether the text strips accents and convert to lower case.
         If you use the BERT pre-training model,
         lower is set to Flase when using the cased model,
         otherwise it is set to True.
-    max_input_chars_per_word : int, default 200
+    max_input_chars_per_word
+    lru_cache_size
+        Maximum size of a least-recently-used cache to speed up tokenization.
+        Use size of 2**20 for example.
 
     Examples
     --------
@@ -812,10 +818,14 @@ class BERTTokenizer:
 
     _special_prefix = '##'
 
-    def __init__(self, vocab, lower=True, max_input_chars_per_word=200):
+    def __init__(self, vocab: Vocab, lower: bool = True, max_input_chars_per_word: int = 200,
+                 lru_cache_size: Optional[int] = None):
         self.vocab = vocab
         self.max_input_chars_per_word = max_input_chars_per_word
         self.basic_tokenizer = BERTBasicTokenizer(lower=lower)
+        if lru_cache_size:
+            self._word_to_wordpiece_optimized = functools.lru_cache(maxsize=lru_cache_size)(
+                self._word_to_wordpiece_optimized)
 
     def __call__(self, sample):
         """
@@ -841,6 +851,10 @@ class BERTTokenizer:
 
         return split_tokens
 
+    def _word_to_wordpiece_optimized(self, text):  # pylint: disable=method-hidden
+        return wordpiece_tokenize(text, self.vocab, self.vocab.unknown_token,
+                                  self.max_input_chars_per_word)
+
     def _tokenize_wordpiece(self, text):
         """Tokenizes a piece of text into its word pieces.
 
@@ -861,35 +875,14 @@ class BERTTokenizer:
         ret : A list of wordpiece tokens.
         """
 
+        # case where text is a single token
+        whitespace_tokenized_tokens = self.basic_tokenizer._whitespace_tokenize(text)
+        if len(whitespace_tokenized_tokens) == 1:
+            return self._word_to_wordpiece_optimized(whitespace_tokenized_tokens[0])
+
         output_tokens = []
-        for token in self.basic_tokenizer._whitespace_tokenize(text):
-            chars = list(token)
-            if len(chars) > self.max_input_chars_per_word:
-                output_tokens.append(self.vocab.unknown_token)
-                continue
-            is_bad = False
-            start = 0
-            sub_tokens = []
-            while start < len(chars):
-                end = len(chars)
-                cur_substr = None
-                while start < end:
-                    substr = ''.join(chars[start:end])
-                    if start > 0:
-                        substr = self._special_prefix + substr
-                    if substr in self.vocab:
-                        cur_substr = substr
-                        break
-                    end -= 1
-                if cur_substr is None:
-                    is_bad = True
-                    break
-                sub_tokens.append(cur_substr)
-                start = end
-            if is_bad:
-                output_tokens.append(self.vocab.unknown_token)
-            else:
-                output_tokens.extend(sub_tokens)
+        for token in whitespace_tokenized_tokens:
+            output_tokens.extend(self._word_to_wordpiece_optimized(token))
         return output_tokens
 
     def convert_tokens_to_ids(self, tokens):
@@ -1242,7 +1235,8 @@ class GPT2BPETokenizer(_GPT2BPE):
                               '1a770728fd102bc9dc332f322e6bfb294767a685')
     def __init__(self, root=os.path.join(get_home_dir(), 'models')):
         try:
-            import regex as re
+            import regex  # pylint: disable=import-outside-toplevel
+            self._regex = regex
         except ImportError:
             raise ImportError(
                 'GPT2BPETokenizer requires regex. '
@@ -1292,7 +1286,7 @@ class GPT2BPETokenizer(_GPT2BPE):
                 raise ValueError('Downloaded file has different hash. Please try again.')
         self._read_bpe_ranks(file_path)
         self._cache = {}
-        self._token_pattern = re.compile(
+        self._token_pattern = self._regex.compile(
             r'\'s|\'t|\'re|\'ve|\'m|\'ll|\'d| ?\p{L}+'
             r'| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+')
 
@@ -1354,9 +1348,8 @@ class GPT2BPETokenizer(_GPT2BPE):
         -------
         ret : list(str)
         """
-        import regex as re
         ret = []
-        for word_token in re.findall(self._token_pattern, sample):
+        for word_token in self._regex.findall(self._token_pattern, sample):
             word_token = bytearray(word_token.encode('utf-8'))
             word_token = ''.join(self._byte_encoder[code] for code in word_token)
             ret.extend(self.get_bpe_subword(word_token))
