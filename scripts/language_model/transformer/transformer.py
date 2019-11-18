@@ -27,7 +27,7 @@ from mxnet.gluon import nn
 import gluonnlp as nlp
 
 from .attention_cell import PositionalEmbeddingMultiHeadAttentionCell, \
-                             RelativeSegmentEmbeddingPositionalEmbeddingMultiHeadAttentionCell
+    RelativeSegmentEmbeddingPositionalEmbeddingMultiHeadAttentionCell
 from .embedding import AdaptiveEmbedding, ProjectedEmbedding
 from .softmax import AdaptiveLogSoftmaxWithLoss, ProjectedLogSoftmaxWithLoss
 
@@ -127,9 +127,6 @@ class TransformerXLCell(mx.gluon.HybridBlock):
                                                  weight_initializer=weight_initializer,
                                                  bias_initializer=bias_initializer,
                                                  layer_norm_eps=1e-12)
-            if activation == 'gelu':  # XLNet uses OpenAI GPT's gelu
-                assert hasattr(self.ffn.activation, '_support_erf')
-                self.ffn.activation._support_erf = False
             self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=1e-12)
 
     def hybrid_forward(self, F, inputs, pos_emb, mem_value, mask):
@@ -239,7 +236,7 @@ class _BaseTransformerXL(mx.gluon.HybridBlock):
                                       output_attention=output_attention,
                                       prefix='transformer%d_' % i))
 
-    def hybrid_forward(self, F, step_input, target, mask, pos_seq, mems):  #pylint: disable=arguments-differ
+    def hybrid_forward(self, F, step_input, target, mask, pos_seq, mems):  # pylint: disable=arguments-differ
         """
 
         Parameters
@@ -471,9 +468,12 @@ class XLNetCell(TransformerXLCell):
             - outputs of the transformer decoder cell. Shape (batch_size, length, C_out)
             - additional_outputs of all the transformer decoder cell
         """
-        key_value = F.concat(mem_value, inputs, dim=1)
+        key_value = inputs
+        if mem_value is not None:
+            key_value = F.concat(mem_value, inputs, dim=1)
         outputs, attention_outputs = self.attention_cell(inputs, key_value, key_value, pos_emb,
                                                          mask, segments)
+
         outputs = self.proj(outputs)
         if self._dropout:
             outputs = self.dropout_layer(outputs)
@@ -525,8 +525,9 @@ class _BaseXLNet(mx.gluon.HybridBlock):
         Container for weight sharing between cells. Created if `None`.
 
     """
+
     def __init__(self, vocab_size, num_layers=2, units=128, hidden_size=2048, num_heads=4,
-                 activation='gelu', two_stream: bool = False, scaled=True, dropout=0.0,
+                 activation='approx_gelu', two_stream: bool = False, scaled=True, dropout=0.0,
                  attention_dropout=0.0, use_residual=True, clamp_len: typing.Optional[int] = None,
                  use_decoder=True, tie_decoder_weight=True, weight_initializer=None,
                  bias_initializer='zeros', prefix=None, params=None):
@@ -567,7 +568,8 @@ class _BaseXLNet(mx.gluon.HybridBlock):
                     vocab_size, flatten=False,
                     params=self.word_embed.params if tie_decoder_weight else None)
 
-    def hybrid_forward(self, F, step_input, segments, mask, pos_seq, mems, mask_embed):  #pylint: disable=arguments-differ
+    def hybrid_forward(self, F, step_input, segments, mask, pos_seq, mems, mask_embed):
+        #  pylint: disable=arguments-differ
         """
         Parameters
         ----------
@@ -586,8 +588,8 @@ class _BaseXLNet(mx.gluon.HybridBlock):
             Memory from previous forward passes containing
             `num_layers` `NDArray`s or `Symbol`s each of shape [batch_size,
             memory_length, units].
-
         Returns
+
         -------
         core_out : NDArray or Symbol
             For use_decoder=True, logits. Otherwise output of last layer.
@@ -664,9 +666,9 @@ class XLNet((mx.gluon.Block)):
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    prefix : str, default 'rnn_'
+    prefix : str, default None
         Prefix for name of `Block`s (and name of weight if params is `None`).
-    params : Parameter or None
+    params : ParameterDict or None
         Container for weight sharing between cells. Created if `None`.
 
     """
@@ -718,19 +720,19 @@ class XLNet((mx.gluon.Block)):
         batch_size, qlen = step_input.shape[:2]
         mlen = mems[0].shape[1] if mems is not None else 0
         klen = qlen + mlen
-
+        segments = None
         if token_types is not None:
             if mlen > 0:
                 mem_pad = mx.nd.zeros([batch_size, mlen], dtype=token_types.dtype,
                                       ctx=token_types.context)
                 mem_pad_token_types = mx.nd.concat(mem_pad, token_types, dim=1)
-
+            else:
+                mem_pad_token_types = token_types
             # `1` indicates not in the same segment [qlen x klen x bsz]
             segments = mx.nd.broadcast_not_equal(token_types.expand_dims(2),
                                                  mem_pad_token_types.expand_dims(1))
             segments = mx.nd.one_hot(segments, 2, 1, 0)
-        else:
-            segments = None
+
 
         pos_seq = mx.nd.arange(start=klen, stop=-qlen, step=-1, ctx=step_input.context)
 
@@ -740,13 +742,12 @@ class XLNet((mx.gluon.Block)):
         output, hids = self._net(step_input, segments, mask, pos_seq, mems)
 
         # Update memory
+        new_mems = None
         if mems is not None:
             new_mems = [
                 # pylint: disable=invalid-sequence-index
                 mx.nd.concat(mem_i, hid_i, dim=1)[:, -mem_i.shape[1]:].detach()
                 for mem_i, hid_i in zip(mems, hids)
             ]
-        else:
-            new_mems = None
 
         return output, new_mems
