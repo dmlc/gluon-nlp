@@ -50,7 +50,7 @@ import gluonnlp as nlp
 from gluonnlp.data import SQuAD
 from gluonnlp.calibration import BertLayerCollector
 from model.qa import BertForQALoss, BertForQA
-from data.qa import SQuADTransform, preprocess_dataset, preprocess_calib_dataset
+from data.qa import SQuADTransform, preprocess_dataset
 from bert_qa_evaluate import get_F1_EM, predict, PredResult
 
 np.random.seed(6)
@@ -150,6 +150,11 @@ parser.add_argument('--max_seq_length',
                     'Sequences longer than this will be truncated, and sequences shorter '
                     'than this will be padded. default is 384')
 
+parser.add_argument(
+    '--pad',
+    action='store_true',
+    help='Whether to pad to maximum length when preparing data batches. Default is False.')
+
 parser.add_argument('--doc_stride',
                     type=int,
                     default=128,
@@ -208,7 +213,7 @@ parser.add_argument('--model_prefix', type=str, required=False,
 parser.add_argument('--only_calibration', action='store_true',
                     help='quantize model')
 
-parser.add_argument('--num_calib_batches', type=int, default=5,
+parser.add_argument('--num_calib_batches', type=int, default=10,
                     help='number of batches for calibration')
 
 parser.add_argument('--quantized_dtype', type=str, default='auto', 
@@ -267,6 +272,7 @@ version_2 = args.version_2
 null_score_diff_threshold = args.null_score_diff_threshold
 
 max_seq_length = args.max_seq_length
+pad = args.pad
 doc_stride = args.doc_stride
 max_query_length = args.max_query_length
 n_best_size = args.n_best_size
@@ -331,15 +337,16 @@ else:
     # no checkpoint is loaded
     net.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 
-if deploy:
-    logging.info('load symbol file directly as SymbolBlock for model deployment')
-    net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(args.model_prefix),
-            ['data0', 'data1', 'data2'], '{}-0000.params'.format(args.model_prefix))
-
 net.hybridize(static_alloc=True)
 
 loss_function = BertForQALoss()
 loss_function.hybridize(static_alloc=True)
+
+if deploy:
+    logging.info('load symbol file directly as SymbolBlock for model deployment')
+    net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(args.model_prefix),
+            ['data0', 'data1', 'data2'], '{}-0000.params'.format(args.model_prefix))
+    net.hybridize(static_alloc=True, static_shape=True)
 
 # calibration config
 only_calibration = args.only_calibration
@@ -493,7 +500,7 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
-            is_pad=False,
+            is_pad=pad,
             is_training=False)._transform, lazy=False)
 
     dev_data_transform, _ = preprocess_dataset(
@@ -502,7 +509,7 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
-            is_pad=False,
+            is_pad=pad,
             is_training=False),
             for_calibration=only_calibration)
     log.info('The number of examples after preprocessing:{}'.format(
@@ -552,7 +559,7 @@ def evaluate():
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
-            is_pad=False,
+            is_pad=pad,
             is_training=False)._transform, lazy=False)
 
     dev_data_transform, _ = preprocess_dataset(
@@ -561,7 +568,7 @@ def evaluate():
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
-            is_pad=False,
+            is_pad=pad,
             is_training=False))
     log.info('The number of examples after preprocessing:{}'.format(
         len(dev_data_transform)))
