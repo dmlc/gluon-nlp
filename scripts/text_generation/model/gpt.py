@@ -242,7 +242,14 @@ class GPT2Model(HybridBlock):
                 self._final_ln = nn.LayerNorm(prefix='final_ln{}_'.format(i))
 
     def hybrid_forward(self, F, data, states=None): # pylint: disable=arguments-differ
-        """
+        """Compute
+
+        Notes
+        -----
+        If you hybridized the GPT2Model by calling net.hybridize(), you cannot
+        switch between states=None, and states=list_of_NDArray between calls to
+        the net. The hybridized model will only support the type of states used
+        during the first call after hybridization.
 
         Parameters
         ----------

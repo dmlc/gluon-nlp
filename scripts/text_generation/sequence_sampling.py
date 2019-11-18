@@ -170,6 +170,9 @@ def generate():
                                               scorer=scorer,
                                               max_length=args.max_length - len(bos_tokens))
     inputs, begin_states = get_initial_input_state(decoder, bos_ids)
+
+    sampler._decoder.net.hybridize()  # Hybridize after we obtained the initial states
+
     # samples have shape (1, beam_size, length), scores have shape (1, beam_size)
     samples, scores, valid_lengths = sampler(inputs, begin_states)
     samples = samples[0].asnumpy()
