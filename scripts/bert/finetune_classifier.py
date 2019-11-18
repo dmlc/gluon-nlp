@@ -165,10 +165,10 @@ if args.only_inference and not args.model_parameters:
 get_pretrained = not (args.pretrained_bert_parameters is not None
                       or args.model_parameters is not None)
 
-use_roberta = 'roberta' in args.model_name
+use_roberta = 'roberta' in args.bert_model
 get_model_params = {
-    'name': args.model_name,
-    'dataset_name': args.dataset,
+    'name': args.bert_model,
+    'dataset_name': args.bert_dataset,
     'pretrained': args.get_pretrained,
     'ctx': ctx,
     'use_decoder': False,
@@ -216,7 +216,7 @@ model.hybridize(static_alloc=True)
 loss_function.hybridize(static_alloc=True)
 
 # data processing
-do_lower_case = 'uncased' in args.dataset
+do_lower_case = 'uncased' in args.bert_dataset
 if use_roberta:
     bert_tokenizer = nlp.data.GPT2BPETokenizer()
 else:
