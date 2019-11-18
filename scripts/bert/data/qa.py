@@ -52,7 +52,7 @@ def _worker_fn(example, transform):
     return feature
 
 
-def preprocess_dataset(dataset, transform, num_workers=8):
+def preprocess_dataset(dataset, transform, num_workers=8, for_calibration=False):
     """Use multiprocessing to perform transform for dataset.
 
     Parameters
@@ -77,8 +77,14 @@ def preprocess_dataset(dataset, transform, num_workers=8):
                 dataset_transform.append(_data[:-1])
                 dataset_len.append(_data[-1])
 
-    dataset = SimpleDataset(dataset_transform).transform(
-        lambda x: (x[0], x[1], x[2], x[3], x[4], x[5]))
+    if for_calibration:
+        # gluon calibration api supposes there must be input datas and one label per data entry.
+        dataset = SimpleDataset(dataset_transform).transform(
+            lambda x: (x[1], x[2], x[3], x[4]))
+    else:
+        dataset = SimpleDataset(dataset_transform).transform(
+            lambda x: (x[0], x[1], x[2], x[3], x[4], x[5]))
+
     end = time.time()
     pool.close()
     print('Done! Transform dataset costs %.2f seconds.' % (end-start))
