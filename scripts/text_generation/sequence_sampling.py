@@ -61,7 +61,7 @@ for p in [beam_search_parser, random_sample_parser]:
     p.add_argument('--lm-model', type=str, default='awd_lstm_lm_1150',
                    help='type of the pre-trained model to load, can be "standard_lstm_lm_200", '
                         '"standard_lstm_lm_650", "standard_lstm_lm_1500", '
-                        '"awd_lstm_lm_1150", etc.')
+                        '"awd_lstm_lm_1150", "gpt2_117m", "gpt2_345m", etc.')
     p.add_argument('--max-length', type=int, default=20, help='Maximum sentence length.')
     p.add_argument('--print-num', type=int, default=3, help='Number of sentences to display.')
     p.add_argument('--bos', type=str, default='I think this works')
