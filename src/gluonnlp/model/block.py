@@ -125,3 +125,26 @@ class GELU(HybridBlock):
     def __repr__(self):
         s = '{name}()'
         return s.format(name=self.__class__.__name__)
+    
+  
+class Mish(HybridBlock):
+    """Mish: A Self Regularized Non-Monotnic Neural Activation Function
+
+    https://arxiv.org/abs/1908.08681
+    """
+
+    def hybrid_forward(self, F, x): 
+        """
+
+        Parameters
+        ----------
+        Inputs:
+            - **data**: input tensor with arbitrary shape.
+        Outputs:
+            - **out**: output tensor with the same shape as `data`.
+        """
+        return x * F.tanh(math.log(1 + math.exp(x)))
+
+    def __repr__(self):
+        s = '{name}()'
+        return s.format(name=self.__class__.__name__)
