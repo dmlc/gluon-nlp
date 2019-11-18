@@ -245,3 +245,4 @@ class XLNetDatasetTransform:
             return input_ids, valid_length, segment_ids, label
         else:
             return self._xl_xform(line)
+            
