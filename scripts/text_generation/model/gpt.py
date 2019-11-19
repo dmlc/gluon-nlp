@@ -275,7 +275,8 @@ class GPT2Model(HybridBlock):
         if F is mx.nd:
             length = data.shape[1] + (states[0].shape[1] if states is not None else 0)
             assert length <= self._max_length
-        data_pos = F.broadcast_like(F.expand_dims(data_pos, axis=0), data,
+        # astype cast to workaround https://github.com/apache/incubator-mxnet/issues/16851
+        data_pos = F.broadcast_like(F.expand_dims(data_pos, axis=0), data.astype('int32'),
                                     lhs_axes=(0, ), rhs_axes=(0, ))
         out = self._embed(data) + self._pos_embed(data_pos)
         for i in range(self._num_layers):
