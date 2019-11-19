@@ -235,7 +235,7 @@ class XLNetDatasetTransform:
             Input strings. For sequence pairs, the input is a tuple of 3 strings:
             (text_a, text_b, label). For single sequences, the input is a tuple
             of 2 strings: (text_a, label).
-            
+
         Returns
         -------
         np.array: input token ids in 'int32', shape (batch_size, seq_length)
