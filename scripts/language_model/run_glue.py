@@ -116,7 +116,7 @@ def split_and_load(arrs, ctx):
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logging.captureWarnings(True)
-handler = logging.FileHandler('log.txt')
+handler = logging.FileHandler('log_{0}.txt'.format(args.task_name))
 handler.setLevel(logging.INFO)
 handler2 = logging.StreamHandler()
 handler2.setLevel(logging.INFO)
