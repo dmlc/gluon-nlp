@@ -392,8 +392,10 @@ def train(metric):
                     for splited_data in data_list:
                         input_ids, valid_length, segment_ids, label = splited_data
                         out = model(input_ids, segment_ids, valid_length=valid_length)
-                        out_list.append(out)
-                        label_list.append(label)
+                        # for STS-B, a 1-size batch may raise numerical error
+                        if args.task_name != 'STS-B' or out.shape[0] >= 2:
+                            out_list.append(out)
+                            label_list.append(label)
                         ls = loss_function(out, label).mean() / len(ctxs)
                         ls.backward()
                         batch_loss.append(ls)
