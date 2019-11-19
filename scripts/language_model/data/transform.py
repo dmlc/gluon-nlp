@@ -4,6 +4,7 @@ import numpy as np
 
 class XLNetSentenceTransform:
     r"""XLNet style data transformation.
+
     The transformation is processed in the following steps:
     - tokenize the input sequences
     - insert [CLS], [SEP] as necessary. Note that the [CLS] token is inserted
@@ -12,6 +13,7 @@ class XLNetSentenceTransform:
       sequence or the second sequence.
     - generate valid length
     - pad the sequence to max_length. Note that we use left pad in XLNet
+
     For sequence pairs, the input is a tuple of 3 strings:
     text_a, text_b and label.
     Inputs:
@@ -37,12 +39,14 @@ class XLNetSentenceTransform:
         type_ids: 0   0   0  0     0 0      0
         valid_length: 7
         label: 1
+
     Parameters
     ----------
     line: tuple of str
         Input strings. For sequence pairs, the input is a tuple of 3 strings:
         (text_a, text_b, label). For single sequences, the input is a tuple
         of 2 strings: (text_a, label).
+
     Returns
     -------
     np.array: input token ids in 'int32', shape (batch_size, seq_length)
@@ -147,6 +151,7 @@ class XLNetSentenceTransform:
 
 class XLNetDatasetTransform:
     """Dataset transformation for XLNet-style sentence classification or regression.
+
     Parameters
     ----------
     tokenizer : BERTTokenizer.
@@ -190,12 +195,14 @@ class XLNetDatasetTransform:
 
     def __call__(self, line):
         """Perform transformation for sequence pairs or single sequences.
+
         The transformation is processed in the following steps:
         - tokenize the input sequences
         - insert [CLS], [SEP] as necessary
         - generate type ids to indicate whether a token belongs to the first
           sequence or the second sequence.
         - generate valid length
+
         For sequence pairs, the input is a tuple of 3 strings:
         text_a, text_b and label.
         Inputs:
@@ -221,12 +228,14 @@ class XLNetDatasetTransform:
             type_ids: 0   0   0  0     0 0      0
             valid_length: 7
             label: 1
+
         Parameters
         ----------
         line: tuple of str
             Input strings. For sequence pairs, the input is a tuple of 3 strings:
             (text_a, text_b, label). For single sequences, the input is a tuple
             of 2 strings: (text_a, label).
+            
         Returns
         -------
         np.array: input token ids in 'int32', shape (batch_size, seq_length)
