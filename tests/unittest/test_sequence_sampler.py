@@ -27,7 +27,6 @@ def test_beam_search_score(length, alpha, K):
     lp = (K + length) ** alpha / (K + 1) ** alpha
     assert_allclose(scores.asnumpy(), sum_log_probs.asnumpy() / lp, 1E-5, 1E-5)
 
-@pytest.mark.skip_master
 @pytest.mark.serial
 @pytest.mark.parametrize('top_k', [None, 5])
 def test_sequence_sampler(top_k):

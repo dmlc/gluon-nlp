@@ -61,7 +61,6 @@ def test_glove():
     time.sleep(5)
 
 
-@pytest.mark.skip_master
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
@@ -159,7 +158,6 @@ def test_sampling(method, lmmodel):
     time.sleep(5)
 
 
-@pytest.mark.skip_master
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
