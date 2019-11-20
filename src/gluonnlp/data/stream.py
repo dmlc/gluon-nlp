@@ -25,6 +25,7 @@ import glob
 import multiprocessing
 import multiprocessing.pool
 import os
+import queue
 import random
 import sys
 import threading
@@ -33,12 +34,7 @@ import traceback
 import numpy as np
 
 import mxnet as mx
-from mxnet.gluon.data import RandomSampler, SequentialSampler, Sampler
-
-try:
-    import Queue as queue
-except ImportError:
-    import queue
+from mxnet.gluon.data import RandomSampler, Sampler, SequentialSampler
 
 __all__ = [
     'DataStream', 'SimpleDataStream', 'DatasetStream', 'SimpleDatasetStream',
