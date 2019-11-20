@@ -265,7 +265,7 @@ class GPT2Model(HybridBlock):
         """
         new_states = []
         if states is not None:
-            prev_len_range = F.contrib.arange_like(states[0], axis=1).astype('int32')
+            prev_len_range = F.contrib.arange_like(states[0], axis=2).astype('int32')
             prev_len = F.broadcast_add(F.slice_axis(prev_len_range, axis=0, begin=-1, end=None),
                                        F.ones((1, ), dtype='int32'))
             data_pos = F.broadcast_add(
@@ -273,7 +273,7 @@ class GPT2Model(HybridBlock):
         else:
             data_pos = F.contrib.arange_like(data, axis=1).astype('int32')
         if F is mx.nd:
-            length = data.shape[1] + (states[0].shape[1] if states is not None else 0)
+            length = data.shape[1] + (states[0].shape[2] if states is not None else 0)
             assert length <= self._max_length
         # astype cast to workaround https://github.com/apache/incubator-mxnet/issues/16851
         data_pos = F.broadcast_like(F.expand_dims(data_pos, axis=0), data.astype('int32'),
