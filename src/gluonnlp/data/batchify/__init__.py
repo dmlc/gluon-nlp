@@ -18,7 +18,7 @@
 # pylint: disable=wildcard-import
 """Batchify helpers."""
 
-from . import batchify, language_model
+from . import batchify, embedding, language_model
 from .batchify import *
 from .embedding import *
 from .language_model import *
