@@ -102,6 +102,7 @@ parser.add_argument(
 
 parser.add_argument('--dropout', type=float, default=0.1, help='dropout')
 parser.add_argument('--attention_dropout', type=float, default=0.1, help='attention dropout')
+parser.add_argument('--lr_decay', type=str, default='linear', help='lr decay')
 args = parser.parse_args()
 
 
@@ -374,10 +375,11 @@ def train(metric):
             tic = time.time()
             all_model_params.zero_grad()
             for batch_id, seqs in enumerate(train_data):
+                new_lr = args.lr
                 # learning rate schedule
                 if step_num < num_warmup_steps:
                     new_lr = args.lr * step_num / num_warmup_steps
-                else:
+                elif args.lr_decay == 'linear':
                     non_warmup_steps = step_num - num_warmup_steps
                     offset = non_warmup_steps / (num_train_steps - num_warmup_steps)
                     new_lr = max(0, args.lr - offset * args.lr)
