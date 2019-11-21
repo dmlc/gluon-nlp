@@ -28,8 +28,6 @@ from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 
 from .. import _constants as C
-from ..vocab import BERTVocab
-from ..data import SentencepieceTokenizer
 
 __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
@@ -214,7 +212,6 @@ def _slice_pad_length(num_items, length, overlap=0):
     else:
         return 0
 
-
 # name:[sha hash, file extention]
 _vocab_sha1 = {'wikitext-2': ['be36dc5238c2e7d69720881647ab72eb506d0131', '.vocab'],
                'gbw': ['ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f', '.vocab'],
@@ -241,11 +238,11 @@ _vocab_sha1 = {'wikitext-2': ['be36dc5238c2e7d69720881647ab72eb506d0131', '.voca
                'baidu_ernie_uncased': ['223553643220255e2a0d4c60e946f4ad7c719080', '.vocab'],
                'openai_webtext': ['f917dc7887ce996068b0a248c8d89a7ec27b95a1', '.vocab'],
                'xlnet_126gb': ['0d74490383bbc5c62b8bcea74d8b74a1bb1280b3', '.vocab'],
-               'kobert_news_wiki_ko_cased': ['f86b1a8355819ba5ab55e7ea4a4ec30fdb5b084f', '.spiece']}
+               'kobert_news_wiki_ko_cased':['f86b1a8355819ba5ab55e7ea4a4ec30fdb5b084f','.spiece']}
 
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
-
+#_url_format = '{repo_url}{file_name}.zip'
 
 def train_valid_split(dataset, valid_ratio=0.05):
     """Split the dataset into training and validation sets.
@@ -327,7 +324,7 @@ def _load_pretrained_vocab(name, root, cls=None):
     prefix = str(time.time())
     zip_file_path = os.path.join(root, prefix + file_name + '.zip')
     # will be fixed after merge
-    repo_url = _get_repo_url() if name.startswith() != 'kobert' else 'https://kobert.blob.core.windows.net/models/kobert/tokenizer/'
+    repo_url = _get_repo_url() # if not name.startswith('kobert') else 'https://kobert.blob.core.windows.net/models/kobert/tokenizer/'
     download(_url_format.format(repo_url=repo_url, file_name=file_name),
              path=zip_file_path,
              overwrite=True)
@@ -351,10 +348,11 @@ def _load_pretrained_vocab(name, root, cls=None):
 def _load_vocab_file(file_path, cls):
     with open(file_path, 'r') as f:
         if cls is None:
-            # pylint: disable=import-outside-toplevel
             from ..vocab import Vocab
             cls = Vocab
-        if file_path.startswith('.spiece'):
+        if file_path.endswith('.spiece'):
+            from ..vocab import BERTVocab
+            from ..data import SentencepieceTokenizer
             return BERTVocab.from_sentencepiece(file_path, padding_token='[PAD]'), SentencepieceTokenizer(file_path)
         else:
             return cls.from_json(f.read()), None

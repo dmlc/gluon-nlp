@@ -1169,7 +1169,7 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
                           layer_norm_eps=predefined_args.get('layer_norm_eps', 1e-5))
 
     from ..vocab import Vocab  # pylint: disable=import-outside-toplevel
-    bert_vocab = _load_vocab(dataset_name, vocab, root, cls=Vocab)
+    bert_vocab, _ = _load_vocab(dataset_name, vocab, root, cls=Vocab)
     # BERT
     net = RoBERTaModel(encoder, len(bert_vocab),
                        units=predefined_args['units'],
@@ -1255,7 +1255,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
 
     Returns
     -------
-    (BERTModel, gluonnlp.vocab.BERTVocab) or (BERTModel, gluonnlp.vocab.BERTVocab, gluonnlp.data.SentencepieceTokenizer)
+    (BERTModel, gluonnlp.vocab.BERTVocab) or (BERTModel, gluonnlp.vocab.BERTVocab, gluonnlp.data.SentencepieceTokenizer) if model provides sentencepiece model only.
     """
     predefined_args = bert_hparams[model_name]
     mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
