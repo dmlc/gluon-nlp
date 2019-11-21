@@ -24,17 +24,8 @@ import random
 
 import numpy as np
 
+from ...base import numba_njit, numba_prange
 from ..stream import DataStream
-
-try:
-    from numba import njit, prange
-    numba_njit = njit(nogil=True)
-except ImportError:
-    # Define numba shims
-    prange = range
-
-    def numba_njit(func):
-        return func
 
 
 class EmbeddingCenterContextBatchify:
@@ -127,7 +118,7 @@ class _EmbeddingCenterContextBatchify(DataStream):
         self._index_dtype = index_dtype
 
     def __iter__(self):
-        if prange is range:
+        if numba_prange is range:
             logging.warning(
                 'EmbeddingCenterContextBatchify supports just in time compilation '
                 'with numba, but numba is not installed. '

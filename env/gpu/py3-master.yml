@@ -20,6 +20,7 @@ dependencies:
     - seaborn
     - jieba
     - cython
+    - boto3
     - pytype==2019.10.17
     - pytest==5.2.3
     - pytest-env==0.6.2
