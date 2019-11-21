@@ -37,6 +37,7 @@ from .utils import _load_pretrained_params, _load_vocab
 #                              COMPONENTS                                     #
 ###############################################################################
 
+
 class BERTEncoder(HybridBlock, Seq2SeqEncoder):
     """Structure of the BERT Encoder.
 
@@ -130,7 +131,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
                     activation=activation, layer_norm_eps=layer_norm_eps)
                 self.transformer_cells.add(cell)
 
-    def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
+    def __call__(self, inputs, states=None, valid_length=None):  # pylint: disable=arguments-differ
         """Encode the inputs given the states and valid sequence length.
 
         Parameters
@@ -1055,6 +1056,7 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
                              dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
                              use_decoder=use_decoder,
                              root=root, **kwargs)
+
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,

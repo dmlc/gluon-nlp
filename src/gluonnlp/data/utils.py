@@ -214,6 +214,7 @@ def _slice_pad_length(num_items, length, overlap=0):
     else:
         return 0
 
+
 # name:[sha hash, file extention]
 _vocab_sha1 = {'wikitext-2': ['be36dc5238c2e7d69720881647ab72eb506d0131', '.vocab'],
                'gbw': ['ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f', '.vocab'],
@@ -240,7 +241,7 @@ _vocab_sha1 = {'wikitext-2': ['be36dc5238c2e7d69720881647ab72eb506d0131', '.voca
                'baidu_ernie_uncased': ['223553643220255e2a0d4c60e946f4ad7c719080', '.vocab'],
                'openai_webtext': ['f917dc7887ce996068b0a248c8d89a7ec27b95a1', '.vocab'],
                'xlnet_126gb': ['0d74490383bbc5c62b8bcea74d8b74a1bb1280b3', '.vocab'],
-               'kobert_news_wiki_ko_cased':['f86b1a8355819ba5ab55e7ea4a4ec30fdb5b084f','.spiece']}
+               'kobert_news_wiki_ko_cased': ['f86b1a8355819ba5ab55e7ea4a4ec30fdb5b084f', '.spiece']}
 
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
