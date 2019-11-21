@@ -22,7 +22,7 @@ __all__ = ['Highway']
 
 from mxnet import gluon
 from mxnet.gluon import nn
-from gluonnlp.initializer import HighwayBias
+from ..initializer import HighwayBias
 
 
 class Highway(gluon.HybridBlock):

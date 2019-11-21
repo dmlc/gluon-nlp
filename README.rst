@@ -15,7 +15,7 @@ GluonNLP: Your Choice of Deep Learning for NLP
 
 .. raw:: html
 
-   <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='https://img.shields.io/badge/python-3.6%2C3.7-blue.svg'></a>
+   <a href='http://ci.mxnet.io/job/gluon-nlp/job/master/'><img src='https://img.shields.io/badge/python-3.5%2C3.7-blue.svg'></a>
    <a href='https://codecov.io/gh/dmlc/gluon-nlp'><img src='https://codecov.io/gh/dmlc/gluon-nlp/branch/master/graph/badge.svg'></a>
    <a href='http://ci.mxnet.io/job/gluonnlp-py3-master-gpu-doc/job/master/'><img src='http://ci.mxnet.io/buildStatus/icon?job=gluonnlp-py3-master-gpu-doc%2Fmaster'></a>
    <a href='https://pypi.org/project/gluonnlp/#history'><img src='https://img.shields.io/pypi/v/gluonnlp.svg'></a>
@@ -43,8 +43,8 @@ News
 Installation
 ============
 
-Make sure you have Python 3.6 or newer and a recent version of MXNet (our CI
-server runs the testsuite with Python 3.6).
+Make sure you have Python 3.5 or newer and a recent version of MXNet (our CI
+server runs the testsuite with Python 3.5).
 
 You can install ``MXNet`` and ``GluonNLP`` using pip.
 
