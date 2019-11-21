@@ -226,8 +226,8 @@ class TokenEmbedding:
                         unknown_index = 0
                     else:
                         raise ValueError('unknown_token "{}" is not part of idx_to_vec but '
-                                         'init_unknown_vec is None. You must provide either of them.'
-                                         .format(unknown_token))
+                                         'init_unknown_vec is None. '
+                                         'You must provide either of them.'.format(unknown_token))
 
             # Initialization
             self._unknown_token = unknown_token

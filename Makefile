@@ -25,7 +25,7 @@ pylint:
 	pylint --rcfile=$(ROOTDIR)/.pylintrc $(lintdir)
 
 pytype:
-	pytype --rcfile=$(ROOTDIR)/.pytype.cfg
+	pytype --config=$(ROOTDIR)/.pytype.cfg
 
 restruc:
 	python setup.py check --restructuredtext --strict
