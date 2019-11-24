@@ -132,7 +132,7 @@ def extract_weights(args):
         if 'w_0' in ernie_name:
             fluid_array = fluid_array.transpose()
         state_dict[gluon_name] = fluid_array
-        print(f'{ernie_name} -> {gluon_name} {fluid_array.shape}')
+        print('{} -> {} {}'.format(ernie_name, gluon_name, fluid_array.shape))
     print('extract weights done!'.center(60, '='))
     return state_dict
 

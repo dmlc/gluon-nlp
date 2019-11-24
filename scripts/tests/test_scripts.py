@@ -135,14 +135,19 @@ def test_sentiment_analysis_textcnn():
                                      '--dropout', '0.5', '--model_mode', 'rand', '--data_name', 'MR'])
     time.sleep(5)
 
-@pytest.mark.skip_master
 @pytest.mark.remote_required
 @pytest.mark.gpu
 @pytest.mark.serial
 @pytest.mark.integration
 @pytest.mark.parametrize('method', ['beam_search', 'sampling'])
-def test_sampling(method):
-    args = ['--bos', 'I love it', '--beam-size', '2', '--print-num', '1', '--gpu', '0']
+@pytest.mark.parametrize('lmmodel', ['awd_lstm_lm_1150', 'gpt2_117m'])
+def test_sampling(method, lmmodel):
+    if 'gpt2' in lmmodel and method == 'beam_search':
+        return  # unsupported
+    args = [
+        '--bos', 'I love it', '--beam-size', '2', '--print-num', '1', '--gpu', '0', '--lm-model',
+        lmmodel
+    ]
     if method == 'beam_search':
         args.insert(0, 'beam-search')
         args.extend(['--k', '50'])
