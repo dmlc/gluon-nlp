@@ -23,9 +23,6 @@ import mxnet as mx
 from mxnet.gluon import rnn
 from mxnet.gluon.block import Block
 
-from .attention_cell import (AttentionCell, DotProductAttentionCell,
-                             MLPAttentionCell, MultiHeadAttentionCell)
-
 
 def _get_cell_type(cell_type):
     """Get the object type of the cell by parsing the input

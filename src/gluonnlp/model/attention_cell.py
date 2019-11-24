@@ -92,7 +92,7 @@ class AttentionCell(HybridBlock):
         out = cell(query, key, value, mask)
 
     """
-    def __init__(self,unnormalized_score=False, prefix=None, params=None):
+    def __init__(self, unnormalized_score=False, prefix=None, params=None):
         self._dtype = np.float32
         self._unnormalized_score = unnormalized_score
         super(AttentionCell, self).__init__(prefix=prefix, params=params)
@@ -222,9 +222,10 @@ class MultiHeadAttentionCell(AttentionCell):
         See document of `Block`.
     """
     def __init__(self, base_cell, query_units, key_units, value_units, num_heads, use_bias=True,
-                 weight_initializer=None, bias_initializer='zeros',unnormalized_score=False, prefix=None, params=None):
+                 weight_initializer=None, bias_initializer='zeros',
+                 unnormalized_score=False, prefix=None, params=None):
         super(MultiHeadAttentionCell,
-              self).__init__(unnormalized_score=unnormalized_score,prefix=prefix, params=params)
+              self).__init__(unnormalized_score=unnormalized_score, prefix=prefix, params=params)
         self._base_cell = base_cell
         self._num_heads = num_heads
         self._use_bias = use_bias
@@ -343,7 +344,8 @@ class MLPAttentionCell(AttentionCell):
     """
 
     def __init__(self, units, act=nn.Activation('tanh'), normalized=False, dropout=0.0,
-                 weight_initializer=None, bias_initializer='zeros', unnormalized_score=False,prefix=None, params=None):
+                 weight_initializer=None, bias_initializer='zeros',
+                 unnormalized_score=False, prefix=None, params=None):
         # Define a temporary class to implement the normalized version
         # TODO(sxjscience) Find a better solution
         class _NormalizedScoreProj(HybridBlock):
@@ -409,7 +411,7 @@ class MLPAttentionCell(AttentionCell):
         if mask is not None:
             att_weights = att_weights * mask
         att_weights = self._dropout_layer(att_weights)
-        return att_weights,att_score
+        return att_weights, att_score
 
 
 class DotProductAttentionCell(AttentionCell):
@@ -472,8 +474,8 @@ class DotProductAttentionCell(AttentionCell):
         See document of `Block`.
     """
     def __init__(self, units=None, luong_style=False, scaled=True, normalized=False, use_bias=True,
-                 dropout=0.0, weight_initializer=None, bias_initializer='zeros',unnormalized_score=False,
-                 prefix=None, params=None):
+                 dropout=0.0, weight_initializer=None, bias_initializer='zeros',
+                 unnormalized_score=False, prefix=None, params=None):
         super(DotProductAttentionCell,
               self).__init__(unnormalized_score=unnormalized_score,
                              prefix=prefix,
