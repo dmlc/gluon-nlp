@@ -318,11 +318,11 @@ class BERTModel(HybridBlock):
         self.encoder = encoder
         # Construct word embedding
         self.word_embed = self._get_embed(word_embed, vocab_size, embed_size,
-                                          embed_initializer, embed_dropout, 'word_embed_')
+                                          embed_initializer, 'word_embed_')
         # Construct token type embedding
         if use_token_type_embed:
             self.token_type_embed = self._get_embed(token_type_embed, token_type_vocab_size,
-                                                    embed_size, embed_initializer, embed_dropout,
+                                                    embed_size, embed_initializer,
                                                     'token_type_embed_')
         if self._use_pooler:
             # Construct pooler
@@ -354,7 +354,7 @@ class BERTModel(HybridBlock):
             'The weights of word embedding are not tied with those of decoder'
         return decoder
 
-    def _get_embed(self, embed, vocab_size, embed_size, initializer, dropout, prefix):
+    def _get_embed(self, embed, vocab_size, embed_size, initializer, prefix):
         """ Construct an embedding block. """
         if embed is None:
             assert embed_size is not None, '"embed_size" cannot be None if "word_embed" or ' \
@@ -364,8 +364,6 @@ class BERTModel(HybridBlock):
                 with embed.name_scope():
                     embed.add(nn.Embedding(input_dim=vocab_size, output_dim=embed_size,
                                            weight_initializer=initializer))
-                    if dropout:
-                        embed.add(nn.Dropout(rate=dropout))
         assert isinstance(embed, HybridBlock)
         return embed
 
