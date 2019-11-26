@@ -348,7 +348,7 @@ def test_finetune_squad(sentencepiece):
 @pytest.mark.parametrize('dataset', ['MRPC'])
 def test_xlnet_finetune_glue(dataset):
     arguments = ['--batch_size', '32', '--task_name', dataset,
-                 '--gpu', '0', '--epochs', '1', '--max_len', '32']
+                 '--gpu', '1', '--epochs', '1', '--max_len', '32']
     process = subprocess.check_call([sys.executable, './scripts/language_model/run_glue.py']
                                     + arguments)
     time.sleep(5)
