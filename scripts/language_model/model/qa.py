@@ -37,15 +37,14 @@ class PoolerEndLogits(HybridBlock):
         self.dense_1 = nn.Dense(1, flatten=False)
         self.layernorm = nn.LayerNorm()
 
-    def __call__(self, hidden_states, start_states=None, start_positions=None, p_masks=None):
+    def __call__(self, hidden_states, start_states=None, start_positions=None, p_masks=None, is_evaluation=False):
         # pylint: disable=arguments-differ
         return super(PoolerEndLogits, self).__call__(hidden_states, start_states, start_positions,
-                                                     p_masks)
+                                                     p_masks, is_evaluation)
 
-    def hybrid_forward(self, F, hidden_states, start_states, start_positions, p_mask):
+    def hybrid_forward(self, F, hidden_states, start_states, start_positions, p_mask, is_evaluation=False):
         # pylint: disable=arguments-differ
-        assert start_states is not None or start_positions is not None
-        if start_positions is not None:
+        if not is_evaluation:
             bsz, slen, hsz = hidden_states.shape
             start_states = mx.nd.gather_nd(hidden_states,
                                            mx.nd.concat(
@@ -123,7 +122,6 @@ class XLNetForQA(Block):
                  is_impossible=None, mems=None, is_evaluation=False):
         #pylint: disable=arguments-differ, dangerous-default-value
         """Generate the unnormalized score for the given the input sequences."""
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
         valid_length = [] if valid_length is None else valid_length
         return super(XLNetForQA, self).__call__(inputs, token_types, valid_length, p_mask, label,
                                                 is_impossible, mems, is_evaluation)
@@ -139,6 +137,7 @@ class XLNetForQA(Block):
                                        F.reshape(valid_length_start, shape=(-1, 1)))
             mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
                                    F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
+            print(mask[0][0])
         else:
             raise NotImplementedError
         return mask
@@ -163,7 +162,6 @@ class XLNetForQA(Block):
         outputs : NDArray
             Shape (batch_size, seq_length, 2)
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
         if isinstance(valid_length, list) and len(valid_length) == 0:
             valid_length = None
         valid_length_start = inputs.shape[1] - valid_length
@@ -173,7 +171,7 @@ class XLNetForQA(Block):
         if not is_evaluation:
             #training
             start_positions, end_positions = label
-            end_logit = self.end_logits(output, start_positions=start_positions, p_masks=p_mask)
+            end_logit = self.end_logits(output, start_positions=start_positions, p_masks=p_mask, is_evaluation=is_evaluation)
             span_loss = (self.loss(start_logits, start_positions) +
                          self.loss(end_logit, end_positions)) / 2
             cls_loss = None
@@ -213,7 +211,6 @@ class XLNetForQA(Block):
             end_top_log_probs = end_top_log_probs.reshape((-1, self.start_top_n * self.end_top_n))
             end_top_index = end_top_index.reshape((-1, self.start_top_n * self.end_top_n))
 
-            #einsum("blh,bl->bh", output, start_log_probs) need further check
             start_states = mx.nd.batch_dot(output, start_log_probs.expand_dims(-1),
                                            transpose_a=True).squeeze(-1)
 
