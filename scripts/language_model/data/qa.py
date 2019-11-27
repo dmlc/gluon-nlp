@@ -352,7 +352,7 @@ class SQuADTransform:
             p_mask.append(1)
             tokens.append(self.vocab.cls_token)
             segment_ids.append(1)
-            p_mask.append(1)
+            p_mask.append(0)
 
             if self.do_lookup:
                 input_ids = self.vocab.to_indices(tokens)
