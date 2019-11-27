@@ -107,16 +107,17 @@ class XLNetForQA(Block):
     params : ParameterDict or None
         See document of `mx.gluon.Block`.
     """
-    def __init__(self, xlnet_base, start_top_n=None, end_top_n=None, prefix=None, params=None):
+    def __init__(self, xlnet_base, start_top_n=None, end_top_n=None, version_2=False, prefix=None, params=None):
         super(XLNetForQA, self).__init__(prefix=prefix, params=params)
         self.xlnet = xlnet_base
         self.start_top_n = start_top_n
         self.end_top_n = end_top_n
         self.loss = loss.SoftmaxCELoss()
-        self.cls_loss = loss.SigmoidBinaryCrossEntropyLoss()
         self.start_logits = PoolerStartLogits()
         self.end_logits = PoolerEndLogits()
-        self.answer_class = XLNetPoolerAnswerClass()
+        if version_2:
+            self.answer_class = XLNetPoolerAnswerClass()
+            self.cls_loss = loss.SigmoidBinaryCrossEntropyLoss()
 
     def __call__(self, inputs, token_types, valid_length=None, label=None, p_mask=None,
                  is_impossible=None, mems=None, is_evaluation=False):
@@ -137,7 +138,6 @@ class XLNetForQA(Block):
                                        F.reshape(valid_length_start, shape=(-1, 1)))
             mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
                                    F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
-            print(mask[0][0])
         else:
             raise NotImplementedError
         return mask

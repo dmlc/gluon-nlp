@@ -182,32 +182,24 @@ batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack('float32'),
     nlp.data.batchify.Stack('float32'))
 
-net = XLNetForQA(xlnet_base=xlnet_base, start_top_n=args.start_top_n, end_top_n=args.end_top_n)
+if pretrained_xlnet_parameters:
+    # only load XLnetModel parameters
+    nlp.utils.load_parameters(xlnet_base, pretrained_xlnet_parameters, ctx=ctx, ignore_extra=True,
+                              cast_dtype=True)
 
+net = XLNetForQA(xlnet_base=xlnet_base, start_top_n=args.start_top_n, end_top_n=args.end_top_n)
+print(net)
 initializer = mx.init.Normal(0.02)
 
 if args.model_parameters:
     # load complete XLNetForQA parameters
     nlp.utils.load_parameters(net, args.model_parameters, ctx=ctx, cast_dtype=True)
 
-elif pretrained_xlnet_parameters:
-    # only load XLnetModel parameters
-    nlp.utils.load_parameters(xlnet_base, pretrained_xlnet_parameters, ctx=ctx, ignore_extra=True,
-                              cast_dtype=True)
-    net.start_logits.initialize(init=initializer, ctx=ctx)
-    net.end_logits.initialize(init=initializer, ctx=ctx)
+net.start_logits.initialize(init=initializer, ctx=ctx)
+net.end_logits.initialize(init=initializer, ctx=ctx)
+if args.version_2:
     net.answer_class.initialize(init=initializer, ctx=ctx)
 
-elif get_pretrained:
-    # only load XLNetModel parameters
-    net.start_logits.initialize(init=initializer, ctx=ctx)
-    net.end_logits.initialize(init=initializer, ctx=ctx)
-    net.answer_class.initialize(init=initializer, ctx=ctx)
-else:
-    # no checkpoint is loaded
-    net.start_logits.initialize(init=initializer, ctx=ctx)
-    net.end_logits.initialize(init=initializer, ctx=ctx)
-    net.answer_class.initialize(init=initializer, ctx=ctx)
 
 
 def split_and_load(arrs, _ctx):
@@ -314,7 +306,7 @@ def train():
                         token_types,
                         valid_length,
                         [start_label, end_label],
-                        p_mask=p_mask, 
+                        p_mask=p_mask,  # pylint: disable=line-too-long
                         is_impossible=is_impossible)
                     ls = out[0] / len(ctx)
                     if args.accumulate:
