@@ -567,6 +567,8 @@ def evaluate(loader_dev, metric, segment):
     metric.reset()
     step_loss = 0
     tic = time.time()
+    label_list = []
+    out_list = []
     for batch_id, seqs in enumerate(loader_dev):
         input_ids, valid_length, segment_ids, label = seqs
         input_ids = input_ids.as_in_context(ctx)
@@ -576,15 +578,19 @@ def evaluate(loader_dev, metric, segment):
             out = model(input_ids, valid_length)
         else:
             out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
+        label_list.append(label.as_in_context(mx.cpu(0)))
+        out_list.append(out.as_in_context(mx.cpu(0)))
         ls = loss_function(out, label).mean()
 
         step_loss += ls.asscalar()
-        metric.update([label], [out])
 
         if (batch_id + 1) % (args.log_interval) == 0:
             log_eval(batch_id, len(loader_dev), metric, step_loss, args.log_interval)
             step_loss = 0
 
+    label_list = mx.nd.concat(*label_list, dim=0)
+    out_list = mx.nd.concat(*out_list, dim=0)
+    metric.update([label_list], [out_list])
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
         metric_nm, metric_val = [metric_nm], [metric_val]
