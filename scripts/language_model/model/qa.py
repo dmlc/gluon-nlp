@@ -115,6 +115,7 @@ class XLNetForQA(Block):
         self.loss = loss.SoftmaxCELoss()
         self.start_logits = PoolerStartLogits()
         self.end_logits = PoolerEndLogits()
+        self.version2 = version_2
         if version_2:
             self.answer_class = XLNetPoolerAnswerClass()
             self.cls_loss = loss.SigmoidBinaryCrossEntropyLoss()
@@ -172,6 +173,7 @@ class XLNetForQA(Block):
             #training
             start_positions, end_positions = label
             end_logit = self.end_logits(output, start_positions=start_positions, p_masks=p_mask, is_evaluation=is_evaluation)
+            print("start_logit")
             span_loss = (self.loss(start_logits, start_positions) +
                          self.loss(end_logit, end_positions)) / 2
             cls_loss = None
@@ -201,9 +203,9 @@ class XLNetForQA(Block):
             hidden_states_expanded = mx.ndarray.broadcast_to(
                 hidden_states_expanded,
                 shape=start_states.shape)  # shape (bsz, slen, start_n_top, hsz)
-
+            #breakpoint()
             end_logits = self.end_logits(
-                hidden_states_expanded, start_states=start_states)  # shape (bsz, slen, start_n_top)
+                hidden_states_expanded, start_states=start_states, is_evaluation=is_evaluation)  # shape (bsz, slen, start_n_top)
             end_log_probs = mx.nd.softmax(end_logits, axis=1)  # shape (bsz, slen, start_n_top)
             end_top_log_probs, end_top_index = mx.ndarray.topk(
                 end_log_probs, k=self.end_top_n, axis=1,
@@ -213,8 +215,9 @@ class XLNetForQA(Block):
 
             start_states = mx.nd.batch_dot(output, start_log_probs.expand_dims(-1),
                                            transpose_a=True).squeeze(-1)
-
-            cls_logits = self.answer_class(output, start_states=start_states)
+            cls_logits = mx.nd.array([1e20])
+            if self.version2:
+                cls_logits = self.answer_class(output, start_states=start_states)
             outputs = (start_top_log_probs, start_top_index, end_top_log_probs, end_top_index,
                        cls_logits)
             return outputs

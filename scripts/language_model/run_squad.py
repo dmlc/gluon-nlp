@@ -187,8 +187,7 @@ if pretrained_xlnet_parameters:
     nlp.utils.load_parameters(xlnet_base, pretrained_xlnet_parameters, ctx=ctx, ignore_extra=True,
                               cast_dtype=True)
 
-net = XLNetForQA(xlnet_base=xlnet_base, start_top_n=args.start_top_n, end_top_n=args.end_top_n)
-print(net)
+net = XLNetForQA(xlnet_base=xlnet_base, start_top_n=args.start_top_n, end_top_n=args.end_top_n, version_2=args.version_2)
 initializer = mx.init.Normal(0.02)
 
 if args.model_parameters:
@@ -290,7 +289,6 @@ def train():
         step_loss = 0.0
         tic = time.time()
         for batch_id, data in enumerate(train_dataloader):
-            break
             # set new lr
             step_num = set_new_lr(step_num, batch_id)
             data_list = list(split_and_load(data, ctx))
@@ -320,7 +318,6 @@ def train():
                 trainer.update(1)
 
             step_loss += ls.asscalar()
-
             if (batch_id + 1) % log_interval == 0:
                 toc = time.time()
                 log.info(
