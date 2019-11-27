@@ -173,7 +173,6 @@ class XLNetForQA(Block):
             #training
             start_positions, end_positions = label
             end_logit = self.end_logits(output, start_positions=start_positions, p_masks=p_mask, is_evaluation=is_evaluation)
-            print("start_logit")
             span_loss = (self.loss(start_logits, start_positions) +
                          self.loss(end_logit, end_positions)) / 2
             cls_loss = None
