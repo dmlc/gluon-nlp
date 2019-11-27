@@ -290,6 +290,7 @@ def train():
         step_loss = 0.0
         tic = time.time()
         for batch_id, data in enumerate(train_dataloader):
+            break
             # set new lr
             step_num = set_new_lr(step_num, batch_id)
             data_list = list(split_and_load(data, ctx))
@@ -340,10 +341,8 @@ def train():
                  total_num / (epoch_toc - epoch_tic))
         ckpt_name = 'model_xlnet_squad_{0}.params'.format(epoch_id + 1)
         params_saved = os.path.join(args.output_dir, ckpt_name)
-        nlp.utils.save_parameters(model, params_saved)
+        nlp.utils.save_parameters(net, params_saved)
         log.info('params saved in: %s', params_saved)
-
-    net.save_parameters(os.path.join(args.output_dir, 'net.params'))
 
 
 RawResultExtended = collections.namedtuple('RawResultExtended', [
