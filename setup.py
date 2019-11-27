@@ -89,6 +89,6 @@ setup(
         ],
     },
     ext_modules=[
-        Extension('gluonnlp.data.wordpiece', sources=['src/gluonnlp/data/wordpiece.pyx']),
+        Extension('gluonnlp.data.fast_bert_tokenizer', sources=['src/gluonnlp/data/fast_bert_tokenizer.pyx']),
     ],
 )
