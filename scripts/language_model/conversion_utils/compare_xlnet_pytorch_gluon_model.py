@@ -32,17 +32,20 @@ import transformers
 
 
 def compare_xlnet(args):
+    batch_size, qlen, mlen = 2, 16, 100
+
     model_p = transformers.XLNetLMHeadModel.from_pretrained(
         'xlnet-base-cased'
         if args.model_name == 'xlnet_cased_L-12_H-768_A-12' else 'xlnet-large-cased', dropout=0)
     model_p.transformer.attentions = False  # no change of default
     model_p.transformer.output_hidden_states = True
+    model_p.transformer.mem_len = mlen
 
     if args.model_name == 'xlnet_cased_L-12_H-768_A-12':
         kwargs = {
             'hidden_size': 3072,
             'units': 768,
-            'activation': 'gelu',
+            'activation': 'approx_gelu',
             'num_heads': 12,
             'num_layers': 12,
             'vocab_size': 32000
@@ -51,7 +54,7 @@ def compare_xlnet(args):
         kwargs = {
             'hidden_size': 4096,
             'units': 1024,
-            'activation': 'gelu',
+            'activation': 'approx_gelu',
             'num_heads': 16,
             'num_layers': 24,
             'vocab_size': 32000
@@ -68,7 +71,6 @@ def compare_xlnet(args):
     model.hybridize()
 
     # Computation
-    batch_size, qlen, mlen = 2, 16, 100
     mems = model.begin_mems(batch_size, mlen, context=mx.cpu())
     x = mx.nd.ones(shape=(batch_size, qlen))
     token_types = mx.nd.ones(shape=(batch_size, qlen))

@@ -29,7 +29,7 @@ readme = io.open('README.rst', encoding='utf-8').read()
 VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
 requirements = [
-    'numpy',
+    'numpy>=1.16.0',
     'cython'
 ]
 
