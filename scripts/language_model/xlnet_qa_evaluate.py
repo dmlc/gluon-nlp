@@ -186,7 +186,6 @@ def predict_extended(features, results, tokenizer, n_best_size, max_answer_lengt
                     _PrelimPrediction(features_id=features_id, start_index=start_index,
                                       end_index=end_index, start_log_prob=start_log_prob,
                                       end_log_prob=end_log_prob))
-                print()
 
     prelim_predictions = sorted(prelim_predictions, key=lambda x:
                                 (x.start_log_prob + x.end_log_prob), reverse=True)

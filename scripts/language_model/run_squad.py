@@ -448,5 +448,5 @@ if __name__ == '__main__':
     if not args.only_predict:
         train()
         evaluate()
-    elif args.model_parameters:
+    else:
         evaluate()

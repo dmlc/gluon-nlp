@@ -188,7 +188,7 @@ class XLNetForQA(Block):
             start_top_log_probs, start_top_index = mx.ndarray.topk(
                 start_log_probs, k=self.start_top_n, axis=-1,
                 ret_typ='both')  # shape (bsz, start_n_top)
-            index = mx.nd.concat(*[mx.nd.arange(bsz).expand_dims(1)] * self.start_top_n).reshape(
+            index = mx.nd.concat(*[mx.nd.arange(bsz, ctx=start_log_probs.context).expand_dims(1)] * self.start_top_n).reshape(
                 bsz * self.start_top_n, 1)
             start_top_index_rs = start_top_index.reshape((-1, 1))
             gather_index = mx.nd.concat(index, start_top_index_rs).T  #shape(2, bsz * start_n_top)
