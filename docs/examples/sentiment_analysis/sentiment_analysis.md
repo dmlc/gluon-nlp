@@ -195,7 +195,7 @@ def get_dataloader():
 
     # Pad data, stack label and lengths
     batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0, ret_length=True),
+        nlp.data.batchify.Pad(axis=0, pad_val=0, ret_length=True),
         nlp.data.batchify.Stack(dtype='float32'))
     batch_sampler = nlp.data.sampler.FixedBucketSampler(
         train_data_lengths,

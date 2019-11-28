@@ -3,7 +3,7 @@ Contribute
 
 GluonNLP community welcomes contributions from anyone! Latest documentation can be found `here <http://gluon-nlp.mxnet.io/master/index.html>`__.
 
-There are lots of opportunities for you to become our `contributors <https://github.com/dmlc/gluon-nlp/blob/master/contributor.rst>`__:
+There are lots of opportunities for you to become our `contributors <https://github.com/dmlc/gluon-nlp/graphs/contributors>`__:
 
 - Ask or answer questions on `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
 - Propose ideas, or review proposed design ideas on `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.

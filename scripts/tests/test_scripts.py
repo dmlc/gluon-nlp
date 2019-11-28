@@ -61,7 +61,6 @@ def test_glove():
     time.sleep(5)
 
 
-@pytest.mark.skip_master
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
@@ -135,14 +134,19 @@ def test_sentiment_analysis_textcnn():
                                      '--dropout', '0.5', '--model_mode', 'rand', '--data_name', 'MR'])
     time.sleep(5)
 
-@pytest.mark.skip_master
 @pytest.mark.remote_required
 @pytest.mark.gpu
 @pytest.mark.serial
 @pytest.mark.integration
 @pytest.mark.parametrize('method', ['beam_search', 'sampling'])
-def test_sampling(method):
-    args = ['--bos', 'I love it', '--beam-size', '2', '--print-num', '1', '--gpu', '0']
+@pytest.mark.parametrize('lmmodel', ['awd_lstm_lm_1150', 'gpt2_117m'])
+def test_sampling(method, lmmodel):
+    if 'gpt2' in lmmodel and method == 'beam_search':
+        return  # unsupported
+    args = [
+        '--bos', 'I love it', '--beam-size', '2', '--print-num', '1', '--gpu', '0', '--lm-model',
+        lmmodel
+    ]
     if method == 'beam_search':
         args.insert(0, 'beam-search')
         args.extend(['--k', '50'])
@@ -154,7 +158,6 @@ def test_sampling(method):
     time.sleep(5)
 
 
-@pytest.mark.skip_master
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
@@ -195,7 +198,7 @@ def test_transformer(bleu):
                                      '--bleu', '13a', 
                                      '--log_interval', '10', 
                                      '--model_parameter', './scripts/machine_translation/transformer_en_de_u512/valid_best.params', 
-                                     '--gpus', '0'
+                                     '--gpu', '0'
                                      ])
     time.sleep(5)
 
@@ -225,6 +228,8 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.remote_required
 @pytest.mark.integration
 @pytest.mark.parametrize('backend', ['horovod', 'device'])
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 11, 30),
+                    reason="mxnet nightly incompatible with horovod")
 def test_bert_pretrain(backend):
     # test data creation
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
@@ -315,7 +320,7 @@ def test_finetune_train(early_stop, bert_model, dataset, dtype):
 @pytest.mark.integration
 @pytest.mark.parametrize('task', ['classification', 'regression', 'question_answering'])
 def test_export(task):
-    process = subprocess.check_call([sys.executable, './scripts/bert/export/export.py',
+    process = subprocess.check_call([sys.executable, './scripts/bert/export.py',
                                      '--task', task])
 
 @pytest.mark.serial
@@ -333,5 +338,17 @@ def test_finetune_squad(sentencepiece):
         arguments += ['--sentencepiece', f]
 
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
+                                    + arguments)
+    time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+@pytest.mark.parametrize('dataset', ['MRPC'])
+def test_xlnet_finetune_glue(dataset):
+    arguments = ['--batch_size', '32', '--task_name', dataset,
+                 '--gpu', '1', '--epochs', '1', '--max_len', '32']
+    process = subprocess.check_call([sys.executable, './scripts/language_model/run_glue.py']
                                     + arguments)
     time.sleep(5)

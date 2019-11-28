@@ -690,25 +690,27 @@ class TokenEmbedding:
 
         if self.allow_extend:
             # Add new / previously unknown tokens
+            len_before = len(self._token_to_idx)
             for token in tokens:
-                if not token in self._token_to_idx:
+                if token not in self._token_to_idx:
                     idx = len(self._token_to_idx)
                     self._token_to_idx[token] = idx
                     self._idx_to_token.append(token)
 
-            num_extended = len(self._token_to_idx) - self.idx_to_vec.shape[0]
-            if num_extended == 1:
-                warnings.warn(
-                    'When adding new tokens via TokenEmbedding.__setitem__ '
-                    'the internal embedding matrix needs to be reallocated. '
-                    'Users are therefore encouraged to batch their updates '
-                    '(i.e. add multiple new tokens at a time).')
+            num_extended = len(self._token_to_idx) - len_before
+            if num_extended >= 1:
+                if num_extended == 1:
+                    warnings.warn(
+                        'When adding new tokens via TokenEmbedding.__setitem__ '
+                        'the internal embedding matrix needs to be reallocated. '
+                        'Users are therefore encouraged to batch their updates '
+                        '(i.e. add multiple new tokens at a time).')
 
-            # Extend shape of idx_to_vec
-            idx_to_vec = nd.zeros(shape=(len(self._token_to_idx),
-                                         self.idx_to_vec.shape[1]))
-            idx_to_vec[:self.idx_to_vec.shape[0]] = self._idx_to_vec
-            self._idx_to_vec = idx_to_vec
+                # Extend shape of idx_to_vec
+                idx_to_vec = nd.zeros(shape=(len(self._token_to_idx),
+                                             self.idx_to_vec.shape[1]))
+                idx_to_vec[:self.idx_to_vec.shape[0]] = self._idx_to_vec
+                self._idx_to_vec = idx_to_vec
 
         indices = []
         for token in tokens:
@@ -1308,7 +1310,7 @@ class Word2Vec(TokenEmbedding):
                     warnings.warn('line {} in {}: failed to decode. Skipping.'
                                   .format(line_num, pretrained_file_path))
                     continue
-                elems = np.fromstring(f.read(binary_len), dtype=np.float32)
+                elems = np.frombuffer(f.read(binary_len), dtype=np.float32)
 
                 assert len(elems) > 1, 'line {} in {}: unexpected data format.'.format(
                     line_num, pretrained_file_path)

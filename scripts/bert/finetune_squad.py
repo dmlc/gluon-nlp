@@ -232,7 +232,7 @@ lr = args.lr
 ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 
 accumulate = args.accumulate
-log_interval = args.log_interval * accumulate if accumulate else args.log_interval
+log_interval = args.log_interval
 if accumulate:
     log.info('Using gradient accumulation. Effective batch size = {}'.
              format(accumulate*batch_size))
@@ -425,7 +425,7 @@ def train():
 
             step_loss += ls.asscalar()
 
-            if (batch_id + 1) % log_interval == 0:
+            if (batch_id + 1) % (log_interval * (accumulate if accumulate else 1)) == 0:
                 toc = time.time()
                 log.info('Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f} Thoughput={:.2f} samples/s'  # pylint: disable=line-too-long
                          .format(epoch_id, batch_id, len(train_dataloader),

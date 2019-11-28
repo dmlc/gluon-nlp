@@ -183,3 +183,66 @@ The dataset used for training the models is Google's 1 billion words dataset.
 
    $ python large_word_language_model.py --gpus 0,1,2,3 --clip=10
    $ python large_word_language_model.py --gpus 4 --eval-only --batch-size=1
+
+
+XLNet: Generalized Autoregressive Pretraining for Language Understanding
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Reference: Yang, Z., Dai, Z., Yang, Y., Carbonell, J., Salakhutdinov, R., &
+Le, Q. V. "`XLNet: Generalized Autoregressive Pretraining for Language
+Understanding. <https://arxiv.org/abs/1906.08237>`_" arXiv preprint
+arXiv:1906.08237 (2019).
+
+
+The following pre-trained XLNet models are available from the **get_model** API:
+
++-------------------+--------------------------+-----------------------------+
+|                   | xlnet_cased_l12_h768_a12 | xlnet_cased_l24_h1024_a16   |
++===================+==========================+=============================+
+| 126gb             | ✓                        | ✓                           |
++-------------------+--------------------------+-----------------------------+
+
+where **126gb*** refers to the 126 GB large training dataset used by the XLNet
+paper authors.
+
+.. code-block:: python
+
+    import gluonnlp as nlp; import mxnet as mx
+    from transformer import get_model, XLNetTokenizer
+    model, vocab, tokenizer = get_model('xlnet_cased_l12_h768_a12', dataset_name='126gb', use_decoder=True)
+    indices = mx.nd.array([vocab.to_indices(tokenizer('Hello world'))])
+    token_types = mx.nd.ones_like(indices)
+    mems = model.begin_mems(batch_size=1, mem_len=500, context=indices.context)
+    output, new_mems = model(indices, token_types, mems)
+
+Sentence Classification
+~~~~~~~~~~~~~~~~~~~~~~~
+
+GluonNLP provides the following example script to fine-tune sentence classification with pre-trained
+XLNet model.
+
+Results using `xlnet_12_768_12`:
+
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|Task Name        |Metrics              |Results on Dev Set     |log                                                                                                                                         |command                                                                                                                                                          |
++=================+=====================+=======================+============================================================================================================================================+=================================================================================================================================================================+
+| CoLA            |Matthew Corr.        |56                     |`log <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_CoLA.log>`__                   |`command <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_CoLA.sh>`__                                     |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SST-2           |Accuracy             |94                     |`log <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_SST.log>`__                    |`command <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_SST.sh>`__                                      |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| MRPC            |Accuracy/F1          |87/90                  |`log <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_MRPC.log>`__                   |`command <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_MRPC.sh>`__                                     |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| STS-B           |Pearson Corr.        |86                     |`log <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_STS-B.log>`__                  |`command <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_STS-B.sh>`__                                    |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| QQP             |Accuracy             |90                     |`log <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_QQP.log>`__                    |`command <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_QQP.sh>`__                                      |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| MNLI            |Accuracy             |87/86                  |`log <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_MNLI.log>`__                   |`command <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_MNLI.sh>`__                                     |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| QNLI            |Accuracy             |88                     |`log <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_QNLI.log>`__                   |`command <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_QNLI.sh>`__                                     |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| RTE             |Accuracy             |74                     |`log <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_RTE.log>`__                    |`command <https://github.com/dmlc/web-data/tree/master/gluonnlp/logs/language_model/xlnet_l12_h768_a12_finetuned_RTE.sh>`__                                      |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+
+
+
