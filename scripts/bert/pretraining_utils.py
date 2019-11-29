@@ -255,12 +255,14 @@ class BERTDataLoaderFn(DataLoaderFn):
             dataloader = nlp.data.ShardedDataLoader(dataset,
                                                     batch_sampler=sampler,
                                                     batchify_fn=self._batchify_fn,
-                                                    num_workers=self._num_ctxes)
+                                                    num_workers=self._num_ctxes,
+                                                    thread_pool=True)
         else:
             dataloader = DataLoader(dataset=dataset,
                                     batch_sampler=sampler,
                                     batchify_fn=self._batchify_fn,
-                                    num_workers=self._num_ctxes)
+                                    num_workers=self._num_ctxes,
+                                    thread_pool=True)
         return dataloader
 
 class BERTLoaderTransform:
