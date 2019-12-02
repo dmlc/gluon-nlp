@@ -16,7 +16,6 @@
 # under the License.
 
 # pylint: disable=consider-iterating-dictionary, too-many-lines
-
 """Text token embedding."""
 
 __all__ = [
@@ -214,16 +213,21 @@ class TokenEmbedding:
             if idx_to_vec.shape[0] != len(idx_to_token):
                 raise ValueError('idx_to_token and idx_to_vec must contain '
                                  'the same number of tokens and embeddings respectively.')
-            if init_unknown_vec is not None:
-                logging.info('Ignoring init_unknown_vec as idx_to_vec is specified')
             if unknown_token is not None:
                 try:
                     unknown_index = idx_to_token.index(unknown_token)
+                    if init_unknown_vec is not None:
+                        logging.info('Ignoring init_unknown_vec as idx_to_vec is specified')
                 except ValueError:
-                    idx_to_token.insert(0, unknown_token)
-                    idx_to_vec = nd.concat(init_unknown_vec((1, idx_to_vec.shape[1])), idx_to_vec,
-                                           dim=0)
-                    unknown_index = 0
+                    if init_unknown_vec is not None:
+                        idx_to_token.insert(0, unknown_token)
+                        idx_to_vec = nd.concat(init_unknown_vec((1, idx_to_vec.shape[1])),
+                                               idx_to_vec, dim=0)
+                        unknown_index = 0
+                    else:
+                        raise ValueError('unknown_token "{}" is not part of idx_to_vec but '
+                                         'init_unknown_vec is None. '
+                                         'You must provide either of them.'.format(unknown_token))
 
             # Initialization
             self._unknown_token = unknown_token
@@ -350,7 +354,7 @@ class TokenEmbedding:
         with io.open(pretrained_file_path, 'rb') as f:
             for line_num, line in enumerate(f):
                 try:
-                    line = line.decode(encoding)
+                    line = line.decode(encoding)  # pytype: disable=attribute-error
                 except ValueError:
                     warnings.warn('line {} in {}: failed to decode. Skipping.'
                                   .format(line_num, pretrained_file_path))
@@ -1286,7 +1290,7 @@ class Word2Vec(TokenEmbedding):
         loaded_unknown_vec = None
         pretrained_file_path = os.path.expanduser(pretrained_file_path)
         with io.open(pretrained_file_path, 'rb') as f:
-            header = f.readline().decode(encoding=encoding)
+            header = f.readline().decode(encoding=encoding)  # pytype: disable=attribute-error
             vocab_size, vec_len = (int(x) for x in header.split())
             if unknown_token:
                 # Reserve a vector slot for the unknown token at the very beggining

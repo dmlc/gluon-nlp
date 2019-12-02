@@ -61,7 +61,7 @@ for p in [beam_search_parser, random_sample_parser]:
     p.add_argument('--lm-model', type=str, default='awd_lstm_lm_1150',
                    help='type of the pre-trained model to load, can be "standard_lstm_lm_200", '
                         '"standard_lstm_lm_650", "standard_lstm_lm_1500", '
-                        '"awd_lstm_lm_1150", etc.')
+                        '"awd_lstm_lm_1150", "gpt2_117m", "gpt2_345m", etc.')
     p.add_argument('--max-length', type=int, default=20, help='Maximum sentence length.')
     p.add_argument('--print-num', type=int, default=3, help='Number of sentences to display.')
     p.add_argument('--bos', type=str, default='I think this works')
@@ -170,6 +170,9 @@ def generate():
                                               scorer=scorer,
                                               max_length=args.max_length - len(bos_tokens))
     inputs, begin_states = get_initial_input_state(decoder, bos_ids)
+
+    sampler._decoder.net.hybridize()  # Hybridize after we obtained the initial states
+
     # samples have shape (1, beam_size, length), scores have shape (1, beam_size)
     samples, scores, valid_lengths = sampler(inputs, begin_states)
     samples = samples[0].asnumpy()

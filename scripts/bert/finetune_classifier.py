@@ -39,10 +39,10 @@ import argparse
 import random
 import logging
 import warnings
-import multiprocessing
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
+from mxnet.contrib.amp import amp
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
@@ -208,7 +208,6 @@ task = tasks[task_name]
 # data type with mixed precision training
 if args.dtype == 'float16':
     try:
-        from mxnet.contrib import amp # pylint: disable=ungrouped-imports
         # monkey patch amp list since topk does not support fp16
         amp.lists.symbol.FP32_FUNCS.append('topk')
         amp.lists.symbol.FP16_FP32_FUNCS.remove('topk')
@@ -216,11 +215,6 @@ if args.dtype == 'float16':
     except ValueError:
         # topk is already in the FP32_FUNCS list
         amp.init()
-    except ImportError:
-        # amp is not available
-        logging.info('Mixed precision training with float16 requires MXNet >= '
-                     '1.5.0b20190627. Please consider upgrading your MXNet version.')
-        exit()
 
 # model and loss
 only_inference = args.only_inference
@@ -294,8 +288,6 @@ else:
 
 def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab, pad=False):
     """Train/eval Data preparation function."""
-    pool = multiprocessing.Pool()
-
     # transformation for data train and dev
     label_dtype = 'float32' if not task.class_labels else 'int32'
     trans = BERTDatasetTransform(tokenizer, max_len,
@@ -308,7 +300,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
     # data train
     # task.dataset_train returns (segment_name, dataset)
     train_tsv = task.dataset_train()[1]
-    data_train = mx.gluon.data.SimpleDataset(pool.map(trans, train_tsv))
+    data_train = mx.gluon.data.SimpleDataset(list(map(trans, train_tsv)))
     data_train_len = data_train.transform(
         lambda input_id, length, segment_id, label_id: length, lazy=False)
     # bucket sampler for training
@@ -336,7 +328,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
     dev_tsv_list = dev_tsv if isinstance(dev_tsv, list) else [dev_tsv]
     loader_dev_list = []
     for segment, data in dev_tsv_list:
-        data_dev = mx.gluon.data.SimpleDataset(pool.map(trans, data))
+        data_dev = mx.gluon.data.SimpleDataset(list(map(trans, data)))
         loader_dev = mx.gluon.data.DataLoader(
             data_dev,
             batch_size=dev_batch_size,
@@ -361,7 +353,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
     test_tsv_list = test_tsv if isinstance(test_tsv, list) else [test_tsv]
     loader_test_list = []
     for segment, data in test_tsv_list:
-        data_test = mx.gluon.data.SimpleDataset(pool.map(test_trans, data))
+        data_test = mx.gluon.data.SimpleDataset(list(map(test_trans, data)))
         loader_test = mx.gluon.data.DataLoader(
             data_test,
             batch_size=dev_batch_size,
@@ -575,6 +567,8 @@ def evaluate(loader_dev, metric, segment):
     metric.reset()
     step_loss = 0
     tic = time.time()
+    label_list = []
+    out_list = []
     for batch_id, seqs in enumerate(loader_dev):
         input_ids, valid_length, segment_ids, label = seqs
         input_ids = input_ids.as_in_context(ctx)
@@ -584,15 +578,19 @@ def evaluate(loader_dev, metric, segment):
             out = model(input_ids, valid_length)
         else:
             out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
+        label_list.append(label.as_in_context(mx.cpu(0)))
+        out_list.append(out.as_in_context(mx.cpu(0)))
         ls = loss_function(out, label).mean()
 
         step_loss += ls.asscalar()
-        metric.update([label], [out])
 
         if (batch_id + 1) % (args.log_interval) == 0:
             log_eval(batch_id, len(loader_dev), metric, step_loss, args.log_interval)
             step_loss = 0
 
+    label_list = mx.nd.concat(*label_list, dim=0)
+    out_list = mx.nd.concat(*out_list, dim=0)
+    metric.update([label_list], [out_list])
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
         metric_nm, metric_val = [metric_nm], [metric_val]
