@@ -29,41 +29,74 @@ import zipfile
 
 from mxnet.gluon.utils import _get_repo_file_url, check_sha1, download
 
-from ... import _constants as C
-from ...vocab import Vocab
-from ..stream import SimpleDatasetStream
-from ..dataset import CorpusDataset
+from ..._constants import EOS_TOKEN
 from ...base import get_home_dir
+from ...vocab import Vocab
+from ..dataset import CorpusDataset
+from ..stream import SimpleDatasetStream
 
 
-class _GBWStream(SimpleDatasetStream):
-    def __init__(self, namespace, segment, bos, eos, skip_empty, root):
-        """Directory layout:
-           - root ($MXNET_HOME/datasets/gbw)
-             - archive_file (1-billion-word-language-modeling-benchmark-r13output.tar.gz)
-             - dir (1-billion-word-language-modeling-benchmark-r13output)
-               - subdir (training-monolingual.tokenized.shuffled)
-               - subdir (heldout-monolingual.tokenized.shuffled)
-        """
+class GBWStream(SimpleDatasetStream):
+    """1-Billion-Word word-level dataset for language modeling, from Google.
+
+    The GBWSream iterates over CorpusDatasets(flatten=False).
+
+    Source http://www.statmt.org/lm-benchmark
+
+    License: Apache
+
+    Parameters
+    ----------
+    segment : {'train', 'test'}, default 'train'
+        Dataset segment.
+    skip_empty : bool, default True
+        Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
+        will be added in empty samples.
+    bos : str or None, default None
+        The token to add at the begining of each sentence. If None, nothing is added.
+    eos : str or None, default '<eos>'
+        The token to add at the end of each sentence. If None, nothing is added.
+    root : str, default '$MXNET_HOME/datasets/gbw'
+        Path to temp folder for storing data.
+        MXNET_HOME defaults to '~/.mxnet'.
+    """
+
+    _archive_data = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
+                     '4df859766482e12264a5a9d9fb7f0e276020447d')
+    _archive_vocab = ('gbw-ebb1a287.zip',
+                      '63b335dcc27b6804d0a14acb88332d2602fe0f59')
+    _data_file = {'train': ('training-monolingual.tokenized.shuffled',
+                            'news.en-00*-of-00100',
+                            '5e0d7050b37a99fd50ce7e07dc52468b2a9cd9e8'),
+                  'test': ('heldout-monolingual.tokenized.shuffled',
+                           'news.en.heldout-00000-of-00050',
+                           '0a8e2b7496ba0b5c05158f282b9b351356875445')}
+    _vocab_file = ('gbw-ebb1a287.vocab',
+                   'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f')
+
+    # Directory layout:
+    # - root ($MXNET_HOME/datasets/gbw)
+    #   - archive_file (1-billion-word-language-modeling-benchmark-r13output.tar.gz)
+    #   - dir (1-billion-word-language-modeling-benchmark-r13output)
+    #     - subdir (training-monolingual.tokenized.shuffled)
+    #     - subdir (heldout-monolingual.tokenized.shuffled)
+
+    def __init__(self, segment='train', skip_empty=True, bos=None, eos=EOS_TOKEN,
+                 root=os.path.join(get_home_dir(), 'datasets', 'gbw')):
         root = os.path.expanduser(root)
         if not os.path.isdir(root):
             os.makedirs(root)
         self._root = root
         self._dir = os.path.join(root, '1-billion-word-language-modeling-benchmark-r13output')
-        self._namespace = 'gluon/dataset/{}'.format(namespace)
+        self._namespace = 'gluon/dataset/gbw'
         subdir_name, pattern, data_hash = self._data_file[segment]
         self._subdir = os.path.join(self._dir, subdir_name)
         self._file_pattern = os.path.join(self._subdir, pattern)
         self._data_hash = data_hash
         self._get_data()
         sampler = 'sequential' if segment != 'train' else 'random'
-        super(_GBWStream, self).__init__(
-            dataset=CorpusDataset,
-            file_pattern=self._file_pattern,
-            skip_empty=skip_empty,
-            bos=bos,
-            eos=eos,
-            file_sampler=sampler)
+        super().__init__(dataset=CorpusDataset, file_pattern=self._file_pattern,
+                         skip_empty=skip_empty, bos=bos, eos=eos, file_sampler=sampler)
 
     def _get_data(self):
         archive_file_name, archive_hash = self._archive_data
@@ -105,46 +138,6 @@ class _GBWStream(SimpleDatasetStream):
             with zipfile.ZipFile(downloaded_path, 'r') as zf:
                 zf.extractall(path=root)
         return path
-
-class GBWStream(_GBWStream):
-    """1-Billion-Word word-level dataset for language modeling, from Google.
-
-    The GBWSream iterates over CorpusDatasets(flatten=False).
-
-    Source http://www.statmt.org/lm-benchmark
-
-    License: Apache
-
-    Parameters
-    ----------
-    segment : {'train', 'test'}, default 'train'
-        Dataset segment.
-    skip_empty : bool, default True
-        Whether to skip the empty samples produced from sample_splitters. If False, `bos` and `eos`
-        will be added in empty samples.
-    bos : str or None, default None
-        The token to add at the begining of each sentence. If None, nothing is added.
-    eos : str or None, default '<eos>'
-        The token to add at the end of each sentence. If None, nothing is added.
-    root : str, default '$MXNET_HOME/datasets/gbw'
-        Path to temp folder for storing data.
-        MXNET_HOME defaults to '~/.mxnet'.
-    """
-    def __init__(self, segment='train', skip_empty=True, bos=None, eos=C.EOS_TOKEN,
-                 root=os.path.join(get_home_dir(), 'datasets', 'gbw')):
-        self._archive_data = ('1-billion-word-language-modeling-benchmark-r13output.tar.gz',
-                              '4df859766482e12264a5a9d9fb7f0e276020447d')
-        self._archive_vocab = ('gbw-ebb1a287.zip',
-                               '63b335dcc27b6804d0a14acb88332d2602fe0f59')
-        self._data_file = {'train': ('training-monolingual.tokenized.shuffled',
-                                     'news.en-00*-of-00100',
-                                     '5e0d7050b37a99fd50ce7e07dc52468b2a9cd9e8'),
-                           'test': ('heldout-monolingual.tokenized.shuffled',
-                                    'news.en.heldout-00000-of-00050',
-                                    '0a8e2b7496ba0b5c05158f282b9b351356875445')}
-        self._vocab_file = ('gbw-ebb1a287.vocab',
-                            'ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f')
-        super(GBWStream, self).__init__('gbw', segment, bos, eos, skip_empty, root)
 
     @property
     def vocab(self):

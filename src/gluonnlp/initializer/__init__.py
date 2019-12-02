@@ -18,6 +18,8 @@
 # pylint: disable=wildcard-import
 """NLP initializer."""
 
+from . import initializer
+
 from .initializer import *
 
 __all__ = initializer.__all__

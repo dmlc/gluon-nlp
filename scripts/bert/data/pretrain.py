@@ -19,6 +19,7 @@
 """Dataset for pre-training. """
 import logging
 
+from mxnet.gluon.data import DataLoader
 import gluonnlp as nlp
 from gluonnlp.data.batchify import Tuple, Stack, Pad
 try:
@@ -70,7 +71,6 @@ class BERTDataLoaderFn(DataLoaderFn):
                                   Stack())                          # valid_length
 
     def __call__(self, dataset, sampler):
-        from mxnet.gluon.data import DataLoader
         dataloader = DataLoader(dataset=dataset,
                                 batch_sampler=sampler,
                                 batchify_fn=self._batchify_fn,
