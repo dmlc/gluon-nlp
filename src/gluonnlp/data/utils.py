@@ -301,15 +301,8 @@ def _load_pretrained_vocab(name, root, cls=None):
                                              short_hash=short_hash(name))
     root = os.path.expanduser(root)
     file_path = os.path.join(root, file_name + '.vocab')
+    lock_path = os.path.join(root, file_name + '.lock')
     sha1_hash = _vocab_sha1[name]
-    if os.path.exists(file_path):
-        if check_sha1(file_path, sha1_hash):
-            return _load_vocab_file(file_path, cls)
-        else:
-            print('Detected mismatch in the content of model vocab file. Downloading again.')
-    else:
-        print('Vocab file is not found. Downloading.')
-
     if not os.path.exists(root):
         try:
             os.makedirs(root)
@@ -318,31 +311,39 @@ def _load_pretrained_vocab(name, root, cls=None):
                 pass
             else:
                 raise e
-
-    prefix = str(time.time())
-    zip_file_path = os.path.join(root, prefix + file_name + '.zip')
-    repo_url = _get_repo_url()
-    if repo_url[-1] != '/':
-        repo_url = repo_url + '/'
-    download(_url_format.format(repo_url=repo_url, file_name=file_name),
-             path=zip_file_path,
-             overwrite=True)
-    with zipfile.ZipFile(zip_file_path) as zf:
-        if not os.path.exists(file_path):
-            zf.extractall(root)
-    try:
-        os.remove(zip_file_path)
-    except OSError as e:
-        # file has already been removed.
-        if e.errno == 2:
-            pass
+    import portalocker
+    with portalocker.Lock(lock_path, timeout=int(os.environ.get('GLUON_MODEL_LOCK_TIMEOUT', 300))):
+        if os.path.exists(file_path):
+            if check_sha1(file_path, sha1_hash):
+                return _load_vocab_file(file_path, cls)
+            else:
+                print('Detected mismatch in the content of model vocab file. Downloading again.')
         else:
-            raise e
+            print('Vocab file is not found. Downloading.')
 
-    if check_sha1(file_path, sha1_hash):
-        return _load_vocab_file(file_path, cls)
-    else:
-        raise ValueError('Downloaded file has different hash. Please try again.')
+        zip_file_path = os.path.join(root, file_name + '.zip')
+        repo_url = _get_repo_url()
+        if repo_url[-1] != '/':
+            repo_url = repo_url + '/'
+        download(_url_format.format(repo_url=repo_url, file_name=file_name),
+                 path=zip_file_path,
+                 overwrite=True)
+        with zipfile.ZipFile(zip_file_path) as zf:
+            if not os.path.exists(file_path):
+                zf.extractall(root)
+        try:
+            os.remove(zip_file_path)
+        except OSError as e:
+            # file has already been removed.
+            if e.errno == 2:
+                pass
+            else:
+                raise e
+
+        if check_sha1(file_path, sha1_hash):
+            return _load_vocab_file(file_path, cls)
+        else:
+            raise ValueError('Downloaded file has different hash. Please try again.')
 
 
 def _load_vocab_file(file_path, cls):
