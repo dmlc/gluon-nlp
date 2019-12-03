@@ -436,7 +436,7 @@ class SQuADDataTokenizer:
         _spacy_tokenizer = nlp.data.SpacyTokenizer()
     except (ImportError, AttributeError) as e:
         _spacy_error = e
-        def _spacy_tokenizer(*args, **kwargs):
+        def _spacy_tokenizer(*args, **kwargs):  # pylint: disable=no-method-argument
             raise SQuADDataTokenizer._spacy_error
 
     def __init__(self, use_spacy=True):
