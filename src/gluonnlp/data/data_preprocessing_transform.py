@@ -1,99 +1,90 @@
-# Copyright 2018 The Google AI Language Team Authors and DMLC.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
 """glue and squad transform."""
 
 __all__ = [
-    'TruncateTransform', 'InsertTransform', 'TokenizeTransform',
+    'TruncateTransform', 'ConcatSeqTransform',
     'BertTStyleSentenceTransform', 'BertStyleGlueTransform',
     'BertStyleSQuADTransform', 'SQuADExampleTransform', 'DocSpanTransform',
     'TokenizeAndPositionAlignTransform', 'SimpleQAPreparation', 'SquadExample'
 ]
 
 import collections
+from functools import partial
 import numpy as np
 from gluonnlp.data.utils import whitespace_splitter
-from .qa_preprocessing_utils import truncate_seq_pair, improve_answer_span
+from .qa_preprocessing_utils import truncate_seqs_equal, improve_answer_span
 
 
 class TruncateTransform:
     """
-    Truncate a sequence(pair) to max length.
+    Truncate a sequence(list) to max length.
 
     Parameters
     ----------
     max_len : int
     truncate_fn : callable
-        A function determines how to truncate the sequence pair
+        A function determines how to truncate the sequence (list).
+        The function should implement argument max_length
 
     Returns
     -------
-    list : list of sequence
+    list : list of sequences or a single sequence
     """
-    def __init__(self, max_len, truncate_fn=truncate_seq_pair):
+    def __init__(self, max_len, truncate_fn=truncate_seqs_equal):
         self._max_len = max_len
-        self.fn = truncate_fn
+        self.fn = partial(truncate_fn, max_length=max_len)
 
     def __call__(self, seqs):
-        assert isinstance(seqs, collections.Iterable)
-        if len(seqs) > 1:
-            # Modifies `tokens_a` and `tokens_b` in place so that the total
-            # length is less than the specified length.
-            # Account for [CLS], [SEP], [SEP] with "- 3"
-            token_a, token_b = seqs
-            self.fn(token_a, token_b, self._max_len)
-            return [token_a, token_b]
+        assert isinstance(seqs, collections.abc.Iterable)
+        if len(seqs) == 0:
+            return seqs
+        if isinstance(seqs[0], collections.abc.Iterable) and not isinstance(
+                seqs[0], str):
+            #if it contains a list of seqs
+            seqs = self.fn(seqs)
+            return seqs
         else:
-            # Account for [CLS] and [SEP] with "- 2"
-            if len(seqs[0]) > self._max_len - 2:
-                seqs = [seqs[0][0:(self._max_len - 2)]]
-            return [seqs[0]]
+            #if it is a single sequence
+            return seqs[:self._max_len]
 
 
-class InsertTransform:
-    """Insert special tokens for sequence pairs or single sequences.
-           For sequence pairs, the input is a tuple of 2 strings:
+class ConcatSeqTransform:
+    """Insert special tokens for sequence list or a single sequence.
+           For sequence pairs, the input is a list of 2 strings:
            text_a, text_b.
 
            Inputs:
                text_a: 'is this jacksonville ?'
                text_b: 'no it is not'
-           Tokenization:
-               text_a: 'is this jack ##son ##ville ?'
-               text_b: 'no it is not .'
-           Processed:
-               tokens: '[CLS] is this jack ##son ##ville ? [SEP] no it is not . [SEP]'
-               type_ids: 0     0  0    0    0     0       0 0     1  1  1  1   1 1
-               valid_length: 14
+               start_token: [CLS]
+               token_after_seg: [[SEP], [SEP]]
+               end_token: None
 
-           For single sequences, the input is a tuple of single string:
-           text_a.
-
-           Inputs:
-               text_a: 'the dog is hairy .'
-           Tokenization:
-               text_a: 'the dog is hairy .'
            Processed:
-               text_a: '[CLS] the dog is hairy . [SEP]'
-               type_ids: 0     0   0   0  0     0 0
-               valid_length: 7
+               tokens: '[CLS] is this jacksonville ? [SEP] no it is not . [SEP]'
+               segment_ids: 0 0  0    0            0  0    1  1  1  1   1 1
+               p_mask:      0 0  0    0            0  1    0  0  0  0   0 1
+               valid_length: 12
 
            Parameters
            ----------
-           line: tuple of str
-               Input strings. For sequence pairs, the input is a tuple of 2 strings:
-               (text_a, text_b). For single sequences, the input is a tuple of single
-               string: (text_a,).
+            vocab : Vocab
+                If vocab is not None. The tokens will be converted to ids before return
+
+            token_after_seg : list
+                The special tokens to be appended to each sequence. For example:
+                Given:
+                    seqs: [[1, 2], [3, 4], [5, 6]]
+                    token_after_seg: [None, 7]
+                it will be:
+                    [1, 2, 3, 4, 7, 5, 6]
+
+            start_token : string
+                The special token to be added to the start
+
+            end_token : string
+                The special token to be added to the end
+
+            seqs : list of sequences or a single sequence
 
            Returns
            -------
@@ -102,64 +93,59 @@ class InsertTransform:
            np.array: valid length in 'int32', shape (batch_size,)
            np.array: mask for special tokens
            """
-    def __init__(self, cls_token, sep_token, vocab, left_cls=True):
-        self._cls_token = cls_token
-        self._sep_token = sep_token
-        self._left_cls = left_cls
+    def __init__(self,
+                 vocab=None,
+                 token_after_seg=None,
+                 start_token=None,
+                 end_token=None):
         self._vocab = vocab
+        self._start_token = start_token
+        self._end_token = end_token
+        self._token_after_seg = token_after_seg if token_after_seg else []
 
-    def __call__(self, token_truncated):
-        # The embedding vectors for `type=0` and `type=1` were learned during
-        # pre-training and are added to the wordpiece embedding vector
-        # (and position vector). This is not *strictly* necessary since
-        # the [SEP] token unambiguously separates the sequences, but it makes
-        # it easier for the model to learn the concept of sequences.
-
-        # For classification tasks, the first/last vector (corresponding to [CLS]) is
-        # used as as the "sentence vector". Note that this only makes sense because
-        # the entire model is fine-tuned.
-        assert self._left_cls  #currently we only support left cls
+    def __call__(self, seqs):
+        assert isinstance(seqs, collections.abc.Iterable) and len(seqs) > 0
         tokens = []
-        tokens_a = token_truncated[0] if isinstance(token_truncated,
-                                                    list) else token_truncated
-        if self._left_cls:
-            tokens.append(self._cls_token)
-
+        if self._start_token:
+            tokens.append(self._start_token)
+        tokens_a = seqs if not isinstance(
+            seqs[0], collections.abc.Iterable) else seqs[0]
         tokens.extend(tokens_a)
         p_mask = [0] * len(tokens)
+        sp_token_counter = 0
 
-        tokens.append(self._sep_token)
+        if sp_token_counter < len(self._token_after_seg):
+            if self._token_after_seg[sp_token_counter]:
+                tokens.append(self._token_after_seg[sp_token_counter])
+            sp_token_counter += 1
+
         segment_ids = [0] * len(tokens)
         p_mask.append(1)
+        seqs = seqs[1:]
 
-        if isinstance(token_truncated, list) and len(token_truncated) == 2:
-            tokens_b = token_truncated[1]
-            tokens.extend(tokens_b)
-            p_mask.extend([0] * (len(tokens) - len(p_mask)))
-            tokens.append(self._sep_token)
-            p_mask.append(1)
-            if not self._left_cls:
-                tokens.append(self._cls_token)
-            segment_ids.extend([1] * (len(tokens) - len(segment_ids)))
+        if len(seqs) > 0 and isinstance(seqs[0], collections.abc.Iterable):
+            # if seqs is a list of sequence
+            for (i, seq) in enumerate(seqs):
+                tokens_b = seq
+                tokens.extend(tokens_b)
+                p_mask.extend([0] * (len(tokens) - len(p_mask)))
+                if sp_token_counter < len(self._token_after_seg):
+                    if self._token_after_seg[sp_token_counter]:
+                        tokens.append(self._token_after_seg[sp_token_counter])
+                        p_mask.append(1)
+                    sp_token_counter += 1
+                segment_ids.extend([i + 1] * (len(tokens) - len(segment_ids)))
 
-        input_ids = self._vocab[tokens]
+        if self._end_token:
+            tokens.append(self._end_token)
+            p_mask.append(0)
+            segment_ids.append(len(seqs))
+
+        if self._vocab:
+            tokens = self._vocab[tokens]
         # The valid length of sentences. Only real  tokens are attended to.
-        valid_length = len(input_ids)
-        return input_ids, segment_ids, valid_length, p_mask
-
-
-class TokenizeTransform:
-    """
-    Tokenize a sequence or a list of sequence
-    """
-    def __init__(self, tokenizer):
-        self._tokenizer = tokenizer
-
-    def __call__(self, tokens):
-        if isinstance(tokens, collections.abc.Iterable):
-            return [self._tokenizer(token) for token in tokens]
-        else:
-            return [self._tokenizer(tokens)]
+        valid_length = len(tokens)
+        return tokens, segment_ids, valid_length, p_mask
 
 
 class BertTStyleSentenceTransform:
@@ -181,11 +167,10 @@ class BertTStyleSentenceTransform:
     def __init__(self,
                  tokenizer,
                  max_seq_length=None,
-                 vocab=None,
-                 left_cls=True):
+                 vocab=None):
         assert tokenizer.vocab or vocab
         self.Truncate = TruncateTransform(max_len=max_seq_length)
-        self.Tokenizer = TokenizeTransform(tokenizer)
+        self._tokenizer = tokenizer
         self._vocab = tokenizer.vocab if vocab is None else vocab
         # RoBERTa does not register CLS token and SEP token
         if hasattr(self._vocab, 'cls_token'):
@@ -196,14 +181,14 @@ class BertTStyleSentenceTransform:
             self._sep_token = self._vocab.sep_token
         else:
             self._sep_token = self._vocab.eos_token
+        self._token_after_seg = [self._sep_token] * 2
 
-        self.InsertSpecialTokens = InsertTransform(self._cls_token,
-                                                   self._sep_token,
-                                                   self._vocab,
-                                                   left_cls=left_cls)
+        self.InsertSpecialTokens = ConcatSeqTransform(self._vocab,
+                                                      self._token_after_seg,
+                                                      self._cls_token)
 
     def __call__(self, line):
-        tokens_raw = self.Tokenizer(line)
+        tokens_raw = [self._tokenizer(l) for l in line]
         tokens_trun = self.Truncate(tokens_raw)
         input_ids, segment_ids, valid_length, _ = self.InsertSpecialTokens(
             tokens_trun)
@@ -236,6 +221,10 @@ class BertStyleGlueTransform:
                 for key in self.label_alias:
                     self._label_map[key] = self._label_map[
                         self.label_alias[key]]
+            if len(class_labels) > 1:
+                max_seq_length += 3  # account for special tokens
+            else:
+                max_seq_length += 2
 
         self.sentense_transform = BertTStyleSentenceTransform(
             tokenizer, max_seq_length=max_seq_length, vocab=vocab)
@@ -418,7 +407,7 @@ class SimpleQAPreparation:
     Note that this class does not check if max span.
     """
     def __init__(self, cls_token, sep_token, vocab, is_training):
-        self.insert = InsertTransform(cls_token, sep_token, vocab)
+        self.insert = ConcatSeqTransform(cls_token, sep_token, vocab)
         self.is_training = is_training
 
     def __call__(self,

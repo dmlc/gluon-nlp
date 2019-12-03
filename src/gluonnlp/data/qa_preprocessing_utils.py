@@ -1,5 +1,7 @@
 """Utility classes and functions for qa data processing"""
 
+import collections
+
 
 def truncate_seq_pair(tokens_a, tokens_b, max_length):
     """Truncates a sequence pair in place to the maximum length."""
@@ -15,6 +17,56 @@ def truncate_seq_pair(tokens_a, tokens_b, max_length):
             tokens_a.pop()
         else:
             tokens_b.pop()
+
+
+def truncate_seqs_equal(seqs, max_length):
+    """
+    truncate a list of seqs so that the total length equals max length.
+    Trying to truncate the seqs to equal length.
+
+    Returns
+    -------
+    list : list of truncated sequence keeping the origin order
+    """
+    assert isinstance(seqs, list) and isinstance(seqs[0],
+                                                 collections.abc.Iterable)
+    tokens_to_remove = sum(list(map(len, seqs))) - max_length
+    if tokens_to_remove <= 0:
+        return seqs
+    if len(seqs) == 1:
+        return [seqs[0][:-tokens_to_remove]]
+
+    seq_len = list(map(lambda a: (len(a), a), seqs))
+    seq_len = [[s[0], [i, s[1]]] for (i, s) in enumerate(seq_len)]
+    seq_len.sort(key=lambda a: a[0], reverse=True)
+    prev = seq_len[0]
+    count_removed = 0
+    truncate_to = seq_len[0][0]
+    remain = 0
+    for (i, seq) in enumerate(seq_len):
+        cur_remove = (prev[0] - seq_len[i][0]) * i
+        if count_removed + cur_remove < tokens_to_remove:
+            count_removed += cur_remove
+            prev = seq_len[i]
+        else:
+            truncate_to = prev[0] - (tokens_to_remove - count_removed) // i
+            remain = (tokens_to_remove - count_removed) % i
+            break
+
+    if count_removed < tokens_to_remove and prev[1][0] == seq_len[-1][1][0]:
+        truncate_to = prev[0] - (tokens_to_remove -
+                                 count_removed) // len(seq_len)
+        remain = (tokens_to_remove - count_removed) % len(seq_len)
+
+    for seq in seq_len:
+        seq[1][1] = seq[1][1][:truncate_to]
+        if remain > 0:
+            seq[1][1].pop()
+            remain -= 1
+    seq_len.sort(key=lambda a: a[1][0])
+    ret = [a[1][1] for a in seq_len]
+    assert sum(list(map(len, ret))) == max_length
+    return ret
 
 
 def improve_answer_span(doc_tokens, input_start, input_end, tokenizer,

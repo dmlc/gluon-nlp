@@ -19,7 +19,9 @@
 
 import numpy as np
 from gluonnlp.vocab import BERTVocab
-from gluonnlp.data import count_tokens, BERTTokenizer, BertStyleGlueTransform, BertStyleSQuADTransform
+from gluonnlp.data import count_tokens, BERTTokenizer, \
+    BertStyleGlueTransform, BertStyleSQuADTransform, TruncateTransform, \
+        ConcatSeqTransform
 
 
 def test_bertstyle_glue_dataset_transform():
@@ -139,4 +141,33 @@ def test_bertstyle_squad_dataset_transform():
     assert start_label == 0
     assert end_label == 0
     assert is_impossible == True
+
+def test_truncate():
+    seqs = [[j*i for j in range(i)] for i in range(1,10)]
+    res1 = [[0], [0, 2], [0, 3, 6], [0, 4, 8], [0, 5, 10], [0, 6], [0, 7], [0, 8], [0, 9]]
+    seq = [i for i in range(20)]
+    res3 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    trunc = TruncateTransform(20)
+    assert all(np.array(trunc(seqs)) == np.array(res1))
+    assert all(np.array(trunc(seq)) == np.array(res3))
+
+def test_concat_sequence():
+    seqs = [[3 * i + j for j in range(3)] for i in range(3)]
+    start_token = -1
+    end_token = 999
+    middle_tokens = ['a', 'b', 'c']
+    concat = ConcatSeqTransform(start_token=start_token, token_after_seg=middle_tokens, end_token=end_token)
+    res = concat(seqs)
+    assert res[0] == [-1, 0, 1, 2, 'a', 3, 4, 5, 'b', 6, 7, 8, 'c', 999]
+    assert res[1] == [0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2]
+    assert res[2] == 14
+    assert res[3] == [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0]
+
+    middle_tokens = ['a', None, 'b']
+    concat = ConcatSeqTransform(start_token=start_token, token_after_seg=middle_tokens, end_token=end_token)
+    res = concat(seqs)
+    assert res[0] == [-1, 0, 1, 2, 'a', 3, 4, 5, 6, 7, 8, 'b', 999]
+    assert res[1] == [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 2]
+    assert res[2] == 13
+    assert res[3] == [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0]
 
