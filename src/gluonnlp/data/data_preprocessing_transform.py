@@ -2,8 +2,8 @@
 
 __all__ = [
     'TruncateTransform', 'ConcatSeqTransform',
-    'BertTStyleSentenceTransform', 'BertStyleGlueTransform',
-    'BertStyleSQuADTransform', 'SQuADExampleTransform', 'DocSpanTransform',
+    'BertStyleGlueTransform', 'BertStyleSQuADTransform',
+    'SQuADExampleTransform', 'DocSpanTransform',
     'TokenizeAndPositionAlignTransform', 'SimpleQAPreparation', 'SquadExample'
 ]
 
@@ -46,116 +46,48 @@ class TruncateTransform:
 
 
 class ConcatSeqTransform:
-    """Insert special tokens for sequence list or a single sequence.
-           For sequence pairs, the input is a list of 2 strings:
-           text_a, text_b.
+    """
+    Insert special tokens for sequence list or a single sequence.
+    For sequence pairs, the input is a list of 2 strings:
+    text_a, text_b.
+    Inputs:
+       text_a: 'is this jacksonville ?'
+       text_b: 'no it is not'
+       separator: [[SEP], [SEP]]
 
-           Inputs:
-               text_a: 'is this jacksonville ?'
-               text_b: 'no it is not'
-               start_token: [CLS]
-               token_after_seg: [[SEP], [SEP]]
-               end_token: None
-
-           Processed:
-               tokens: '[CLS] is this jacksonville ? [SEP] no it is not . [SEP]'
-               segment_ids: 0 0  0    0            0  0    1  1  1  1   1 1
-               p_mask:      0 0  0    0            0  1    0  0  0  0   0 1
-               valid_length: 12
-
-           Parameters
-           ----------
-            vocab : Vocab
-                If vocab is not None. The tokens will be converted to ids before return
-
-            token_after_seg : list
-                The special tokens to be appended to each sequence. For example:
-                Given:
-                    seqs: [[1, 2], [3, 4], [5, 6]]
-                    token_after_seg: [None, 7]
-                it will be:
-                    [1, 2, 3, 4, 7, 5, 6]
-
-            start_token : string
-                The special token to be added to the start
-
-            end_token : string
-                The special token to be added to the end
-
-            seqs : list of sequences or a single sequence
-
-           Returns
-           -------
-           np.array: input token ids in 'int32', shape (batch_size, seq_length)
-           np.array: segment ids in 'int32', shape (batch_size, seq_length)
-           np.array: mask for special tokens
-           """
-    def __init__(self,
-                 vocab=None):
-        self._vocab = vocab
-
-    def __call__(self, seqs, seperators):
-        assert isinstance(seqs, collections.abc.Iterable) and len(seqs) > 0
-        concat = sum((seq + sep for sep, seq in
-                      itertools.zip_longest(seperators, seqs, fillvalue=[])), [])
-        segment_ids = sum(([i] * (len(seq) + len(sep)) for i, (sep, seq) in
-                           enumerate(itertools.zip_longest(seperators, seqs, fillvalue=[]))), [])
-        p_mask = sum(([0] * len(seq) + [1] * len(sep) for sep, seq in
-                      itertools.zip_longest(seperators, seqs, fillvalue=[])), [])
-
-        if self._vocab:
-            concat = self._vocab[concat]
-
-        return concat, segment_ids, p_mask
-
-
-class BertTStyleSentenceTransform:
-    r"""BERT style data transformation.
+    Processed:
+       tokens:     'is this jacksonville ? [SEP] no it is not . [SEP]'
+       segment_ids: 0  0    0            0  0    1  1  1  1   1 1
+       p_mask:      0  0    0            0  1    0  0  0  0   0 1
+       valid_length: 11
 
     Parameters
     ----------
-    tokenizer : BERTTokenizer.
-        Tokenizer for the sentences.
-    max_seq_length : int.
-        Maximum sequence length of the sentences.
-    vocab : Vocab
-        The vocabulary which has cls_token and sep_token registered.
-        If vocab.cls_token is not present, vocab.bos_token is used instead.
-        If vocab.sep_token is not present, vocab.eos_token is used instead.
-    left_cls : bool
-        Insert [CLS] to the start/end of the sequence
+    separator : list
+        The special tokens to be appended to each sequence. For example:
+        Given:
+            seqs: [[1, 2], [3, 4], [5, 6]]
+            separator: [[], 7]
+        it will be:
+            [1, 2, 3, 4, 7, 5, 6]
+
+    seqs : list of sequences or a single sequence
+
+    Returns
+    -------
+    np.array: input token ids in 'int32', shape (batch_size, seq_length)
+    np.array: segment ids in 'int32', shape (batch_size, seq_length)
+    np.array: mask for special tokens
     """
-    def __init__(self,
-                 tokenizer,
-                 max_seq_length=None,
-                 vocab=None):
-        assert tokenizer.vocab or vocab
-        self.Truncate = TruncateTransform(max_len=max_seq_length)
-        self._tokenizer = tokenizer
-        self._vocab = tokenizer.vocab if vocab is None else vocab
-        # RoBERTa does not register CLS token and SEP token
-        if hasattr(self._vocab, 'cls_token'):
-            self._cls_token = self._vocab.cls_token
-        else:
-            self._cls_token = self._vocab.bos_token
-        if hasattr(self._vocab, 'sep_token'):
-            self._sep_token = self._vocab.sep_token
-        else:
-            self._sep_token = self._vocab.eos_token
-        self._token_after_seg = [self._sep_token] * 2
-
-        self.InsertSpecialTokens = ConcatSeqTransform()
-
-    def __call__(self, line):
-        tokens_raw = [self._tokenizer(l) for l in line]
-        tokens_trun = self.Truncate(tokens_raw)
-        tokens, segment_ids, _ = self.InsertSpecialTokens(
-            tokens_trun, [[self._sep_token]] * len(tokens_trun))
-
-        input_ids = self._vocab[[self._cls_token] + tokens]
-        segment_ids = [0] + segment_ids
-
-        return np.array(input_ids, dtype='int32'), np.array(segment_ids, dtype='int32')
+    def __call__(self, seqs, separators):
+        assert isinstance(seqs, collections.abc.Iterable) and len(seqs) > 0
+        concat = sum((seq + sep for sep, seq in
+                      itertools.zip_longest(separators, seqs, fillvalue=[])), [])
+        segment_ids = sum(([i] * (len(seq) + len(sep)) for i, (sep, seq) in
+                           enumerate(itertools.zip_longest(separators, seqs, fillvalue=[]))), [])
+        p_mask = sum(([0] * len(seq) + [1] * len(sep) for sep, seq in
+                      itertools.zip_longest(separators, seqs, fillvalue=[])), [])
+        return concat, segment_ids, p_mask
 
 
 class BertStyleGlueTransform:
@@ -165,17 +97,18 @@ class BertStyleGlueTransform:
     def __init__(self,
                  tokenizer,
                  max_seq_length,
+                 cls_token=None,
+                 sep_token=None,
                  task=None,
                  class_labels=None,
                  label_alias=None,
-                 vocab=None,
-                 has_label=True):
-        self.has_label = has_label
+                 vocab=None):
+        self._vocab = tokenizer.vocab if vocab is None else vocab
         self.class_labels = task.class_labels if task else class_labels
         self._label_dtype = 'int32' if (task
                                         and task.class_labels) else 'float32'
         self.label_alias = task.label_alias if task else label_alias
-        if self.has_label and self.class_labels:
+        if self.class_labels:
             self._label_map = {}
             for (i, label) in enumerate(self.class_labels):
                 self._label_map[label] = i
@@ -188,22 +121,31 @@ class BertStyleGlueTransform:
             else:
                 max_seq_length += 2
 
-        self.sentense_transform = BertTStyleSentenceTransform(
-            tokenizer, max_seq_length=max_seq_length, vocab=vocab)
-        self.tokenizer = tokenizer
+        self.Truncate = TruncateTransform(max_len=max_seq_length)
+        self.InsertSpecialTokens = ConcatSeqTransform()
+        self._tokenizer = tokenizer
+        self._sep_token = sep_token
+        self._cls_token = cls_token
 
     def __call__(self, line):
-        if self.has_label:
-            input_ids, segment_ids = self.sentense_transform(
-                line[:-1])
-            label = line[-1]
-            # map to int if class labels are available
-            if self.class_labels:
-                label = self._label_map[label]
-            label = np.array([label], dtype=self._label_dtype)
-            return input_ids, segment_ids, label
-        else:
-            return self.sentense_transform(line)
+        #process the token pair
+        tokens_raw = [self._tokenizer(l) for l in line[:-1]]
+        tokens_trun = self.Truncate(tokens_raw)
+        tokens, segment_ids, _ = self.InsertSpecialTokens(
+            tokens_trun, [[self._sep_token]] * len(tokens_trun))
+
+        #add cls token
+        input_ids = self._vocab[[self._cls_token] + tokens]
+        segment_ids = [0] + segment_ids
+
+        #get label
+        label = line[-1]
+        # map to int if class labels are available
+        if self.class_labels:
+            label = self._label_map[label]
+        label = np.array([label], dtype=self._label_dtype)
+        return input_ids, segment_ids, label
+
 
 
 SquadExample = collections.namedtuple('SquadExample', [

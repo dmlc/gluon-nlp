@@ -35,7 +35,9 @@ def test_bertstyle_glue_dataset_transform():
     tokenizer = BERTTokenizer(vocab=bert_vocab)
 
     # test Transform for classification task
-    bert_cls_dataset_t = BertStyleGlueTransform(tokenizer, 15, class_labels=[label_cls])
+    bert_cls_dataset_t = BertStyleGlueTransform(tokenizer, 15, class_labels=[label_cls],
+                                                cls_token=bert_vocab.cls_token,
+                                                sep_token=bert_vocab.sep_token)
 
     token_ids, type_ids, label_ids = bert_cls_dataset_t((text_a, text_b, label_cls))
     text_a_tokens = ['is', 'this', 'jack', '##son', '##ville', '?']
@@ -52,21 +54,25 @@ def test_bertstyle_glue_dataset_transform():
     start = len(text_a_tokens) + 2
     end = len(text_a_tokens)+2+len(text_b_tokens)+1
     valid_type_ids[start:end] = 1
-    assert all(token_ids == concated_ids)
+    assert all(np.array(token_ids) == np.array(concated_ids))
     assert all(type_ids == valid_type_ids)
     assert all(label_ids == np.array([label_cls], dtype=np.int32))
 
     #test Transform for regression task
     label_reg = 0.2
-    bert_reg_dataset_t = BertStyleGlueTransform(tokenizer, 15)
+    bert_reg_dataset_t = BertStyleGlueTransform(tokenizer, 15,
+                                                cls_token=bert_vocab.cls_token,
+                                                sep_token=bert_vocab.sep_token)
     token_ids, type_ids, label_reg_val = bert_reg_dataset_t((text_a, text_b, label_reg))
-    assert all(token_ids == concated_ids)
+    assert all(token_ids == np.array(concated_ids))
     assert all(type_ids == valid_type_ids)
     assert all(label_reg_val == np.array([label_reg], dtype=np.float32))
 
     #test Transform for single input sequence
     label_reg = 0.2
-    bert_reg_dataset_t = BertStyleGlueTransform(tokenizer, 15)
+    bert_reg_dataset_t = BertStyleGlueTransform(tokenizer, 15,
+                                                cls_token=bert_vocab.cls_token,
+                                                sep_token=bert_vocab.sep_token)
     token_ids, type_ids, label_reg_val = bert_reg_dataset_t((text_ab, label_reg))
     concated_ids = cls_ids + text_a_ids + text_b_ids + sep_ids
 
