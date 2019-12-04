@@ -8,6 +8,7 @@ __all__ = [
 ]
 
 import collections
+import itertools
 from functools import partial
 import numpy as np
 from gluonnlp.data.utils import whitespace_splitter
@@ -23,129 +24,89 @@ class TruncateTransform:
     max_len : int
     truncate_fn : callable
         A function determines how to truncate the sequence (list).
-        The function should implement argument max_length
+        The function should implement argument max_len, and return a list
 
     Returns
     -------
-    list : list of sequences or a single sequence
+    list : list
     """
     def __init__(self, max_len, truncate_fn=truncate_seqs_equal):
         self._max_len = max_len
-        self.fn = partial(truncate_fn, max_length=max_len)
+        self.fn = partial(truncate_fn, max_len=max_len)
 
     def __call__(self, seqs):
         assert isinstance(seqs, collections.abc.Iterable)
         if len(seqs) == 0:
             return seqs
-        if isinstance(seqs[0], collections.abc.Iterable) and not isinstance(
-                seqs[0], str):
-            #if it contains a list of seqs
-            seqs = self.fn(seqs)
-            return seqs
-        else:
-            #if it is a single sequence
-            return seqs[:self._max_len]
+        if not isinstance(seqs[0], collections.abc.Iterable) or isinstance(seqs[0], str):
+            seqs = [seqs]
+
+        seqs = self.fn(seqs)
+        return seqs
 
 
 class ConcatSeqTransform:
     """Insert special tokens for sequence list or a single sequence.
-    For sequence pairs, the input is a list of 2 strings:
-    text_a, text_b.
+           For sequence pairs, the input is a list of 2 strings:
+           text_a, text_b.
 
-    Inputs:
-        text_a: 'is this jacksonville ?'
-        text_b: 'no it is not'
-        start_token: [CLS]
-        token_after_seg: [[SEP], [SEP]]
-        end_token: None
+           Inputs:
+               text_a: 'is this jacksonville ?'
+               text_b: 'no it is not'
+               start_token: [CLS]
+               token_after_seg: [[SEP], [SEP]]
+               end_token: None
 
-    Processed:
-        tokens: '[CLS] is this jacksonville ? [SEP] no it is not . [SEP]'
-        segment_ids: 0 0  0    0            0  0    1  1  1  1   1 1
-        p_mask:      0 0  0    0            0  1    0  0  0  0   0 1
-        valid_length: 12
+           Processed:
+               tokens: '[CLS] is this jacksonville ? [SEP] no it is not . [SEP]'
+               segment_ids: 0 0  0    0            0  0    1  1  1  1   1 1
+               p_mask:      0 0  0    0            0  1    0  0  0  0   0 1
+               valid_length: 12
 
-    Parameters
-    ----------
-    vocab : Vocab
-        If vocab is not None. The tokens will be converted to ids before return
+           Parameters
+           ----------
+            vocab : Vocab
+                If vocab is not None. The tokens will be converted to ids before return
 
-    token_after_seg : list
-        The special tokens to be appended to each sequence. For example:
-        Given:
-            seqs: [[1, 2], [3, 4], [5, 6]]
-            token_after_seg: [None, 7]
-        it will be:
-            [1, 2, 3, 4, 7, 5, 6]
+            token_after_seg : list
+                The special tokens to be appended to each sequence. For example:
+                Given:
+                    seqs: [[1, 2], [3, 4], [5, 6]]
+                    token_after_seg: [None, 7]
+                it will be:
+                    [1, 2, 3, 4, 7, 5, 6]
 
-    start_token : string
-        The special token to be added to the start
+            start_token : string
+                The special token to be added to the start
 
-    end_token : string
-        The special token to be added to the end
+            end_token : string
+                The special token to be added to the end
 
-    seqs : list of sequences or a single sequence
+            seqs : list of sequences or a single sequence
 
-    Returns
-    -------
-    np.array: input token ids in 'int32', shape (batch_size, seq_length)
-    np.array: segment ids in 'int32', shape (batch_size, seq_length)
-    np.array: valid length in 'int32', shape (batch_size,)
-    np.array: mask for special tokens
-    """
+           Returns
+           -------
+           np.array: input token ids in 'int32', shape (batch_size, seq_length)
+           np.array: segment ids in 'int32', shape (batch_size, seq_length)
+           np.array: mask for special tokens
+           """
     def __init__(self,
-                 vocab=None,
-                 token_after_seg=None,
-                 start_token=None,
-                 end_token=None):
+                 vocab=None):
         self._vocab = vocab
-        self._start_token = start_token
-        self._end_token = end_token
-        self._token_after_seg = token_after_seg if token_after_seg else []
 
-    def __call__(self, seqs):
+    def __call__(self, seqs, seperators):
         assert isinstance(seqs, collections.abc.Iterable) and len(seqs) > 0
-        tokens = []
-        if self._start_token:
-            tokens.append(self._start_token)
-        tokens_a = seqs if not isinstance(
-            seqs[0], collections.abc.Iterable) else seqs[0]
-        tokens.extend(tokens_a)
-        p_mask = [0] * len(tokens)
-        sp_token_counter = 0
-
-        if sp_token_counter < len(self._token_after_seg):
-            if self._token_after_seg[sp_token_counter]:
-                tokens.append(self._token_after_seg[sp_token_counter])
-            sp_token_counter += 1
-
-        segment_ids = [0] * len(tokens)
-        p_mask.append(1)
-        seqs = seqs[1:]
-
-        if len(seqs) > 0 and isinstance(seqs[0], collections.abc.Iterable):
-            # if seqs is a list of sequence
-            for (i, seq) in enumerate(seqs):
-                tokens_b = seq
-                tokens.extend(tokens_b)
-                p_mask.extend([0] * (len(tokens) - len(p_mask)))
-                if sp_token_counter < len(self._token_after_seg):
-                    if self._token_after_seg[sp_token_counter]:
-                        tokens.append(self._token_after_seg[sp_token_counter])
-                        p_mask.append(1)
-                    sp_token_counter += 1
-                segment_ids.extend([i + 1] * (len(tokens) - len(segment_ids)))
-
-        if self._end_token:
-            tokens.append(self._end_token)
-            p_mask.append(0)
-            segment_ids.append(len(seqs))
+        concat = sum((seq + sep for sep, seq in
+                      itertools.zip_longest(seperators, seqs, fillvalue=[])), [])
+        segment_ids = sum(([i] * (len(seq) + len(sep)) for i, (sep, seq) in
+                           enumerate(itertools.zip_longest(seperators, seqs, fillvalue=[]))), [])
+        p_mask = sum(([0] * len(seq) + [1] * len(sep) for sep, seq in
+                      itertools.zip_longest(seperators, seqs, fillvalue=[])), [])
 
         if self._vocab:
-            tokens = self._vocab[tokens]
-        # The valid length of sentences. Only real  tokens are attended to.
-        valid_length = len(tokens)
-        return tokens, segment_ids, valid_length, p_mask
+            concat = self._vocab[concat]
+
+        return concat, segment_ids, p_mask
 
 
 class BertTStyleSentenceTransform:
@@ -183,17 +144,18 @@ class BertTStyleSentenceTransform:
             self._sep_token = self._vocab.eos_token
         self._token_after_seg = [self._sep_token] * 2
 
-        self.InsertSpecialTokens = ConcatSeqTransform(self._vocab,
-                                                      self._token_after_seg,
-                                                      self._cls_token)
+        self.InsertSpecialTokens = ConcatSeqTransform()
 
     def __call__(self, line):
         tokens_raw = [self._tokenizer(l) for l in line]
         tokens_trun = self.Truncate(tokens_raw)
-        input_ids, segment_ids, valid_length, _ = self.InsertSpecialTokens(
-            tokens_trun)
-        return np.array(input_ids, dtype='int32'), np.array(valid_length, dtype='int32'),\
-            np.array(segment_ids, dtype='int32')
+        tokens, segment_ids, _ = self.InsertSpecialTokens(
+            tokens_trun, [[self._sep_token]] * len(tokens_trun))
+
+        input_ids = self._vocab[[self._cls_token] + tokens]
+        segment_ids = [0] + segment_ids
+
+        return np.array(input_ids, dtype='int32'), np.array(segment_ids, dtype='int32')
 
 
 class BertStyleGlueTransform:
@@ -232,14 +194,14 @@ class BertStyleGlueTransform:
 
     def __call__(self, line):
         if self.has_label:
-            input_ids, valid_length, segment_ids = self.sentense_transform(
+            input_ids, segment_ids = self.sentense_transform(
                 line[:-1])
             label = line[-1]
             # map to int if class labels are available
             if self.class_labels:
                 label = self._label_map[label]
             label = np.array([label], dtype=self._label_dtype)
-            return input_ids, valid_length, segment_ids, label
+            return input_ids, segment_ids, label
         else:
             return self.sentense_transform(line)
 
@@ -407,8 +369,11 @@ class SimpleQAPreparation:
     Note that this class does not check if max span.
     """
     def __init__(self, cls_token, sep_token, vocab, is_training):
-        self.insert = ConcatSeqTransform(cls_token, sep_token, vocab)
+        self.insert = ConcatSeqTransform()
         self.is_training = is_training
+        self._cls_token = cls_token
+        self._sep_token = sep_token
+        self._vocab = vocab
 
     def __call__(self,
                  query,
@@ -424,8 +389,11 @@ class SimpleQAPreparation:
         for doc_span in doc_spans:
             span_text = all_doc_tokens[doc_span.start:doc_span.start +
                                        doc_span.length]
-            input_ids, segment_ids, valid_length, p_mask = self.insert(
-                [query, span_text])
+            tokens, segment_ids, p_mask = self.insert(
+                [query, span_text], [[self._sep_token]] * 2)
+            input_ids = self._vocab[[self._cls_token] + tokens]
+            segment_ids = [0] + segment_ids
+            p_mask = [0] + p_mask
             start_position = 0
             end_position = 0
             if self.is_training and not is_impossible:
@@ -449,7 +417,7 @@ class SimpleQAPreparation:
             if not other_features:
                 other_features = []
             ret.append(other_features + [
-                input_ids, segment_ids, valid_length, p_mask, start_position,
+                input_ids, segment_ids, p_mask, start_position,
                 end_position, is_impossible
             ])
         return ret
