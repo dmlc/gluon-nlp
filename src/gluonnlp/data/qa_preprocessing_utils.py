@@ -61,7 +61,7 @@ def truncate_seqs_equal(seqs, max_length):
     for seq in seq_len:
         seq[1][1] = seq[1][1][:truncate_to]
         if remain > 0:
-            seq[1][1].pop()
+            seq[1][1].pop() # pytype: disable=attribute-error
             remain -= 1
     seq_len.sort(key=lambda a: a[1][0])
     ret = [a[1][1] for a in seq_len]

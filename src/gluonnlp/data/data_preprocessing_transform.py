@@ -49,50 +49,50 @@ class TruncateTransform:
 
 class ConcatSeqTransform:
     """Insert special tokens for sequence list or a single sequence.
-           For sequence pairs, the input is a list of 2 strings:
-           text_a, text_b.
+    For sequence pairs, the input is a list of 2 strings:
+    text_a, text_b.
 
-           Inputs:
-               text_a: 'is this jacksonville ?'
-               text_b: 'no it is not'
-               start_token: [CLS]
-               token_after_seg: [[SEP], [SEP]]
-               end_token: None
+    Inputs:
+        text_a: 'is this jacksonville ?'
+        text_b: 'no it is not'
+        start_token: [CLS]
+        token_after_seg: [[SEP], [SEP]]
+        end_token: None
 
-           Processed:
-               tokens: '[CLS] is this jacksonville ? [SEP] no it is not . [SEP]'
-               segment_ids: 0 0  0    0            0  0    1  1  1  1   1 1
-               p_mask:      0 0  0    0            0  1    0  0  0  0   0 1
-               valid_length: 12
+    Processed:
+        tokens: '[CLS] is this jacksonville ? [SEP] no it is not . [SEP]'
+        segment_ids: 0 0  0    0            0  0    1  1  1  1   1 1
+        p_mask:      0 0  0    0            0  1    0  0  0  0   0 1
+        valid_length: 12
 
-           Parameters
-           ----------
-            vocab : Vocab
-                If vocab is not None. The tokens will be converted to ids before return
+    Parameters
+    ----------
+    vocab : Vocab
+        If vocab is not None. The tokens will be converted to ids before return
 
-            token_after_seg : list
-                The special tokens to be appended to each sequence. For example:
-                Given:
-                    seqs: [[1, 2], [3, 4], [5, 6]]
-                    token_after_seg: [None, 7]
-                it will be:
-                    [1, 2, 3, 4, 7, 5, 6]
+    token_after_seg : list
+        The special tokens to be appended to each sequence. For example:
+        Given:
+            seqs: [[1, 2], [3, 4], [5, 6]]
+            token_after_seg: [None, 7]
+        it will be:
+            [1, 2, 3, 4, 7, 5, 6]
 
-            start_token : string
-                The special token to be added to the start
+    start_token : string
+        The special token to be added to the start
 
-            end_token : string
-                The special token to be added to the end
+    end_token : string
+        The special token to be added to the end
 
-            seqs : list of sequences or a single sequence
+    seqs : list of sequences or a single sequence
 
-           Returns
-           -------
-           np.array: input token ids in 'int32', shape (batch_size, seq_length)
-           np.array: segment ids in 'int32', shape (batch_size, seq_length)
-           np.array: valid length in 'int32', shape (batch_size,)
-           np.array: mask for special tokens
-           """
+    Returns
+    -------
+    np.array: input token ids in 'int32', shape (batch_size, seq_length)
+    np.array: segment ids in 'int32', shape (batch_size, seq_length)
+    np.array: valid length in 'int32', shape (batch_size,)
+    np.array: mask for special tokens
+    """
     def __init__(self,
                  vocab=None,
                  token_after_seg=None,
