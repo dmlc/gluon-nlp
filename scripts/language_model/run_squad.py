@@ -188,6 +188,9 @@ if pretrained_xlnet_parameters:
                               cast_dtype=True)
 
 net = XLNetForQA(xlnet_base=xlnet_base, start_top_n=args.start_top_n, end_top_n=args.end_top_n, version_2=args.version_2)
+net_eval = XLNetForQA(xlnet_base=xlnet_base, start_top_n=args.start_top_n, end_top_n=args.end_top_n,
+                      version_2=args.version_2, eval=True, params=net.collect_params())
+
 initializer = mx.init.Normal(0.02)
 
 if args.model_parameters:
@@ -199,6 +202,8 @@ net.end_logits.initialize(init=initializer, ctx=ctx)
 if args.version_2:
     net.answer_class.initialize(init=initializer, ctx=ctx)
 
+net.hybridize(static_alloc=True)
+net_eval.hybridize(static_alloc=True)
 
 
 def split_and_load(arrs, _ctx):
@@ -388,7 +393,7 @@ def evaluate(prefix=''):
         for splited_data in data_list:
             example_ids, inputs, token_types, valid_length, p_mask, _, _, _ = splited_data
             total_num += len(inputs)
-            outputs = net(inputs, token_types, valid_length, p_mask=p_mask, is_evaluation=True)
+            outputs = net_eval(inputs, token_types, valid_length, p_mask=p_mask)
             example_ids = example_ids.asnumpy().tolist()
             for i, example_ids in enumerate(example_ids):
                 result = RawResultExtended(unique_id=None,
@@ -396,7 +401,7 @@ def evaluate(prefix=''):
                                            start_top_index=outputs[1][i].asnumpy().tolist(),
                                            end_top_log_probs=outputs[2][i].asnumpy().tolist(),
                                            end_top_index=outputs[3][i].asnumpy().tolist(),
-                                           cls_logits=outputs[4][i].asnumpy().tolist())
+                                           cls_logits=outputs[4][i].asnumpy().tolist() if outputs[4] else [1e30])
                 all_results[example_ids].append(result)
         if batch_id % args.log_interval == 0:
             log.info('Batch: %d/%d', batch_id + 1, len(dev_dataloader))
