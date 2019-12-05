@@ -150,25 +150,21 @@ def test_truncate():
     res2 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     trunc = TruncateTransform(20)
     assert all(np.array(trunc(seqs)) == np.array(res1))
-    assert all(np.array(trunc(seq[0])) == np.array(res2))
+    assert all(np.array(trunc(seq)[0]) == np.array(res2))
 
 def test_concat_sequence():
     seqs = [[3 * i + j for j in range(3)] for i in range(3)]
-    start_token = -1
-    end_token = 999
-    middle_tokens = ['a', 'b', 'c']
-    concat = ConcatSeqTransform(start_token=start_token, token_after_seg=middle_tokens, end_token=end_token)
-    res = concat(seqs)
-    assert res[0] == [-1, 0, 1, 2, 'a', 3, 4, 5, 'b', 6, 7, 8, 'c', 999]
-    assert res[1] == [0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 2]
-    assert res[2] == 14
-    assert res[3] == [0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0]
+    seperators = [['a'], ['b'], ['c']]
+    concat = ConcatSeqTransform()
+    res = concat(seqs, seperators)
+    assert res[0] == [0, 1, 2, 'a', 3, 4, 5, 'b', 6, 7, 8, 'c']
+    assert res[1] == [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
+    assert res[2] == [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]
 
-    middle_tokens = ['a', None, 'b']
-    concat = ConcatSeqTransform(start_token=start_token, token_after_seg=middle_tokens, end_token=end_token)
-    res = concat(seqs)
-    assert res[0] == [-1, 0, 1, 2, 'a', 3, 4, 5, 6, 7, 8, 'b', 999]
-    assert res[1] == [0, 0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2, 2]
-    assert res[2] == 13
-    assert res[3] == [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 0]
+    seperators = [['a'], [], ['b']]
+    concat = ConcatSeqTransform()
+    res = concat(seqs, seperators)
+    assert res[0] == [0, 1, 2, 'a', 3, 4, 5, 6, 7, 8, 'b']
+    assert res[1] == [0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2]
+    assert res[2] == [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]
 
