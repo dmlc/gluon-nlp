@@ -331,31 +331,27 @@ class SimpleQAPreparation:
         for doc_span in doc_spans:
             span_text = all_doc_tokens[doc_span.start:doc_span.start +
                                        doc_span.length]
+
+            # Insert [sep]
             tokens, segment_ids, p_mask = self.insert(
                 [query, span_text], [[self._sep_token]] * 2)
+            # Insert [cls]
             input_ids = self._vocab[[self._cls_token] + tokens]
             segment_ids = [0] + segment_ids
             p_mask = [0] + p_mask
+
+            # Get start/end position for each doc span
             start_position = 0
             end_position = 0
             if self.is_training and not is_impossible:
                 doc_start = doc_span.start
                 doc_end = doc_span.start + doc_span.length - 1
-                out_of_span = False
-                if not (tok_start_position >= doc_start
+                if (tok_start_position >= doc_start
                         and tok_end_position <= doc_end):
-                    out_of_span = True
-                if out_of_span:
-                    start_position = 0
-                    end_position = 0
-                else:
-                    doc_offset = len(query) + 2
+                    doc_offset = len(query) + 2  # plus the special token added
                     start_position = tok_start_position - doc_start + doc_offset
                     end_position = tok_end_position - doc_start + doc_offset
 
-            if self.is_training and is_impossible:
-                start_position = 0
-                end_position = 0
             if not other_features:
                 other_features = []
             ret.append(other_features + [
