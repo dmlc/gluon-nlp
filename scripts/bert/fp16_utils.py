@@ -188,8 +188,8 @@ class LossScaler:
         for param in params:
             if param.grad_req != 'null':
                 grad = param.list_grad()[0]
-                is_not_finite += mx.nd.contrib.isnan(grad).sum()
-                is_not_finite += mx.nd.contrib.isinf(grad).sum()
+                is_not_finite += mx.nd.contrib.isnan(grad).sum().astype('float32', copy=False)
+                is_not_finite += mx.nd.contrib.isinf(grad).sum().astype('float32', copy=False)
         # NDArray is implicitly converted to bool
         if is_not_finite == 0:
             return False
