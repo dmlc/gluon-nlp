@@ -20,8 +20,8 @@
 import numpy as np
 from gluonnlp.vocab import BERTVocab
 from gluonnlp.data import count_tokens, BERTTokenizer, \
-    BertStyleGlueTransform, BertStyleSQuADTransform, TruncateTransform, \
-        ConcatSeqTransform
+    BertStyleGlueTransform, BertStyleSQuADTransform, truncate_seqs_equal, \
+    ConcatSeqTransform
 
 
 def test_bertstyle_glue_dataset_transform():
@@ -101,9 +101,11 @@ def test_bertstyle_squad_dataset_transform():
     vocab_tokens = ['what', 'is', 'my', 'na', '##me', '?', 'my', 'na', '##me', 'is', 'jack']
     bert_vocab = BERTVocab(count_tokens(vocab_tokens))
     tokenizer = BERTTokenizer(vocab=bert_vocab)
-    trans = BertStyleSQuADTransform(tokenizer, max_seq_length=len(vocab_tokens) + 3,
-                             doc_stride=3, max_query_length=6,
-                             is_training=True)
+    trans = BertStyleSQuADTransform(tokenizer, bert_vocab.cls_token,
+                                    bert_vocab.sep_token,
+                                    max_seq_length=len(vocab_tokens) + 3,
+                                    doc_stride=10, max_query_length=6,
+                                    is_training=True)
     example_id, inputs, token_types, p_mask, start_label, end_label, is_impossible = \
     trans(data_without_impossible)[0]
     text_a_tokens = ['what', 'is', 'my', 'na','##me', '?']
@@ -146,24 +148,24 @@ def test_bertstyle_squad_dataset_transform():
 def test_truncate():
     seqs = [[j*i for j in range(i)] for i in range(1,10)]
     res1 = [[0], [0, 2], [0, 3, 6], [0, 4, 8], [0, 5, 10], [0, 6], [0, 7], [0, 8], [0, 9]]
-    seq = [i for i in range(20)]
-    res2 = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-    trunc = TruncateTransform(20)
-    assert all(np.array(trunc(seqs)) == np.array(res1))
-    assert all(np.array(trunc(seq)[0]) == np.array(res2))
+    seq = [[i for i in range(20)]]
+
+    truncated = truncate_seqs_equal(seqs, 20)
+    truncated2 = truncate_seqs_equal(seq, 20)
+
+    assert all(truncated == np.array(res1))
+    assert all(truncated2[0] == np.array(seq)[0])
 
 def test_concat_sequence():
     seqs = [[3 * i + j for j in range(3)] for i in range(3)]
     seperators = [['a'], ['b'], ['c']]
-    concat = ConcatSeqTransform()
-    res = concat(seqs, seperators)
+    res = ConcatSeqTransform(seqs, seperators)
     assert res[0] == [0, 1, 2, 'a', 3, 4, 5, 'b', 6, 7, 8, 'c']
     assert res[1] == [0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2]
     assert res[2] == [0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1]
 
     seperators = [['a'], [], ['b']]
-    concat = ConcatSeqTransform()
-    res = concat(seqs, seperators)
+    res = ConcatSeqTransform(seqs, seperators)
     assert res[0] == [0, 1, 2, 'a', 3, 4, 5, 6, 7, 8, 'b']
     assert res[1] == [0, 0, 0, 0, 1, 1, 1, 2, 2, 2, 2]
     assert res[2] == [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1]
