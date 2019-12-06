@@ -91,13 +91,15 @@ def TokenizeAndPositionAlign(origin_text, positions, tokenizer):
     if not isinstance(positions, list):
         positions = [positions]
     orig_to_tok_index = []
+    tok_to_orig_index = []
     tokenized_text = []
     for (i, token) in enumerate(origin_text):
         orig_to_tok_index.append(len(tokenized_text))
         sub_tokens = tokenizer(token)
         tokenized_text += sub_tokens
+        tok_to_orig_index += [i] * len(sub_tokens)
     new_positions = [orig_to_tok_index[p] for p in positions]
-    return new_positions, tokenized_text
+    return new_positions, tokenized_text, orig_to_tok_index, tok_to_orig_index
 
 
 def get_doc_spans(full_doc, max_length, doc_stride):
@@ -123,6 +125,8 @@ def get_doc_spans(full_doc, max_length, doc_stride):
         length = min(max_length, len(full_doc) - start_offset)
         end_offset = start_offset + length
         doc_spans.append((full_doc[start_offset: end_offset], (start_offset, end_offset)))
+        if start_offset + length == len(full_doc):
+            break
         start_offset += min(length, doc_stride)
     return list(zip(*doc_spans))
 
@@ -142,30 +146,31 @@ def align_position2doc_spans(positions, doc_spans_indices,
 
 def improve_answer_span(doc_tokens, input_start, input_end, tokenizer,
                         orig_answer_text):
-    """Returns tokenized answer spans that better match the annotated answer."""
+    """Returns tokenized answer spans that better match the annotated answer.
 
-    # The SQuAD annotations are character based. We first project them to
-    # whitespace-tokenized words. But then after WordPiece tokenization, we can
-    # often find a "better match". For example:
-    #
-    #   Question: What year was John Smith born?
-    #   Context: The leader was John Smith (1895-1943).
-    #   Answer: 1895
-    #
-    # The original whitespace-tokenized answer will be "(1895-1943).". However
-    # after tokenization, our tokens will be "( 1895 - 1943 ) .". So we can match
-    # the exact answer, 1895.
-    #
-    # However, this is not always possible. Consider the following:
-    #
-    #   Question: What country is the top exporter of electornics?
-    #   Context: The Japanese electronics industry is the lagest in the world.
-    #   Answer: Japan
-    #
-    # In this case, the annotator chose "Japan" as a character sub-span of
-    # the word "Japanese". Since our WordPiece tokenizer does not split
-    # "Japanese", we just use "Japanese" as the annotation. This is fairly rare
-    # in SQuAD, but does happen.
+    The SQuAD annotations are character based. We first project them to
+    whitespace-tokenized words. But then after WordPiece tokenization, we can
+    often find a "better match". For example:
+
+      Question: What year was John Smith born?
+      Context: The leader was John Smith (1895-1943).
+      Answer: 1895
+
+    The original whitespace-tokenized answer will be "(1895-1943).". However
+    after tokenization, our tokens will be "( 1895 - 1943 ) .". So we can match
+    the exact answer, 1895.
+
+    However, this is not always possible. Consider the following:
+
+      Question: What country is the top exporter of electornics?
+      Context: The Japanese electronics industry is the lagest in the world.
+      Answer: Japan
+
+    In this case, the annotator chose "Japan" as a character sub-span of
+    the word "Japanese". Since our WordPiece tokenizer does not split
+    "Japanese", we just use "Japanese" as the annotation. This is fairly rare
+    in SQuAD, but does happen.
+    """
     tok_answer_text = ' '.join(tokenizer(orig_answer_text))
 
     for new_start in range(input_start, input_end + 1):
@@ -178,36 +183,41 @@ def improve_answer_span(doc_tokens, input_start, input_end, tokenizer,
 
 
 def check_is_max_context(doc_spans, cur_span_index, position):
-    """Check if this is the 'max context' doc span for the token."""
+    """Check if this is the 'max context' doc span for the token.
 
-    # Because of the sliding window approach taken to scoring documents, a single
-    # token can appear in multiple documents. E.g.
-    #  Doc: the man went to the store and bought a gallon of milk
-    #  Span A: the man went to the
-    #  Span B: to the store and bought
-    #  Span C: and bought a gallon of
-    #  ...
-    #
-    # Now the word 'bought' will have two scores from spans B and C. We only
-    # want to consider the score with "maximum context", which we define as
-    # the *minimum* of its left and right context (the *sum* of left and
-    # right context will always be the same, of course).
-    #
-    # In the example the maximum context for 'bought' would be span C since
-    # it has 1 left context and 3 right context, while span B has 4 left context
-    # and 0 right context.
+    Because of the sliding window approach taken to scoring documents, a single
+    token can appear in multiple documents. E.g.
+     Doc: the man went to the store and bought a gallon of milk
+     Span A: the man went to the
+     Span B: to the store and bought
+     Span C: and bought a gallon of
+     ...
+
+    Now the word 'bought' will have two scores from spans B and C. We only
+    want to consider the score with "maximum context", which we define as
+    the *minimum* of its left and right context (the *sum* of left and
+    right context will always be the same, of course).
+
+    In the example the maximum context for 'bought' would be span C since
+    it has 1 left context and 3 right context, while span B has 4 left context
+    and 0 right context.
+
+    Note that position is the absolute position in the origin text.
+    """
     best_score = None
     best_span_index = None
     for (span_index, doc_span) in enumerate(doc_spans):
-        end = doc_span.start + doc_span.length - 1
-        if position < doc_span.start:
+        start, end = doc_span
+        end -= 1
+        length = end - start + 1
+        if position < start:
             continue
         if position > end:
             continue
-        num_left_context = position - doc_span.start
+        num_left_context = position - start
         num_right_context = end - position
         score = min(num_left_context, num_right_context) + \
-            0.01 * doc_span.length
+                0.01 * length
         if best_score is None or score > best_score:
             best_score = score
             best_span_index = span_index

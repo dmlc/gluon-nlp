@@ -8,7 +8,8 @@ __all__ = [
 import collections
 import numpy as np
 from .preprocessing_utils import truncate_seqs_equal, improve_answer_span, \
-    ConcatSeqTransform, TokenizeAndPositionAlign, get_doc_spans, align_position2doc_spans
+    ConcatSeqTransform, TokenizeAndPositionAlign, get_doc_spans, align_position2doc_spans, \
+    check_is_max_context
 
 class BertStyleGlueTransform:
     """Convert from gluonnlp.data.Glue* record to inputs for BERT-style model."""
@@ -62,6 +63,11 @@ SquadExample = collections.namedtuple('SquadExample', [
     'start_position', 'end_position', 'is_impossible'
 ])
 
+SquadBERTFeautre = collections.namedtuple('SquadBERTFeautre', ['example_id', 'qas_id', 'doc_tokens',
+                                          'tokens', 'token_to_orig_map', 'token_is_max_context', 'input_ids',
+                                                               'p_mask', 'segment_ids', 'start_position',
+                                                               'end_position','is_impossible'])
+
 
 class SQuADExampleTransform:
     """Convert from gluonnlp.data.SQuAD's record to SquadExample."""
@@ -100,8 +106,12 @@ class SQuADExampleTransform:
                 prev_is_whitespace = False
             char_to_word_offset.append(len(doc_tokens) - 1)
 
-        start_position = char_to_word_offset[answer_offset] if not is_impossible else -1
-        end_position = char_to_word_offset[answer_offset + answer_length -1] if not is_impossible else -1
+        if self.is_training:
+            start_position = -1
+            end_position = -1
+        else:
+            start_position = char_to_word_offset[answer_offset] if not is_impossible else -1
+            end_position = char_to_word_offset[answer_offset + answer_length -1] if not is_impossible else -1
 
         example = SquadExample(qas_id=qas_id,
                                question_text=question_text,
@@ -146,12 +156,13 @@ class BertStyleSQuADTransform:
         self._doc_stride = doc_stride
         self._max_query_length = max_query_length
         self._get_example = SQuADExampleTransform(training=is_training)
+        self._is_training = is_training
 
     def __call__(self, line):
         example = self._get_example(line)
-        query_tokenized = [self._cls_token] + self._tokenizer(example.question_text)[:self._max_query_length]
+        query_tokenized = [self._cls_token] + self._tokenizer(example.question_text)[: self._max_query_length]
         #get the start/end position of the answer in tokenized paragraph
-        (tok_start_position, tok_end_position), all_doc_tokens = \
+        (tok_start_position, tok_end_position), all_doc_tokens, _, tok_to_orig_index= \
             TokenizeAndPositionAlign(example.doc_tokens,
                                       [example.start_position,
                                       example.end_position],
@@ -164,17 +175,30 @@ class BertStyleSQuADTransform:
             tok_start_position, tok_end_position = -1, -1
 
         #get doc spans
-        doc_spans, doc_spans_indices = get_doc_spans(all_doc_tokens, self._max_seq_length - self._max_query_length - 3,
+        doc_spans, doc_spans_indices = get_doc_spans(all_doc_tokens, self._max_seq_length - len(query_tokenized) - 2,
                                   self._doc_stride)
-        #get sequence features: tokens, segment_ids, p_masks
-        seq_features = [ConcatSeqTransform([query_tokenized, doc_span], [[self._sep_token]] * 2)
-                    for doc_span in doc_spans]
         #get the new start/end position
         positions = [align_position2doc_spans([tok_start_position, tok_end_position], doc_idx,
                                               offset=len(query_tokenized) + 1,
                                               default_value=0) for doc_idx in doc_spans_indices]
-        features = [[example.example_id] + [self._vocab[tokens], segment_id, p_mask]
-                    + [start, end, example.is_impossible]
-                    for (tokens, segment_id, p_mask), (start, end) in zip(seq_features, positions)]
 
+        token_is_max_context = [{len(query_tokenized) + p: check_is_max_context(doc_spans_indices, i,
+                                                                                p + doc_spans_indices[i][0])
+                                 for p in range(len(doc_span))}
+                                for (i, doc_span) in enumerate(doc_spans)]
+        token_to_orig_map = [{len(query_tokenized) + p: tok_to_orig_index[p + doc_spans_indices[i][0]]
+                                 for p in range(len(doc_span))}
+                                for (i, doc_span) in enumerate(doc_spans)]
+        #get sequence features: tokens, segment_ids, p_masks
+        seq_features = [ConcatSeqTransform([query_tokenized, doc_span], [[self._sep_token]] * 2)
+                    for doc_span in doc_spans]
+
+        features = [SquadBERTFeautre(example_id=example.example_id, qas_id=example.qas_id,
+                             doc_tokens=example.doc_tokens, tokens=tokens, token_to_orig_map=t2o,
+                             token_is_max_context=is_max, input_ids=self._vocab[tokens],
+                             p_mask=p_mask, segment_ids=segment_ids, start_position=start, end_position=end,
+                             is_impossible=example.is_impossible) for (tokens, segment_ids, p_mask), (start, end),
+                                                                      is_max, t2o in zip(seq_features, positions,
+                                                                                    token_is_max_context,
+                                                                                    token_to_orig_map)]
         return features
