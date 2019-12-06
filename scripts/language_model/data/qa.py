@@ -384,6 +384,7 @@ class SQuADTransform:
                 out_of_span = False
                 if not (tok_start_position >= doc_start and tok_end_position <= doc_end):
                     out_of_span = True
+                    continue
                 if out_of_span:
                     start_position = 0
                     end_position = 0

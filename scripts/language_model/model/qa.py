@@ -228,6 +228,10 @@ class XLNetForQA(Block):
             cls_logits = None
             if self.version2:
                 cls_logits = self.answer_class(output, output.shape[0], start_states=start_states)
+                
+            padding_length = mx.nd.expand_dims(slen - valid_length, axis=-1)
+            start_top_index = start_top_index - padding_length
+            end_top_index = end_top_index - padding_length
             outputs = (start_top_log_probs, start_top_index, end_top_log_probs, end_top_index,
                        cls_logits)
             return outputs
