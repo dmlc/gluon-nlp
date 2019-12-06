@@ -1,7 +1,7 @@
 """Utility classes and functions for data processing"""
 
 __all__ = [
-    'truncate_seqs_equal', 'truncate_equal_by_len', 'ConcatSeqTransform', 'TokenizeAndPositionAlign',
+    'truncate_seqs_equal', 'ConcatSeqTransform', 'TokenizeAndPositionAlign',
     'get_doc_spans', 'align_position2doc_spans', 'improve_answer_span', 'check_is_max_context'
 ]
 
@@ -10,9 +10,19 @@ import itertools
 import numpy.ma as ma
 
 
-def truncate_equal_by_len(lens, max_len):
+def truncate_seqs_equal(seqs, max_len):
+    """truncate a list of seqs so that the total length equals max length.
+
+    Trying to truncate the seqs to equal length.
+
+    Returns
+    -------
+    list : list of truncated sequence keeping the origin order
+    """
+    assert isinstance(seqs, list)
+    lens = list(map(len, seqs))
     if sum(lens) <= max_len:
-        return lens
+        return seqs
 
     lens = ma.masked_array(lens, mask=[0] * len(lens))
     while True:
@@ -28,22 +38,7 @@ def truncate_equal_by_len(lens, max_len):
                 for i in range(lens.count())
             ]
             break
-
-    return lens.data.tolist()
-
-
-def truncate_seqs_equal(seqs, max_len):
-    """
-    truncate a list of seqs so that the total length equals max length.
-    Trying to truncate the seqs to equal length.
-
-    Returns
-    -------
-    list : list of truncated sequence keeping the origin order
-    """
-    assert isinstance(seqs, list)
-    lens = list(map(len, seqs))
-    seqs = [seq[:length] for (seq, length) in zip(seqs, truncate_equal_by_len(lens, max_len))]
+    seqs = [seq[:length] for (seq, length) in zip(seqs, lens.data.tolist())]
     return seqs
 
 
