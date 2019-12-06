@@ -7,7 +7,7 @@ __all__ = [
 
 import collections
 import numpy as np
-from .qa_preprocessing_utils import truncate_seqs_equal, improve_answer_span, \
+from .preprocessing_utils import truncate_seqs_equal, improve_answer_span, \
     ConcatSeqTransform, TokenizeAndPositionAlign, get_doc_spans, align_position2doc_spans
 
 class BertStyleGlueTransform:
