@@ -378,6 +378,10 @@ def evaluate(prefix=''):
                        is_pad=True, is_training=False))
     log.info('The number of examples after preprocessing: %d', len(dev_data_transform))
 
+    (_, _), (data_file_name, _) \
+        = dev_data._data_file[dev_data._version][dev_data._segment]
+    dev_data_path = os.path.join(dev_data._root, data_file_name)
+
     dev_dataloader = mx.gluon.data.DataLoader(dev_data_transform, batchify_fn=batchify_fn,
                                               num_workers=4, batch_size=args.test_batch_size,
                                               shuffle=False, last_batch='keep')
@@ -401,7 +405,8 @@ def evaluate(prefix=''):
                                            start_top_index=outputs[1][i].asnumpy().tolist(),
                                            end_top_log_probs=outputs[2][i].asnumpy().tolist(),
                                            end_top_index=outputs[3][i].asnumpy().tolist(),
-                                           cls_logits=outputs[4][i].asnumpy().tolist() if outputs[4] else [1e30])
+                                           cls_logits=outputs[4][i].asnumpy().tolist() 
+                                           if outputs[4] is not None else [1e30])
                 all_results[example_ids].append(result)
         if batch_id % args.log_interval == 0:
             log.info('Batch: %d/%d', batch_id + 1, len(dev_dataloader))
@@ -442,7 +447,7 @@ def evaluate(prefix=''):
         with open(output_null_log_odds_file, 'w') as writer:
             writer.write(json.dumps(scores_diff_json, indent=4) + '\n')
 
-    evaluate_options = EVAL_OPTS(data_file=args.predict_file, pred_file=output_prediction_file,
+    evaluate_options = EVAL_OPTS(data_file=dev_data_path, pred_file=output_prediction_file,
                                  na_prob_file=output_null_log_odds_file)
 
     results = evaluate_on_squad(evaluate_options)
