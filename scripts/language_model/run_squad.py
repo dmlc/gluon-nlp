@@ -119,6 +119,7 @@ parser.add_argument('--debug', action='store_true',
 parser.add_argument('--pretrained_xlnet_parameters', type=str, default=None,
                     help='Pre-trained bert model parameter file. default is None')
 
+parser.add_argument('--layerwise_decay', type=float, default=0.75, help='Layer-wise lr decay')
 parser.add_argument('--seed', type=int, default=29, help='Random seed')
 parser.add_argument('--start_top_n', type=int, default=5, help='to be added')
 parser.add_argument('--end_top_n', type=int, default=5, help='to be added')
@@ -171,6 +172,12 @@ get_model_params = {
 }
 
 xlnet_base, vocab, tokenizer = model.get_model(**get_model_params)
+
+num_layers = len(xlnet_base._net.transformer_cells)
+for (i, layer_parameters) in enumerate(xlnet_base._net.transformer_cells):
+    params = layer_parameters.collect_params()
+    for key, value in params.items():
+        value.lr_mult = args.layerwise_decay ** (num_layers - i - 1)
 
 batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack(),
