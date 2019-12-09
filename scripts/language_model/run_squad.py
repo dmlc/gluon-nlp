@@ -406,7 +406,7 @@ def evaluate(prefix=''):
                                            end_top_log_probs=outputs[2][i].asnumpy().tolist(),
                                            end_top_index=outputs[3][i].asnumpy().tolist(),
                                            cls_logits=outputs[4][i].asnumpy().tolist() 
-                                           if outputs[4] is not None else [1e30])
+                                           if outputs[4] is not None else [-1e30])
                 all_results[example_ids].append(result)
         if batch_id % args.log_interval == 0:
             log.info('Batch: %d/%d', batch_id + 1, len(dev_dataloader))
