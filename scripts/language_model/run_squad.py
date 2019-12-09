@@ -196,14 +196,14 @@ initializer = mx.init.Normal(0.02)
 if args.model_parameters:
     # load complete XLNetForQA parameters
     nlp.utils.load_parameters(net, args.model_parameters, ctx=ctx, cast_dtype=True)
+else:
+    net.start_logits.initialize(init=initializer, ctx=ctx)
+    net.end_logits.initialize(init=initializer, ctx=ctx)
+    if args.version_2:
+        net.answer_class.initialize(init=initializer, ctx=ctx)
 
-net.start_logits.initialize(init=initializer, ctx=ctx)
-net.end_logits.initialize(init=initializer, ctx=ctx)
-if args.version_2:
-    net.answer_class.initialize(init=initializer, ctx=ctx)
-
-net.hybridize(static_alloc=True)
-net_eval.hybridize(static_alloc=True)
+#net.hybridize(static_alloc=True)
+#net_eval.hybridize(static_alloc=True)
 
 
 def split_and_load(arrs, _ctx):
@@ -361,6 +361,10 @@ def evaluate(prefix=''):
         dev_data = SQuAD('dev', version='2.0')
     else:
         dev_data = SQuAD('dev', version='1.1')
+    (_, _), (data_file_name, _) \
+        = dev_data._data_file[dev_data._version][dev_data._segment]
+    dev_data_path = os.path.join(dev_data._root, data_file_name)
+    
     if args.debug:
         sampled_data = [dev_data[0], dev_data[1], dev_data[2]]
         dev_data = mx.gluon.data.SimpleDataset(sampled_data)
@@ -377,10 +381,6 @@ def evaluate(prefix=''):
                        doc_stride=args.doc_stride, max_query_length=args.max_query_length,
                        is_pad=True, is_training=False))
     log.info('The number of examples after preprocessing: %d', len(dev_data_transform))
-
-    (_, _), (data_file_name, _) \
-        = dev_data._data_file[dev_data._version][dev_data._segment]
-    dev_data_path = os.path.join(dev_data._root, data_file_name)
 
     dev_dataloader = mx.gluon.data.DataLoader(dev_data_transform, batchify_fn=batchify_fn,
                                               num_workers=4, batch_size=args.test_batch_size,
