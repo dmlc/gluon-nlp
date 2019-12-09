@@ -123,6 +123,9 @@ parser.add_argument('--layerwise_decay', type=float, default=0.75, help='Layer-w
 parser.add_argument('--seed', type=int, default=29, help='Random seed')
 parser.add_argument('--start_top_n', type=int, default=5, help='to be added')
 parser.add_argument('--end_top_n', type=int, default=5, help='to be added')
+parser.add_argument('--dropout', type=float, default=0.1, help='dropout')
+parser.add_argument('--attention_dropout', type=float, default=0.1, help='attention dropout')
+
 args = parser.parse_args()
 
 # random seed
@@ -169,6 +172,9 @@ get_model_params = {
     'pretrained': get_pretrained,
     'ctx': ctx,
     'use_decoder': False,
+    'dropout': args.dropout,
+    'attention_dropout': args.attention_dropout
+
 }
 
 xlnet_base, vocab, tokenizer = model.get_model(**get_model_params)
@@ -454,8 +460,11 @@ def evaluate(prefix=''):
         with open(output_null_log_odds_file, 'w') as writer:
             writer.write(json.dumps(scores_diff_json, indent=4) + '\n')
 
-    evaluate_options = EVAL_OPTS(data_file=dev_data_path, pred_file=output_prediction_file,
+    if args.version_2:
+        evaluate_options = EVAL_OPTS(data_file=dev_data_path, pred_file=output_prediction_file,
                                  na_prob_file=output_null_log_odds_file)
+    else:
+        evaluate_options = EVAL_OPTS(data_file=dev_data_path, pred_file=output_prediction_file, na_prob_file=None)
 
     results = evaluate_on_squad(evaluate_options)
     return results
