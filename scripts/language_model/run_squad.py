@@ -333,7 +333,7 @@ def train():
             if not args.accumulate or (batch_id + 1) % args.accumulate == 0:
                 trainer.allreduce_grads()
                 nlp.utils.clip_grad_global_norm(params, 1)
-                trainer.update(1)
+                trainer.update(1, ignore_stale_grad=True)
 
             step_loss += ls.asscalar()
             if (batch_id + 1) % log_interval == 0:
