@@ -36,7 +36,7 @@ class PoolerEndLogits(HybridBlock):
         self._eval = eval
         self._hsz = units
         with self.name_scope():
-            self.dense_0 = nn.Dense(units, activation='tanh', flatten=False)
+            self.dense_0 = nn.Dense(units, activation='relu', flatten=False)
             self.dense_1 = nn.Dense(1, flatten=False)
             self.layernorm = nn.LayerNorm()
 
@@ -53,16 +53,17 @@ class PoolerEndLogits(HybridBlock):
             bsz, slen, hsz = self._bsz, self._slen, self._hsz
             start_states = F.gather_nd(hidden_states,
                                            F.concat(
-                                               F.arange(bsz).expand_dims(1),
-                                               start_positions.reshape(
-                                                   (bsz, 1))).transpose())  #shape(bsz, hsz)
+                                               F.contrib.arange_like(hidden_states, axis=0).expand_dims(1),
+                                               start_positions.expand_dims(1)).transpose())  #shape(bsz, hsz)
             start_states = start_states.expand_dims(1)
-            start_states = F.broadcast_to(start_states,
-                                              shape=(bsz, slen, hsz))  # shape (bsz, slen, hsz)
-
+            start_states = F.broadcast_like(start_states,
+                                              hidden_states)  # shape (bsz, slen, hsz)
         x = self.dense_0(F.concat(hidden_states, start_states, dim=-1))
         x = self.layernorm(x)
         x = self.dense_1(x).squeeze(-1)
+        if self._eval:
+            p_mask = p_mask.expand_dims(-1)
+            p_mask = F.broadcast_like(p_mask, x)
         if p_mask is not None:
             x = x * (1 - p_mask) - 1e30 * p_mask
         return x
@@ -70,37 +71,29 @@ class PoolerEndLogits(HybridBlock):
 
 class XLNetPoolerAnswerClass(HybridBlock):
     """ Compute SQuAD 2.0 answer class from classification and start tokens hidden states. """
-    def __init__(self, units=768, eval=False, prefix=None, params=None):
+    def __init__(self, units=768, dropout=0.1, prefix=None, params=None):
         super(XLNetPoolerAnswerClass, self).__init__(prefix=prefix, params=params)
-        self._eval = eval
         with self.name_scope():
             self._units = units
-            self.dense_0 = nn.Dense(units, activation='tanh', prefix=prefix)
+            self.dense_0 = nn.Dense(units, activation='relu', prefix=prefix)
             self.dense_1 = nn.Dense(1, use_bias=False)
+            self._dropout = nn.Dropout(dropout)
 
 
-    def __call__(self, hidden_states, batch_size=None, start_positions=None, start_states=None, cls_index=None):
+    def __call__(self, hidden_states, batch_size=None, start_states=None, cls_index=None):
         # pylint: disable=arguments-differ
         self._bsz = batch_size
-        return super(XLNetPoolerAnswerClass, self).__call__(hidden_states, start_positions,
-                                                            start_states, cls_index)
+        return super(XLNetPoolerAnswerClass, self).__call__(hidden_states, start_states, cls_index)
         # pylint: disable=unused-argument
 
-    def hybrid_forward(self, F, hidden_states, start_positions, start_states, cls_index):
+    def hybrid_forward(self, F, hidden_states, start_states, cls_index):
         # pylint: disable=arguments-differ
         # get the cls_token's state, currently the last state
         cls_token_state = hidden_states.slice(begin=(0, -1, 0), end=(None, -2, None),
                                               step=(None, -1, None))
         cls_token_state = cls_token_state.reshape(shape=(-1, self._units))
-        bsz = self._bsz
-
-        if not self._eval:
-            start_states = F.gather_nd(
-                hidden_states,
-                F.concat(F.arange(bsz).expand_dims(1), start_positions.reshape((bsz, 1))).transpose())
-
         x = self.dense_0(F.concat(start_states, cls_token_state, dim=-1))
-
+        x = self._dropout(x)
         x = self.dense_1(x).squeeze(-1)
         return x
 
@@ -128,7 +121,7 @@ class XLNetForQA(Block):
             self.version2 = version_2
             self.eval = eval
             if version_2:
-                self.answer_class = XLNetPoolerAnswerClass(eval=eval)
+                self.answer_class = XLNetPoolerAnswerClass()
                 self.cls_loss = loss.SigmoidBinaryCrossEntropyLoss()
 
     def __call__(self, inputs, token_types, valid_length=None, label=None, p_mask=None,
@@ -186,9 +179,12 @@ class XLNetForQA(Block):
                                         start_positions=start_positions, p_masks=p_mask)
             span_loss = (self.loss(start_logits, start_positions) +
                          self.loss(end_logit, end_positions)) / 2
+
             cls_loss = None
-            if is_impossible is not None:
-                cls_logits = self.answer_class(output, output.shape[0], start_positions=start_positions)
+            if self.version2:
+                start_log_probs = mx.nd.softmax(start_logits, axis=-1)
+                start_states = mx.nd.batch_dot(output, start_log_probs.expand_dims(-1), transpose_a=True).squeeze(-1)
+                cls_logits = self.answer_class(output, output.shape[0], start_states)
                 cls_loss = self.cls_loss(cls_logits, is_impossible)
             total_loss = span_loss + 0.5 * cls_loss if cls_loss is not None else span_loss
             return total_loss
@@ -205,6 +201,7 @@ class XLNetForQA(Block):
             gather_index = mx.nd.concat(index, start_top_index_rs).T  #shape(2, bsz * start_n_top)
             start_states = mx.nd.gather_nd(output, gather_index).reshape(
                 (bsz, self.start_top_n, hsz))  #shape (bsz, start_n_top, hsz)
+            
             start_states = start_states.expand_dims(1)
             start_states = mx.nd.broadcast_to(
                 start_states,
@@ -215,20 +212,19 @@ class XLNetForQA(Block):
                 shape=start_states.shape)  # shape (bsz, slen, start_n_top, hsz)
             end_logits = self.end_logits(
                 hidden_states_expanded, hidden_states_expanded.shape[0], hidden_states_expanded.shape[1],
-                start_states=start_states)  # shape (bsz, slen, start_n_top)
+                start_states=start_states, p_masks=p_mask)  # shape (bsz, slen, start_n_top)
             end_log_probs = mx.nd.softmax(end_logits, axis=1)  # shape (bsz, slen, start_n_top)
             end_top_log_probs, end_top_index = mx.ndarray.topk(
                 end_log_probs, k=self.end_top_n, axis=1,
                 ret_typ='both')  # shape (bsz, end_n_top, start_n_top)
             end_top_log_probs = end_top_log_probs.reshape((-1, self.start_top_n * self.end_top_n))
             end_top_index = end_top_index.reshape((-1, self.start_top_n * self.end_top_n))
+            start_states = mx.nd.batch_dot(output, start_log_probs.expand_dims(-1), transpose_a=True).squeeze(-1)
 
-            start_states = mx.nd.batch_dot(output, start_log_probs.expand_dims(-1),
-                                           transpose_a=True).squeeze(-1)
             cls_logits = None
             if self.version2:
-                cls_logits = self.answer_class(output, output.shape[0], start_states=start_states)
-                
+                cls_logits = self.answer_class(output, output.shape[0], start_states)
+
             padding_length = mx.nd.expand_dims(slen - valid_length, axis=-1)
             start_top_index = start_top_index - padding_length
             end_top_index = end_top_index - padding_length
