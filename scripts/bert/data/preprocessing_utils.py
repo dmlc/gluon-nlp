@@ -2,8 +2,9 @@
 
 __all__ = [
     'truncate_seqs_equal', 'concat_sequences', 'tokenize_and_align_positions',
-    'get_doc_spans', 'align_position2doc_spans', 'improve_answer_span', 'check_is_max_context',
-    'convert_squad_examples']
+    'get_doc_spans', 'align_position2doc_spans', 'improve_answer_span',
+    'check_is_max_context', 'convert_squad_examples'
+]
 
 import collections
 import itertools
@@ -77,16 +78,22 @@ def concat_sequences(seqs, separators, separator_mask=1):
     np.array: mask for special tokens
     """
     assert isinstance(seqs, collections.abc.Iterable) and len(seqs) > 0
-    concat = sum((seq + sep for sep, seq in
-                  itertools.zip_longest(separators, seqs, fillvalue=[])), [])
-    segment_ids = sum(([i] * (len(seq) + len(sep)) for i, (sep, seq) in
-                       enumerate(itertools.zip_longest(separators, seqs, fillvalue=[]))), [])
-    p_mask = sum(([0] * len(seq) + [separator_mask] * len(sep) for sep, seq in
-                  itertools.zip_longest(separators, seqs, fillvalue=[])), [])
+    concat = sum((
+        seq + sep
+        for sep, seq in itertools.zip_longest(separators, seqs, fillvalue=[])),
+                 [])
+    segment_ids = sum(
+        ([i] * (len(seq) + len(sep)) for i, (sep, seq) in enumerate(
+            itertools.zip_longest(separators, seqs, fillvalue=[]))), [])
+    p_mask = sum((
+        [0] * len(seq) + [separator_mask] * len(sep)
+        for sep, seq in itertools.zip_longest(separators, seqs, fillvalue=[])),
+                 [])
     return concat, segment_ids, p_mask
 
 
-def tokenize_and_align_positions(origin_text, start_position, end_position, tokenizer):
+def tokenize_and_align_positions(origin_text, start_position, end_position,
+                                 tokenizer):
     """Tokenize the text and align the origin positions to the corresponding position"""
     orig_to_tok_index = []
     tok_to_orig_index = []
@@ -125,23 +132,30 @@ def get_doc_spans(full_doc, max_length, doc_stride):
     while start_offset < len(full_doc):
         length = min(max_length, len(full_doc) - start_offset)
         end_offset = start_offset + length
-        doc_spans.append((full_doc[start_offset: end_offset], (start_offset, end_offset)))
+        doc_spans.append(
+            (full_doc[start_offset:end_offset], (start_offset, end_offset)))
         if start_offset + length == len(full_doc):
             break
         start_offset += min(length, doc_stride)
     return list(zip(*doc_spans))
 
 
-def align_position2doc_spans(positions, doc_spans_indices,
-                             offset=0, default_value=-1, all_in_span=True):
+def align_position2doc_spans(positions,
+                             doc_spans_indices,
+                             offset=0,
+                             default_value=-1,
+                             all_in_span=True):
     """Align the origin positions to the corresponding position in doc spans"""
     if not isinstance(positions, list):
         positions = [positions]
     doc_start, doc_end = doc_spans_indices
     if all_in_span and not all([p in range(doc_start, doc_end) for p in positions]):
         return [default_value] * len(positions)
-    new_positions = [p - doc_start + offset if p in range(doc_start, doc_end)
-                     else default_value for p in positions]
+    new_positions = [
+        p - doc_start +
+        offset if p in range(doc_start, doc_end) else default_value
+        for p in positions
+    ]
     return new_positions
 
 
@@ -228,7 +242,8 @@ def check_is_max_context(doc_spans, cur_span_index, position):
 
 SquadExample = collections.namedtuple('SquadExample', [
     'qas_id', 'question_text', 'doc_tokens', 'example_id', 'orig_answer_text',
-    'start_position', 'end_position', 'is_impossible'])
+    'start_position', 'end_position', 'is_impossible'
+])
 
 
 def convert_squad_examples(record, is_training):
@@ -262,8 +277,10 @@ def convert_squad_examples(record, is_training):
         start_position = -1
         end_position = -1
     else:
-        start_position = char_to_word_offset[answer_offset] if not is_impossible else -1
-        end_position = char_to_word_offset[answer_offset + answer_length - 1] if not is_impossible else -1
+        start_position = char_to_word_offset[
+            answer_offset] if not is_impossible else -1
+        end_position = char_to_word_offset[answer_offset + answer_length -
+                                           1] if not is_impossible else -1
 
     example = SquadExample(qas_id=qas_id,
                            question_text=question_text,
