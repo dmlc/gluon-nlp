@@ -46,13 +46,13 @@ from mxnet.contrib.amp import amp
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
-
+from functools import partial
 from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask
 from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
 from data.classification import LCQMCTask, ChnSentiCorpTask
-from data.transform import BERTDatasetTransform
+from data.preprocessing_utils import truncate_seqs_equal, concat_sequences
 
-nlp.utils.check_version('0.8.1', warning_only=True)
+#nlp.utils.check_version('0.8.1', warning_only=True)
 
 tasks = {
     'MRPC': MRPCTask(),
@@ -286,23 +286,60 @@ if use_roberta:
 else:
     bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 
-def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab, pad=False):
+
+def convert_examples_to_features(example, tokenizer=None, truncate_length=512, cls_token=None, sep_token=None,
+                                 class_labels=None, label_alias=None, vocab=None, is_test=False):
+    assert tokenizer is not None
+    vocab = tokenizer.vocab if vocab is None else vocab
+    if not is_test:
+        label_dtype = 'int32' if class_labels else 'float32'
+        # get the label
+        label = example[-1]
+        example = example[:-1]
+        #create label maps if classification task
+        if class_labels:
+            label_map = {}
+            for (i, l) in enumerate(class_labels):
+                label_map[l] = i
+            if label_alias:
+                for key in label_alias:
+                    label_map[key] = label_map[label_alias[key]]
+            label = label_map[label]
+        label = np.array([label], dtype=label_dtype)
+
+    # tokenize raw text
+    tokens_raw = [tokenizer(l) for l in example]
+    # truncate to the truncate_length,
+    tokens_trun = truncate_seqs_equal(tokens_raw, truncate_length)
+    # concate the sequences with special tokens
+    tokens_trun[0] = [cls_token] + tokens_trun[0]
+    tokens, segment_ids, _ = concat_sequences(
+        tokens_trun, [[sep_token]] * len(tokens_trun))
+    # convert the token to ids
+    input_ids = vocab[tokens]
+    valid_length = len(input_ids)
+    if not is_test:
+        return input_ids, valid_length, segment_ids, label
+    else:
+        return input_ids, valid_length, segment_ids
+
+def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab):
     """Train/eval Data preparation function."""
     # transformation for data train and dev
-    label_dtype = 'float32' if not task.class_labels else 'int32'
-    trans = BERTDatasetTransform(tokenizer, max_len,
-                                 vocab=vocab,
-                                 class_labels=task.class_labels,
-                                 label_alias=task.label_alias,
-                                 pad=pad, pair=task.is_pair,
-                                 has_label=True)
+    label_dtype = 'int32' if task.class_labels else 'float32'
+    truncate_length = max_len - 3 if task.is_pair else max_len - 2
+    trans = partial(convert_examples_to_features, tokenizer=tokenizer, truncate_length=truncate_length,
+                                     cls_token=vocab.cls_token if not use_roberta else vocab.bos_token,
+                                     sep_token=vocab.sep_token if not use_roberta else vocab.eos_token,
+                                     class_labels=task.class_labels,
+                                     label_alias=task.label_alias)
 
     # data train
     # task.dataset_train returns (segment_name, dataset)
     train_tsv = task.dataset_train()[1]
     data_train = mx.gluon.data.SimpleDataset(list(map(trans, train_tsv)))
     data_train_len = data_train.transform(
-        lambda input_id, length, segment_id, label_id: length, lazy=False)
+        lambda _, valid_length, segment_ids, label: valid_length, lazy=False)
     # bucket sampler for training
     pad_val = vocabulary[vocabulary.padding_token]
     batchify_fn = nlp.data.batchify.Tuple(
@@ -342,11 +379,11 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
         nlp.data.batchify.Pad(axis=0, pad_val=pad_val), nlp.data.batchify.Stack(),
         nlp.data.batchify.Pad(axis=0, pad_val=0))
     # transform for data test
-    test_trans = BERTDatasetTransform(tokenizer, max_len,
-                                      vocab=vocab,
-                                      class_labels=None,
-                                      pad=pad, pair=task.is_pair,
-                                      has_label=False)
+    test_trans = partial(convert_examples_to_features, tokenizer=tokenizer, truncate_length=max_len,
+                    cls_token=vocab.cls_token if not use_roberta else vocab.bos_token,
+                    sep_token=vocab.sep_token if not use_roberta else vocab.eos_token,
+                    class_labels=None,
+                    is_test=True)
 
     # data test. For MNLI, more than one test set is available
     test_tsv = task.dataset_test()
@@ -367,7 +404,7 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab,
 # Get the loader.
 logging.info('processing dataset...')
 train_data, dev_data_list, test_data_list, num_train_examples = preprocess_data(
-    bert_tokenizer, task, batch_size, dev_batch_size, args.max_len, vocabulary, args.pad)
+    bert_tokenizer, task, batch_size, dev_batch_size, args.max_len, vocabulary)
 
 
 def test(loader_test, segment):

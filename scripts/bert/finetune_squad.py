@@ -37,19 +37,23 @@ import json
 import logging
 import os
 import io
-import copy
 import random
 import time
 import warnings
+import itertools
 
 import numpy as np
 import mxnet as mx
+import multiprocessing as mp
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
+from functools import partial
 from model.qa import BertForQALoss, BertForQA
-from data.qa import SQuADTransform, preprocess_dataset
 from bert_qa_evaluate import get_F1_EM, predict, PredResult
+from data.preprocessing_utils import truncate_seqs_equal, improve_answer_span, \
+    concat_sequences, tokenize_and_align_positions, get_doc_spans, align_position2doc_spans, \
+    check_is_max_context, convert_squad_examples
 
 np.random.seed(6)
 random.seed(6)
@@ -313,25 +317,24 @@ loss_function.hybridize(static_alloc=True)
 
 def train():
     """Training function."""
-    segment = 'train' if not args.debug else 'dev'
+    segment = 'train' #if not args.debug else 'dev'
     log.info('Loading %s data...', segment)
     if version_2:
         train_data = SQuAD(segment, version='2.0')
     else:
         train_data = SQuAD(segment, version='1.1')
     if args.debug:
-        sampled_data = [train_data[i] for i in range(1000)]
+        sampled_data = [train_data[i] for i in range(0, 10000)]
         train_data = mx.gluon.data.SimpleDataset(sampled_data)
     log.info('Number of records in Train data:{}'.format(len(train_data)))
-
-    train_data_transform, _ = preprocess_dataset(
-        train_data, SQuADTransform(
-            copy.copy(tokenizer),
+    train_data_transform = preprocess_dataset(
+            tokenizer,
+            train_data,
             max_seq_length=max_seq_length,
             doc_stride=doc_stride,
             max_query_length=max_query_length,
-            is_pad=True,
-            is_training=True))
+            input_features=True)
+
     log.info('The number of examples after preprocessing:{}'.format(
         len(train_data_transform)))
 
@@ -442,35 +445,33 @@ def train():
 
 
 def evaluate():
-    """Evaluate the model on validation dataset.
-    """
+    """Evaluate the model on validation dataset."""
     log.info('Loading dev data...')
     if version_2:
         dev_data = SQuAD('dev', version='2.0')
     else:
         dev_data = SQuAD('dev', version='1.1')
     if args.debug:
-        sampled_data = [dev_data[0], dev_data[1], dev_data[2]]
+        sampled_data = [dev_data[i] for i in range(100)]
         dev_data = mx.gluon.data.SimpleDataset(sampled_data)
     log.info('Number of records in dev data:{}'.format(len(dev_data)))
 
-    dev_dataset = dev_data.transform(
-        SQuADTransform(
-            copy.copy(tokenizer),
-            max_seq_length=max_seq_length,
-            doc_stride=doc_stride,
-            max_query_length=max_query_length,
-            is_pad=False,
-            is_training=False)._transform, lazy=False)
+    dev_dataset = preprocess_dataset(
+        tokenizer,
+        dev_data,
+        max_seq_length=max_seq_length,
+        doc_stride=doc_stride,
+        max_query_length=max_query_length,
+        input_features=False)
 
-    dev_data_transform, _ = preprocess_dataset(
-        dev_data, SQuADTransform(
-            copy.copy(tokenizer),
-            max_seq_length=max_seq_length,
-            doc_stride=doc_stride,
-            max_query_length=max_query_length,
-            is_pad=False,
-            is_training=False))
+    dev_data_transform = preprocess_dataset(
+        tokenizer,
+        dev_data,
+        max_seq_length=max_seq_length,
+        doc_stride=doc_stride,
+        max_query_length=max_query_length,
+        input_features=True)
+
     log.info('The number of examples after preprocessing:{}'.format(
         len(dev_data_transform)))
 
@@ -535,6 +536,113 @@ def evaluate():
         F1_EM = get_F1_EM(dev_data, all_predictions)
         log.info(F1_EM)
 
+
+SquadBERTFeautre = collections.namedtuple('SquadBERTFeautre', ['example_id', 'qas_id', 'doc_tokens', 'valid_length',
+                                          'tokens', 'token_to_orig_map', 'token_is_max_context', 'input_ids',
+                                                               'p_mask', 'segment_ids', 'start_position',
+                                                               'end_position','is_impossible'])
+
+
+def convert_examples_to_features(example,
+                                 tokenizer=None,
+                                 cls_token=None,
+                                 sep_token=None,
+                                 vocab=None,
+                                 max_seq_length=384,
+                                 doc_stride=128,
+                                 max_query_length=64,
+                                 cls_index=0):
+    """convert the examples to the BERT features"""
+    query_tokenized = [cls_token] + tokenizer(example.question_text)[: max_query_length]
+    #tokenize paragraph and get start/end position of the answer in tokenized paragraph
+    tok_start_position, tok_end_position, all_doc_tokens, _, tok_to_orig_index= \
+        tokenize_and_align_positions(example.doc_tokens,
+                                  example.start_position,
+                                  example.end_position,
+                                  tokenizer)
+    # get doc spans using sliding window
+    doc_spans, doc_spans_indices = get_doc_spans(all_doc_tokens, max_seq_length - len(query_tokenized) - 2,
+                                                 doc_stride)
+
+    if not example.is_impossible:
+        (tok_start_position, tok_end_position) = improve_answer_span(
+            all_doc_tokens, tok_start_position, tok_end_position,
+            tokenizer, example.orig_answer_text)
+        # get the new start/end position
+        positions = [align_position2doc_spans([tok_start_position, tok_end_position], doc_idx,
+                                              offset=len(query_tokenized) + 1,
+                                              default_value=0) for doc_idx in doc_spans_indices]
+    else:
+        # if the question is impossible to answer(in squad2.0), set the start/end position to cls index
+        positions = [[cls_index, cls_index] for _ in doc_spans_indices]
+
+    token_is_max_context = [{len(query_tokenized) + p: check_is_max_context(doc_spans_indices, i,
+                             p + doc_spans_indices[i][0])
+                             for p in range(len(doc_span))}
+                             for (i, doc_span) in enumerate(doc_spans)]
+    token_to_orig_map = [{len(query_tokenized) + p + 1: tok_to_orig_index[p + doc_spans_indices[i][0]]
+                             for p in range(len(doc_span))}
+                            for (i, doc_span) in enumerate(doc_spans)]
+
+    #get sequence features: tokens, segment_ids, p_masks
+    seq_features = [concat_sequences([query_tokenized, doc_span], [[sep_token]] * 2)
+                for doc_span in doc_spans]
+
+    features = [SquadBERTFeautre(example_id=example.example_id, qas_id=example.qas_id,
+                                 doc_tokens=example.doc_tokens, valid_length=len(tokens), tokens=tokens,
+                                 token_to_orig_map=t2o, token_is_max_context=is_max, input_ids=vocab[tokens],
+                                 p_mask=p_mask, segment_ids=segment_ids, start_position=start, end_position=end,
+                                 is_impossible=example.is_impossible)
+                                 for (tokens, segment_ids, p_mask), (start, end), is_max, t2o
+                                    in zip(seq_features, positions, token_is_max_context, token_to_orig_map)]
+    return features
+
+
+def preprocess_dataset(tokenizer,
+                            dataset,
+                            vocab = None,
+                            max_seq_length=384,
+                            doc_stride=128,
+                            max_query_length=64,
+                            input_features=True,
+                            num_workers=4):
+
+    """Loads a dataset into features"""
+    vocab = tokenizer.vocab if vocab is None else vocab
+    trans = partial(convert_examples_to_features,
+                                 tokenizer=tokenizer,
+                                 cls_token=vocab.cls_token,
+                                 sep_token=vocab.sep_token,
+                                 vocab=vocab,
+                                 max_seq_length=max_seq_length,
+                                 doc_stride=doc_stride,
+                                 max_query_length=max_query_length)
+    pool = mp.Pool(num_workers)
+    start = time.time()
+
+    example_trans = partial(convert_squad_examples, is_training=input_features)
+    # convert the raw dataset into raw features
+    examples = pool.map(example_trans, dataset)
+
+    if input_features:
+        # convert the full features into the training features
+        # Note that we will need the full features to make evaluation
+        # Due to using sliding windows in data preprocessing,
+        # we will have multiple examples for a single entry after processed.
+        # Thus we need to flatten it for training.
+        data_feature = mx.gluon.data.SimpleDataset(list(itertools.chain.from_iterable(pool.map(trans, examples))))
+        data_feature = data_feature.transform(lambda *example: (example[0],  # example_id
+                                                                  example[7],  # inputs_id
+                                                                  example[9],  # segment_ids
+                                                                  example[3],  # valid_length,
+                                                                  example[10],  # start_position,
+                                                                  example[11]))  # end_position
+    else:
+        data_feature = mx.gluon.data.SimpleDataset(list(pool.map(trans, examples)))
+
+    end = time.time()
+    print('Done! Transform dataset costs %.2f seconds.' % (end - start))
+    return data_feature
 
 if __name__ == '__main__':
     if not only_predict:

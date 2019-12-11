@@ -1,9 +1,9 @@
 """Utility classes and functions for data processing"""
 
 __all__ = [
-    'truncate_seqs_equal', 'ConcatSeqTransform', 'TokenizeAndPositionAlign',
-    'get_doc_spans', 'align_position2doc_spans', 'improve_answer_span', 'check_is_max_context'
-]
+    'truncate_seqs_equal', 'concat_sequences', 'tokenize_and_align_positions',
+    'get_doc_spans', 'align_position2doc_spans', 'improve_answer_span', 'check_is_max_context',
+    'convert_squad_examples']
 
 import collections
 import itertools
@@ -42,7 +42,7 @@ def truncate_seqs_equal(seqs, max_len):
     return seqs
 
 
-def ConcatSeqTransform(seqs, separators, separator_mask=1):
+def concat_sequences(seqs, separators, separator_mask=1):
     """
     Insert special tokens for sequence list or a single sequence.
     For sequence pairs, the input is a list of 2 strings:
@@ -86,10 +86,8 @@ def ConcatSeqTransform(seqs, separators, separator_mask=1):
     return concat, segment_ids, p_mask
 
 
-def TokenizeAndPositionAlign(origin_text, positions, tokenizer):
+def tokenize_and_align_positions(origin_text, start_position, end_position, tokenizer):
     """Tokenize the text and align the origin positions to the corresponding position"""
-    if not isinstance(positions, list):
-        positions = [positions]
     orig_to_tok_index = []
     tok_to_orig_index = []
     tokenized_text = []
@@ -98,8 +96,11 @@ def TokenizeAndPositionAlign(origin_text, positions, tokenizer):
         sub_tokens = tokenizer(token)
         tokenized_text += sub_tokens
         tok_to_orig_index += [i] * len(sub_tokens)
-    new_positions = [orig_to_tok_index[p] for p in positions]
-    return new_positions, tokenized_text, orig_to_tok_index, tok_to_orig_index
+
+    start_position = orig_to_tok_index[start_position]
+    end_position = orig_to_tok_index[end_position + 1] - 1 if end_position < len(origin_text) - 1  \
+        else len(tokenized_text) - 1
+    return start_position, end_position, tokenized_text, orig_to_tok_index, tok_to_orig_index
 
 
 def get_doc_spans(full_doc, max_length, doc_stride):
@@ -137,9 +138,9 @@ def align_position2doc_spans(positions, doc_spans_indices,
     if not isinstance(positions, list):
         positions = [positions]
     doc_start, doc_end = doc_spans_indices
-    if all_in_span and not all([p in range(doc_start, doc_end + 1) for p in positions]):
+    if all_in_span and not all([p in range(doc_start, doc_end) for p in positions]):
         return [default_value] * len(positions)
-    new_positions = [p - doc_start + offset if p in range(doc_start, doc_end + 1)
+    new_positions = [p - doc_start + offset if p in range(doc_start, doc_end)
                      else default_value for p in positions]
     return new_positions
 
@@ -223,3 +224,53 @@ def check_is_max_context(doc_spans, cur_span_index, position):
             best_span_index = span_index
 
     return cur_span_index == best_span_index
+
+
+SquadExample = collections.namedtuple('SquadExample', [
+    'qas_id', 'question_text', 'doc_tokens', 'example_id', 'orig_answer_text',
+    'start_position', 'end_position', 'is_impossible'])
+
+
+def convert_squad_examples(record, is_training):
+    """read a single entry of gluonnlp.data.SQuAD and convert it to an example"""
+    example_id = record[0]
+    qas_id = record[1]
+    question_text = record[2]
+    paragraph_text = record[3]
+    orig_answer_text = record[4][0] if record[4] else ''
+    answer_offset = record[5][0] if record[5] else ''
+    is_impossible = record[6] if len(record) == 7 else False
+
+    answer_length = len(orig_answer_text)
+    doc_tokens = []
+
+    char_to_word_offset = []
+    prev_is_whitespace = True
+
+    for c in paragraph_text:
+        if str.isspace(c):
+            prev_is_whitespace = True
+        else:
+            if prev_is_whitespace:
+                doc_tokens.append(c)
+            else:
+                doc_tokens[-1] += c
+            prev_is_whitespace = False
+        char_to_word_offset.append(len(doc_tokens) - 1)
+
+    if not is_training:
+        start_position = -1
+        end_position = -1
+    else:
+        start_position = char_to_word_offset[answer_offset] if not is_impossible else -1
+        end_position = char_to_word_offset[answer_offset + answer_length - 1] if not is_impossible else -1
+
+    example = SquadExample(qas_id=qas_id,
+                           question_text=question_text,
+                           doc_tokens=doc_tokens,
+                           example_id=example_id,
+                           orig_answer_text=orig_answer_text,
+                           start_position=start_position,
+                           end_position=end_position,
+                           is_impossible=is_impossible)
+    return example
