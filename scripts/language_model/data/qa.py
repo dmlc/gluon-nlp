@@ -326,7 +326,7 @@ class SQuADTransform:
             for token in query_tokens:
                 tokens.append(token)
                 segment_ids.append(0)
-                p_mask.append(0)
+                p_mask.append(1)
 
             #SEP token
             tokens.append(self.vocab.sep_token)
