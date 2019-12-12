@@ -228,7 +228,7 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.remote_required
 @pytest.mark.integration
 @pytest.mark.parametrize('backend', ['horovod', 'device'])
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 11, 30),
+@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 12, 14),
                     reason="mxnet nightly incompatible with horovod")
 def test_bert_pretrain(backend):
     # test data creation
@@ -338,5 +338,17 @@ def test_finetune_squad(sentencepiece):
         arguments += ['--sentencepiece', f]
 
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
+                                    + arguments)
+    time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+@pytest.mark.parametrize('dataset', ['MRPC'])
+def test_xlnet_finetune_glue(dataset):
+    arguments = ['--batch_size', '32', '--task_name', dataset,
+                 '--gpu', '1', '--epochs', '1', '--max_len', '32']
+    process = subprocess.check_call([sys.executable, './scripts/language_model/run_glue.py']
                                     + arguments)
     time.sleep(5)

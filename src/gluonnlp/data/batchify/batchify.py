@@ -20,9 +20,8 @@ __all__ = ['Stack', 'Pad', 'Tuple', 'List', 'NamedTuple', 'Dict']
 
 import warnings
 import math
-from typing import Dict as t_Dict, Callable as t_Callable,\
-    NamedTuple as t_NamedTuple, List as t_List, Tuple as t_Tuple, AnyStr,\
-    Union as t_Union
+from typing import (Dict as t_Dict, Callable as t_Callable, List as t_List, Tuple as t_Tuple,
+                    AnyStr, Union as t_Union)
 
 import numpy as np
 import mxnet as mx
@@ -461,8 +460,8 @@ class NamedTuple:
 
     Parameters
     ----------
-    container
-        The object that constructs the namedtuple.
+    container : NamedTuple class
+        The object that constructs the NamedTuple.
     fn_info
         The information of the inner batchify functions.
 
@@ -501,11 +500,8 @@ class NamedTuple:
     [0 1 0]
     <NDArray 3 @cpu_shared(0)>)
     """
-    def __init__(self,
-                 container: t_NamedTuple,
-                 fn_info: t_Union[t_List[t_Callable],
-                                  t_Tuple[t_Callable],
-                                  t_Dict[AnyStr, t_Callable]]):
+    def __init__(self, container, fn_info: t_Union[t_List[t_Callable], t_Tuple[t_Callable],
+                                                   t_Dict[AnyStr, t_Callable]]):
         self._container = container
         if isinstance(fn_info, (list, tuple)):
             if len(container._fields) != len(fn_info):
@@ -526,17 +522,17 @@ class NamedTuple:
                 raise ValueError('All batchify functions must be callable.')
         self._fn_l = fn_info
 
-    def __call__(self, data: t_List[t_NamedTuple]) -> t_NamedTuple:
+    def __call__(self, data):
         """Batchify the input data.
 
         Parameters
         ----------
-        data
-            The samples to batchfy. Each sample should be a namedtuple.
+        data : List of NamedTuple
+            The samples to batchify. Each sample should be a NamedTuple.
 
         Returns
         -------
-        ret
+        ret : List of NamedTuple
             A namedtuple of length N. Contains the batchified result of each attribute in the input.
         """
         if not isinstance(data[0], self._container):

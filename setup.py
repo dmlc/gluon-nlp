@@ -29,7 +29,7 @@ readme = io.open('README.rst', encoding='utf-8').read()
 VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
 requirements = [
-    'numpy',
+    'numpy>=1.16.0',
     'cython'
 ]
 
@@ -72,6 +72,7 @@ setup(
             'boto3',
             'tqdm',
             'sacremoses',
+            'regex',
         ],
         'dev': [
             'pytest',
@@ -89,6 +90,6 @@ setup(
         ],
     },
     ext_modules=[
-        Extension('gluonnlp.data.wordpiece', sources=['src/gluonnlp/data/wordpiece.pyx']),
+        Extension('gluonnlp.data.fast_bert_tokenizer', sources=['src/gluonnlp/data/fast_bert_tokenizer.pyx']),
     ],
 )

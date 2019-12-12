@@ -41,6 +41,8 @@ import random
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
+# this notebook assumes that all required scripts are already
+# downloaded from the corresponding tutorial webpage on http://gluon-nlp.mxnet.io
 from bert import data
 
 nlp.utils.check_version('0.8.1')
