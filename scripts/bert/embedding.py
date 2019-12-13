@@ -169,21 +169,29 @@ class BertEmbedding:
             List of tokens, and tokens embedding
         """
         sentences = []
+        padding_idx, cls_idx, sep_idx = None, None, None
+        if self.vocab.padding_token:
+            padding_idx = self.vocab[self.vocab.padding_token]
+        if self.vocab.cls_token:
+            cls_idx = self.vocab[self.vocab.cls_token]
+        if self.vocab.sep_token:
+            sep_idx = self.vocab[self.vocab.sep_token]
         for token_ids, sequence_outputs in batches:
             tokens = []
             tensors = []
             oov_len = 1
             for token_id, sequence_output in zip(token_ids, sequence_outputs):
-                if token_id == 1:
-                    # [PAD] token, sequence is finished.
+                # [PAD] token, sequence is finished.
+                if padding_idx and token_id == padding_idx:
                     break
-                if token_id in (2, 3):
-                    # [CLS], [SEP]
+                # [CLS], [SEP]
+                if cls_idx and token_id == cls_idx:
+                    continue
+                if cls_idx and token_id == sep_idx:
                     continue
                 token = self.vocab.idx_to_token[token_id]
-                if token.startswith('##'):
-                    token = token[2:]
-                    tokens[-1] += token
+                if not self.tokenizer.is_first_subword(token):
+                    tokens.append(token)
                     if oov_way == 'last':
                         tensors[-1] = sequence_output
                     else:
@@ -217,7 +225,7 @@ if __name__ == '__main__':
                         help='path to a params file to load instead of the pretrained model.')
     parser.add_argument('--sentencepiece', type=str, default=None,
                         help='Path to the sentencepiece .model file for both tokenization and vocab.')
-    parser.add_argument('--max_seq_length', type=int, default=25,
+    parser.add_argument('--max_seq_length', type=int, default=128,
                         help='max length of each sequence')
     parser.add_argument('--batch_size', type=int, default=256,
                         help='batch size')
@@ -258,7 +266,7 @@ if __name__ == '__main__':
         logger.error('Please specify --sentence or --file')
 
     if result:
-        for sent, embeddings in zip(sents, result):
-            print('Text: {}'.format(sent))
-            _, tokens_embedding = embeddings
+        for _, embeddings in zip(sents, result):
+            sent, tokens_embedding = embeddings
+            print('Text: {}'.format(' '.join(sent)))
             print('Tokens embedding: {}'.format(tokens_embedding))
