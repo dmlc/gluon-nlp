@@ -30,6 +30,7 @@ from . import utils
 from . import vocab
 from . import optimizer
 from . import initializer
+from . import estimator
 from .vocab import Vocab
 
 __version__ = '0.10.0.dev'
@@ -43,7 +44,8 @@ __all__ = ['data',
            'initializer',
            'optimizer',
            'utils',
-           'metric']
+           'metric',
+           'estimator']
 
 warnings.filterwarnings(module='gluonnlp', action='default', category=DeprecationWarning)
 utils.version.check_version('1.6.0', warning_only=True, library=mxnet)
