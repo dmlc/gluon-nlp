@@ -207,14 +207,7 @@ task = tasks[task_name]
 
 # data type with mixed precision training
 if args.dtype == 'float16':
-    try:
-        # monkey patch amp list since topk does not support fp16
-        amp.lists.symbol.FP32_FUNCS.append('topk')
-        amp.lists.symbol.FP16_FP32_FUNCS.remove('topk')
-        amp.init()
-    except ValueError:
-        # topk is already in the FP32_FUNCS list
-        amp.init()
+    amp.init()
 
 # model and loss
 only_inference = args.only_inference
