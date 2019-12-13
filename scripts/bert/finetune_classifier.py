@@ -219,7 +219,7 @@ if args.dtype == 'float16':
     except ImportError:
         # amp is not available
         logging.info('Mixed precision training with float16 requires MXNet >= '
-                     '1.5.0b20190627. Please consider upgrading your MXNet version.')
+                     '1.5.1. Please consider upgrading your MXNet version.')
         exit()
 
 # model and loss
