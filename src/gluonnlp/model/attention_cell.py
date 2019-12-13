@@ -209,7 +209,7 @@ class MultiHeadAttentionCell(AttentionCell):
         self._base_cell = base_cell
         self._num_heads = num_heads
         self._use_bias = use_bias
-        units = {'query': query_units, 'key': key_units, 'value': value_units}
+        units = [('query', query_units), ('key', key_units), ('value', value_units)]
         for name, unit in units.items():
             if unit % self._num_heads != 0:
                 raise ValueError(
