@@ -153,12 +153,9 @@ class BertEmbedding:
 
         Parameters
         ----------
-        batches : List[(tokens_id,
-                        sequence_outputs,
-                        pooled_output].
-            batch   token_ids (max_seq_length, ),
-                    sequence_outputs (max_seq_length, dim, ),
-                    pooled_output (dim, )
+        batches : List[(tokens_id, sequence_outputs)].
+            batch   token_ids shape is (max_seq_length,),
+                    sequence_outputs shape is (max_seq_length, dim)
         oov_way : str
             use **avg**, **sum** or **last** to get token embedding for those out of
             vocabulary words
@@ -187,7 +184,7 @@ class BertEmbedding:
                 # [CLS], [SEP]
                 if cls_idx and token_id == cls_idx:
                     continue
-                if cls_idx and token_id == sep_idx:
+                if sep_idx and token_id == sep_idx:
                     continue
                 token = self.vocab.idx_to_token[token_id]
                 if not self.tokenizer.is_first_subword(token):
@@ -220,7 +217,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default='bert_12_768_12',
                         help='pre-trained model')
     parser.add_argument('--dataset_name', type=str, default='book_corpus_wiki_en_uncased',
-                        help='dataset')
+                        help='name of the dataset used for pre-training')
     parser.add_argument('--params_path', type=str, default=None,
                         help='path to a params file to load instead of the pretrained model.')
     parser.add_argument('--sentencepiece', type=str, default=None,
@@ -230,10 +227,10 @@ if __name__ == '__main__':
     parser.add_argument('--batch_size', type=int, default=256,
                         help='batch size')
     parser.add_argument('--oov_way', type=str, default='avg',
-                        help='how to handle oov\n'
-                             'avg: average all oov embeddings to represent the original token\n'
-                             'sum: sum all oov embeddings to represent the original token\n'
-                             'last: use last oov embeddings to represent the original token\n')
+                        help='how to handle subword embeddings\n'
+                             'avg: average all subword embeddings to represent the original token\n'
+                             'sum: sum all subword embeddings to represent the original token\n'
+                             'last: use last subword embeddings to represent the original token\n')
     parser.add_argument('--sentences', type=str, nargs='+', default=None,
                         help='sentence for encoding')
     parser.add_argument('--file', type=str, default=None,
