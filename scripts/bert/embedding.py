@@ -29,24 +29,13 @@ import mxnet as mx
 from mxnet.gluon.data import DataLoader
 
 import gluonnlp
-from gluonnlp.data import BERTTokenizer, BERTSentenceTransform
+from gluonnlp.data import BERTTokenizer, BERTSentenceTransform, BERTSPTokenizer
 from gluonnlp.base import get_home_dir
 
 try:
     from data.embedding import BertEmbeddingDataset
 except ImportError:
     from .data.embedding import BertEmbeddingDataset
-
-try:
-    unicode
-except NameError:
-    # Define `unicode` for Python3
-    def unicode(s, *_):
-        return s
-
-
-def to_unicode(s):
-    return unicode(s, 'utf-8')
 
 
 __all__ = ['BertEmbedding']
@@ -75,12 +64,14 @@ class BertEmbedding:
         max length of each sequence
     batch_size : int, default 256
         batch size
+    sentencepiece : str, default None
+        Path to the sentencepiece .model file for both tokenization and vocab
     root : str, default '$MXNET_HOME/models' with MXNET_HOME defaults to '~/.mxnet'
         Location for keeping the model parameters.
     """
     def __init__(self, ctx=mx.cpu(), dtype='float32', model='bert_12_768_12',
                  dataset_name='book_corpus_wiki_en_uncased', params_path=None,
-                 max_seq_length=25, batch_size=256,
+                 max_seq_length=25, batch_size=256, sentencepiece=None,
                  root=os.path.join(get_home_dir(), 'models')):
         self.ctx = ctx
         self.dtype = dtype
@@ -89,22 +80,31 @@ class BertEmbedding:
         self.dataset_name = dataset_name
 
         # Don't download the pretrained models if we have a parameter path
+        vocab = None
+        dataset_name = self.dataset_name
+        if params_path:
+            dataset_name = None
+        if sentencepiece:
+            vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(sentencepiece)
         self.bert, self.vocab = gluonnlp.model.get_model(model,
-                                                         dataset_name=self.dataset_name,
+                                                         dataset_name=dataset_name,
                                                          pretrained=params_path is None,
                                                          ctx=self.ctx,
                                                          use_pooler=False,
                                                          use_decoder=False,
                                                          use_classifier=False,
-                                                         root=root)
-        self.bert.cast(self.dtype)
+                                                         root=root, vocab=vocab)
 
+        self.bert.cast(self.dtype)
         if params_path:
             logger.info('Loading params from %s', params_path)
-            self.bert.load_parameters(params_path, ctx=ctx, ignore_extra=True)
+            self.bert.load_parameters(params_path, ctx=ctx, ignore_extra=True, cast_dtype=True)
 
         lower = 'uncased' in self.dataset_name
-        self.tokenizer = BERTTokenizer(self.vocab, lower=lower)
+        if sentencepiece:
+            self.tokenizer = BERTSPTokenizer(sentencepiece, self.vocab, lower=lower)
+        else:
+            self.tokenizer = BERTTokenizer(self.vocab, lower=lower)
         self.transform = BERTSentenceTransform(tokenizer=self.tokenizer,
                                                max_seq_length=self.max_seq_length,
                                                pair=False)
@@ -215,6 +215,8 @@ if __name__ == '__main__':
                         help='dataset')
     parser.add_argument('--params_path', type=str, default=None,
                         help='path to a params file to load instead of the pretrained model.')
+    parser.add_argument('--sentencepiece', type=str, default=None,
+                        help='Path to the sentencepiece .model file for both tokenization and vocab.')
     parser.add_argument('--max_seq_length', type=int, default=25,
                         help='max length of each sequence')
     parser.add_argument('--batch_size', type=int, default=256,
@@ -224,7 +226,7 @@ if __name__ == '__main__':
                              'avg: average all oov embeddings to represent the original token\n'
                              'sum: sum all oov embeddings to represent the original token\n'
                              'last: use last oov embeddings to represent the original token\n')
-    parser.add_argument('--sentences', type=to_unicode, nargs='+', default=None,
+    parser.add_argument('--sentences', type=str, nargs='+', default=None,
                         help='sentence for encoding')
     parser.add_argument('--file', type=str, default=None,
                         help='file for encoding')
@@ -240,7 +242,8 @@ if __name__ == '__main__':
     else:
         context = mx.cpu()
     bert_embedding = BertEmbedding(ctx=context, model=args.model, dataset_name=args.dataset_name,
-                                   max_seq_length=args.max_seq_length, batch_size=args.batch_size)
+                                   max_seq_length=args.max_seq_length, batch_size=args.batch_size,
+                                   params_path=args.params_path, sentencepiece=args.sentencepiece)
     result = []
     sents = []
     if args.sentences:
