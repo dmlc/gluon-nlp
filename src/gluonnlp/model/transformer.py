@@ -34,8 +34,8 @@ from ..base import get_home_dir
 from ..utils.parallel import Parallelizable
 from .block import GELU
 from .seq2seq_encoder_decoder import (Seq2SeqDecoder, Seq2SeqEncoder,
-                                      Seq2SeqOneStepDecoder,
-                                      _get_attention_cell)
+                                      Seq2SeqOneStepDecoder)
+from .attention_cell import _get_attention_cell
 from .translation import NMTModel
 from .utils import _load_pretrained_params, _load_vocab
 

@@ -23,9 +23,6 @@ import mxnet as mx
 from mxnet.gluon import rnn
 from mxnet.gluon.block import Block
 
-from .attention_cell import (AttentionCell, DotProductAttentionCell,
-                             MLPAttentionCell, MultiHeadAttentionCell)
-
 
 def _get_cell_type(cell_type):
     """Get the object type of the cell by parsing the input
@@ -52,51 +49,6 @@ def _get_cell_type(cell_type):
             raise NotImplementedError
     else:
         return cell_type
-
-
-def _get_attention_cell(attention_cell, units=None,
-                        scaled=True, num_heads=None,
-                        use_bias=False, dropout=0.0):
-    """
-
-    Parameters
-    ----------
-    attention_cell : AttentionCell or str
-    units : int or None
-
-    Returns
-    -------
-    attention_cell : AttentionCell
-    """
-    if isinstance(attention_cell, str):
-        if attention_cell == 'scaled_luong':
-            return DotProductAttentionCell(units=units, scaled=True, normalized=False,
-                                           use_bias=use_bias, dropout=dropout, luong_style=True)
-        elif attention_cell == 'scaled_dot':
-            return DotProductAttentionCell(units=units, scaled=True, normalized=False,
-                                           use_bias=use_bias, dropout=dropout, luong_style=False)
-        elif attention_cell == 'dot':
-            return DotProductAttentionCell(units=units, scaled=False, normalized=False,
-                                           use_bias=use_bias, dropout=dropout, luong_style=False)
-        elif attention_cell == 'cosine':
-            return DotProductAttentionCell(units=units, scaled=False, use_bias=use_bias,
-                                           dropout=dropout, normalized=True)
-        elif attention_cell == 'mlp':
-            return MLPAttentionCell(units=units, normalized=False)
-        elif attention_cell == 'normed_mlp':
-            return MLPAttentionCell(units=units, normalized=True)
-        elif attention_cell == 'multi_head':
-            base_cell = DotProductAttentionCell(scaled=scaled, dropout=dropout)
-            return MultiHeadAttentionCell(base_cell=base_cell, query_units=units, use_bias=use_bias,
-                                          key_units=units, value_units=units, num_heads=num_heads)
-        else:
-            raise NotImplementedError
-    else:
-        assert isinstance(attention_cell, AttentionCell),\
-            'attention_cell must be either string or AttentionCell. Received attention_cell={}'\
-                .format(attention_cell)
-        return attention_cell
-
 
 def _nested_sequence_last(data, valid_length):
     """
