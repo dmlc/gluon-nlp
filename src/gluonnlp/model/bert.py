@@ -1264,6 +1264,9 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
 
     from ..vocab import BERTVocab
     bert_vocab, tokenizer = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
+    if tokenizer is not None:
+        # only kobert returns additional tokenizer
+        assert dataset_name.lower() == 'kobert_news_wiki_ko_cased'
     # BERT
     net = BERTModel(encoder, len(bert_vocab),
                     token_type_vocab_size=predefined_args['token_type_vocab_size'],

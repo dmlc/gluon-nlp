@@ -242,7 +242,6 @@ _vocab_sha1 = {'wikitext-2': ['be36dc5238c2e7d69720881647ab72eb506d0131', '.voca
 
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
-#_url_format = '{repo_url}{file_name}.zip'
 
 def train_valid_split(dataset, valid_ratio=0.05):
     """Split the dataset into training and validation sets.
@@ -323,8 +322,7 @@ def _load_pretrained_vocab(name, root, cls=None):
 
     prefix = str(time.time())
     zip_file_path = os.path.join(root, prefix + file_name + '.zip')
-    # will be fixed after merge
-    repo_url = _get_repo_url() # if not name.startswith('kobert') else 'https://kobert.blob.core.windows.net/models/kobert/tokenizer/'
+    repo_url = _get_repo_url()
     download(_url_format.format(repo_url=repo_url, file_name=file_name),
              path=zip_file_path,
              overwrite=True)
