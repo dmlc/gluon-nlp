@@ -210,7 +210,7 @@ class MultiHeadAttentionCell(AttentionCell):
         self._num_heads = num_heads
         self._use_bias = use_bias
         units = [('query', query_units), ('key', key_units), ('value', value_units)]
-        for name, unit in units.items():
+        for name, unit in units:
             if unit % self._num_heads != 0:
                 raise ValueError(
                     'In MultiHeadAttetion, the {name}_units should be divided exactly'
