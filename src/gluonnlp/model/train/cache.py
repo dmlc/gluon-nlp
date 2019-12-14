@@ -73,7 +73,7 @@ class CacheCell(Block):
         with self.name_scope():
             self.lm_model = lm_model
 
-    def save_parameters(self, filename, deduplicate=False):
+    def save_parameters(self, filename, deduplicate=False):  # pylint: disable=arguments-differ
         """Save parameters to file.
 
         filename : str
