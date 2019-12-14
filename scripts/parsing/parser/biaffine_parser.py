@@ -324,7 +324,7 @@ class BiaffineParser(nn.Block):
             return arc_accuracy, rel_accuracy, overall_accuracy, outputs
         return outputs
 
-    def save_parameters(self, filename):
+    def save_parameters(self, filename):  # pylint: disable=arguments-differ
         """Save model
 
         Parameters
