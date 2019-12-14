@@ -64,7 +64,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         Whether to scale the softmax input by the sqrt of the input dimension
         in multi-head attention
     dropout : float
-        Dropout probability of the attention probabilities.
+        Dropout probability of the attention probabilities and embedding.
     use_residual : bool
     output_attention: bool, default False
         Whether to output the attention weights
@@ -253,18 +253,14 @@ class BERTModel(HybridBlock):
     embed_size : int or None, default None
         Size of the embedding vectors. It is used to generate the word and token type
         embeddings if word_embed and token_type_embed are None.
-    embed_dropout : float, default 0.0
-        Dropout rate of the embedding weights. It is used to generate the source and target
-        embeddings if word_embed and token_type_embed are None.
     embed_initializer : Initializer, default None
         Initializer of the embedding weights. It is used to generate the source and target
         embeddings if word_embed and token_type_embed are None.
     word_embed : Block or None, default None
-        The word embedding. If set to None, word_embed will be constructed using embed_size and
-        embed_dropout.
+        The word embedding. If set to None, word_embed will be constructed using embed_size.
     token_type_embed : Block or None, default None
         The token type embedding (segment embedding). If set to None and the token_type_embed will
-        be constructed using embed_size and embed_dropout.
+        be constructed using embed_size.
     use_pooler : bool, default True
         Whether to include the pooler which converts the encoded sequence tensor of shape
         (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
@@ -307,7 +303,7 @@ class BERTModel(HybridBlock):
     """
 
     def __init__(self, encoder, vocab_size=None, token_type_vocab_size=None, units=None,
-                 embed_size=None, embed_dropout=0.0, embed_initializer=None,
+                 embed_size=None, embed_initializer=None,
                  word_embed=None, token_type_embed=None, use_pooler=True, use_decoder=True,
                  use_classifier=True, use_token_type_embed=True, prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
@@ -319,11 +315,11 @@ class BERTModel(HybridBlock):
         self.encoder = encoder
         # Construct word embedding
         self.word_embed = self._get_embed(word_embed, vocab_size, embed_size,
-                                          embed_initializer, embed_dropout, 'word_embed_')
+                                          embed_initializer, 'word_embed_')
         # Construct token type embedding
         if use_token_type_embed:
             self.token_type_embed = self._get_embed(token_type_embed, token_type_vocab_size,
-                                                    embed_size, embed_initializer, embed_dropout,
+                                                    embed_size, embed_initializer,
                                                     'token_type_embed_')
         if self._use_pooler:
             # Construct pooler
@@ -355,7 +351,7 @@ class BERTModel(HybridBlock):
             'The weights of word embedding are not tied with those of decoder'
         return decoder
 
-    def _get_embed(self, embed, vocab_size, embed_size, initializer, dropout, prefix):
+    def _get_embed(self, embed, vocab_size, embed_size, initializer, prefix):
         """ Construct an embedding block. """
         if embed is None:
             assert embed_size is not None, '"embed_size" cannot be None if "word_embed" or ' \
@@ -365,8 +361,6 @@ class BERTModel(HybridBlock):
                 with embed.name_scope():
                     embed.add(nn.Embedding(input_dim=vocab_size, output_dim=embed_size,
                                            weight_initializer=initializer))
-                    if dropout:
-                        embed.add(nn.Dropout(rate=dropout))
         assert isinstance(embed, HybridBlock)
         return embed
 
@@ -491,15 +485,11 @@ class RoBERTaModel(BERTModel):
     embed_size : int or None, default None
         Size of the embedding vectors. It is used to generate the word and token type
         embeddings if word_embed and token_type_embed are None.
-    embed_dropout : float, default 0.0
-        Dropout rate of the embedding weights. It is used to generate the source and target
-        embeddings if word_embed and token_type_embed are None.
     embed_initializer : Initializer, default None
         Initializer of the embedding weights. It is used to generate the source and target
         embeddings if word_embed and token_type_embed are None.
     word_embed : Block or None, default None
-        The word embedding. If set to None, word_embed will be constructed using embed_size and
-        embed_dropout.
+        The word embedding. If set to None, word_embed will be constructed using embed_size.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
     prefix : str or None
@@ -527,12 +517,12 @@ class RoBERTaModel(BERTModel):
     """
 
     def __init__(self, encoder, vocab_size=None, units=None,
-                 embed_size=None, embed_dropout=0.0, embed_initializer=None,
+                 embed_size=None, embed_initializer=None,
                  word_embed=None, use_decoder=True,
                  prefix=None, params=None):
         super(RoBERTaModel, self).__init__(encoder, vocab_size=vocab_size,
                                            token_type_vocab_size=None, units=units,
-                                           embed_size=embed_size, embed_dropout=embed_dropout,
+                                           embed_size=embed_size,
                                            embed_initializer=embed_initializer,
                                            word_embed=word_embed, token_type_embed=None,
                                            use_pooler=False, use_decoder=use_decoder,
@@ -638,7 +628,7 @@ class RoBERTaClassifier(HybridBlock):
     num_classes : int, default is 2
         The number of target classes.
     dropout : float or None, default 0.0.
-        Dropout probability for the bert output.
+        Dropout probability for the RoBERTa output.
     prefix : str or None
         See document of `mx.gluon.Block`.
     params : ParameterDict or None
@@ -752,7 +742,6 @@ roberta_12_768_12_hparams = {
     'dropout': 0.1,
     'use_residual': True,
     'embed_size': 768,
-    'embed_dropout': 0.1,
     'word_embed': None,
     'layer_norm_eps': 1e-5
 }
@@ -768,7 +757,6 @@ roberta_24_1024_16_hparams = {
     'dropout': 0.1,
     'use_residual': True,
     'embed_size': 1024,
-    'embed_dropout': 0.1,
     'word_embed': None,
     'layer_norm_eps': 1e-5
 }
@@ -784,7 +772,6 @@ bert_12_768_12_hparams = {
     'dropout': 0.1,
     'use_residual': True,
     'embed_size': 768,
-    'embed_dropout': 0.1,
     'token_type_vocab_size': 2,
     'word_embed': None,
 }
@@ -800,7 +787,6 @@ bert_24_1024_16_hparams = {
     'dropout': 0.1,
     'use_residual': True,
     'embed_size': 1024,
-    'embed_dropout': 0.1,
     'token_type_vocab_size': 2,
     'word_embed': None,
 }
@@ -816,7 +802,6 @@ ernie_12_768_12_hparams = {
     'dropout': 0.1,
     'use_residual': True,
     'embed_size': 768,
-    'embed_dropout': 0.1,
     'token_type_vocab_size': 2,
     'word_embed': None,
     'activation': 'relu',
@@ -1148,7 +1133,7 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
     RoBERTaModel, gluonnlp.vocab.Vocab
     """
     predefined_args = bert_hparams[model_name]
-    mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
+    mutable_args = ['use_residual', 'dropout', 'word_embed']
     mutable_args = frozenset(mutable_args)
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
         'Cannot override predefined model settings.'
@@ -1174,7 +1159,6 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
     net = RoBERTaModel(encoder, len(bert_vocab),
                        units=predefined_args['units'],
                        embed_size=predefined_args['embed_size'],
-                       embed_dropout=predefined_args['embed_dropout'],
                        word_embed=predefined_args['word_embed'],
                        use_decoder=use_decoder)
     if pretrained:
@@ -1258,7 +1242,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
     (BERTModel, gluonnlp.vocab.BERTVocab) or (BERTModel, gluonnlp.vocab.BERTVocab, gluonnlp.data.SentencepieceTokenizer) if model provides sentencepiece model only.
     """
     predefined_args = bert_hparams[model_name]
-    mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
+    mutable_args = ['use_residual', 'dropout', 'word_embed']
     mutable_args = frozenset(mutable_args)
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
         'Cannot override predefined model settings.'
@@ -1285,7 +1269,6 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
                     token_type_vocab_size=predefined_args['token_type_vocab_size'],
                     units=predefined_args['units'],
                     embed_size=predefined_args['embed_size'],
-                    embed_dropout=predefined_args['embed_dropout'],
                     word_embed=predefined_args['word_embed'],
                     use_pooler=use_pooler, use_decoder=use_decoder,
                     use_classifier=use_classifier,
