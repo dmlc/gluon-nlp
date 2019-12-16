@@ -305,8 +305,6 @@ def convert_examples_to_features(example,
                                  vocab=None,
                                  is_test=False):
     """convert glue examples into necessary features"""
-    assert tokenizer is not None
-    vocab = tokenizer.vocab if vocab is None else vocab
     if not is_test:
         label_dtype = 'int32' if class_labels else 'float32'
         # get the label
@@ -352,7 +350,8 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len,
         cls_token=vocab.cls_token if not use_roberta else vocab.bos_token,
         sep_token=vocab.sep_token if not use_roberta else vocab.eos_token,
         class_labels=task.class_labels,
-        label_alias=task.label_alias)
+        label_alias=task.label_alias,
+        vocab=vocab)
 
     # data train
     # task.dataset_train returns (segment_name, dataset)
@@ -403,7 +402,8 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len,
         cls_token=vocab.cls_token if not use_roberta else vocab.bos_token,
         sep_token=vocab.sep_token if not use_roberta else vocab.eos_token,
         class_labels=None,
-        is_test=True)
+        is_test=True,
+        vocab=vocab)
 
     # data test. For MNLI, more than one test set is available
     test_tsv = task.dataset_test()
