@@ -354,6 +354,7 @@ def _load_vocab_file(file_path, cls, special_tokens):
             from ..vocab import Vocab  # pylint: disable=import-outside-toplevel
             cls = Vocab
         if file_path.endswith('.spiece'):
+            assert special_tokens is not None, 'special_tokens must be specified.'
             from ..vocab import BERTVocab  # pylint: disable=import-outside-toplevel
             from ..data import SentencepieceTokenizer  # pylint: disable=import-outside-toplevel
             return BERTVocab.from_sentencepiece(
