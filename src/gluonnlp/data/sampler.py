@@ -522,6 +522,7 @@ class SplitSampler(Sampler):
             (length, num_parts)
         self.even_size = even_size
         self.num_parts = num_parts
+        self._total_length = length
         if not even_size:
             # Compute the length of each partition
             part_len = length // num_parts
@@ -545,7 +546,7 @@ class SplitSampler(Sampler):
         indices = list(range(self._start, self._end))
         if self.even_size and len(indices) < self._len:
             # guaranteed to have part_len number of samples
-            candidates = list(range(self._len * self.num_parts))
+            candidates = list(range(self._total_length))
             extras = random.sample(candidates, k=self._len-len(indices))
             indices.extend(extras)
         random.shuffle(indices)
