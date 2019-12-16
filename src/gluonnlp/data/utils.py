@@ -301,7 +301,7 @@ def _load_pretrained_vocab(name, root, cls=None):
     Returns
     -------
     Vocab or nlp.vocab.BERTVocab, Tokenizer or None
-        Loaded vocabulary object for the pre-trained model.
+        Loaded vocabulary object and Tokenizer for the pre-trained model.
     """
     file_name = '{name}-{short_hash}'.format(name=name,
                                              short_hash=short_hash(name))
