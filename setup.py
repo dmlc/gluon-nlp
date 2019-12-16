@@ -29,7 +29,7 @@ readme = io.open('README.rst', encoding='utf-8').read()
 VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
 requirements = [
-    'numpy',
+    'numpy>=1.16.0',
     'cython'
 ]
 
@@ -37,7 +37,7 @@ setup(
     # Metadata
     name='gluonnlp',
     version=VERSION,
-    python_requires='>=3.6',
+    python_requires='>=3.5',
     author='Gluon NLP Toolkit Contributors',
     author_email='mxnet-gluon@amazon.com',
     url='https://github.com/dmlc/gluon-nlp',
@@ -72,6 +72,7 @@ setup(
             'boto3',
             'tqdm',
             'sacremoses',
+            'regex',
         ],
         'dev': [
             'pytest',
@@ -89,6 +90,6 @@ setup(
         ],
     },
     ext_modules=[
-        Extension('gluonnlp.data.wordpiece', sources=['src/gluonnlp/data/wordpiece.pyx']),
+        Extension('gluonnlp.data.fast_bert_tokenizer', sources=['src/gluonnlp/data/fast_bert_tokenizer.pyx']),
     ],
 )

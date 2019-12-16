@@ -18,6 +18,8 @@
 # pylint: disable=wildcard-import
 """NLP loss."""
 
+from . import activation_regularizer, loss, label_smoothing
+
 from .activation_regularizer import *
 from .loss import *
 from .label_smoothing import *

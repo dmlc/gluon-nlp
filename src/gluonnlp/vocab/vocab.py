@@ -261,7 +261,8 @@ class Vocab:
         if token_to_idx:
             self._sort_index_according_to_user_specification(token_to_idx)
             if unknown_token:
-                self._token_to_idx._default = self._token_to_idx[unknown_token]
+                self._token_to_idx._default = \
+                    self._token_to_idx[unknown_token]  # pytype: disable=not-writable
 
 
     def _index_counter_keys(self, counter, unknown_token, special_tokens, max_size,
@@ -597,10 +598,9 @@ class Vocab:
                     if idx == token_to_idx[token]:
                         # Valid idx
                         continue
-                    else:
-                        # Introduce temporary token
-                        token_to_idx.update({str(uuid.uuid4()): idx})
-                        corrected_token_to_idx[token].append(idx)
+                    # Introduce temporary token
+                    token_to_idx.update({str(uuid.uuid4()): idx})
+                    corrected_token_to_idx[token].append(idx)
 
         vocab = cls(
             counter=count_tokens(token_to_idx.keys()),
