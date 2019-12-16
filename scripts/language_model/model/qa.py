@@ -36,9 +36,9 @@ class PoolerEndLogits(HybridBlock):
         self._eval = eval
         self._hsz = units
         with self.name_scope():
-            self.dense_0 = nn.Dense(units, activation='relu', flatten=False)
+            self.dense_0 = nn.Dense(units, activation='tanh', flatten=False)
             self.dense_1 = nn.Dense(1, flatten=False)
-            self.layernorm = nn.LayerNorm()
+            self.layernorm = nn.LayerNorm(epsilon=1e-12, in_channels=768)
 
     def __call__(self, hidden_states, batch_size=None, slen=None, start_states=None, start_positions=None, p_masks=None):
         # pylint: disable=arguments-differ
@@ -75,8 +75,8 @@ class XLNetPoolerAnswerClass(HybridBlock):
         super(XLNetPoolerAnswerClass, self).__init__(prefix=prefix, params=params)
         with self.name_scope():
             self._units = units
-            self.dense_0 = nn.Dense(units, activation='relu', prefix=prefix)
-            self.dense_1 = nn.Dense(1, use_bias=False)
+            self.dense_0 = nn.Dense(units, in_units=2 * units, activation='tanh', use_bias=True, flatten=False)
+            self.dense_1 = nn.Dense(1, in_units=units, use_bias=False, flatten=False)
             self._dropout = nn.Dropout(dropout)
 
 
