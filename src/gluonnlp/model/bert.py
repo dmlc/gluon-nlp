@@ -1239,7 +1239,9 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
 
     Returns
     -------
-    (BERTModel, gluonnlp.vocab.BERTVocab) or (BERTModel, gluonnlp.vocab.BERTVocab, gluonnlp.data.SentencepieceTokenizer) if model contains sentencepiece tokenizer.
+    (BERTModel, gluonnlp.vocab.BERTVocab) or
+    (BERTModel, gluonnlp.vocab.BERTVocab, gluonnlp.data.SentencepieceTokenizer)
+    if model contains sentencepiece tokenizer.
     """
     predefined_args = bert_hparams[model_name]
     mutable_args = ['use_residual', 'dropout', 'word_embed']
@@ -1262,7 +1264,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
                           activation=predefined_args.get('activation', 'gelu'),
                           layer_norm_eps=predefined_args.get('layer_norm_eps', 1e-12))
 
-    from ..vocab import BERTVocab
+    from ..vocab import BERTVocab  # pylint: disable=import-outside-toplevel
     bert_vocab, tokenizer = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     if tokenizer is not None:
         # only kobert returns additional tokenizer

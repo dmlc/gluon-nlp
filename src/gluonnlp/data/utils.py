@@ -212,36 +212,42 @@ def _slice_pad_length(num_items, length, overlap=0):
     else:
         return 0
 
+
 # name:[sha hash, file extention]
-_vocab_sha1 = {'wikitext-2': ['be36dc5238c2e7d69720881647ab72eb506d0131', '.vocab'],
-               'gbw': ['ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f', '.vocab'],
-               'WMT2014_src': ['230ebb817b1d86950d71e2e765f192a4e4f34415', '.vocab'],
-               'WMT2014_tgt': ['230ebb817b1d86950d71e2e765f192a4e4f34415', '.vocab'],
-               'book_corpus_wiki_en_cased': ['2d62af22535ed51f35cc8e2abb607723c89c2636', '.vocab'],
-               'book_corpus_wiki_en_uncased': ['a66073971aa0b1a262453fe51342e57166a8abcf', '.vocab'],
+_vocab_sha1 = {'wikitext-2': ['be36dc5238c2e7d69720881647ab72eb506d0131', '.vocab', None],
+               'gbw': ['ebb1a287ca14d8fa6f167c3a779e5e7ed63ac69f', '.vocab', None],
+               'WMT2014_src': ['230ebb817b1d86950d71e2e765f192a4e4f34415', '.vocab', None],
+               'WMT2014_tgt': ['230ebb817b1d86950d71e2e765f192a4e4f34415', '.vocab', None],
+               'book_corpus_wiki_en_cased':
+               ['2d62af22535ed51f35cc8e2abb607723c89c2636', '.vocab', None],
+               'book_corpus_wiki_en_uncased':
+               ['a66073971aa0b1a262453fe51342e57166a8abcf', '.vocab', None],
                'openwebtext_book_corpus_wiki_en_uncased':
-               ['a66073971aa0b1a262453fe51342e57166a8abcf', '.vocab'],
+               ['a66073971aa0b1a262453fe51342e57166a8abcf', '.vocab', None],
                'openwebtext_ccnews_stories_books_cased':
-               ['2b804f8f90f9f93c07994b703ce508725061cf43', '.vocab'],
-               'wiki_multilingual_cased': ['0247cb442074237c38c62021f36b7a4dbd2e55f7', '.vocab'],
-               'wiki_cn_cased': ['ddebd8f3867bca5a61023f73326fb125cf12b4f5', '.vocab'],
-               'wiki_multilingual_uncased': ['2b2514cc539047b9179e9d98a4e68c36db05c97a', '.vocab'],
-               'scibert_scivocab_uncased': ['2d2566bfc416790ab2646ab0ada36ba628628d60', '.vocab'],
-               'scibert_scivocab_cased': ['2c714475b521ab8542cb65e46259f6bfeed8041b', '.vocab'],
-               'scibert_basevocab_uncased': ['80ef760a6bdafec68c99b691c94ebbb918c90d02', '.vocab'],
-               'scibert_basevocab_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab'],
-               'biobert_v1.0_pmc_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab'],
-               'biobert_v1.0_pubmed_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab'],
-               'biobert_v1.0_pubmed_pmc_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab'],
-               'biobert_v1.1_pubmed_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab'],
-               'clinicalbert_uncased': ['80ef760a6bdafec68c99b691c94ebbb918c90d02', '.vocab'],
-               'baidu_ernie_uncased': ['223553643220255e2a0d4c60e946f4ad7c719080', '.vocab'],
-               'openai_webtext': ['f917dc7887ce996068b0a248c8d89a7ec27b95a1', '.vocab'],
-               'xlnet_126gb': ['0d74490383bbc5c62b8bcea74d8b74a1bb1280b3', '.vocab'],
-               'kobert_news_wiki_ko_cased':['f86b1a8355819ba5ab55e7ea4a4ec30fdb5b084f','.spiece']}
+               ['2b804f8f90f9f93c07994b703ce508725061cf43', '.vocab', None],
+               'wiki_multilingual_cased': ['0247cb442074237c38c62021f36b7a4dbd2e55f7', '.vocab', None],
+               'wiki_cn_cased': ['ddebd8f3867bca5a61023f73326fb125cf12b4f5', '.vocab', None],
+               'wiki_multilingual_uncased': ['2b2514cc539047b9179e9d98a4e68c36db05c97a', '.vocab', None],
+               'scibert_scivocab_uncased': ['2d2566bfc416790ab2646ab0ada36ba628628d60', '.vocab', None],
+               'scibert_scivocab_cased': ['2c714475b521ab8542cb65e46259f6bfeed8041b', '.vocab', None],
+               'scibert_basevocab_uncased': ['80ef760a6bdafec68c99b691c94ebbb918c90d02', '.vocab', None],
+               'scibert_basevocab_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab', None],
+               'biobert_v1.0_pmc_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab', None],
+               'biobert_v1.0_pubmed_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab', None],
+               'biobert_v1.0_pubmed_pmc_cased':
+               ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab', None],
+               'biobert_v1.1_pubmed_cased': ['a4ff6fe1f85ba95f3010742b9abc3a818976bb2c', '.vocab', None],
+               'clinicalbert_uncased': ['80ef760a6bdafec68c99b691c94ebbb918c90d02', '.vocab', None],
+               'baidu_ernie_uncased': ['223553643220255e2a0d4c60e946f4ad7c719080', '.vocab', None],
+               'openai_webtext': ['f917dc7887ce996068b0a248c8d89a7ec27b95a1', '.vocab', None],
+               'xlnet_126gb': ['0d74490383bbc5c62b8bcea74d8b74a1bb1280b3', '.vocab', None],
+               'kobert_news_wiki_ko_cased':
+               ['f86b1a8355819ba5ab55e7ea4a4ec30fdb5b084f', '.spiece', {'padding_token': '[PAD]'}]}
 
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
+
 
 def train_valid_split(dataset, valid_ratio=0.05):
     """Split the dataset into training and validation sets.
@@ -300,12 +306,11 @@ def _load_pretrained_vocab(name, root, cls=None):
     file_name = '{name}-{short_hash}'.format(name=name,
                                              short_hash=short_hash(name))
     root = os.path.expanduser(root)
-    sha1_hash = _vocab_sha1[name][0]
-    file_ext = _vocab_sha1[name][1]
+    sha1_hash, file_ext, special_tokens = _vocab_sha1[name]
     file_path = os.path.join(root, file_name + file_ext)
     if os.path.exists(file_path):
         if check_sha1(file_path, sha1_hash):
-            return _load_vocab_file(file_path, cls)
+            return _load_vocab_file(file_path, cls, special_tokens)
         else:
             print('Detected mismatch in the content of model vocab file. Downloading again.')
     else:
@@ -338,22 +343,22 @@ def _load_pretrained_vocab(name, root, cls=None):
         else:
             raise e
     if check_sha1(file_path, sha1_hash):
-        return _load_vocab_file(file_path, cls)
+        return _load_vocab_file(file_path, cls, special_tokens)
     else:
         raise ValueError('Downloaded file has different hash. Please try again.')
 
 
-def _load_vocab_file(file_path, cls):
+def _load_vocab_file(file_path, cls, special_tokens):
     with open(file_path, 'r') as f:
         if cls is None:
-            from ..vocab import Vocab
+            from ..vocab import Vocab  # pylint: disable=import-outside-toplevel
             cls = Vocab
         if file_path.endswith('.spiece'):
-            from ..vocab import BERTVocab
-            from ..data import SentencepieceTokenizer
+            from ..vocab import BERTVocab  # pylint: disable=import-outside-toplevel
+            from ..data import SentencepieceTokenizer  # pylint: disable=import-outside-toplevel
             return BERTVocab.from_sentencepiece(
                 file_path,
-                padding_token='[PAD]'), SentencepieceTokenizer(file_path)
+                **special_tokens), SentencepieceTokenizer(file_path)
         else:
             return cls.from_json(f.read()), None
 
