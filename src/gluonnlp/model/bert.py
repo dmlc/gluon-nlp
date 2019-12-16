@@ -1239,7 +1239,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
 
     Returns
     -------
-    (BERTModel, gluonnlp.vocab.BERTVocab) or (BERTModel, gluonnlp.vocab.BERTVocab, gluonnlp.data.SentencepieceTokenizer) if model provides sentencepiece model only.
+    (BERTModel, gluonnlp.vocab.BERTVocab) or (BERTModel, gluonnlp.vocab.BERTVocab, gluonnlp.data.SentencepieceTokenizer) if model contains sentencepiece tokenizer.
     """
     predefined_args = bert_hparams[model_name]
     mutable_args = ['use_residual', 'dropout', 'word_embed']

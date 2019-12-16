@@ -351,7 +351,9 @@ def _load_vocab_file(file_path, cls):
         if file_path.endswith('.spiece'):
             from ..vocab import BERTVocab
             from ..data import SentencepieceTokenizer
-            return BERTVocab.from_sentencepiece(file_path, padding_token='[PAD]'), SentencepieceTokenizer(file_path)
+            return BERTVocab.from_sentencepiece(
+                file_path,
+                padding_token='[PAD]'), SentencepieceTokenizer(file_path)
         else:
             return cls.from_json(f.read()), None
 
