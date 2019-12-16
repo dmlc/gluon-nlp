@@ -79,13 +79,16 @@ class BertEmbedding:
         self.batch_size = batch_size
         self.dataset_name = dataset_name
 
-        # Don't download the pretrained models if we have a parameter path
-        vocab = None
-        dataset_name = self.dataset_name
-        if params_path:
+        # use sentencepiece vocab and a checkpoint
+        # we need to set dataset_name to None, otherwise it uses the downloaded vocab
+        if params_path and sentencepiece:
             dataset_name = None
+        else:
+            dataset_name = self.dataset_name
         if sentencepiece:
             vocab = gluonnlp.vocab.BERTVocab.from_sentencepiece(sentencepiece)
+        else:
+            vocab = None
         self.bert, self.vocab = gluonnlp.model.get_model(model,
                                                          dataset_name=dataset_name,
                                                          pretrained=params_path is None,
