@@ -224,7 +224,11 @@ if __name__ == '__main__':
     parser.add_argument('--params_path', type=str, default=None,
                         help='path to a params file to load instead of the pretrained model.')
     parser.add_argument('--sentencepiece', type=str, default=None,
+<<<<<<< HEAD
                         help='Path to the sentencepiece .model file for both tokenization and vocab.')
+=======
+                        help='Path to the sentencepiece .model file for tokenization and vocab.')
+>>>>>>> b84a9b945550ee695db45d53aea926db5d4d3e13
     parser.add_argument('--max_seq_length', type=int, default=128,
                         help='max length of each sequence')
     parser.add_argument('--batch_size', type=int, default=256,
