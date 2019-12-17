@@ -29,6 +29,7 @@ from gluonnlp.estimator import LanguageModelEstimator
 from gluonnlp.estimator import HiddenStateHandler, AvgParamHandler
 from gluonnlp.estimator import LearningRateHandler, RNNGradientUpdateHandler
 from gluonnlp.estimator import LanguageModelBatchProcessor
+from gluonnlp.estimator import MetricResetHandler
 from mxnet.gluon.data.sampler import BatchSampler
 
 class BatchVariableLenTextSampler(BatchSampler):
@@ -220,6 +221,7 @@ est = LanguageModelEstimator(net=model, loss=train_loss,
 event_handlers = [HiddenStateHandler(), AvgParamHandler(),
                   LearningRateHandler(lr_update_interval=args.lr_update_interval, lr_update_factor=args.lr_update_factor),
                   RNNGradientUpdateHandler(clip=args.clip),
-                  LoggingHandler(log_interval=20, metrics=est.train_metrics + est.val_metrics)]
+                  LoggingHandler(log_interval=args.log_interval, metrics=est.train_metrics + est.val_metrics),
+                  MetricResetHandler(metrics=est.train_metrics, log_interval=args.log_interval)]
 est.fit(train_data=train_data_loader, epochs=args.epochs, event_handlers=event_handlers,
         batch_axis=1)

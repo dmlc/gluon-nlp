@@ -56,6 +56,7 @@ class LanguageModelBatchProcessor(BatchProcessor):
         for L in Ls:
             L.backward()
 
+        Ls = [l * (len(estimator.context) * X.size) for l in Ls]
         return data, target, outputs, Ls
 
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):

@@ -26,10 +26,11 @@ import mxnet as mx
 from mxnet.gluon.contrib.estimator import TrainBegin, TrainEnd, EpochBegin
 from mxnet.gluon.contrib.estimator import EpochEnd, BatchBegin, BatchEnd
 from mxnet.gluon.contrib.estimator import GradientUpdateHandler
+from mxnet.gluon.contrib.estimator import MetricHandler
 from mxnet.gluon.utils import clip_global_norm
 
 __all__ = ['HiddenStateHandler', 'AvgParamHandler', 'LearningRateHandler',
-           'RNNGradientUpdateHandler']
+           'RNNGradientUpdateHandler', 'MetricResetHandler']
 
 class HiddenStateHandler(EpochBegin):
     def __init__(self):
@@ -119,9 +120,29 @@ class RNNGradientUpdateHandler(GradientUpdateHandler):
         self.clip = clip
 
     def batch_end(self, estimator, *args, **kwargs):
+        loss = kwargs['loss']
+        loss_size = sum([l.size for l in loss])
         parameters = estimator.net.collect_params()
         grads = [p.grad(ctx) for p in parameters.values() for ctx in estimator.context]
         if self.clip is not None:
+            # use multi context clipping later
             clip_global_norm(grads, self.clip)
 
         estimator.trainer.step(1)
+
+class MetricResetHandler(BatchBegin, MetricHandler):
+    def __init__(self, metrics, log_interval=1):
+        super().__init__(metrics=metrics)
+        self.batch_id = 0
+        self.log_interval = log_interval
+
+    def epoch_begin(self, estimator, *args, **kwargs):
+        self.batch_id = 0
+        for metric in self.metrics:
+            metric.reset()
+
+    def batch_begin(self, estimator, *args, **kwargs):
+        if self.batch_id % self.log_interval == 1:
+            for metric in self.metrics:
+                metric.reset_local()
+        self.batch_id += 1
