@@ -41,16 +41,15 @@ class HiddenStateHandler(EpochBegin):
         estimator.eval_hiddens = None
     
 class AvgParamHandler(BatchEnd, EpochEnd):
-    def __init__(self):
+    def __init__(self, data_length):
         self.ntasgd = False
         self.epoch_id = 0
         self.batch_id = 0
         self.avg_trigger = 0
-        # self.ntasgd is always False during the first epoch
-        self.batches_per_epoch = 0
         self.t = 0
         self.n = 5
         self.valid_losses = []
+        self.data_length = data_length
 
     def batch_end(self, estimator, *args, **kwargs):
         parameters = estimator.net.collect_params()
@@ -59,18 +58,21 @@ class AvgParamHandler(BatchEnd, EpochEnd):
                 estimator.avg_param = {k.split(estimator.net._prefix)[1]: v.data(estimator.context[0]).copy()
                                        for k, v in parameters.items()}
             else:
-                gamma = 1. / max(1, self.epoch_id * (self.batches_per_epoch // estimator.bptt) +
-                                 self.batch_index - avg_trigger + 2)
+                gamma = 1. / max(1, self.epoch_id * (self.data_length // estimator.bptt) +
+                                 self.batch_id - self.avg_trigger + 2)
                 for key, val in estimator.avg_param.items():
-                    val[:] += gamma * (parameters['{}{}'.format(estimator.net.__prefix, key)]
+                    val[:] += gamma * (parameters['{}{}'.format(estimator.net._prefix, key)]
                                        .data(estimator.context[0]) - val)
         self.batch_id += 1
 
     def epoch_end(self, estimator, *args, **kwargs):
+        if not isinstance(estimator.val_metrics, list):
+            val_metrics = [estimator.val_metrics]
+        else:
+            val_metrics = estimator.val_metrics
         parameters = estimator.net.collect_params()
-        self.batches_per_epoch = self.batch_id
-        if self.ntasgd == False and self.avg_trigger == 0:
-            if self.t > self.n and estimator.val_metrics > min(self.valid_losses[-self.n:]):
+        if self.avg_trigger == 0:
+            if self.t > self.n and val_metrics[0].get()[1] > min(self.valid_losses[-self.n:]):
                 if estimator.avg_param is None:
                     estimator.avg_param = {k.split(estimator.net._prefix)[1]: v.data(estimator.context[0]).copy()
                                            for k, v in parameters.items()}
@@ -78,10 +80,10 @@ class AvgParamHandler(BatchEnd, EpochEnd):
                     for key, val in parameters.items():
                         estimator.avg_param[key.split(estimator.net._prefix)[1]] \
                             = val.data(estimator.context[0]).copy()
-                self.avg_trigger = (self.epoch_id + 1) * (self.batches_per_epoch // estimator.bptt)
+                self.avg_trigger = (self.epoch_id + 1) * (self.data_length // estimator.bptt)
                 print('Switching to NTASGD and avg_trigger is : %d' % self.avg_trigger)
                 self.ntasgd = True
-            self.valid_losses.append(estimator.val_metrics)
+            self.valid_losses.append(val_metrics[0].get()[1])
             self.t += 1
         self.batch_id = 0
         self.epoch_id += 1
@@ -104,9 +106,14 @@ class LearningRateHandler(BatchBegin, BatchEnd, EpochEnd):
         estimator.trainer.set_learning_rate(self.lr_batch_start)
 
     def epoch_end(self, estimator, *args, **kwargs):
-        if estimator.val_metrics < self.best_val:
+        if not isinstance(estimator.val_metrics, list):
+            val_metrics = [estimator.val_metrics]
+        else:
+            val_metrics = estimator.val_metrics
+
+        if val_metrics[0].get()[1] < self.best_val:
             self.update_lr_epoch = 0
-            self.best_val = estimator.val_metrics
+            self.best_val = val_metrics[0].get()[1]
         else:
             self.update_lr_epoch += 1
             if self.update_lr_epoch % self.lr_update_interval == 0 and self.update_lr_epoch != 0:

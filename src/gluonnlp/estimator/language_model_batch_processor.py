@@ -60,9 +60,13 @@ class LanguageModelBatchProcessor(BatchProcessor):
         return data, target, outputs, Ls
 
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):
+        batch_axis = 1 #temporary work around, removed after estimator is fixed
+        data = val_batch[:-1]
+        target = val_batch[1:]
         batch_size = val_batch.shape[batch_axis]
-        val_batch = [split_and_load(x, ctx_list=estimator.context, batch_axis=batch_axis) for x in val_batch]
-        data, target = val_batch
+        data = split_and_load(data, estimator.context, batch_axis=batch_axis, even_split=True)
+        target = split_and_load(target, estimator.context, batch_axis=batch_axis, even_split=True)
+
         Ls = []
         outputs = []
         if estimator.eval_hiddens is None:
@@ -75,7 +79,7 @@ class LanguageModelBatchProcessor(BatchProcessor):
         for i, (X, y, h) in enumerate(zip(data, target, estimator.eval_hiddens)):
             output, h = estimator.eval_net(X, h)
             L = estimator.evaluation_loss(output.reshape(-3, -1), y.reshape(-1,))
-            self.eval_hiddens[i] = h
+            estimator.eval_hiddens[i] = h
             Ls.append(L)
             outputs.append(output)
 

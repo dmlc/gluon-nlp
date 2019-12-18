@@ -33,15 +33,20 @@ from gluonnlp.estimator import MetricResetHandler
 from mxnet.gluon.data.sampler import BatchSampler
 
 class BatchVariableLenTextSampler(BatchSampler):
-    def __init__(self, bptt, length):
+    def __init__(self, bptt, length, use_variable_length=True):
         self.bptt = bptt
         self.length = length
         self.index = 0
+        self.use_variable_length = use_variable_length
 
     def __iter__(self):
+        self.index = 0
         while self.index < self.length - 2:
-            bptt = self.bptt if mx.nd.random.uniform().asscalar() < .95 else self.bptt / 2
-            seq_len = max(5, int(mx.nd.random.normal(bptt, 5).asscalar()))
+            if self.use_variable_length:
+                bptt = self.bptt if mx.nd.random.uniform().asscalar() < .95 else self.bptt / 2
+                seq_len = max(5, int(mx.nd.random.normal(bptt, 5).asscalar()))
+            else:
+                seq_len = self.bptt
             seq_len = min(seq_len, self.length - self.index - 1)
             # batch_size = seq_len + 1
             batch = []
@@ -53,7 +58,7 @@ class BatchVariableLenTextSampler(BatchSampler):
     def __len__(self):
         # you may never get real size of the data sampler beforehand. May need some
         # postprocessing after fetching the data batch
-        return self.length / 5 + 1
+        return int(self.length / 5) + 1
 
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
@@ -168,6 +173,7 @@ if args.weight_dropout > 0:
     model = nlp.model.train.AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
                                    args.tied, args.dropout, args.weight_dropout,
                                    args.dropout_h, args.dropout_i, args.dropout_e)
+    model.initialize(mx.init.Xavier(), ctx=context)
     model_eval = nlp.model.AWDRNN(args.model, len(vocab), args.emsize, args.nhid, args.nlayers,
                                   args.tied, args.dropout, args.weight_dropout,
                                   args.dropout_h, args.dropout_i, args.dropout_e,
@@ -175,16 +181,15 @@ if args.weight_dropout > 0:
 else:
     model = nlp.model.train.StandardRNN(args.model, len(vocab), args.emsize,
                                         args.nhid, args.nlayers, args.dropout, args.tied)
+    model.initialize(mx.init.Xavier(), ctx=context)
     model_eval = nlp.model.StandardRNN(args.model, len(vocab), args.emsize,
                                        args.nhid, args.nlayers, args.dropout, args.tied,
                                        params=model.collect_params())
 
-model.initialize(mx.init.Xavier(), ctx=context)
 
 model.hybridize(static_alloc=True)
 
 print(model)
-
 
 if args.optimizer == 'sgd':
     trainer_params = {'learning_rate': args.lr,
@@ -204,9 +209,11 @@ loss = gluon.loss.SoftmaxCrossEntropyLoss()
 train_loss = JointActivationRegularizationLoss(loss, args.alpha, args.beta)
 
 sampler = BatchVariableLenTextSampler(bptt=70, length=len(train_data))
+val_sampler = BatchVariableLenTextSampler(bptt=70, length=len(val_data), use_variable_length=False)
 train_data_loader = mx.gluon.data.DataLoader(train_data,
                                              batch_sampler=sampler)
-
+val_data_loader = mx.gluon.data.DataLoader(val_data,
+                                           batch_sampler=val_sampler)
 
 train_metric = mx.metric.Loss(train_loss)
 val_metric = mx.metric.Loss(loss)
@@ -218,10 +225,12 @@ est = LanguageModelEstimator(net=model, loss=train_loss,
                              evaluation_loss=loss,
                              eval_net=model_eval,
                              batch_processor=batch_processor)
-event_handlers = [HiddenStateHandler(), AvgParamHandler(),
+event_handlers = [HiddenStateHandler(), AvgParamHandler(data_length=len(train_data)),
                   LearningRateHandler(lr_update_interval=args.lr_update_interval, lr_update_factor=args.lr_update_factor),
                   RNNGradientUpdateHandler(clip=args.clip),
                   LoggingHandler(log_interval=args.log_interval, metrics=est.train_metrics + est.val_metrics),
                   MetricResetHandler(metrics=est.train_metrics, log_interval=args.log_interval)]
-est.fit(train_data=train_data_loader, epochs=args.epochs, event_handlers=event_handlers,
+est.fit(train_data=train_data_loader, val_data=val_data_loader,
+        epochs=args.epochs,
+        event_handlers=event_handlers,
         batch_axis=1)
