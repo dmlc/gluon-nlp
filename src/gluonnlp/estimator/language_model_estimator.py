@@ -41,8 +41,7 @@ class LanguageModelEstimator(Estimator):
                  evaluation_loss=None,
                  eval_net=None,
                  batch_processor=LanguageModelBatchProcessor(),
-                 bptt=70,
-                 ntasgd=True):
+                 bptt=70):
         super().__init__(net=net, loss=loss,
                          train_metrics=train_metrics,
                          val_metrics=val_metrics,
@@ -56,7 +55,6 @@ class LanguageModelEstimator(Estimator):
         self.eval_hiddens = None
         self.avg_param = None
         self.bptt = bptt
-        self.ntasgd = ntasgd
         
     def detach(self, hidden):
         if isinstance(hidden, (tuple, list)):
