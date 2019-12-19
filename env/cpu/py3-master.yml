@@ -25,5 +25,6 @@ dependencies:
     - nltk==3.4.5
     - sacremoses==0.0.35
     - spacy==2.2.2
+    - jieba
     - sentencepiece==0.1.83
     - sphinx-autodoc-typehints==1.7.0
