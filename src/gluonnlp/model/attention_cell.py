@@ -78,12 +78,39 @@ def _masked_softmax(F, att_score, mask, dtype):
         att_weights = F.softmax(att_score, axis=-1)
     return att_weights
 
+def _generate_relative_positions_matrix(F, seq_length, max_relative_position):
+    """Generates matrix of relative positions between inputs.
+    
+    Row i corresponds to the i-th word and the columns represent word j in the input sequence.
+    For example, if max_relative_position=3, seq_length=6
 
-# TODO(sxjscience) In the future, we should support setting mask/att_weights as sparse tensors
+    matrix:
+
+        3,4,5,6,6,6
+        2,3,4,5,6,6
+        1,2,3,4,5,6
+        0,1,2,3,4,5
+        0,0,1,2,3,4
+        0,0,0,1,2,3
+
+    """
+    range_vec = F.arange(seq_length)
+    range_mat = F.tile(range_vec, [seq_length]).reshape([seq_length, seq_length])
+    distance_mat = range_mat - F.transpose(range_mat)
+    distance_mat_clipped = F.clip(distance_mat, -max_relative_position, max_relative_position)
+    # Shift values to be >= 0. Each integer still uniquely identifies a relative
+    # position difference.
+    final_mat = distance_mat_clipped + max_relative_position
+    return final_mat
+
+# TODO(sxjscience) In the future, we should support setting
+# mask/att_weights as sparse tensors
 class AttentionCell(HybridBlock):
     """Abstract class for attention cells. Extend the class
      to implement your own attention method.
-     One typical usage is to define your own `_compute_weight()` function to calculate the weights::
+
+     One typical usage is to define your own `_compute_weight()` function to
+     calculate the weights::
 
         cell = AttentionCell()
         out = cell(query, key, value, mask)
@@ -504,3 +531,132 @@ class DotProductAttentionCell(AttentionCell):
             att_weights = att_weights * mask
         att_weights = self._dropout_layer(att_weights)
         return att_weights
+
+class MultiHeadAttentionRelativePosCell(HybridBlock):
+    r"""Multi-head Attention Cell with relative position embedding.
+
+    In the MultiHeadAttentionCell, the input query/key/value will be linearly projected
+    for `num_heads` times with different projection matrices. Each projected key, value, query
+    will be used to calculate the attention weights and values. The output of each head will
+    be concatenated to form the final output.
+
+    The idea is first proposed in "[Arxiv2014] Neural Turing Machines" and
+    is later adopted in "[NIPS2017] Attention is All You Need" to solve the
+    Neural Machine Translation problem.
+
+    The idea of relative position is proposed in
+    "Self-Attention with Relative Position Representations"
+
+    Parameters
+    ----------
+    base_cell : AttentionCell
+    query_units : int
+        Total number of projected units for query. Must be divided exactly by num_heads.
+    key_units : int
+        Total number of projected units for key. Must be divided exactly by num_heads.
+    value_units : int
+        Total number of projected units for value. Must be divided exactly by num_heads.
+    num_heads : int
+        Number of parallel attention heads
+    max_relative_position: int
+        Max number of positions embeddings 
+    use_bias : bool, default True
+        Whether to use bias when projecting the query/key/values
+    weight_initializer : str or `Initializer` or None, default None
+        Initializer of the weights.
+    bias_initializer : str or `Initializer`, default 'zeros'
+        Initializer of the bias.
+    prefix : str or None, default None
+        See document of `Block`.
+    params : str or None, default None
+        See document of `Block`.
+    """
+    def __init__(self, query_units, key_units, value_units, num_heads, max_relative_position,
+                 dropout=0.0, use_bias=True, weight_initializer=None, bias_initializer='zeros',
+                 prefix=None, params=None):
+        super(MultiHeadAttentionRelativePosCell, self).__init__(prefix=prefix, params=params)
+        self._query_units = query_units
+        self._key_units = key_units
+        self._value_units = value_units
+        self._num_heads = num_heads
+        self._use_bias = use_bias
+        self._max_relative_position = max_relative_position * 2 + 1
+        self._embed_units = query_units/num_heads
+        if self._query_units % self._num_heads != 0:
+            raise ValueError('In MultiHeadAttetion, the query_units should be divided exactly'
+                             ' by the number of heads. Received query_units={}, num_heads={}'
+                             .format(key_units, num_heads))
+
+        if self._key_units % self._num_heads != 0:
+            raise ValueError('In MultiHeadAttetion, the key_units should be divided exactly'
+                             ' by the number of heads. Received key_units={}, num_heads={}'
+                             .format(key_units, num_heads))
+
+        if self._value_units % self._num_heads != 0:
+            raise ValueError('In MultiHeadAttetion, the value_units should be divided exactly'
+                             ' by the number of heads. Received value_units={}, num_heads={}'
+                             .format(value_units, num_heads))
+
+        with self.name_scope():
+            self.proj_query = nn.Dense(units=self._query_units, use_bias=self._use_bias,
+                                       flatten=False, weight_initializer=weight_initializer,
+                                       bias_initializer=bias_initializer, prefix='query_')
+            self.proj_key = nn.Dense(units=self._key_units, use_bias=self._use_bias,
+                                     flatten=False, weight_initializer=weight_initializer,
+                                     bias_initializer=bias_initializer, prefix='key_')
+            self.proj_value = nn.Dense(units=self._value_units, use_bias=self._use_bias,
+                                       flatten=False, weight_initializer=weight_initializer,
+                                       bias_initializer=bias_initializer, prefix='value_')
+            self.key_embedding = nn.Embedding(input_dim=self._max_relative_position,
+                                              output_dim=self._embed_units)
+            self.value_embedding = nn.Embedding(input_dim=self._max_relative_position,
+                                                output_dim=self._embed_units)
+
+            self._dropout_layer = nn.Dropout(dropout)
+
+    # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, query, key, value, position_matrix, mask=None):
+        key_embeddings = self.key_embedding(F.BlockGrad(position_matrix))
+        value_embeddings = self.value_embedding(F.BlockGrad(position_matrix))
+        att_weights = self._compute_weight(F, query, key, key_embeddings, mask)
+        context_vec = self._read_by_weight(F, att_weights, value, value_embeddings)
+        return context_vec, att_weights
+
+    def _compute_weight(self, F, query, key, key_embeddings, mask):
+        query = self.proj_query(query)  # Shape (batch_size, query_length, query_units)
+        # Shape (batch_size * num_heads, query_length, ele_units)
+        query = F.transpose(query.reshape(shape=(0, 0, self._num_heads, -1)),
+                            axes=(0, 2, 1, 3))\
+                 .reshape(shape=(-1, 0, 0), reverse=True)
+        key = self.proj_key(key)
+        key = F.transpose(key.reshape(shape=(0, 0, self._num_heads, -1)),
+                          axes=(0, 2, 1, 3)).reshape(shape=(-1, 0, 0), reverse=True)
+        if mask is not None:
+            mask = F.broadcast_axis(F.expand_dims(mask, axis=1),
+                                    axis=1, size=self._num_heads)\
+                    .reshape(shape=(-1, 0, 0), reverse=True)
+
+        query = F.contrib.div_sqrt_dim(query)
+
+        pos_score = F.batch_dot(query.transpose(axes=(1, 0, 2)), key_embeddings, transpose_b=True)
+
+        att_score = F.batch_dot(query, key, transpose_b=True) + pos_score.transpose(axes=(1, 0, 2))
+
+        att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask, np.float32))
+
+        return att_weights.reshape(shape=(-1, self._num_heads, 0, 0), reverse=True)
+
+    def _read_by_weight(self, F, att_weights, value, value_embeddings):
+        att_weights = att_weights.reshape(shape=(-1, 0, 0), reverse=True)
+        value = self.proj_value(value)
+        value = F.transpose(value.reshape(shape=(0, 0, self._num_heads, -1)),
+                            axes=(0, 2, 1, 3)).reshape(shape=(-1, 0, 0), reverse=True)
+
+        pos_score = F.batch_dot(att_weights.transpose(axes=(1, 0, 2)), value_embeddings)
+
+        context_vec = F.batch_dot(att_weights, value) + pos_score.transpose(axes=(1, 0, 2))
+        context_vec = F.transpose(context_vec.reshape(shape=(-1, self._num_heads, 0, 0),
+                                                      reverse=True),
+                                  axes=(0, 2, 1, 3)).reshape(shape=(0, 0, -1))
+        return context_vec
+

@@ -99,3 +99,76 @@ def test_multihead_attention():
                                                use_mask=use_mask,
                                                multi_head=True,
                                                num_heads=num_heads)
+
+def check_attention_cell_relative_postions(attention_cell, q_channel, k_channel, v_channel,
+                               use_mask, multi_head=False,
+                               num_heads=None):
+    attention_cell.initialize()
+    attention_cell.hybridize()
+    _max_relative_position = 3
+    for seq_length in [10, 1, 5]:
+        for batch_size in [1, 3]:
+            if use_mask:
+                mask_nd = mx.random.uniform(0, 1,
+                                            shape=(batch_size, seq_length, seq_length)) > 0.3
+            else:
+                mask_nd = None
+            query_nd = mx.nd.random.normal(0, 1, (batch_size, seq_length, q_channel))
+            key_nd = mx.nd.random.normal(0, 1, (batch_size, seq_length, k_channel))
+            value_nd = mx.nd.random.normal(0, 1, (batch_size, seq_length, v_channel))
+            range_vec = mx.nd.arange(seq_length)
+            range_mat = mx.nd.tile(range_vec, [seq_length]).reshape([seq_length, seq_length])
+            distance_mat = range_mat - mx.nd.transpose(range_mat)
+            distance_mat_clipped = mx.nd.clip(distance_mat, -_max_relative_position, _max_relative_position)
+            # Shift values to be >= 0. Each integer still uniquely identifies a relative
+            # position difference.
+            position_matrix = distance_mat_clipped + _max_relative_position
+
+            read_value, att_weights = attention_cell(query_nd, key_nd, value_nd, position_matrix, mask_nd)
+            att_weights_npy = att_weights.asnumpy()
+            read_value_npy = read_value.asnumpy()
+            value_npy = value_nd.asnumpy()
+            if not multi_head:
+                if use_mask:
+                    assert_allclose(att_weights_npy.sum(axis=-1),
+                                    mx.nd.sum(mask_nd, axis=-1).asnumpy() > 0, 1E-5, 1E-5)
+                else:
+                    assert_allclose(att_weights_npy.sum(axis=-1),
+                                    np.ones(att_weights.shape[:-1]), 1E-5, 1E-5)
+                # Check the read value is correct
+                for i in range(batch_size):
+                    assert_allclose(read_value_npy[i],
+                                    att_weights_npy[i].dot(value_npy[i]), 1E-5, 1E-5)
+                if use_mask:
+                    assert_allclose(mx.nd.norm((1 - mask_nd) * att_weights).asscalar(), 0)
+            else:
+                read_value_npy = read_value_npy.reshape((batch_size, seq_length, num_heads,
+                                                         -1))
+                if use_mask:
+                    mask_npy = mask_nd.asnumpy()
+                for j in range(num_heads):
+                    if use_mask:
+                        assert_allclose(att_weights_npy[:, j, :, :].sum(axis=-1),
+                                        mask_npy.sum(axis=-1) > 0, 1E-5, 1E-5)
+                    else:
+                        assert_allclose(att_weights_npy[:, j, :, :].sum(axis=-1),
+                                        np.ones((batch_size, seq_length)), 1E-5, 1E-5)
+                    if use_mask:
+                        assert_allclose((1 - mask_npy) * att_weights_npy[:, j, :, :], 0)
+
+
+def test_multihead_attention_relative_positions():
+    for query_units, key_units, value_units, num_heads in [(4, 4, 4, 2), (3, 3, 3, 3),
+                                                           (6, 6, 6, 1)]:
+
+        cell = ac. MultiHeadAttentionRelativePosCell(query_units=query_units,
+                                                      key_units=key_units, value_units=value_units, num_heads=num_heads,
+                                                      max_relative_position=5)
+        check_attention_cell_relative_postions(cell,
+            q_channel=query_units // num_heads,
+            k_channel=key_units // num_heads,
+            v_channel=value_units // num_heads,
+            use_mask=True,
+            multi_head=True,
+            num_heads=num_heads)
+
