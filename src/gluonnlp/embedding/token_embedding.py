@@ -1004,9 +1004,6 @@ class FastText(TokenEmbedding):
 
     >>> import gluonnlp as nlp
     >>> sorted(nlp.embedding.list_sources('FastText'))
-
-
-
     [\
 'cc.af.300', 'cc.als.300', 'cc.am.300', 'cc.an.300', 'cc.ar.300', 'cc.arz.300', \
 'cc.as.300', 'cc.ast.300', 'cc.az.300', 'cc.azb.300', 'cc.ba.300', 'cc.bar.300', \
@@ -1194,10 +1191,10 @@ class Word2Vec(TokenEmbedding):
     Available sources
 
     >>> import gluonnlp as nlp
-    >>> nlp.embedding.list_sources('Word2Vec')
+    >>> sorted(nlp.embedding.list_sources('Word2Vec'))
     [\
-'GoogleNews-vectors-negative300', 'freebase-vectors-skipgram1000-en', \
-'freebase-vectors-skipgram1000'\
+'GoogleNews-vectors-negative300', 'freebase-vectors-skipgram1000', \
+'freebase-vectors-skipgram1000-en'
 ]
 
     Parameters

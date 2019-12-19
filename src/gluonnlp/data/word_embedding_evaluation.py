@@ -860,7 +860,7 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
     >>> len(biggeranalogytestset)
     98000
     >>> biggeranalogytestset[0]
-    ['album', 'albums', 'application', 'applications']
+    ['arm', 'armless', 'art', 'artless']
     """
     _archive_file = ('BATS_3.0.zip',
                      'bf94d47884be9ea83af369beeea7499ed25dcf0d')
