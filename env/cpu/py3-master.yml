@@ -30,3 +30,6 @@ dependencies:
     - notedown
     - recommonmark
     - seaborn
+    - sphinx_gallery
+    - sphinx_rtd_theme
+    - mxtheme
