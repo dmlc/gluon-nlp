@@ -9,7 +9,6 @@ import random
 import logging
 import warnings
 import sys
-import multiprocessing
 from functools import partial
 import numpy as np
 import mxnet as mx
@@ -23,7 +22,6 @@ sys.path.append(path + '/../bert/data')
 #pylint: disable=wrong-import-position
 from classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask, \
      QNLITask, CoLATask, MNLITask, WNLITask, XNLITask, LCQMCTask, ChnSentiCorpTask
-from data.transform import XLNetDatasetTransform
 from preprocessing_utils import truncate_seqs_equal, concat_sequences
 
 tasks = {
@@ -126,6 +124,7 @@ def convert_examples_to_features(example,
                                  label_alias=None,
                                  vocab=None,
                                  is_test=False):
+    #pylint: disable=redefined-outer-name
     """convert glue examples into necessary features"""
     assert vocab
     if not is_test:
@@ -164,6 +163,7 @@ def convert_examples_to_features(example,
 
 def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len,
                     vocab):
+    #pylint: disable=redefined-outer-name
     """Train/eval Data preparation function."""
     label_dtype = 'int32' if task.class_labels else 'float32'
     truncate_length = max_len - 3 if task.is_pair else max_len - 2
@@ -283,7 +283,7 @@ get_pretrained = True
 
 get_model_params = {
     'name': args.model_name,
-    'do_lower_case': 'uncased' in args.dataset,
+    'do_lower_case': True,
     'dataset_name': args.dataset,
     'pretrained': get_pretrained,
     'ctx': ctxs,

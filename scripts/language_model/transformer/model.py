@@ -142,7 +142,8 @@ def transformerxl(dataset_name: str, vocab: nlp.Vocab, **kwargs):
 def xlnet_cased_l12_h768_a12(dataset_name: Optional[str] = None, vocab: Optional[nlp.Vocab] = None,
                              tokenizer: Optional[XLNetTokenizer] = None, pretrained: bool = True,
                              ctx: mx.Context = mx.cpu(),
-                             root=os.path.join(get_home_dir(), 'models'), do_lower_case=False, **kwargs):
+                             root=os.path.join(get_home_dir(), 'models'),
+                             do_lower_case=False, **kwargs):
     """XLNet model.
 
     References:
@@ -199,7 +200,8 @@ def xlnet_cased_l12_h768_a12(dataset_name: Optional[str] = None, vocab: Optional
 def xlnet_cased_l24_h1024_a16(dataset_name: Optional[str] = None, vocab: Optional[nlp.Vocab] = None,
                               tokenizer: Optional[XLNetTokenizer] = None, pretrained: bool = True,
                               ctx: mx.Context = mx.cpu(),
-                              root=os.path.join(get_home_dir(), 'models'), do_lower_case=False, **kwargs):
+                              root=os.path.join(get_home_dir(), 'models'),
+                              do_lower_case=False, **kwargs):
     """XLNet model.
 
     References:
