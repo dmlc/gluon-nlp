@@ -116,7 +116,7 @@ def count_tokens(tokens, to_lower=False, counter=None):
     >>> source_str = ' Life is great ! \n life is good . \n'
     >>> source_str_tokens = filter(None, re.split(' |\n', source_str))
     >>> gluonnlp.data.count_tokens(source_str_tokens)
-    Counter({'is': 2, 'Life': 1, 'great': 1, '!': 1, 'life': 1, 'good': 1, '.': 1})
+    Counter({'is': 2, 'Life': 1, '.': 1, '!': 1, 'great': 1, 'life': 1, 'good': 1})
 
     """
     if to_lower:

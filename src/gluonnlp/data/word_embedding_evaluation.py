@@ -890,7 +890,7 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
         if self.category is not None:
             categories = [self.category]
         else:
-            categories = self._categories.keys()
+            categories = sorted(list(self._categories.keys()))
 
         datasets = []
         for category in categories:
