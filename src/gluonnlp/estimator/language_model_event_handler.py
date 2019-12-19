@@ -30,7 +30,8 @@ from mxnet.gluon.contrib.estimator import MetricHandler
 from mxnet.gluon.utils import clip_global_norm
 
 __all__ = ['HiddenStateHandler', 'AvgParamHandler', 'LearningRateHandler',
-           'RNNGradientUpdateHandler', 'MetricResetHandler']
+           'RNNGradientUpdateHandler', 'MetricResetHandler',
+           'WordLanguageModelCheckpointHandler']
 
 class HiddenStateHandler(EpochBegin):
     def __init__(self):
@@ -42,7 +43,6 @@ class HiddenStateHandler(EpochBegin):
     
 class AvgParamHandler(BatchEnd, EpochEnd):
     def __init__(self, data_length):
-        self.ntasgd = False
         self.epoch_id = 0
         self.batch_id = 0
         self.avg_trigger = 0
@@ -53,7 +53,7 @@ class AvgParamHandler(BatchEnd, EpochEnd):
 
     def batch_end(self, estimator, *args, **kwargs):
         parameters = estimator.net.collect_params()
-        if self.ntasgd:
+        if estimator.ntasgd:
             if estimator.avg_param is None:
                 estimator.avg_param = {k.split(estimator.net._prefix)[1]: v.data(estimator.context[0]).copy()
                                        for k, v in parameters.items()}
@@ -82,7 +82,7 @@ class AvgParamHandler(BatchEnd, EpochEnd):
                             = val.data(estimator.context[0]).copy()
                 self.avg_trigger = (self.epoch_id + 1) * (self.data_length // estimator.bptt)
                 print('Switching to NTASGD and avg_trigger is : %d' % self.avg_trigger)
-                self.ntasgd = True
+                estimator.ntasgd = True
             self.valid_losses.append(val_metrics[0].get()[1])
             self.t += 1
         self.batch_id = 0
@@ -153,3 +153,26 @@ class MetricResetHandler(BatchBegin, MetricHandler):
             for metric in self.metrics:
                 metric.reset_local()
         self.batch_id += 1
+
+class WordLanguageModelCheckpointHandler(EpochEnd):
+    def __init__(self, save):
+        self.save = save
+        self.best_val = float('Inf')
+
+    def epoch_end(self, estimator, *args, **kwargs):
+        if not isinstance(estimator.val_metrics, list):
+            val_metrics = [estimator.val_metrics]
+        else:
+            val_metrics = estimator.val_metrics
+
+        if estimator.ntasgd:
+            mx.nd.save('{}.val.params'.format(self.save), estimator.avg_param)
+        else:
+            estimator.net.save_parameters('{}.val.params'.format(self.save))
+
+        if val_metrics[0].get()[1] < self.best_val:
+            self.best_val = val_metrics[0].get()[1]
+            if estimator.ntasgd:
+                mx.nd.save(self.save, estimator.avg_param)
+            else:
+                estimator.net.save_parameters(self.save)

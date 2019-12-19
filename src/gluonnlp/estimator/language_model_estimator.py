@@ -55,6 +55,7 @@ class LanguageModelEstimator(Estimator):
         self.eval_hiddens = None
         self.avg_param = None
         self.bptt = bptt
+        self.ntasgd = False
         
     def detach(self, hidden):
         if isinstance(hidden, (tuple, list)):
