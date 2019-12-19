@@ -1080,7 +1080,7 @@ class FastText(TokenEmbedding):
 'wiki.ug', 'wiki.uk', 'wiki.ur', 'wiki.uz', 'wiki.ve', 'wiki.vec', 'wiki.vep', \
 'wiki.vi', 'wiki.vls', 'wiki.vo', 'wiki.wa', 'wiki.war', 'wiki.wo', 'wiki.wuu', \
 'wiki.xal', 'wiki.xh', 'wiki.xmf', 'wiki.yi', 'wiki.yo', 'wiki.za', 'wiki.zea', \
-'wiki.zh', 'wiki.zh_classical', 'wiki.zh_min_nan', 'wiki.zh_yue', 'wiki.zu']
+'wiki.zh', 'wiki.zh_classical', 'wiki.zh_min_nan', 'wiki.zh_yue', 'wiki.zu'] \
 ]
 
 
@@ -1194,7 +1194,7 @@ class Word2Vec(TokenEmbedding):
     >>> sorted(nlp.embedding.list_sources('Word2Vec'))
     [\
 'GoogleNews-vectors-negative300', 'freebase-vectors-skipgram1000', \
-'freebase-vectors-skipgram1000-en'
+'freebase-vectors-skipgram1000-en' \
 ]
 
     Parameters
