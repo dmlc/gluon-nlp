@@ -28,3 +28,5 @@ dependencies:
     - sphinx-autodoc-typehints==1.7.0
     - jieba
     - notedown
+    - recommonmark
+    - seaborn
