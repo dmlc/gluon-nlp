@@ -147,7 +147,7 @@ core_logic: {
           path = env.BRANCH_NAME
         }
         sh """
-        conda activate ./conda/cpu/py3
+        conda activate ./conda/cpu/py3-master
         make docs
         ci/upload_doc.sh ${bucket} ${path}
         """
