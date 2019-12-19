@@ -22,7 +22,6 @@ __all__ = ['clip_grad_global_norm', 'save_parameters',
 import warnings
 
 import numpy as np
-import mxnet as mx
 from mxnet import nd
 from .. import _constants as C
 from .files import _TempFilePath, _transfer_file_s3
