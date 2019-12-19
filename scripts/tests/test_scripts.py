@@ -25,6 +25,7 @@ import datetime
 
 import pytest
 import mxnet as mx
+import gluonnlp as nlp
 
 @pytest.mark.serial
 @pytest.mark.remote_required
