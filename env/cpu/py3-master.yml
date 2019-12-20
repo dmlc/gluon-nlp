@@ -30,18 +30,17 @@ dependencies:
     - recommonmark
     - sphinx_gallery
     - sphinx_rtd_theme
-    - pytest-xdist<1.28	
-    - recommonmark	
-    - pandoc=1.19.2	
-    - notedown	
-    - numba>=v0.40.0	
-    - sphinx-gallery	
-    - nbsphinx>=0.3.4,<0.4	
-    - nbconvert=5.4.0	
-    - tornado=5.1.1	
-    - ipython	
-    - ipykernel	
-    - boto3=1.9.207	
-    - https://github.com/szha/mx-theme/tarball/master	
+    - recommonmark
+    - pandoc=1.19.2
+    - notedown
+    - numba>=v0.40.0
+    - sphinx-gallery
+    - nbsphinx>=0.3.4,<0.4
+    - nbconvert=5.4.0
+    - tornado=5.1.1
+    - ipython
+    - ipykernel
+    - boto3=1.9.207
+    - https://github.com/szha/mx-theme/tarball/master
     - seaborn
     - jieba
