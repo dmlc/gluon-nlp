@@ -296,9 +296,9 @@ def _get_cell_type(cell_type):
         elif cell_type == 'gru':
             return rnn.GRUCell
         elif cell_type == 'relu_rnn':
-            return partial(rnn.RNNCell, activation='relu')
+            return functools.partial(rnn.RNNCell, activation='relu')
         elif cell_type == 'tanh_rnn':
-            return partial(rnn.RNNCell, activation='tanh')
+            return functools.partial(rnn.RNNCell, activation='tanh')
         else:
             raise NotImplementedError
     else:
