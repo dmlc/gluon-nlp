@@ -17,8 +17,6 @@
 """Encoder and decoder used in sequence-to-sequence learning."""
 __all__ = ['Seq2SeqEncoder']
 
-from functools import partial
-
 import mxnet as mx
 from mxnet.gluon.block import Block
 
