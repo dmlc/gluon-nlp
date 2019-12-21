@@ -28,7 +28,6 @@ import time
 import random
 import multiprocessing as mp
 import numpy as np
-import warnings
 
 import mxnet as mx
 from mxnet import gluon, autograd, metric
@@ -130,7 +129,7 @@ if args.gpu is None:
     context = mx.cpu()
 else:
     print('Use gpu%d' % args.gpu)
-    context = mx.gpu(int(args.gpu))
+    context = mx.gpu(args.gpu)
 
 
 class AggregationLayer(HybridBlock):
@@ -362,8 +361,7 @@ est = Estimator(net=net,
                 context=context,
                 batch_processor=SentimentAnalysisBatchProcessor())
 
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
+if __name__ == '__main__':
     # Magic line
     est.fit(train_data=train_dataloader,
             val_data=valid_dataloader,
