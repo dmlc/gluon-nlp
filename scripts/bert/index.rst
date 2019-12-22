@@ -258,7 +258,7 @@ Named Entity Recognition
 
 GluonNLP provides training and prediction script for named entity recognition models.
 
-The training script for NER requires python3 and the seqeval package:
+The training script for NER requires the seqeval package:
 
 .. code-block:: console
 
@@ -271,7 +271,7 @@ prefix in file names:
 
 .. code-block:: console
 
-    $ python3 finetune_ner.py \
+    $ python finetune_ner.py \
         --train-path ${DATA_DIR}/train.txt \
         --dev-path ${DATA_DIR}/dev.txt \
         --test-path ${DATA_DIR}/test.txt
@@ -366,7 +366,7 @@ Here's one example of the ATIS dataset, it uses the `IOB2 format <https://en.wik
 In this example, we demonstrate how to use GluonNLP to fine-tune a pretrained BERT model for joint intent classification and slot labelling. We
 choose to finetune a pretrained BERT model.  We use two datasets `ATIS <https://github.com/yvchen/JointSLU>`__ and `SNIPS <https://github.com/snipsco/nlu-benchmark/tree/master/2017-06-custom-intent-engines>`__.
 
-The training script requires python3 and the seqeval and tqdm packages:
+The training script requires the seqeval and tqdm packages:
 
 .. code-block:: console
 
@@ -377,7 +377,7 @@ For the ATIS dataset, use the following command to run the experiment:
 
 .. code-block:: console
 
-    $ python3 finetune_icsl.py --gpu 0 --dataset atis
+    $ python finetune_icsl.py --gpu 0 --dataset atis
 
 It produces the final slot labelling F1 = `95.83%` and intent classification accuracy = `98.66%`
 
@@ -385,7 +385,7 @@ For the SNIPS dataset, use the following command to run the experiment:
 
 .. code-block:: console
 
-    $ python3 finetune_icsl.py --gpu 0 --dataset snips
+    $ python finetune_icsl.py --gpu 0 --dataset snips
 
 It produces the final slot labelling F1 = `96.06%` and intent classification accuracy = `98.71%`
 
