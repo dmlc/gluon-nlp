@@ -36,6 +36,15 @@ For a list of open starter tasks, check `good first issues <https://github.com/d
    -  `What is the consequence of force
       push <#what-is-the-consequence-of-force-push>`__
 
+Clone the master branch for development
+---------------------------------------
+
+GluonNLP github defaults to the latest stable branch. For development, please make changes to the master branch such that the changes will be included in the next release.
+
+.. code:: bash
+
+    git clone -b master https://github.com/dmlc/gluon-nlp
+
 
 Make changes
 ------------
