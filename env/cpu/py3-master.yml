@@ -5,6 +5,7 @@ dependencies:
   - pip
   - perl
   - sphinx
+  - pydoc=1.19.2
   - pip:
     - cython
     - pytype==2019.10.17
@@ -31,7 +32,6 @@ dependencies:
     - sphinx_gallery
     - sphinx_rtd_theme
     - recommonmark
-    - pandoc==1.19.2
     - notedown
     - numba>=v0.40.0
     - sphinx-gallery
