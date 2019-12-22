@@ -4,6 +4,7 @@ dependencies:
   - python=3.5
   - pip
   - perl
+  - sphinx
   - pip:
     - cython
     - pytype==2019.10.17
