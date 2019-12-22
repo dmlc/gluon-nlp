@@ -154,6 +154,7 @@ How to submit pull request
    together(use git rebase then squash) into more meaningful groups.
 -  Send the pull request!
 
+   -  Select "dmlc/gluon-nlp" with "master" branch as the base
    -  Fix the problems reported by automatic checks
    -  If you are contributing a new module or new function, add a test.
 
