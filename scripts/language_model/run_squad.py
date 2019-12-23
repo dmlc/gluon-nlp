@@ -20,7 +20,6 @@ from transformer import model
 from xlnet_qa_evaluate import predict_extended
 from utils_squad_evaluate import EVAL_OPTS, main as evaluate_on_squad
 
-os.environ['MXNET_USE_FUSION'] = '0'
 log = logging.getLogger('gluonnlp')
 log.setLevel(logging.DEBUG)
 formatter = logging.Formatter(fmt='%(levelname)s:%(name)s:%(asctime)s %(message)s',
@@ -175,16 +174,15 @@ get_model_params = {
     'use_decoder': False,
     'dropout': args.dropout,
     'attention_dropout': args.attention_dropout
-
 }
 
 xlnet_base, vocab, tokenizer = model.get_model(**get_model_params)
 
 num_layers = len(xlnet_base._net.transformer_cells)
 for (i, layer_parameters) in enumerate(xlnet_base._net.transformer_cells):
-    params = layer_parameters.collect_params()
-    for key, value in params.items():
-        value.lr_mult = args.layerwise_decay ** (num_layers - i - 1)
+    layer_params = layer_parameters.collect_params()
+    for key, value in layer_params.items():
+        value.lr_mult = args.layerwise_decay**(num_layers - i - 1)
 
 batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack(),
@@ -201,9 +199,10 @@ if pretrained_xlnet_parameters:
     nlp.utils.load_parameters(xlnet_base, pretrained_xlnet_parameters, ctx=ctx, ignore_extra=True,
                               cast_dtype=True)
 
-net = XLNetForQA(xlnet_base=xlnet_base, start_top_n=args.start_top_n, end_top_n=args.end_top_n, version_2=args.version_2)
+net = XLNetForQA(xlnet_base=xlnet_base, start_top_n=args.start_top_n, end_top_n=args.end_top_n,
+                 version_2=args.version_2)
 net_eval = XLNetForQA(xlnet_base=xlnet_base, start_top_n=args.start_top_n, end_top_n=args.end_top_n,
-                      version_2=args.version_2, eval=True, params=net.collect_params())
+                      version_2=args.version_2, is_eval=True, params=net.collect_params())
 
 initializer = mx.init.Normal(0.02)
 
@@ -221,24 +220,23 @@ net_eval.hybridize(static_alloc=True)
 
 
 def split_array(arr, num_of_splits):
+    """split an array into a number of splits"""
     size = arr.shape[0]
     if size < num_of_splits:
-        return [arr[i: i+1] for i in range(size)]
+        return [arr[i:i + 1] for i in range(size)]
     slice_len, rest = divmod(size, num_of_splits)
     div_points = [0] + [(slice_len * index + min(index, rest) + slice_len + (index < rest))
                         for index in range(num_of_splits)]
-    try:
-        slices = [arr[div_points[i]: div_points[i + 1]] for i in range(num_of_splits)]
-    except:
-        breakpoint()
+    slices = [arr[div_points[i]:div_points[i + 1]] for i in range(num_of_splits)]
     return slices
 
 
 def split_and_load(arrs, ctxs):
     """split and load arrays to a list of contexts"""
     assert isinstance(arrs, (list, tuple))
-    # split and load    
-    loaded_arrs = [[i.as_in_context(ctx) for i, ctx in zip(split_array(arr, len(ctxs)), ctxs)] for arr in arrs]
+    # split and load
+    loaded_arrs = [[i.as_in_context(ctx) for i, ctx in zip(split_array(arr, len(ctxs)), ctxs)]
+                   for arr in arrs]
     return zip(*loaded_arrs)
 
 
@@ -376,7 +374,7 @@ def train():
 
 
 RawResultExtended = collections.namedtuple('RawResultExtended', [
-    'unique_id', 'start_top_log_probs', 'start_top_index', 'end_top_log_probs', 'end_top_index',
+    'start_top_log_probs', 'start_top_index', 'end_top_log_probs', 'end_top_index',
     'cls_logits'
 ])
 
@@ -392,7 +390,7 @@ def evaluate(prefix=''):
     (_, _), (data_file_name, _) \
         = dev_data._data_file[dev_data._version][dev_data._segment]
     dev_data_path = os.path.join(dev_data._root, data_file_name)
-    
+
     if args.debug:
         sampled_data = [dev_data[0], dev_data[1], dev_data[2]]
         dev_data = mx.gluon.data.SimpleDataset(sampled_data)
@@ -427,14 +425,14 @@ def evaluate(prefix=''):
             total_num += len(inputs)
             outputs = net_eval(inputs, token_types, valid_length, p_mask=p_mask)
             example_ids = example_ids.asnumpy().tolist()
-            for i, example_ids in enumerate(example_ids):
-                result = RawResultExtended(unique_id=None,
-                                           start_top_log_probs=outputs[0][i].asnumpy().tolist(),
-                                           start_top_index=outputs[1][i].asnumpy().tolist(),
-                                           end_top_log_probs=outputs[2][i].asnumpy().tolist(),
-                                           end_top_index=outputs[3][i].asnumpy().tolist(),
-                                           cls_logits=outputs[4][i].asnumpy().tolist() 
-                                           if outputs[4] is not None else [-1e30])
+            for c, example_ids in enumerate(example_ids):
+                result = RawResultExtended(
+                    start_top_log_probs=outputs[0][c].asnumpy().tolist(),
+                    start_top_index=outputs[1][c].asnumpy().tolist(),
+                    end_top_log_probs=outputs[2][c].asnumpy().tolist(),
+                    end_top_index=outputs[3][c].asnumpy().tolist(),
+                    cls_logits=outputs[4][c].asnumpy().tolist()
+                    if outputs[4] is not None else [-1e30])
                 all_results[example_ids].append(result)
         if batch_id % args.log_interval == 0:
             log.info('Batch: %d/%d', batch_id + 1, len(dev_dataloader))
@@ -477,9 +475,10 @@ def evaluate(prefix=''):
 
     if args.version_2:
         evaluate_options = EVAL_OPTS(data_file=dev_data_path, pred_file=output_prediction_file,
-                                 na_prob_file=output_null_log_odds_file)
+                                     na_prob_file=output_null_log_odds_file)
     else:
-        evaluate_options = EVAL_OPTS(data_file=dev_data_path, pred_file=output_prediction_file, na_prob_file=None)
+        evaluate_options = EVAL_OPTS(data_file=dev_data_path, pred_file=output_prediction_file,
+                                     na_prob_file=None)
 
     results = evaluate_on_squad(evaluate_options)
     return results
