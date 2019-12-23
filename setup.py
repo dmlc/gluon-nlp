@@ -72,6 +72,7 @@ setup(
             'boto3',
             'tqdm',
             'sacremoses',
+            'regex',
         ],
         'dev': [
             'pytest',
