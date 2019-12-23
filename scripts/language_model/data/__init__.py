@@ -1,2 +1,2 @@
 """ data """
-from . import transform, qa
+from . import transform

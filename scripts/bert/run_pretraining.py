@@ -29,6 +29,7 @@ This example shows how to pre-train a BERT model with Gluon NLP Toolkit.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import os
+import sys
 import random
 import warnings
 import logging
@@ -183,10 +184,10 @@ def init_comm(backend):
     # backend specific implementation
     if backend == 'horovod':
         try:
-            import horovod.mxnet as hvd
+            import horovod.mxnet as hvd  # pylint: disable=import-outside-toplevel
         except ImportError:
             logging.info('horovod must be installed.')
-            exit()
+            sys.exit(1)
         hvd.init()
         store = None
         num_workers = hvd.size()

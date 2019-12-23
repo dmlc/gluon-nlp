@@ -13,9 +13,9 @@ class XLNetSentenceTransform:
       sequence or the second sequence.
     - generate valid length
     - pad the sequence to max_length. Note that we use left pad in XLNet
+
     For sequence pairs, the input is a tuple of 3 strings:
     text_a, text_b and label.
-
     Inputs:
         text_a: 'is this jacksonville ?'
         text_b: 'no it is not'
@@ -54,6 +54,7 @@ class XLNetSentenceTransform:
     np.array: valid length in 'int32', shape (batch_size,)
     np.array: input token type ids in 'int32', shape (batch_size, seq_length)
     """
+
     def __init__(self, tokenizer, max_seq_length=None, vocab=None, pad=True, pair=True):
         self._tokenizer = tokenizer
         self._max_seq_length = max_seq_length
@@ -88,7 +89,8 @@ class XLNetSentenceTransform:
             # Modifies `tokens_a` and `tokens_b` in place so that the total
             # length is less than the specified length.
             # Account for [CLS], [SEP], [SEP] with "- 3"
-            self._truncate_seq_pair(tokens_a, tokens_b, self._max_seq_length - 3)
+            self._truncate_seq_pair(tokens_a, tokens_b,
+                                    self._max_seq_length - 3)
         else:
             # Account for [CLS] and [SEP] with "- 2"
             if len(tokens_a) > self._max_seq_length - 2:
@@ -150,6 +152,7 @@ class XLNetSentenceTransform:
 
 class XLNetDatasetTransform:
     """Dataset transformation for XLNet-style sentence classification or regression.
+
     Parameters
     ----------
     tokenizer : BERTTokenizer.
@@ -169,8 +172,15 @@ class XLNetDatasetTransform:
         label_dtype = int32 for classification task
         label_dtype = float32 for regression task
     """
-    def __init__(self, tokenizer, max_seq_length, vocab=None, class_labels=None, label_alias=None,
-                 pad=True, pair=True, has_label=True):
+    def __init__(self,
+                 tokenizer,
+                 max_seq_length,
+                 vocab=None,
+                 class_labels=None,
+                 label_alias=None,
+                 pad=True,
+                 pair=True,
+                 has_label=True):
         self.class_labels = class_labels
         self.has_label = has_label
         self._label_dtype = 'int32' if class_labels else 'float32'
@@ -181,8 +191,8 @@ class XLNetDatasetTransform:
             if label_alias:
                 for key in label_alias:
                     self._label_map[key] = self._label_map[label_alias[key]]
-        self._xl_xform = XLNetSentenceTransform(tokenizer, max_seq_length=max_seq_length,
-                                                vocab=vocab, pad=pad, pair=pair)
+        self._xl_xform = XLNetSentenceTransform(
+            tokenizer, max_seq_length=max_seq_length, vocab=vocab, pad=pad, pair=pair)
 
     def __call__(self, line):
         """Perform transformation for sequence pairs or single sequences.

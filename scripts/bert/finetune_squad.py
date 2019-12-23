@@ -117,7 +117,7 @@ parser.add_argument('--test_batch_size',
 parser.add_argument('--optimizer',
                     type=str,
                     default='bertadam',
-                    help='optimization algorithm. default is bertadam(mxnet >= 1.5.0.)')
+                    help='optimization algorithm. default is bertadam')
 
 parser.add_argument('--accumulate',
                     type=int,
@@ -232,7 +232,7 @@ lr = args.lr
 ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 
 accumulate = args.accumulate
-log_interval = args.log_interval * accumulate if accumulate else args.log_interval
+log_interval = args.log_interval
 if accumulate:
     log.info('Using gradient accumulation. Effective batch size = {}'.
              format(accumulate*batch_size))
@@ -342,15 +342,8 @@ def train():
     log.info('Start Training')
 
     optimizer_params = {'learning_rate': lr}
-    try:
-        trainer = mx.gluon.Trainer(net.collect_params(), optimizer,
-                                   optimizer_params, update_on_kvstore=False)
-    except ValueError as e:
-        print(e)
-        warnings.warn('AdamW optimizer is not found. Please consider upgrading to '
-                      'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
-        trainer = mx.gluon.Trainer(net.collect_params(), 'adam',
-                                   optimizer_params, update_on_kvstore=False)
+    trainer = mx.gluon.Trainer(net.collect_params(), optimizer,
+                               optimizer_params, update_on_kvstore=False)
 
     num_train_examples = len(train_data_transform)
     step_size = batch_size * accumulate if accumulate else batch_size
@@ -425,7 +418,7 @@ def train():
 
             step_loss += ls.asscalar()
 
-            if (batch_id + 1) % log_interval == 0:
+            if (batch_id + 1) % (log_interval * (accumulate if accumulate else 1)) == 0:
                 toc = time.time()
                 log.info('Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f} Thoughput={:.2f} samples/s'  # pylint: disable=line-too-long
                          .format(epoch_id, batch_id, len(train_dataloader),

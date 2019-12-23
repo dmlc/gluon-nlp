@@ -15,11 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 """Utility functions for parallel processing."""
+import queue
 import threading
-try:
-    import Queue as queue
-except ImportError:
-    import queue
 
 __all__ = ['Parallelizable', 'Parallel']
 

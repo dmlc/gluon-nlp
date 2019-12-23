@@ -4,7 +4,7 @@ import os
 import re
 import shutil
 import sys
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
 
 
 def read(*names, **kwargs):
@@ -29,14 +29,15 @@ readme = io.open('README.rst', encoding='utf-8').read()
 VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
 requirements = [
-    'numpy',
+    'numpy>=1.16.0',
+    'cython'
 ]
 
 setup(
     # Metadata
     name='gluonnlp',
     version=VERSION,
-    python_requires='>=3.6',
+    python_requires='>=3.5',
     author='Gluon NLP Toolkit Contributors',
     author_email='mxnet-gluon@amazon.com',
     url='https://github.com/dmlc/gluon-nlp',
@@ -53,6 +54,11 @@ setup(
     package_dir={"": "src"},
     zip_safe=True,
     include_package_data=True,
+    setup_requires=[
+        # Setuptools 18.0 properly handles Cython extensions.
+        'setuptools>=18.0',
+        'cython',
+    ],
     install_requires=requirements,
     extras_require={
         'extras': [
@@ -66,6 +72,7 @@ setup(
             'boto3',
             'tqdm',
             'sacremoses',
+            'regex',
         ],
         'dev': [
             'pytest',
@@ -82,4 +89,7 @@ setup(
             'flaky',
         ],
     },
+    ext_modules=[
+        Extension('gluonnlp.data.fast_bert_tokenizer', sources=['src/gluonnlp/data/fast_bert_tokenizer.pyx']),
+    ],
 )

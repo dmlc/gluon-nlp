@@ -62,7 +62,7 @@ class XLNetTokenizer:
         self._lower = lower
         self._remove_space = remove_space
         self._keep_accents = keep_accents
-        self._sentencepiece: Optional[nlp.data.SentencepieceTokenizer] = None
+        self._sentencepiece = None  # type: Optional[nlp.data.SentencepieceTokenizer]
 
     def __call__(self, sample: str) -> List[str]:
         """Tokenize a sample.
@@ -94,7 +94,7 @@ class XLNetTokenizer:
             self._sentencepiece = nlp.data.SentencepieceTokenizer(self._sentencepiece_path)
 
         pieces = self._sentencepiece(outputs)
-        new_pieces: List[str] = []
+        new_pieces = []  # type: List[str]
         for piece in pieces:
             if len(piece) > 1 and piece[-1] == ',' and piece[-2].isdigit():
                 cur_pieces = self._sentencepiece(piece[:-1].replace(self._spiece_prefix, ''))

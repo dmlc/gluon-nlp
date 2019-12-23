@@ -330,8 +330,7 @@ class RadinskyMTurk(WordSimilarityEvaluationDataset):
     def _get_data(self):
         datafilepath = os.path.join(self.root, self._archive_file[0])
 
-        dataset = CorpusDataset(datafilepath, tokenizer=lambda x: x.split(','))
-        return [row for row in dataset]
+        return list(CorpusDataset(datafilepath, tokenizer=lambda x: x.split(',')))
 
 
 @register
