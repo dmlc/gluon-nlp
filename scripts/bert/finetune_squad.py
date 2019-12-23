@@ -184,9 +184,8 @@ parser.add_argument('--null_score_diff_threshold',
                     'Typical values are between -1.0 and -5.0. default is 0.0')
 
 parser.add_argument('--gpu',
-                    type=int,
-                    default=None,
-                    help='which gpu to use for finetuning. CPU is used if not set.')
+                    action='store_true',
+                    help='use GPU instead of CPU')
 
 parser.add_argument('--sentencepiece',
                     type=str,
@@ -197,7 +196,21 @@ parser.add_argument('--debug',
                     action='store_true',
                     help='Run the example in test mode for sanity checks')
 
+parser.add_argument('--comm_backend',
+                    type=str,
+                    default=None,
+                    help='Communication backend. Set to horovod if horovod is used for multi-GPU training')
+
 args = parser.parse_args()
+
+if args.comm_backend == 'horovod':
+    import horovod.mxnet as hvd
+    hvd.init()
+    rank = hvd.rank()
+    size = hvd.size()
+else:
+    rank = 0
+    size = 1
 
 output_dir = args.output_dir
 if not os.path.exists(output_dir):
@@ -229,10 +242,10 @@ epochs = args.epochs
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 lr = args.lr
-ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
+ctx = mx.gpu(rank) if args.gpu else mx.cpu()
 
 accumulate = args.accumulate
-log_interval = args.log_interval
+log_interval = args.log_interval * accumulate if accumulate else args.log_interval
 if accumulate:
     log.info('Using gradient accumulation. Effective batch size = {}'.
              format(accumulate*batch_size))
@@ -335,28 +348,32 @@ def train():
     log.info('The number of examples after preprocessing:{}'.format(
         len(train_data_transform)))
 
+    sampler = nlp.data.SplitSampler(len(train_data_transform), num_parts=size,
+                                    part_index=rank, even_size=True)
+    num_train_examples = len(sampler)
+
     train_dataloader = mx.gluon.data.DataLoader(
         train_data_transform, batchify_fn=batchify_fn,
-        batch_size=batch_size, num_workers=4, shuffle=True)
+        batch_size=batch_size, num_workers=4, sampler=sampler)
 
     log.info('Start Training')
 
-    optimizer_params = {'learning_rate': lr}
-    trainer = mx.gluon.Trainer(net.collect_params(), optimizer,
-                               optimizer_params, update_on_kvstore=False)
+    optimizer_params = {'learning_rate': lr, 'wd': 0.01}
+    all_parameters = net.collect_params()
+    if args.comm_backend == 'horovod':
+        trainer = hvd.DistributedTrainer(all_parameters, optimizer, optimizer_params)
+    else:
+        trainer = mx.gluon.Trainer(all_parameters, optimizer, optimizer_params)
 
-    num_train_examples = len(train_data_transform)
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * epochs)
     num_warmup_steps = int(num_train_steps * warmup_ratio)
-    step_num = 0
 
     def set_new_lr(step_num, batch_id):
         """set new learning rate"""
         # set grad to zero for gradient accumulation
         if accumulate:
             if batch_id % accumulate == 0:
-                net.collect_params().zero_grad()
                 step_num += 1
         else:
             step_num += 1
@@ -376,62 +393,75 @@ def train():
     for _, v in net.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
     # Collect differentiable parameters
-    params = [p for p in net.collect_params().values()
-              if p.grad_req != 'null']
+    params = [p for p in all_parameters.values() if p.grad_req != 'null']
     # Set grad_req if gradient accumulation is required
     if accumulate:
         for p in params:
             p.grad_req = 'add'
+    all_parameters.zero_grad()
 
     epoch_tic = time.time()
+
     total_num = 0
     log_num = 0
-    for epoch_id in range(epochs):
-        step_loss = 0.0
-        tic = time.time()
-        for batch_id, data in enumerate(train_dataloader):
+    batch_id = 0
+    step_loss = 0.0
+    tic = time.time()
+    step_num = 0
+    while step_num < num_train_steps:
+        for _, data in enumerate(train_dataloader):
             # set new lr
             step_num = set_new_lr(step_num, batch_id)
             # forward and backward
+            _, inputs, token_types, valid_length, start_label, end_label = data
+            num_labels = len(inputs)
+            log_num += num_labels
+            total_num += num_labels
+
+            inputs = inputs.as_in_context(ctx)
+            token_types = token_types.as_in_context(ctx)
+            valid_length = valid_length.as_in_context(ctx)
+            start_label = start_label.as_in_context(ctx)
+            end_label = end_label.as_in_context(ctx)
+
             with mx.autograd.record():
-                _, inputs, token_types, valid_length, start_label, end_label = data
-
-                log_num += len(inputs)
-                total_num += len(inputs)
-
-                out = net(inputs.astype('float32').as_in_context(ctx),
-                          token_types.astype('float32').as_in_context(ctx),
-                          valid_length.astype('float32').as_in_context(ctx))
-
-                ls = loss_function(out, [
-                    start_label.astype('float32').as_in_context(ctx),
-                    end_label.astype('float32').as_in_context(ctx)]).mean()
+                out = net(inputs.astype('float32', copy=False),
+                          token_types.astype('float32', copy=False),
+                          valid_length.astype('float32', copy=False))
+                labels = [start_label.astype('float32', copy=False), end_label.astype('float32', copy=False)]
+                loss = loss_function(out, labels).sum() / num_labels
 
                 if accumulate:
-                    ls = ls / accumulate
-            ls.backward()
+                    loss = loss / accumulate
+                mx.autograd.backward(loss)
+
             # update
             if not accumulate or (batch_id + 1) % accumulate == 0:
                 trainer.allreduce_grads()
-                nlp.utils.clip_grad_global_norm(params, 1)
+                nlp.utils.clip_grad_global_norm(params, 1.0 * size)
                 trainer.update(1)
+                all_parameters.zero_grad()
 
-            step_loss += ls.asscalar()
+            if args.comm_backend == 'horovod':
+                step_loss += hvd.allreduce(loss, average=True).asscalar()
+            else:
+                step_loss += loss.asscalar()
 
-            if (batch_id + 1) % (log_interval * (accumulate if accumulate else 1)) == 0:
+            if (batch_id + 1) % log_interval == 0:
                 toc = time.time()
-                log.info('Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f} Thoughput={:.2f} samples/s'  # pylint: disable=line-too-long
-                         .format(epoch_id, batch_id, len(train_dataloader),
+                log.info('Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f} Thoughput={:.2f} samples/s'
+                         .format(step_num, num_train_steps,
                                  step_loss / log_interval,
                                  trainer.learning_rate, toc - tic, log_num/(toc - tic)))
                 tic = time.time()
                 step_loss = 0.0
                 log_num = 0
+            batch_id += 1
         epoch_toc = time.time()
         log.info('Time cost={:.2f} s, Thoughput={:.2f} samples/s'.format(
             epoch_toc - epoch_tic, total_num/(epoch_toc - epoch_tic)))
-
-    net.save_parameters(os.path.join(output_dir, 'net.params'))
+    if rank == 0:
+        net.save_parameters(os.path.join(output_dir, 'net.params'))
 
 
 def evaluate():
@@ -464,6 +494,7 @@ def evaluate():
             max_query_length=max_query_length,
             is_pad=False,
             is_training=False))
+
     log.info('The number of examples after preprocessing:{}'.format(
         len(dev_data_transform)))
 
@@ -482,9 +513,9 @@ def evaluate():
     for data in dev_dataloader:
         example_ids, inputs, token_types, valid_length, _, _ = data
         total_num += len(inputs)
-        out = net(inputs.astype('float32').as_in_context(ctx),
-                  token_types.astype('float32').as_in_context(ctx),
-                  valid_length.astype('float32').as_in_context(ctx))
+        out = net(inputs.as_in_context(ctx).astype('float32'),
+                  token_types.as_in_context(ctx).astype('float32'),
+                  valid_length.as_in_context(ctx).astype('float32'))
 
         output = mx.nd.split(out, axis=2, num_outputs=2)
         example_ids = example_ids.asnumpy().tolist()
@@ -517,16 +548,17 @@ def evaluate():
 
         all_predictions[example_qas_id] = prediction
 
-    with io.open(os.path.join(output_dir, 'predictions.json'),
-                 'w', encoding='utf-8') as fout:
-        data = json.dumps(all_predictions, ensure_ascii=False)
-        fout.write(data)
-
     if version_2:
         log.info('Please run evaluate-v2.0.py to get evaluation results for SQuAD 2.0')
     else:
         F1_EM = get_F1_EM(dev_data, all_predictions)
         log.info(F1_EM)
+
+    with io.open(os.path.join(output_dir, 'predictions.json'),
+                 'w', encoding='utf-8') as fout:
+        data = json.dumps(all_predictions, ensure_ascii=False)
+        fout.write(data)
+
 
 
 if __name__ == '__main__':
