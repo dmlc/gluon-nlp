@@ -284,7 +284,7 @@ def train():
         num_train_steps = args.training_steps
         epoch_number = 999
 
-    log.info('training steps=%fs', num_train_steps)
+    log.info('training steps=%d', num_train_steps)
     num_warmup_steps = int(num_train_steps * args.warmup_ratio)
     step_num = 0
 
