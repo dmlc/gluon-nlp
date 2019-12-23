@@ -96,10 +96,10 @@ parser.add_argument(
     'nbest_predictions.json output file. default is 20')
 
 parser.add_argument(
-    '--max_answer_length', type=int, default=30,
+    '--max_answer_length', type=int, default=64,
     help='The maximum length of an answer that can be generated. This is needed '
     'because the start and end predictions are not conditioned on one another.'
-    ' default is 30')
+    ' default is 64')
 
 parser.add_argument('--version_2', action='store_true',
                     help='SQuAD examples whether contain some that do not have an answer.')
