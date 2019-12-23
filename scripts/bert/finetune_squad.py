@@ -196,21 +196,17 @@ parser.add_argument('--debug',
                     action='store_true',
                     help='Run the example in test mode for sanity checks')
 
+parser.add_argument('--dtype',
+                    type=str,
+                    default='float32',
+                    help='Data type used for training. Either float32 or float16')
+
 parser.add_argument('--comm_backend',
                     type=str,
                     default=None,
                     help='Communication backend. Set to horovod if horovod is used for multi-GPU training')
 
 args = parser.parse_args()
-
-if args.comm_backend == 'horovod':
-    import horovod.mxnet as hvd
-    hvd.init()
-    rank = hvd.rank()
-    size = hvd.size()
-else:
-    rank = 0
-    size = 1
 
 output_dir = args.output_dir
 if not os.path.exists(output_dir):
@@ -227,6 +223,19 @@ log.addHandler(console)
 log.addHandler(fh)
 
 log.info(args)
+
+if args.comm_backend == 'horovod':
+    import horovod.mxnet as hvd
+    hvd.init()
+    rank = hvd.rank()
+    size = hvd.size()
+else:
+    rank = 0
+    size = 1
+
+if args.dtype == 'float16':
+    from mxnet.contrib import amp
+    amp.init()
 
 model_name = args.bert_model
 dataset_name = args.bert_dataset
@@ -364,6 +373,8 @@ def train():
         trainer = hvd.DistributedTrainer(all_parameters, optimizer, optimizer_params)
     else:
         trainer = mx.gluon.Trainer(all_parameters, optimizer, optimizer_params)
+    if args.dtype == 'float16':
+        amp.init_trainer(trainer)
 
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * epochs)
@@ -425,22 +436,28 @@ def train():
             end_label = end_label.as_in_context(ctx)
 
             with mx.autograd.record():
-                out = net(inputs.astype('float32', copy=False),
-                          token_types.astype('float32', copy=False),
+                out = net(inputs, token_types,
                           valid_length.astype('float32', copy=False))
                 labels = [start_label.astype('float32', copy=False), end_label.astype('float32', copy=False)]
                 loss = loss_function(out, labels).sum() / num_labels
 
                 if accumulate:
                     loss = loss / accumulate
-                mx.autograd.backward(loss)
+                if args.dtype == 'float16':
+                    with amp.scale_loss(loss, trainer) as l:
+                        mx.autograd.backward(l)
+                        norm_clip = 1.0 * size * trainer._amp_loss_scaler.loss_scale
+                else:
+                    mx.autograd.backward(l)
+                    norm_clip = 1.0 * size
 
             # update
             if not accumulate or (batch_id + 1) % accumulate == 0:
                 trainer.allreduce_grads()
-                nlp.utils.clip_grad_global_norm(params, 1.0 * size)
+                nlp.utils.clip_grad_global_norm(params, norm_clip)
                 trainer.update(1)
-                all_parameters.zero_grad()
+                if accumulate:
+                    all_parameters.zero_grad()
 
             if args.comm_backend == 'horovod':
                 step_loss += hvd.allreduce(loss, average=True).asscalar()
@@ -513,8 +530,8 @@ def evaluate():
     for data in dev_dataloader:
         example_ids, inputs, token_types, valid_length, _, _ = data
         total_num += len(inputs)
-        out = net(inputs.as_in_context(ctx).astype('float32'),
-                  token_types.as_in_context(ctx).astype('float32'),
+        out = net(inputs.as_in_context(ctx),
+                  token_types.as_in_context(ctx),
                   valid_length.as_in_context(ctx).astype('float32'))
 
         output = mx.nd.split(out, axis=2, num_outputs=2)
