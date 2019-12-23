@@ -209,8 +209,7 @@ class XLNetForQA(Block):
             hidden_states_expanded = mx.ndarray.broadcast_to(
                 hidden_states_expanded,
                 shape=start_states.shape)  # shape (bsz, slen, start_n_top, hsz)
-            end_logits = self.end_logits(hidden_states_expanded, hidden_states_expanded.shape[0],
-                                         hidden_states_expanded.shape[1], start_states=start_states,
+            end_logits = self.end_logits(hidden_states_expanded, start_states=start_states,
                                          p_masks=p_mask)  # shape (bsz, slen, start_n_top)
             end_log_probs = mx.nd.softmax(end_logits, axis=1)  # shape (bsz, slen, start_n_top)
             end_top_log_probs, end_top_index = mx.ndarray.topk(

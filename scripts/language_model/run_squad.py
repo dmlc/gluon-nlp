@@ -125,6 +125,7 @@ parser.add_argument('--start_top_n', type=int, default=5, help='to be added')
 parser.add_argument('--end_top_n', type=int, default=5, help='to be added')
 parser.add_argument('--dropout', type=float, default=0.1, help='dropout')
 parser.add_argument('--attention_dropout', type=float, default=0.1, help='attention dropout')
+parser.add_argument('--training_steps', type=int , help='training steps')
 
 args = parser.parse_args()
 
@@ -279,6 +280,11 @@ def train():
     num_train_examples = len(train_data_transform)
     step_size = args.batch_size * args.accumulate if args.accumulate else args.batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
+    if args.training_steps:
+        num_train_steps = args.training_steps
+        epoch_number = 999
+
+    logging.info('training steps=%fs', num_train_steps)
     num_warmup_steps = int(num_train_steps * args.warmup_ratio)
     step_num = 0
 
@@ -316,9 +322,12 @@ def train():
     epoch_tic = time.time()
     total_num = 0
     log_num = 0
+    finish_flag = False
     for epoch_id in range(args.epochs):
         step_loss = 0.0
         tic = time.time()
+        if finish_flag:
+            break
         for batch_id, data in enumerate(train_dataloader):
             # set new lr
             step_num = set_new_lr(step_num, batch_id)
@@ -364,6 +373,10 @@ def train():
                 tic = time.time()
                 step_loss = 0.0
                 log_num = 0
+            if step_num >= num_train_steps:
+                logging.info('Finish training step: %d', step_num)
+                finish_flag = True
+                break
         epoch_toc = time.time()
         log.info('Time cost=%.2f s, Thoughput=%.2f samples/s', epoch_toc - epoch_tic,
                  total_num / (epoch_toc - epoch_tic))
