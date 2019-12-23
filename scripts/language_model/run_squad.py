@@ -281,6 +281,7 @@ def train():
     num_train_examples = len(train_data_transform)
     step_size = args.batch_size * args.accumulate if args.accumulate else args.batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
+    epoch_number = args.epochs
     if args.training_steps:
         num_train_steps = args.training_steps
         epoch_number = 999
@@ -324,7 +325,7 @@ def train():
     total_num = 0
     log_num = 0
     finish_flag = False
-    for epoch_id in range(args.epochs):
+    for epoch_id in range(epoch_number):
         step_loss = 0.0
         tic = time.time()
         if finish_flag:
