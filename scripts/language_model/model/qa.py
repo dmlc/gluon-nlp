@@ -29,7 +29,7 @@ class PoolerStartLogits(HybridBlock):
 
 class PoolerEndLogits(Block):
     """ Compute SQuAD end_logits from sequence hidden states and start token hidden state."""
-    def __init__(self, units=768, is_eval=True, prefix=None, params=None):
+    def __init__(self, units=768, is_eval=False, prefix=None, params=None):
         super(PoolerEndLogits, self).__init__(prefix=prefix, params=params)
         self._eval = is_eval
         self._hsz = units
@@ -118,7 +118,7 @@ class XLNetForQA(Block):
             self.start_logits = PoolerStartLogits()
             self.end_logits = PoolerEndLogits(is_eval=is_eval)
             self.version2 = version_2
-            self.eval = eval
+            self.eval = is_eval
             if version_2:
                 self.answer_class = XLNetPoolerAnswerClass()
                 self.cls_loss = loss.SigmoidBinaryCrossEntropyLoss()
