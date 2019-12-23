@@ -28,7 +28,7 @@ class PoolerStartLogits(HybridBlock):
         return x
 
 
-class PoolerEndLogits(HybridBlock):
+class PoolerEndLogits(Block):
     """ Compute SQuAD end_logits from sequence hidden states and start token hidden state.
     """
     def __init__(self, units=768, eval=True, prefix=None, params=None):
@@ -47,7 +47,7 @@ class PoolerEndLogits(HybridBlock):
         return super(PoolerEndLogits, self).__call__(hidden_states, start_states, start_positions,
                                                      p_masks)
 
-    def hybrid_forward(self, F, hidden_states, start_states, start_positions, p_mask):
+    def forward(self, hidden_states, start_states, start_positions, p_mask):
         # pylint: disable=arguments-differ
         if not self._eval:
             bsz, slen, hsz = self._bsz, self._slen, self._hsz
@@ -69,7 +69,7 @@ class PoolerEndLogits(HybridBlock):
         return x
 
 
-class XLNetPoolerAnswerClass(HybridBlock):
+class XLNetPoolerAnswerClass(Block):
     """ Compute SQuAD 2.0 answer class from classification and start tokens hidden states. """
     def __init__(self, units=768, dropout=0.1, prefix=None, params=None):
         super(XLNetPoolerAnswerClass, self).__init__(prefix=prefix, params=params)
@@ -86,7 +86,7 @@ class XLNetPoolerAnswerClass(HybridBlock):
         return super(XLNetPoolerAnswerClass, self).__call__(hidden_states, start_states, cls_index)
         # pylint: disable=unused-argument
 
-    def hybrid_forward(self, F, hidden_states, start_states, cls_index):
+    def hybrid_forward(self, hidden_states, start_states, cls_index):
         # pylint: disable=arguments-differ
         # get the cls_token's state, currently the last state
         cls_token_state = hidden_states.slice(begin=(0, -1, 0), end=(None, -2, None),

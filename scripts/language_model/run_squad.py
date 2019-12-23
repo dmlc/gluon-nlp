@@ -216,8 +216,8 @@ else:
     if args.version_2:
         net.answer_class.initialize(init=initializer, ctx=ctx)
 
-#net.hybridize(static_alloc=True)
-#net_eval.hybridize(static_alloc=True)
+net.hybridize(static_alloc=True)
+net_eval.hybridize(static_alloc=True)
 
 
 def split_and_load(arrs, _ctx):
