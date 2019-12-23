@@ -34,7 +34,7 @@ from mxnet import gluon, autograd, metric
 from mxnet.gluon import HybridBlock
 from mxnet.gluon.data import DataLoader
 from mxnet.gluon.contrib.estimator import Estimator
-from mxnet.gluon.contrib.estimator.event_handler import EarlyStoppingHandler, CheckpointHandler
+from mxnet.gluon.contrib.estimator.event_handler import EarlyStoppingHandler, CheckpointHandler, GradientUpdateHandler
 from mxnet.gluon.contrib.estimator.batch_processor import BatchProcessor
 import gluonnlp as nlp
 
@@ -285,7 +285,7 @@ trainer = gluon.Trainer(net.collect_params(), 'ftml',
 loss_fn = gluon.loss.SigmoidBCELoss()
 
 
-class SentimentAnalysisBatchProcessor(BatchProcessor):
+class FituneLmBatchProcessor(BatchProcessor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -327,21 +327,33 @@ class SentimentAnalysisBatchProcessor(BatchProcessor):
             ]
         for l in loss:
             l.backward()
-        # Clip gradient
-        if args.clip is not None:
-            grads = [
-                p.grad(estimator.context)
-                for p in self.net.collect_params().values()
-            ]
-            gluon.utils.clip_global_norm(grads, args.clip)
+
         pre_labels = [(pred_pro > 0.5).reshape(-1, ) for pred_pro in pred]
         return data_list, label_list, pre_labels, loss
 
 
-# Metric to monitor
-acc_metric = metric.Accuracy()
+class ClipGradientHandler(GradientUpdateHandler):
+    def __init__(self, clip=None, **kwargs):
+        super().__init__(**kwargs)
+        self.clip = clip
 
-earlystopping_handler = EarlyStoppingHandler(monitor=acc_metric,
+    def batch_end(self, estimator, *args, **kwargs):
+        loss = kwargs['loss']
+        batch_size = 0
+        if not isinstance(loss, list):
+            loss = [loss]
+        if isinstance(loss, list):
+            for l in loss:
+                batch_size += l.shape[estimator.batch_axis]
+        parameters = estimator.net.collect_params()
+        grads = [p.grad(ctx) for p in parameters.values() for ctx in estimator.context]
+        if self.clip is not None:
+            # use multi context clipping later
+            gluon.utils.clip_global_norm(grads, self.clip)
+        estimator.trainer.step(batch_size)
+
+
+earlystopping_handler = EarlyStoppingHandler(monitor=metric.Accuracy(),
                                              min_delta=0,
                                              patience=3,
                                              mode='max')
@@ -349,9 +361,11 @@ earlystopping_handler = EarlyStoppingHandler(monitor=acc_metric,
 checkpoint_handler = CheckpointHandler(
     model_dir='./',
     model_prefix=args.save_prefix,
-    monitor=acc_metric,  # Monitors a metric
+    monitor=metric.Accuracy(),  # Monitors a metric
     save_best=True,
     mode='max')  # Save the best model in terms of
+
+clip_gradient_handler = ClipGradientHandler(args.clip)
 
 est = Estimator(net=net,
                 loss=loss_fn,
@@ -359,12 +373,11 @@ est = Estimator(net=net,
                 val_metrics=[mx.metric.Accuracy()],
                 trainer=trainer,
                 context=context,
-                batch_processor=SentimentAnalysisBatchProcessor())
-
+                batch_processor=FituneLmBatchProcessor())
 if __name__ == '__main__':
     # Magic line
     est.fit(train_data=train_dataloader,
             val_data=valid_dataloader,
             epochs=args.epochs,
             event_handlers=[checkpoint_handler,
-                            earlystopping_handler])  # Add the event handlers
+                            earlystopping_handler, clip_gradient_handler])  # Add the event handlers
