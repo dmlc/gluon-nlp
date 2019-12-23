@@ -334,6 +334,7 @@ def train():
             step_num = set_new_lr(step_num, batch_id)
             data_list = list(split_and_load(data, ctx))
             # forward and backward
+            batch_loss = []
             with mx.autograd.record():
                 for splited_data in data_list:
                     _, inputs, token_types, valid_length, p_mask, start_label, end_label, _is_impossible = splited_data  # pylint: disable=line-too-long
@@ -351,6 +352,7 @@ def train():
                     ls = out.mean() / len(ctx)
                     if args.accumulate:
                         ls = ls / args.accumulate
+                    batch_loss.append(ls)
                     ls.backward()
             # update
             if not args.accumulate or (batch_id + 1) % args.accumulate == 0:
@@ -358,7 +360,7 @@ def train():
                 nlp.utils.clip_grad_global_norm(params, 1)
                 trainer.update(1, ignore_stale_grad=True)
 
-            step_loss += ls.asscalar()
+            step_loss += sum([ls.asscalar() for ls in batch_loss])
             if (batch_id + 1) % log_interval == 0:
                 toc = time.time()
                 log.info(
@@ -464,7 +466,7 @@ def evaluate(prefix=''):
         results = all_results[features[0].example_id]
         example_qas_id = features[0].qas_id
         score_diff, best_non_null_entry, nbest_json = predict_extended(
-            features=features, results=results, tokenizer=tokenizer, n_best_size=args.n_best_size,
+            features=features, results=results, tokenizer=nlp.data.BERTBasicTokenizer(lower=args.uncased), n_best_size=args.n_best_size,
             max_answer_length=args.max_answer_length, start_n_top=args.start_top_n,
             end_n_top=args.end_top_n)
         scores_diff_json[example_qas_id] = score_diff
