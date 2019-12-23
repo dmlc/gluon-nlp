@@ -467,7 +467,7 @@ def evaluate(prefix=''):
         results = all_results[features[0].example_id]
         example_qas_id = features[0].qas_id
         score_diff, best_non_null_entry, nbest_json = predict_extended(
-            features=features, results=results, tokenizer=nlp.data.BERTBasicTokenizer(lower=args.uncased), n_best_size=args.n_best_size,
+            features=features, results=results, tokenizer=nlp.data.BERTBasicTokenizer(lower=False), n_best_size=args.n_best_size,
             max_answer_length=args.max_answer_length, start_n_top=args.start_top_n,
             end_n_top=args.end_top_n)
         scores_diff_json[example_qas_id] = score_diff

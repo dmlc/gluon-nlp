@@ -56,7 +56,7 @@ class XLNetTokenizer:
     """
     _spiece_prefix = '▁'
 
-    def __init__(self, sentencepiece_path: str, lower: bool = True, remove_space: bool = True,
+    def __init__(self, sentencepiece_path: str, lower: bool = False, remove_space: bool = True,
                  keep_accents: bool = False):
         self._sentencepiece_path = sentencepiece_path
         self._lower = lower
