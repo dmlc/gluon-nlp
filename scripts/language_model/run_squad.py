@@ -20,6 +20,7 @@ from transformer import model
 from xlnet_qa_evaluate import predict_extended
 from utils_squad_evaluate import EVAL_OPTS, main as evaluate_on_squad
 
+os.environ['MXNET_USE_FUSION'] = '0'
 log = logging.getLogger('gluonnlp')
 log.setLevel(logging.DEBUG)
 formatter = logging.Formatter(fmt='%(levelname)s:%(name)s:%(asctime)s %(message)s',
