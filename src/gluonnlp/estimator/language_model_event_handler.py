@@ -137,6 +137,24 @@ class RNNGradientUpdateHandler(GradientUpdateHandler):
 
         estimator.trainer.step(1)
 
+class LargeRNNGradientUpdateHandler(GradientUpdateHandler):
+    def __init__(self, batch_size, clip=None, **kwargs):
+        super().__init__(**kwargs)
+        self.batch_size = batch_size
+        self.clip = clip
+
+    def batch_end(self, estimator, *args, **kwargs):
+        encoder_params = estimator.net.encoder.collect_params().values()
+        embedding_params = list(estimator.net.embedding.collect_params().values())
+
+        for ctx in estimator.context:
+            x = embedding_params[0].grad(ctx)
+            x[:] *= self.batch_size # can I get the batch size dynamically?
+            encoder_grad = [p.grad(ctx) for p in encoder_params]
+            gluon.utils.clip_global_norm(encoder_grad, self.clip)
+            
+        estimator.trainer.step(len(estimator.context))
+
 class MetricResetHandler(BatchBegin, MetricHandler):
     def __init__(self, metrics, log_interval=1):
         super().__init__(metrics=metrics)

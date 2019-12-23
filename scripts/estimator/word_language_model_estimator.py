@@ -192,6 +192,19 @@ model.hybridize(static_alloc=True)
 
 print(model)
 
+
+def check_initialized(net):
+    params = net.collect_params()
+    for param in params:
+        try:
+            params[param].list_ctx()
+        except RuntimeError:
+            return False
+    return True
+    
+print(check_initialized(model))
+print(check_initialized(model_eval))
+                                    
 if args.optimizer == 'sgd':
     trainer_params = {'learning_rate': args.lr,
                       'momentum': 0,

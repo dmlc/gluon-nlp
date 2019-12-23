@@ -35,16 +35,16 @@ class LanguageModelBatchProcessor(BatchProcessor):
         batch_size = train_batch.shape[batch_axis]
         data = split_and_load(data, estimator.context, batch_axis=batch_axis, even_split=True)
         target = split_and_load(target, estimator.context, batch_axis=batch_axis, even_split=True)
-        
-        Ls = []
-        outputs = []
-        data_size = 0
         if estimator.hiddens is None:
             estimator.hiddens = [estimator.net.begin_state(batch_size // len(estimator.context),
                                                            func=mx.nd.zeros,
                                                            ctx=ctx) for ctx in estimator.context]
         else:
             estimator.hiddens = estimator.detach(estimator.hiddens)
+        
+        Ls = []
+        outputs = []
+        data_size = 0
         with mx.autograd.record():
             for i, (X, y, h) in enumerate(zip(data, target, estimator.hiddens)):
                 output, h, encoder_hs, dropped_encoder_hs = estimator.net(X, h)
@@ -84,3 +84,49 @@ class LanguageModelBatchProcessor(BatchProcessor):
             outputs.append(output)
 
         return data, target, outputs, Ls
+
+class ParallelLanguageModelBatchProcessor(BatchProcessor):
+    def __init__(self):
+        pass
+
+    def fit_batch(self, estimator, train_batch, batch_axis=0):
+        data, target, mask, sample = train_batch
+        batch_size = data.shape(batch_axis)
+        if estimator.hiddens is None:
+            estimator.hiddens = [estimator.net.begin_state(batch_size,
+                                                           func=mx.nd.zeros,
+                                                           ctx=ctx) for ctx in estimator.context]
+        else:
+            estimator.hiddens = estimator.detach(estimator.hiddens)
+        Ls = []
+        for _, batch in enumerate(zip(data, target, mask, sample, hiddens)):
+            paralllel.put(batch)
+
+        for _ in range(len(data)):
+            hidden, ls = parallel.get()
+            index = estimator.context.index(hidden[0].context)
+            estimator.hiddens[index] = hidden
+            Ls.append(ls)
+
+        #Ls = [l / estimator.bptt for l in Ls]
+        return data, target, hiddens, Ls
+
+    def evaluate_batch(self, estimator, val_batch, batch_axis=0):
+        data, target = val_batch
+        ctx = estimator.context[0]
+        data = data.as_in_context(ctx)
+        target = target.as_in_context(ctx)
+        if estimator.eval_hiddens is None:
+            estimator.eval_hiddens = estimator.eval_net.begin_state(batch_size=batch_size,
+                                                               func=mx.nd.zeros,
+                                                               ctx=ctx)
+        else:
+            estimator.eval_hiddens = estimator.detach(estimator.eval_hiddens)
+
+        mask = data != vocab[vocab.padding_token]
+        output, estimator.eval_hiddens = estimator.eval_net(data, estimator.eval_hiddens)
+        output = output.reshape((-3, -1))
+        L = estimator.evaluation_loss(output, target.reshape(-1, ) * mask.reshape(-1))
+        L = L * mask
+
+        return data, target, output, L
