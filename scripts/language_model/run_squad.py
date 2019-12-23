@@ -220,11 +220,25 @@ net.hybridize(static_alloc=True)
 net_eval.hybridize(static_alloc=True)
 
 
-def split_and_load(arrs, _ctx):
+def split_array(arr, num_of_splits):
+    size = arr.shape[0]
+    if size < num_of_splits:
+        return [arr[i: i+1] for i in range(size)]
+    slice_len, rest = divmod(size, num_of_splits)
+    div_points = [0] + [(slice_len * index + min(index, rest) + slice_len + (index < rest))
+                        for index in range(num_of_splits)]
+    try:
+        slices = [arr[div_points[i]: div_points[i + 1]] for i in range(num_of_splits)]
+    except:
+        breakpoint()
+    return slices
+
+
+def split_and_load(arrs, ctxs):
     """split and load arrays to a list of contexts"""
     assert isinstance(arrs, (list, tuple))
-    # split and load
-    loaded_arrs = [mx.gluon.utils.split_and_load(arr, _ctx, even_split=False) for arr in arrs]
+    # split and load    
+    loaded_arrs = [[i.as_in_context(ctx) for i, ctx in zip(split_array(arr, len(ctxs)), ctxs)] for arr in arrs]
     return zip(*loaded_arrs)
 
 

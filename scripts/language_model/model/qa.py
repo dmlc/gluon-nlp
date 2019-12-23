@@ -87,7 +87,7 @@ class XLNetPoolerAnswerClass(Block):
         return super(XLNetPoolerAnswerClass, self).__call__(hidden_states, start_states, cls_index)
         # pylint: disable=unused-argument
 
-    def hybrid_forward(self, hidden_states, start_states, cls_index):
+    def forward(self, hidden_states, start_states, cls_index):
         # pylint: disable=arguments-differ
         # get the cls_token's state, currently the last state
         F = mx.ndarray
