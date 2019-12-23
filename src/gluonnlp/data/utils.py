@@ -366,18 +366,18 @@ def _load_pretrained_vocab(name, root, cls=None):
         raise ValueError('Downloaded file has different hash. Please try again.')
 
 
-def _load_vocab_file(file_path, cls, special_tokens):
+def _load_vocab_file(file_path, cls, kwargs):
     with open(file_path, 'r') as f:
         if cls is None:
             from ..vocab import Vocab  # pylint: disable=import-outside-toplevel
             cls = Vocab
         if file_path.endswith('.spiece'):
-            assert special_tokens is not None, 'special_tokens must be specified.'
+            assert kwargs is not None, 'special_tokens must be specified.'
             from ..vocab import BERTVocab  # pylint: disable=import-outside-toplevel
             from ..data import SentencepieceTokenizer  # pylint: disable=import-outside-toplevel
             return BERTVocab.from_sentencepiece(
                 file_path,
-                **special_tokens), SentencepieceTokenizer(file_path)
+                **kwargs), SentencepieceTokenizer(file_path)
         else:
             return cls.from_json(f.read()), None
 
