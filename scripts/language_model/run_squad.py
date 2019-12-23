@@ -42,8 +42,8 @@ parser.add_argument('--dataset', type=str, default='126gb',
 parser.add_argument('--predict_file', default='./data/dev-v2.0.json', type=str,
                     help='SQuAD json for predictions. E.g., dev-v1.1.json or test-v1.1.json')
 
-parser.add_argument('--uncased', action='store_false',
-                    help='if not set, inputs are converted to lower case.')
+parser.add_argument('--uncased', action='store_true',
+                    help='if set, inputs are converted to lower case.')
 
 parser.add_argument(
     '--output_dir', type=str, default='./output_dir',
