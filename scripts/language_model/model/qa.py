@@ -61,7 +61,7 @@ class PoolerEndLogits(HybridBlock):
         x = self.dense_0(F.concat(hidden_states, start_states, dim=-1))
         x = self.layernorm(x)
         x = self.dense_1(x).squeeze(-1)
-        if self._eval:
+        if p_mask is not None and self._eval:
             p_mask = p_mask.expand_dims(-1)
             p_mask = F.broadcast_like(p_mask, x)
         if p_mask is not None:

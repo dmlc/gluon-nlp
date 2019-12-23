@@ -20,6 +20,7 @@ from transformer import model
 from xlnet_qa_evaluate import predict_extended
 from utils_squad_evaluate import EVAL_OPTS, main as evaluate_on_squad
 
+os.environ['MXNET_USE_FUSION'] = '0'
 log = logging.getLogger('gluonnlp')
 log.setLevel(logging.DEBUG)
 formatter = logging.Formatter(fmt='%(levelname)s:%(name)s:%(asctime)s %(message)s',
@@ -260,7 +261,7 @@ def train():
     except ValueError as _:
         warnings.warn('AdamW optimizer is not found. Please consider upgrading to '
                       'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
-        trainer = mx.gluon.Trainer(net.collect_params(), 'adam', optimizer_params,
+        trainer = mx.gluon.Trainer(net.collect_params(), 'bertadam', optimizer_params,
                                    update_on_kvstore=False)
 
     num_train_examples = len(train_data_transform)
@@ -325,7 +326,7 @@ def train():
                         [start_label, end_label],
                         p_mask=p_mask,  # pylint: disable=line-too-long
                         is_impossible=is_impossible)
-                    ls = out[0] / len(ctx)
+                    ls = out.mean() / len(ctx)
                     if args.accumulate:
                         ls = ls / args.accumulate
                     ls.backward()
