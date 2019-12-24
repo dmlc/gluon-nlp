@@ -19,7 +19,7 @@
 Bert layer output collector with threshold clipping for calibration
 ===================================================================
 
-This collector is designed for collect and clip the layer outputs of bert 
+This collector is designed for collect and clip the layer outputs of bert
 while calibration with Gluon NLP Toolkit.
 
 @article{devlin2018bert,
@@ -31,12 +31,11 @@ while calibration with Gluon NLP Toolkit.
 }
 """
 import ctypes
-import numpy as np
 from mxnet import ndarray
 from mxnet.base import NDArrayHandle, py_str
 from mxnet.ndarray import NDArray
 
-class BertLayerCollector(object):
+class BertLayerCollector:
     """Saves layer output min and max values in a dict with layer names as keys.
     The collected min and max values will be directly used as thresholds for quantization.
     """
@@ -70,5 +69,5 @@ class BertLayerCollector(object):
         else:
             self.min_max_dict[name] = (min_range, max_range)
         if self.logger is not None:
-            self.logger.info("Collecting layer %s min_range=%f, max_range=%f"
+            self.logger.info('Collecting layer %s min_range=%f, max_range=%f'
                              % (name, min_range, max_range))
