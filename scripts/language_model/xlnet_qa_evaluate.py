@@ -12,24 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """XLNet SQuAD evaluate."""
+
+import json
+import math
+import collections
 from collections import namedtuple, OrderedDict
 
 from mxnet import nd
+from utils_squad_evaluate import find_all_best_thresh_v2, make_qid_to_has_ans, get_raw_scores
+from model.temp_utils import BasicTokenizer
 
-
-def _get_best_indexes(logits, n_best_size):
-    """Get the n-best logits from a list."""
-    index_and_score = sorted(enumerate(logits), key=lambda x: x[1], reverse=True)
-
-    best_indexes = []
-    for i, _ in enumerate(index_and_score):
-        if i >= n_best_size:
-            break
-        best_indexes.append(index_and_score[i][0])
-    return best_indexes
-
-
-def get_final_text(pred_text, orig_text, tokenizer):
+def get_final_text(pred_text, orig_text, do_lower_case):
     """Project the tokenized prediction back to the original text."""
 
     # When we created the data, we kept track of the alignment between original
@@ -53,27 +46,28 @@ def get_final_text(pred_text, orig_text, tokenizer):
     #
     # What we really want to return is "Steve Smith".
     #
-    # Therefore, we have to apply a semi-complicated alignment heruistic between
-    # `pred_text` and `orig_text` to get a character-to-charcter alignment. This
+    # Therefore, we have to apply a semi-complicated alignment heuristic between
+    # `pred_text` and `orig_text` to get a character-to-character alignment. This
     # can fail in certain cases in which case we just return `orig_text`.
 
     def _strip_spaces(text):
         ns_chars = []
-        ns_to_s_map = OrderedDict()
+        ns_to_s_map = collections.OrderedDict()
         for (i, c) in enumerate(text):
-            if c == ' ':
+            if c == " ":
                 continue
             ns_to_s_map[len(ns_chars)] = i
             ns_chars.append(c)
-        ns_text = ''.join(ns_chars)
+        ns_text = "".join(ns_chars)
         return (ns_text, ns_to_s_map)
 
     # We first tokenize `orig_text`, strip whitespace from the result
     # and `pred_text`, and check if they are the same length. If they are
     # NOT the same length, the heuristic has failed. If they are the same
     # length, we assume the characters are one-to-one aligned.
+    tokenizer = BasicTokenizer(do_lower_case=do_lower_case)
 
-    tok_text = ' '.join(tokenizer(orig_text))
+    tok_text = " ".join(tokenizer.tokenize(orig_text))
 
     start_position = tok_text.find(pred_text)
     if start_position == -1:
@@ -89,8 +83,7 @@ def get_final_text(pred_text, orig_text, tokenizer):
     # We then project the characters in `pred_text` back to `orig_text` using
     # the character-to-character alignment.
     tok_s_to_ns_map = {}
-    for i in tok_ns_to_s_map.keys():
-        tok_index = tok_ns_to_s_map[i]
+    for (i, tok_index) in tok_ns_to_s_map.items():
         tok_s_to_ns_map[tok_index] = i
 
     orig_start_position = None
@@ -113,6 +106,18 @@ def get_final_text(pred_text, orig_text, tokenizer):
 
     output_text = orig_text[orig_start_position:(orig_end_position + 1)]
     return output_text
+
+
+def _get_best_indexes(logits, n_best_size):
+    """Get the n-best logits from a list."""
+    index_and_score = sorted(enumerate(logits), key=lambda x: x[1], reverse=True)
+
+    best_indexes = []
+    for i in range(len(index_and_score)):
+        if i >= n_best_size:
+            break
+        best_indexes.append(index_and_score[i][0])
+    return best_indexes
 
 
 def predict_extended(features, results, tokenizer, n_best_size, max_answer_length=64, start_n_top=5,
@@ -157,6 +162,16 @@ def predict_extended(features, results, tokenizer, n_best_size, max_answer_lengt
     for features_id, (result, feature) in enumerate(zip(results, features)):
         cur_null_score = result.cls_logits[0]
         score_null = min(score_null, cur_null_score)
+        #print("id: ", feature.qas_id)
+        #print("len: ", len(feature.tokens))
+        #print("feature answer :", feature.orig_answer_text)
+        #print("featture isimpossible: ", feature.is_impossible)
+        #print("start index: ", result.start_top_index)
+        #for i in range(start_n_top):
+        #    print("maybe: ", feature.tokens[int(result.start_top_index[i])])
+        #print("end index: ", result.end_top_index)
+        #print("start log: ", result.start_top_log_probs)
+        #print("end log: " ,result.end_top_log_probs)
         for i in range(start_n_top):
             for j in range(end_n_top):
                 start_log_prob = result.start_top_log_probs[i]
@@ -171,9 +186,9 @@ def predict_extended(features, results, tokenizer, n_best_size, max_answer_lengt
                     continue
                 if end_index >= len(feature.tokens):
                     continue
-                if start_index not in feature.token_to_orig_map:
+                if start_index not in feature.token_to_orig_map.keys():
                     continue
-                if end_index not in feature.token_to_orig_map:
+                if end_index not in feature.token_to_orig_map.keys():
                     continue
                 if not feature.token_is_max_context.get(start_index, False):
                     continue
@@ -182,6 +197,7 @@ def predict_extended(features, results, tokenizer, n_best_size, max_answer_lengt
                 length = end_index - start_index + 1
                 if length > max_answer_length:
                     continue
+                #print("st: {0}, ed: {1}".format(start_index, end_index))
                 prelim_predictions.append(
                     _PrelimPrediction(features_id=features_id, start_index=start_index,
                                       end_index=end_index, start_log_prob=start_log_prob,
@@ -210,7 +226,8 @@ def predict_extended(features, results, tokenizer, n_best_size, max_answer_lengt
             tok_text = tok_text.strip()
             tok_text = ' '.join(tok_text.split())
             orig_text = ' '.join(orig_tokens)
-
+            #print("tok_text: ", tok_text)
+            #print("orig text: ", orig_text)
             final_text = get_final_text(tok_text, orig_text, tokenizer)
             if final_text in seen_predictions:
                 continue
@@ -237,7 +254,8 @@ def predict_extended(features, results, tokenizer, n_best_size, max_answer_lengt
         total_scores.append(entry.start_log_prob + entry.end_log_prob)
         if not best_non_null_entry:
             best_non_null_entry = entry
-
+    print("best: ", best_non_null_entry)
+    print("--------------------------")
     probs = nd.softmax(nd.array(total_scores)).asnumpy()
 
     nbest_json = []
@@ -254,3 +272,26 @@ def predict_extended(features, results, tokenizer, n_best_size, max_answer_lengt
     assert best_non_null_entry is not None
     score_diff = score_null
     return score_diff, best_non_null_entry.text, nbest_json
+
+
+def _compute_softmax(scores):
+    """Compute softmax probability over raw logits."""
+    if not scores:
+        return []
+
+    max_score = None
+    for score in scores:
+        if max_score is None or score > max_score:
+            max_score = score
+
+    exp_scores = []
+    total_sum = 0.0
+    for score in scores:
+        x = math.exp(score - max_score)
+        exp_scores.append(x)
+        total_sum += x
+
+    probs = []
+    for score in exp_scores:
+        probs.append(score / total_sum)
+    return probs

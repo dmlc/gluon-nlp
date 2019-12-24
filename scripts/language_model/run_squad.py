@@ -396,7 +396,7 @@ RawResultExtended = collections.namedtuple('RawResultExtended', [
 ])
 
 
-def evaluate(prefix=''):
+def evaluate(prefix='p'):
     """Evaluate the model on validation dataset.
     """
     log.info('Loading dev data...')
