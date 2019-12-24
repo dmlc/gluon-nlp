@@ -5,6 +5,7 @@ dependencies:
   - pip
   - perl
   - pip:
+    - numpy==1.17.4
     - cython
     - boto3
     - pytype==2019.10.17
