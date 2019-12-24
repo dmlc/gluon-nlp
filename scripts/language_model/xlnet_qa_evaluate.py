@@ -176,7 +176,7 @@ def predict_extended(features, results, tokenizer, n_best_size, max_answer_lengt
             for j in range(end_n_top):
                 start_log_prob = result.start_top_log_probs[i]
                 start_index = int(result.start_top_index[i])
-                j_index = i * end_n_top + j
+                j_index = j * end_n_top + i
                 end_log_prob = result.end_top_log_probs[j_index]
                 end_index = int(result.end_top_index[j_index])
                 # We could hypothetically create invalid predictions, e.g., predict
@@ -254,8 +254,6 @@ def predict_extended(features, results, tokenizer, n_best_size, max_answer_lengt
         total_scores.append(entry.start_log_prob + entry.end_log_prob)
         if not best_non_null_entry:
             best_non_null_entry = entry
-    print("best: ", best_non_null_entry)
-    print("--------------------------")
     probs = nd.softmax(nd.array(total_scores)).asnumpy()
 
     nbest_json = []

@@ -136,7 +136,7 @@ class XLNetForQA(Block):
         if left_pad:
             #left pad
             valid_length_start = valid_length_start.astype('int64')
-            steps = F.contrib.arange_like(inputs, axis=1) - 1
+            steps = F.contrib.arange_like(inputs, axis=1) + 1
             ones = F.ones_like(steps)
             mask = F.broadcast_greater(F.reshape(steps, shape=(1, -1)),
                                        F.reshape(valid_length_start, shape=(-1, 1)))
