@@ -241,7 +241,7 @@ batch_size = 32
 lr = 5e-6
 
 # The FixedBucketSampler and the DataLoader for making the mini-batches
-train_sampler = nlp.data.FixedBucketSampler(lengths=[int(item[1]) for item in data_train],
+train_sampler = nlp.data.FixedBucketSampler(lengths=[int(item[2]) for item in data_train],
                                             batch_size=batch_size,
                                             shuffle=True)
 bert_dataloader = mx.gluon.data.DataLoader(data_train, batch_sampler=train_sampler)

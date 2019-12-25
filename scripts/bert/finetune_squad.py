@@ -496,15 +496,6 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
         nlp.data.batchify.Stack('float32'),
         nlp.data.batchify.Stack('float32'))
 
-    dev_dataset = dev_data.transform(
-        SQuADTransform(
-            copy.copy(tokenizer),
-            max_seq_length=max_seq_length,
-            doc_stride=doc_stride,
-            max_query_length=max_query_length,
-            is_pad=pad,
-            is_training=False)._transform, lazy=False)
-
     dev_data_transform, _ = preprocess_dataset(
         dev_data, SQuADTransform(
             copy.copy(tokenizer),
@@ -540,7 +531,7 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
     ckpt_name = 'model_bert_squad_quantized_{0}'.format(calib_mode)
     params_saved = os.path.join(output_dir, ckpt_name)
     net.export(params_saved, epoch=0)
-    log.info('Saving quantized model at %s' % output_dir)
+    log.info('Saving quantized model at %s', output_dir)
 
 def evaluate():
     """Evaluate the model on validation dataset.

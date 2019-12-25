@@ -420,7 +420,7 @@ def calibration(net, dev_data_list, num_calib_batches, quantized_dtype, calib_mo
         ckpt_name = 'model_bert_{0}_quantized_{1}'.format(task_name, calib_mode)
         params_saved = os.path.join(output_dir, ckpt_name)
         net.export(params_saved, epoch=0)
-        logging.info('Saving quantized model at %s' % output_dir)
+        logging.info('Saving quantized model at %s', output_dir)
 
 
 def test(loader_test, segment):
