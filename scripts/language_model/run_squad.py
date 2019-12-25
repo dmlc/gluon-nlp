@@ -492,10 +492,11 @@ def evaluate(prefix='p'):
 
     if args.version_2:
         evaluate_options = EVAL_OPTS(data_file=dev_data_path, pred_file=output_prediction_file,
-                                     na_prob_file=output_null_log_odds_file)
+                                     na_prob_file=output_null_log_odds_file,
+                                     na_prob_thresh=null_score_diff_threshold)
     else:
         evaluate_options = EVAL_OPTS(data_file=dev_data_path, pred_file=output_prediction_file,
-                                     na_prob_file=None)
+                                     na_prob_file=None, na_prob_thresh=null_score_diff_threshold)
 
     results = evaluate_on_squad(evaluate_options)
     return results
