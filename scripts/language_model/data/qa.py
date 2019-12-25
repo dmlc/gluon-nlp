@@ -384,10 +384,9 @@ class SQuADTransform:
                 out_of_span = False
                 if not (tok_start_position >= doc_start and tok_end_position <= doc_end):
                     out_of_span = True
-                    continue
                 if out_of_span:
-                    start_position = 0
-                    end_position = 0
+                    start_position = cls_index
+                    end_position = cls_index
                     span_is_impossible = True
                 else:
                     #padding to the left
@@ -407,7 +406,7 @@ class SQuADTransform:
                              cls_index=cls_index, p_mask=p_mask, paragraph_len=paragraph_len,
                              valid_length=valid_length, segment_ids=segment_ids,
                              start_position=start_position, end_position=end_position,
-                             is_impossible=example.is_impossible))
+                             is_impossible=span_is_impossible)
         return features
 
     def __call__(self, record, evaluate=False):
