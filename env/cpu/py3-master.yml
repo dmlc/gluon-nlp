@@ -3,7 +3,6 @@ channels:
 dependencies:
   - python=3.5
   - pip=18.1
-  - cython
   - perl
   - pylint=2.3.1
   - flake8
@@ -30,6 +29,9 @@ dependencies:
   - boto3=1.9.207
   - scipy=1.3.0
   - pip:
+    - numpy==1.17.4
+    - cython
+    - boto3
     - pytype==2019.10.17
     - pylint-quotes==0.2.1
     - sacremoses

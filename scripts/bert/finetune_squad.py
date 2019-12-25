@@ -117,7 +117,7 @@ parser.add_argument('--test_batch_size',
 parser.add_argument('--optimizer',
                     type=str,
                     default='bertadam',
-                    help='optimization algorithm. default is bertadam(mxnet >= 1.5.0.)')
+                    help='optimization algorithm. default is bertadam')
 
 parser.add_argument('--accumulate',
                     type=int,
@@ -342,15 +342,8 @@ def train():
     log.info('Start Training')
 
     optimizer_params = {'learning_rate': lr}
-    try:
-        trainer = mx.gluon.Trainer(net.collect_params(), optimizer,
-                                   optimizer_params, update_on_kvstore=False)
-    except ValueError as e:
-        print(e)
-        warnings.warn('AdamW optimizer is not found. Please consider upgrading to '
-                      'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
-        trainer = mx.gluon.Trainer(net.collect_params(), 'adam',
-                                   optimizer_params, update_on_kvstore=False)
+    trainer = mx.gluon.Trainer(net.collect_params(), optimizer,
+                               optimizer_params, update_on_kvstore=False)
 
     num_train_examples = len(train_data_transform)
     step_size = batch_size * accumulate if accumulate else batch_size

@@ -115,13 +115,7 @@ def main(config):
     num_warmup_steps = int(num_train_steps * config.warmup_ratio)
 
     optimizer_params = {'learning_rate': config.learning_rate}
-    try:
-        trainer = mx.gluon.Trainer(net.collect_params(), config.optimizer, optimizer_params)
-    except ValueError as e:
-        print(e)
-        logging.warning('AdamW optimizer is not found. Please consider upgrading to '
-                        'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
-        trainer = mx.gluon.Trainer(net.collect_params(), 'adam', optimizer_params)
+    trainer = mx.gluon.Trainer(net.collect_params(), config.optimizer, optimizer_params)
 
     # collect differentiable parameters
     logging.info('Collect params...')
