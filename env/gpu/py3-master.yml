@@ -8,6 +8,7 @@ dependencies:
   - tornado=5.1.1
   - sphinx=2.2.1
   - pip:
+    - numpy==1.17.4
     - notedown==1.5.1
     - sphinx-gallery==0.4.0
     - recommonmark==0.6.0
