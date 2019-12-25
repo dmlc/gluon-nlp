@@ -126,7 +126,7 @@ parser.add_argument('--start_top_n', type=int, default=5, help='to be added')
 parser.add_argument('--end_top_n', type=int, default=5, help='to be added')
 parser.add_argument('--dropout', type=float, default=0.1, help='dropout')
 parser.add_argument('--attention_dropout', type=float, default=0.1, help='attention dropout')
-parser.add_argument('--training_steps', type=int , help='training steps')
+parser.add_argument('--training_steps', type=int, help='training steps')
 
 args = parser.parse_args()
 
@@ -390,10 +390,9 @@ def train():
         log.info('params saved in: %s', params_saved)
 
 
-RawResultExtended = collections.namedtuple('RawResultExtended', [
-    'start_top_log_probs', 'start_top_index', 'end_top_log_probs', 'end_top_index',
-    'cls_logits'
-])
+RawResultExtended = collections.namedtuple(
+    'RawResultExtended',
+    ['start_top_log_probs', 'start_top_index', 'end_top_log_probs', 'end_top_index', 'cls_logits'])
 
 
 def evaluate(prefix='p'):
@@ -467,8 +466,8 @@ def evaluate(prefix='p'):
         results = all_results[features[0].example_id]
         example_qas_id = features[0].qas_id
         score_diff, best_non_null_entry, nbest_json = predict_extended(
-            features=features, results=results, tokenizer=nlp.data.BERTBasicTokenizer(lower=args.uncased),
-            n_best_size=args.n_best_size,
+            features=features, results=results,
+            tokenizer=nlp.data.BERTBasicTokenizer(lower=args.uncased), n_best_size=args.n_best_size,
             max_answer_length=args.max_answer_length, start_n_top=args.start_top_n,
             end_n_top=args.end_top_n)
         scores_diff_json[example_qas_id] = score_diff

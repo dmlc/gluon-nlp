@@ -406,7 +406,7 @@ class SQuADTransform:
                              cls_index=cls_index, p_mask=p_mask, paragraph_len=paragraph_len,
                              valid_length=valid_length, segment_ids=segment_ids,
                              start_position=start_position, end_position=end_position,
-                             is_impossible=span_is_impossible)
+                             is_impossible=span_is_impossible))
         return features
 
     def __call__(self, record, evaluate=False):
