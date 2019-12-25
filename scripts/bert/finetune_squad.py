@@ -44,7 +44,7 @@ import warnings
 
 import numpy as np
 import mxnet as mx
-from mxnet.contrib.quantization import *
+from mxnet.contrib.quantization import quantize_net
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
@@ -216,13 +216,14 @@ parser.add_argument('--only_calibration', action='store_true',
 parser.add_argument('--num_calib_batches', type=int, default=10,
                     help='number of batches for calibration')
 
-parser.add_argument('--quantized_dtype', type=str, default='auto', 
+parser.add_argument('--quantized_dtype', type=str, default='auto',
                     choices=['auto', 'int8', 'uint8'],
                     help='quantization destination data type for input data')
 
 parser.add_argument('--calib_mode', type=str, default='customize',
                     choices=['none', 'naive', 'entropy', 'customize'],
-                    help='calibration mode used for generating calibration table for the quantized symbol.')
+                    help='calibration mode used for generating calibration table '
+                         'for the quantized symbol.')
 
 args = parser.parse_args()
 
@@ -345,7 +346,8 @@ loss_function.hybridize(static_alloc=True)
 if deploy:
     logging.info('load symbol file directly as SymbolBlock for model deployment')
     net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(args.model_prefix),
-            ['data0', 'data1', 'data2'], '{}-0000.params'.format(args.model_prefix))
+                                       ['data0', 'data1', 'data2'],
+                                       '{}-0000.params'.format(args.model_prefix))
     net.hybridize(static_alloc=True, static_shape=True)
 
 # calibration config
@@ -511,7 +513,7 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
             max_query_length=max_query_length,
             is_pad=pad,
             is_training=False),
-            for_calibration=only_calibration)
+        for_calibration=only_calibration)
     log.info('The number of examples after preprocessing:{}'.format(
         len(dev_data_transform)))
 
@@ -522,18 +524,18 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
         shuffle=False, last_batch='keep')
 
     assert ctx == mx.cpu(), \
-        "Currently only supports CPU with MKL-DNN backend."
+        'Currently only supports CPU with MKL-DNN backend.'
     log.info('Now we are doing calibration on dev with %s.', ctx)
     collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=log)
     net = quantize_net(net, quantized_dtype=quantized_dtype,
-                        exclude_layers=[],
-                        exclude_layers_match=['elemwise_add'],
-                        calib_data=dev_dataloader,
-                        calib_mode=calib_mode,
-                        num_calib_examples=test_batch_size * num_calib_batches,
-                        ctx=ctx,
-                        LayerOutputCollector=collector,
-                        logger=log)
+                       exclude_layers=[],
+                       exclude_layers_match=['elemwise_add'],
+                       calib_data=dev_dataloader,
+                       calib_mode=calib_mode,
+                       num_calib_examples=test_batch_size * num_calib_batches,
+                       ctx=ctx,
+                       LayerOutputCollector=collector,
+                       logger=log)
     # save params
     ckpt_name = 'model_bert_squad_quantized_{0}'.format(calib_mode)
     params_saved = os.path.join(output_dir, ckpt_name)

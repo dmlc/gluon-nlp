@@ -223,8 +223,8 @@ print('%s token id = %s'%(vocabulary.padding_token, vocabulary[vocabulary.paddin
 print('%s token id = %s'%(vocabulary.cls_token, vocabulary[vocabulary.cls_token]))
 print('%s token id = %s'%(vocabulary.sep_token, vocabulary[vocabulary.sep_token]))
 print('token ids = \n%s'%data_train[sample_id][0])
-print('valid length = \n%s'%data_train[sample_id][1])
-print('segment ids = \n%s'%data_train[sample_id][2])
+print('segment ids = \n%s'%data_train[sample_id][1])
+print('valid length = \n%s'%data_train[sample_id][2])
 print('label = \n%s'%data_train[sample_id][3])
 ```
 
@@ -261,7 +261,7 @@ num_epochs = 3
 for epoch_id in range(num_epochs):
     metric.reset()
     step_loss = 0
-    for batch_id, (token_ids, valid_length, segment_ids, label) in enumerate(bert_dataloader):
+    for batch_id, (token_ids, segment_ids, valid_length, label) in enumerate(bert_dataloader):
         with mx.autograd.record():
 
             # Load the data to the GPU

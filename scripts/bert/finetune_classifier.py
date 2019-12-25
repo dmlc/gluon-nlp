@@ -43,7 +43,7 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 from mxnet.contrib.amp import amp
-from mxnet.contrib.quantization import *
+from mxnet.contrib.quantization import quantize_net
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
@@ -188,12 +188,13 @@ parser.add_argument('--only_calibration', action='store_true',
                     help='quantize model')
 parser.add_argument('--num_calib_batches', type=int, default=5,
                     help='number of batches for calibration')
-parser.add_argument('--quantized_dtype', type=str, default='auto', 
+parser.add_argument('--quantized_dtype', type=str, default='auto',
                     choices=['auto', 'int8', 'uint8'],
                     help='quantization destination data type for input data')
 parser.add_argument('--calib_mode', type=str, default='customize',
                     choices=['none', 'naive', 'entropy', 'customize'],
-                    help='calibration mode used for generating calibration table for the quantized symbol.')
+                    help='calibration mode used for generating calibration table '
+                         'for the quantized symbol.')
 
 args = parser.parse_args()
 
@@ -296,7 +297,8 @@ loss_function.hybridize(static_alloc=True)
 if deploy:
     logging.info('load symbol file directly as SymbolBlock for model deployment')
     model = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(args.model_prefix),
-            ['data0', 'data1', 'data2'], '{}-0000.params'.format(args.model_prefix))
+                                         ['data0', 'data1', 'data2'],
+                                         '{}-0000.params'.format(args.model_prefix))
     model.hybridize(static_alloc=True, static_shape=True)
 
 # data processing
@@ -399,9 +401,9 @@ train_data, dev_data_list, test_data_list, num_train_examples = preprocess_data(
 def calibration(net, dev_data_list, num_calib_batches, quantized_dtype, calib_mode):
     """calibration function on the dev dataset."""
     assert len(dev_data_list) == 1, \
-        "Currectly, MNLI not supported."
+        'Currectly, MNLI not supported.'
     assert ctx == mx.cpu(), \
-        "Currently only supports CPU with MKL-DNN backend."
+        'Currently only supports CPU with MKL-DNN backend.'
     logging.info('Now we are doing calibration on dev with %s.', ctx)
     for _, dev_data in dev_data_list:
         collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=logging)
