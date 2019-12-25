@@ -3,10 +3,11 @@ TextCNN Model for Sentiment Analysis
 ===============================================
 This example shows how to use convolutional neural networks (textCNN)
 for sentiment analysis on various datasets.
-
 Kim, Y. (2014). Convolutional neural networks for sentence classification.
 arXiv preprint arXiv:1408.5882.
 """
+
+# coding: utf-8
 
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -25,14 +26,17 @@ arXiv preprint arXiv:1408.5882.
 # specific language governing permissions and limitations
 # under the License.
 
+
 import argparse
-import time
 import random
 import numpy as np
 
 import mxnet as mx
 from mxnet import nd, gluon, autograd
 from mxnet.gluon.data import DataLoader
+from mxnet.gluon.contrib.estimator import Estimator
+from mxnet.gluon.contrib.estimator.event_handler import EpochBegin, BatchEnd, EpochEnd
+from mxnet.gluon.contrib.estimator.batch_processor import BatchProcessor
 import gluonnlp
 import process_data
 import text_cnn
@@ -43,23 +47,43 @@ np.random.seed(3435)
 random.seed(3435)
 mx.random.seed(3435)
 
-parser = argparse.ArgumentParser(description='Sentiment analysis with the textCNN model on\
+parser = argparse.ArgumentParser(
+    description='Sentiment analysis with the textCNN model on\
                                  various datasets.')
-parser.add_argument('--data_name', choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC', 'CR', 'MPQA'],
-                    default='MR', help='name of the data set')
-parser.add_argument('--model_mode', choices=['rand', 'static', 'non-static', 'multichannel'],
-                    default='multichannel', help='Variants of the textCNN model (see the paper:\
-                    Convolutional Neural Networks for Sentence Classification).')
-parser.add_argument('--epochs', type=int, default=200,
+parser.add_argument(
+    '--data_name',
+    choices=['MR', 'SST-1', 'SST-2', 'Subj', 'TREC', 'CR', 'MPQA'],
+    default='MR',
+    help='name of the data set')
+parser.add_argument('--model_mode',
+                    choices=['rand', 'static', 'non-static', 'multichannel'],
+                    default='multichannel',
+                    help='Variants of the textCNN model (see the paper:\
+                    Convolutional Neural Networks for Sentence Classification).'
+                    )
+parser.add_argument('--epochs',
+                    type=int,
+                    default=200,
                     help='upper epoch limit')
-parser.add_argument('--batch_size', type=int, default=50, metavar='N',
+parser.add_argument('--batch_size',
+                    type=int,
+                    default=50,
+                    metavar='N',
                     help='batch size')
-parser.add_argument('--dropout', type=float, default=.5,
+parser.add_argument('--dropout',
+                    type=float,
+                    default=.5,
                     help='dropout applied to layers (0 = no dropout)')
-parser.add_argument('--log-interval', type=int, default=30, metavar='N',
+parser.add_argument('--log-interval',
+                    type=int,
+                    default=30,
+                    metavar='N',
                     help='report interval')
-parser.add_argument('--gpu', type=int, default=None,
-                    help='id of the gpu to use. Set it to empty means to use cpu.')
+parser.add_argument(
+    '--gpu',
+    type=int,
+    default=None,
+    help='id of the gpu to use. Set it to empty means to use cpu.')
 args = parser.parse_args()
 print(args)
 
@@ -71,138 +95,166 @@ else:
     context = mx.gpu(args.gpu)
 
 if args.data_name in ('MR', 'Subj', 'CR', 'MPQA'):
-    vocab, max_len, output_size, train_dataset, train_data_lengths \
-    = process_data.load_dataset(args.data_name)
+    vocab, max_len, output_size, train_dataset, train_data_lengths = process_data.load_dataset(args.data_name)
 elif args.data_name == 'TREC':
-    vocab, max_len, output_size, train_dataset, train_data_lengths, \
-    test_dataset, test_data_lengths = process_data.load_dataset(args.data_name)
+    vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, test_data_lengths = process_data.load_dataset(
+        args.data_name)
 else:
-    vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, \
-    test_data_lengths, dev_dataset, dev_data_lengths = process_data.load_dataset(args.data_name)
+    vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, test_data_lengths, dev_dataset, dev_data_lengths = process_data.load_dataset(
+        args.data_name)
 
 model = text_cnn.model(args.dropout, vocab, args.model_mode, output_size)
 print(model)
 
-loss = gluon.loss.SoftmaxCrossEntropyLoss()
 
-def evaluate(net, dataloader):
-    """Evaluate network on the specified dataset"""
-    total_L = 0.0
-    total_sample_num = 0
-    total_correct_num = 0
-    start_log_interval_time = time.time()
-    print('Begin Testing...')
-    for i, (data, label) in enumerate(dataloader):
-        data = mx.nd.transpose(data.as_in_context(context))
-        label = label.as_in_context(context)
-        output = net(data)
-        L = loss(output, label)
-        pred = nd.argmax(output, axis=1)
-        total_L += L.sum().asscalar()
-        total_sample_num += label.shape[0]
-        total_correct_num += (pred.astype('int') == label).sum().asscalar()
-        if (i + 1) % args.log_interval == 0:
-            print('[Batch {}/{}] elapsed {:.2f} s'.format(
-                i + 1, len(dataloader), time.time() - start_log_interval_time))
-            start_log_interval_time = time.time()
-    avg_L = total_L / float(total_sample_num)
-    acc = total_correct_num / float(total_sample_num)
-    return avg_L, acc
-
-def train(net, train_data, test_data, dev_data=None):
-    """Train textCNN model for sentiment analysis."""
-    start_pipeline_time = time.time()
-    net, trainer = text_cnn.init(net, vocab, args.model_mode, context)
-    if dev_data is None:
-        random.shuffle(train_data)
-        sp = len(train_data) // 10
-        train_dataloader = DataLoader(dataset=train_data[sp:],
-                                      batch_size=args.batch_size,
-                                      shuffle=True)
-        val_dataloader = DataLoader(dataset=train_data[:sp],
-                                    batch_size=args.batch_size,
-                                    shuffle=False)
+def check_metrics(metrics):
+    if isinstance(metrics, mx.metric.CompositeEvalMetric):
+        metrics = [
+            m for metric in metrics.metrics for m in check_metrics(metric)
+        ]
+    elif isinstance(metrics, mx.metric.EvalMetric):
+        metrics = [metrics]
     else:
-        train_dataloader = DataLoader(dataset=train_data,
-                                      batch_size=args.batch_size,
-                                      shuffle=True)
-        val_dataloader = DataLoader(dataset=dev_data,
-                                    batch_size=args.batch_size,
-                                    shuffle=False)
-    test_dataloader = DataLoader(dataset=test_data,
-                                 batch_size=args.batch_size,
-                                 shuffle=False)
-    # Training/Testing.
-    best_val_acc = 0
-    for epoch in range(args.epochs):
-        # Epoch training stats.
-        start_epoch_time = time.time()
-        epoch_L = 0.0
-        epoch_sent_num = 0
-        epoch_wc = 0
-        # Log interval training stats.
-        start_log_interval_time = time.time()
-        log_interval_wc = 0
-        log_interval_sent_num = 0
-        log_interval_L = 0.0
-        for i, (data, label) in enumerate(train_dataloader):
-            data = mx.nd.transpose(data.as_in_context(context))
-            label = label.as_in_context(context)
-            wc = max_len
-            log_interval_wc += wc
-            epoch_wc += wc
-            log_interval_sent_num += data.shape[1]
-            epoch_sent_num += data.shape[1]
+        metrics = metrics or []
+        if not all(
+                [isinstance(metric, mx.metric.EvalMetric) for metric in metrics]):
+            raise ValueError(
+                "metrics must be a Metric or a list of Metric, "
+                "refer to mxnet.metric.EvalMetric: {}".format(metrics))
+    return metrics
 
-            with autograd.record():
-                output = net(data)
-                L = loss(output, label).mean()
-            L.backward()
-            # Update parameter.
-            trainer.step(args.batch_size)
-            log_interval_L += L.asscalar()
-            epoch_L += L.asscalar()
-            if (i + 1) % args.log_interval == 0:
-                print('[Epoch %d Batch %d/%d] avg loss %g, throughput %gK wps' % (
-                    epoch, i + 1, len(train_dataloader),
-                    log_interval_L / log_interval_sent_num,
-                    log_interval_wc / 1000 / (time.time() - start_log_interval_time)))
-                # Clear log interval training stats.
-                start_log_interval_time = time.time()
-                log_interval_wc = 0
-                log_interval_sent_num = 0
-                log_interval_L = 0
-        end_epoch_time = time.time()
-        val_avg_L, val_acc = evaluate(net, val_dataloader)
-        print('[Epoch %d] train avg loss %g, '
-              'dev acc %.4f, dev avg loss %g, throughput %gK wps' % (
-                  epoch, epoch_L / epoch_sent_num,
-                  val_acc, val_avg_L,
-                  epoch_wc / 1000 / (end_epoch_time - start_epoch_time)))
 
-        if val_acc >= best_val_acc:
-            print('Observed Improvement.')
-            best_val_acc = val_acc
-            test_avg_L, test_acc = evaluate(net, test_dataloader)
+class GetValMetricHandler(EpochBegin, BatchEnd, EpochEnd):
+    def __init__(self, metrics):
+        self.metrics = check_metrics(metrics)
+        self.metric_history = {}
 
-    print('Test loss %g, test acc %.4f'%(test_avg_L, test_acc))
-    print('Total time cost %.2fs'%(time.time()-start_pipeline_time))
-    return test_acc
+    def epoch_begin(self, estimator, *args, **kwargs):
+        for metric in self.metrics:
+            metric.reset()
 
-def k_fold_cross_valid(k, net, all_dataset):
-    test_acc = []
+    def batch_end(self, estimator, *args, **kwargs):
+        pred = kwargs['pred']
+        label = kwargs['label']
+        loss = kwargs['loss']
+        for metric in self.metrics:
+            if isinstance(metric, mx.metric.Loss):
+                # metric wrapper for loss values
+                metric.update(0, loss)
+            else:
+                metric.update(label, pred)
+
+    def epoch_end(self, estimator, *args, **kwargs):
+        for metric in self.metrics:
+            metric_name, metric_val = metric.get()
+            if 'validation' in metric_name:
+                self.metric_history.setdefault(metric_name,
+                                               []).append(metric_val)
+
+
+class SentimentAnalysisCNNBatchProcessor(BatchProcessor):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def evaluate_batch(self, estimator, val_batch, batch_axis=0):
+        data = mx.nd.transpose(val_batch[0])
+        label = val_batch[1]
+        data_list = gluon.utils.split_and_load(data, estimator.context)
+        label_list = gluon.utils.split_and_load(label, estimator.context)
+        pred = [estimator.eval_net(data) for data in data_list]
+        loss = [
+            estimator.evaluation_loss(y_hat, y)
+            for y_hat, y in zip(pred, label_list)
+        ]
+        pre_labels = [nd.argmax(pred_pro, axis=1) for pred_pro in pred]
+        return data_list, label_list, pre_labels, loss
+
+    def fit_batch(self, estimator, train_batch, batch_axis=0):
+        data = mx.nd.transpose(train_batch[0])
+        label = train_batch[1]
+        data_list = gluon.utils.split_and_load(data, estimator.context)
+        label_list = gluon.utils.split_and_load(label, estimator.context)
+        with autograd.record():
+            pred = [estimator.net(data) for data in data_list]
+            loss = [
+                estimator.loss(y_hat, y).mean()
+                for y_hat, y in zip(pred, label_list)
+            ]
+        for l in loss:
+            l.backward()
+        pre_labels = [nd.argmax(pred_pro, axis=1) for pred_pro in pred]
+        return data_list, label_list, pre_labels, loss
+
+
+def k_fold_cross_valid(k, all_dataset):
+    val_acc = []
     fold_size = len(all_dataset) // k
     random.shuffle(all_dataset)
-    for test_i in range(10):
-        test_data = all_dataset[test_i * fold_size: (test_i + 1) * fold_size]
-        train_data = all_dataset[: test_i * fold_size] + all_dataset[(test_i + 1) * fold_size:]
-        test_acc.append(train(net, train_data, test_data))
-    print('K-fold cross valid avg acc', sum(test_acc) / k)
 
+    for i in range(k):
+        print('Fold-%d starts...' % (i + 1))
+        val_dataset = all_dataset[i * fold_size:(i + 1) * fold_size]
+        train_dataset = all_dataset[:i * fold_size] + all_dataset[(i + 1) *
+                                                                  fold_size:]
+        train_dataloader = DataLoader(dataset=train_dataset,
+                                      batch_size=args.batch_size,
+                                      shuffle=True)
+        val_dataloader = DataLoader(dataset=val_dataset,
+                                    batch_size=args.batch_size,
+                                    shuffle=False)
+        est = Estimator(net=net,
+                        loss=loss_fn,
+                        train_metrics=[mx.metric.Loss()],
+                        trainer=trainer,
+                        context=context,
+                        evaluation_loss=loss_fn,
+                        val_metrics=[mx.metric.Accuracy()],
+                        batch_processor=SentimentAnalysisCNNBatchProcessor())
+        get_val_metric_handler = GetValMetricHandler(est.val_metrics)
+        est.fit(train_data=train_dataloader,
+                val_data=val_dataloader,
+                epochs=args.epochs,
+                event_handlers=[get_val_metric_handler
+                                ])  # Add the event handlers
+        for metric_name, metric_vals in get_val_metric_handler.metric_history.items(
+        ):
+            if metric_name == 'validation accuracy':
+                val_acc.append(max(metric_vals))
+    print('K-fold(%d-fold) cross valid avg acc' % (k), sum(val_acc) / k)
+
+
+net, trainer = text_cnn.init(model, vocab, args.model_mode, context)
+loss_fn = gluon.loss.SoftmaxCrossEntropyLoss()
+est = Estimator(net=net,
+                loss=loss_fn,
+                train_metrics=[mx.metric.Loss()],
+                trainer=trainer,
+                context=context,
+                evaluation_loss=loss_fn,
+                val_metrics=[mx.metric.Accuracy()],
+                batch_processor=SentimentAnalysisCNNBatchProcessor())
 if __name__ == '__main__':
     if args.data_name == 'TREC':
-        train(model, train_dataset, test_dataset)
+        random.shuffle(train_dataset)
+        sp = len(train_dataset) // 10
+        train_dataloader = DataLoader(dataset=train_dataset[sp:],
+                                      batch_size=args.batch_size,
+                                      shuffle=True)
+        val_dataloader = DataLoader(dataset=train_dataset[:sp],
+                                    batch_size=args.batch_size,
+                                    shuffle=False)
+        est.fit(train_data=train_dataloader,
+                val_data=val_dataloader,
+                epochs=args.epochs)  # Add the event handlers
     elif args.data_name == 'SST-1' or args.data_name == 'SST-2':
-        train(model, train_dataset, test_dataset, dev_dataset)
+        train_dataloader = DataLoader(dataset=train_dataset,
+                                      batch_size=args.batch_size,
+                                      shuffle=True)
+        val_dataloader = DataLoader(dataset=dev_dataset,
+                                    batch_size=args.batch_size,
+                                    shuffle=False)
+        est.fit(train_data=train_dataloader,
+                val_data=val_dataloader,
+                epochs=args.epochs)  # Add the event handlers
     else:
-        k_fold_cross_valid(10, model, train_dataset)
+        k_fold_cross_valid(10, train_dataset)
