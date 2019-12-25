@@ -212,6 +212,8 @@ class XLNetForQA(Block):
             end_logits = self.end_logits(hidden_states_expanded, start_states=start_states,
                                          p_masks=p_mask)  # shape (bsz, slen, start_n_top)
             end_log_probs = mx.nd.softmax(end_logits, axis=1)  # shape (bsz, slen, start_n_top)
+            # Note that end_top_index and end_top_log_probs have shape (bsz, END_N_TOP, start_n_top)
+            # So that for each start position, there are end_n_top end positions on the second dim.
             end_top_log_probs, end_top_index = mx.ndarray.topk(
                 end_log_probs, k=self.end_top_n, axis=1,
                 ret_typ='both')  # shape (bsz, end_n_top, start_n_top)
