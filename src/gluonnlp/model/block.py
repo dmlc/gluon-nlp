@@ -20,7 +20,7 @@ __all__ = ['RNNCellLayer', 'L2Normalization', 'GELU']
 
 import math
 from mxnet import ndarray
-from mxnet.gluon import Block, HybridBlock
+from mxnet.gluon import Block, HybridBlock, nn
 
 
 class RNNCellLayer(Block):
@@ -107,6 +107,9 @@ class GELU(HybridBlock):
         super().__init__(prefix=prefix, params=params)
         self._approximate = approximate
 
+        if not self._approximate:
+            self.gelu = nn.GELU()
+
     def hybrid_forward(self, F, x):  # pylint: disable=arguments-differ
         """
 
@@ -118,7 +121,7 @@ class GELU(HybridBlock):
             - **out**: output tensor with the same shape as `data`.
         """
         if not self._approximate:
-            return x * 0.5 * (1.0 + F.erf(x / math.sqrt(2.0)))
+            return self.gelu(x)
         else:
             return 0.5 * x * (1 + F.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * (x ** 3))))
 
