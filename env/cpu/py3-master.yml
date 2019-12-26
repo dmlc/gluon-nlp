@@ -28,7 +28,7 @@ dependencies:
   - regex
   - scipy
   - pip:
-    - numpy==1.17.4
+    - numpy==1.15.1
     - cython
     - boto3
     - pytype==2019.10.17
