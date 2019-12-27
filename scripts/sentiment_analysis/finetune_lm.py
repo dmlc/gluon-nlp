@@ -286,8 +286,8 @@ loss_fn = gluon.loss.SigmoidBCELoss()
 
 
 class FituneLmBatchProcessor(BatchProcessor):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        pass
 
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):
         data = mx.nd.transpose(val_batch[0][0])
