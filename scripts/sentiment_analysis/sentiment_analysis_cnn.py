@@ -124,25 +124,11 @@ def check_metrics(metrics):
     return metrics
 
 
-class GetValMetricHandler(EpochBegin, BatchEnd, EpochEnd):
+class GetValMetricHandler(EpochEnd):
+    # track validation metric at the end of every epoch.
     def __init__(self, metrics):
         self.metrics = check_metrics(metrics)
         self.metric_history = {}
-
-    def epoch_begin(self, estimator, *args, **kwargs):
-        for metric in self.metrics:
-            metric.reset()
-
-    def batch_end(self, estimator, *args, **kwargs):
-        pred = kwargs['pred']
-        label = kwargs['label']
-        loss = kwargs['loss']
-        for metric in self.metrics:
-            if isinstance(metric, mx.metric.Loss):
-                # metric wrapper for loss values
-                metric.update(0, loss)
-            else:
-                metric.update(label, pred)
 
     def epoch_end(self, estimator, *args, **kwargs):
         for metric in self.metrics:
@@ -153,8 +139,8 @@ class GetValMetricHandler(EpochBegin, BatchEnd, EpochEnd):
 
 
 class SentimentAnalysisCNNBatchProcessor(BatchProcessor):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self):
+        pass
 
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):
         data = mx.nd.transpose(val_batch[0])
