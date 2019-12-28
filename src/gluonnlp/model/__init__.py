@@ -65,7 +65,7 @@ You can also get a ELMo model with pretrained parameters:
 
 .. _ELMo: https://arxiv.org/pdf/1802.05365.pdf
 """
-
+import os
 
 from . import (attention_cell, bert, bilm_encoder, block,
                convolutional_encoder, elmo, highway, language_model,
@@ -88,12 +88,13 @@ from .sequence_sampler import *
 from .transformer import *
 from .translation import *
 from .utils import *
+from ..base import get_home_dir
 
 __all__ = language_model.__all__ + sequence_sampler.__all__ + attention_cell.__all__ + \
           utils.__all__ + parameter.__all__ + block.__all__ + highway.__all__ + \
-          convolutional_encoder.__all__ + sampled_block.__all__ + ['get_model'] + ['train'] + \
-          bilm_encoder.__all__ + lstmpcellwithclip.__all__ + elmo.__all__ + \
-          seq2seq_encoder_decoder.__all__ + transformer.__all__ + bert.__all__
+          convolutional_encoder.__all__ + sampled_block.__all__ + ['get_model', 'get_tokenizer'] + \
+          ['train'] + bilm_encoder.__all__ + lstmpcellwithclip.__all__ + \
+          elmo.__all__ + seq2seq_encoder_decoder.__all__ + transformer.__all__ + bert.__all__
 
 
 def get_model(name, **kwargs):
@@ -151,3 +152,107 @@ def get_model(name, **kwargs):
             'Model %s is not supported. Available options are\n\t%s'%(
                 name, '\n\t'.join(sorted(models.keys()))))
     return models[name](**kwargs)
+
+
+def get_tokenizer(model_name, dataset_name,
+                  vocab=None, root=os.path.join(get_home_dir(), 'models'),
+                  **kwargs):
+    """Returns a pre-defined tokenizer by name.
+
+    Parameters
+    ----------
+    model_name : str
+        Options include 'bert_24_1024_16', 'bert_12_768_12', 'roberta_12_768_12',
+        'roberta_24_1024_16' and 'ernie_12_768_12'
+    dataset_name : str
+        The supported datasets for model_name of either bert_24_1024_16 and
+        bert_12_768_12 are 'book_corpus_wiki_en_cased',
+        'book_corpus_wiki_en_uncased'.
+        For model_name bert_12_768_12 'wiki_cn_cased',
+        'wiki_multilingual_uncased', 'wiki_multilingual_cased',
+        'scibert_scivocab_uncased', 'scibert_scivocab_cased',
+        'scibert_basevocab_uncased','scibert_basevocab_cased',
+        'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
+        'biobert_v1.1_pubmed',
+        'clinicalbert',
+        'kobert_news_wiki_ko_cased' are supported.
+        For model_name roberta_12_768_12 and roberta_24_1024_16
+        'openwebtext_ccnews_stories_books_cased' is supported.
+        For model_name ernie_12_768_12
+        'baidu_ernie_uncased'.
+        is additionally supported.
+    vocab : gluonnlp.vocab.BERTVocab or None, default None
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
+
+    root : str, default '$MXNET_HOME/models' with MXNET_HOME defaults to '~/.mxnet'
+        Location for keeping the model parameters.
+    cls : nlp.Vocab or nlp.vocab.BERTVocab, default nlp.Vocab
+
+    Returns
+    -------
+    gluonnlp.data.BERTTokenizer or gluonnlp.data.GPT2BPETokenizer or
+    gluonnlp.data.SentencepieceTokenizer
+    """
+    from ..data.utils import _get_pretrained_sentencepiece_tokenizer  # pylint: disable=import-outside-toplevel
+    from ..data import BERTTokenizer, GPT2BPETokenizer  # pylint: disable=import-outside-toplevel
+
+    model_name, dataset_name = model_name.lower(), dataset_name.lower()
+    model_dataset_name = '_'.join([model_name, dataset_name])
+    model_dataset_names = {'roberta_12_768_12_openwebtext_ccnews_stories_books_cased':
+                           [GPT2BPETokenizer, {'lower': False}],
+                           'roberta_24_1024_16_openwebtext_ccnews_stories_books_cased':
+                           [GPT2BPETokenizer, {'lower': False}],
+                           'bert_12_768_12_book_corpus_wiki_en_cased':
+                           [BERTTokenizer, {'lower': False}],
+                           'bert_12_768_12_book_corpus_wiki_en_uncased':
+                           [BERTTokenizer, {'lower': True}],
+                           'bert_12_768_12_openwebtext_book_corpus_wiki_en_uncased':
+                           [BERTTokenizer, {'lower': True}],
+                           'bert_12_768_12_wiki_multilingual_uncased':
+                           [BERTTokenizer, {'lower': False}],
+                           'bert_12_768_12_wiki_multilingual_cased':
+                           [BERTTokenizer, {'lower': True}],
+                           'bert_12_768_12_wiki_cn_cased':
+                           [BERTTokenizer, {'lower': False}],
+                           'bert_24_1024_16_book_corpus_wiki_en_cased':
+                           [BERTTokenizer, {'lower': False}],
+                           'bert_24_1024_16_book_corpus_wiki_en_uncased':
+                           [BERTTokenizer, {'lower': True}],
+                           'bert_12_768_12_scibert_scivocab_uncased':
+                           [BERTTokenizer, {'lower': True}],
+                           'bert_12_768_12_scibert_scivocab_cased':
+                           [BERTTokenizer, {'lower': False}],
+                           'bert_12_768_12_scibert_basevocab_uncased':
+                           [BERTTokenizer, {'lower': True}],
+                           'bert_12_768_12_scibert_basevocab_cased':
+                           [BERTTokenizer, {'lower': False}],
+                           'bert_12_768_12_biobert_v1.0_pmc_cased':
+                           [BERTTokenizer, {'lower': False}],
+                           'bert_12_768_12_biobert_v1.0_pubmed_cased':
+                           [BERTTokenizer, {'lower': False}],
+                           'bert_12_768_12_biobert_v1.0_pubmed_pmc_cased':
+                           [BERTTokenizer, {'lower': False}],
+                           'bert_12_768_12_biobert_v1.1_pubmed_cased':
+                           [BERTTokenizer, {'lower': False}],
+                           'bert_12_768_12_clinicalbert_uncased':
+                           [BERTTokenizer, {'lower': True}],
+                           'bert_12_768_12_kobert_news_wiki_ko_cased':
+                           [_get_pretrained_sentencepiece_tokenizer, {'lower': False}],
+                           'ernie_12_768_12_baidu_ernie_uncased':
+                           [BERTTokenizer, {'lower': True}]}
+    if model_dataset_name not in model_dataset_names:
+        raise ValueError(
+            'Model name %s is not supported. Available options are\n\t%s'%(
+                model_dataset_name, '\n\t'.join(sorted(model_dataset_names.keys()))))
+    tokenizer_cls, extra_args = model_dataset_names[model_dataset_name]
+    kwargs = {**kwargs, **extra_args}
+    if tokenizer_cls is BERTTokenizer:
+        assert vocab is not None, 'Must specify vocab if loading BERTTokenizer'
+        return tokenizer_cls(vocab, kwargs)
+    elif tokenizer_cls is GPT2BPETokenizer:
+        return tokenizer_cls(root=root)
+    elif tokenizer_cls is _get_pretrained_sentencepiece_tokenizer:
+        return tokenizer_cls(dataset_name, root=root)
+    else:
+        raise ValueError('Could not get any matched tokenizer interface.')

@@ -372,7 +372,7 @@ def _load_vocab_file(file_path, cls, kwargs):
             from ..vocab import Vocab  # pylint: disable=import-outside-toplevel
             cls = Vocab
         if file_path.endswith('.spiece'):
-            assert kwargs is not None, 'special_tokens must be specified.'
+            assert kwargs is not None, 'special tokens must be specified when .spiece provide.'
             from ..vocab import BERTVocab  # pylint: disable=import-outside-toplevel
             from ..data import SentencepieceTokenizer  # pylint: disable=import-outside-toplevel
             return BERTVocab.from_sentencepiece(
@@ -462,3 +462,8 @@ class Splitter:
             List of strings. Obtained by calling s.split(separator).
         """
         return s.split(self._separator)
+
+
+def _get_pretrained_sentencepiece_tokenizer(dataset_name, root):
+    _, tokenizer = _load_pretrained_vocab(name=dataset_name, root=root)
+    return tokenizer
