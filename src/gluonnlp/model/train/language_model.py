@@ -103,9 +103,7 @@ class AWDRNN(HybridBlock):
         output = nn.HybridSequential()
         with output.name_scope():
             if self._tie_weights:
-                output.add(nn.Dense(self._vocab_size,
-                                    use_bias=False,
-                                    flatten=False,
+                output.add(nn.Dense(self._vocab_size, flatten=False,
                                     params=self.embedding[0].params))
             else:
                 output.add(nn.Dense(self._vocab_size, flatten=False))
