@@ -44,7 +44,7 @@ import warnings
 
 import numpy as np
 import mxnet as mx
-from mxnet.contrib.quantization import quantize_net
+from mxnet.contrib.quantization import quantize_net_v2
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
@@ -518,15 +518,15 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
         'Currently only supports CPU with MKL-DNN backend.'
     log.info('Now we are doing calibration on dev with %s.', ctx)
     collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=log)
-    net = quantize_net(net, quantized_dtype=quantized_dtype,
-                       exclude_layers=[],
-                       exclude_layers_match=['elemwise_add'],
-                       calib_data=dev_dataloader,
-                       calib_mode=calib_mode,
-                       num_calib_examples=test_batch_size * num_calib_batches,
-                       ctx=ctx,
-                       LayerOutputCollector=collector,
-                       logger=log)
+    net = quantize_net_v2(net, quantized_dtype=quantized_dtype,
+                          exclude_layers=[],
+                          exclude_layers_match=['elemwise_add'],
+                          calib_data=dev_dataloader,
+                          calib_mode=calib_mode,
+                          num_calib_examples=test_batch_size * num_calib_batches,
+                          ctx=ctx,
+                          LayerOutputCollector=collector,
+                          logger=log)
     # save params
     ckpt_name = 'model_bert_squad_quantized_{0}'.format(calib_mode)
     params_saved = os.path.join(output_dir, ckpt_name)

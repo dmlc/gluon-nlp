@@ -43,7 +43,7 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 from mxnet.contrib.amp import amp
-from mxnet.contrib.quantization import quantize_net
+from mxnet.contrib.quantization import quantize_net_v2
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
@@ -407,15 +407,15 @@ def calibration(net, dev_data_list, num_calib_batches, quantized_dtype, calib_mo
     logging.info('Now we are doing calibration on dev with %s.', ctx)
     for _, dev_data in dev_data_list:
         collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=logging)
-        net = quantize_net(net, quantized_dtype=quantized_dtype,
-                           exclude_layers=[],
-                           exclude_layers_match=['elemwise_add'],
-                           calib_data=dev_data,
-                           calib_mode=calib_mode,
-                           num_calib_examples=dev_batch_size * num_calib_batches,
-                           ctx=ctx,
-                           LayerOutputCollector=collector,
-                           logger=logging)
+        net = quantize_net_v2(net, quantized_dtype=quantized_dtype,
+                              exclude_layers=[],
+                              exclude_layers_match=['elemwise_add'],
+                              calib_data=dev_data,
+                              calib_mode=calib_mode,
+                              num_calib_examples=dev_batch_size * num_calib_batches,
+                              ctx=ctx,
+                              LayerOutputCollector=collector,
+                              logger=logging)
         # save params
         ckpt_name = 'model_bert_{0}_quantized_{1}'.format(task_name, calib_mode)
         params_saved = os.path.join(output_dir, ckpt_name)
