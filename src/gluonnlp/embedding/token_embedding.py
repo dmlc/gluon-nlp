@@ -910,11 +910,11 @@ class GloVe(TokenEmbedding):
     Available sources
 
     >>> import gluonnlp as nlp
-    >>> nlp.embedding.list_sources('GloVe')
+    >>> sorted(nlp.embedding.list_sources('GloVe'))
     [\
-'glove.42B.300d', 'glove.6B.100d', 'glove.6B.200d', 'glove.6B.300d', \
-'glove.6B.50d', 'glove.840B.300d', 'glove.twitter.27B.100d', \
-'glove.twitter.27B.200d', 'glove.twitter.27B.25d', 'glove.twitter.27B.50d'\
+'glove.42B.300d', 'glove.6B.100d', 'glove.6B.200d', 'glove.6B.300d', 'glove.6B.50d', \
+'glove.840B.300d', 'glove.twitter.27B.100d', 'glove.twitter.27B.200d', \
+'glove.twitter.27B.25d', 'glove.twitter.27B.50d'\
 ]
 
     Parameters
@@ -1003,98 +1003,84 @@ class FastText(TokenEmbedding):
     Available sources
 
     >>> import gluonnlp as nlp
-    >>> nlp.embedding.list_sources('FastText')
+    >>> sorted(nlp.embedding.list_sources('FastText'))
     [\
-'crawl-300d-2M', 'crawl-300d-2M-subword', 'wiki.aa', 'wiki.ab', 'wiki.ace', \
-'wiki.ady', 'wiki.af', 'wiki.ak', 'wiki.als', 'wiki.am', 'wiki.ang', \
-'wiki.an', 'wiki.arc', 'wiki.ar', 'wiki.arz', 'wiki.as', 'wiki.ast', \
-'wiki.av', 'wiki.ay', 'wiki.azb', 'wiki.az', 'wiki.ba', 'wiki.bar', \
-'wiki.bat_smg', 'wiki.bcl', 'wiki.be', 'wiki.bg', 'wiki.bh', 'wiki.bi', \
-'wiki.bjn', 'wiki.bm', 'wiki.bn', 'wiki.bo', 'wiki.bpy', 'wiki.br', \
-'wiki.bs', 'wiki.bug', 'wiki.bxr', 'wiki.ca', 'wiki.cbk_zam', 'wiki.cdo', \
-'wiki.ceb', 'wiki.ce', 'wiki.ch', 'wiki.cho', 'wiki.chr', 'wiki.chy', \
-'wiki.ckb', 'wiki.co', 'wiki.crh', 'wiki.cr', 'wiki.csb', 'wiki.cs', \
-'wiki.cu', 'wiki.cv', 'wiki.cy', 'wiki.da', 'wiki.de', 'wiki.diq', \
-'wiki.dsb', 'wiki.dv', 'wiki.dz', 'wiki.ee', 'wiki.el', 'wiki.eml', \
-'wiki.en', 'wiki.eo', 'wiki.es', 'wiki.et', 'wiki.eu', 'wiki.ext', \
-'wiki.fa', 'wiki.ff', 'wiki.fi', 'wiki.fiu_vro', 'wiki.fj', 'wiki.fo', \
-'wiki.fr', 'wiki.frp', 'wiki.frr', 'wiki.fur', 'wiki.fy', 'wiki.gag', \
-'wiki.gan', 'wiki.ga', 'wiki.gd', 'wiki.glk', 'wiki.gl', 'wiki.gn', \
-'wiki.gom', 'wiki.got', 'wiki.gu', 'wiki.gv', 'wiki.hak', 'wiki.ha', \
-'wiki.haw', 'wiki.he', 'wiki.hif', 'wiki.hi', 'wiki.ho', 'wiki.hr', \
-'wiki.hsb', 'wiki.ht', 'wiki.hu', 'wiki.hy', 'wiki.hz', 'wiki.ia', \
-'wiki.id', 'wiki.ie', 'wiki.ig', 'wiki.ii', 'wiki.ik', 'wiki.ilo', \
-'wiki.io', 'wiki.is', 'wiki.it', 'wiki.iu', 'wiki.jam', 'wiki.ja', \
-'wiki.jbo', 'wiki.jv', 'wiki.kaa', 'wiki.kab', 'wiki.ka', 'wiki.kbd', \
-'wiki.kg', 'wiki.ki', 'wiki.kj', 'wiki.kk', 'wiki.kl', 'wiki.km', \
-'wiki.kn', 'wiki.koi', 'wiki.ko', 'wiki.krc', 'wiki.kr', 'wiki.ksh', \
-'wiki.ks', 'wiki.ku', 'wiki.kv', 'wiki.kw', 'wiki.ky', 'wiki.lad', \
-'wiki.la', 'wiki.lbe', 'wiki.lb', 'wiki.lez', 'wiki.lg', 'wiki.lij', \
-'wiki.li', 'wiki.lmo', 'wiki.ln', 'wiki.lo', 'wiki.lrc', 'wiki.ltg', \
-'wiki.lt', 'wiki.lv', 'wiki.mai', 'wiki.map_bms', 'wiki.mdf', 'wiki.mg', \
-'wiki.mh', 'wiki.mhr', 'wiki.min', 'wiki.mi', 'wiki.mk', 'wiki.ml', \
-'wiki.mn', 'wiki.mo', 'wiki.mrj', 'wiki.mr', 'wiki.ms', 'wiki.mt', \
-'wiki.multi.ar', 'wiki.multi.bg', 'wiki.multi.ca', 'wiki.multi.cs', \
-'wiki.multi.da', 'wiki.multi.de', 'wiki.multi.el', 'wiki.multi.en', \
-'wiki.multi.es', 'wiki.multi.et', 'wiki.multi.fi', 'wiki.multi.fr', \
-'wiki.multi.he', 'wiki.multi.hr', 'wiki.multi.hu', 'wiki.multi.id', \
-'wiki.multi.it', 'wiki.multi.mk', 'wiki.multi.nl', 'wiki.multi.no', \
-'wiki.multi.pl', 'wiki.multi.pt', 'wiki.multi.ro', 'wiki.multi.ru', \
-'wiki.multi.sk', 'wiki.multi.sl', 'wiki.multi.sv', 'wiki.multi.tr', \
-'wiki.multi.uk', 'wiki.multi.vi', 'wiki.mus', 'wiki.mwl', 'wiki.my', \
-'wiki.myv', 'wiki.mzn', 'wiki.nah', 'wiki.na', 'wiki.nap', 'wiki.nds_nl', \
-'wiki.nds', 'wiki.ne', 'wiki.new', 'wiki-news-300d-1M', \
-'wiki-news-300d-1M-subword', 'wiki.ng', 'wiki.nl', 'wiki.nn', 'wiki.no', \
-'wiki.nov', 'wiki.vec', 'wiki.nrm', 'wiki.nso', 'wiki.nv', 'wiki.ny', \
-'wiki.oc', 'wiki.olo', 'wiki.om', 'wiki.or', 'wiki.os', 'wiki.pag', \
-'wiki.pam', 'wiki.pa', 'wiki.pap', 'wiki.pcd', 'wiki.pdc', 'wiki.pfl', \
-'wiki.pih', 'wiki.pi', 'wiki.pl', 'wiki.pms', 'wiki.pnb', 'wiki.pnt', \
-'wiki.ps', 'wiki.pt', 'wiki.qu', 'wiki.rm', 'wiki.rmy', 'wiki.rn', \
-'wiki.roa_rup', 'wiki.roa_tara', 'wiki.ro', 'wiki.rue', 'wiki.ru', \
-'wiki.rw', 'wiki.sah', 'wiki.sa', 'wiki.scn', 'wiki.sc', 'wiki.sco', \
-'wiki.sd', 'wiki.se', 'wiki.sg', 'wiki.sh', 'wiki.simple', 'wiki.si', \
-'wiki.sk', 'wiki.sl', 'wiki.sm', 'wiki.sn', 'wiki.so', 'wiki.sq', \
-'wiki.srn', 'wiki.sr', 'wiki.ss', 'wiki.st', 'wiki.stq', 'wiki.su', \
-'wiki.sv', 'wiki.sw', 'wiki.szl', 'wiki.ta', 'wiki.tcy', 'wiki.te', \
-'wiki.tet', 'wiki.tg', 'wiki.th', 'wiki.ti', 'wiki.tk', 'wiki.tl', \
-'wiki.tn', 'wiki.to', 'wiki.tpi', 'wiki.tr', 'wiki.ts', 'wiki.tt', \
-'wiki.tum', 'wiki.tw', 'wiki.ty', 'wiki.tyv', 'wiki.udm', 'wiki.ug', \
-'wiki.uk', 'wiki.ur', 'wiki.uz', 'wiki.ve', 'wiki.vep', 'wiki.vi', \
-'wiki.vls', 'wiki.vo', 'wiki.wa', 'wiki.war', 'wiki.wo', 'wiki.wuu', \
-'wiki.xal', 'wiki.xh', 'wiki.xmf', 'wiki.yi', 'wiki.yo', 'wiki.za', \
-'wiki.zea', 'wiki.zh_classical', 'wiki.zh_min_nan', 'wiki.zh', \
-'wiki.zh_yue', 'wiki.zu', 'cc.af.300', 'cc.als.300', 'cc.am.300', \
-'cc.an.300', 'cc.ar.300', 'cc.arz.300', 'cc.as.300', 'cc.ast.300', \
-'cc.az.300', 'cc.azb.300', 'cc.ba.300', 'cc.bar.300', 'cc.bcl.300', \
-'cc.be.300', 'cc.bg.300', 'cc.bh.300', 'cc.bn.300', 'cc.bo.300', \
-'cc.bpy.300', 'cc.br.300', 'cc.bs.300', 'cc.ca.300', 'cc.ce.300', \
-'cc.ceb.300', 'cc.ckb.300', 'cc.co.300', 'cc.cs.300', 'cc.cv.300', \
-'cc.cy.300', 'cc.da.300', 'cc.de.300', 'cc.diq.300', 'cc.dv.300', \
-'cc.el.300', 'cc.eml.300', 'cc.en.300', 'cc.eo.300', 'cc.es.300', \
-'cc.et.300', 'cc.eu.300', 'cc.fa.300', 'cc.fi.300', 'cc.fr.300', \
-'cc.frr.300', 'cc.fy.300', 'cc.ga.300', 'cc.gd.300', 'cc.gl.300', \
-'cc.gom.300', 'cc.gu.300', 'cc.gv.300', 'cc.he.300', 'cc.hi.300', \
-'cc.hif.300', 'cc.hr.300', 'cc.hsb.300', 'cc.ht.300', 'cc.hu.300', \
-'cc.hy.300', 'cc.ia.300', 'cc.id.300', 'cc.ilo.300', 'cc.io.300', \
-'cc.is.300', 'cc.it.300', 'cc.ja.300', 'cc.jv.300', 'cc.ka.300', \
-'cc.kk.300', 'cc.km.300', 'cc.kn.300', 'cc.ko.300', 'cc.ku.300', \
-'cc.ky.300', 'cc.la.300', 'cc.lb.300', 'cc.li.300', 'cc.lmo.300', \
-'cc.lt.300', 'cc.lv.300', 'cc.mai.300', 'cc.mg.300', 'cc.mhr.300', \
-'cc.min.300', 'cc.mk.300', 'cc.ml.300', 'cc.mn.300', 'cc.mr.300', \
-'cc.mrj.300', 'cc.ms.300', 'cc.mt.300', 'cc.mwl.300', 'cc.my.300', \
-'cc.myv.300', 'cc.mzn.300', 'cc.nah.300', 'cc.nap.300', 'cc.nds.300', \
-'cc.ne.300', 'cc.new.300', 'cc.nl.300', 'cc.nn.300', 'cc.no.300', \
-'cc.nso.300', 'cc.oc.300', 'cc.or.300', 'cc.os.300', 'cc.pa.300', \
-'cc.pam.300', 'cc.pfl.300', 'cc.pl.300', 'cc.pms.300', 'cc.pnb.300', \
-'cc.ps.300', 'cc.pt.300', 'cc.qu.300', 'cc.rm.300', 'cc.ro.300', \
-'cc.ru.300', 'cc.sa.300', 'cc.sah.300', 'cc.sc.300', 'cc.scn.300', \
-'cc.sco.300', 'cc.sd.300', 'cc.sh.300', 'cc.si.300', 'cc.sk.300', \
-'cc.sl.300', 'cc.so.300', 'cc.sq.300', 'cc.sr.300', 'cc.su.300', \
-'cc.sv.300', 'cc.sw.300', 'cc.ta.300', 'cc.te.300', 'cc.tg.300', \
-'cc.th.300', 'cc.tk.300', 'cc.tl.300', 'cc.tr.300', 'cc.tt.300', \
-'cc.ug.300', 'cc.uk.300', 'cc.ur.300', 'cc.uz.300', 'cc.vec.300', \
-'cc.vi.300', 'cc.vls.300', 'cc.vo.300', 'cc.wa.300', 'cc.war.300', \
-'cc.xmf.300', 'cc.yi.300', 'cc.yo.300', 'cc.zea.300', 'cc.zh.300'\
+'cc.af.300', 'cc.als.300', 'cc.am.300', 'cc.an.300', 'cc.ar.300', 'cc.arz.300', \
+'cc.as.300', 'cc.ast.300', 'cc.az.300', 'cc.azb.300', 'cc.ba.300', 'cc.bar.300', \
+'cc.bcl.300', 'cc.be.300', 'cc.bg.300', 'cc.bh.300', 'cc.bn.300', 'cc.bo.300', \
+'cc.bpy.300', 'cc.br.300', 'cc.bs.300', 'cc.ca.300', 'cc.ce.300', 'cc.ceb.300', \
+'cc.ckb.300', 'cc.co.300', 'cc.cs.300', 'cc.cv.300', 'cc.cy.300', 'cc.da.300', \
+'cc.de.300', 'cc.diq.300', 'cc.dv.300', 'cc.el.300', 'cc.eml.300', 'cc.en.300', \
+'cc.eo.300', 'cc.es.300', 'cc.et.300', 'cc.eu.300', 'cc.fa.300', 'cc.fi.300', \
+'cc.fr.300', 'cc.frr.300', 'cc.fy.300', 'cc.ga.300', 'cc.gd.300', 'cc.gl.300', \
+'cc.gom.300', 'cc.gu.300', 'cc.gv.300', 'cc.he.300', 'cc.hi.300', 'cc.hif.300', \
+'cc.hr.300', 'cc.hsb.300', 'cc.ht.300', 'cc.hu.300', 'cc.hy.300', 'cc.ia.300', \
+'cc.id.300', 'cc.ilo.300', 'cc.io.300', 'cc.is.300', 'cc.it.300', 'cc.ja.300', \
+'cc.jv.300', 'cc.ka.300', 'cc.kk.300', 'cc.km.300', 'cc.kn.300', 'cc.ko.300', \
+'cc.ku.300', 'cc.ky.300', 'cc.la.300', 'cc.lb.300', 'cc.li.300', 'cc.lmo.300', \
+'cc.lt.300', 'cc.lv.300', 'cc.mai.300', 'cc.mg.300', 'cc.mhr.300', 'cc.min.300', \
+'cc.mk.300', 'cc.ml.300', 'cc.mn.300', 'cc.mr.300', 'cc.mrj.300', 'cc.ms.300', \
+'cc.mt.300', 'cc.mwl.300', 'cc.my.300', 'cc.myv.300', 'cc.mzn.300', 'cc.nah.300', \
+'cc.nap.300', 'cc.nds.300', 'cc.ne.300', 'cc.new.300', 'cc.nl.300', 'cc.nn.300', \
+'cc.no.300', 'cc.nso.300', 'cc.oc.300', 'cc.or.300', 'cc.os.300', 'cc.pa.300', \
+'cc.pam.300', 'cc.pfl.300', 'cc.pl.300', 'cc.pms.300', 'cc.pnb.300', 'cc.ps.300', \
+'cc.pt.300', 'cc.qu.300', 'cc.rm.300', 'cc.ro.300', 'cc.ru.300', 'cc.sa.300', \
+'cc.sah.300', 'cc.sc.300', 'cc.scn.300', 'cc.sco.300', 'cc.sd.300', 'cc.sh.300', \
+'cc.si.300', 'cc.sk.300', 'cc.sl.300', 'cc.so.300', 'cc.sq.300', 'cc.sr.300', \
+'cc.su.300', 'cc.sv.300', 'cc.sw.300', 'cc.ta.300', 'cc.te.300', 'cc.tg.300', \
+'cc.th.300', 'cc.tk.300', 'cc.tl.300', 'cc.tr.300', 'cc.tt.300', 'cc.ug.300', \
+'cc.uk.300', 'cc.ur.300', 'cc.uz.300', 'cc.vec.300', 'cc.vi.300', 'cc.vls.300', \
+'cc.vo.300', 'cc.wa.300', 'cc.war.300', 'cc.xmf.300', 'cc.yi.300', 'cc.yo.300', \
+'cc.zea.300', 'cc.zh.300', 'crawl-300d-2M', 'crawl-300d-2M-subword', \
+'wiki-news-300d-1M', 'wiki-news-300d-1M-subword', 'wiki.aa', 'wiki.ab', 'wiki.ace', \
+'wiki.ady', 'wiki.af', 'wiki.ak', 'wiki.als', 'wiki.am', 'wiki.an', 'wiki.ang', \
+'wiki.ar', 'wiki.arc', 'wiki.arz', 'wiki.as', 'wiki.ast', 'wiki.av', 'wiki.ay', \
+'wiki.az', 'wiki.azb', 'wiki.ba', 'wiki.bar', 'wiki.bat_smg', 'wiki.bcl', 'wiki.be', \
+'wiki.bg', 'wiki.bh', 'wiki.bi', 'wiki.bjn', 'wiki.bm', 'wiki.bn', 'wiki.bo', \
+'wiki.bpy', 'wiki.br', 'wiki.bs', 'wiki.bug', 'wiki.bxr', 'wiki.ca', 'wiki.cbk_zam', \
+'wiki.cdo', 'wiki.ce', 'wiki.ceb', 'wiki.ch', 'wiki.cho', 'wiki.chr', 'wiki.chy', \
+'wiki.ckb', 'wiki.co', 'wiki.cr', 'wiki.crh', 'wiki.cs', 'wiki.csb', 'wiki.cu', \
+'wiki.cv', 'wiki.cy', 'wiki.da', 'wiki.de', 'wiki.diq', 'wiki.dsb', 'wiki.dv', \
+'wiki.dz', 'wiki.ee', 'wiki.el', 'wiki.eml', 'wiki.en', 'wiki.eo', 'wiki.es', \
+'wiki.et', 'wiki.eu', 'wiki.ext', 'wiki.fa', 'wiki.ff', 'wiki.fi', 'wiki.fiu_vro', \
+'wiki.fj', 'wiki.fo', 'wiki.fr', 'wiki.frp', 'wiki.frr', 'wiki.fur', 'wiki.fy', \
+'wiki.ga', 'wiki.gag', 'wiki.gan', 'wiki.gd', 'wiki.gl', 'wiki.glk', 'wiki.gn', \
+'wiki.gom', 'wiki.got', 'wiki.gu', 'wiki.gv', 'wiki.ha', 'wiki.hak', 'wiki.haw', \
+'wiki.he', 'wiki.hi', 'wiki.hif', 'wiki.ho', 'wiki.hr', 'wiki.hsb', 'wiki.ht', \
+'wiki.hu', 'wiki.hy', 'wiki.hz', 'wiki.ia', 'wiki.id', 'wiki.ie', 'wiki.ig', \
+'wiki.ii', 'wiki.ik', 'wiki.ilo', 'wiki.io', 'wiki.is', 'wiki.it', 'wiki.iu', \
+'wiki.ja', 'wiki.jam', 'wiki.jbo', 'wiki.jv', 'wiki.ka', 'wiki.kaa', 'wiki.kab', \
+'wiki.kbd', 'wiki.kg', 'wiki.ki', 'wiki.kj', 'wiki.kk', 'wiki.kl', 'wiki.km', \
+'wiki.kn', 'wiki.ko', 'wiki.koi', 'wiki.kr', 'wiki.krc', 'wiki.ks', 'wiki.ksh', \
+'wiki.ku', 'wiki.kv', 'wiki.kw', 'wiki.ky', 'wiki.la', 'wiki.lad', 'wiki.lb', \
+'wiki.lbe', 'wiki.lez', 'wiki.lg', 'wiki.li', 'wiki.lij', 'wiki.lmo', 'wiki.ln', \
+'wiki.lo', 'wiki.lrc', 'wiki.lt', 'wiki.ltg', 'wiki.lv', 'wiki.mai', 'wiki.map_bms', \
+'wiki.mdf', 'wiki.mg', 'wiki.mh', 'wiki.mhr', 'wiki.mi', 'wiki.min', 'wiki.mk', \
+'wiki.ml', 'wiki.mn', 'wiki.mo', 'wiki.mr', 'wiki.mrj', 'wiki.ms', 'wiki.mt', \
+'wiki.multi.ar', 'wiki.multi.bg', 'wiki.multi.ca', 'wiki.multi.cs', 'wiki.multi.da', \
+'wiki.multi.de', 'wiki.multi.el', 'wiki.multi.en', 'wiki.multi.es', 'wiki.multi.et', \
+'wiki.multi.fi', 'wiki.multi.fr', 'wiki.multi.he', 'wiki.multi.hr', 'wiki.multi.hu', \
+'wiki.multi.id', 'wiki.multi.it', 'wiki.multi.mk', 'wiki.multi.nl', 'wiki.multi.no', \
+'wiki.multi.pl', 'wiki.multi.pt', 'wiki.multi.ro', 'wiki.multi.ru', 'wiki.multi.sk', \
+'wiki.multi.sl', 'wiki.multi.sv', 'wiki.multi.tr', 'wiki.multi.uk', 'wiki.multi.vi', \
+'wiki.mus', 'wiki.mwl', 'wiki.my', 'wiki.myv', 'wiki.mzn', 'wiki.na', 'wiki.nah', \
+'wiki.nap', 'wiki.nds', 'wiki.nds_nl', 'wiki.ne', 'wiki.new', 'wiki.ng', 'wiki.nl', \
+'wiki.nn', 'wiki.no', 'wiki.nov', 'wiki.nrm', 'wiki.nso', 'wiki.nv', 'wiki.ny', \
+'wiki.oc', 'wiki.olo', 'wiki.om', 'wiki.or', 'wiki.os', 'wiki.pa', 'wiki.pag', \
+'wiki.pam', 'wiki.pap', 'wiki.pcd', 'wiki.pdc', 'wiki.pfl', 'wiki.pi', 'wiki.pih', \
+'wiki.pl', 'wiki.pms', 'wiki.pnb', 'wiki.pnt', 'wiki.ps', 'wiki.pt', 'wiki.qu', \
+'wiki.rm', 'wiki.rmy', 'wiki.rn', 'wiki.ro', 'wiki.roa_rup', 'wiki.roa_tara', \
+'wiki.ru', 'wiki.rue', 'wiki.rw', 'wiki.sa', 'wiki.sah', 'wiki.sc', 'wiki.scn', \
+'wiki.sco', 'wiki.sd', 'wiki.se', 'wiki.sg', 'wiki.sh', 'wiki.si', 'wiki.simple', \
+'wiki.sk', 'wiki.sl', 'wiki.sm', 'wiki.sn', 'wiki.so', 'wiki.sq', 'wiki.sr', \
+'wiki.srn', 'wiki.ss', 'wiki.st', 'wiki.stq', 'wiki.su', 'wiki.sv', 'wiki.sw', \
+'wiki.szl', 'wiki.ta', 'wiki.tcy', 'wiki.te', 'wiki.tet', 'wiki.tg', 'wiki.th', \
+'wiki.ti', 'wiki.tk', 'wiki.tl', 'wiki.tn', 'wiki.to', 'wiki.tpi', 'wiki.tr', \
+'wiki.ts', 'wiki.tt', 'wiki.tum', 'wiki.tw', 'wiki.ty', 'wiki.tyv', 'wiki.udm', \
+'wiki.ug', 'wiki.uk', 'wiki.ur', 'wiki.uz', 'wiki.ve', 'wiki.vec', 'wiki.vep', \
+'wiki.vi', 'wiki.vls', 'wiki.vo', 'wiki.wa', 'wiki.war', 'wiki.wo', 'wiki.wuu', \
+'wiki.xal', 'wiki.xh', 'wiki.xmf', 'wiki.yi', 'wiki.yo', 'wiki.za', 'wiki.zea', \
+'wiki.zh', 'wiki.zh_classical', 'wiki.zh_min_nan', 'wiki.zh_yue', 'wiki.zu'\
 ]
 
 
@@ -1205,10 +1191,10 @@ class Word2Vec(TokenEmbedding):
     Available sources
 
     >>> import gluonnlp as nlp
-    >>> nlp.embedding.list_sources('Word2Vec')
+    >>> sorted(nlp.embedding.list_sources('Word2Vec'))
     [\
-'GoogleNews-vectors-negative300', 'freebase-vectors-skipgram1000-en', \
-'freebase-vectors-skipgram1000'\
+'GoogleNews-vectors-negative300', 'freebase-vectors-skipgram1000', \
+'freebase-vectors-skipgram1000-en'\
 ]
 
     Parameters
