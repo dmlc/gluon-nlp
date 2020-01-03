@@ -18,7 +18,7 @@
 __all__ = ['AWDRNN', 'StandardRNN', 'BigRNN']
 
 from mxnet import init, nd, autograd
-from mxnet.gluon import nn, Block, HybridBlock, contrib, rnn
+from mxnet.gluon import nn, Block, HybridBlock, contrib, rnn, ParameterDict
 from mxnet import sym
 
 from ..utils import _get_rnn_layer, apply_weight_drop
@@ -71,6 +71,9 @@ class AWDRNN(HybridBlock):
         self._drop_e = drop_e
         self._weight_drop = weight_drop
         self._tie_weights = tie_weights
+        self._weight_share = False
+        if 'params' in kwargs and kwargs['params'] is not None:
+            self._weight_share = True
 
         with self.name_scope():
             self.embedding = self._get_embedding()
@@ -103,8 +106,15 @@ class AWDRNN(HybridBlock):
         output = nn.HybridSequential()
         with output.name_scope():
             if self._tie_weights:
-                output.add(nn.Dense(self._vocab_size, flatten=False,
-                                    params=self.embedding[0].params))
+                if self._weight_share:
+                    shared_params = self.embedding[0].params
+                    shared_params = ParameterDict(shared_params.prefix)
+                    shared_params.update(output._params._shared)
+                    output.add(nn.Dense(self._vocab_size, flatten=False,
+                                        params=shared_params))
+                else:
+                    output.add(nn.Dense(self._vocab_size, flatten=False,
+                                        params=self.embedding[0].params))
             else:
                 output.add(nn.Dense(self._vocab_size, flatten=False))
         return output
