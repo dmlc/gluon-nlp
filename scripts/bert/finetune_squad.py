@@ -307,6 +307,8 @@ if args.sentencepiece:
 else:
     tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
 
+print(vocab)
+print(tokenizer)
 batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack(),
     nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
@@ -689,6 +691,7 @@ def preprocess_dataset(tokenizer,
             list(pool.map(trans, examples)))
 
     end = time.time()
+    pool.close()
     print('Done! Transform dataset costs %.2f seconds.' % (end - start))
     return data_feature
 

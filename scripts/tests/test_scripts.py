@@ -332,7 +332,7 @@ def test_export(task):
 def test_finetune_squad(sentencepiece):
     arguments = ['--optimizer', 'adam', '--batch_size', '32',
                  '--gpu', '0', '--epochs', '1', '--debug', '--max_seq_length', '32',
-                 '--max_query_length', '8', 'doc_stride', '384']
+                 '--max_query_length', '8', '--doc_stride', '384']
     if sentencepiece:
         # the downloaded bpe vocab
         url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'

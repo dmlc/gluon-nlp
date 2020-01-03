@@ -283,7 +283,6 @@ get_pretrained = True
 
 get_model_params = {
     'name': args.model_name,
-    'do_lower_case': True,
     'dataset_name': args.dataset,
     'pretrained': get_pretrained,
     'ctx': ctxs,
