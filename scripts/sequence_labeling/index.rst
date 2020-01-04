@@ -14,7 +14,7 @@ The training script for NER requires the seqeval package:
 
 .. code-block:: console
 
-    $ pip3 install seqeval --user
+    $ pip install seqeval --user
 
 Dataset should be formatted in `CoNLL-2003 shared task format <https://www.clips.uantwerpen.be/conll2003/ner/>`_.
 Assuming data files are located in `${DATA_DIR}`, below command trains BERT model for
@@ -23,7 +23,7 @@ prefix in file names:
 
 .. code-block:: console
 
-    $ python finetune_ner.py \
+    $ python finetune_bert.py \
         --train-path ${DATA_DIR}/train.txt \
         --dev-path ${DATA_DIR}/dev.txt \
         --test-path ${DATA_DIR}/test.txt
