@@ -368,7 +368,6 @@ def train():
             train_dataset = pickle.load(file)
             train_dataset = mx.gluon.data.SimpleDataset(train_dataset)
 
-    log.infor('finish converting features...')
     train_data_transform = convert_examples_to_inputs(train_dataset)
 
     log.info('The number of examples after preprocessing: %s',
