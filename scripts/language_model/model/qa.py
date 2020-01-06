@@ -77,19 +77,20 @@ class XLNetPoolerAnswerClass(Block):
             self.dense_1 = nn.Dense(1, in_units=units, use_bias=False, flatten=False)
             self._dropout = nn.Dropout(dropout)
 
-    def __call__(self, hidden_states, batch_size=None, start_states=None, cls_index=None):
+    def __call__(self, hidden_states, start_states=None, cls_index=None):
         # pylint: disable=arguments-differ
-        self._bsz = batch_size
         return super(XLNetPoolerAnswerClass, self).__call__(hidden_states, start_states, cls_index)
         # pylint: disable=unused-argument
 
-    def forward(self, hidden_states, start_states, cls_index):
+    def forward(self, sequence, start_states, cls_index):
         # pylint: disable=arguments-differ
         # get the cls_token's state, currently the last state
         F = mx.ndarray
-        cls_token_state = hidden_states.slice(begin=(0, -1, 0), end=(None, -2, None),
-                                              step=(None, -1, None))
-        cls_token_state = cls_token_state.reshape(shape=(-1, self._units))
+        index = F.contrib.arange_like(sequence, axis=0, ctx=sequence.context).expand_dims(1)
+        valid_length_rs = cls_index.reshape((-1, 1)) - 1
+        gather_index = F.concat(index, valid_length_rs).T
+        cls_token_state = F.gather_nd(sequence, gather_index)
+
         x = self.dense_0(F.concat(start_states, cls_token_state, dim=-1))
         x = self._dropout(x)
         x = self.dense_1(x).squeeze(-1)
@@ -131,11 +132,11 @@ class XLNetForQA(Block):
         return super(XLNetForQA, self).__call__(inputs, token_types, valid_length, p_mask, label,
                                                 is_impossible, mems)
 
-    def _padding_mask(self, inputs, valid_length_start, left_pad=True):
+    def _padding_mask(self, inputs, valid_length, left_pad=False):
         F = mx.ndarray
         if left_pad:
-            #left pad
-            valid_length_start = valid_length_start.astype('int64')
+            # left padding
+            valid_length_start = valid_length.astype('int64')
             steps = F.contrib.arange_like(inputs, axis=1) + 1
             ones = F.ones_like(steps)
             mask = F.broadcast_greater(F.reshape(steps, shape=(1, -1)),
@@ -143,7 +144,14 @@ class XLNetForQA(Block):
             mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
                                    F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
         else:
-            raise NotImplementedError
+            # right padding
+            valid_length = valid_length.astype(inputs.dtype)
+            steps = F.contrib.arange_like(inputs, axis=1)
+            ones = F.ones_like(steps)
+            mask = F.broadcast_lesser(F.reshape(steps, shape=(1, -1)),
+                                  F.reshape(valid_length, shape=(-1, 1)))
+            mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
+                               F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
         return mask
 
     def forward(self, inputs, token_types, valid_length, p_mask, label, is_impossible, mems):
@@ -167,10 +175,10 @@ class XLNetForQA(Block):
         """
         if isinstance(valid_length, list) and len(valid_length) == 0:
             valid_length = None
-        valid_length_start = inputs.shape[1] - valid_length
-        attention_mask = self._padding_mask(inputs, valid_length_start).astype('float32')
+        attention_mask = self._padding_mask(inputs, valid_length).astype('float32')
         output, _ = self.xlnet(inputs, token_types, mems, attention_mask)
         start_logits = self.start_logits(output, p_masks=p_mask)  # shape (bsz, slen)
+        bsz, slen, hsz = output.shape
         if not self.eval:
             #training
             start_positions, end_positions = label
@@ -179,18 +187,20 @@ class XLNetForQA(Block):
                          self.loss(end_logit, end_positions)) / 2
 
             cls_loss = None
+            total_loss = [span_loss]
             if self.version2:
                 start_log_probs = mx.nd.softmax(start_logits, axis=-1)
                 start_states = mx.nd.batch_dot(output, start_log_probs.expand_dims(-1),
                                                transpose_a=True).squeeze(-1)
-                cls_logits = self.answer_class(output, output.shape[0], start_states)
+
+                cls_logits = self.answer_class(output, start_states, valid_length)
                 cls_loss = self.cls_loss(cls_logits, is_impossible)
-            total_loss = span_loss + 0.5 * cls_loss if cls_loss is not None else span_loss
-            return total_loss
+                total_loss.append(0.5 * cls_loss)
+            total_loss_sum = span_loss + 0.5 * cls_loss if cls_loss is not None else span_loss
+            return total_loss, total_loss_sum
         else:
             #inference
-            bsz, slen, hsz = output.shape
-            start_log_probs = mx.nd.softmax(start_logits, axis=-1)  # shape (bsz, slen)
+            start_log_probs = mx.nd.log_softmax(start_logits, axis=-1)  # shape (bsz, slen)
             start_top_log_probs, start_top_index = mx.ndarray.topk(
                 start_log_probs, k=self.start_top_n, axis=-1,
                 ret_typ='both')  # shape (bsz, start_n_top)
@@ -211,7 +221,7 @@ class XLNetForQA(Block):
                 shape=start_states.shape)  # shape (bsz, slen, start_n_top, hsz)
             end_logits = self.end_logits(hidden_states_expanded, start_states=start_states,
                                          p_masks=p_mask)  # shape (bsz, slen, start_n_top)
-            end_log_probs = mx.nd.softmax(end_logits, axis=1)  # shape (bsz, slen, start_n_top)
+            end_log_probs = mx.nd.log_softmax(end_logits, axis=1)  # shape (bsz, slen, start_n_top)
             # Note that end_top_index and end_top_log_probs have shape (bsz, END_N_TOP, start_n_top)
             # So that for each start position, there are end_n_top end positions on the second dim.
             end_top_log_probs, end_top_index = mx.ndarray.topk(
@@ -219,16 +229,17 @@ class XLNetForQA(Block):
                 ret_typ='both')  # shape (bsz, end_n_top, start_n_top)
             end_top_log_probs = end_top_log_probs.reshape((-1, self.start_top_n * self.end_top_n))
             end_top_index = end_top_index.reshape((-1, self.start_top_n * self.end_top_n))
-            start_states = mx.nd.batch_dot(output, start_log_probs.expand_dims(-1),
+
+            start_probs = mx.nd.softmax(start_logits, axis=-1)
+            start_states = mx.nd.batch_dot(output, start_probs.expand_dims(-1),
                                            transpose_a=True).squeeze(-1)
 
             cls_logits = None
             if self.version2:
-                cls_logits = self.answer_class(output, output.shape[0], start_states)
+                cls_logits = self.answer_class(output, start_states, valid_length)
 
-            padding_length = mx.nd.expand_dims(slen - valid_length, axis=-1)
-            start_top_index = start_top_index - padding_length
-            end_top_index = end_top_index - padding_length
+            start_top_index = start_top_index
+            end_top_index = end_top_index
             outputs = (start_top_log_probs, start_top_index, end_top_log_probs, end_top_index,
                        cls_logits)
             return outputs
