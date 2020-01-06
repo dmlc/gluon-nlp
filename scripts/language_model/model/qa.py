@@ -130,6 +130,7 @@ class XLNetForQA(Block):
                  end_top_n=None,
                  version_2=False,
                  is_eval=False,
+                 units=768,
                  prefix=None,
                  params=None):
         super(XLNetForQA, self).__init__(prefix=prefix, params=params)
@@ -139,11 +140,11 @@ class XLNetForQA(Block):
             self.end_top_n = end_top_n
             self.loss = loss.SoftmaxCELoss()
             self.start_logits = PoolerStartLogits()
-            self.end_logits = PoolerEndLogits(is_eval=is_eval)
+            self.end_logits = PoolerEndLogits(units=units, is_eval=is_eval)
             self.version2 = version_2
             self.eval = is_eval
             if version_2:
-                self.answer_class = XLNetPoolerAnswerClass()
+                self.answer_class = XLNetPoolerAnswerClass(units=units)
                 self.cls_loss = loss.SigmoidBinaryCrossEntropyLoss()
 
     def __call__(self,
