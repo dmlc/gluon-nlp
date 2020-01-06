@@ -7,6 +7,8 @@ dependencies:
   - pandoc=1.19.2
   - tornado=5.1.1
   - sphinx=2.2.1
+  # In the -master pipeline, we test without numba. Numba is an optional
+  # dependency and GluonNLP needs to work both with and without numba installed.
   - pip:
     - numpy==1.17.4
     - notedown==1.5.1
@@ -16,7 +18,6 @@ dependencies:
     - nbsphinx>=0.3.4,<0.4
     - ipython
     - ipykernel
-    - numba==0.46
     - https://github.com/szha/mx-theme/tarball/master
     - seaborn
     - jieba
