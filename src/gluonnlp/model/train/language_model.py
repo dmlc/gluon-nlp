@@ -71,6 +71,9 @@ class AWDRNN(HybridBlock):
         self._drop_e = drop_e
         self._weight_drop = weight_drop
         self._tie_weights = tie_weights
+        self._shared_params = None
+        if 'params' in kwargs:
+            self._shared_params = kwargs['params']
 
         with self.name_scope():
             self.embedding = self._get_embedding()
@@ -103,10 +106,10 @@ class AWDRNN(HybridBlock):
         output = nn.HybridSequential()
         with output.name_scope():
             if self._tie_weights:
-                if output._params._shared is not None:
+                if self._shared_params is not None:
                     shared_params = self.embedding[0].params
                     shared_params = ParameterDict(shared_params.prefix)
-                    shared_params.update(output._params._shared)
+                    shared_params.update(self._shared_params)
                     output.add(nn.Dense(self._vocab_size, flatten=False,
                                         params=shared_params))
                 else:
