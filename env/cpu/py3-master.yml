@@ -5,13 +5,14 @@ dependencies:
   - pip
   - perl
   - pip:
+    - numpy==1.17.4
     - cython
     - boto3
     - pytype==2019.10.17
-    - pytest==5.2.3
+    - pytest==5.3.2
     - pytest-env==0.6.2
     - pytest-cov==2.8.1
-    - pytest-xdist==1.30.0
+    - pytest-xdist==1.31.0
     - pylint==2.4.4
     - pylint-quotes==0.2.1
     - flaky==3.6.1
@@ -24,5 +25,6 @@ dependencies:
     - nltk==3.4.5
     - sacremoses==0.0.35
     - spacy==2.2.2
+    - jieba
     - sentencepiece==0.1.83
     - sphinx-autodoc-typehints==1.7.0
