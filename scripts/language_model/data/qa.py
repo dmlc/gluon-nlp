@@ -283,6 +283,8 @@ class SQuADTransform:
                  uncased=False,
                  is_training=True):
         self.tokenizer = tokenizer
+        self.sp_model = nlp.data.SentencepieceTokenizer(
+            self.tokenizer._sentencepiece_path)._processor
         self.vocab = vocab
         self.max_seq_length = max_seq_length
         self.max_query_length = max_query_length
@@ -318,11 +320,9 @@ class SQuADTransform:
         """Loads a data file into a list of `InputBatch`s."""
 
         example = self._toSquadExample(record)
-        sp_model = nlp.data.SentencepieceTokenizer(
-            self.tokenizer._sentencepiece_path)._processor
         max_N, max_M = 1024, 1024
         f = np.zeros((max_N, max_M), dtype=np.float32)
-
+        sp_model = self.sp_model
         query_tokens = self.tokenizer(example.question_text)
         if len(query_tokens) > self.max_query_length:
             query_tokens = query_tokens[0:self.max_query_length]
