@@ -348,6 +348,7 @@ def train():
         sampled_data = [train_data[i] for i in range(100)]
         train_data = mx.gluon.data.SimpleDataset(sampled_data)
     log.info('Number of records in Train data: %s', len(train_data))
+    suffix = '.squad1' if not args.version_2 else '.squad2'
     if args.raw:
         train_dataset = train_data.transform(SQuADTransform(
             copy.copy(tokenizer),
@@ -356,15 +357,15 @@ def train():
             doc_stride=args.doc_stride,
             max_query_length=args.max_query_length,
             is_pad=True,
-            is_training=True)._transform,
-                                             lazy=False)
-        with open(args.dev_dataset_file, 'wb') as file:
+            is_training=True)._transform,lazy=False)
+        with open(args.dev_dataset_file + suffix, 'wb') as file:
             pickle.dump(list(train_dataset), file)
     else:
-        with open(args.dev_dataset_file, 'rb') as file:
+        with open(args.dev_dataset_file + suffix, 'rb') as file:
             train_dataset = pickle.load(file)
             train_dataset = mx.gluon.data.SimpleDataset(train_dataset)
 
+    log.infor('finish converting features...')
     train_data_transform = convert_examples_to_inputs(train_dataset)
 
     log.info('The number of examples after preprocessing: %s',
@@ -556,7 +557,7 @@ def evaluate(prefix=''):
         sampled_data = [dev_data[0], dev_data[1], dev_data[2]]
         dev_data = mx.gluon.data.SimpleDataset(sampled_data)
     log.info('Number of records in dev data: %d', len(dev_data))
-
+    suffix = '.squad1' if not args.version_2 else '.squad2'
     if args.raw:
         dev_dataset = dev_data.transform(SQuADTransform(
             copy.copy(tokenizer),
@@ -567,10 +568,10 @@ def evaluate(prefix=''):
             is_pad=True,
             is_training=False)._transform,
                                          lazy=False)
-        with open(args.dev_dataset_file, 'wb') as file:
+        with open(args.dev_dataset_file + suffix, 'wb') as file:
             pickle.dump(list(dev_dataset), file)
     else:
-        with open(args.dev_dataset_file, 'rb') as file:
+        with open(args.dev_dataset_file + suffix, 'rb') as file:
             dev_dataset = pickle.load(file)
             dev_dataset = mx.gluon.data.SimpleDataset(dev_dataset)
 
