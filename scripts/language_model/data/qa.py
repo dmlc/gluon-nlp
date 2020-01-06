@@ -14,16 +14,12 @@
 """XLNet for QA datasets."""
 import collections
 import multiprocessing as mp
-import time
-from functools import partial
-import pickle
-from mxnet.gluon.data import SimpleDataset
-from gluonnlp.data.utils import whitespace_splitter
 import unicodedata
 import gc
-import gluonnlp as nlp
+from mxnet.gluon.data import SimpleDataset
 import numpy as np
-__all__ = ['SQuADTransform', 'preprocess_dataset']
+import gluonnlp as nlp
+__all__ = ['SQuADTransform']
 
 
 class SquadExample:
@@ -31,11 +27,17 @@ class SquadExample:
 
        For examples without an answer, the start and end position are -1.
     """
-    def __init__(self, qas_id, question_text, paragraph_text, example_id, orig_answer_text=None,
-                 start_position=None, is_impossible=False):
+    def __init__(self,
+                 qas_id,
+                 question_text,
+                 paragraph_text,
+                 example_id,
+                 orig_answer_text=None,
+                 start_position=None,
+                 is_impossible=False):
         self.qas_id = qas_id
         self.question_text = question_text
-        self.paragraph_text=paragraph_text
+        self.paragraph_text = paragraph_text
         self.orig_answer_text = orig_answer_text
         self.start_position = start_position
         self.is_impossible = is_impossible
@@ -43,6 +45,7 @@ class SquadExample:
 
 
 def convert_single_example_to_input(example):
+    """convert a single example into necessary features for model input"""
     features = []
     for _example in example:
         feature = []
@@ -60,6 +63,7 @@ def convert_single_example_to_input(example):
 
 
 def convert_examples_to_inputs(examples, num_workers=8):
+    """convert examples into necessary features for model input"""
     pool = mp.Pool(num_workers)
     dataset_transform = []
     for data in pool.map(convert_single_example_to_input, examples):
@@ -72,8 +76,9 @@ def convert_examples_to_inputs(examples, num_workers=8):
     pool.close()
     return dataset
 
-def _encode_pieces(sp_model, text, sample=False):
 
+def _encode_pieces(sp_model, text, sample=False):
+    """apply sentence pieces to raw text"""
     if not sample:
         pieces = sp_model.EncodeAsPieces(text)
     else:
@@ -82,111 +87,111 @@ def _encode_pieces(sp_model, text, sample=False):
     new_pieces = []
     for piece in pieces:
         if len(piece) > 1 and piece[-1] == ',' and piece[-2].isdigit():
-          cur_pieces = sp_model.EncodeAsPieces(
-              piece[:-1].replace(u'▁', ''))
-          if piece[0] != u'▁' and cur_pieces[0][0] == u'▁':
-            if len(cur_pieces[0]) == 1:
-              cur_pieces = cur_pieces[1:]
-            else:
-              cur_pieces[0] = cur_pieces[0][1:]
-          cur_pieces.append(piece[-1])
-          new_pieces.extend(cur_pieces)
+            cur_pieces = sp_model.EncodeAsPieces(piece[:-1].replace(u'▁', ''))
+            if piece[0] != u'▁' and cur_pieces[0][0] == u'▁':
+                if len(cur_pieces[0]) == 1:
+                    cur_pieces = cur_pieces[1:]
+                else:
+                    cur_pieces[0] = cur_pieces[0][1:]
+            cur_pieces.append(piece[-1])
+            new_pieces.extend(cur_pieces)
         else:
-          new_pieces.append(piece)
+            new_pieces.append(piece)
     return new_pieces
 
 
-
-class InputFeatures(object):
-  """A single set of features of data."""
-
-  def __init__(self,
-               example_id,
-               qas_id,
-               doc_span_index,
-               tok_start_to_orig_index,
-               tok_end_to_orig_index,
-               token_is_max_context,
-               input_ids,
-               tokens,
-               valid_length,
-               p_mask,
-               segment_ids,
-               paragraph_text,
-               paragraph_len,
-               cls_index,
-               start_position=None,
-               end_position=None,
-               is_impossible=None):
-    self.example_id = example_id
-    self.qas_id = qas_id
-    self.doc_span_index = doc_span_index
-    self.tok_start_to_orig_index = tok_start_to_orig_index
-    self.tok_end_to_orig_index = tok_end_to_orig_index
-    self.token_is_max_context = token_is_max_context
-    self.input_ids = input_ids
-    self.tokens = tokens
-    self.valid_length = valid_length
-    self.p_mask = p_mask
-    self.segment_ids = segment_ids
-    self.paragraph_text = paragraph_text
-    self.paragraph_len = paragraph_len
-    self.cls_index = cls_index
-    self.start_position = start_position
-    self.end_position = end_position
-    self.is_impossible = is_impossible
+class InputFeatures:
+    """A single set of features of data."""
+    def __init__(self,
+                 example_id,
+                 qas_id,
+                 doc_span_index,
+                 tok_start_to_orig_index,
+                 tok_end_to_orig_index,
+                 token_is_max_context,
+                 input_ids,
+                 tokens,
+                 valid_length,
+                 p_mask,
+                 segment_ids,
+                 paragraph_text,
+                 paragraph_len,
+                 cls_index,
+                 start_position=None,
+                 end_position=None,
+                 is_impossible=None):
+        self.example_id = example_id
+        self.qas_id = qas_id
+        self.doc_span_index = doc_span_index
+        self.tok_start_to_orig_index = tok_start_to_orig_index
+        self.tok_end_to_orig_index = tok_end_to_orig_index
+        self.token_is_max_context = token_is_max_context
+        self.input_ids = input_ids
+        self.tokens = tokens
+        self.valid_length = valid_length
+        self.p_mask = p_mask
+        self.segment_ids = segment_ids
+        self.paragraph_text = paragraph_text
+        self.paragraph_len = paragraph_len
+        self.cls_index = cls_index
+        self.start_position = start_position
+        self.end_position = end_position
+        self.is_impossible = is_impossible
 
 
 def _convert_index(index, pos, M=None, is_start=True):
-  if index[pos] is not None:
-    return index[pos]
-  N = len(index)
-  rear = pos
-  while rear < N - 1 and index[rear] is None:
-    rear += 1
-  front = pos
-  while front > 0 and index[front] is None:
-    front -= 1
-  assert index[front] is not None or index[rear] is not None
-  if index[front] is None:
-    if index[rear] >= 1:
-      if is_start:
-        return 0
-      else:
-        return index[rear] - 1
-    return index[rear]
-  if index[rear] is None:
-    if M is not None and index[front] < M - 1:
-      if is_start:
-        return index[front] + 1
-      else:
-        return M - 1
-    return index[front]
-  if is_start:
-    if index[rear] > index[front] + 1:
-      return index[front] + 1
+    """convert tokenized index to corresponding origin text index"""
+    if index[pos] is not None:
+        return index[pos]
+    N = len(index)
+    rear = pos
+    while rear < N - 1 and index[rear] is None:
+        rear += 1
+    front = pos
+    while front > 0 and index[front] is None:
+        front -= 1
+    assert index[front] is not None or index[rear] is not None
+    if index[front] is None:
+        if index[rear] >= 1:
+            if is_start:
+                return 0
+            else:
+                return index[rear] - 1
+        return index[rear]
+    if index[rear] is None:
+        if M is not None and index[front] < M - 1:
+            if is_start:
+                return index[front] + 1
+            else:
+                return M - 1
+        return index[front]
+    if is_start:
+        if index[rear] > index[front] + 1:
+            return index[front] + 1
+        else:
+            return index[rear]
     else:
-      return index[rear]
-  else:
-    if index[rear] > index[front] + 1:
-      return index[rear] - 1
+        if index[rear] > index[front] + 1:
+            return index[rear] - 1
+        else:
+            return index[front]
+
+
+def preprocess_text(inputs, lower=False, remove_space=True,
+                    keep_accents=False):
+    """simple text clean"""
+    if remove_space:
+        outputs = ' '.join(inputs.strip().split())
     else:
-      return index[front]
+        outputs = inputs
+    outputs = outputs.replace('``', '"').replace('\'\'', '"')
+    if not keep_accents:
+        outputs = unicodedata.normalize('NFKD', outputs)
+        outputs = ''.join([c for c in outputs if not unicodedata.combining(c)])
+    if lower:
+        outputs = outputs.lower()
 
-
-def preprocess_text(inputs, lower=False, remove_space=True, keep_accents=False):
-  if remove_space:
-    outputs = ' '.join(inputs.strip().split())
-  else:
-    outputs = inputs
-  outputs = outputs.replace("``", '"').replace("''", '"')
-  if not keep_accents:
-    outputs = unicodedata.normalize('NFKD', outputs)
-    outputs = ''.join([c for c in outputs if not unicodedata.combining(c)])
-  if lower:
-    outputs = outputs.lower()
-
-  return outputs
+    return outputs
 
 
 class SQuADTransform:
@@ -268,8 +273,15 @@ class SQuADTransform:
     do_lookup : bool, default True
         Whether to do vocabulary lookup for convert tokens to indices.
     """
-    def __init__(self, tokenizer, vocab, max_seq_length=384, doc_stride=128, max_query_length=64,
-                 is_pad=True, uncased=False, is_training=True):
+    def __init__(self,
+                 tokenizer,
+                 vocab,
+                 max_seq_length=384,
+                 doc_stride=128,
+                 max_query_length=64,
+                 is_pad=True,
+                 uncased=False,
+                 is_training=True):
         self.tokenizer = tokenizer
         self.vocab = vocab
         self.max_seq_length = max_seq_length
@@ -293,31 +305,32 @@ class SQuADTransform:
         answer_offset = record[5][0] if record[5] else ''
         is_impossible = record[6] if len(record) == 7 else False
 
-        example = SquadExample(qas_id=qas_id, question_text=question_text, paragraph_text=paragraph_text,
+        example = SquadExample(qas_id=qas_id,
+                               question_text=question_text,
+                               paragraph_text=paragraph_text,
                                example_id=example_id,
                                orig_answer_text=orig_answer_text,
                                start_position=answer_offset,
                                is_impossible=is_impossible)
         return example
 
-
     def _transform(self, *record):
         """Loads a data file into a list of `InputBatch`s."""
 
         example = self._toSquadExample(record)
-        sp_model = nlp.data.SentencepieceTokenizer(self.tokenizer._sentencepiece_path)._processor
+        sp_model = nlp.data.SentencepieceTokenizer(
+            self.tokenizer._sentencepiece_path)._processor
         max_N, max_M = 1024, 1024
         f = np.zeros((max_N, max_M), dtype=np.float32)
 
         query_tokens = self.tokenizer(example.question_text)
         if len(query_tokens) > self.max_query_length:
-            query_tokens = query_tokens[0: self.max_query_length]
+            query_tokens = query_tokens[0:self.max_query_length]
         query_tokens = self.vocab.to_indices(query_tokens)
 
         paragraph_text = example.paragraph_text
         para_tokens = _encode_pieces(
-            sp_model,
-            preprocess_text(example.paragraph_text, self.uncased))
+            sp_model, preprocess_text(example.paragraph_text, self.uncased))
 
         chartok_to_tok_index = []
         tok_start_to_chartok_index = []
@@ -353,8 +366,8 @@ class SQuADTransform:
                 # because the mismatch between sentence pieces and original text will
                 # be small
                 for j in range(i - max_dist, i + max_dist):
-                    if j >= M or j < 0: continue
-
+                    if j >= M or j < 0:
+                        continue
                     if i > 0:
                         g[(i, j)] = 0
                         f[i, j] = f[i - 1, j]
@@ -364,9 +377,9 @@ class SQuADTransform:
                         f[i, j] = f[i, j - 1]
 
                     f_prev = f[i - 1, j - 1] if i > 0 and j > 0 else 0
-                    if (preprocess_text(paragraph_text[i], lower=self.uncased,
-                                        remove_space=False)
-                            == tok_cat_text[j]
+                    if (preprocess_text(paragraph_text[i],
+                                        lower=self.uncased,
+                                        remove_space=False) == tok_cat_text[j]
                             and f_prev + 1 > f[i, j]):
                         g[(i, j)] = 2
                         f[i, j] = f_prev + 1
@@ -374,14 +387,16 @@ class SQuADTransform:
         max_dist = abs(N - M) + 5
         for _ in range(2):
             _lcs_match(max_dist)
-            if f[N - 1, M - 1] > 0.8 * N: break
+            if f[N - 1, M - 1] > 0.8 * N:
+                break
             max_dist *= 2
 
         orig_to_chartok_index = [None] * N
         chartok_to_orig_index = [None] * M
         i, j = N - 1, M - 1
         while i >= 0 and j >= 0:
-            if (i, j) not in g: break
+            if (i, j) not in g:
+                break
             if g[(i, j)] == 2:
                 orig_to_chartok_index[i] = j
                 chartok_to_orig_index[j] = i
@@ -391,19 +406,24 @@ class SQuADTransform:
             else:
                 i = i - 1
 
-        if all(v is None for v in orig_to_chartok_index) or f[N - 1, M - 1] < 0.8 * N:
+        if all(v is None
+               for v in orig_to_chartok_index) or f[N - 1, M - 1] < 0.8 * N:
             print('MISMATCH DETECTED!')
-            return
+            return None
 
         tok_start_to_orig_index = []
         tok_end_to_orig_index = []
         for i in range(len(para_tokens)):
             start_chartok_pos = tok_start_to_chartok_index[i]
             end_chartok_pos = tok_end_to_chartok_index[i]
-            start_orig_pos = _convert_index(chartok_to_orig_index, start_chartok_pos,
-                                            N, is_start=True)
-            end_orig_pos = _convert_index(chartok_to_orig_index, end_chartok_pos,
-                                          N, is_start=False)
+            start_orig_pos = _convert_index(chartok_to_orig_index,
+                                            start_chartok_pos,
+                                            N,
+                                            is_start=True)
+            end_orig_pos = _convert_index(chartok_to_orig_index,
+                                          end_chartok_pos,
+                                          N,
+                                          is_start=False)
 
             tok_start_to_orig_index.append(start_orig_pos)
             tok_end_to_orig_index.append(end_orig_pos)
@@ -419,11 +439,13 @@ class SQuADTransform:
             start_position = example.start_position
             end_position = start_position + len(example.orig_answer_text) - 1
 
-            start_chartok_pos = _convert_index(orig_to_chartok_index, start_position,
+            start_chartok_pos = _convert_index(orig_to_chartok_index,
+                                               start_position,
                                                is_start=True)
             tok_start_position = chartok_to_tok_index[start_chartok_pos]
 
-            end_chartok_pos = _convert_index(orig_to_chartok_index, end_position,
+            end_chartok_pos = _convert_index(orig_to_chartok_index,
+                                             end_position,
                                              is_start=False)
             tok_end_position = chartok_to_tok_index[end_chartok_pos]
             assert tok_start_position <= tok_end_position
@@ -440,7 +462,7 @@ class SQuADTransform:
         # To deal with this we do a sliding window approach, where we take chunks
         # of the up to our max length with a stride of `doc_stride`.
         _DocSpan = collections.namedtuple(  # pylint: disable=invalid-name
-            "DocSpan", ["start", "length"])
+            'DocSpan', ['start', 'length'])
         doc_spans = []
         features = []
         start_offset = 0
@@ -452,7 +474,6 @@ class SQuADTransform:
             if start_offset + length == len(all_doc_tokens):
                 break
             start_offset += min(length, self.doc_stride)
-        #print("qas id: {}, tokens: {}, max tokens for doc: {} doc_spans: {}".format(example.qas_id, len(all_doc_tokens), max_tokens_for_doc, len(doc_spans)))
         for (doc_span_index, doc_span) in enumerate(doc_spans):
             tokens = []
             token_is_max_context = {}
@@ -470,7 +491,8 @@ class SQuADTransform:
                 cur_tok_end_to_orig_index.append(
                     tok_end_to_orig_index[split_token_index])
 
-                is_max_context = _check_is_max_context(doc_spans, doc_span_index,
+                is_max_context = _check_is_max_context(doc_spans,
+                                                       doc_span_index,
                                                        split_token_index)
                 token_is_max_context[len(tokens)] = is_max_context
                 tokens.append(all_doc_tokens[split_token_index])
@@ -526,8 +548,8 @@ class SQuADTransform:
                 doc_start = doc_span.start
                 doc_end = doc_span.start + doc_span.length - 1
                 out_of_span = False
-                if not (tok_start_position >= doc_start and
-                        tok_end_position <= doc_end):
+                if not (tok_start_position >= doc_start
+                        and tok_end_position <= doc_end):
                     out_of_span = True
                 if out_of_span:
                     # continue
@@ -546,34 +568,39 @@ class SQuADTransform:
                 end_position = cls_index
 
             if example.example_id < 20:
-                print("*** Example ***")
-                print("qas_id: %s" % (example.qas_id))
-                print("example_index: %s" % (example.example_id))
-                print("doc_span_index: %s" % (doc_span_index))
-                print("tok_start_to_orig_index: %s" % " ".join(
-                    [str(x) for x in cur_tok_start_to_orig_index]))
-                print("tok_end_to_orig_index: %s" % " ".join(
-                    [str(x) for x in cur_tok_end_to_orig_index]))
-                print("token_is_max_context: %s" % " ".join([
-                    "%d:%s" % (x, y) for (x, y) in token_is_max_context.items()
+                print('*** Example ***')
+                print('qas_id: %s' % (example.qas_id))
+                print('example_index: %s' % (example.example_id))
+                print('doc_span_index: %s' % (doc_span_index))
+                print('tok_start_to_orig_index: %s' %
+                      ' '.join([str(x) for x in cur_tok_start_to_orig_index]))
+                print('tok_end_to_orig_index: %s' %
+                      ' '.join([str(x) for x in cur_tok_end_to_orig_index]))
+                print('token_is_max_context: %s' % ' '.join([
+                    '%d:%s' % (x, y)
+                    for (x, y) in token_is_max_context.items()
                 ]))
-                print("input_ids: %s" % " ".join([str(x) for x in input_ids]))
-                print(
-                    "p_mask: %s" % " ".join([str(x) for x in p_mask]))
-                print(
-                    "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
+                print('input_ids: %s' % ' '.join([str(x) for x in input_ids]))
+                print('p_mask: %s' % ' '.join([str(x) for x in p_mask]))
+                print('segment_ids: %s' %
+                      ' '.join([str(x) for x in segment_ids]))
 
                 if self.is_training and span_is_impossible:
-                   print("impossible example span")
+                    print('impossible example span')
 
                 if self.is_training and not span_is_impossible:
-                    pieces = [sp_model.IdToPiece(token) for token in
-                              tokens[start_position-padding_length: (end_position-padding_length + 1)]]
+                    pieces = [
+                        sp_model.IdToPiece(token)
+                        for token in tokens[start_position -
+                                            padding_length:(end_position -
+                                                            padding_length +
+                                                            1)]
+                    ]
                     answer_text = sp_model.DecodePieces(pieces)
-                    print("start_position: %d" % (start_position-padding_length))
-                    print("end_position: %d" % (end_position-padding_length))
-                    print(
-                        "answer: %s" % (answer_text))
+                    print('start_position: %d' %
+                          (start_position - padding_length))
+                    print('end_position: %d' % (end_position - padding_length))
+                    print('answer: %s' % (answer_text))
 
                     # note(zhiliny): With multi processing,
                     # the example_index is actually the index within the current process

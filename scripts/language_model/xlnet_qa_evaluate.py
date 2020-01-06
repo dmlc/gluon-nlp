@@ -13,22 +13,25 @@
 # limitations under the License.
 """XLNet SQuAD evaluate."""
 
-import json
-import math
-import collections
 from collections import namedtuple, OrderedDict
 
 from mxnet import nd
 
-
 _PrelimPrediction = namedtuple(  # pylint: disable=invalid-name
-    'PrelimPrediction',
-    ['feature_id', 'start_index', 'end_index', 'start_log_prob', 'end_log_prob'])
+    'PrelimPrediction', [
+        'feature_id', 'start_index', 'end_index', 'start_log_prob',
+        'end_log_prob'
+    ])
 
 _NbestPrediction = namedtuple(  # pylint: disable=invalid-name
     'NbestPrediction', ['text', 'start_log_prob', 'end_log_prob'])
 
-def predict_extended(features, results, n_best_size, max_answer_length=64, start_n_top=5,
+
+def predict_extended(features,
+                     results,
+                     n_best_size,
+                     max_answer_length=64,
+                     start_n_top=5,
                      end_n_top=5):
     """Get prediction results for XLNet.
 
@@ -85,12 +88,16 @@ def predict_extended(features, results, n_best_size, max_answer_length=64, start
                 if length > max_answer_length:
                     continue
                 prelim_predictions.append(
-                    _PrelimPrediction(feature_id=features_id, start_index=start_index,
-                                      end_index=end_index, start_log_prob=start_log_prob,
+                    _PrelimPrediction(feature_id=features_id,
+                                      start_index=start_index,
+                                      end_index=end_index,
+                                      start_log_prob=start_log_prob,
                                       end_log_prob=end_log_prob))
 
-    prelim_predictions = sorted(prelim_predictions, key=lambda x:
-                                (x.start_log_prob + x.end_log_prob), reverse=True)
+    prelim_predictions = sorted(prelim_predictions,
+                                key=lambda x:
+                                (x.start_log_prob + x.end_log_prob),
+                                reverse=True)
 
     seen_predictions = {}
     nbest = []
@@ -104,18 +111,20 @@ def predict_extended(features, results, n_best_size, max_answer_length=64, start
         end_orig_pos = tok_end_to_orig_index[pred.end_index]
 
         paragraph_text = feature.paragraph_text
-        final_text = paragraph_text[start_orig_pos: end_orig_pos + 1].strip()
+        final_text = paragraph_text[start_orig_pos:end_orig_pos + 1].strip()
         if final_text in seen_predictions:
             continue
         seen_predictions[final_text] = True
         nbest.append(
-            _NbestPrediction(text=final_text, start_log_prob=pred.start_log_prob,
+            _NbestPrediction(text=final_text,
+                             start_log_prob=pred.start_log_prob,
                              end_log_prob=pred.end_log_prob))
 
     # In very rare edge cases we could have no valid predictions. So we
     # just create a nonce prediction in this case to avoid failure.
     if not nbest:
-        nbest.append(_NbestPrediction(text='', start_log_prob=-1e6, end_log_prob=-1e6))
+        nbest.append(
+            _NbestPrediction(text='', start_log_prob=-1e6, end_log_prob=-1e6))
 
     assert len(nbest) >= 1
 
@@ -141,4 +150,3 @@ def predict_extended(features, results, n_best_size, max_answer_length=64, start
     assert best_non_null_entry is not None
     score_diff = score_null
     return score_diff, best_non_null_entry.text, nbest_json
-
