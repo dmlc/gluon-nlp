@@ -591,15 +591,12 @@ class SQuADTransform:
                 if self.is_training and not span_is_impossible:
                     pieces = [
                         sp_model.IdToPiece(token)
-                        for token in tokens[start_position -
-                                            padding_length:(end_position -
-                                                            padding_length +
-                                                            1)]
+                        for token in tokens[start_position :(end_position + 1)]
                     ]
                     answer_text = sp_model.DecodePieces(pieces)
                     print('start_position: %d' %
-                          (start_position - padding_length))
-                    print('end_position: %d' % (end_position - padding_length))
+                          (start_position))
+                    print('end_position: %d' % (end_position))
                     print('answer: %s' % (answer_text))
 
                     # note(zhiliny): With multi processing,
