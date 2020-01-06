@@ -44,7 +44,11 @@ class LengthNormalizedLoss(EvalMetric):
             output_names=output_names, label_names=label_names,
             has_global_stats=True)
 
-    def update(self, _, preds, seq_valid_length):
+    # Parameter labels should be a list in the form of  [target_sequence,
+    # target_seqauence_valid_length]
+    def update(self, labels, preds):
+        _, seq_valid_length = labels
+
         if isinstance(seq_valid_length, ndarray.ndarray.NDArray):
             seq_valid_length = [seq_valid_length]
 
