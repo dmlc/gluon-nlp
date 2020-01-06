@@ -108,6 +108,20 @@ class DotProductSelfAttentionCell(HybridBlock):
                                                 allow_deferred_init=True)
             self.dropout_layer = nn.Dropout(self._dropout)
 
+    def _collect_params_with_prefix(self, prefix=''):
+        # the registered parameter names in v0.8 are the following:
+        # prefix_proj_query.weight, prefix_proj_query.bias
+        # prefix_proj_value.weight, prefix_proj_value.bias
+        # prefix_proj_key.weight, prefix_proj_key.bias
+        # this is a temporary fix to keep backward compatibility, due to an issue in MXNet:
+        # https://github.com/apache/incubator-mxnet/issues/17220
+        if prefix:
+            prefix += '.'
+        ret = {prefix + 'proj_' + k.replace('_', '.') : v for k, v in self._reg_params.items()}
+        for name, child in self._children.items():
+            ret.update(child._collect_params_with_prefix(prefix + name))
+        return ret
+
     def hybrid_forward(self, F, qkv, valid_len, query_bias, key_bias, value_bias,
                        query_weight, key_weight, value_weight):
         in_bias = F.concat(query_bias, key_bias, value_bias, dim=0)
