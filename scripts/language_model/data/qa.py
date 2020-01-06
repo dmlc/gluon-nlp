@@ -349,7 +349,6 @@ class SQuADTransform:
             max_N = max(N, max_N)
             max_M = max(M, max_M)
             f = np.zeros((max_N, max_M), dtype=np.float32)
-            gc.collect()
 
         g = {}
 
