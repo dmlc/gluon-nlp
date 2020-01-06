@@ -134,8 +134,10 @@ class DotProductSelfAttentionCell(HybridBlock):
             valid_len = F.broadcast_axis(F.expand_dims(valid_len, axis=1),
                                          axis=1, size=self._num_heads)
             valid_len = valid_len.reshape(shape=(-1, 0), reverse=True)
+            att_weights = F.softmax(att_score, length=valid_len, use_length=True, axis=-1)
+        else:
+            att_weights = F.softmax(att_score, axis=-1)
         # att_weights shape = (batch_size, seq_length, seq_length)
-        att_weights = F.softmax(att_score, length=valid_len, use_length=True, axis=-1)
         att_weights = self.dropout_layer(att_weights)
         context_vec = F.contrib.interleaved_matmul_selfatt_valatt(qkv_proj, att_weights,
                                                                   heads=self._num_heads)
@@ -619,7 +621,10 @@ class BERTModel(HybridBlock):
         # encoding
         outputs, additional_outputs = self.encoder(embedding, valid_length=valid_length)
         # (seq_len, batch, C) -> (batch, seq_len, C)
-        outputs = outputs.transpose((1, 0, 2))
+        if isinstance(outputs, (list, tuple)):
+            outputs = [o.transpose((1, 0, 2)) for o in outputs]
+        else:
+            outputs = outputs.transpose((1, 0, 2))
         return outputs, additional_outputs
 
     def _apply_pooling(self, sequence):
