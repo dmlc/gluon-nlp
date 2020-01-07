@@ -58,16 +58,11 @@ Machine Translation
 .. container:: cards
 
    .. card::
-      :title: Google Neural Machine Translation
+      :title: Google Neural Machine Translation with Transformer
       :link: machine_translation/gnmt.html
 
-      Learn how to train Google Neural Machine Translation, a seq2seq with attention model.
-
-   .. card::
-      :title: Machine Translation with Transformer
-      :link: machine_translation/transformer.html
-
-      Learn how to use a pre-trained transformer translation model for English-German translation.
+      Learn how to train Google Neural Machine Translation, a seq2seq with attention model and learn
+      how to use a pre-trained transformer translation model for English-German translation.
 
 
 .. toctree::
@@ -75,7 +70,6 @@ Machine Translation
    :maxdepth: 1
 
    machine_translation/gnmt.ipynb
-   machine_translation/transformer.ipynb
 
 
 Sentence Embedding
