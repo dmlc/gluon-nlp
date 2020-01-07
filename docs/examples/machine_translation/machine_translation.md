@@ -1,4 +1,4 @@
-# Google Neural Machine Translation (GNMT) with Transformers
+# Machine Translation
 
 ## Google Neural Machine Translation (GNMT)
 

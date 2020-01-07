@@ -59,7 +59,7 @@ Machine Translation
 
    .. card::
       :title: Google Neural Machine Translation with Transformer
-      :link: machine_translation/gnmt.html
+      :link: machine_translation/machine_translation.html
 
       Learn how to train Google Neural Machine Translation, a seq2seq with attention model and learn
       how to use a pre-trained transformer translation model for English-German translation.
@@ -69,7 +69,7 @@ Machine Translation
    :hidden:
    :maxdepth: 1
 
-   machine_translation/gnmt.ipynb
+   machine_translation/machine_translation.ipynb
 
 
 Sentence Embedding
