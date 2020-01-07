@@ -516,10 +516,12 @@ class SplitSampler(Sampler):
     even_size: bool, default False
       If the number of samples is not even across all partitions, sample a few extra samples
       for the ones with fewer samples.
-    repeat: int
-      The number of times that items are repeated with reshuffling.
+    repeat: int, default 1
+      The number of times that items are repeated.
+    shuffle: bool, default False
+      Whether or not to shuffle the items.
     """
-    def __init__(self, length, num_parts=1, part_index=0, even_size=False, repeat=1):
+    def __init__(self, length, num_parts=1, part_index=0, even_size=False, repeat=1, shuffle=False):
         assert length >= num_parts, \
             'Length (%d) must be greater than or equal to the number of partitions (%d).'%\
             (length, num_parts)
@@ -544,6 +546,7 @@ class SplitSampler(Sampler):
             self._end = self._end if self._end <= length else length
             self._len = part_len
         self._repeat = repeat
+        self._shuffle = shuffle
 
     def __iter__(self):
         # Extract examples between `start` and `end`, shuffle and return them.
@@ -555,7 +558,8 @@ class SplitSampler(Sampler):
                 candidates = list(range(self._total_length))
                 extras = random.sample(candidates, k=self._len-len(indices))
                 indices.extend(extras)
-            random.shuffle(indices)
+            if self._shuffle:
+                random.shuffle(indices)
             file_iter.extend(indices)
         return iter(file_iter)
 
