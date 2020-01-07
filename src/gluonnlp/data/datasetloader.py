@@ -35,12 +35,12 @@ from gluonnlp.data.stream import _PathDataset
 
 
 class ProxyArrayDataset(ArrayDataset):
-    """When BaseManager is used, proxy[ArrayDataset] does not support index."""
+    """When BaseManager is used, proxy[ArrayDataset] does not support indexing."""
     def __init__(self, *args):
         super(ProxyArrayDataset, self).__init__(*args)
 
     def get(self, idx):
-        return self.__getitem__(idx)
+        return self[idx]
 
 
 def _dataset_worker_fn(url, dataset_fn, batch_sampler_fn):
@@ -172,9 +172,9 @@ class _MultiDatasetWorkerIter:
     def _push_next_dataset(self):
         """Assign next dataset workload to workers."""
         current_dataset_idx = self._sent_idx * self._circle_length
-        if current_dataset_idx < len(self._dataset):
+        if current_dataset_idx < self._num_datasets:
             circle_length = min(self._circle_length,
-                                len(self._dataset) - current_dataset_idx)
+                                self._num_datasets - current_dataset_idx)
             if self._circle_length > 1:
                 url = [self._dataset[current_dataset_idx + i] for i in range(circle_length)]
             else:
@@ -379,6 +379,8 @@ class DatasetLoader:
                     if i < len(dataset) - 1:
                         if len(urls) < self._circle_length:
                             continue
+                    if self._circle_length == 1:
+                        urls = urls[0]
                     dataset, batch_sampler = _dataset_worker_fn(urls, self._dataset_fn, self._batch_sampler_fn)
                     for batch in batch_sampler:
                         ret = self._batchify_fn([dataset[idx] for idx in batch])
