@@ -82,12 +82,12 @@ def transform(instance, max_seq_length):
     return features
 
 def print_example(instance, features):
-    # logging.debug('*** Example Instance ***')
-    # logging.debug('\n%s', instance)
+    logging.debug('*** Example Instance ***')
+    logging.debug('\n%s', instance)
 
     for feature_name in features.keys():
         feature = features[feature_name]
-        # logging.debug('Generated %s: %s', feature_name, feature)
+        logging.debug('Generated %s: %s', feature_name, feature)
 
 def write_to_files_np(features, tokenizer, max_seq_length,
                       max_predictions_per_seq, output_files):
@@ -261,10 +261,7 @@ def create_training_instances(x):
             process_args.append((all_documents, document_index, max_seq_length, short_seq_prob,
                                  masked_lm_prob, max_predictions_per_seq, whole_word_mask,
                                  vocab, tokenizer))
-        logging.debug('*** Number of prcesses: %d***', worker_pool._processes)
-        logging.debug('*** Creating intances from %d documents ***', document_index + 1)
         for df in range(dupe_factor):
-            logging.debug('*** Running %d run ***', df)
             instances_results = worker_pool.map(create_instances_from_document, process_args)
             for instances_result in instances_results:
                 instances.extend(instances_result)
