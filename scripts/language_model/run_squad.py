@@ -282,7 +282,7 @@ if pretrained_xlnet_parameters:
                               ignore_extra=True,
                               cast_dtype=True)
 
-units=xlnet_base._net._units
+ units = xlnet_base._net._units
 net = XLNetForQA(xlnet_base=xlnet_base,
                  start_top_n=args.start_top_n,
                  end_top_n=args.end_top_n,
@@ -360,7 +360,7 @@ def train():
             doc_stride=args.doc_stride,
             max_query_length=args.max_query_length,
             is_pad=True,
-            is_training=True)._transform,lazy=False)
+            is_training=True)._transform, lazy=False)
         with open(args.train_dataset_file + suffix, 'wb') as file:
             pickle.dump(list(train_dataset), file)
     else:
@@ -632,7 +632,7 @@ def evaluate(prefix=''):
         score_diff, best_non_null_entry, nbest_json = predict_extended(
             features=features,
             results=results,
-            n_best_size=args.n_best_size,
+            n_best_size=5,
             max_answer_length=args.max_answer_length,
             start_n_top=args.start_top_n,
             end_n_top=args.end_top_n)
