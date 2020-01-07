@@ -19,7 +19,7 @@ def prepare_bucket_sampler(dataset, batch_size, shuffle=False, num_buckets=1):
 
 
 def test_dataset_loader():
-    num_files = 2
+    num_files = 5
     for i in range(num_files):
         np.save(os.path.join('tests', 'data', 'part_{}.npy'.format(i)), np.random.uniform(size=(100, 20)))
     data = os.path.join('tests', 'data')

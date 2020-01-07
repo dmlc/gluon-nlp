@@ -16,13 +16,14 @@
 # under the License.
 
 # pylint: disable=ungrouped-imports
-"""DatasetLoader. An extension of Gluon data loader that allows reading multiple files on-the-fly."""
+"""DatasetLoader. An extension of Gluon data loader that allows 
+reading and processing ultiple files on-the-fly.
+"""
 
 __all__ = ['DatasetLoader']
 
 import io
 import pickle
-import logging
 import warnings
 import multiprocessing
 from multiprocessing.managers import BaseManager
@@ -78,6 +79,7 @@ class _MultiBatchWorkerIter:
         self._pin_memory = pin_memory
         self._prefetch = prefetch
         self._dataset = None
+        self._last_dataset = None
         self._batch_iter = None
 
     def _next_dataset(self):
@@ -99,6 +101,9 @@ class _MultiBatchWorkerIter:
                 return
             else:
                 dataset, batch_sampler = result
+                # Wihout keeping the referebce to the last dataset in the master process,
+                # the key error can be triggered occasionally. This may be a bug in Python. 
+                self._last_dataset = self._dataset
                 self._dataset = dataset
                 self._batch_iter = iter(batch_sampler)
                 for _ in range(self._prefetch):
@@ -298,8 +303,9 @@ class DatasetLoader:
         multiple worker processes, try reduce `num_batch_workers` in this case.
         By default it defaults to `num_batch_workers * 2`.
     dataset_cached : bool, default is False
-        Whether or not to cache last processed dataset. Each processed dataset can only be cached for once.
-        When there is no new available processed dataset to be fetched, we pop a cached processed dataset.
+        Whether or not to cache last processed dataset. Each processed dataset can
+        only be cached for once. When there is no new available processed dataset to be fetched,
+        we pop a cached processed dataset.
     num_max_dataset_cached : int, default is 0
         Maximum number of cached datasets. It is valid only if dataset_cached is True
     """
@@ -329,10 +335,8 @@ class DatasetLoader:
                 'When dataset_cached is True, num_max_dataset_cached must be positive'
         self._dataset = _PathDataset(file_patterns)
         self._file_sampler = file_sampler
-        assert dataset_fn is not None, \
-            'dataset_fn is not given. Set it to default function prepare_pretrain_text_dataset'
-        assert batch_sampler_fn is not None, \
-            'batch_sampler_fn is not given. Set it to default function prepare_pretrain_bucket_sampler'
+        assert dataset_fn is not None, 'dataset_fn is not given.'
+        assert batch_sampler_fn is not None, 'batch_sampler_fn is not given.'
         if dataset_params is not None:
             self._dataset_fn = partial(dataset_fn, **dataset_params)
         else:
@@ -343,10 +347,10 @@ class DatasetLoader:
             self._batch_sampler_fn = batch_sampler_fn
         self._num_dataset_workers = num_dataset_workers
         self._num_batch_workers = num_batch_workers
-        self._dataset_prefetch \
-            = max(0, int(dataset_prefetch) if dataset_prefetch is not None else self._num_dataset_workers)
-        self._batch_prefetch \
-            = max(0, int(batch_prefetch) if batch_prefetch is not None else 2 * self._num_batch_workers)
+        self._dataset_prefetch = max(0, int(dataset_prefetch) \
+                if dataset_prefetch is not None else self._num_dataset_workers)
+        self._batch_prefetch = max(0, int(batch_prefetch) \
+                if batch_prefetch is not None else 2 * self._num_batch_workers)
         self._pin_memory = pin_memory
         self._circle_length = circle_length
         self._dataset_cached = dataset_cached
@@ -381,7 +385,8 @@ class DatasetLoader:
                             continue
                     if self._circle_length == 1:
                         urls = urls[0]
-                    dataset, batch_sampler = _dataset_worker_fn(urls, self._dataset_fn, self._batch_sampler_fn)
+                    dataset, batch_sampler = _dataset_worker_fn(urls, self._dataset_fn,
+                                                                self._batch_sampler_fn)
                     for batch in batch_sampler:
                         ret = self._batchify_fn([dataset[idx] for idx in batch])
                         if self._pin_memory:

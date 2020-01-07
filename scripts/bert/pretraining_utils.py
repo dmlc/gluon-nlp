@@ -178,13 +178,15 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle,
     num_batch_workers : int
         The number of worker processes for batch construction.
     circle_length : int, default is 1
-        The number of files to be read for a single worker at the same time. When circle_length is larger than 1,
-        we merge circle_length files.
+        The number of files to be read for a single worker at the same time.
+        When circle_length is larger than 1, we merge circle_length files.
     repeat : int, default is 1
         The number of times that files are repeated.
     dataset_cached : bool, default is False
-        Whether or not to cache last processed dataset. Each processed dataset can only be cached for once.
-        When there is no new available processed dataset to be fetched, we pop a cached processed dataset.
+        Whether or not to cache last processed dataset.
+        Each processed dataset can only be cached for once.
+        When there is no new available processed dataset to be fetched,
+        we pop a cached processed dataset.
     num_max_dataset_cached : int, default is 0
         Maximum number of cached datasets. It is valid only if dataset_cached is True
     """
@@ -210,14 +212,21 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle,
         nlp.data.batchify.Stack(),  # next_sentence_label
         nlp.data.batchify.Pad(pad_val=0, round_to=8),  # segment_id
         nlp.data.batchify.Stack())
-    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx, repeat=repeat)
-    dataloader = nlp.data.DatasetLoader(data, file_sampler=split_sampler, dataset_fn=dataset_fn,
+    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts,
+                                          part_index=part_idx, repeat=repeat)
+    dataloader = nlp.data.DatasetLoader(data,
+                                        file_sampler=split_sampler,
+                                        dataset_fn=dataset_fn,
                                         batch_sampler_fn=sampler_fn,
-                                        dataset_params=dataset_params, batch_sampler_params=sampler_params,
+                                        dataset_params=dataset_params,
+                                        batch_sampler_params=sampler_params,
                                         batchify_fn=batchify_fn,
-                                        num_dataset_workers=num_dataset_workers, num_batch_workers=num_batch_workers,
-                                        pin_memory=True, circle_length=circle_length,
-                                        dataset_cached=dataset_cached, num_max_dataset_cached=num_max_dataset_cached)
+                                        num_dataset_workers=num_dataset_workers,
+                                        num_batch_workers=num_batch_workers,
+                                        pin_memory=True,
+                                        circle_length=circle_length,
+                                        dataset_cached=dataset_cached,
+                                        num_max_dataset_cached=num_max_dataset_cached)
     return dataloader
 
 
@@ -250,13 +259,15 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes,
     num_batch_workers : int
         The number of worker processes for batch contruction.
     circle_length : int, default is 1
-        The number of files to be read for a single worker at the same time. When circle_length is larger than 1,
-        we merge circle_length files.
+        The number of files to be read for a single worker at the same time.
+        When circle_length is larger than 1, we merge circle_length files.
     repeat : int, default is 1
         The number of times that files are repeated.
     dataset_cached : bool, default is False
-        Whether or not to cache last processed dataset. Each processed dataset can only be cached for once.
-        When there is no new available processed dataset to be fetched, we pop a cached processed dataset.
+        Whether or not to cache last processed dataset.
+        Each processed dataset can only be cached for once.
+        When there is no new available processed dataset to be fetched,
+        we pop a cached processed dataset.
     num_max_dataset_cached : int, default is 0
         Maximum number of cached datasets. It is valid only if dataset_cached is True
     """
@@ -279,14 +290,21 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes,
         nlp.data.batchify.Stack(),  # next_sentence_label
         nlp.data.batchify.Pad(pad_val=0, round_to=8),  # segment_id
         nlp.data.batchify.Stack())
-    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx, repeat=repeat)
-    dataloader = nlp.data.DatasetLoader(data, file_sampler=split_sampler, dataset_fn=dataset_fn,
+    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts,
+                                          part_index=part_idx, repeat=repeat)
+    dataloader = nlp.data.DatasetLoader(data,
+                                        file_sampler=split_sampler,
+                                        dataset_fn=dataset_fn,
                                         batch_sampler_fn=sampler_fn,
-                                        dataset_params=dataset_params, batch_sampler_params=sampler_params,
+                                        dataset_params=dataset_params,
+                                        batch_sampler_params=sampler_params,
                                         batchify_fn=batchify_fn,
-                                        num_dataset_workers=num_dataset_workers, num_batch_workers=num_batch_workers,
-                                        pin_memory=True, circle_length=circle_length,
-                                        dataset_cached=dataset_cached, num_max_dataset_cached=num_max_dataset_cached)
+                                        num_dataset_workers=num_dataset_workers,
+                                        num_batch_workers=num_batch_workers,
+                                        pin_memory=True,
+                                        circle_length=circle_length,
+                                        dataset_cached=dataset_cached,
+                                        num_max_dataset_cached=num_max_dataset_cached)
     return dataloader
 
 
