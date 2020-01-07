@@ -361,10 +361,10 @@ def train():
             max_query_length=args.max_query_length,
             is_pad=True,
             is_training=True)._transform,lazy=False)
-        with open(args.dev_dataset_file + suffix, 'wb') as file:
+        with open(args.train_dataset_file + suffix, 'wb') as file:
             pickle.dump(list(train_dataset), file)
     else:
-        with open(args.dev_dataset_file + suffix, 'rb') as file:
+        with open(args.train_dataset_file + suffix, 'rb') as file:
             train_dataset = pickle.load(file)
             train_dataset = mx.gluon.data.SimpleDataset(train_dataset)
 
