@@ -47,9 +47,14 @@ class LengthNormalizedLoss(EvalMetric):
     # Parameter labels should be a list in the form of  [target_sequence,
     # target_seqauence_valid_length]
     def update(self, labels, preds):
+        if not isinstance(labels, list) or len(labels) != 2:
+            raise ValueError('labels must be a list. Its first element should be'
+                             ' target sequence and the second element should be'
+                             'the valid length of sequence.')
+
         _, seq_valid_length = labels
 
-        if isinstance(seq_valid_length, ndarray.ndarray.NDArray):
+        if not isinstance(seq_valid_length, list):
             seq_valid_length = [seq_valid_length]
 
         if not isinstance(preds, list):
