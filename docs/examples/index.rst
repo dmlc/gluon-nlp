@@ -58,7 +58,7 @@ Machine Translation
 .. container:: cards
 
    .. card::
-      :title: Google Neural Machine Translation with Transformer
+      :title: Machine Translation
       :link: machine_translation/machine_translation.html
 
       Learn how to train Google Neural Machine Translation, a seq2seq with attention model and learn
