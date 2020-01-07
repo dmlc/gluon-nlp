@@ -4,6 +4,8 @@ dependencies:
   - python=3.5
   - pip
   - perl
+  # In the -master pipeline, we test without numba. Numba is an optional
+  # dependency and GluonNLP needs to work both with and without numba installed.
   - pip:
     - numpy==1.17.4
     - cython
