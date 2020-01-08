@@ -116,9 +116,9 @@ def test_split_sampler(num_samples, num_parts, repeat):
             count += 1
             indices.append(i)
         total_count += count
-        assert count == len(sampler) * repeat
+        assert count == len(sampler)
     assert total_count == num_samples * repeat
-    assert sorted(indices) == np.repeat(list(range(num_samples)), repeat)
+    assert np.allclose(sorted(indices), np.repeat(list(range(num_samples)), repeat))
 
 
 @pytest.mark.parametrize('num_samples', [30])
