@@ -261,7 +261,7 @@ def create_training_instances(x):
             process_args.append((all_documents, document_index, max_seq_length, short_seq_prob,
                                  masked_lm_prob, max_predictions_per_seq, whole_word_mask,
                                  vocab, tokenizer))
-        for df in range(dupe_factor):
+        for _ in range(dupe_factor):
             instances_results = worker_pool.map(create_instances_from_document, process_args)
             for instances_result in instances_results:
                 instances.extend(instances_result)

@@ -16,7 +16,7 @@
 # under the License.
 
 # pylint: disable=ungrouped-imports
-"""DatasetLoader. An extension of Gluon data loader that allows 
+"""DatasetLoader. An extension of Gluon data loader that allows
 reading and processing ultiple files on-the-fly.
 """
 
@@ -102,7 +102,7 @@ class _MultiBatchWorkerIter:
             else:
                 dataset, batch_sampler = result
                 # Wihout keeping the referebce to the last dataset in the master process,
-                # the key error can be triggered occasionally. This may be a bug in Python. 
+                # the key error can be triggered occasionally. This may be a bug in Python.
                 self._last_dataset = self._dataset
                 self._dataset = dataset
                 self._batch_iter = iter(batch_sampler)
