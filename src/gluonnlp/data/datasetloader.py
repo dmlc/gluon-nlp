@@ -17,7 +17,7 @@
 
 # pylint: disable=ungrouped-imports
 """DatasetLoader. An extension of Gluon data loader that allows
-reading and processing ultiple files on-the-fly.
+reading and processing multiple files on-the-fly.
 """
 
 __all__ = ['DatasetLoader']
@@ -32,7 +32,7 @@ from mxnet import context
 from mxnet.gluon.data import ArrayDataset
 from mxnet.gluon.data.dataloader import ForkingPickler, _as_in_context
 from mxnet.gluon.data.dataloader import default_mp_batchify_fn, default_batchify_fn
-from gluonnlp.data.stream import _PathDataset
+from .stream import _PathDataset
 
 
 class ProxyArrayDataset(ArrayDataset):
