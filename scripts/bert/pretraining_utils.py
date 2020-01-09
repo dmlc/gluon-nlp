@@ -500,7 +500,7 @@ def generate_dev_set(tokenizer, vocab, cache_file, args):
                                args.short_seq_prob, args.masked_lm_prob,
                                args.max_predictions_per_seq,
                                args.whole_word_mask, vocab,
-                               1, args.num_data_workers,
+                               1, args.num_dataset_workers,
                                worker_pool, cache_file))
     logging.info('Done generating validation set on rank 0.')
 
