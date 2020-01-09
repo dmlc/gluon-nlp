@@ -72,7 +72,7 @@ def convert_examples_to_inputs(examples, num_workers=8):
             for _data in data:
                 dataset_transform.append(_data[:-1])
     dataset = SimpleDataset(dataset_transform).transform(
-        lambda x: (x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8]))
+        lambda x: (x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]))
 
     pool.close()
     return dataset
