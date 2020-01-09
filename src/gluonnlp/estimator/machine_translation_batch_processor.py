@@ -22,9 +22,9 @@ import mxnet as mx
 from mxnet.gluon.contrib.estimator import BatchProcessor
 from mxnet.gluon.utils import split_and_load
 
-__all__ = ['ParallelMachineTranslationBatchProcessor']
+__all__ = ['MTTransformerBatchProcessor']
 
-class ParallelMachineTranslationBatchProcessor(BatchProcessor):
+class MTTransformerBatchProcessor(BatchProcessor):
     def __init__(self, rescale_loss=100, batch_size=1024):
         self.rescale_loss = rescale_loss
         self.batch_size = batch_size

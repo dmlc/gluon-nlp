@@ -30,6 +30,7 @@ __all__ = ['MachineTranslationEstimator']
 class MachineTranslationEstimator(Estimator):
     def __init__(self, net, loss,
                  train_metrics=None,
+                 val_metrics=None,
                  initializer=None,
                  trainer=None,
                  context=None,

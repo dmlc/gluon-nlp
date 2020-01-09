@@ -181,4 +181,8 @@ class ComputeBleuHandler(EpochEnd):
         for ind, sentence in zip(self.all_inst_ids, self.translation_out):
             self.real_translation_out[ind] = sentence
         self.bleu_score, _, _, _, _ = self.compute_bleu_fn([self.tgt_sentence],
-                                                           self.real_translation_out)
+                                                           self.real_translation_out,
+                                                           tokenized=self.tokenized,
+                                                           tokenizer=self.tokenizer,
+                                                           split_compound_word+self.split_compound_word,
+                                                           bpe=self.bpe)

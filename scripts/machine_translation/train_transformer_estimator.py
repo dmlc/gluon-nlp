@@ -52,8 +52,10 @@ import dataprocessor
 from bleu import _bpe_to_words, compute_bleu
 from translation import BeamSearchTranslator
 from utils import logging_config
-from gluonnlp.estimator import MachineTranslationEstimator
-from gluonnlp.estimator import LengthNormalizedLoss
+from gluonnlp.estimator import MachineTranslationEstimator, LengthNormalizedLoss
+from gluonnlp.estimator import MTTransformerBatchProcessor, MTTransformerParamUpdateHandler
+from gluonnlp.estimator import TransformerLearningRateHandler, MTTransformerMetricHandler
+from gluonnlp.estimator import TransformerGradientAccumulationHandler, ComputeBleuHandler
 
 np.random.seed(100)
 random.seed(100)
@@ -209,7 +211,57 @@ rescale_loss = 100.
 parallel_model = ParallelTransformer(model, label_smoothing, loss_function, rescale_loss)
 detokenizer = nlp.data.SacreMosesDetokenizer()
 
-loss = LengthNormalizedLoss()
-train_metric = mx.metric.Loss(loss)
+trainer = gluon.Trainer(model.collect_params(), args.optimizer,
+                        {'learning_rate': args.lr, 'beta2': 0.98, 'epsilon': 1e-9})
 
-mt_estimator = MachineTranslationEstimator(net=parallel_model, loss=loss_function)
+train_data_loader, val_data_loader, test_data_loader \
+    = dataprocessor.make_dataloader(data_train, data_val, data_test, args,
+                                    use_average_length=True, num_shards=len(ctx))
+
+if args.bleu == 'tweaked':
+    bpe = bool(args.dataset != 'IWSLT2015' and args.dataset != 'TOY')
+    split_compound_word = bpe
+    tokenized = True
+elif args.bleu == '13a' or args.bleu == 'intl':
+    bpe = False
+    split_compound_word = False
+    tokenized = False
+else:
+    raise NotImplementedError
+
+grad_interval = args.num_accumulated
+average_start = (len(train_data_loader) // grad_interval) * (args.epochs - args.average_start)
+
+train_metric = LengthNormalizedLoss(loss_function)
+val_metric = LengthNormalizedLoss(test_loss_function)
+
+mt_estimator = MachineTranslationEstimator(net=parallel_model, loss=loss_function,
+                                           train_metrics=train_metric,
+                                           val_metrics=val_metric,
+                                           trainer=trainer,
+                                           context=ctx,
+                                           evaluation_loss=test_loss_function,
+                                           eval_net=model,
+                                           batch_processor=MTTransformerBatchProcessor())
+
+param_update_handler = MTTransformerParamUpdateHandler(avg_start=average_start,
+                                                       grad_interval=grad_interval)
+learning_rate_handler = TransformerLearningRateHandler(lr=args.lr, num_units=args.num_unit,
+                                                       warmup_steps=args.warmup_steps,
+                                                       grad_interval=grad_interval)
+gradient_acc_handler = TransformerGradientAccumulationHandler(grad_interval=grad_interval,
+                                                              batch_size=args.batch_size,
+                                                              rescale_loss=rescale_loss)
+metric_handler = MTTransformerMetricHandler(grad_interval=grad_interval)
+bleu_handler = ComputeBleuHandler(tgt_vocab, tgt_sentence=val_tgt_sentences,
+                                  translator=translator, compute_bleu_fn=compute_bleu,
+                                  tokenized=tokenized, tokenizer=args.bleu,
+                                  split_compound_word=split_compound_word,
+                                  bpe=bpe)
+
+event_handlers = [param_update_handler, learning_rate_handler, gradient_acc_handler,
+                  metric_handler, bleu_handler]
+
+mt_estimator.fit(train_data=train_dta_loader, val_data=val_data_loader,
+                 epochs=args.epochs, event_handlers=event_handlers,
+                 batch_axis=0)
