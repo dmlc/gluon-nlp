@@ -107,6 +107,10 @@ class AWDRNN(HybridBlock):
         with output.name_scope():
             if self._tie_weights:
                 if self._shared_params is not None:
+                    # self.embedding[0].params do not contain the bias, it
+                    # may leave the decoder bias uninitialized. We resolve this
+                    # issue by creating a new ParameterDict and stuffing
+                    # every shared params into the ParameterDict.
                     shared_params = self.embedding[0].params
                     shared_params = ParameterDict(shared_params.prefix)
                     shared_params.update(self._shared_params)
