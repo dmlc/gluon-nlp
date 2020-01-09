@@ -57,6 +57,7 @@ def convert_single_example_to_input(example):
         feature.append(_example.start_position)
         feature.append(_example.end_position)
         feature.append(_example.is_impossible)
+        feature.append(_example.doc_span_index)
         feature.append(len(_example.input_ids))
         features.append(feature)
     return features
@@ -71,7 +72,7 @@ def convert_examples_to_inputs(examples, num_workers=8):
             for _data in data:
                 dataset_transform.append(_data[:-1])
     dataset = SimpleDataset(dataset_transform).transform(
-        lambda x: (x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]))
+        lambda x: (x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7], x[8]))
 
     pool.close()
     return dataset
