@@ -15,7 +15,6 @@
 import collections
 import multiprocessing as mp
 import unicodedata
-import gc
 from mxnet.gluon.data import SimpleDataset
 import numpy as np
 import gluonnlp as nlp

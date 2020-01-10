@@ -61,7 +61,7 @@ parser.add_argument(
     ' default is ./output_dir')
 
 # Training configuration
-parser.add_argument('--seed', type=int, default=777, help='Random seed')
+parser.add_argument('--seed', type=int, default=12, help='Random seed')
 parser.add_argument('--version_2',
                     action='store_true',
                     help='Whether use SQuAD v2.0 dataset')
@@ -82,7 +82,7 @@ parser.add_argument(
     '--uncased',
     action='store_true',
     help=
-    'if set, inputs are converted to lower case. Up to 01/04/2020, all released models are cased'
+    'if set, inputs are converted to lower case. Up to 04/01/2020, all released models are cased'
 )
 parser.add_argument(
     '--gpu',
@@ -124,7 +124,7 @@ parser.add_argument('--test_batch_size',
 
 parser.add_argument('--optimizer',
                     type=str,
-                    default='bertadam',
+                    default='adam',
                     help='optimization algorithm. default is bertadam')
 
 parser.add_argument(
@@ -132,7 +132,8 @@ parser.add_argument(
     type=int,
     default=None,
     help='The number of batches for '
-    'gradients accumulation to simulate large batch size. Default is None')
+    'gradients accumulation to simulate large batch size. Default is None.'
+    'Accumulation may have some bug up to mxnet-1.6.0b20200109')
 
 parser.add_argument('--lr',
                     type=float,
@@ -145,11 +146,14 @@ parser.add_argument(
     default=0,
     help='ratio of warmup steps that linearly increase learning rate from '
     '0 to target learning rate. default is 0')
-parser.add_argument('--layerwise_decay',
-                    type=float,
-                    default=0.75,
-                    help='Layer-wise lr decay')
-parser.add_argument('--wd', type=float, default=0.01, help='weight decay')
+parser.add_argument(
+    '--layerwise_decay',
+    type=float,
+    default=0.75,
+    help=
+    'Layer-wise gradient decay(refered as layer-wise learning rate decay in the paper)'
+)
+parser.add_argument('--wd', type=float, default=0, help='weight decay')
 parser.add_argument('--dropout', type=float, default=0.1, help='dropout')
 parser.add_argument('--attention_dropout',
                     type=float,
@@ -339,91 +343,25 @@ def split_and_load(arrs, ctxs):
     return zip(*loaded_arrs)
 
 
-def clip_grad_global_norm_and_apply_decay(parameters, max_norm, check_isfinite=True):
-    """Rescales gradients of parameters so that the sum of their 2-norm is smaller than `max_norm`.
-    If gradients exist for more than one context for a parameter, user needs to explicitly call
-    ``trainer.allreduce_grads`` so that the gradients are summed first before calculating
-    the 2-norm.
+def _apply_gradient_decay():
+    """apply layer-wise gradient decay.
 
-    .. note::
-
-        This function is only for use when `update_on_kvstore` is set to False in trainer.
-        In cases where training happens on multiple contexts, this method should be used in
-        conjunction with ``trainer.allreduce_grads()`` and ``trainer.update()``.
-        (**not** ``trainer.step()``)
-
-    Example::
-
-        trainer = Trainer(net.collect_params(), update_on_kvstore=False, ...)
-        for x, y in mx.gluon.utils.split_and_load(X, [mx.gpu(0), mx.gpu(1)]):
-            with mx.autograd.record():
-                y = net(x)
-                loss = loss_fn(y, label)
-            loss.backward()
-        trainer.allreduce_grads()
-        nlp.utils.clip_grad_global_norm(net.collect_params().values(), max_norm)
-        trainer.update(batch_size)
-        ...
-
-    Parameters
-    ----------
-    parameters : list of Parameters
-    max_norm : float
-    check_isfinite : bool, default True
-         If True, check that the total_norm is finite (not nan or inf). This
-         requires a blocking .asscalar() call.
-
-    Returns
-    -------
-    NDArray or float
-      Total norm. Return type is NDArray of shape (1,) if check_isfinite is
-      False. Otherwise a float is returned.
-
+    Note that the description in origin paper about layer-wise learning rate decay
+    is inaccurate. According to their implementation, they are actually performing
+    layer-wise gradient decay. Gradient decay and learning rate decay could be the
+    same by using standard SGD, but different by using Adaptive optimizer(e.g., Adam).
     """
-    def _norm(array):
-        if array.stype == 'default':
-            x = array.reshape((-1))
-            return mx.nd.dot(x, x)
-        return array.norm().square()
-
-    arrays = []
-    i = 0
-    for p in parameters:
-        if p.grad_req != 'null':
-            grad_list = p.list_grad()
-            arrays.append(grad_list[i % len(grad_list)])
-            i += 1
-    assert len(arrays) > 0, 'No parameter found available for gradient norm clipping.'
-    ctx, dtype = arrays[0].context, arrays[0].dtype
-    total_norm = mx.nd.add_n(*[_norm(arr).as_in_context(ctx) for arr in arrays])
-    total_norm = mx.nd.sqrt(total_norm)
-    if check_isfinite:
-        total_norm = total_norm.asscalar()
-        if not np.isfinite(total_norm):
-            warnings.warn(
-                UserWarning('nan or inf is detected. '
-                            'Clipping results will be undefined.'), stacklevel=2)
-    scale = max_norm / (total_norm + 1e-8)
-    if check_isfinite:
-        scale = mx.nd.array([scale], dtype=dtype, ctx=ctx)
-    scale = mx.nd.min(mx.nd.concat(scale, mx.nd.ones((1,), dtype=dtype, ctx=ctx), dim=0))
-    for p in parameters:
-        if p.grad_req != 'null':
-            for arr in p.list_grad():
-                arr *= scale.as_in_context(arr.context)
 
     num_layers = len(xlnet_base._net.transformer_cells)
     for (i, layer_parameters) in enumerate(xlnet_base._net.transformer_cells):
         layer_params = layer_parameters.collect_params()
         for key, value in layer_params.items():
             if 'seg_emb' in key:
+                # segment embeddings are not included
                 continue
-            #print("apply mult {} to param {}".format(args.layerwise_decay**(num_layers - i - 1), key))
             if value.grad_req != 'null':
-                for arr in p.list_grad():
+                for arr in value.list_grad():
                     arr *= args.layerwise_decay**(num_layers - i - 1)
-
-    return total_norm
 
 
 def train():
@@ -447,7 +385,8 @@ def train():
             doc_stride=args.doc_stride,
             max_query_length=args.max_query_length,
             is_pad=True,
-            is_training=True)._transform, lazy=False)
+            is_training=True)._transform,
+                                             lazy=False)
         with open(args.train_dataset_file + suffix, 'wb') as file:
             pickle.dump(list(train_dataset), file)
     else:
@@ -514,13 +453,6 @@ def train():
         trainer.set_learning_rate(new_lr)
         return step_num
 
-    # # apply layer-wise learnging rate decay
-    # num_layers = len(xlnet_base._net.transformer_cells)
-    # for (i, layer_parameters) in enumerate(xlnet_base._net.transformer_cells):
-    #     layer_params = layer_parameters.collect_params()
-    #     for _, value in layer_params.items():
-    #         value.lr_mult = args.layerwise_decay**(num_layers - i - 1)
-
     # Do not apply weight decay on LayerNorm and bias terms
     for _, v in net.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
@@ -572,7 +504,8 @@ def train():
             # update
             if not args.accumulate or (batch_id + 1) % args.accumulate == 0:
                 trainer.allreduce_grads()
-                clip_grad_global_norm_and_apply_decay(params, 1)
+                nlp.utils.clip_grad_global_norm(params, 1)
+                _apply_gradient_decay()
                 trainer.update(1, ignore_stale_grad=True)
 
             if args.version_2:
@@ -626,7 +559,8 @@ def train():
 
 RawResultExtended = collections.namedtuple('RawResultExtended', [
     'start_top_log_probs', 'start_top_index', 'end_top_log_probs',
-    'end_top_index', 'cls_logits'])
+    'end_top_index', 'cls_logits'
+])
 
 
 def evaluate(prefix=''):
@@ -718,7 +652,7 @@ def evaluate(prefix=''):
         score_diff, best_non_null_entry, nbest_json = predict_extended(
             features=features,
             results=results,
-            n_best_size=5,
+            n_best_size=args.start_top_n,
             max_answer_length=args.max_answer_length,
             start_n_top=args.start_top_n,
             end_n_top=args.end_top_n)
