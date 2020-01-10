@@ -21,6 +21,7 @@ import warnings
 import numpy
 from mxnet.optimizer import Optimizer, register
 from mxnet.ndarray import zeros, NDArray, full
+import os
 
 __all__ = ['BERTAdam']
 
@@ -63,6 +64,7 @@ class BERTAdam(Optimizer):
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
+        self.aggregate_num = max(1,min(50,int(os.getenv('MXNET_OPTIMIZER_AGGREGATION_SIZE',"4"))))
 
     def create_state_multi_precision(self, index, weight):
         """multi-precision state creation function."""
@@ -88,41 +90,23 @@ class BERTAdam(Optimizer):
 
     def update_multi_precision(self, index, weight, grad, state):
         """multi-precision update function"""
-        use_multi_precision = self.multi_precision and weight.dtype == numpy.float16
+        use_multi_precision = self.multi_precision and weight[0].dtype == numpy.float16
         self._update_impl(index, weight, grad, state,
                           multi_precision=use_multi_precision)
 
     def _update_impl(self, indices, weight, grad, state, multi_precision=False):
         """update function"""
         try:
-            from mxnet.ndarray.contrib import adamw_update
+            from mxnet.ndarray.contrib import adamw_update, multi_adamw_update
         except ImportError:
             raise ImportError('Failed to import nd.contrib.adamw_update from MXNet. '
                               'BERTAdam optimizer requires mxnet>=1.5.0b20190220. '
                               'Please upgrade your MXNet version. For example: '
                               'pip install mxnet-cu90 --pre. Otherwise, please consider '
                               'Adam optimizer with different hyper-parameters.')
-        self._update_count(indices)
-        lr = self._get_lr(indices)
-        wd = self._get_wd(indices)
-
-        # pylint: disable=access-member-before-definition
-        if not isinstance(self.rescale_grad, NDArray):
-            self.rescale_grad = full(shape=(1,), val=self.rescale_grad, ctx=weight.context)
-        else:
-            self.rescale_grad = self.rescale_grad.as_in_context(weight.context)
-
-        kwargs = {'beta1': self.beta1, 'beta2': self.beta2, 'epsilon': self.epsilon,
-                  'rescale_grad': self.rescale_grad}
-        if self.clip_gradient:
-            kwargs['clip_gradient'] = self.clip_gradient
-        if not multi_precision:
-            mean, var = state
-            adamw_update(weight, grad, mean, var, out=weight,
-                         lr=1, wd=wd, eta=lr, **kwargs)
-        else:
+        if multi_precision:
             try:
-                from mxnet.ndarray.contrib import mp_adamw_update
+                from mxnet.ndarray.contrib import mp_adamw_update, multi_mp_adamw_update
             except ImportError:
                 raise ImportError('Failed to import '
                                   'nd.contrib.mp_adamw_update from MXNet. '
@@ -130,6 +114,76 @@ class BERTAdam(Optimizer):
                                   'Please upgrade your MXNet version. For example: '
                                   'pip install mxnet-cu90 --pre. Otherwise, please consider '
                                   'Adam optimizer with different hyper-parameters.')
-            mean, var = state[0]
-            mp_adamw_update(weight, grad, mean, var, state[1], out=weight,
-                            lr=1, wd=wd, eta=lr, **kwargs)
+        if self.aggregate_num > 1:
+          aggregate = True
+        else:
+          aggregate = False
+        if not isinstance(indices, (tuple, list)):
+            indices = [indices]
+            weight = [weight]
+            grad = [grad]
+            state = [state]
+        for w_i, g_i in zip(weight, grad):
+            assert(isinstance(w_i, NDArray))
+            assert(isinstance(g_i, NDArray))
+            aggregate = (aggregate and
+                         w_i.stype == 'default' and
+                         g_i.stype == 'default')
+        self._update_count(indices)
+        lrs = self._get_lrs(indices)
+        wds = self._get_wds(indices)
+
+        # pylint: disable=access-member-before-definition
+        if not isinstance(self.rescale_grad, NDArray):
+            self.rescale_grad = full(shape=(1,), val=self.rescale_grad, ctx=weight[0].context)
+        else:
+            self.rescale_grad = self.rescale_grad.as_in_context(weight[0].context)
+
+        kwargs = {'beta1': self.beta1, 'beta2': self.beta2, 'epsilon': self.epsilon,
+                  'rescale_grad': self.rescale_grad}
+        if self.clip_gradient:
+            kwargs['clip_gradient'] = self.clip_gradient
+
+        if aggregate:
+            import numpy as np
+            current_index = 0
+            while current_index < len(indices):
+                sidx = current_index
+                eidx = min(current_index + self.aggregate_num, len(indices))
+                if not multi_precision:
+                    mean, var = list(zip(*state[sidx:eidx]))
+                    multi_adamw_update(weight[sidx:eidx],
+                                       grad[sidx:eidx],
+                                       mean, var,
+                                       out=weight[sidx:eidx],
+                                       size=len(weight[sidx:eidx]),
+                                       lrs=list(np.ones(len(weight[sidx:eidx]))),
+                                       wds=wds[sidx:eidx],
+                                       etas=lrs[sidx:eidx],
+                                       **kwargs)
+                else:
+                    mean_var = list(zip(*state[sidx:eidx]))[0]
+                    tmean_var = list(zip(*mean_var))
+                    mean=tmean_var[0]
+                    var=tmean_var[1]
+                    multi_mp_adamw_update(weight[sidx:eidx],
+                                          grad[sidx:eidx],
+                                          mean, var,
+                                          list(zip(*state[sidx:eidx]))[1],
+                                          out=weight[sidx:eidx],
+                                          size=len(weight[sidx:eidx]),
+                                          lrs=list(np.ones(len(weight[sidx:eidx]))),
+                                          wds=wds[sidx:eidx],
+                                          etas=lrs[sidx:eidx],
+                                          **kwargs)
+                current_index += self.aggregate_num
+        else:
+            for w_i, g_i, s_i, lr, wd in zip(weight, grad, state, lrs, wds):
+                if not multi_precision:
+                    mean, var = s_i
+                    adamw_update(w_i, g_i, mean, var, out=w_i,
+                                lr=1, wd=wd, eta=lr, **kwargs)
+                else:
+                    mean, var = s_i[0]
+                    mp_adamw_update(w_i, g_i, mean, var, s_i[1], out=w_i,
+                                    lr=1, wd=wd, eta=lr, **kwargs)
