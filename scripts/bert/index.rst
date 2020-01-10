@@ -258,7 +258,7 @@ Named Entity Recognition
 
 GluonNLP provides training and prediction script for named entity recognition models.
 
-The training script for NER requires python3 and the seqeval package:
+The training script for NER requires the seqeval package:
 
 .. code-block:: console
 
@@ -271,7 +271,7 @@ prefix in file names:
 
 .. code-block:: console
 
-    $ python3 finetune_ner.py \
+    $ python finetune_ner.py \
         --train-path ${DATA_DIR}/train.txt \
         --dev-path ${DATA_DIR}/dev.txt \
         --test-path ${DATA_DIR}/test.txt
@@ -300,8 +300,8 @@ The goal of this BERT Embedding is to obtain the token embedding from BERT's pre
 
 .. code-block:: shell
 
-    python bert/embedding.py --sentences "GluonNLP is a toolkit that enables easy text preprocessing, datasets loading and neural models building to help you speed up your Natural Language Processing (NLP) research."
-    Text: GluonNLP is a toolkit that enables easy text preprocessing, datasets loading and neural models building to help you speed up your Natural Language Processing (NLP) research.
+    python embedding.py --sentences "GluonNLP is a toolkit that enables easy text preprocessing, datasets loading and neural models building to help you speed up your Natural Language Processing (NLP) research."
+    Text: g ##lu ##on ##nl ##p is a tool ##kit that enables easy text prep ##ro ##ces ##sing , data ##set ##s loading and neural models building to help you speed up your natural language processing ( nl ##p ) research .
     Tokens embedding: [array([-0.11881411, -0.59530115,  0.627092  , ...,  0.00648153,
        -0.03886228,  0.03406909], dtype=float32), array([-0.7995638 , -0.6540758 , -0.00521846, ..., -0.42272145,
        -0.5787281 ,  0.7021201 ], dtype=float32), array([-0.7406778 , -0.80276626,  0.3931962 , ..., -0.49068323,
@@ -366,7 +366,7 @@ Here's one example of the ATIS dataset, it uses the `IOB2 format <https://en.wik
 In this example, we demonstrate how to use GluonNLP to fine-tune a pretrained BERT model for joint intent classification and slot labelling. We
 choose to finetune a pretrained BERT model.  We use two datasets `ATIS <https://github.com/yvchen/JointSLU>`__ and `SNIPS <https://github.com/snipsco/nlu-benchmark/tree/master/2017-06-custom-intent-engines>`__.
 
-The training script requires python3 and the seqeval and tqdm packages:
+The training script requires the seqeval and tqdm packages:
 
 .. code-block:: console
 
@@ -377,7 +377,7 @@ For the ATIS dataset, use the following command to run the experiment:
 
 .. code-block:: console
 
-    $ python3 finetune_icsl.py --gpu 0 --dataset atis
+    $ python finetune_icsl.py --gpu 0 --dataset atis
 
 It produces the final slot labelling F1 = `95.83%` and intent classification accuracy = `98.66%`
 
@@ -385,7 +385,7 @@ For the SNIPS dataset, use the following command to run the experiment:
 
 .. code-block:: console
 
-    $ python3 finetune_icsl.py --gpu 0 --dataset snips
+    $ python finetune_icsl.py --gpu 0 --dataset snips
 
 It produces the final slot labelling F1 = `96.06%` and intent classification accuracy = `98.71%`
 

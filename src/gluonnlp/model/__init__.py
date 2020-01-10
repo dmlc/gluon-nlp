@@ -67,25 +67,27 @@ You can also get a ELMo model with pretrained parameters:
 """
 
 
-from . import (attention_cell, sequence_sampler, block, convolutional_encoder,
-               highway, language_model, parameter, sampled_block, train, utils, bilm_encoder,
-               lstmpcellwithclip, elmo)
+from . import (attention_cell, bert, bilm_encoder, block,
+               convolutional_encoder, elmo, highway, language_model,
+               lstmpcellwithclip, parameter, sampled_block,
+               seq2seq_encoder_decoder, sequence_sampler, train, transformer,
+               utils)
 from .attention_cell import *
-from .sequence_sampler import *
+from .bert import *
+from .bilm_encoder import BiLMEncoder
 from .block import *
 from .convolutional_encoder import *
-from .seq2seq_encoder_decoder import *
-from .translation import *
-from .transformer import *
-from .bert import *
+from .elmo import *
 from .highway import *
 from .language_model import *
+from .lstmpcellwithclip import LSTMPCellWithClip
 from .parameter import *
 from .sampled_block import *
+from .seq2seq_encoder_decoder import *
+from .sequence_sampler import *
+from .transformer import *
+from .translation import *
 from .utils import *
-from .bilm_encoder import BiLMEncoder
-from .lstmpcellwithclip import LSTMPCellWithClip
-from .elmo import *
 
 __all__ = language_model.__all__ + sequence_sampler.__all__ + attention_cell.__all__ + \
           utils.__all__ + parameter.__all__ + block.__all__ + highway.__all__ + \

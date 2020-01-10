@@ -30,6 +30,7 @@ def check_version(min_version, warning_only=False):
     warning_only : bool
         Printing a warning instead of throwing an exception.
     """
+    # pylint: disable=import-outside-toplevel
     from .. import __version__
     from packaging.version import parse
     bad_version = parse(__version__.replace('.dev', '')) < parse(min_version)

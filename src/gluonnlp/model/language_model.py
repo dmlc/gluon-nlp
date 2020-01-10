@@ -25,7 +25,7 @@ from mxnet.gluon import Block, nn, rnn, contrib
 from mxnet import nd, cpu, autograd, sym
 from mxnet.gluon.model_zoo import model_store
 
-from gluonnlp.model import train
+from . import train
 from .utils import _load_vocab, _load_pretrained_params
 from ..base import get_home_dir
 

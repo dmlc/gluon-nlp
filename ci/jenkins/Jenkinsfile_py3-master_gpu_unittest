@@ -40,19 +40,19 @@ core_logic: {
   utils.parallel_stage('Tests', [
     build_steps.test_unittest('gluon-nlp-gpu-py3-master', 'gpu/py3-master',
                               'tests/unittest', 'src/gluonnlp',
-                              'gpu and (not (serial or skip_master))',
+                              'gpu and (not serial)',
                               4, true, false),
     build_steps.test_unittest('gluon-nlp-gpu-py3-master', 'gpu/py3-master',
                               'tests/unittest', 'src/gluonnlp',
-                              'gpu and serial and not skip_master',
+                              'gpu and serial',
                               0, true, false),
     build_steps.test_unittest('gluon-nlp-gpu-py3-master', 'gpu/py3-master',
                               'scripts/tests', 'src/gluonnlp',
-                              'gpu and (not (serial or skip_master or integration))',
+                              'gpu and (not (serial or integration))',
                               4, true, false),
     build_steps.test_unittest('gluon-nlp-gpu-py3-master', 'gpu/py3-master',
                               'scripts/tests', 'src/gluonnlp',
-                              'gpu and serial and not (skip_master or integration)',
+                              'gpu and serial and not integration',
                               0, true, false)
   ])
 }

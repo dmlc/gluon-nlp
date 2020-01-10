@@ -18,6 +18,7 @@
 """Utilities for pre-training."""
 import time
 import os
+import sys
 import logging
 import random
 import multiprocessing
@@ -437,4 +438,4 @@ def profile(curr_step, start_step, end_step, profile_name='profile.json',
         logging.info(mx.profiler.dumps())
         mx.profiler.dump()
         if early_exit:
-            exit()
+            sys.exit(0)

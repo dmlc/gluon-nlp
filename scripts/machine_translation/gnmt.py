@@ -22,7 +22,9 @@ from mxnet.base import _as_list
 from mxnet.gluon import nn, rnn
 from mxnet.gluon.block import HybridBlock
 from gluonnlp.model.seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, \
-     Seq2SeqOneStepDecoder, _get_attention_cell, _get_cell_type, _nested_sequence_last
+     Seq2SeqOneStepDecoder, _nested_sequence_last
+from gluonnlp.model.utils import _get_cell_type
+from gluonnlp.model.attention_cell import _get_attention_cell
 
 
 class GNMTEncoder(Seq2SeqEncoder):
