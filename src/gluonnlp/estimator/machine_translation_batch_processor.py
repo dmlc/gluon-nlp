@@ -21,15 +21,32 @@ import numpy as np
 import mxnet as mx
 from mxnet.gluon.contrib.estimator import BatchProcessor
 from mxnet.gluon.utils import split_and_load
+from ..model.transformer import ParallelTransformer
+from ..utils.parallel import Parallel
 
 __all__ = ['MTTransformerBatchProcessor']
 
 class MTTransformerBatchProcessor(BatchProcessor):
-    def __init__(self, rescale_loss=100, batch_size=1024):
+    def __init__(self, rescale_loss=100,
+                 batch_size=1024,
+                 label_smoothing=None,
+                 loss_function=None):
         self.rescale_loss = rescale_loss
         self.batch_size = batch_size
+        self.label_smoothing = label_smoothing
+        self.loss_function = loss_function
+        self.parallel_model = None
+
+    def _get_parallel_model(self, estimator):
+        if self.label_smoothing is None or self.loss_function is None:
+            raise ValueError('label smoothing or loss function cannot be none.')
+        if self.parallel_model is None:
+            self.parallel_model = ParallelTransformer(estimator.net, self.label_smoothing,
+                                                      self.loss_function, self.rescale_loss)
+            self.parallel_model = Parallel(len(estimator.context), self.parallel_model)
 
     def fit_batch(self, estimator, train_batch, batch_axis=0):
+        self._get_parallel_model(estimator)
         data = [shard[0] for shard in train_batch]
         target = [shard[1] for shard in train_batch]
         src_word_count, tgt_word_count, bs = np.sum([(shard[2].sum(),
@@ -40,9 +57,9 @@ class MTTransformerBatchProcessor(BatchProcessor):
                 for context, shard in zip(estimator.context, train_batch)]
         Ls = []
         for seq in seqs:
-            estimator.net.put((seq, self.batch_size))
-        Ls = [self.estimator.get() for _ in range(len(estimator.context))]
-        return data, target, None, Ls
+            self.parallel_model.put((seq, self.batch_size))
+        Ls = [self.parallel_model.get() for _ in range(len(estimator.context))]
+        return data, [target, tgt_word_count - bs], None, Ls
 
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):
         ctx = estimator.context[0]
@@ -55,6 +72,6 @@ class MTTransformerBatchProcessor(BatchProcessor):
         out, _ = self.eval_net(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
         loss = self.evaluation_loss(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean().asscalar()
         inst_ids = inst_ids.asnumpy().astype(np.int32).tolist()
-        loss *= (tgt_seq.shape[1] - 1)
+        loss = loss * (tgt_seq.shape[1] - 1)
         estimator.val_tgt_valid_length = tgt_seq.shape[1] - 1
         return src_seq, tgt_seq, out, loss

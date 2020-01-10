@@ -234,25 +234,29 @@ average_start = (len(train_data_loader) // grad_interval) * (args.epochs - args.
 
 train_metric = LengthNormalizedLoss(loss_function)
 val_metric = LengthNormalizedLoss(test_loss_function)
+batch_processor = MTTransformerBatchProcessor(rescale_loss=rescale_loss,
+                                              batch_size=args.batch_size,
+                                              label_smoothing=label_smoothing,
+                                              loss_function=loss_function)
 
-mt_estimator = MachineTranslationEstimator(net=parallel_model, loss=loss_function,
+mt_estimator = MachineTranslationEstimator(net=model, loss=loss_function,
                                            train_metrics=train_metric,
                                            val_metrics=val_metric,
                                            trainer=trainer,
                                            context=ctx,
                                            evaluation_loss=test_loss_function,
-                                           eval_net=model,
-                                           batch_processor=MTTransformerBatchProcessor())
+                                           batch_processor=batch_processor)
 
 param_update_handler = MTTransformerParamUpdateHandler(avg_start=average_start,
                                                        grad_interval=grad_interval)
-learning_rate_handler = TransformerLearningRateHandler(lr=args.lr, num_units=args.num_unit,
+learning_rate_handler = TransformerLearningRateHandler(lr=args.lr, num_units=args.num_units,
                                                        warmup_steps=args.warmup_steps,
                                                        grad_interval=grad_interval)
 gradient_acc_handler = TransformerGradientAccumulationHandler(grad_interval=grad_interval,
                                                               batch_size=args.batch_size,
                                                               rescale_loss=rescale_loss)
-metric_handler = MTTransformerMetricHandler(grad_interval=grad_interval)
+metric_handler = MTTransformerMetricHandler(metrics=mt_estimator.train_metrics,
+                                            grad_interval=grad_interval)
 bleu_handler = ComputeBleuHandler(tgt_vocab, tgt_sentence=val_tgt_sentences,
                                   translator=translator, compute_bleu_fn=compute_bleu,
                                   tokenized=tokenized, tokenizer=args.bleu,
@@ -262,6 +266,6 @@ bleu_handler = ComputeBleuHandler(tgt_vocab, tgt_sentence=val_tgt_sentences,
 event_handlers = [param_update_handler, learning_rate_handler, gradient_acc_handler,
                   metric_handler, bleu_handler]
 
-mt_estimator.fit(train_data=train_dta_loader, val_data=val_data_loader,
+mt_estimator.fit(train_data=train_data_loader, val_data=val_data_loader,
                  epochs=args.epochs, event_handlers=event_handlers,
                  batch_axis=0)

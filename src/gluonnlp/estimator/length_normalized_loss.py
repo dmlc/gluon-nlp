@@ -17,7 +17,7 @@
 """ Length Normalized Loss """
 
 from mxnet import ndarray
-from ..metric.masked_accuracy import EvalMetric
+from mxnet.metric import EvalMetric
 
 __all__ = ['LengthNormalizedLoss']
 

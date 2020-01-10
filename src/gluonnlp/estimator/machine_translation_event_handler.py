@@ -23,9 +23,11 @@ import math
 
 import mxnet as mx
 from mxnet.gluon.contrib.estimator import TrainBegin, TrainEnd, EpochBegin
-from mxnet.gluon.contrib.estimator import EpochEnd, BatchBegin, BatchEnc
+from mxnet.gluon.contrib.estimator import EpochEnd, BatchBegin, BatchEnd
 from mxnet.gluon.contrib.estimator import GradientUpdateHandler
 from mxnet.gluon.contrib.estimator import MetricHandler
+from mxnet.metric import Loss as MetricLoss
+from .length_normalized_loss import LengthNormalizedLoss
 
 __all__ = ['MTTransformerParamUpdateHandler', 'TransformerLearningRateHandler',
            'MTTransformerMetricHandler', 'TransformerGradientAccumulationHandler',
@@ -40,17 +42,15 @@ class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
 
     def _update_avg_param(self, estimator):
         if estimator.avg_param is None:
-            # estimator.net is parallel model estimator.net._model is the model
-            # embedded in the parallel model
             estimator.avg_param = {k:v.data(estimator.context[0]).copy() for k, v in
-                                   estimator.net._model.collect_params().items()}
+                                   estimator.net.collect_params().items()}
         if self.step_num > self.avg_start:
-            params = estimator.net._model.collect_params()
+            params = estimator.net.collect_params()
             alpha = 1. / max(1, self.step_num - self.avg_start)
             for key, val in estimator.avg_param.items():
-                estimator.avg_param[:] += alpha *
-                (params[key].data(estimator.context[0]) -
-                 val)
+                estimator.avg_param[:] += alpha * \
+                                          (params[key].data(estimator.context[0]) -
+                                           val)
 
     def epoch_begin(self, estimator, *args, **kwargs):
         self.batch_id = 0
@@ -59,11 +59,11 @@ class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
         if self.batch_id % self.grad_interval == 0:
             self.step_num += 1
         if self.batch_id % self.grad_interval == self.grad_interval - 1:
-            _update_avg_param(estimator)
+            self._update_avg_param(estimator)
         self.batch_id += 1
 
     def epoch_end(self, estimator, *args, **kwargs):
-        _update_avg_param(estimator)
+        self._update_avg_param(estimator)
 
 
 class TransformerLearningRateHandler(EpochBegin, BatchBegin):
@@ -75,6 +75,7 @@ class TransformerLearningRateHandler(EpochBegin, BatchBegin):
         self.num_units = num_units
         self.warmup_steps = warmup_steps
         self.grad_interval = grad_interval
+        self.step_num = 0
 
     def epoch_begin(self, estimator, *args, **kwargs):
         self.batch_id = 0
@@ -88,7 +89,9 @@ class TransformerLearningRateHandler(EpochBegin, BatchBegin):
             estimator.trainer.set_learning_rate(new_lr)
         self.batch_id += 1
 
-class TransformerGradientAccumulationHandler(TrainBegin, EpochBegin, BatchEnd):
+class TransformerGradientAccumulationHandler(GradientUpdateHandler,
+                                             TrainBegin,
+                                             EpochBegin):
     def __init__(self, grad_interval=1,
                  batch_size=1024,
                  rescale_loss=100):
@@ -99,12 +102,12 @@ class TransformerGradientAccumulationHandler(TrainBegin, EpochBegin, BatchEnd):
     def _update_gradient(self, estimator):
         estimator.trainer.step(float(self.loss_denom) /
                                self.batch_size /self.rescale_loss)
-        params = estimator.net._model.collect_params()
+        params = estimator.net.collect_params()
         params.zero_grad()
         self.loss_denom = 0
 
     def train_begin(self, estimator, *args, **kwargs):
-        params = estimator.net._model.collect_params()
+        params = estimator.net.collect_params()
         params.setattr('grad_req', 'add')
         params.zero_grad()
 
@@ -115,12 +118,12 @@ class TransformerGradientAccumulationHandler(TrainBegin, EpochBegin, BatchEnd):
     def batch_end(self, estimator, *args, **kwargs):
         self.loss_denom += estimator.tgt_valid_length
         if self.batch_id % self.grad_interval == self.grad_interval - 1:
-            _update_gradient(estimator)
+            self._update_gradient(estimator)
         self.batch_id += 1
 
     def epoch_end(self, estimator, *args, **kwargs):
         if self.loss_denom > 0:
-            _update_gradient(estimator)
+            self._update_gradient(estimator)
 
 class MTTransformerMetricHandler(MetricHandler, BatchBegin):
     def __init__(self, grad_interval, *args, **kwargs):
@@ -137,6 +140,18 @@ class MTTransformerMetricHandler(MetricHandler, BatchBegin):
             for metric in self.metrics:
                 metric.reset_local()
         self.batch_id += 1
+
+    def batch_end(self, estimator, *args, **kwargs):
+        pred = kwargs['pred']
+        label = kwargs['label']
+        loss = kwargs['loss']
+        for metric in self.metrics:
+            if isinstance(metric, MetricLoss):
+                metric.update(0, loss)
+            elif isinstance(metric, LengthNormalizedLoss):
+                metric.update(label, loss)
+            else:
+                metric.update(label, pred)
 
 # A temporary workaround for computing the bleu function. After bleu is in the metric
 # api, this event handler could be removed.
@@ -184,5 +199,5 @@ class ComputeBleuHandler(EpochEnd):
                                                            self.real_translation_out,
                                                            tokenized=self.tokenized,
                                                            tokenizer=self.tokenizer,
-                                                           split_compound_word+self.split_compound_word,
+                                                           split_compound_word=self.split_compound_word,
                                                            bpe=self.bpe)

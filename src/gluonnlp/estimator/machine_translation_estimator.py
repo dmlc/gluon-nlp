@@ -23,7 +23,7 @@ import warnings
 import numpy as np
 import mxnet as mx
 from mxnet.gluon.contrib.estimator import Estimator
-from .machine_translation_batch_processor import MachineTranslationBatchProcessor
+from .machine_translation_batch_processor import MTTransformerBatchProcessor
 
 __all__ = ['MachineTranslationEstimator']
 
@@ -36,7 +36,7 @@ class MachineTranslationEstimator(Estimator):
                  context=None,
                  evaluation_loss=None,
                  eval_net=None,
-                 batch_processor=MachineTranslationBatchProcessor()):
+                 batch_processor=MTTransformerBatchProcessor()):
         super().__init__(net=net, loss=loss,
                          train_metrics=train_metrics,
                          val_metrics=val_metrics,
