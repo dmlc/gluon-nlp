@@ -64,7 +64,7 @@ class BERTAdam(Optimizer):
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
-        self.aggregate_num = max(1,min(50,int(os.getenv('MXNET_OPTIMIZER_AGGREGATION_SIZE',"4"))))
+        self.aggregate_num = max(1, min(50, int(os.getenv('MXNET_OPTIMIZER_AGGREGATION_SIZE', "4"))))
 
     def create_state_multi_precision(self, index, weight):
         """multi-precision state creation function."""
@@ -115,9 +115,9 @@ class BERTAdam(Optimizer):
                                   'pip install mxnet-cu90 --pre. Otherwise, please consider '
                                   'Adam optimizer with different hyper-parameters.')
         if self.aggregate_num > 1:
-          aggregate = True
+            aggregate = True
         else:
-          aggregate = False
+            aggregate = False
         if not isinstance(indices, (tuple, list)):
             indices = [indices]
             weight = [weight]
@@ -164,8 +164,8 @@ class BERTAdam(Optimizer):
                 else:
                     mean_var = list(zip(*state[sidx:eidx]))[0]
                     tmean_var = list(zip(*mean_var))
-                    mean=tmean_var[0]
-                    var=tmean_var[1]
+                    mean = tmean_var[0]
+                    var = tmean_var[1]
                     multi_mp_adamw_update(weight[sidx:eidx],
                                           grad[sidx:eidx],
                                           mean, var,
@@ -182,7 +182,7 @@ class BERTAdam(Optimizer):
                 if not multi_precision:
                     mean, var = s_i
                     adamw_update(w_i, g_i, mean, var, out=w_i,
-                                lr=1, wd=wd, eta=lr, **kwargs)
+                                 lr=1, wd=wd, eta=lr, **kwargs)
                 else:
                     mean, var = s_i[0]
                     mp_adamw_update(w_i, g_i, mean, var, s_i[1], out=w_i,
