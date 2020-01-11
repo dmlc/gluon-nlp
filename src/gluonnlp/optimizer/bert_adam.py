@@ -64,8 +64,8 @@ class BERTAdam(Optimizer):
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
-        self.aggregate_num = max(1,
-            min(50, int(os.getenv('MXNET_OPTIMIZER_AGGREGATION_SIZE', '4'))))
+        self.aggregate_num = max(1, min(50, int(os.getenv('MXNET_OPTIMIZER_AGGREGATION_SIZE',
+                                                          '4'))))
 
     def create_state_multi_precision(self, index, weight):
         """multi-precision state creation function."""
