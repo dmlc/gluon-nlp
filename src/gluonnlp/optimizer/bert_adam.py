@@ -17,11 +17,11 @@
 # under the License.
 
 """Weight updating functions."""
+import os
 import warnings
 import numpy
 from mxnet.optimizer import Optimizer, register
 from mxnet.ndarray import zeros, NDArray, full
-import os
 
 __all__ = ['BERTAdam']
 
@@ -64,7 +64,8 @@ class BERTAdam(Optimizer):
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
-        self.aggregate_num = max(1, min(50, int(os.getenv('MXNET_OPTIMIZER_AGGREGATION_SIZE', "4"))))
+        self.aggregate_num = max(1,
+            min(50, int(os.getenv('MXNET_OPTIMIZER_AGGREGATION_SIZE', '4'))))
 
     def create_state_multi_precision(self, index, weight):
         """multi-precision state creation function."""
@@ -114,10 +115,7 @@ class BERTAdam(Optimizer):
                                   'Please upgrade your MXNet version. For example: '
                                   'pip install mxnet-cu90 --pre. Otherwise, please consider '
                                   'Adam optimizer with different hyper-parameters.')
-        if self.aggregate_num > 1:
-            aggregate = True
-        else:
-            aggregate = False
+        aggregate = self.aggregate_num > 1
         if not isinstance(indices, (tuple, list)):
             indices = [indices]
             weight = [weight]
@@ -145,7 +143,6 @@ class BERTAdam(Optimizer):
             kwargs['clip_gradient'] = self.clip_gradient
 
         if aggregate:
-            import numpy as np
             current_index = 0
             while current_index < len(indices):
                 sidx = current_index
@@ -157,7 +154,7 @@ class BERTAdam(Optimizer):
                                        mean, var,
                                        out=weight[sidx:eidx],
                                        size=len(weight[sidx:eidx]),
-                                       lrs=list(np.ones(len(weight[sidx:eidx]))),
+                                       lrs=list(numpy.ones(len(weight[sidx:eidx]))),
                                        wds=wds[sidx:eidx],
                                        etas=lrs[sidx:eidx],
                                        **kwargs)
@@ -172,7 +169,7 @@ class BERTAdam(Optimizer):
                                           list(zip(*state[sidx:eidx]))[1],
                                           out=weight[sidx:eidx],
                                           size=len(weight[sidx:eidx]),
-                                          lrs=list(np.ones(len(weight[sidx:eidx]))),
+                                          lrs=list(numpy.ones(len(weight[sidx:eidx]))),
                                           wds=wds[sidx:eidx],
                                           etas=lrs[sidx:eidx],
                                           **kwargs)
