@@ -35,6 +35,7 @@ import io
 import os
 import time
 import unicodedata
+import warnings
 import zipfile
 from typing import List, Optional
 
@@ -339,7 +340,9 @@ class JiebaTokenizer:
 
     def __init__(self):
         try:
-            import jieba  # pylint: disable=import-outside-toplevel
+            with warnings.catch_warnings():  # jieba uses deprecated imp module
+                warnings.simplefilter('ignore')
+                import jieba  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise ImportError(
                 'jieba is not installed. You must install jieba in order to use the '

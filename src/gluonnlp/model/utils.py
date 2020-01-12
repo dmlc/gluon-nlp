@@ -87,6 +87,8 @@ rate=0.5, mode=training)
     existing_params = _find_params(block, local_param_regex)
     for (local_param_name, param), \
             (ref_params_list, ref_reg_params_list) in existing_params.items():
+        if isinstance(param, WeightDropParameter):
+            continue
         dropped_param = WeightDropParameter(param, rate, weight_dropout_mode, axes)
         for ref_params in ref_params_list:
             ref_params[param.name] = dropped_param
