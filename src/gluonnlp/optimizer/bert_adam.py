@@ -22,6 +22,8 @@ import warnings
 import numpy
 from mxnet.optimizer import Optimizer, register
 from mxnet.ndarray import zeros, NDArray, full
+from mxnet.ndarray.contrib import adamw_update, multi_adamw_update, \
+    mp_adamw_update, multi_mp_adamw_update
 
 __all__ = ['BERTAdam']
 
@@ -97,24 +99,6 @@ class BERTAdam(Optimizer):
 
     def _update_impl(self, indices, weight, grad, state, multi_precision=False):
         """update function"""
-        try:
-            from mxnet.ndarray.contrib import adamw_update, multi_adamw_update
-        except ImportError:
-            raise ImportError('Failed to import nd.contrib.adamw_update from MXNet. '
-                              'BERTAdam optimizer requires mxnet>=1.5.0b20190220. '
-                              'Please upgrade your MXNet version. For example: '
-                              'pip install mxnet-cu90 --pre. Otherwise, please consider '
-                              'Adam optimizer with different hyper-parameters.')
-        if multi_precision:
-            try:
-                from mxnet.ndarray.contrib import mp_adamw_update, multi_mp_adamw_update
-            except ImportError:
-                raise ImportError('Failed to import '
-                                  'nd.contrib.mp_adamw_update from MXNet. '
-                                  'BERTAdam optimizer requires mxnet>=1.5.0b20190220. '
-                                  'Please upgrade your MXNet version. For example: '
-                                  'pip install mxnet-cu90 --pre. Otherwise, please consider '
-                                  'Adam optimizer with different hyper-parameters.')
         aggregate = self.aggregate_num > 1
         if not isinstance(indices, (tuple, list)):
             indices = [indices]
