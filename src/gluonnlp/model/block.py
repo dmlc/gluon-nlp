@@ -118,7 +118,7 @@ class GELU(HybridBlock):
             - **out**: output tensor with the same shape as `data`.
         """
         if not self._approximate:
-            return x * 0.5 * (1.0 + F.erf(x / math.sqrt(2.0)))
+            return F.LeakyReLU(x, act_type='gelu')
         else:
             return 0.5 * x * (1 + F.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * (x ** 3))))
 
