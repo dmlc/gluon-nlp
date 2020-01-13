@@ -182,12 +182,10 @@ def get_tokenizer(model_name, dataset_name,
         'baidu_ernie_uncased'.
         is additionally supported.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
-        Vocabulary for the dataset. Must be provided if dataset_name is not
-        specified. Ignored if dataset_name is specified.
-
+        Vocabulary for the dataset. Must be provided if tokenizer is based on
+        vocab.
     root : str, default '$MXNET_HOME/models' with MXNET_HOME defaults to '~/.mxnet'
         Location for keeping the model parameters.
-    cls : nlp.Vocab or nlp.vocab.BERTVocab, default nlp.Vocab
 
     Returns
     -------
@@ -262,10 +260,10 @@ def get_tokenizer(model_name, dataset_name,
     kwargs = {**extra_args, **kwargs}
     if tokenizer_cls is BERTTokenizer:
         assert vocab is not None, 'Must specify vocab if loading BERTTokenizer'
-        return tokenizer_cls(vocab, kwargs)
+        return tokenizer_cls(vocab, **kwargs)
     elif tokenizer_cls is GPT2BPETokenizer:
         return tokenizer_cls(root=root)
     elif tokenizer_cls is _load_pretrained_sentencepiece_tokenizer:
-        return tokenizer_cls(dataset_name, root, kwargs)
+        return tokenizer_cls(dataset_name, root, **kwargs)
     else:
         raise ValueError('Could not get any matched tokenizer interface.')
