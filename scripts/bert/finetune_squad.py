@@ -41,6 +41,7 @@ import random
 import time
 import warnings
 import itertools
+import pickle
 import multiprocessing as mp
 from functools import partial
 
@@ -220,6 +221,7 @@ parser.add_argument('--debug',
                     action='store_true',
                     help='Run the example in test mode for sanity checks')
 
+parser.add_argument('--load_feature_from_pickle', action='store_true', help='load features from file if set')
 args = parser.parse_args()
 
 output_dir = args.output_dir
@@ -307,8 +309,6 @@ if args.sentencepiece:
 else:
     tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
 
-print(vocab)
-print(tokenizer)
 batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack(),
     nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
@@ -609,11 +609,13 @@ def convert_examples_to_features(example,
         # if the question is impossible to answer, set the start/end position to cls index
         positions = [[cls_index, cls_index] for _ in doc_spans_indices]
 
+    # record whether the tokens in a docspan have max context
     token_is_max_context = [{
         len(query_tokenized) + p:
         check_is_max_context(doc_spans_indices, i, p + doc_spans_indices[i][0])
         for p in range(len(doc_span))
     } for (i, doc_span) in enumerate(doc_spans)]
+
     token_to_orig_map = [{
         len(query_tokenized) + p + 1:
         tok_to_orig_index[p + doc_spans_indices[i][0]]
@@ -653,7 +655,9 @@ def preprocess_dataset(tokenizer,
                        doc_stride=128,
                        max_query_length=64,
                        input_features=True,
-                       num_workers=4):
+                       num_workers=4,
+                       load_from_pickle=False,
+                       feature_file=None):
     """Loads a dataset into features"""
     vocab = tokenizer.vocab if vocab is None else vocab
     trans = partial(convert_examples_to_features,
@@ -666,10 +670,18 @@ def preprocess_dataset(tokenizer,
                     max_query_length=max_query_length)
     pool = mp.Pool(num_workers)
     start = time.time()
-
-    example_trans = partial(convert_squad_examples, is_training=input_features)
-    # convert the raw dataset into raw features
-    examples = pool.map(example_trans, dataset)
+    if not load_from_pickle:
+        example_trans = partial(convert_squad_examples, is_training=input_features)
+        # convert the raw dataset into raw features
+        examples = pool.map(example_trans, dataset)
+        raw_features = pool.map(trans, examples)
+        if feature_file:
+            with open(feature_file, 'wb') as file:
+                pickle.dump(list(raw_features), file)
+    else:
+        assert feature_file, 'feature file should be provided.'
+        with open(feature_file, 'wb') as file:
+            raw_features = pickle.load(file)
 
     if input_features:
         # convert the full features into the training features
@@ -678,7 +690,7 @@ def preprocess_dataset(tokenizer,
         # we will have multiple examples for a single entry after processed.
         # Thus we need to flatten it for training.
         data_feature = mx.gluon.data.SimpleDataset(
-            list(itertools.chain.from_iterable(pool.map(trans, examples))))
+            list(itertools.chain.from_iterable(raw_features)))
         data_feature = data_feature.transform(lambda *example: (
             example[0],  # example_id
             example[7],  # inputs_id
@@ -688,7 +700,7 @@ def preprocess_dataset(tokenizer,
             example[11]))  # end_position
     else:
         data_feature = mx.gluon.data.SimpleDataset(
-            list(pool.map(trans, examples)))
+            list(raw_features))
 
     end = time.time()
     pool.close()

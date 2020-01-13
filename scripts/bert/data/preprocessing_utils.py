@@ -8,6 +8,8 @@ __all__ = [
 
 import collections
 import itertools
+import unicodedata
+import numpy as np
 import numpy.ma as ma
 
 
@@ -43,7 +45,7 @@ def truncate_seqs_equal(seqs, max_len):
     return seqs
 
 
-def concat_sequences(seqs, separators, separator_mask=1):
+def concat_sequences(seqs, separators, separator_mask=[]):
     """
     Insert special tokens for sequence list or a single sequence.
     For sequence pairs, the input is a list of 2 strings:
@@ -91,6 +93,53 @@ def concat_sequences(seqs, separators, separator_mask=1):
                  [])
     return concat, segment_ids, p_mask
 
+def concat_sequences_2(seqs, separators, separator_mask=[]):
+    """
+    Insert special tokens for sequence list or a single sequence.
+    For sequence pairs, the input is a list of 2 strings:
+    text_a, text_b.
+    Inputs:
+       text_a: 'is this jacksonville ?'
+       text_b: 'no it is not'
+       separator: [[SEP], [SEP]]
+
+    Processed:
+       tokens:     'is this jacksonville ? [SEP] no it is not . [SEP]'
+       segment_ids: 0  0    0            0  0    1  1  1  1   1 1
+       p_mask:      0  0    0            0  1    0  0  0  0   0 1
+       valid_length: 11
+
+    Parameters
+    ----------
+    separator : list
+        The special tokens to be appended to each sequence. For example:
+        Given:
+            seqs: [[1, 2], [3, 4], [5, 6]]
+            separator: [[], 7]
+        it will be:
+            [1, 2, 3, 4, 7, 5, 6]
+
+    seqs : list of sequences or a single sequence
+
+    Returns
+    -------
+    np.array: input token ids in 'int32', shape (batch_size, seq_length)
+    np.array: segment ids in 'int32', shape (batch_size, seq_length)
+    np.array: mask for special tokens
+    """
+    assert isinstance(seqs, collections.abc.Iterable) and len(seqs) > 0
+    concat = sum((
+        seq + sep
+        for sep, seq in itertools.zip_longest(separators, seqs, fillvalue=[])),
+                 [])
+    segment_ids = sum(
+        ([i] * (len(seq) + len(sep)) for i, (sep, seq) in enumerate(
+            itertools.zip_longest(separators, seqs, fillvalue=[]))), [])
+    p_mask = sum((
+        [0] * len(seq) + mask
+        for sep, seq, mask in itertools.zip_longest(separators, seqs, separator_mask, fillvalue=[])),
+                 [])
+    return concat, segment_ids, p_mask
 
 def tokenize_and_align_positions(origin_text, start_position, end_position,
                                  tokenizer):
@@ -241,7 +290,7 @@ def check_is_max_context(doc_spans, cur_span_index, position):
 
 
 SquadExample = collections.namedtuple('SquadExample', [
-    'qas_id', 'question_text', 'doc_tokens', 'example_id', 'orig_answer_text',
+    'qas_id', 'question_text', 'paragraph_text', 'doc_tokens', 'example_id', 'orig_answer_text',
     'start_position', 'end_position', 'is_impossible'
 ])
 
@@ -284,6 +333,7 @@ def convert_squad_examples(record, is_training):
 
     example = SquadExample(qas_id=qas_id,
                            question_text=question_text,
+                           paragraph_text=paragraph_text,
                            doc_tokens=doc_tokens,
                            example_id=example_id,
                            orig_answer_text=orig_answer_text,
@@ -291,3 +341,79 @@ def convert_squad_examples(record, is_training):
                            end_position=end_position,
                            is_impossible=is_impossible)
     return example
+
+
+def preprocess_text(inputs, lower=False, remove_space=True, keep_accents=False):
+    if remove_space:
+        outputs = ' '.join(inputs.strip().split())
+    else:
+        outputs = inputs
+    outputs = outputs.replace("``", '"').replace("''", '"')
+    if not keep_accents:
+        outputs = unicodedata.normalize('NFKD', outputs)
+        outputs = ''.join([c for c in outputs if not unicodedata.combining(c)])
+    if lower:
+        outputs = outputs.lower()
+
+    return outputs
+
+
+def _convert_index(index, pos, M=None, is_start=True):
+    if index[pos] is not None:
+        return index[pos]
+    N = len(index)
+    rear = pos
+    while rear < N - 1 and index[rear] is None:
+        rear += 1
+    front = pos
+    while front > 0 and index[front] is None:
+        front -= 1
+    assert index[front] is not None or index[rear] is not None
+    if index[front] is None:
+        if index[rear] >= 1:
+            if is_start:
+                return 0
+            else:
+                return index[rear] - 1
+        return index[rear]
+    if index[rear] is None:
+        if M is not None and index[front] < M - 1:
+            if is_start:
+                return index[front] + 1
+            else:
+                return M - 1
+        return index[front]
+    if is_start:
+        if index[rear] > index[front] + 1:
+            return index[front] + 1
+        else:
+            return index[rear]
+    else:
+        if index[rear] > index[front] + 1:
+            return index[rear] - 1
+        else:
+            return index[front]
+
+
+def _lcs_match(max_dist, seq1, seq2, max_first_seq_len, max_second_seq_len, lower=False):
+    f = np.zeros((max(len(seq1), 1024), max(len(seq2), 1024)), dtype=np.float32)
+    g = {}
+    for i in range(max_first_seq_len):
+        for j in range(i - max_dist, i + max_dist):
+            if j >= max_second_seq_len or j < 0: continue
+
+            if i > 0:
+                g[(i, j)] = 0
+                f[i, j] = f[i - 1, j]
+
+            if j > 0 and f[i, j - 1] > f[i, j]:
+                g[(i, j)] = 1
+                f[i, j] = f[i, j - 1]
+
+            f_prev = f[i - 1, j - 1] if i > 0 and j > 0 else 0
+            if (preprocess_text(seq1[i], lower=lower,
+                                remove_space=False) == seq2[j]
+                    and f_prev + 1 > f[i, j]):
+                g[(i, j)] = 2
+                f[i, j] = f_prev + 1
+    return f, g

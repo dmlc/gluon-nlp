@@ -574,6 +574,8 @@ def train(metric):
                         all_model_params.zero_grad()
 
                 step_loss += ls.asscalar()
+                if do_regression:
+                    label = label.reshape((-1))
                 metric.update([label], [out])
                 if (batch_id + 1) % (args.log_interval) == 0:
                     log_train(batch_id, len(train_data), metric, step_loss,
@@ -645,15 +647,14 @@ def evaluate(loader_dev, metric, segment):
         ls = loss_function(out, label).mean()
 
         step_loss += ls.asscalar()
-
+        if do_regression:
+            label = label.reshape((-1))
+        metric.update([label], [out])
         if (batch_id + 1) % (args.log_interval) == 0:
             log_eval(batch_id, len(loader_dev), metric, step_loss,
                      args.log_interval)
             step_loss = 0
 
-    label_list = mx.nd.concat(*label_list, dim=0)
-    out_list = mx.nd.concat(*out_list, dim=0)
-    metric.update([label_list], [out_list])
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
         metric_nm, metric_val = [metric_nm], [metric_val]
