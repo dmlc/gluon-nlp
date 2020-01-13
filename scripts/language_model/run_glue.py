@@ -17,7 +17,6 @@ import gluonnlp as nlp
 from model.XLNet_classifier import XLNetClassifier
 from transformer import model
 
-os.environ['MXNET_USE_FUSION'] = '0'
 path = sys.path[0]
 sys.path.append(path + '/../bert/data')
 #pylint: disable=wrong-import-position
@@ -166,6 +165,7 @@ args = parser.parse_args()
 
 def split_array(arr, num_of_splits):
     """split an array into equal pieces"""
+    # TODO Replace this function with gluon.utils.split_data() once targeting MXNet 1.7
     size = arr.shape[0]
     if size < num_of_splits:
         return [arr[i:i + 1] for i in range(size)]
@@ -180,6 +180,7 @@ def split_array(arr, num_of_splits):
 
 def split_and_load(arrs, _ctxs):
     """split and load arrays to a list of contexts"""
+    # TODO Replace split_array() with gluon.utils.split_data() once targeting MXNet 1.7
     assert isinstance(arrs, (list, tuple))
     # split and load
     loaded_arrs = [[
