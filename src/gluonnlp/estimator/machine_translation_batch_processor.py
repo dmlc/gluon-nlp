@@ -24,7 +24,7 @@ from mxnet.gluon.utils import split_and_load
 from ..model.transformer import ParallelTransformer
 from ..utils.parallel import Parallel
 
-__all__ = ['MTTransformerBatchProcessor']
+__all__ = ['MTTransformerBatchProcessor', 'MTGNMTBatchProcessor']
 
 class MTTransformerBatchProcessor(BatchProcessor):
     def __init__(self, rescale_loss=100,
@@ -69,9 +69,42 @@ class MTTransformerBatchProcessor(BatchProcessor):
         src_valid_length = src_valid_length.as_in_context(ctx)
         tgt_valid_length = tgt_valid_length.as_in_context(ctx)
 
-        out, _ = self.eval_net(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
-        loss = self.evaluation_loss(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean().asscalar()
+        out, _ = estimator.eval_net(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
+        loss = estimator.evaluation_loss(out, tgt_seq[:, 1:], tgt_valid_length - 1).sum().asscalar()
         inst_ids = inst_ids.asnumpy().astype(np.int32).tolist()
         loss = loss * (tgt_seq.shape[1] - 1)
-        estimator.val_tgt_valid_length = tgt_seq.shape[1] - 1
-        return src_seq, tgt_seq, out, loss
+        val_tgt_valid_length = (tgt_valid_length - 1).sum().asscalar()
+        return src_seq, [tgt_seq, val_tgt_valid_length], out, loss
+
+class MTGNMTBatchProcessor(BatchProcessor):
+    def __init__():
+        pass
+
+    def fit_batch(self, estimator, train_batch, batch_axis=0):
+        src_seq, tgt_seql, src_valid_length, tgt_valid_length = train_batch
+        src_seq = src_seq.as_in_context(estimator.context)
+        tgt_seq = tgt_seq.as_in_context(estimator.context)
+        src_valid_length = src_valid_length.as_in_context(estimator.context)
+        tgt_valid_lenght = tgt_valid_length.as_in_context(estimator.context)
+        with mx.autograd.record():
+            out, _ = estimator.net(src_seq, tgt_seq[:, :-1], src_valid_length,
+                                   tgt_valid_length - 1)
+            loss = estimator.loss(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean()
+            loss = loss * (tgt_seq.shape[1] - 1)
+            loss = loss / (tgt_valid_length - 1).mean()
+            loss.backward()
+        return src_seq, [tgt_seq, (tgt_valid_length - 1).sum()], out, loss * tgt_seq.shape[0]
+
+    def evaluate_batch(self, estimator, val_batch, batch_axis=0):
+        src_seq, tgt_seq, src_valid_length, tgt_valid_length, inst_ids = val_batch
+        src_seq = src_seq.as_in_context(estimator.context)
+        tgt_seq = tgt_seq.as_in_context(estimator.context)
+        src_valid_length = src_valid_length.as_in_context(estimator.context)
+        tgt_valid_length = tgt_valid_length.as_in_context(estimator.context)
+        out, _ = estimator.eval_net(src_seq, tgt_seq[:, :-1], src_valid_length,
+                                    tgt_valid_length - 1)
+        loss = estimator.evaluation_loss(out, tgt_seq[:, 1:],
+                                         tgt_valid_length - 1).sum().asscalar()
+        loss = loss * (tgt_seq.shape[1] - 1)
+        val_tgt_valid_length = (tgt_valid_length - 1).sum().asscalar()
+        return src_seq, [tgt_seq, val_tgt_valid_length], out, loss

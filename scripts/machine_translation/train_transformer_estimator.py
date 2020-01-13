@@ -56,6 +56,7 @@ from gluonnlp.estimator import MachineTranslationEstimator, LengthNormalizedLoss
 from gluonnlp.estimator import MTTransformerBatchProcessor, MTTransformerParamUpdateHandler
 from gluonnlp.estimator import TransformerLearningRateHandler, MTTransformerMetricHandler
 from gluonnlp.estimator import TransformerGradientAccumulationHandler, ComputeBleuHandler
+from gluonnlp.estimator import ValBleuHandler
 
 np.random.seed(100)
 random.seed(100)
@@ -257,15 +258,27 @@ gradient_acc_handler = TransformerGradientAccumulationHandler(grad_interval=grad
                                                               rescale_loss=rescale_loss)
 metric_handler = MTTransformerMetricHandler(metrics=mt_estimator.train_metrics,
                                             grad_interval=grad_interval)
-bleu_handler = ComputeBleuHandler(tgt_vocab, tgt_sentence=val_tgt_sentences,
+bleu_handler = ComputeBleuHandler(tgt_vocab=tgt_vocab, tgt_sentence=val_tgt_sentences,
                                   translator=translator, compute_bleu_fn=compute_bleu,
                                   tokenized=tokenized, tokenizer=args.bleu,
                                   split_compound_word=split_compound_word,
-                                  bpe=bpe)
+                                  bpe=bpe, bleu=args.bleu, detokenizer=detokenizer,
+                                  _bpe_to_words=_bpe_to_words)
+
+val_bleu_handler = ValBleuHandler(val_data=val_data_loader, val_tgt_vocab=tgt_vocab,
+                                  val_tgt_sentences=val_tgt_sentences, translator=translator,
+                                  tokenized=tokenized, tokenizer=args.bleu,
+                                  split_compound_word=split_compound_word, bpe=bpe,
+                                  compute_bleu_fn=compute_bleu,
+                                  bleu=args.bleu, detokenizer=detokenizer,
+                                  _bpe_to_words=_bpe_to_words)
 
 event_handlers = [param_update_handler, learning_rate_handler, gradient_acc_handler,
-                  metric_handler, bleu_handler]
+                  metric_handler, val_bleu_handler]
 
-mt_estimator.fit(train_data=train_data_loader, val_data=val_data_loader,
-                 epochs=args.epochs, event_handlers=event_handlers,
+mt_estimator.fit(train_data=train_data_loader,
+                 val_data=val_data_loader,
+                 #epochs=args.epochs,
+                 batches=2,
+                 event_handlers=event_handlers,
                  batch_axis=0)

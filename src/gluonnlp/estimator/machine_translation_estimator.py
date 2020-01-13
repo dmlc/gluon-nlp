@@ -49,3 +49,4 @@ class MachineTranslationEstimator(Estimator):
         self.tgt_valid_length = 0
         self.val_tgt_valid_length = 0
         self.avg_param = None
+        self.bleu_score = 0.0

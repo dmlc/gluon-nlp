@@ -61,11 +61,17 @@ class LengthNormalizedLoss(EvalMetric):
             preds = [preds]
 
         for length in seq_valid_length:
-            total_length = ndarray.sum(length).asscalar()
+            if isinstance(length, ndarray.ndarray.NDArray):
+                total_length = ndarray.sum(length).asscalar()
+            else:
+                total_length = length
             self.num_inst += total_length
             self.global_num_inst += total_length
 
         for pred in preds:
-            loss = ndarray.sum(pred).asscalar()
+            if isinstance(pred, ndarray.ndarray.NDArray):
+                loss = ndarray.sum(pred).asscalar()
+            else:
+                loss = pred
             self.sum_metric += loss
             self.global_sum_metric += loss

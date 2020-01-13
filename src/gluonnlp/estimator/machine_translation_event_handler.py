@@ -21,17 +21,19 @@ import copy
 import warnings
 import math
 
+import numpy as np
 import mxnet as mx
 from mxnet.gluon.contrib.estimator import TrainBegin, TrainEnd, EpochBegin
 from mxnet.gluon.contrib.estimator import EpochEnd, BatchBegin, BatchEnd
 from mxnet.gluon.contrib.estimator import GradientUpdateHandler
 from mxnet.gluon.contrib.estimator import MetricHandler
+from mxnet import gluon
 from mxnet.metric import Loss as MetricLoss
 from .length_normalized_loss import LengthNormalizedLoss
 
 __all__ = ['MTTransformerParamUpdateHandler', 'TransformerLearningRateHandler',
            'MTTransformerMetricHandler', 'TransformerGradientAccumulationHandler',
-           'ComputeBleuHandler']
+           'ComputeBleuHandler', 'ValBleuHandler', 'MTGNMTGradientUpdateHandler']
 
 class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
     def __init__(self, avg_start, grad_interval=1):
@@ -89,12 +91,24 @@ class TransformerLearningRateHandler(EpochBegin, BatchBegin):
             estimator.trainer.set_learning_rate(new_lr)
         self.batch_id += 1
 
+class MTGNMTGradientUpdateHandler(GradientUpdateHandler):
+    def __init__(self, clip):
+        super(MTGNMTGradientUpdateHandler, self).__init__()
+        self.clip = clip
+
+    def batch_end(self, estimator, *args, **kwargs):
+        grads = [p.grad(ctx) for p in estimator.net.collect_params().values()]
+        gnorm = gluon.utils.clip_global_norm(grads, self.clip)
+        estimator.trainer.step(1)
+
 class TransformerGradientAccumulationHandler(GradientUpdateHandler,
                                              TrainBegin,
-                                             EpochBegin):
+                                             EpochBegin,
+                                             EpochEnd):
     def __init__(self, grad_interval=1,
                  batch_size=1024,
                  rescale_loss=100):
+        super(TransformerGradientAccumulationHandler, self).__init__()
         self.grad_interval = grad_interval
         self.batch_size = batch_size
         self.rescale_loss = rescale_loss
@@ -155,7 +169,7 @@ class MTTransformerMetricHandler(MetricHandler, BatchBegin):
 
 # A temporary workaround for computing the bleu function. After bleu is in the metric
 # api, this event handler could be removed.
-class ComputeBleuHandler(EpochEnd):
+class ComputeBleuHandler(BatchEnd, EpochEnd):
     def __init__(self,
                  tgt_vocab,
                  tgt_sentence,
@@ -164,7 +178,10 @@ class ComputeBleuHandler(EpochEnd):
                  tokenized,
                  tokenizer,
                  split_compound_word,
-                 bpe):
+                 bpe,
+                 bleu,
+                 detokenizer,
+                 _bpe_to_words):
         self.tgt_vocab = tgt_vocab
         self.tgt_sentence = tgt_sentence
         self.translator = translator
@@ -173,6 +190,9 @@ class ComputeBleuHandler(EpochEnd):
         self.tokenizer = tokenizer
         self.split_compound_word = split_compound_word
         self.bpe = bpe
+        self.bleu = bleu
+        self.detokenizer = detokenizer
+        self._bpe_to_words = _bpe_to_words
 
         self.all_inst_ids = []
         self.translation_out = []
@@ -192,12 +212,78 @@ class ComputeBleuHandler(EpochEnd):
                  max_score_sample[i][1:(sample_valid_length[i] - 1)]])
         
     def epoch_end(self, estimator, *args, **kwargs):
-        self.real_translation_out = [None for _ in range(len(all_inst_ids))]
+        real_translation_out = [None for _ in range(len(all_inst_ids))]
         for ind, sentence in zip(self.all_inst_ids, self.translation_out):
-            self.real_translation_out[ind] = sentence
-        self.bleu_score, _, _, _, _ = self.compute_bleu_fn([self.tgt_sentence],
-                                                           self.real_translation_out,
+            if self.bleu == 'tweaked':
+                real_translation_out[ind] = sentence
+            elif self.bleu == '13a' or self.bleu == 'intl':
+                real_translation_out[ind] = self.detokenizer(self._bpe_to_words(sentence))
+            else:
+                raise NotImplementedError
+        estimator.bleu_score, _, _, _, _ = self.compute_bleu_fn([self.tgt_sentence],
+                                                           real_translation_out,
                                                            tokenized=self.tokenized,
                                                            tokenizer=self.tokenizer,
                                                            split_compound_word=self.split_compound_word,
                                                            bpe=self.bpe)
+
+
+# temporary validation bleu metric hack, it can be removed once bleu metric api is available
+class ValBleuHandler(EpochEnd):
+    def __init__(self, val_data,
+                 val_tgt_vocab,
+                 val_tgt_sentences,
+                 translator,
+                 tokenized,
+                 tokenizer,
+                 split_compound_word,
+                 bpe,
+                 compute_bleu_fn,
+                 bleu,
+                 detokenizer,
+                 _bpe_to_words):
+        self.val_data = val_data
+        self.val_tgt_vocab = val_tgt_vocab
+        self.val_tgt_sentences = val_tgt_sentences
+        self.translator = translator
+        self.tokenized = tokenized
+        self.tokenizer = tokenizer
+        self.split_compound_word = split_compound_word
+        self.bpe = bpe
+        self.compute_bleu_fn = compute_bleu_fn
+        self.bleu = bleu
+        self.detokenizer = detokenizer
+        self._bpe_to_words = _bpe_to_words
+
+    def epoch_end(self, estimator, *args, **kwargs):
+        translation_out = []
+        all_inst_ids = []
+        for  _, (src_seq, tgt_seq, src_valid_length, tgt_valid_length, inst_ids) \
+             in enumerate(self.val_data):
+            src_seq = src_seq.as_in_context(estimator.context[0])
+            tgt_seq = tgt_seq.as_in_context(estimator.context[0])
+            src_valid_length = src_valid_length.as_in_context(estimator.context[0])
+            tgt_valid_length = tgt_valid_length.as_in_context(estimator.context[0])
+            all_inst_ids.extend(inst_ids.asnumpy().astype(np.int32).tolist())
+            samples, _, sample_valid_length = self.translator.translate(
+                src_seq=src_seq, src_valid_length=src_valid_length)
+            max_score_sample = samples[:, 0, :].asnumpy()
+            sample_valid_length = sample_valid_length[:, 0].asnumpy()
+            for i in range(max_score_sample.shape[0]):
+                translation_out.append(
+                    [self.val_tgt_vocab.idx_to_token[ele] for ele in
+                     max_score_sample[i][1:(sample_valid_length[i] - 1)]])
+        real_translation_out = [None for _ in range(len(all_inst_ids))]
+        for ind, sentence in zip(all_inst_ids, translation_out):
+            if self.bleu == 'tweaked':
+                real_translation_out[ind] = sentence
+            elif self.bleu == '13a' or self.beu == 'intl':
+                real_translation_out[ind] = self.detokenizer(self._bpe_to_words(sentence))
+            else:
+                raise NotImplementedError
+        estimator.bleu, _, _, _, _ = self.compute_bleu_fn([self.val_tgt_sentences],
+                                                          real_translation_out,
+                                                          tokenized=self.tokenized,
+                                                          tokenizer=self.tokenizer,
+                                                          split_compound_word=self.split_compound_word,
+                                                          bpe=self.bpe)
