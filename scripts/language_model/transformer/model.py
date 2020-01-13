@@ -184,7 +184,7 @@ def xlnet_cased_l12_h768_a12(dataset_name: Optional[str] = None, vocab: Optional
         'num_layers': 12,
     })
     if vocab is None or dataset_name is not None:
-        vocab, _ = _load_vocab('xlnet_' + dataset_name, vocab, root)
+        vocab = _load_vocab('xlnet_' + dataset_name, vocab, root)
     net = XLNet(vocab_size=len(vocab), **kwargs)
     if pretrained:
         _load_pretrained_params(net=net, model_name='xlnet_cased_l12_h768_a12',
@@ -241,7 +241,7 @@ def xlnet_cased_l24_h1024_a16(dataset_name: Optional[str] = None, vocab: Optiona
         'num_layers': 24,
     })
     if vocab is None or dataset_name is not None:
-        vocab, _ = _load_vocab('xlnet_' + dataset_name, vocab, root)
+        vocab = _load_vocab('xlnet_' + dataset_name, vocab, root)
     net = XLNet(vocab_size=len(vocab), **kwargs)
     if pretrained:
         _load_pretrained_params(net=net, model_name='xlnet_cased_l24_h1024_a16',

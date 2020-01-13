@@ -175,7 +175,7 @@ class StandardRNN(train.StandardRNN):
 
 
 def _get_rnn_model(model_cls, model_name, dataset_name, vocab, pretrained, ctx, root, **kwargs):
-    vocab, _ = _load_vocab(dataset_name, vocab, root)
+    vocab = _load_vocab(dataset_name, vocab, root)
     kwargs['vocab_size'] = len(vocab)
     net = model_cls(**kwargs)
     if pretrained:

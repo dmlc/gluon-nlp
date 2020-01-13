@@ -300,7 +300,7 @@ def test_bert_sentencepiece_sentences_transform():
 def test_gpt2_transforms():
     tokenizer = t.GPT2BPETokenizer()
     detokenizer = t.GPT2BPEDetokenizer()
-    vocab, _ = _load_vocab('openai_webtext', None, root=os.path.join('tests', 'data', 'models'))
+    vocab = _load_vocab('openai_webtext', None, root=os.path.join('tests', 'data', 'models'))
     s = ' natural language processing tools such as gluonnlp and torchtext'
     subwords = tokenizer(s)
     indices = vocab[subwords]

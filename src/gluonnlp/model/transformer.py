@@ -930,8 +930,8 @@ def get_transformer_encoder_decoder(num_layers=2,
 def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_vocab, encoder,
                            decoder, one_step_ahead_decoder, share_embed, embed_size, tie_weights,
                            embed_initializer, pretrained, ctx, root, **kwargs):
-    src_vocab, _ = _load_vocab(dataset_name + '_src', src_vocab, root)
-    tgt_vocab, _ = _load_vocab(dataset_name + '_tgt', tgt_vocab, root)
+    src_vocab = _load_vocab(dataset_name + '_src', src_vocab, root)
+    tgt_vocab = _load_vocab(dataset_name + '_tgt', tgt_vocab, root)
     kwargs['encoder'] = encoder
     kwargs['decoder'] = decoder
     kwargs['one_step_ahead_decoder'] = one_step_ahead_decoder

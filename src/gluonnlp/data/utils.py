@@ -306,35 +306,15 @@ def short_hash(name):
     return _vocab_sha1[name][0][:8]
 
 
-def _load_pretrained_vocab(name, root, cls=None):
-    """Load the accompanying vocabulary object for pre-trained model.
-
-    Parameters
-    ----------
-    name : str
-        Name of the vocabulary, usually the name of the dataset.
-    root : str
-        Location for keeping the model vocabulary.
-    cls : nlp.Vocab or nlp.vocab.BERTVocab, default nlp.Vocab
-
-    Returns
-    -------
-    Vocab or nlp.vocab.BERTVocab, Tokenizer or None
-        Loaded vocabulary object and Tokenizer for the pre-trained model.
-    """
+def _get_vocab_tokenizer_info(name, root):
     file_name = '{name}-{short_hash}'.format(name=name,
                                              short_hash=short_hash(name))
     root = os.path.expanduser(root)
     sha1_hash, file_ext, special_tokens = _vocab_sha1[name]
-    file_path = os.path.join(root, file_name + file_ext)
-    if os.path.exists(file_path):
-        if check_sha1(file_path, sha1_hash):
-            return _load_vocab_file(file_path, cls, special_tokens)
-        else:
-            print('Detected mismatch in the content of model vocab file. Downloading again.')
-    else:
-        print('Vocab file is not found. Downloading.')
+    return file_name, file_ext, sha1_hash, special_tokens
 
+
+def _download_vocab_tokenizer(root, file_name, file_path):
     if not os.path.exists(root):
         try:
             os.makedirs(root)
@@ -361,8 +341,55 @@ def _load_pretrained_vocab(name, root, cls=None):
             pass
         else:
             raise e
+
+def _load_pretrained_vocab(name, root, cls=None):
+    """Load the accompanying vocabulary object for pre-trained model.
+
+    Parameters
+    ----------
+    name : str
+        Name of the vocabulary, usually the name of the dataset.
+    root : str
+        Location for keeping the model vocabulary.
+    cls : nlp.Vocab or nlp.vocab.BERTVocab, default nlp.Vocab
+
+    Returns
+    -------
+    Vocab or nlp.vocab.BERTVocab, Tokenizer or None
+        Loaded vocabulary object and Tokenizer for the pre-trained model.
+    """
+    file_name, file_ext, sha1_hash, special_tokens = _get_vocab_tokenizer_info(name, root)
+    file_path = os.path.join(root, file_name + file_ext)
+    if os.path.exists(file_path):
+        if check_sha1(file_path, sha1_hash):
+            return _load_vocab_file(file_path, cls, special_tokens)
+        else:
+            print('Detected mismatch in the content of model vocab file. Downloading again.')
+    else:
+        print('Vocab file is not found. Downloading.')
+    _download_vocab_tokenizer(root, file_name, file_path)
     if check_sha1(file_path, sha1_hash):
         return _load_vocab_file(file_path, cls, special_tokens)
+    else:
+        raise ValueError('Downloaded file has different hash. Please try again.')
+
+
+def _load_pretrained_sentencepiece_tokenizer(name, root, kwargs):
+    from ..data import SentencepieceTokenizer  # pylint: disable=import-outside-toplevel
+    file_name, file_ext, sha1_hash, _ = _get_vocab_tokenizer_info(name, root)
+    file_path = os.path.join(root, file_name + file_ext)
+    if os.path.exists(file_path):
+        if check_sha1(file_path, sha1_hash):
+            assert file_path.endswith('.spiece')
+            return SentencepieceTokenizer(file_path, **kwargs)
+        else:
+            print('Detected mismatch in the content of model tokenizer file. Downloading again.')
+    else:
+        print('tokenizer file is not found. Downloading.')
+    _download_vocab_tokenizer(root, file_name, file_path)
+    if check_sha1(file_path, sha1_hash):
+        assert file_path.endswith('.spiece')
+        return SentencepieceTokenizer(file_path, **kwargs)
     else:
         raise ValueError('Downloaded file has different hash. Please try again.')
 
@@ -375,12 +402,11 @@ def _load_vocab_file(file_path, cls, kwargs):
         if file_path.endswith('.spiece'):
             assert kwargs is not None, 'special tokens must be specified when .spiece provide.'
             from ..vocab import BERTVocab  # pylint: disable=import-outside-toplevel
-            from ..data import SentencepieceTokenizer  # pylint: disable=import-outside-toplevel
             return BERTVocab.from_sentencepiece(
                 file_path,
-                **kwargs), SentencepieceTokenizer(file_path)
+                **kwargs)
         else:
-            return cls.from_json(f.read()), None
+            return cls.from_json(f.read())
 
 
 def _extract_archive(file, target_dir):  # pylint: disable=redefined-builtin
@@ -463,8 +489,3 @@ class Splitter:
             List of strings. Obtained by calling s.split(separator).
         """
         return s.split(self._separator)
-
-
-def _get_pretrained_sentencepiece_tokenizer(dataset_name, root):
-    _, tokenizer = _load_pretrained_vocab(name=dataset_name, root=root)
-    return tokenizer

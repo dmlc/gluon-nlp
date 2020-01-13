@@ -178,13 +178,9 @@ def test_pretrained_bert_models(disable_missing_parameters):
 
             eprint('testing forward for %s on %s' % (model_name, dataset))
 
-            if not has_missing_params and 'kobert' not in dataset:
+            if not has_missing_params:
                 model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
                                                    pretrained=True)
-            elif 'kobert' in dataset:
-                # KoBERT specific test case
-                model, vocab, _ = nlp.model.get_model(model_name, dataset_name=dataset,
-                                                      pretrained=True)
             else:
                 with pytest.raises(AssertionError):
                     model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,

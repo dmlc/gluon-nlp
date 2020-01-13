@@ -427,8 +427,8 @@ def _get_gpt2_model(model_name=None, dataset_name=None, vocab=None, pretrained=T
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
         'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
-    vocab, _ = _load_vocab(dataset_name, vocab, root)
-    # BERT
+    vocab = _load_vocab(dataset_name, vocab, root)
+    # GPT2
     net = GPT2Model(units=predefined_args['units'],
                     vocab_size=len(vocab),
                     max_length=predefined_args['max_length'],

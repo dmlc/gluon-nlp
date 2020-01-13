@@ -57,7 +57,7 @@ def test_bertvocab():
                                              pretrained=True, ctx=ctx, use_pooler=True,
                                              use_decoder=False, use_classifier=False)
 
-    bert_base6, vocab6, _ = nlp.model.get_model('bert_12_768_12',
+    bert_base6, vocab6 = nlp.model.get_model('bert_12_768_12',
                                                 dataset_name='kobert_news_wiki_ko_cased',
                                                 pretrained=True, ctx=ctx, use_pooler=True,
                                                 use_decoder=False, use_classifier=False)

@@ -193,8 +193,21 @@ def get_tokenizer(model_name, dataset_name,
     -------
     gluonnlp.data.BERTTokenizer or gluonnlp.data.GPT2BPETokenizer or
     gluonnlp.data.SentencepieceTokenizer
+
+    Examples
+    --------
+    >>> model_name = 'bert_12_768_12'
+    >>> dataset_name = 'book_corpus_wiki_en_uncased'
+    >>> model, vocab = gluonnlp.model.get_model(model_name,
+                                                dataset_name=dataset_name,
+                                                pretrained=True, use_pooler=True,
+                                                use_decoder=False, use_classifier=False)
+    >>> tok = gluonnlp.model.get_tokenizer(model_name, dataset_name, vocab,
+                                           max_input_chars_per_word=300)
+    >>> tok('Habit is second nature.')
+    ['habit', 'is', 'second', 'nature', '.']
     """
-    from ..data.utils import _get_pretrained_sentencepiece_tokenizer  # pylint: disable=import-outside-toplevel
+    from ..data.utils import _load_pretrained_sentencepiece_tokenizer  # pylint: disable=import-outside-toplevel
     from ..data import BERTTokenizer, GPT2BPETokenizer  # pylint: disable=import-outside-toplevel
 
     model_name, dataset_name = model_name.lower(), dataset_name.lower()
@@ -238,7 +251,7 @@ def get_tokenizer(model_name, dataset_name,
                            'bert_12_768_12_clinicalbert_uncased':
                            [BERTTokenizer, {'lower': True}],
                            'bert_12_768_12_kobert_news_wiki_ko_cased':
-                           [_get_pretrained_sentencepiece_tokenizer, {'lower': False}],
+                           [_load_pretrained_sentencepiece_tokenizer, {'num_best': 0, 'alpha':1.0}],
                            'ernie_12_768_12_baidu_ernie_uncased':
                            [BERTTokenizer, {'lower': True}]}
     if model_dataset_name not in model_dataset_names:
@@ -246,13 +259,13 @@ def get_tokenizer(model_name, dataset_name,
             'Model name %s is not supported. Available options are\n\t%s'%(
                 model_dataset_name, '\n\t'.join(sorted(model_dataset_names.keys()))))
     tokenizer_cls, extra_args = model_dataset_names[model_dataset_name]
-    kwargs = {**kwargs, **extra_args}
+    kwargs = {**extra_args, **kwargs}
     if tokenizer_cls is BERTTokenizer:
         assert vocab is not None, 'Must specify vocab if loading BERTTokenizer'
         return tokenizer_cls(vocab, kwargs)
     elif tokenizer_cls is GPT2BPETokenizer:
         return tokenizer_cls(root=root)
-    elif tokenizer_cls is _get_pretrained_sentencepiece_tokenizer:
-        return tokenizer_cls(dataset_name, root=root)
+    elif tokenizer_cls is _load_pretrained_sentencepiece_tokenizer:
+        return tokenizer_cls(dataset_name, root, kwargs)
     else:
         raise ValueError('Could not get any matched tokenizer interface.')

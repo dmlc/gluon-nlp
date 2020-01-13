@@ -1154,7 +1154,7 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
                           layer_norm_eps=predefined_args.get('layer_norm_eps', 1e-5))
 
     from ..vocab import Vocab  # pylint: disable=import-outside-toplevel
-    bert_vocab, _ = _load_vocab(dataset_name, vocab, root, cls=Vocab)
+    bert_vocab = _load_vocab(dataset_name, vocab, root, cls=Vocab)
     # BERT
     net = RoBERTaModel(encoder, len(bert_vocab),
                        units=predefined_args['units'],
@@ -1239,9 +1239,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
 
     Returns
     -------
-    (BERTModel, gluonnlp.vocab.BERTVocab) or
-    (BERTModel, gluonnlp.vocab.BERTVocab, gluonnlp.data.SentencepieceTokenizer)
-    if model contains sentencepiece tokenizer.
+    (BERTModel, gluonnlp.vocab.BERTVocab)
     """
     predefined_args = bert_hparams[model_name]
     mutable_args = ['use_residual', 'dropout', 'word_embed']
@@ -1265,10 +1263,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
                           layer_norm_eps=predefined_args.get('layer_norm_eps', 1e-12))
 
     from ..vocab import BERTVocab  # pylint: disable=import-outside-toplevel
-    bert_vocab, tokenizer = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
-    if tokenizer is not None:
-        # only kobert returns additional tokenizer
-        assert dataset_name.lower() == 'kobert_news_wiki_ko_cased'
+    bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     # BERT
     net = BERTModel(encoder, len(bert_vocab),
                     token_type_vocab_size=predefined_args['token_type_vocab_size'],
@@ -1282,7 +1277,4 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         ignore_extra = not (use_pooler and use_decoder and use_classifier)
         _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=ignore_extra,
                                 allow_missing=pretrained_allow_missing)
-    if tokenizer:
-        return net, bert_vocab, tokenizer
-    else:
-        return net, bert_vocab
+    return net, bert_vocab

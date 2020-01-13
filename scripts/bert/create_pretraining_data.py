@@ -530,8 +530,8 @@ def main():
                                              alpha=args.sp_alpha, lower=not args.cased)
     else:
         logging.info('loading vocab file from pre-defined dataset: %s', args.dataset_name)
-        vocab, _ = nlp.data.utils._load_pretrained_vocab(args.dataset_name, root=output_dir,
-                                                         cls=nlp.vocab.BERTVocab)
+        vocab = nlp.data.utils._load_pretrained_vocab(args.dataset_name, root=output_dir,
+                                                      cls=nlp.vocab.BERTVocab)
         tokenizer = BERTTokenizer(vocab=vocab, lower='uncased' in args.dataset_name)
 
     # count the number of input files

@@ -75,7 +75,7 @@ def fairseq_vocab_to_gluon_vocab(torch_vocab):
     specials = [bos_idx, pad_idx, eos_idx, unk_idx]
 
     openai_to_roberta = {}
-    openai_vocab, _ = _load_pretrained_vocab('openai_webtext', '.')
+    openai_vocab = _load_pretrained_vocab('openai_webtext', '.')
 
     with io.open(os.path.join(ckpt_dir, 'dict.txt'), encoding='utf-8') as f:
         for i, line in enumerate(f):
