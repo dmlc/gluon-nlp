@@ -196,13 +196,12 @@ def get_tokenizer(model_name, dataset_name,
     --------
     >>> model_name = 'bert_12_768_12'
     >>> dataset_name = 'book_corpus_wiki_en_uncased'
-    >>> model, vocab = gluonnlp.model.get_model(model_name,
-                                                dataset_name=dataset_name,
-                                                pretrained=True, use_pooler=True,
-                                                use_decoder=False, use_classifier=False)
-    >>> tok = gluonnlp.model.get_tokenizer(model_name, dataset_name, vocab,
-                                           max_input_chars_per_word=300)
-    >>> tok('Habit is second nature.')
+    >>> _, vocab = gluonnlp.model.get_model(model_name,
+    ...                                     dataset_name=dataset_name,
+    ...                                     pretrained=False, root='./model')
+    -etc-
+    >>> tokenizer = gluonnlp.model.get_tokenizer(model_name, dataset_name, vocab)
+    >>> tokenizer('Habit is second nature.')
     ['habit', 'is', 'second', 'nature', '.']
     """
     from ..data.utils import _load_pretrained_sentencepiece_tokenizer  # pylint: disable=import-outside-toplevel
