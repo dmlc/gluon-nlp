@@ -31,7 +31,7 @@ from . import optimizer
 from . import initializer
 from .vocab import Vocab
 
-__version__ = '0.8.2'
+__version__ = '0.8.3'
 
 __all__ = ['data',
            'model',
