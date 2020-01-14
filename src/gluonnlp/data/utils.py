@@ -17,7 +17,6 @@
 
 """Utility classes and functions. They help organize and keep statistics of datasets."""
 import collections
-import errno
 import os
 import tarfile
 import zipfile
