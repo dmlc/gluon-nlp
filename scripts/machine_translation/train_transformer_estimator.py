@@ -56,7 +56,7 @@ from gluonnlp.estimator import MachineTranslationEstimator, LengthNormalizedLoss
 from gluonnlp.estimator import MTTransformerBatchProcessor, MTTransformerParamUpdateHandler
 from gluonnlp.estimator import TransformerLearningRateHandler, MTTransformerMetricHandler
 from gluonnlp.estimator import TransformerGradientAccumulationHandler, ComputeBleuHandler
-from gluonnlp.estimator import ValBleuHandler
+from gluonnlp.estimator import ValBleuHandler, MTCheckpointHandler
 
 np.random.seed(100)
 random.seed(100)
@@ -273,12 +273,17 @@ val_bleu_handler = ValBleuHandler(val_data=val_data_loader, val_tgt_vocab=tgt_vo
                                   bleu=args.bleu, detokenizer=detokenizer,
                                   _bpe_to_words=_bpe_to_words)
 
+checkpoint_handler = MTCheckpointHandler(model_dir=args.save_dir,
+                                         average_checkpoint=args.average_checkpoint,
+                                         num_averages=args.num_averages,
+                                         average_start=args.average_start)
+
 event_handlers = [param_update_handler, learning_rate_handler, gradient_acc_handler,
-                  metric_handler, val_bleu_handler]
+                  metric_handler, val_bleu_handler, checkpoint_handler]
 
 mt_estimator.fit(train_data=train_data_loader,
                  val_data=val_data_loader,
                  #epochs=args.epochs,
-                 batches=2,
+                 batches=5,
                  event_handlers=event_handlers,
                  batch_axis=0)

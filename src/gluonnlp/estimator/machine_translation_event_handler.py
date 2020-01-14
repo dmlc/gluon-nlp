@@ -20,12 +20,13 @@
 import copy
 import warnings
 import math
+import os
 
 import numpy as np
 import mxnet as mx
 from mxnet.gluon.contrib.estimator import TrainBegin, TrainEnd, EpochBegin
 from mxnet.gluon.contrib.estimator import EpochEnd, BatchBegin, BatchEnd
-from mxnet.gluon.contrib.estimator import GradientUpdateHandler
+from mxnet.gluon.contrib.estimator import GradientUpdateHandler, CheckpointHandler
 from mxnet.gluon.contrib.estimator import MetricHandler
 from mxnet import gluon
 from mxnet.metric import Loss as MetricLoss
@@ -33,7 +34,8 @@ from .length_normalized_loss import LengthNormalizedLoss
 
 __all__ = ['MTTransformerParamUpdateHandler', 'TransformerLearningRateHandler',
            'MTTransformerMetricHandler', 'TransformerGradientAccumulationHandler',
-           'ComputeBleuHandler', 'ValBleuHandler', 'MTGNMTGradientUpdateHandler']
+           'ComputeBleuHandler', 'ValBleuHandler', 'MTGNMTGradientUpdateHandler',
+           'MTGNMTLearningRateHandler', 'MTCheckpointHandler']
 
 class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
     def __init__(self, avg_start, grad_interval=1):
@@ -67,6 +69,17 @@ class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
     def epoch_end(self, estimator, *args, **kwargs):
         self._update_avg_param(estimator)
 
+class MTGNMTLearningRateHandler(EpochEnd):
+    def __init__(self, epochs, lr_update_factor):
+        self.epoch_id = 0
+        self.epochs = epochs
+        self.lr_update_factor = lr_update_factor
+
+    def epoch_end(self, estimator, *args, **kwargs):
+        if self.epoch_id + 1 >= (self.epochs * 2) // 3:
+            new_lr = estimator.trainer.learning_rate * self.lr_update_factor
+            estimator.trainer.set_learning_rate(new_lr)
+        self.epoch_id += 1
 
 class TransformerLearningRateHandler(EpochBegin, BatchBegin):
     def __init__(self, lr,
@@ -167,6 +180,53 @@ class MTTransformerMetricHandler(MetricHandler, BatchBegin):
             else:
                 metric.update(label, pred)
 
+class MTCheckpointHandler(CheckpointHandler, TrainEnd):
+    def __init__(self, *args,
+                 average_checkpoint=None,
+                 num_averages=None,
+                 average_start=0,
+                 epochs=0,
+                 **kwargs):
+        super(MTCheckpointHandler, self).__init__(*args, **kwargs)
+        self.bleu_score = 0.
+        self.average_checkpoint = average_checkpoint
+        self.num_averages = num_averages
+        self.average_start = average_start
+        self.epochs = epochs
+
+    def epoch_end(self, estimator, *args, **kwargs):
+        if estimator.bleu_score > self.bleu_score:
+            self.bleu_score = estimator.bleu_score
+            save_path = os.path.join(self.model_dir, 'valid_best.params')
+            estimator.net.save_parameters(save_path)
+        save_path = os.path.join(self.model_dir, 'epoch{:d}.params'.format(self.current_epoch))
+        estimator.net.save(save_path)
+        self.current_epoch += 1
+
+    def train_end(self, estimator, *args, **kwargs):
+        ctx = estimator.context
+        save_path = os.path.join(self.model_dir, 'average.params')
+        mx.nd.save(save_path, estimator.avg_param)
+        if self.average_checkpoint:
+            for j in range(args.num_averages):
+                params = mx.nd.load(os.path.join(self.model_dir,
+                                                 'epoch{:d}.params'.format(self.epochs - j - 1)))
+                alpha = 1. / (j + 1)
+                for k, v in estimator.net._collect_params_with_prefix().items():
+                    for c in ctx:
+                        v.data(c)[:] == alpha * (params[k].as_in_context(c) - v.data(c))
+                save_path = os.path.join(self.model_dir,
+                                         'average_checkpoint_{}.params'.format(self.num_averages))
+                estimator.net.save_parameters(save_path)
+        elif self.average_start:
+            for k, v in estimator.net.collect_params().items():
+                v.set_data(average_param_dict[k])
+                save_path = os.path.join(self.model_dir, 'average.params')
+                estimator.net.save_parameters(save_path)
+            else:
+                estimator.net.load_parameters(os.path.join(self.model_dir,
+                                                           'valid_best.params'), ctx)
+
 # A temporary workaround for computing the bleu function. After bleu is in the metric
 # api, this event handler could be removed.
 class ComputeBleuHandler(BatchEnd, EpochEnd):
@@ -175,13 +235,13 @@ class ComputeBleuHandler(BatchEnd, EpochEnd):
                  tgt_sentence,
                  translator,
                  compute_bleu_fn,
-                 tokenized,
-                 tokenizer,
-                 split_compound_word,
-                 bpe,
-                 bleu,
-                 detokenizer,
-                 _bpe_to_words):
+                 tokenized=True,
+                 tokenizer='13a',
+                 split_compound_word=False,
+                 bpe=False,
+                 bleu='tweaked',
+                 detokenizer=None,
+                 _bpe_to_words=None):
         self.tgt_vocab = tgt_vocab
         self.tgt_sentence = tgt_sentence
         self.translator = translator
@@ -234,14 +294,14 @@ class ValBleuHandler(EpochEnd):
                  val_tgt_vocab,
                  val_tgt_sentences,
                  translator,
-                 tokenized,
-                 tokenizer,
-                 split_compound_word,
-                 bpe,
                  compute_bleu_fn,
-                 bleu,
-                 detokenizer,
-                 _bpe_to_words):
+                 tokenized=True,
+                 tokenizer='13a',
+                 split_compound_word=False,
+                 bpe=False,
+                 bleu='tweaked',
+                 detokenizer=None,
+                 _bpe_to_words=None):
         self.val_data = val_data
         self.val_tgt_vocab = val_tgt_vocab
         self.val_tgt_sentences = val_tgt_sentences
@@ -281,7 +341,7 @@ class ValBleuHandler(EpochEnd):
                 real_translation_out[ind] = self.detokenizer(self._bpe_to_words(sentence))
             else:
                 raise NotImplementedError
-        estimator.bleu, _, _, _, _ = self.compute_bleu_fn([self.val_tgt_sentences],
+        estimator.bleu_score, _, _, _, _ = self.compute_bleu_fn([self.val_tgt_sentences],
                                                           real_translation_out,
                                                           tokenized=self.tokenized,
                                                           tokenizer=self.tokenizer,

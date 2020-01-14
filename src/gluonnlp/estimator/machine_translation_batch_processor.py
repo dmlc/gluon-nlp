@@ -59,6 +59,7 @@ class MTTransformerBatchProcessor(BatchProcessor):
         for seq in seqs:
             self.parallel_model.put((seq, self.batch_size))
         Ls = [self.parallel_model.get() for _ in range(len(estimator.context))]
+        Ls = Ls * self.batch_size * self.rescale_loss
         return data, [target, tgt_word_count - bs], None, Ls
 
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):
