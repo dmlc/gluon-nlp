@@ -75,8 +75,7 @@ class _SampledDenseHelper(HybridBlock):
 
         # subtract log(q)
         expected_count_sampled = expected_count_sampled.astype('float32')
-        expected_count_sampled = expected_count_sampled.reshape(
-                                           shape=(1, self._num_sampled))
+        expected_count_sampled = expected_count_sampled.reshape(shape=(1, self._num_sampled))
         expected_count_true = expected_count_true.astype('float32').reshape((-1,))
         pred_true = pred_true - F.log(expected_count_true)
         pred_true = pred_true.reshape((-1, 1))
