@@ -21,13 +21,16 @@ import errno
 import os
 import tarfile
 import zipfile
-import time
+import random
+import sys
+import shutil
 
 import numpy as np
 from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import _get_repo_url, check_sha1, download
 
 from .. import _constants as C
+from .. import utils
 
 __all__ = [
     'Counter', 'count_tokens', 'concat_sequence', 'slice_sequence', 'train_valid_split',
@@ -303,6 +306,11 @@ def _load_pretrained_vocab(name, root, cls=None):
     root = os.path.expanduser(root)
     file_path = os.path.join(root, file_name + '.vocab')
     sha1_hash = _vocab_sha1[name]
+
+    temp_num = str(random.Random().randint(1, sys.maxsize))
+    temp_root = os.path.join(root, temp_num)
+    temp_file_path = os.path.join(temp_root, file_name + '.vocab')
+    temp_zip_file_path = os.path.join(root, temp_num + file_name + '.zip')
     if os.path.exists(file_path):
         if check_sha1(file_path, sha1_hash):
             return _load_vocab_file(file_path, cls)
@@ -311,34 +319,19 @@ def _load_pretrained_vocab(name, root, cls=None):
     else:
         print('Vocab file is not found. Downloading.')
 
-    if not os.path.exists(root):
-        try:
-            os.makedirs(root)
-        except OSError as e:
-            if e.errno == errno.EEXIST and os.path.isdir(root):
-                pass
-            else:
-                raise e
+    utils.mkdir(root)
 
-    prefix = str(time.time())
-    zip_file_path = os.path.join(root, prefix + file_name + '.zip')
     repo_url = _get_repo_url()
     if repo_url[-1] != '/':
         repo_url = repo_url + '/'
     download(_url_format.format(repo_url=repo_url, file_name=file_name),
-             path=zip_file_path,
-             overwrite=True)
-    with zipfile.ZipFile(zip_file_path) as zf:
+             path=temp_zip_file_path, overwrite=True)
+    with zipfile.ZipFile(temp_zip_file_path) as zf:
         if not os.path.exists(file_path):
-            zf.extractall(root)
-    try:
-        os.remove(zip_file_path)
-    except OSError as e:
-        # file has already been removed.
-        if e.errno == 2:
-            pass
-        else:
-            raise e
+            utils.mkdir(temp_root)
+            zf.extractall(temp_root)
+            os.replace(temp_file_path, file_path)
+            shutil.rmtree(temp_root)
 
     if check_sha1(file_path, sha1_hash):
         return _load_vocab_file(file_path, cls)

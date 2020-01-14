@@ -21,6 +21,7 @@ import os
 import io
 import random
 import warnings
+import threading
 
 from flaky import flaky
 import mxnet as mx
@@ -702,6 +703,7 @@ def test_numpy_dataset():
     (nlp.data.GlueMRPC, 'mrpc', 'dev', 408, 3),
     (nlp.data.GlueMRPC, 'mrpc', 'test', 1725, 2),
 ])
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_glue_data(cls, name, segment, length, fields):
@@ -713,3 +715,19 @@ def test_glue_data(cls, name, segment, length, fields):
 
     for i, x in enumerate(dataset):
         assert len(x) == fields, x
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_parallel_load_pretrained_vocab():
+    def fn(name):
+        root = 'test_parallel_load_pretrained_vocab'
+        _ = nlp.data.utils._load_pretrained_vocab(name, root=root)
+    threads = []
+    name = 'openwebtext_book_corpus_wiki_en_uncased'
+    for _ in range(10):
+        x = threading.Thread(target=fn, args=(name,))
+        threads.append(x)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
