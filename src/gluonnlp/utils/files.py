@@ -57,7 +57,7 @@ def remove(filename):
         msg = 'Removing objects on S3 is not supported: {}'.format(filename)
         raise NotImplementedError(msg)
     try:
-        os.remove(zip_file_path)
+        os.remove(filename)
     except OSError as e:
         # file has already been removed.
         if e.errno == 2:
