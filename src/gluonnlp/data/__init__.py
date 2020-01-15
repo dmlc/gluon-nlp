@@ -20,7 +20,7 @@
 
 from . import (batchify, candidate_sampler, conll, corpora, dataloader,
                dataset, question_answering, registry, sampler, sentiment,
-               stream, transforms, translation, utils,
+               stream, super_glue, transforms, translation, utils,
                word_embedding_evaluation, intent_slot, glue)
 from .candidate_sampler import *
 from .conll import *
