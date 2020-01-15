@@ -74,7 +74,7 @@ parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument('--optimizer',
-                    type='str',
+                    type=str,
                     default='bertadam',
                     help='The optimizer to be used for training')
 parser.add_argument('--epochs', type=int, default=3, help='number of epochs.')
@@ -192,8 +192,19 @@ parser.add_argument(
 
 args = parser.parse_args()
 
-logging.getLogger().setLevel(logging.INFO)
+log = logging.getLogger()
+log.setLevel(logging.INFO)
 logging.captureWarnings(True)
+fh = logging.FileHandler('log_{0}.txt'.format(args.task_name))
+formatter = logging.Formatter(
+    fmt='%(levelname)s:%(name)s:%(asctime)s %(message)s', datefmt='%H:%M:%S')
+fh.setLevel(logging.INFO)
+fh.setFormatter(formatter)
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+console.setFormatter(formatter)
+log.addHandler(console)
+log.addHandler(fh)
 logging.info(args)
 
 batch_size = args.batch_size
