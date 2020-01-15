@@ -23,6 +23,7 @@ import datetime
 
 import pytest
 import mxnet as mx
+import gluonnlp as nlp
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -217,8 +218,10 @@ def test_bert_embedding(use_pretrained):
     if use_pretrained:
         args.extend(['--dtype', 'float32'])
     else:
+        _, _ = nlp.model.get_model('bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased',
+                                   pretrained=True, root='test_bert_embedding')
         args.extend(['--params_path',
-                     '~/.mxnet/models/bert_12_768_12_book_corpus_wiki_en_uncased-75cc780f.params'])
+                     'test_bert_embedding/bert_12_768_12_book_corpus_wiki_en_uncased-75cc780f.params'])
     process = subprocess.check_call([sys.executable, './scripts/bert/embedding.py'] + args)
     time.sleep(5)
 
@@ -228,8 +231,6 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.remote_required
 @pytest.mark.integration
 @pytest.mark.parametrize('backend', ['horovod', 'device'])
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 12, 14),
-                    reason="mxnet nightly incompatible with horovod")
 def test_bert_pretrain(backend):
     # test data creation
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
