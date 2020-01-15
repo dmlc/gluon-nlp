@@ -217,12 +217,12 @@ def get_dataloader(data_set, args, dataset_type,
     data_lengths = get_data_lengths(data_set)
 
     if dataset_type == 'train':
-        train_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
+        train_batchify_fn = btf.Tuple(btf.Pad(pad_val=0), btf.Pad(pad_val=0),
                                       btf.Stack(dtype='float32'), btf.Stack(dtype='float32'))
 
     else:
         data_lengths = list(map(lambda x: x[-1], data_lengths))
-        test_batchify_fn = btf.Tuple(btf.Pad(), btf.Pad(),
+        test_batchify_fn = btf.Tuple(btf.Pad(pad_val=0), btf.Pad(pad_val=0),
                                      btf.Stack(dtype='float32'), btf.Stack(dtype='float32'),
                                      btf.Stack())
 
@@ -279,6 +279,6 @@ def write_sentences(sentences, file_path):
     with io.open(file_path, 'w', encoding='utf-8') as of:
         for sent in sentences:
             if isinstance(sent, (list, tuple)):
-                of.write(u' '.join(sent) + u'\n')
+                of.write(' '.join(sent) + '\n')
             else:
-                of.write(sent + u'\n')
+                of.write(sent + '\n')

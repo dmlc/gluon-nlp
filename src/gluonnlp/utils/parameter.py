@@ -22,7 +22,6 @@ __all__ = ['clip_grad_global_norm', 'save_parameters',
 import warnings
 
 import numpy as np
-import mxnet as mx
 from mxnet import nd
 from .. import _constants as C
 from .files import _TempFilePath, _transfer_file_s3
@@ -140,8 +139,6 @@ def load_parameters(model, filename, ctx=None, allow_missing=False,
         provided by the Parameter if any.
     """
     if cast_dtype is not None:
-        if mx.__version__ < '1.5.0':
-            raise NotImplementedError('cast_dtype option requires MXNet 1.5.0')
         _s3_compatible_save_load(False, model.load_parameters, filename, ctx=ctx,
                                  allow_missing=allow_missing, ignore_extra=ignore_extra,
                                  cast_dtype=cast_dtype)

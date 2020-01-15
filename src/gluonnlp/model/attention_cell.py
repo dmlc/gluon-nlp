@@ -23,7 +23,36 @@ import numpy as np
 import mxnet as mx
 from mxnet.gluon.block import HybridBlock
 from mxnet.gluon import nn
+from mxnet.contrib.amp import amp
 from .block import L2Normalization
+
+
+def _apply_mask(F, att_score, mask, dtype):
+    """Fill in the masked scores with a very small value
+
+    Parameters
+    ----------
+    F : symbol or ndarray
+    att_score : Symbol or NDArray
+        Shape (batch_size, query_length, memory_length)
+    mask : Symbol or NDArray or None
+        Shape (batch_size, query_length, memory_length)
+    Returns
+    -------
+    att_score : Symbol or NDArray
+        Shape (batch_size, query_length, memory_length)
+    """
+    # Fill in the masked scores with a very small value
+    neg = -1e18
+    if np.dtype(dtype) == np.float16:
+        neg = -1e4
+    else:
+        # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
+        if amp._amp_initialized:
+            neg = -1e4
+    att_score = F.where(mask, att_score, neg * F.ones_like(att_score))
+    return att_score
+
 
 # TODO(sxjscience) Add mask flag to softmax operator. Think about how to accelerate the kernel
 def _masked_softmax(F, att_score, mask, dtype):
@@ -38,23 +67,12 @@ def _masked_softmax(F, att_score, mask, dtype):
         Shape (batch_size, query_length, memory_length)
     Returns
     -------
-    att_weights : Symborl or NDArray
+    att_weights : Symbol or NDArray
         Shape (batch_size, query_length, memory_length)
     """
     if mask is not None:
         # Fill in the masked scores with a very small value
-        neg = -1e18
-        if np.dtype(dtype) == np.float16:
-            neg = -1e4
-        else:
-            try:
-                # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
-                from mxnet.contrib import amp
-                if amp.amp._amp_initialized:
-                    neg = -1e4
-            except ImportError:
-                pass
-        att_score = F.where(mask, att_score, neg * F.ones_like(att_score))
+        att_score = _apply_mask(F, att_score, mask, dtype)
         att_weights = F.softmax(att_score, axis=-1) * mask
     else:
         att_weights = F.softmax(att_score, axis=-1)
@@ -151,15 +169,9 @@ class AttentionCell(HybridBlock):
         """
         return super(AttentionCell, self).__call__(query, key, value, mask)
 
-    def forward(self, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
+    def hybrid_forward(self, F, query, key, value=None, mask=None):  # pylint: disable=arguments-differ
         if value is None:
             value = key
-        if mask is None:
-            return super(AttentionCell, self).forward(query, key, value)
-        else:
-            return super(AttentionCell, self).forward(query, key, value, mask)
-
-    def hybrid_forward(self, F, query, key, value, mask=None):  # pylint: disable=arguments-differ
         att_weights = self._compute_weight(F, query, key, mask)
         context_vec = self._read_by_weight(F, att_weights, value)
         return context_vec, att_weights
@@ -205,8 +217,8 @@ class MultiHeadAttentionCell(AttentionCell):
         self._base_cell = base_cell
         self._num_heads = num_heads
         self._use_bias = use_bias
-        units = {'query': query_units, 'key': key_units, 'value': value_units}
-        for name, unit in units.items():
+        units = [('query', query_units), ('key', key_units), ('value', value_units)]
+        for name, unit in units:
             if unit % self._num_heads != 0:
                 raise ValueError(
                     'In MultiHeadAttetion, the {name}_units should be divided exactly'
@@ -359,14 +371,23 @@ class MLPAttentionCell(AttentionCell):
                                                  weight_initializer=weight_initializer,
                                                  prefix='score_')
 
-    def _compute_weight(self, F, query, key, mask=None):
+    def _compute_score(self, F, query, key, mask=None):
         mapped_query = self._query_mid_layer(query)
         mapped_key = self._key_mid_layer(key)
         mid_feat = F.broadcast_add(F.expand_dims(mapped_query, axis=2),
                                    F.expand_dims(mapped_key, axis=1))
         mid_feat = self._act(mid_feat)
         att_score = self._attention_score(mid_feat).reshape(shape=(0, 0, 0))
-        att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask, self._dtype))
+        if mask is not None:
+            att_score = _apply_mask(F, att_score, mask, self._dtype)
+        return att_score
+
+    def _compute_weight(self, F, query, key, mask=None):
+        att_score = self._compute_score(F, query, key, mask)
+        att_weights = F.softmax(att_score, axis=-1)
+        if mask is not None:
+            att_weights = att_weights * mask
+        att_weights = self._dropout_layer(att_weights)
         return att_weights
 
 
@@ -455,7 +476,7 @@ class DotProductAttentionCell(AttentionCell):
             with self.name_scope():
                 self._l2_norm = L2Normalization(axis=-1)
 
-    def _compute_weight(self, F, query, key, mask=None):
+    def _compute_score(self, F, query, key, mask=None):
         if self._units is not None:
             query = self._proj_query(query)
             if not self._luong_style:
@@ -472,6 +493,57 @@ class DotProductAttentionCell(AttentionCell):
             query = F.contrib.div_sqrt_dim(query)
 
         att_score = F.batch_dot(query, key, transpose_b=True)
+        if mask is not None:
+            att_score = _apply_mask(F, att_score, mask, self._dtype)
+        return att_score
 
-        att_weights = self._dropout_layer(_masked_softmax(F, att_score, mask, self._dtype))
+    def _compute_weight(self, F, query, key, mask=None):
+        att_score = self._compute_score(F, query, key, mask)
+        att_weights = F.softmax(att_score, axis=-1)
+        if mask is not None:
+            att_weights = att_weights * mask
+        att_weights = self._dropout_layer(att_weights)
         return att_weights
+
+def _get_attention_cell(attention_cell, units=None,
+                        scaled=True, num_heads=None,
+                        use_bias=False, dropout=0.0):
+    """
+
+    Parameters
+    ----------
+    attention_cell : AttentionCell or str
+    units : int or None
+
+    Returns
+    -------
+    attention_cell : AttentionCell
+    """
+    if isinstance(attention_cell, str):
+        if attention_cell == 'scaled_luong':
+            return DotProductAttentionCell(units=units, scaled=True, normalized=False,
+                                           use_bias=use_bias, dropout=dropout, luong_style=True)
+        elif attention_cell == 'scaled_dot':
+            return DotProductAttentionCell(units=units, scaled=True, normalized=False,
+                                           use_bias=use_bias, dropout=dropout, luong_style=False)
+        elif attention_cell == 'dot':
+            return DotProductAttentionCell(units=units, scaled=False, normalized=False,
+                                           use_bias=use_bias, dropout=dropout, luong_style=False)
+        elif attention_cell == 'cosine':
+            return DotProductAttentionCell(units=units, scaled=False, use_bias=use_bias,
+                                           dropout=dropout, normalized=True)
+        elif attention_cell == 'mlp':
+            return MLPAttentionCell(units=units, normalized=False)
+        elif attention_cell == 'normed_mlp':
+            return MLPAttentionCell(units=units, normalized=True)
+        elif attention_cell == 'multi_head':
+            base_cell = DotProductAttentionCell(scaled=scaled, dropout=dropout)
+            return MultiHeadAttentionCell(base_cell=base_cell, query_units=units, use_bias=use_bias,
+                                          key_units=units, value_units=units, num_heads=num_heads)
+        else:
+            raise NotImplementedError
+    else:
+        assert isinstance(attention_cell, AttentionCell),\
+            'attention_cell must be either string or AttentionCell. Received attention_cell={}'\
+                .format(attention_cell)
+        return attention_cell

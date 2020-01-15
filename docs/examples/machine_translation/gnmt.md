@@ -277,12 +277,12 @@ is to construct the sampler and `DataLoader`. The first step is to use the `batc
 function, which pads and stacks sequences to form mini-batches.
 
 ```{.python .input}
-train_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(),
-                                            nlp.data.batchify.Pad(),
+train_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(pad_val=0),
+                                            nlp.data.batchify.Pad(pad_val=0),
                                             nlp.data.batchify.Stack(dtype='float32'),
                                             nlp.data.batchify.Stack(dtype='float32'))
-test_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(),
-                                           nlp.data.batchify.Pad(),
+test_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(pad_val=0),
+                                           nlp.data.batchify.Pad(pad_val=0),
                                            nlp.data.batchify.Stack(dtype='float32'),
                                            nlp.data.batchify.Stack(dtype='float32'),
                                            nlp.data.batchify.Stack())
@@ -337,12 +337,12 @@ feed the encoder and decoder to the `NMTModel` to construct the GNMT model.
 `model.hybridize` allows computation to be done using the symbolic backend. To understand what it means to be "hybridized," please refer to [this](https://mxnet.incubator.apache.org/versions/master/tutorials/gluon/hybrid.html) page on MXNet hybridization and its advantages.
 
 ```{.python .input}
-encoder, decoder = nmt.gnmt.get_gnmt_encoder_decoder(hidden_size=num_hidden,
-                                                     dropout=dropout,
-                                                     num_layers=num_layers,
-                                                     num_bi_layers=num_bi_layers)
+encoder, decoder, one_step_ahead_decoder = nmt.gnmt.get_gnmt_encoder_decoder(
+    hidden_size=num_hidden, dropout=dropout, num_layers=num_layers,
+    num_bi_layers=num_bi_layers)
 model = nlp.model.translation.NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder,
-                                       decoder=decoder, embed_size=num_hidden, prefix='gnmt_')
+                                       decoder=decoder, one_step_ahead_decoder=one_step_ahead_decoder,
+                                       embed_size=num_hidden, prefix='gnmt_')
 model.initialize(init=mx.init.Uniform(0.1), ctx=ctx)
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)

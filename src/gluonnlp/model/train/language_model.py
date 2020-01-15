@@ -18,7 +18,7 @@
 __all__ = ['AWDRNN', 'StandardRNN', 'BigRNN']
 
 from mxnet import init, nd, autograd
-from mxnet.gluon import nn, Block, HybridBlock, contrib, rnn
+from mxnet.gluon import nn, Block, HybridBlock, contrib, rnn, ParameterDict
 from mxnet import sym
 
 from ..utils import _get_rnn_layer, apply_weight_drop
@@ -71,6 +71,9 @@ class AWDRNN(HybridBlock):
         self._drop_e = drop_e
         self._weight_drop = weight_drop
         self._tie_weights = tie_weights
+        self._shared_params = None
+        if 'params' in kwargs:
+            self._shared_params = kwargs['params']
 
         with self.name_scope():
             self.embedding = self._get_embedding()
@@ -103,8 +106,19 @@ class AWDRNN(HybridBlock):
         output = nn.HybridSequential()
         with output.name_scope():
             if self._tie_weights:
-                output.add(nn.Dense(self._vocab_size, flatten=False,
-                                    params=self.embedding[0].params))
+                if self._shared_params is not None:
+                    # self.embedding[0].params do not contain the bias, it
+                    # may leave the decoder bias uninitialized. We resolve this
+                    # issue by creating a new ParameterDict and stuffing
+                    # every shared params into the ParameterDict.
+                    shared_params = self.embedding[0].params
+                    shared_params = ParameterDict(shared_params.prefix)
+                    shared_params.update(self._shared_params)
+                    output.add(nn.Dense(self._vocab_size, flatten=False,
+                                        params=shared_params))
+                else:
+                    output.add(nn.Dense(self._vocab_size, flatten=False,
+                                        params=self.embedding[0].params))
             else:
                 output.add(nn.Dense(self._vocab_size, flatten=False))
         return output
@@ -144,8 +158,6 @@ class AWDRNN(HybridBlock):
             to num_layers. The shape of every encoder's dropped output
             `(sequence_length, batch_size, num_hidden)`
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        begin_state = [] if begin_state is None else begin_state
         return super(AWDRNN, self).__call__(inputs, begin_state)
 
     def hybrid_forward(self, F, inputs, begin_state=None): # pylint: disable=arguments-differ
@@ -176,10 +188,6 @@ class AWDRNN(HybridBlock):
             to num_layers. The shape of every encoder's dropped output
             `(sequence_length, batch_size, num_hidden)`
         """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        if isinstance(begin_state, list) and len(begin_state) == 0:
-            begin_state = None
-
         encoded = self.embedding(inputs)
         if not begin_state:
             if F == nd:
@@ -302,9 +310,6 @@ class StandardRNN(HybridBlock):
             The list of last output with dropout of the model's encoder.
             the shape of last encoder's dropped output `(sequence_length, batch_size, num_hidden)`
         """
-        print('called train.__call__')
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        begin_state = [] if begin_state is None else begin_state
         return super(StandardRNN, self).__call__(inputs, begin_state)
 
     def hybrid_forward(self, F, inputs, begin_state=None): # pylint: disable=arguments-differ
@@ -335,11 +340,6 @@ class StandardRNN(HybridBlock):
             The list of last output with dropout of the model's encoder.
             the shape of last encoder's dropped output `(sequence_length, batch_size, num_hidden)`
         """
-        print('called train.hybrid_forward')
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        if isinstance(begin_state, list) and len(begin_state) == 0:
-            begin_state = None
-
         encoded = self.embedding(inputs)
         if not begin_state:
             if F == nd:

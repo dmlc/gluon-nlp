@@ -3,7 +3,7 @@ Contribute
 
 GluonNLP community welcomes contributions from anyone! Latest documentation can be found `here <http://gluon-nlp.mxnet.io/master/index.html>`__.
 
-There are lots of opportunities for you to become our `contributors <https://github.com/dmlc/gluon-nlp/blob/master/contributor.rst>`__:
+There are lots of opportunities for you to become our `contributors <https://github.com/dmlc/gluon-nlp/graphs/contributors>`__:
 
 - Ask or answer questions on `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
 - Propose ideas, or review proposed design ideas on `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
@@ -35,6 +35,15 @@ For a list of open starter tasks, check `good first issues <https://github.com/d
       one <#how-to-combine-multiple-commits-into-one>`__
    -  `What is the consequence of force
       push <#what-is-the-consequence-of-force-push>`__
+
+Clone the master branch for development
+---------------------------------------
+
+GluonNLP github defaults to the latest stable branch. For development, please make changes to the master branch such that the changes will be included in the next release.
+
+.. code:: bash
+
+    git clone -b master https://github.com/dmlc/gluon-nlp
 
 
 Make changes
@@ -145,6 +154,7 @@ How to submit pull request
    together(use git rebase then squash) into more meaningful groups.
 -  Send the pull request!
 
+   -  Select "dmlc/gluon-nlp" with "master" branch as the base
    -  Fix the problems reported by automatic checks
    -  If you are contributing a new module or new function, add a test.
 

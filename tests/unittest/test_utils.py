@@ -134,6 +134,7 @@ def test_version():
     past_version = '0.1.2'
     with pytest.raises(AssertionError):
         nlp.utils.check_version(future_version, warning_only=False)
-    nlp.utils.check_version(future_version, warning_only=True)
+    with pytest.raises(UserWarning):
+        nlp.utils.check_version(future_version, warning_only=True)
     nlp.utils.check_version(past_version, warning_only=False)
     nlp.utils.check_version(past_version, warning_only=True)

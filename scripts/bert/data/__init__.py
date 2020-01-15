@@ -17,4 +17,4 @@
 
 # pylint: disable=wildcard-import
 """BERT data."""
-from . import qa, classification, embedding, transform, ner, dataloader
+from . import qa, classification, embedding, transform, ner, dataloader, pretrain

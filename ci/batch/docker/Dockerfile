@@ -24,5 +24,4 @@ FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
  ENV PATH /opt/conda/bin:$PATH
  RUN git clone https://github.com/dmlc/gluon-nlp
  WORKDIR gluon-nlp
- RUN /bin/bash -c 'CONDA_ENVS_PATH=$PWD/conda CONDA_PKGS_DIRS=$PWD/conda/pkgs conda init bash && source /root/.bashrc && conda env update --prune -p conda/gpu/py3 -f env/gpu/py3.yml && source activate ./conda/gpu/py3 && pip install -v -e . && pip install awscli && python -m spacy download en && python -m spacy download de && python -m nltk.downloader all'
  ADD gluon_nlp_job.sh .

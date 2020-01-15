@@ -37,7 +37,11 @@ class NMTModel(Block):
     encoder : Seq2SeqEncoder
         Encoder that encodes the input sentence.
     decoder : Seq2SeqDecoder
-        Decoder that generates the predictions based on the output of the encoder.
+        Decoder used during training phase. The decoder generates predictions
+        based on the output of the encoder.
+    one_step_ahead_decoder : Seq2SeqOneStepDecoder
+        One-step ahead decoder used during inference phase. The decoder
+        generates predictions based on the output of the encoder.
     embed_size : int or None, default None
         Size of the embedding vectors. It is used to generate the source and target embeddings
         if src_embed and tgt_embed are None.
@@ -63,7 +67,7 @@ class NMTModel(Block):
     params : ParameterDict or None
         See document of `Block`.
     """
-    def __init__(self, src_vocab, tgt_vocab, encoder, decoder,
+    def __init__(self, src_vocab, tgt_vocab, encoder, decoder, one_step_ahead_decoder,
                  embed_size=None, embed_dropout=0.0, embed_initializer=mx.init.Uniform(0.1),
                  src_embed=None, tgt_embed=None, share_embed=False, tie_weights=False,
                  tgt_proj=None, prefix=None, params=None):
@@ -72,6 +76,7 @@ class NMTModel(Block):
         self.src_vocab = src_vocab
         self.encoder = encoder
         self.decoder = decoder
+        self.one_step_ahead_decoder = one_step_ahead_decoder
         self._shared_embed = share_embed
         if embed_dropout is None:
             embed_dropout = 0.0
@@ -158,10 +163,8 @@ class NMTModel(Block):
         additional_outputs : list
             Additional outputs of the decoder, e.g, the attention weights
         """
-        outputs, states, additional_outputs =\
-            self.decoder.decode_seq(inputs=self.tgt_embed(inputs),
-                                    states=states,
-                                    valid_length=valid_length)
+        outputs, states, additional_outputs = self.decoder(self.tgt_embed(inputs), states,
+                                                           valid_length)
         outputs = self.tgt_proj(outputs)
         return outputs, states, additional_outputs
 
@@ -183,7 +186,7 @@ class NMTModel(Block):
             Additional outputs of the step, e.g, the attention weights
         """
         step_output, states, step_additional_outputs =\
-            self.decoder(self.tgt_embed(step_input), states)
+            self.one_step_ahead_decoder(self.tgt_embed(step_input), states)
         step_output = self.tgt_proj(step_output)
         return step_output, states, step_additional_outputs
 

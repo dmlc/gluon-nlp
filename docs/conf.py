@@ -31,9 +31,9 @@ version = nlp.__version__
 release = nlp.__version__
 
 # General information about the project.
-project = u'gluonnlp'
-author = u'%s developers' % project
-copyright = u'2018, %s' % author
+project = 'gluonnlp'
+author = '%s developers' % project
+copyright = '2019, %s' % author
 github_doc_root = 'http://gluon-nlp.mxnet.io/{}/'.format(str(version))
 
 # add markdown parser
@@ -170,7 +170,7 @@ html_theme_options = {
     'primary_color': 'blue',
     'accent_color': 'deep_orange',
     'header_links' : [
-        ('Install', 'install', False, ''),
+        ('Install', 'install/install-more', False, ''),
         ('API', 'api/index', False, ''),
         ('Community', 'community/index', False, ''),
         ('Contribute', 'community/contribute', False, ''),
@@ -234,6 +234,9 @@ def setup(app):
             }, True)
     app.add_transform(AutoStructify)
     app.add_javascript('google_analytics.js')
+    app.add_javascript('hidebib.js')
+    app.add_javascript('install-options.js')
+    app.add_stylesheet('custom.css')
 
 
 sphinx_gallery_conf = {

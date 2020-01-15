@@ -23,6 +23,7 @@ import datetime
 
 import pytest
 import mxnet as mx
+import gluonnlp as nlp
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -61,7 +62,6 @@ def test_glove():
     time.sleep(5)
 
 
-@pytest.mark.skip_master
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
@@ -135,14 +135,19 @@ def test_sentiment_analysis_textcnn():
                                      '--dropout', '0.5', '--model_mode', 'rand', '--data_name', 'MR'])
     time.sleep(5)
 
-@pytest.mark.skip_master
 @pytest.mark.remote_required
 @pytest.mark.gpu
 @pytest.mark.serial
 @pytest.mark.integration
 @pytest.mark.parametrize('method', ['beam_search', 'sampling'])
-def test_sampling(method):
-    args = ['--bos', 'I love it', '--beam-size', '2', '--print-num', '1', '--gpu', '0']
+@pytest.mark.parametrize('lmmodel', ['awd_lstm_lm_1150', 'gpt2_117m'])
+def test_sampling(method, lmmodel):
+    if 'gpt2' in lmmodel and method == 'beam_search':
+        return  # unsupported
+    args = [
+        '--bos', 'I love it', '--beam-size', '2', '--print-num', '1', '--gpu', '0', '--lm-model',
+        lmmodel
+    ]
     if method == 'beam_search':
         args.insert(0, 'beam-search')
         args.extend(['--k', '50'])
@@ -154,7 +159,6 @@ def test_sampling(method):
     time.sleep(5)
 
 
-@pytest.mark.skip_master
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
@@ -195,7 +199,7 @@ def test_transformer(bleu):
                                      '--bleu', '13a', 
                                      '--log_interval', '10', 
                                      '--model_parameter', './scripts/machine_translation/transformer_en_de_u512/valid_best.params', 
-                                     '--gpus', '0'
+                                     '--gpu', '0'
                                      ])
     time.sleep(5)
 
@@ -214,8 +218,10 @@ def test_bert_embedding(use_pretrained):
     if use_pretrained:
         args.extend(['--dtype', 'float32'])
     else:
+        _, _ = nlp.model.get_model('bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased',
+                                   pretrained=True, root='test_bert_embedding')
         args.extend(['--params_path',
-                     '~/.mxnet/models/bert_12_768_12_book_corpus_wiki_en_uncased-75cc780f.params'])
+                     'test_bert_embedding/bert_12_768_12_book_corpus_wiki_en_uncased-75cc780f.params'])
     process = subprocess.check_call([sys.executable, './scripts/bert/embedding.py'] + args)
     time.sleep(5)
 
@@ -224,26 +230,8 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
-def test_pretrain_create():
-    # test data creation
-    process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
-                                     '--input_file', './scripts/bert/sample_text.txt',
-                                     '--output_dir', 'test/bert/data',
-                                     '--dataset_name', 'book_corpus_wiki_en_uncased',
-                                     '--max_seq_length', '128',
-                                     '--max_predictions_per_seq', '20',
-                                     '--dupe_factor', '5',
-                                     '--whole_word_mask',
-                                     '--masked_lm_prob', '0.15',
-                                     '--short_seq_prob', '0.1',
-                                     '--verbose'])
-    time.sleep(3)
-
-@pytest.mark.serial
-@pytest.mark.gpu
-@pytest.mark.remote_required
-@pytest.mark.integration
-def test_pretrain():
+@pytest.mark.parametrize('backend', ['horovod', 'device'])
+def test_bert_pretrain(backend):
     # test data creation
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
@@ -253,107 +241,35 @@ def test_pretrain():
                                      '--max_predictions_per_seq', '20',
                                      '--dupe_factor', '5',
                                      '--masked_lm_prob', '0.15',
-                                     '--short_seq_prob', '0.1',
+                                     '--short_seq_prob', '0',
                                      '--verbose'])
-    try:
-        # TODO(haibin) update test once MXNet 1.5 is released.
-        from mxnet.ndarray.contrib import adamw_update
-        arguments = ['--log_interval', '2', '--data_eval', './test/bert/data/*.npz',
-                     '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt', '--gpus', '0',
-                     '--num_steps', '20', '--num_buckets', '1']
-        # test training
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                         '--dtype', 'float32',
-                                         '--data', './test/bert/data/*.npz',
-                                         '--batch_size', '32',
-                                         '--lr', '2e-5',
-                                         '--warmup_ratio', '0.5',
-                                         '--pretrained'] + arguments)
-        # test evaluation
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                         '--dtype', 'float32',
-                                         '--pretrained'] + arguments)
+    arguments = ['--log_interval', '2',
+                 '--lr', '2e-5', '--warmup_ratio', '0.5',
+                 '--total_batch_size', '32', '--total_batch_size_eval', '8',
+                 '--ckpt_dir', './test/bert/ckpt',
+                 '--num_steps', '20', '--num_buckets', '1',
+                 '--pretrained',
+                 '--comm_backend', backend]
 
-        # test mixed precision training and use-avg-len
-        from mxnet.ndarray.contrib import mp_adamw_update
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
-                                         '--data', './test/bert/data/*.npz',
-                                         '--batch_size', '4096',
-                                         '--use_avg_len',
-                                         '--lr', '2e-5',
-                                         '--warmup_ratio', '0.5',
-                                         '--pretrained'] + arguments)
-        time.sleep(5)
-    except ImportError:
-        print("The test expects master branch of MXNet. Skipped now.")
+    if backend == 'device':
+        arguments += ['--gpus', '0']
 
+    # test training with npz data, float32
+    process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
+                                     '--dtype', 'float32',
+                                     '--data', './test/bert/data/*.npz',
+                                     '--data_eval', './test/bert/data/*.npz',
+                                     '--eval_use_npz'] + arguments)
 
-@pytest.mark.serial
-@pytest.mark.gpu
-@pytest.mark.remote_required
-@pytest.mark.integration
-def test_pretrain_hvd():
-    # test data creation
-    process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
-                                     '--input_file', './scripts/bert/sample_text.txt',
-                                     '--output_dir', 'test/bert/data',
-                                     '--dataset_name', 'book_corpus_wiki_en_uncased',
-                                     '--max_seq_length', '128',
-                                     '--max_predictions_per_seq', '20',
-                                     '--dupe_factor', '5',
-                                     '--masked_lm_prob', '0.15',
-                                     '--short_seq_prob', '0.1',
-                                     '--verbose'])
-    try:
-        # TODO(haibin) update test once MXNet 1.5 is released.
-        from mxnet.ndarray.contrib import adamw_update
-        import horovod.mxnet as hvd
-        arguments = ['--log_interval', '2',
-                     '--batch_size_eval', '8', '--ckpt_dir', './test/bert/ckpt',
-                     '--num_steps', '20', '--num_buckets', '1']
-        # test training
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
-                                         '--dtype', 'float32',
-                                         '--data', './test/bert/data/*.npz',
-                                         '--data_eval', './test/bert/data/*.npz',
-                                         '--batch_size', '32',
-                                         '--lr', '2e-5', '--eval_use_npz',
-                                         '--warmup_ratio', '0.5',
-                                         '--pretrained'] + arguments)
-        # test training with raw data
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
-                                         '--dtype', 'float32',
-                                         '--raw',
-                                         '--max_seq_length', '128',
-                                         '--max_predictions_per_seq', '20',
-                                         '--masked_lm_prob', '0.15',
-                                         '--short_seq_prob', '0.1',
-                                         '--data', './scripts/bert/sample_text.txt',
-                                         '--data_eval', './scripts/bert/sample_text.txt',
-                                         '--batch_size', '32',
-                                         '--lr', '2e-5',
-                                         '--warmup_ratio', '0.5',
-                                         '--pretrained'] + arguments)
+    raw_txt_arguments = ['--raw', '--max_seq_length', '128',
+                         '--max_predictions_per_seq', '20', '--masked_lm_prob', '0.15']
 
-        # test evaluation
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
-                                         '--dtype', 'float32',
-                                         '--data_eval', './test/bert/data/*.npz',
-                                         '--eval_use_npz', '--pretrained'] + arguments)
-
-        # test mixed precision training and use-avg-len
-        from mxnet.ndarray.contrib import mp_adamw_update
-        process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining_hvd.py',
-                                         '--data', './test/bert/data/*.npz',
-                                         '--data_eval', './test/bert/data/*.npz',
-                                         '--batch_size', '4096',
-                                         '--use_avg_len',
-                                         '--lr', '2e-5',
-                                         '--warmup_ratio', '0.5',
-                                         '--pretrained'] + arguments)
-        time.sleep(5)
-    except ImportError:
-        print("The test expects master branch of MXNet and Horovod. Skipped now.")
+    # test training with raw data
+    process = subprocess.check_call([sys.executable, './scripts/bert/run_pretraining.py',
+                                     '--data', './scripts/bert/sample_text.txt',
+                                     '--data_eval', './scripts/bert/sample_text.txt'] +
+                                     arguments + raw_txt_arguments)
+    time.sleep(5)
 
 @pytest.mark.serial
 @pytest.mark.gpu
@@ -363,8 +279,8 @@ def test_pretrain_hvd():
 # STS-B inference (regression task)
 @pytest.mark.parametrize('dataset', ['MNLI', 'STS-B'])
 def test_finetune_inference(dataset):
-    arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
-                 'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
+    arguments = ['--log_interval', '100', '--epsilon', '1e-8',
+                 '--gpu', '0', '--max_len', '80', '--only_inference']
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
                                      '--task_name', dataset] + arguments)
     time.sleep(5)
@@ -375,8 +291,8 @@ def test_finetune_inference(dataset):
 @pytest.mark.integration
 @pytest.mark.parametrize('dataset', ['XNLI', 'ChnSentiCorp'])
 def test_finetune_chinese_inference(dataset):
-    arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
-                 'adam', '--gpu', '0', '--max_len', '80', '--only_inference']
+    arguments = ['--log_interval', '100', '--epsilon', '1e-8',
+                 '--gpu', '0', '--max_len', '80', '--only_inference']
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
                                      '--task_name', dataset] + arguments)
     time.sleep(5)
@@ -385,29 +301,27 @@ def test_finetune_chinese_inference(dataset):
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
+@pytest.mark.parametrize('early_stop', [None, 2])
+@pytest.mark.parametrize('bert_model', ['bert_12_768_12', 'roberta_12_768_12'])
 @pytest.mark.parametrize('dataset', ['WNLI'])
 @pytest.mark.parametrize('dtype', ['float32', 'float16'])
-def test_finetune_train(dataset, dtype):
-    arguments = ['--log_interval', '100', '--epsilon', '1e-8', '--optimizer',
-                 'adam', '--gpu', '0', '--epochs', '2', '--dtype', dtype]
-    try:
-        # TODO(haibin) update test once MXNet 1.5 is released.
-        from mxnet.ndarray.contrib import adamw_update
-        # WNLI training with bert_adam
-        process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
-                                         '--task_name', dataset,
-                                         '--optimizer', 'bertadam'] + arguments)
-    except ImportError:
-        # WNLI training with adam
-        process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py',
-                                         '--task_name', dataset,
-                                         '--optimizer', 'adam'] + arguments)
+def test_finetune_train(early_stop, bert_model, dataset, dtype):
+    epochs = early_stop + 2 if early_stop else 2
+    arguments = ['--log_interval', '100', '--epsilon', '1e-8',
+                 '--task_name', dataset, '--bert_model', bert_model,
+                 '--gpu', '0', '--epochs', str(epochs), '--dtype', dtype]
+    if early_stop is not None:
+        arguments += ['--early_stop', str(early_stop)]
+    if 'roberta' in bert_model:
+        arguments += ['--bert_dataset', 'openwebtext_ccnews_stories_books_cased']
+    process = subprocess.check_call([sys.executable, './scripts/bert/finetune_classifier.py'] +
+                                    arguments)
 
 @pytest.mark.serial
 @pytest.mark.integration
 @pytest.mark.parametrize('task', ['classification', 'regression', 'question_answering'])
 def test_export(task):
-    process = subprocess.check_call([sys.executable, './scripts/bert/export/export.py',
+    process = subprocess.check_call([sys.executable, './scripts/bert/export.py',
                                      '--task', task])
 
 @pytest.mark.serial
@@ -425,5 +339,17 @@ def test_finetune_squad(sentencepiece):
         arguments += ['--sentencepiece', f]
 
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
+                                    + arguments)
+    time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+@pytest.mark.parametrize('dataset', ['MRPC'])
+def test_xlnet_finetune_glue(dataset):
+    arguments = ['--batch_size', '32', '--task_name', dataset,
+                 '--gpu', '1', '--epochs', '1', '--max_len', '32']
+    process = subprocess.check_call([sys.executable, './scripts/language_model/run_glue.py']
                                     + arguments)
     time.sleep(5)

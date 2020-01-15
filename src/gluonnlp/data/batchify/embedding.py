@@ -18,22 +18,14 @@
 
 __all__ = ['EmbeddingCenterContextBatchify']
 
+import itertools
 import logging
 import random
 
 import numpy as np
 
+from ...base import numba_njit, numba_prange
 from ..stream import DataStream
-
-try:
-    from numba import njit, prange
-    numba_njit = njit(nogil=True)
-except ImportError:
-    # Define numba shims
-    prange = range
-
-    def numba_njit(func):
-        return func
 
 
 class EmbeddingCenterContextBatchify:
@@ -126,16 +118,18 @@ class _EmbeddingCenterContextBatchify(DataStream):
         self._index_dtype = index_dtype
 
     def __iter__(self):
-        if prange is range:
+        if numba_prange is range:
             logging.warning(
                 'EmbeddingCenterContextBatchify supports just in time compilation '
                 'with numba, but numba is not installed. '
                 'Consider "pip install numba" for significant speed-ups.')
 
-        if isinstance(self._sentences[0][0], str):
+        firstelement = next(itertools.chain.from_iterable(self._sentences))
+        if isinstance(firstelement, str):
             sentences = [np.asarray(s, dtype='O') for s in self._sentences]
         else:
-            sentences = [np.asarray(s) for s in self._sentences]
+            dtype = type(firstelement)
+            sentences = [np.asarray(s, dtype=dtype) for s in self._sentences]
 
         if self._shuffle:
             random.shuffle(sentences)
@@ -203,20 +197,20 @@ def _context_generator(sentence_boundaries, window, batch_size,
                     # In SkipGram mode, there may be some leftover contexts
                     # form the last batch
                     continue
-                elif i < num_rows:
-                    num_context_skip = 0
-                    context_row.append(i)
-                    context_col.append(context)
-                    if cbow:
-                        context_data.append(1.0 / len(contexts))
-                    else:
-                        center_batch.append(center)
-                        context_data.append(1)
-                        i += 1
-                else:
+                if i >= num_rows:
                     num_context_skip = j
                     assert not cbow
                     break
+
+                num_context_skip = 0
+                context_row.append(i)
+                context_col.append(context)
+                if cbow:
+                    context_data.append(1.0 / len(contexts))
+                else:
+                    center_batch.append(center)
+                    context_data.append(1)
+                    i += 1
 
             if cbow:
                 center_batch.append(center)

@@ -14,8 +14,8 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+import nltk
 import pytest
-
 from mxnet.gluon.data import DataLoader
 
 from ..question_answering.data_pipeline import SQuADDataLoaderTransformer
@@ -42,6 +42,7 @@ def test_data_loader_able_to_read_spacy(squad_dev_and_vocab_spacy_provider):
 
 
 def test_data_loader_able_to_read_nltk(squad_dev_and_vocab_nltk_provider):
+    nltk.download('punkt')
     _, _, train_dataset, dev_dataset, word_vocab, char_vocab = squad_dev_and_vocab_nltk_provider
     dataloader = DataLoader(train_dataset.transform(SQuADDataLoaderTransformer()), batch_size=1)
 

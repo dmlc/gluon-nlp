@@ -18,7 +18,6 @@
 """Trainer for mixed precision training."""
 import warnings
 import collections
-import numpy as np
 import mxnet as mx
 from mxnet import nd
 
@@ -158,14 +157,14 @@ class FP16Trainer:
         self.fp32_trainer.allreduce_grads()
         step_size = batch_size * self._scaler.loss_scale
         if max_norm:
-            norm, ratio, is_finite = grad_global_norm(self.fp32_trainer._params,
-                                                      max_norm * self._scaler.loss_scale)
+            _, ratio, is_finite = grad_global_norm(self.fp32_trainer._params,
+                                                   max_norm * self._scaler.loss_scale)
             step_size = ratio * step_size
             if self._support_nan_check:
                 self.fp32_trainer.update(step_size)
                 overflow = is_finite.asscalar() < 1
             else:
-                overflow = not np.isfinite(norm.asscalar())
+                overflow = is_finite.asscalar() < 1
                 if not overflow:
                     self.fp32_trainer.update(step_size)
         else:
@@ -189,8 +188,8 @@ class LossScaler:
         for param in params:
             if param.grad_req != 'null':
                 grad = param.list_grad()[0]
-                is_not_finite += mx.nd.contrib.isnan(grad).sum()
-                is_not_finite += mx.nd.contrib.isinf(grad).sum()
+                is_not_finite += mx.nd.contrib.isnan(grad).sum().astype('float32', copy=False)
+                is_not_finite += mx.nd.contrib.isinf(grad).sum().astype('float32', copy=False)
         # NDArray is implicitly converted to bool
         if is_not_finite == 0:
             return False
