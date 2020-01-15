@@ -353,3 +353,18 @@ def test_xlnet_finetune_glue(dataset):
     process = subprocess.check_call([sys.executable, './scripts/language_model/run_glue.py']
                                     + arguments)
     time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+def test_bert_ner():
+    arguments = ['--train-path', 'sequence_labeling/dataset_sample/train_sample.txt',
+                 '--dev-path', 'sequence_labeling/dataset_sample/validation_sample.txt',
+                 '--test-path', 'sequence_labeling/dataset_sample/test_sample.txt',
+                 '--gpu', '0', '--learning-rate', '1e-5',
+                 '--epoch', '1', '--bert-model', 'bert_24_1024_16',
+                 '--save-checkpoint-prefix', './test_bert_ner']
+    script = './scripts/sequence_labeling/finetune_bert.py'
+    process = subprocess.check_call([sys.executable, script] + arguments)
+    time.sleep(5)
