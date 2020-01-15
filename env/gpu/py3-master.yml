@@ -41,3 +41,4 @@ dependencies:
     - spacy==2.2.2
     - sentencepiece==0.1.83
     - sphinx-autodoc-typehints==1.7.0
+    - seqeval
