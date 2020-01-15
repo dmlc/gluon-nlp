@@ -255,7 +255,6 @@ if pretrained_bert_parameters and model_parameters:
                      'BertForQA model parameters.')
 lower = args.uncased
 
-epochs = args.epochs
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 lr = args.lr
@@ -385,6 +384,7 @@ def train():
     num_train_examples = len(train_data_transform)
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
+    epochs = args.epochs
     if args.training_steps:
         num_train_steps = args.training_steps
         epochs = 9999
