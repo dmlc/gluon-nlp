@@ -17,7 +17,7 @@ class XLNetClassifier(Block):
             self.classifier = nn.HybridSequential(prefix=prefix)
             if dropout:
                 self.classifier.add(nn.Dropout(rate=dropout))
-            self.classifier.add(nn.Dense(units=num_classes))
+            self.classifier.add(nn.Dense(units=num_classes, flatten=False))
             self.pooler = nn.Dense(units=units, flatten=False, activation='tanh', prefix=prefix)
 
     def __call__(self, inputs, token_types, valid_length=None, mems=None):
