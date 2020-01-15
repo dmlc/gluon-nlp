@@ -23,6 +23,7 @@ import datetime
 
 import pytest
 import mxnet as mx
+import gluonnlp as nlp
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -61,7 +62,6 @@ def test_glove():
     time.sleep(5)
 
 
-@pytest.mark.skip_master
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
@@ -135,14 +135,19 @@ def test_sentiment_analysis_textcnn():
                                      '--dropout', '0.5', '--model_mode', 'rand', '--data_name', 'MR'])
     time.sleep(5)
 
-@pytest.mark.skip_master
 @pytest.mark.remote_required
 @pytest.mark.gpu
 @pytest.mark.serial
 @pytest.mark.integration
 @pytest.mark.parametrize('method', ['beam_search', 'sampling'])
-def test_sampling(method):
-    args = ['--bos', 'I love it', '--beam-size', '2', '--print-num', '1', '--gpu', '0']
+@pytest.mark.parametrize('lmmodel', ['awd_lstm_lm_1150', 'gpt2_117m'])
+def test_sampling(method, lmmodel):
+    if 'gpt2' in lmmodel and method == 'beam_search':
+        return  # unsupported
+    args = [
+        '--bos', 'I love it', '--beam-size', '2', '--print-num', '1', '--gpu', '0', '--lm-model',
+        lmmodel
+    ]
     if method == 'beam_search':
         args.insert(0, 'beam-search')
         args.extend(['--k', '50'])
@@ -154,7 +159,6 @@ def test_sampling(method):
     time.sleep(5)
 
 
-@pytest.mark.skip_master
 @pytest.mark.serial
 @pytest.mark.remote_required
 @pytest.mark.gpu
@@ -214,8 +218,10 @@ def test_bert_embedding(use_pretrained):
     if use_pretrained:
         args.extend(['--dtype', 'float32'])
     else:
+        _, _ = nlp.model.get_model('bert_12_768_12', dataset_name='book_corpus_wiki_en_uncased',
+                                   pretrained=True, root='test_bert_embedding')
         args.extend(['--params_path',
-                     '~/.mxnet/models/bert_12_768_12_book_corpus_wiki_en_uncased-75cc780f.params'])
+                     'test_bert_embedding/bert_12_768_12_book_corpus_wiki_en_uncased-75cc780f.params'])
     process = subprocess.check_call([sys.executable, './scripts/bert/embedding.py'] + args)
     time.sleep(5)
 
@@ -225,8 +231,6 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.remote_required
 @pytest.mark.integration
 @pytest.mark.parametrize('backend', ['horovod', 'device'])
-@pytest.mark.skipif(datetime.date.today() < datetime.date(2019, 11, 30),
-                    reason="mxnet nightly incompatible with horovod")
 def test_bert_pretrain(backend):
     # test data creation
     process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
@@ -335,5 +339,17 @@ def test_finetune_squad(sentencepiece):
         arguments += ['--sentencepiece', f]
 
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
+                                    + arguments)
+    time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+@pytest.mark.parametrize('dataset', ['MRPC'])
+def test_xlnet_finetune_glue(dataset):
+    arguments = ['--batch_size', '32', '--task_name', dataset,
+                 '--gpu', '1', '--epochs', '1', '--max_len', '32']
+    process = subprocess.check_call([sys.executable, './scripts/language_model/run_glue.py']
                                     + arguments)
     time.sleep(5)

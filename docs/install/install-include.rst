@@ -47,7 +47,7 @@ Select your preferences and run the install command.
   .. admonition:: Prerequisites:
 
      - Requires `pip >= 9. <https://pip.pypa.io/en/stable/installing/>`_.
-       Python 3.6+ are supported.
+       Python 3.5+ are supported.
 
      .. container:: nightly
 

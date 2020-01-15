@@ -85,7 +85,7 @@ class _TempFilePath:
 def _transfer_file_s3(filename, s3_filename, upload=True):
     """Transfer a file between S3 and local file system."""
     try:
-        import boto3
+        import boto3  # pylint: disable=import-outside-toplevel
     except ImportError:
         raise ImportError('boto3 is required to support s3 URI. Please install'
                           'boto3 via `pip install boto3`')

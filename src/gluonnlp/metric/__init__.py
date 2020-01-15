@@ -18,6 +18,8 @@
 # pylint: disable=wildcard-import
 """NLP Metrics."""
 
+from . import masked_accuracy
+
 from .masked_accuracy import *
 
 __all__ = masked_accuracy.__all__

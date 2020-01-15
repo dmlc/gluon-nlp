@@ -23,7 +23,7 @@ import os
 __all__ = ['numba_njit', 'numba_prange', 'numba_jitclass', 'numba_types', 'get_home_dir']
 
 try:
-    from numba import njit, prange, jitclass, types
+    from numba import njit, prange, jitclass, types  # pytype: disable=import-error
     numba_njit = njit(nogil=True)
     numba_prange = prange
     numba_jitclass = jitclass

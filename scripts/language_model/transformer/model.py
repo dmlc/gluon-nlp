@@ -236,7 +236,7 @@ def xlnet_cased_l24_h1024_a16(dataset_name: Optional[str] = None, vocab: Optiona
     kwargs.update(**{
         'hidden_size': 4096,
         'units': 1024,
-        'activation': 'gelu',
+        'activation': 'approx_gelu',
         'num_heads': 16,
         'num_layers': 24,
     })

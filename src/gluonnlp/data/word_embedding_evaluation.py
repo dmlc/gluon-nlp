@@ -330,8 +330,7 @@ class RadinskyMTurk(WordSimilarityEvaluationDataset):
     def _get_data(self):
         datafilepath = os.path.join(self.root, self._archive_file[0])
 
-        dataset = CorpusDataset(datafilepath, tokenizer=lambda x: x.split(','))
-        return [row for row in dataset]
+        return list(CorpusDataset(datafilepath, tokenizer=lambda x: x.split(',')))
 
 
 @register
@@ -861,7 +860,7 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
     >>> len(biggeranalogytestset)
     98000
     >>> biggeranalogytestset[0]
-    ['album', 'albums', 'application', 'applications']
+    ['arm', 'armless', 'art', 'artless']
     """
     _archive_file = ('BATS_3.0.zip',
                      'bf94d47884be9ea83af369beeea7499ed25dcf0d')
@@ -891,7 +890,7 @@ class BiggerAnalogyTestSet(WordAnalogyEvaluationDataset):
         if self.category is not None:
             categories = [self.category]
         else:
-            categories = self._categories.keys()
+            categories = sorted(list(self._categories.keys()))
 
         datasets = []
         for category in categories:

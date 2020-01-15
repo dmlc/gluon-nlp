@@ -18,10 +18,17 @@
 
 __all__ = ['BeamSearchScorer', 'BeamSearchSampler', 'HybridBeamSearchSampler', 'SequenceSampler']
 
+from typing import TypeVar
+
 import numpy as np
+
 import mxnet as mx
 from mxnet.gluon import HybridBlock
+
 from .._constants import LARGE_NEGATIVE_FLOAT
+
+
+__T = TypeVar('__T')
 
 class BeamSearchScorer(HybridBlock):
     r"""Score function used in beam search.
@@ -141,7 +148,7 @@ def _reconstruct_flattened_structure(structure, flattened):
         raise NotImplementedError
 
 
-def _expand_to_beam_size(data, beam_size, batch_size, state_info=None):
+def _expand_to_beam_size(data: __T, beam_size, batch_size, state_info=None) -> __T:
     """Tile all the states to have batch_size * beam_size on the batch axis.
 
     Parameters

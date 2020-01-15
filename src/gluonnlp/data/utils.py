@@ -115,8 +115,9 @@ def count_tokens(tokens, to_lower=False, counter=None):
     >>> import re
     >>> source_str = ' Life is great ! \n life is good . \n'
     >>> source_str_tokens = filter(None, re.split(' |\n', source_str))
-    >>> gluonnlp.data.count_tokens(source_str_tokens)
-    Counter({'is': 2, 'Life': 1, 'great': 1, '!': 1, 'life': 1, 'good': 1, '.': 1})
+    >>> counter = gluonnlp.data.count_tokens(source_str_tokens)
+    >>> sorted(counter.items())
+    [('!', 1), ('.', 1), ('Life', 1), ('good', 1), ('great', 1), ('is', 2), ('life', 1)]
 
     """
     if to_lower:
@@ -382,6 +383,7 @@ def _load_pretrained_vocab(name, root, cls=None):
 def _load_vocab_file(file_path, cls):
     with open(file_path, 'r') as f:
         if cls is None:
+            # pylint: disable=import-outside-toplevel
             from ..vocab import Vocab
             cls = Vocab
 
