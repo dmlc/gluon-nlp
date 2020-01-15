@@ -48,8 +48,8 @@ parser.add_argument(
     default=None,
     help='Pre-trained bert model parameter file. default is None')
 parser.add_argument(
-    '--raw',
-    action='store_true',
+    '--load_pickle',
+    action='store_false',
     help='Whether do data preprocessing or load from pickled file')
 parser.add_argument('--dev_dataset_file',
                     default='./output_dir/out.dev',
@@ -603,7 +603,7 @@ def train():
         max_seq_length=args.max_seq_length,
         doc_stride=args.doc_stride,
         max_query_length=args.max_query_length,
-        load_from_pickle=not args.raw,
+        load_from_pickle=args.load_pickle,
         feature_file=args.train_dataset_file)
 
     train_data_input = convert_full_features_to_input_features(
@@ -800,7 +800,7 @@ def evaluate(prefix=''):
         max_seq_length=args.max_seq_length,
         doc_stride=args.doc_stride,
         max_query_length=args.max_query_length,
-        load_from_pickle=not args.raw,
+        load_from_pickle=args.load_pickle,
         feature_file=args.dev_dataset_file)
 
     dev_data_input = convert_full_features_to_input_features(dev_data_features)

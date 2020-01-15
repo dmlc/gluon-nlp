@@ -71,7 +71,11 @@ def concat_sequences(seqs, separators, separator_mask=None):
         it will be:
             [1, 2, 3, 4, 7, 5, 6]
 
-    seqs : list of sequences or a single sequence
+    seqs : list
+        sequences or a single sequence
+
+    separator_mask : int
+        The mask value for separator
 
     Returns
     -------
@@ -81,7 +85,7 @@ def concat_sequences(seqs, separators, separator_mask=None):
     """
     assert isinstance(seqs, collections.abc.Iterable) and len(seqs) > 0
     if not separator_mask:
-        separator_mask = []
+        separator_mask = 1
     concat = sum((
         seq + sep
         for sep, seq in itertools.zip_longest(separators, seqs, fillvalue=[])),
@@ -100,7 +104,44 @@ def concat_sequences_extended(seqs,
                               separators,
                               seq_p_mask,
                               separator_mask=None):
-    """TBA"""
+    """
+    Insert special tokens for sequence list or a single sequence.
+    Note that different from concat_sequence(), one can specific mask for sequence and
+    mask for separator on element level.
+    For sequence pairs, the input is a list of 2 strings:
+    text_a, text_b.
+    Inputs:
+       text_a: 'is this jacksonville ?'
+       text_b: 'no it is not'
+       separator: [[SEP], [SEP], [CLS]]
+       seq_p_mask: [[1, 1, 1, 1], [0, 0, 0, 0, 0]]
+       separator_mask: [[1], [1], [0]]
+    Processed:
+       tokens:     'is this jacksonville ? [SEP] no it is not . [SEP] [CLS]'
+       segment_ids: 0  0    0            0  0    1  1  1  1   1 1     2
+       p_mask:      1  1    1            1  1    0  0  0  0   0 1     0
+       valid_length: 11
+
+    Parameters
+    ----------
+    separator : list
+        The special tokens to be appended to each sequence. For example:
+
+    seqs : list
+        sequences or a single sequence
+
+    seq_p_mask : list
+        mask value for each element in seqs. Must have the same shape with seqs
+
+    separator_mask : list
+        The mask value for separator
+
+    Returns
+    -------
+    np.array: input token ids in 'int32', shape (batch_size, seq_length)
+    np.array: segment ids in 'int32', shape (batch_size, seq_length)
+    np.array: mask for special tokens
+    """
     assert isinstance(seqs, collections.abc.Iterable) and len(seqs) > 0
     assert len(seq_p_mask) == len(seqs), 'sequence position mask ' \
                                          'should have the same length with sequences.'

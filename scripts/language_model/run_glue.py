@@ -241,8 +241,7 @@ def preprocess_data(tokenizer,
                     batch_size,
                     dev_batch_size,
                     max_len,
-                    vocab,
-                    load_from_pickle=False):
+                    vocab):
     #pylint: disable=redefined-outer-name
     """Train/eval Data preparation function."""
     label_dtype = 'int32' if task.class_labels else 'float32'
@@ -258,16 +257,8 @@ def preprocess_data(tokenizer,
 
     # data train
     # task.dataset_train returns (segment_name, dataset)
-    filename = 'xlnet_' + args.task_name + '_feature.train'
-    train_feautre_path = os.path.join(args.output_dir, filename)
-    if not load_from_pickle:
-        train_tsv = task.dataset_train()[1]
-        data_train = list(map(trans, train_tsv))
-        with open(train_feautre_path, 'wb') as file:
-            pickle.dump(data_train, file)
-    else:
-        with open(train_feautre_path, 'rb') as file:
-            data_train = pickle.load(file)
+    train_tsv = task.dataset_train()[1]
+    data_train = list(map(trans, train_tsv))
     data_train = mx.gluon.data.SimpleDataset(data_train)
     data_train_len = data_train.transform(
         lambda _, valid_length, segment_ids, label: valid_length, lazy=False)
