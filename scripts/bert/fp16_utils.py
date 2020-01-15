@@ -20,6 +20,7 @@ import warnings
 import collections
 import mxnet as mx
 from mxnet import nd
+from collections import defaultdict
 
 def grad_global_norm(parameters, max_norm):
     """Calculate the 2-norm of gradients of parameters, and how much they should be scaled down
@@ -60,38 +61,25 @@ def grad_global_norm(parameters, max_norm):
     NDArray
       Whether the total norm is finite. Shape is (1,)
     """
-    # collect gradient arrays
-    arrays = []
+    # distribute gradients among contexts
     idx = 0
+    arrays = defaultdict(list)
+    sum_norms = []
     for p in parameters:
         if p.grad_req != 'null':
             p_grads = p.list_grad()
-            arrays.append(p_grads[idx % len(p_grads)])
+            arrays[idx % len(p_grads)].append(p_grads[idx % len(p_grads)])
             idx += 1
     assert len(arrays) > 0, 'No parameter found available for gradient norm.'
 
-    # compute gradient norms
-    def _norm(array):
-        # TODO(haibin) norm operator does not support fp16 safe reduction.
-        # Issue is tracked at: https://github.com/apache/incubator-mxnet/issues/14126
-        x = array.reshape((-1,)).astype('float32', copy=False)
-        return nd.dot(x, x)
-
-    norm_arrays = [_norm(arr) for arr in arrays]
-
-    # group norm arrays by ctx
-    def group_by_ctx(arr_list):
-        groups = collections.defaultdict(list)
-        for arr in arr_list:
-            ctx = arr.context
-            groups[ctx].append(arr)
-        return groups
-    norm_groups = group_by_ctx(norm_arrays)
+    ctx, dtype = arrays[0][0].context, 'float32'
+    for idx,arr in enumerate(arrays.values()):
+        sum_norm = mx.nd.multi_sum_sq(*arr,num_arrays=len(arr))
+        sum_norm = nd.add_n(*sum_norm)
+        sum_norms.append(sum_norm.as_in_context(ctx))
 
     # reduce
-    ctx, dtype = arrays[0].context, 'float32'
-    norms = [nd.add_n(*g).as_in_context(ctx) for g in norm_groups.values()]
-    total_norm = nd.add_n(*norms).sqrt()
+    total_norm = nd.add_n(*sum_norms).sqrt()
     scale = total_norm / max_norm
     # is_finite = 0 if NaN or Inf, 1 otherwise.
     is_finite = nd.contrib.isfinite(scale)
