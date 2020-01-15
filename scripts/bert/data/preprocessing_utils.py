@@ -45,7 +45,7 @@ def truncate_seqs_equal(seqs, max_len):
     return seqs
 
 
-def concat_sequences(seqs, separators, separator_mask=[]):
+def concat_sequences(seqs, separators, separator_mask=None):
     """
     Insert special tokens for sequence list or a single sequence.
     For sequence pairs, the input is a list of 2 strings:
@@ -80,6 +80,8 @@ def concat_sequences(seqs, separators, separator_mask=[]):
     np.array: mask for special tokens
     """
     assert isinstance(seqs, collections.abc.Iterable) and len(seqs) > 0
+    if not separator_mask:
+        separator_mask = []
     concat = sum((
         seq + sep
         for sep, seq in itertools.zip_longest(separators, seqs, fillvalue=[])),
@@ -93,41 +95,17 @@ def concat_sequences(seqs, separators, separator_mask=[]):
                  [])
     return concat, segment_ids, p_mask
 
-def concat_sequences_2(seqs, separators, separator_mask=[]):
-    """
-    Insert special tokens for sequence list or a single sequence.
-    For sequence pairs, the input is a list of 2 strings:
-    text_a, text_b.
-    Inputs:
-       text_a: 'is this jacksonville ?'
-       text_b: 'no it is not'
-       separator: [[SEP], [SEP]]
 
-    Processed:
-       tokens:     'is this jacksonville ? [SEP] no it is not . [SEP]'
-       segment_ids: 0  0    0            0  0    1  1  1  1   1 1
-       p_mask:      0  0    0            0  1    0  0  0  0   0 1
-       valid_length: 11
-
-    Parameters
-    ----------
-    separator : list
-        The special tokens to be appended to each sequence. For example:
-        Given:
-            seqs: [[1, 2], [3, 4], [5, 6]]
-            separator: [[], 7]
-        it will be:
-            [1, 2, 3, 4, 7, 5, 6]
-
-    seqs : list of sequences or a single sequence
-
-    Returns
-    -------
-    np.array: input token ids in 'int32', shape (batch_size, seq_length)
-    np.array: segment ids in 'int32', shape (batch_size, seq_length)
-    np.array: mask for special tokens
-    """
+def concat_sequences_extended(seqs,
+                              separators,
+                              seq_p_mask,
+                              separator_mask=None):
+    """TBA"""
     assert isinstance(seqs, collections.abc.Iterable) and len(seqs) > 0
+    assert len(seq_p_mask) == len(seqs), 'sequence position mask ' \
+                                         'should have the same length with sequences.'
+    if not separator_mask:
+        separator_mask = []
     concat = sum((
         seq + sep
         for sep, seq in itertools.zip_longest(separators, seqs, fillvalue=[])),
@@ -135,11 +113,11 @@ def concat_sequences_2(seqs, separators, separator_mask=[]):
     segment_ids = sum(
         ([i] * (len(seq) + len(sep)) for i, (sep, seq) in enumerate(
             itertools.zip_longest(separators, seqs, fillvalue=[]))), [])
-    p_mask = sum((
-        [0] * len(seq) + mask
-        for sep, seq, mask in itertools.zip_longest(separators, seqs, separator_mask, fillvalue=[])),
-                 [])
+    p_mask = sum(
+        (s_mask + mask for sep, seq, s_mask, mask in itertools.zip_longest(
+            separators, seqs, seq_p_mask, separator_mask, fillvalue=[])), [])
     return concat, segment_ids, p_mask
+
 
 def tokenize_and_align_positions(origin_text, start_position, end_position,
                                  tokenizer):
@@ -198,7 +176,8 @@ def align_position2doc_spans(positions,
     if not isinstance(positions, list):
         positions = [positions]
     doc_start, doc_end = doc_spans_indices
-    if all_in_span and not all([p in range(doc_start, doc_end) for p in positions]):
+    if all_in_span and not all(
+            [p in range(doc_start, doc_end) for p in positions]):
         return [default_value] * len(positions)
     new_positions = [
         p - doc_start +
@@ -290,8 +269,8 @@ def check_is_max_context(doc_spans, cur_span_index, position):
 
 
 SquadExample = collections.namedtuple('SquadExample', [
-    'qas_id', 'question_text', 'paragraph_text', 'doc_tokens', 'example_id', 'orig_answer_text',
-    'start_position', 'end_position', 'is_impossible'
+    'qas_id', 'question_text', 'paragraph_text', 'doc_tokens', 'example_id',
+    'orig_answer_text', 'start_position', 'end_position', 'is_impossible'
 ])
 
 
@@ -343,12 +322,14 @@ def convert_squad_examples(record, is_training):
     return example
 
 
-def preprocess_text(inputs, lower=False, remove_space=True, keep_accents=False):
+def preprocess_text(inputs, lower=False, remove_space=True,
+                    keep_accents=False):
+    """Simple text preprocess"""
     if remove_space:
         outputs = ' '.join(inputs.strip().split())
     else:
         outputs = inputs
-    outputs = outputs.replace("``", '"').replace("''", '"')
+    outputs = outputs.replace('``', '"').replace('\'\'', '"')
     if not keep_accents:
         outputs = unicodedata.normalize('NFKD', outputs)
         outputs = ''.join([c for c in outputs if not unicodedata.combining(c)])
@@ -359,6 +340,7 @@ def preprocess_text(inputs, lower=False, remove_space=True, keep_accents=False):
 
 
 def _convert_index(index, pos, M=None, is_start=True):
+    """Working together with _lcs_match(), convert the token index to context index"""
     if index[pos] is not None:
         return index[pos]
     N = len(index)
@@ -395,12 +377,17 @@ def _convert_index(index, pos, M=None, is_start=True):
             return index[front]
 
 
-def _lcs_match(max_dist, seq1, seq2, max_first_seq_len, max_second_seq_len, lower=False):
-    f = np.zeros((max(len(seq1), 1024), max(len(seq2), 1024)), dtype=np.float32)
+def _lcs_match(max_dist, seq1, seq2, lower=False):
+    """unlike standard LCS, this is specifically optimized for the setting
+    because the mismatch between sentence pieces and original text will be small
+    """
+    f = np.zeros((max(len(seq1), 1024), max(len(seq2), 1024)),
+                 dtype=np.float32)
     g = {}
-    for i in range(max_first_seq_len):
+    for i, token in enumerate(seq1):
         for j in range(i - max_dist, i + max_dist):
-            if j >= max_second_seq_len or j < 0: continue
+            if j >= len(seq2) or j < 0:
+                continue
 
             if i > 0:
                 g[(i, j)] = 0
@@ -411,7 +398,7 @@ def _lcs_match(max_dist, seq1, seq2, max_first_seq_len, max_second_seq_len, lowe
                 f[i, j] = f[i, j - 1]
 
             f_prev = f[i - 1, j - 1] if i > 0 and j > 0 else 0
-            if (preprocess_text(seq1[i], lower=lower,
+            if (preprocess_text(token, lower=lower,
                                 remove_space=False) == seq2[j]
                     and f_prev + 1 > f[i, j]):
                 g[(i, j)] = 2

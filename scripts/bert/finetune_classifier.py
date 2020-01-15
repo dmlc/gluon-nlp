@@ -72,7 +72,16 @@ tasks = {
 parser = argparse.ArgumentParser(
     description='BERT fine-tune examples for classification/regression tasks.',
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+parser.add_argument('--optimizer',
+                    type='str',
+                    default='bertadam',
+                    help='The optimizer to be used for training')
 parser.add_argument('--epochs', type=int, default=3, help='number of epochs.')
+parser.add_argument('--training_steps',
+                    type=int,
+                    help='The total training steps. '
+                    'Note that if specified, epochs will be ignored.')
 parser.add_argument(
     '--batch_size',
     type=int,
@@ -495,14 +504,20 @@ def train(metric):
     all_model_params = model.collect_params()
     optimizer_params = {'learning_rate': lr, 'epsilon': epsilon, 'wd': 0.01}
     trainer = gluon.Trainer(all_model_params,
-                            'bertadam',
+                            args.optimizer,
                             optimizer_params,
                             update_on_kvstore=False)
     if args.dtype == 'float16':
         amp.init_trainer(trainer)
 
+    epoch_number = args.epochs
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
+    if args.training_steps:
+        num_train_steps = args.training_steps
+        epoch_number = 9999
+
+    logging.info('training steps=%d', num_train_steps)
     warmup_ratio = args.warmup_ratio
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
@@ -523,9 +538,12 @@ def train(metric):
     patience = args.early_stop
 
     tic = time.time()
-    for epoch_id in range(args.epochs):
+    finish_flag = False
+    for epoch_id in range(epoch_number):
         if args.early_stop and patience == 0:
             logging.info('Early stopping at epoch %d', epoch_id)
+            break
+        if finish_flag:
             break
         if not only_inference:
             metric.reset()
@@ -574,7 +592,7 @@ def train(metric):
                         all_model_params.zero_grad()
 
                 step_loss += ls.asscalar()
-                if do_regression:
+                if not do_regression:
                     label = label.reshape((-1))
                 metric.update([label], [out])
                 if (batch_id + 1) % (args.log_interval) == 0:
@@ -582,6 +600,10 @@ def train(metric):
                               args.log_interval, epoch_id,
                               trainer.learning_rate)
                     step_loss = 0
+                if step_num >= num_train_steps:
+                    logging.info('Finish training step: %d', step_num)
+                    finish_flag = True
+                    break
             mx.nd.waitall()
 
         # inference on dev data
@@ -630,8 +652,6 @@ def evaluate(loader_dev, metric, segment):
     metric.reset()
     step_loss = 0
     tic = time.time()
-    label_list = []
-    out_list = []
     for batch_id, seqs in enumerate(loader_dev):
         input_ids, valid_length, segment_ids, label = seqs
         input_ids = input_ids.as_in_context(ctx)
@@ -642,12 +662,10 @@ def evaluate(loader_dev, metric, segment):
         else:
             out = model(input_ids, segment_ids.as_in_context(ctx),
                         valid_length)
-        label_list.append(label.as_in_context(mx.cpu(0)))
-        out_list.append(out.as_in_context(mx.cpu(0)))
-        ls = loss_function(out, label).mean()
 
+        ls = loss_function(out, label).mean()
         step_loss += ls.asscalar()
-        if do_regression:
+        if not do_regression:
             label = label.reshape((-1))
         metric.update([label], [out])
         if (batch_id + 1) % (args.log_interval) == 0:

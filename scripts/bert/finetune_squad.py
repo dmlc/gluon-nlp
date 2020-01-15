@@ -112,7 +112,10 @@ parser.add_argument('--epochs',
                     type=int,
                     default=3,
                     help='number of epochs, default is 3')
-
+parser.add_argument('--training_steps',
+                    type=int,
+                    help='training steps, epochs will be ignored '
+                    'if trainin_steps is specified.')
 parser.add_argument(
     '--batch_size',
     type=int,
@@ -221,7 +224,9 @@ parser.add_argument('--debug',
                     action='store_true',
                     help='Run the example in test mode for sanity checks')
 
-parser.add_argument('--load_feature_from_pickle', action='store_true', help='load features from file if set')
+parser.add_argument('--load_feature_from_pickle',
+                    action='store_true',
+                    help='load features from file if set')
 args = parser.parse_args()
 
 output_dir = args.output_dir
@@ -373,12 +378,17 @@ def train():
     log.info('Start Training')
 
     optimizer_params = {'learning_rate': lr}
-    trainer = mx.gluon.Trainer(net.collect_params(), optimizer,
-                               optimizer_params, update_on_kvstore=False)
-
+    trainer = mx.gluon.Trainer(net.collect_params(),
+                               optimizer,
+                               optimizer_params,
+                               update_on_kvstore=False)
     num_train_examples = len(train_data_transform)
     step_size = batch_size * accumulate if accumulate else batch_size
-    num_train_steps = int(num_train_examples / step_size * epochs)
+    num_train_steps = int(num_train_examples / step_size * args.epochs)
+    if args.training_steps:
+        num_train_steps = args.training_steps
+        epochs = 9999
+
     num_warmup_steps = int(num_train_steps * warmup_ratio)
     step_num = 0
 
@@ -416,9 +426,12 @@ def train():
     epoch_tic = time.time()
     total_num = 0
     log_num = 0
+    finish_flag = False
     for epoch_id in range(epochs):
         step_loss = 0.0
         tic = time.time()
+        if finish_flag:
+            break
         for batch_id, data in enumerate(train_dataloader):
             # set new lr
             step_num = set_new_lr(step_num, batch_id)
@@ -461,6 +474,11 @@ def train():
                 tic = time.time()
                 step_loss = 0.0
                 log_num = 0
+
+            if step_num >= num_train_steps:
+                log.info('Finish training step: %d', step_num)
+                finish_flag = True
+                break
         epoch_toc = time.time()
         log.info('Time cost={:.2f} s, Thoughput={:.2f} samples/s'.format(
             epoch_toc - epoch_tic, total_num / (epoch_toc - epoch_tic)))
@@ -671,7 +689,8 @@ def preprocess_dataset(tokenizer,
     pool = mp.Pool(num_workers)
     start = time.time()
     if not load_from_pickle:
-        example_trans = partial(convert_squad_examples, is_training=input_features)
+        example_trans = partial(convert_squad_examples,
+                                is_training=input_features)
         # convert the raw dataset into raw features
         examples = pool.map(example_trans, dataset)
         raw_features = pool.map(trans, examples)
@@ -699,8 +718,7 @@ def preprocess_dataset(tokenizer,
             example[10],  # start_position,
             example[11]))  # end_position
     else:
-        data_feature = mx.gluon.data.SimpleDataset(
-            list(raw_features))
+        data_feature = mx.gluon.data.SimpleDataset(list(raw_features))
 
     end = time.time()
     pool.close()
