@@ -9,7 +9,6 @@ import random
 import logging
 import warnings
 import sys
-import pickle
 from functools import partial
 import numpy as np
 import mxnet as mx
@@ -414,8 +413,7 @@ loss_function.hybridize(static_alloc=True)
 
 logging.info('processing dataset...')
 train_data, dev_data_list, test_data_list, num_train_examples = preprocess_data(
-    tokenizer, task, args.batch_size, args.dev_batch_size, args.max_len, vocab,
-    args.pad)
+    tokenizer, task, args.batch_size, args.dev_batch_size, args.max_len, vocab)
 
 
 def test(loader_test, segment):
