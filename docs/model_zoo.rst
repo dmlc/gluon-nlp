@@ -56,3 +56,9 @@ Model Zoo
       :link: model_zoo/bert/index.html
 
       Transfer pre-trained language representations to language understanding tasks.
+
+   .. card::
+      :title: Sequence Labeling
+      :link: model_zoo/sequence_labeling/index.html
+
+      Assigning labels to each tokens in a text sequence.
