@@ -364,7 +364,7 @@ def test_bert_ner():
                  '--dev-path', folder + '/dataset_sample/validation_sample.txt',
                  '--test-path', folder + '/dataset_sample/test_sample.txt',
                  '--gpu', '0', '--learning-rate', '1e-5',
-                 '--warmup-ratio', '0',
+                 '--warmup-ratio', '0', '--batch-size', '1',
                  '--num-epochs', '1', '--bert-model', 'bert_24_1024_16',
                  '--save-checkpoint-prefix', './test_bert_ner']
     script = folder + '/finetune_bert.py'
