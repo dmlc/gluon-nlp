@@ -92,17 +92,17 @@ class DotProductSelfAttentionCell(HybridBlock):
             if self._use_bias:
                 self.query_bias = self.params.get('query_bias', shape=(self.units,),
                                                  init=bias_initializer)
-                self.key_bias   = self.params.get('key_bias', shape=(self.units,),
-                                                 init=bias_initializer)
+                self.key_bias = self.params.get('key_bias', shape=(self.units,),
+                                                init=bias_initializer)
                 self.value_bias = self.params.get('value_bias', shape=(self.units,),
                                                  init=bias_initializer)
             weight_shape = (self.units, self.units)
             self.query_weight = self.params.get('query_weight', shape=weight_shape,
                                                 init=weight_initializer,
                                                 allow_deferred_init=True)
-            self.key_weight   = self.params.get('key_weight', shape=weight_shape,
-                                                init=weight_initializer,
-                                                allow_deferred_init=True)
+            self.key_weight = self.params.get('key_weight', shape=weight_shape,
+                                              init=weight_initializer,
+                                              allow_deferred_init=True)
             self.value_weight = self.params.get('value_weight', shape=weight_shape,
                                                 init=weight_initializer,
                                                 allow_deferred_init=True)
