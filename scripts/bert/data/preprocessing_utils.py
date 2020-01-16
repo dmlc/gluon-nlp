@@ -8,8 +8,6 @@ __all__ = [
 
 import collections
 import itertools
-import unicodedata
-import numpy as np
 import numpy.ma as ma
 
 
@@ -361,4 +359,3 @@ def convert_squad_examples(record, is_training):
                            end_position=end_position,
                            is_impossible=is_impossible)
     return example
-
