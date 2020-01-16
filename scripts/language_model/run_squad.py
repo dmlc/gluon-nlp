@@ -82,7 +82,7 @@ parser.add_argument(
     '--uncased',
     action='store_true',
     help=
-    'if set, inputs are converted to lower case. Up to 04/01/2020, all released models are cased'
+    'if set, inputs are converted to lower case. Up to January 16th 2020, all released models are cased'
 )
 parser.add_argument(
     '--gpu',
