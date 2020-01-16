@@ -51,14 +51,15 @@ class LengthNormalizedLoss(EvalMetric):
 
         Parameters:
         ----------
-        labels: list
-            a list of two elements. The first element is the target sentence and
+        labels: list or tuple
+            It contains two elements. The first element is the target sentence and
             the second element is the valid length of target sentence
         preds: list or ndarray.ndarray.NDArray
             a list of ndarray.ndarray.NDArray or scalar or a single
             ndarray.ndarray.NDArray. It is usually the loss predicted by the model
         """
-        if not isinstance(labels, list) or len(labels) != 2:
+        typecheck = not isinstance(labels, list) and not isinstance(labels, tuple)
+        if typecheck or len(labels) != 2:
             raise ValueError('labels must be a list. Its first element should be'
                              ' target sequence and the second element should be'
                              'the valid length of sequence.')
