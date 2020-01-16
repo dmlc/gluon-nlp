@@ -45,6 +45,7 @@ from mxnet import gluon, autograd
 import gluonnlp as nlp
 from gluonnlp.utils import Parallel, Parallelizable
 from sampler import LogUniformSampler
+from gluonnlp.model.train import ParallelBigRNN
 
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
@@ -176,23 +177,6 @@ test_data = nlp.data.PrefetchingStream(test_data)
 # Build the model
 ###############################################################################
 
-class ParallelBigRNN(Parallelizable):
-    """Data parallel BigRNN model for training."""
-    def __init__(self, rnn, loss_fn):
-        self._model = rnn
-        self._loss = loss_fn
-
-    def forward_backward(self, x):
-        X, y, m, s, h = x
-        with autograd.record():
-            output, hidden, new_target = self._model(X, y, h, s)
-            output = output.reshape((-3, -1))
-            new_target = new_target.reshape((-1,))
-            ls = self._loss(output, new_target) * m.reshape((-1,))
-            ls = ls / args.batch_size
-            ls.backward()
-        return hidden, ls
-
 eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
                                              args.nlayers, args.nproj,
                                              embed_dropout=args.dropout,
@@ -225,7 +209,7 @@ def train():
     model.hybridize(static_alloc=True, static_shape=True)
     encoder_params = model.encoder.collect_params().values()
     embedding_params = list(model.embedding.collect_params().values())
-    parallel_model = ParallelBigRNN(model, loss)
+    parallel_model = ParallelBigRNN(model, loss, args.batch_size)
     parallel = Parallel(len(context), parallel_model)
     for epoch in range(from_epoch, args.epochs):
         sys.stdout.flush()

@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Language models for training."""
-__all__ = ['AWDRNN', 'StandardRNN', 'BigRNN']
+__all__ = ['AWDRNN', 'StandardRNN', 'BigRNN', 'ParallelBigRNN']
 
 from mxnet import init, nd, autograd
 from mxnet.gluon import nn, Block, HybridBlock, contrib, rnn, ParameterDict
@@ -23,6 +23,7 @@ from mxnet import sym
 
 from ..utils import _get_rnn_layer, apply_weight_drop
 from ..sampled_block import ISDense, SparseISDense
+from ...utils import Parallelizable
 
 class AWDRNN(HybridBlock):
     """AWD language model by salesforce.
@@ -506,3 +507,21 @@ class BigRNN(Block):
         out = out.reshape((length, batch_size, -1))
         new_target = new_target.reshape((length, batch_size))
         return out, out_states, new_target
+
+class ParallelBigRNN(Parallelizable):
+    """Data parallel BigRNN model for training."""
+    def __init__(self, rnn, loss_fn, batch_size):
+        self._model = rnn
+        self._loss = loss_fn
+        self._batch_size = batch_size
+
+    def forward_backward(self, x):
+        X, y, m, s, h = x
+        with autograd.record():
+            output, hidden, new_target = self._model(X, y, h, s)
+            output = output.reshape((-3, -1))
+            new_target = new_target.reshape((-1,))
+            ls = self._loss(output, new_target) * m.reshape((-1,))
+            ls = ls / self._batch_size
+            ls.backward()
+        return hidden, ls
