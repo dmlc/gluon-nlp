@@ -513,7 +513,7 @@ class ParallelBigRNN(Parallelizable):
 
     Parameters
     ----------
-    rnn : HybridBlock
+    model : HybridBlock
         The RNN model to be parallelized
     loss_fn : function
         A function computes the loss of given predictions.
@@ -521,8 +521,8 @@ class ParallelBigRNN(Parallelizable):
         Defines the batch size at each iteration
     ----------
     """
-    def __init__(self, rnn, loss_fn, batch_size):
-        self._model = rnn
+    def __init__(self, model, loss_fn, batch_size):
+        self._model = model
         self._loss = loss_fn
         self._batch_size = batch_size
 
