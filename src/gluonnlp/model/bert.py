@@ -91,11 +91,11 @@ class DotProductSelfAttentionCell(HybridBlock):
         with self.name_scope():
             if self._use_bias:
                 self.query_bias = self.params.get('query_bias', shape=(self.units,),
-                                                 init=bias_initializer)
+                                                  init=bias_initializer)
                 self.key_bias = self.params.get('key_bias', shape=(self.units,),
                                                 init=bias_initializer)
                 self.value_bias = self.params.get('value_bias', shape=(self.units,),
-                                                 init=bias_initializer)
+                                                  init=bias_initializer)
             weight_shape = (self.units, self.units)
             self.query_weight = self.params.get('query_weight', shape=weight_shape,
                                                 init=weight_initializer,
@@ -122,6 +122,7 @@ class DotProductSelfAttentionCell(HybridBlock):
             ret.update(child._collect_params_with_prefix(prefix + name))
         return ret
 
+    # pylint: disable=arguments-differ
     def hybrid_forward(self, F, qkv, valid_len, query_bias, key_bias, value_bias,
                        query_weight, key_weight, value_weight):
         in_bias = F.concat(query_bias, key_bias, value_bias, dim=0)
