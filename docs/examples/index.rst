@@ -106,7 +106,7 @@ Sentence Embedding
 
    .. card::
       :title: INT8 Quantization for BERT Sentence Classification and Question Answering
-      :link: sentence_embedding/bert/quantization.html
+      :link: sentence_embedding/quantization.html
 
       See how to use GluonNLP to quantize a sentence pair classification or question answering
       model into int8 data type with Intel DLBoost.
@@ -118,7 +118,7 @@ Sentence Embedding
    sentence_embedding/elmo_sentence_representation.ipynb
    sentence_embedding/self_attentive_sentence_embedding.ipynb
    sentence_embedding/bert.ipynb
-   sentence_embedding/bert/quantization.md
+   sentence_embedding/quantization.md
 
 
 Sentiment Analysis
