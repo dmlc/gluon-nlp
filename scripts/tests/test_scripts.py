@@ -230,6 +230,7 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
+@pytest.mark.skip_master  # TODO remove once https://github.com/apache/incubator-mxnet/issues/17292 is fixed
 @pytest.mark.parametrize('backend', ['horovod', 'device'])
 def test_bert_pretrain(backend):
     # test data creation
