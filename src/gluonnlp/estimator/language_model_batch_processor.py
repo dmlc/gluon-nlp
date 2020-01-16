@@ -69,17 +69,17 @@ class LanguageModelBatchProcessor(BatchProcessor):
 
         Ls = []
         outputs = []
-        if estimator.eval_hiddens is None:
-            estimator.eval_hiddens = \
-            [estimator.eval_net.begin_state(batch_size //
+        if estimator.val_hiddens is None:
+            estimator.val_hiddens = \
+            [estimator.val_net.begin_state(batch_size //
                                             len(estimator.context), func=mx.nd.zeros, ctx=ctx) for ctx \
              in estimator.context]
         else:
-            estimator.eval_hiddens = estimator.detach(estimator.eval_hiddens)
-        for i, (X, y, h) in enumerate(zip(data, target, estimator.eval_hiddens)):
-            output, h = estimator.eval_net(X, h)
-            L = estimator.evaluation_loss(output.reshape(-3, -1), y.reshape(-1,))
-            estimator.eval_hiddens[i] = h
+            estimator.val_hiddens = estimator.detach(estimator.val_hiddens)
+        for i, (X, y, h) in enumerate(zip(data, target, estimator.val_hiddens)):
+            output, h = estimator.val_net(X, h)
+            L = estimator.val_loss(output.reshape(-3, -1), y.reshape(-1,))
+            estimator.val_hiddens[i] = h
             Ls.append(L)
             outputs.append(output)
 
@@ -116,17 +116,17 @@ class ParallelLanguageModelBatchProcessor(BatchProcessor):
         ctx = estimator.context[0]
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
-        if estimator.eval_hiddens is None:
-            estimator.eval_hiddens = estimator.eval_net.begin_state(batch_size=batch_size,
+        if estimator.val_hiddens is None:
+            estimator.val_hiddens = estimator.val_net.begin_state(batch_size=batch_size,
                                                                func=mx.nd.zeros,
                                                                ctx=ctx)
         else:
-            estimator.eval_hiddens = estimator.detach(estimator.eval_hiddens)
+            estimator.val_hiddens = estimator.detach(estimator.val_hiddens)
 
         mask = data != vocab[vocab.padding_token]
-        output, estimator.eval_hiddens = estimator.eval_net(data, estimator.eval_hiddens)
+        output, estimator.val_hiddens = estimator.val_net(data, estimator.val_hiddens)
         output = output.reshape((-3, -1))
-        L = estimator.evaluation_loss(output, target.reshape(-1, ) * mask.reshape(-1))
+        L = estimator.val_loss(output, target.reshape(-1, ) * mask.reshape(-1))
         L = L * mask
 
         return data, target, output, L

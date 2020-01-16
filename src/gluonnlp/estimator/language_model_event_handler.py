@@ -39,7 +39,7 @@ class HiddenStateHandler(EpochBegin):
 
     def epoch_begin(self, estimator, *args, **kwargs):
         estimator.hiddens = None
-        estimator.eval_hiddens = None
+        estimator.val_hiddens = None
     
 class AvgParamHandler(BatchEnd, EpochEnd):
     def __init__(self, data_length):

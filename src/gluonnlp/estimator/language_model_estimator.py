@@ -38,8 +38,8 @@ class LanguageModelEstimator(Estimator):
                  initializer=None,
                  trainer=None,
                  context=None,
-                 evaluation_loss=None,
-                 eval_net=None,
+                 val_loss=None,
+                 val_net=None,
                  batch_processor=LanguageModelBatchProcessor(),
                  bptt=70):
         super().__init__(net=net, loss=loss,
@@ -48,11 +48,11 @@ class LanguageModelEstimator(Estimator):
                          initializer=initializer,
                          trainer=trainer,
                          context=context,
-                         evaluation_loss=evaluation_loss,
-                         eval_net=eval_net,
+                         val_loss=val_loss,
+                         val_net=val_net,
                          batch_processor=batch_processor)
         self.hiddens = None
-        self.eval_hiddens = None
+        self.val_hiddens = None
         self.avg_param = None
         self.bptt = bptt
         self.ntasgd = False
