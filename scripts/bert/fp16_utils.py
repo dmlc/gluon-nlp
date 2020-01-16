@@ -17,9 +17,7 @@
 
 """Trainer for mixed precision training."""
 import warnings
-import collections
 import mxnet as mx
-from mxnet import nd
 import gluonnlp as nlp
 
 class FP16Trainer:

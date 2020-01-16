@@ -22,7 +22,6 @@ __all__ = ['grad_global_norm', 'clip_grad_global_norm', 'save_parameters',
 import warnings
 
 from collections import defaultdict
-import numpy as np
 import mxnet as mx
 from mxnet import nd
 from .. import _constants as C
@@ -87,6 +86,8 @@ def grad_global_norm(parameters, max_norm=None):
 
     # reduce
     total_norm = nd.add_n(*sum_norms).sqrt()
+    if not max_norm:
+        return total_norm
     scale = total_norm / max_norm
     # is_finite = 0 if NaN or Inf, 1 otherwise.
     is_finite = nd.contrib.isfinite(scale)

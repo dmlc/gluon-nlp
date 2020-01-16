@@ -68,12 +68,9 @@ def test_parallel(num_workers):
     for para_grad, serial_grad in zip(parallel_grads_np, serial_grads_np):
         mx.test_utils.assert_almost_equal(para_grad, serial_grad)
 
-@pytest.mark.parametrize('max_norm,check_isfinite',
-                         [(1, True),
-                          (1, False),
-                          (3, True),
-                          (3, False)])
-def test_grad_global_norm(max_norm, check_isfinite):
+@pytest.mark.parametrize('max_norm',
+                         [ None, 1, 3])
+def test_grad_global_norm(max_norm):
     contexts = [mx.cpu(0), mx.cpu(1)]
     nunits = 100
     net = mx.gluon.nn.Dense(nunits, weight_initializer='ones', bias_initializer='ones')
@@ -85,8 +82,12 @@ def test_grad_global_norm(max_norm, check_isfinite):
             out = net(mx.nd.ones((1, 1), ctx=ctx))
         out.backward()
     trainer.allreduce_grads()
-    norm, ratio, is_finite = nlp.utils.grad_global_norm(net.collect_params().values(),
-                                                        max_norm)
+    if max_norm:
+        norm, ratio, is_finite = nlp.utils.grad_global_norm(net.collect_params().values(),
+                                                            max_norm)
+    else:
+        norm = nlp.utils.grad_global_norm(net.collect_params().values(),
+                                          max_norm)
     # Reference
     ref_norm = 0
     for p in net.collect_params().values():
