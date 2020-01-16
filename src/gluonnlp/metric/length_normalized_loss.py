@@ -44,9 +44,20 @@ class LengthNormalizedLoss(EvalMetric):
             output_names=output_names, label_names=label_names,
             has_global_stats=True)
 
-    # Parameter labels should be a list in the form of  [target_sequence,
-    # target_seqauence_valid_length]
     def update(self, labels, preds):
+        """Update the length normalized metrics with target label and loss
+
+        Update the sum_metrics and sum_insts of metrics with provided arguments.
+
+        Parameters:
+        ----------
+        labels: list
+            a list of two elements. The first element is the target sentence and
+            the second element is the valid length of target sentence
+        preds: list or ndarray.ndarray.NDArray
+            a list of ndarray.ndarray.NDArray or scalar or a single
+            ndarray.ndarray.NDArray. It is usually the loss predicted by the model
+        """
         if not isinstance(labels, list) or len(labels) != 2:
             raise ValueError('labels must be a list. Its first element should be'
                              ' target sequence and the second element should be'
