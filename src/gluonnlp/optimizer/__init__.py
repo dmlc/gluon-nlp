@@ -18,7 +18,7 @@
 # pylint: disable=wildcard-import
 """NLP optimizer."""
 
-from . import bert_adam, lamb
+from . import bert_adam
 
 from .bert_adam import *
 
