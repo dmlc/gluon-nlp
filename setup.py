@@ -73,6 +73,7 @@ setup(
             'tqdm',
             'sacremoses',
             'regex',
+            'packaging',
         ],
         'dev': [
             'pytest',
