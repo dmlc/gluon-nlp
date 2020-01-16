@@ -509,13 +509,38 @@ class BigRNN(Block):
         return out, out_states, new_target
 
 class ParallelBigRNN(Parallelizable):
-    """Data parallel BigRNN model for training."""
+    """Data parallel BigRNN model for training.
+
+    Parameters
+    ----------
+    rnn : HybridBlock
+        The RNN model to be parallelized
+    loss_fn : function
+        A function computes the loss of given predictions.
+    batch_size : int
+        Defines the batch size at each iteration
+    ----------
+    """
     def __init__(self, rnn, loss_fn, batch_size):
         self._model = rnn
         self._loss = loss_fn
         self._batch_size = batch_size
 
     def forward_backward(self, x):
+        """Defines the forward computation.
+
+        Parameters
+        ----------
+        x : tuple
+        It contains the input, target, masked, sampled and hidden states
+
+        Returns
+        ----------
+        hidden : NDArray
+        Next hidden states computed by the parallel model
+        ls : NDArray
+        Loss computed with provided loss function
+        """
         X, y, m, s, h = x
         with autograd.record():
             output, hidden, new_target = self._model(X, y, h, s)
