@@ -57,6 +57,7 @@ from gluonnlp.estimator import MTTransformerBatchProcessor, MTTransformerParamUp
 from gluonnlp.estimator import TransformerLearningRateHandler, MTTransformerMetricHandler
 from gluonnlp.estimator import TransformerGradientAccumulationHandler, ComputeBleuHandler
 from gluonnlp.estimator import ValBleuHandler, MTCheckpointHandler
+from gluonnlp.estimator import MTTransformerLoggingHandler, MTValidationHandler
 
 np.random.seed(100)
 random.seed(100)
@@ -278,12 +279,35 @@ checkpoint_handler = MTCheckpointHandler(model_dir=args.save_dir,
                                          num_averages=args.num_averages,
                                          average_start=args.average_start)
 
-event_handlers = [param_update_handler, learning_rate_handler, gradient_acc_handler,
-                  metric_handler, val_bleu_handler, checkpoint_handler]
+val_metric_handler = MTTransformerMetricHandler(metrics=mt_estimator.val_metrics)
+
+val_validation_handler = MTValidationHandler(val_data=val_data_loader,
+                                             eval_fn=mt_estimator.evaluate,
+                                             event_handlers=val_metric_handler)
+
+log_interval = args.log_interval * grad_interval
+logging_handler = MTTransformerLoggingHandler(log_interval=log_interval,
+                                              metrics=mt_estimator.train_metrics)
+
+event_handlers = [param_update_handler,
+                  learning_rate_handler,
+                  gradient_acc_handler,
+                  metric_handler,
+                  val_validation_handler,
+                  val_bleu_handler,
+                  checkpoint_handler,
+                  logging_handler]
 
 mt_estimator.fit(train_data=train_data_loader,
                  val_data=val_data_loader,
-                 #epochs=args.epochs,
-                 batches=5,
+                 epochs=args.epochs,
+                 #batches=200,
                  event_handlers=event_handlers,
                  batch_axis=0)
+
+val_event_handlers = [val_metric_handler,
+                      bleu_handler]
+
+mt_estimator.evaluate(val_data=val_data_loader, event_handlers=val_event_handlers)
+
+mt_estimator.evaluate(val_data=test_data_loader, event_handlers=val_event_handlers)

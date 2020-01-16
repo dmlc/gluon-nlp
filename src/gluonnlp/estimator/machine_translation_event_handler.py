@@ -21,13 +21,15 @@ import copy
 import warnings
 import math
 import os
+import time
 
 import numpy as np
 import mxnet as mx
 from mxnet.gluon.contrib.estimator import TrainBegin, TrainEnd, EpochBegin
 from mxnet.gluon.contrib.estimator import EpochEnd, BatchBegin, BatchEnd
 from mxnet.gluon.contrib.estimator import GradientUpdateHandler, CheckpointHandler
-from mxnet.gluon.contrib.estimator import MetricHandler
+from mxnet.gluon.contrib.estimator import MetricHandler, LoggingHandler
+from mxnet.gluon.contrib.estimator import ValidationHandler
 from mxnet import gluon
 from mxnet.metric import Loss as MetricLoss
 from .length_normalized_loss import LengthNormalizedLoss
@@ -35,7 +37,8 @@ from .length_normalized_loss import LengthNormalizedLoss
 __all__ = ['MTTransformerParamUpdateHandler', 'TransformerLearningRateHandler',
            'MTTransformerMetricHandler', 'TransformerGradientAccumulationHandler',
            'ComputeBleuHandler', 'ValBleuHandler', 'MTGNMTGradientUpdateHandler',
-           'MTGNMTLearningRateHandler', 'MTCheckpointHandler']
+           'MTGNMTLearningRateHandler', 'MTCheckpointHandler',
+           'MTTransformerLoggingHandler', 'MTValidationHandler']
 
 class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
     def __init__(self, avg_start, grad_interval=1):
@@ -153,7 +156,7 @@ class TransformerGradientAccumulationHandler(GradientUpdateHandler,
             self._update_gradient(estimator)
 
 class MTTransformerMetricHandler(MetricHandler, BatchBegin):
-    def __init__(self, grad_interval, *args, **kwargs):
+    def __init__(self, *args, grad_interval=None,  **kwargs):
         super(MTTransformerMetricHandler, self).__init__(*args, **kwargs)
         self.grad_interval = grad_interval
 
@@ -163,7 +166,7 @@ class MTTransformerMetricHandler(MetricHandler, BatchBegin):
             metric.reset()
 
     def batch_begin(self, estimator, *args, **kwargs):
-        if self.batch_id % self.grad_interval == 0:
+        if self.grad_interval is not None and self.batch_id % self.grad_interval == 0:
             for metric in self.metrics:
                 metric.reset_local()
         self.batch_id += 1
@@ -200,7 +203,7 @@ class MTCheckpointHandler(CheckpointHandler, TrainEnd):
             save_path = os.path.join(self.model_dir, 'valid_best.params')
             estimator.net.save_parameters(save_path)
         save_path = os.path.join(self.model_dir, 'epoch{:d}.params'.format(self.current_epoch))
-        estimator.net.save(save_path)
+        estimator.net.save_parameters(save_path)
         self.current_epoch += 1
 
     def train_end(self, estimator, *args, **kwargs):
@@ -215,17 +218,17 @@ class MTCheckpointHandler(CheckpointHandler, TrainEnd):
                 for k, v in estimator.net._collect_params_with_prefix().items():
                     for c in ctx:
                         v.data(c)[:] == alpha * (params[k].as_in_context(c) - v.data(c))
-                save_path = os.path.join(self.model_dir,
-                                         'average_checkpoint_{}.params'.format(self.num_averages))
-                estimator.net.save_parameters(save_path)
+            save_path = os.path.join(self.model_dir,
+                                     'average_checkpoint_{}.params'.format(self.num_averages))
+            estimator.net.save_parameters(save_path)
         elif self.average_start:
             for k, v in estimator.net.collect_params().items():
-                v.set_data(average_param_dict[k])
-                save_path = os.path.join(self.model_dir, 'average.params')
-                estimator.net.save_parameters(save_path)
-            else:
-                estimator.net.load_parameters(os.path.join(self.model_dir,
-                                                           'valid_best.params'), ctx)
+                v.set_data(estimator.avg_param[k])
+            save_path = os.path.join(self.model_dir, 'average.params')
+            estimator.net.save_parameters(save_path)
+        else:
+            estimator.net.load_parameters(os.path.join(self.model_dir,
+                                                       'valid_best.params'), ctx)
 
 # A temporary workaround for computing the bleu function. After bleu is in the metric
 # api, this event handler could be removed.
@@ -258,9 +261,14 @@ class ComputeBleuHandler(BatchEnd, EpochEnd):
         self.translation_out = []
 
     def batch_end(self, estimator, *args, **kwargs):
+        ctx = estimator.context[0]
         batch = kwargs['batch']
         label = kwargs['label']
         src_seq, tgt_seq, src_valid_length, tgt_valid_length, inst_ids = batch
+        src_seq = src_seq.as_in_context(ctx)
+        tgt_seq = tgt_seq.as_in_context(ctx)
+        src_valid_length = src_valid_length.as_in_context(ctx)
+        tgt_valid_length = tgt_valid_length.as_in_context(ctx)
         self.all_inst_ids.extend(inst_ids.asnumpy().astype(np.int32).tolist())
         samples, _, sample_valid_length = self.translator.translate(
             src_seq=src_seq, src_valid_length=src_valid_length)
@@ -272,7 +280,7 @@ class ComputeBleuHandler(BatchEnd, EpochEnd):
                  max_score_sample[i][1:(sample_valid_length[i] - 1)]])
         
     def epoch_end(self, estimator, *args, **kwargs):
-        real_translation_out = [None for _ in range(len(all_inst_ids))]
+        real_translation_out = [None for _ in range(len(self.all_inst_ids))]
         for ind, sentence in zip(self.all_inst_ids, self.translation_out):
             if self.bleu == 'tweaked':
                 real_translation_out[ind] = sentence
@@ -347,3 +355,41 @@ class ValBleuHandler(EpochEnd):
                                                           tokenizer=self.tokenizer,
                                                           split_compound_word=self.split_compound_word,
                                                           bpe=self.bpe)
+
+class MTTransformerLoggingHandler(LoggingHandler):
+    def __init__(self, *args, **kwargs):
+        super(MTTransformerLoggingHandler, self).__init__(*args, **kwargs)
+
+    def batch_end(self, estimator, *args, **kwargs):
+        if isinstance(self.log_interval, int):
+            batch_time = time.time() - self.batch_start
+            msg = '[Epoch %d][Batch %d]' % (self.current_epoch, self.batch_index)
+            cur_batches = kwargs['batch']
+            for batch in cur_batches:
+                self.processed_samples += batch[0].shape[0]
+            msg += '[Samples %s]' % (self.processed_samples)
+            self.log_interval_time +=  batch_time
+            if self.batch_index % self.log_interval == 0:
+                msg += 'time/interval: %.3fs ' % self.log_interval_time
+                self.log_interval_time = 0
+                for metric in self.metrics:
+                    name, val = metric.get()
+                    msg += '%s: %.4f, ' % (name, val)
+                estimator.logger.info(msg.rstrip(', '))
+        self.batch_index += 1
+
+# TODO: change the mxnet validation_handler to include event_handlers
+class MTValidationHandler(ValidationHandler):
+    def __init__(self, event_handlers,  *args, **kwargs):
+        super(MTValidationHandler, self).__init__(*args, **kwargs)
+        self.event_handlers = event_handlers
+
+    def batch_end(self, estimator, *args, **kwargs):
+        self.current_batch += 1
+        if self.batch_period and self.current_batch % self.batch_period == 0:
+            self.eval_fn(val_data=self.val_data, event_handlers=self.event_handlers)
+
+    def epoch_end(self, estimator, *args, **kwargs):
+        self.current_epoch += 1
+        if self.epoch_period and self.current_epoch % self.epoch_period == 0:
+            self.eval_fn(val_data=self.val_data, event_handlers=self.event_handlers)
