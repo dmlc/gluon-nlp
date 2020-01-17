@@ -111,7 +111,8 @@ class MTGNMTGradientUpdateHandler(GradientUpdateHandler):
         self.clip = clip
 
     def batch_end(self, estimator, *args, **kwargs):
-        grads = [p.grad(ctx) for p in estimator.net.collect_params().values()]
+        grads = [p.grad(estimator.context[0])
+                 for p in estimator.net.collect_params().values()]
         gnorm = gluon.utils.clip_global_norm(grads, self.clip)
         estimator.trainer.step(1)
 

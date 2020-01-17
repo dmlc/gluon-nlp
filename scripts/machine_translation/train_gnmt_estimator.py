@@ -54,7 +54,8 @@ from gluonnlp.estimator import MachineTranslationEstimator, LengthNormalizedLoss
 from gluonnlp.estimator import MTGNMTBatchProcessor, MTGNMTGradientUpdateHandler
 from gluonnlp.estimator import ComputeBleuHandler, ValBleuHandler
 from gluonnlp.estimator import MTTransformerMetricHandler, MTGNMTLearningRateHandler
-from gluonnlp.estimator import MTCheckpointHandler
+from gluonnlp.estimator import MTCheckpointHandler, MTTransformerMetricHandler
+from gluonnlp.estimator import MTValidationHandler
 
 np.random.seed(100)
 random.seed(100)
@@ -153,8 +154,8 @@ train_data_loader, val_data_loader, test_data_loader \
     = dataprocessor.make_dataloader(data_train, data_val, data_test, args)
 
 train_metric = LengthNormalizedLoss(loss_function)
-val_metric = LengthNormalziedLoss(loss_function)
-batchprocessor = MTGNMTBatchProcessor()
+val_metric = LengthNormalizedLoss(loss_function)
+batch_processor = MTGNMTBatchProcessor()
 gnmt_estimator = MachineTranslationEstimator(net=model, loss=loss_function,
                                              train_metrics=train_metric,
                                              val_metrics=val_metric,
@@ -167,16 +168,23 @@ learning_rate_handler = MTGNMTLearningRateHandler(epochs=args.epochs,
 
 gradient_update_handler = MTGNMTGradientUpdateHandler(clip=args.clip)
 
-metric_handler = MTTransformerMetrichandler(metrics=gnmt_estimator.train_metrics,
+metric_handler = MTTransformerMetricHandler(metrics=gnmt_estimator.train_metrics,
                                             grad_interval=1)
 
 bleu_handler = ComputeBleuHandler(tgt_vocab=tgt_vocab, tgt_sentence=val_tgt_sentences,
                                   translator=translator, compute_bleu_fn=compute_bleu)
 
-val_bleu_handler = ValBleuHandler(tgt_vocab=tgt_vocab, tgt_sentence=val_tgt_sentence,
+val_bleu_handler = ValBleuHandler(val_data=val_data_loader,
+                                  val_tgt_vocab=tgt_vocab, val_tgt_sentences=val_tgt_sentences,
                                   translator=translator, compute_bleu_fn=compute_bleu)
 
 checkpoint_handler = MTCheckpointHandler(model_dir=args.save_dir)
+
+val_metric_handler = MTTransformerMetricHandler(metrics=gnmt_estimator.val_metrics)
+
+val_validation_handler = MTValidationHandler(val_data=val_data_loader,
+                                             eval_fn=gnmt_estimator.evaluate,
+                                             event_handlers=val_metric_handler)
 
 event_handlers = [learning_rate_handler, gradient_update_handler, metric_handler,
                   val_bleu_handler, checkpoint_handler]
