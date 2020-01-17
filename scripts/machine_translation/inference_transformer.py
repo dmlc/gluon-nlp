@@ -166,10 +166,10 @@ model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, deco
 param_name = args.model_parameter
 if (not os.path.exists(param_name)):
     archive_param_url = 'http://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/models/{}'
-    archive_file_hash = ('transformer_en_de_512_WMT2014-97ffd554a.zip',
-                         'c182aae397ead66cc91f1bf241ce07a91884c869')
-    param_file_hash = ('transformer_en_de_512_WMT2014-97ffd554a.params',
-                       '97ffd554aac1f4ba2c5a99483543f47440bd9738')
+    archive_file_hash = ('transformer_en_de_512_WMT2014-e25287c5.zip',
+                         '5193b469e0e2dfdda3c834f9212420758a0d1d71')
+    param_file_hash = ('transformer_en_de_512_WMT2014-e25287c5.params',
+                       'e25287c5a924b7025e08d626f02626d5fa3af2d1')
     archive_file, archive_hash = archive_file_hash
     param_file, param_hash = param_file_hash
     logging.warning('The provided param file {} does not exist, start to download it from {}...'
