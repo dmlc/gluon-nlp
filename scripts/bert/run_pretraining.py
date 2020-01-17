@@ -79,6 +79,8 @@ parser.add_argument('--accumulate', type=int, default=1,
                     help='Number of batches for gradient accumulation. '
                          'total_batch_size = batch_size_per_worker * num_worker * accumulate.')
 parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
+parser.add_argument('--optimizer', type=str, default='bertadam',
+                    help='The optimization algorithm')
 parser.add_argument('--start_step', type=int, default=0,
                     help='Start optimization step from the checkpoint.')
 parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
@@ -241,9 +243,9 @@ def train(data_train, data_eval, model):
 
     # backend specific implementation
     if backend == 'horovod':
-        trainer = hvd.DistributedTrainer(param_dict, 'bertadam', optim_params)
+        trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optim_params)
     else:
-        trainer = mx.gluon.Trainer(param_dict, 'bertadam', optim_params,
+        trainer = mx.gluon.Trainer(param_dict, args.optimizer, optim_params,
                                    update_on_kvstore=False)
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale,
                                loss_scaler_params=loss_scale_param)
