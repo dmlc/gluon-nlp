@@ -22,8 +22,10 @@
 import mxnet as mx
 from mxnet.gluon.contrib.estimator import BatchProcessor
 from mxnet.gluon.utils import split_and_load
+from ..utils import Parallel
+from .parallel_language_model import ParallelBigRNN
 
-__all__ = ['LanguageModelBatchProcessor']
+__all__ = ['LanguageModelBatchProcessor', 'ParallelLanguageModelBatchProcessor']
 
 class LanguageModelBatchProcessor(BatchProcessor):
     def __init__(self):
@@ -86,10 +88,16 @@ class LanguageModelBatchProcessor(BatchProcessor):
         return data, target, outputs, Ls
 
 class ParallelLanguageModelBatchProcessor(BatchProcessor):
-    def __init__(self):
-        pass
+    def __init__(self, loss):
+        self.loss = loss
+
+    def _get_parallel_model(self):
+        if self.parallel_model is None:
+            self.parallel_model = ParallelBigRNN(estimator.net, self.loss)
+            self.parallel_model = Parallel(len(estimator.context), self.parallel_model)
 
     def fit_batch(self, estimator, train_batch, batch_axis=0):
+        self._get_parallel_model()
         data, target, mask, sample = train_batch
         batch_size = data.shape(batch_axis)
         if estimator.hiddens is None:
@@ -100,16 +108,16 @@ class ParallelLanguageModelBatchProcessor(BatchProcessor):
             estimator.hiddens = estimator.detach(estimator.hiddens)
         Ls = []
         for _, batch in enumerate(zip(data, target, mask, sample, hiddens)):
-            paralllel.put(batch)
+            self.parallel_model.put(batch)
 
         for _ in range(len(data)):
-            hidden, ls = parallel.get()
+            hidden, ls = self.parallel_model.get()
             index = estimator.context.index(hidden[0].context)
             estimator.hiddens[index] = hidden
             Ls.append(ls)
 
         #Ls = [l / estimator.bptt for l in Ls]
-        return data, target, hiddens, Ls
+        return data, target, None, Ls
 
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):
         data, target = val_batch

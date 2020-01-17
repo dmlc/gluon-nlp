@@ -31,7 +31,8 @@ from mxnet.gluon.utils import clip_global_norm
 
 __all__ = ['HiddenStateHandler', 'AvgParamHandler', 'LearningRateHandler',
            'RNNGradientUpdateHandler', 'MetricResetHandler',
-           'WordLanguageModelCheckpointHandler']
+           'WordLanguageModelCheckpointHandler',
+           'LargeRNNGradientUpdateHandler']
 
 class HiddenStateHandler(EpochBegin):
     def __init__(self):
@@ -149,7 +150,7 @@ class LargeRNNGradientUpdateHandler(GradientUpdateHandler):
 
         for ctx in estimator.context:
             x = embedding_params[0].grad(ctx)
-            x[:] *= self.batch_size # can I get the batch size dynamically?
+            x[:] *= self.batch_size
             encoder_grad = [p.grad(ctx) for p in encoder_params]
             gluon.utils.clip_global_norm(encoder_grad, self.clip)
             
