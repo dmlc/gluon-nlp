@@ -293,7 +293,7 @@ if pretrained_xlnet_parameters:
                               ctx=ctx,
                               ignore_extra=True,
                               cast_dtype=True)
-    
+
 units = xlnet_base._net._units
 net = XLNetForQA(xlnet_base=xlnet_base,
                  start_top_n=args.start_top_n,
@@ -408,7 +408,6 @@ def convert_examples_to_features(example,
         start_chartok_pos = _convert_index(orig_to_chartok_index,
                                            example.start_offset,
                                            is_start=True)
-        
         tok_start_position = chartok_to_tok_index[start_chartok_pos]
 
         end_chartok_pos = _convert_index(orig_to_chartok_index,
