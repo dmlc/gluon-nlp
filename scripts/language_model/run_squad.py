@@ -719,10 +719,10 @@ def train():
                         p_mask=p_mask,  # pylint: disable=line-too-long
                         is_impossible=is_impossible)
                     ls = out.mean() / len(ctx)
-                    if args.accumulate:
-                        ls = ls / args.accumulate
                     batch_loss_sep.append(out_sep)
                     batch_loss.append(ls)
+                    if args.accumulate:
+                        ls = ls / args.accumulate
                     ls.backward()
             # update
             if not args.accumulate or (batch_id + 1) % args.accumulate == 0:
