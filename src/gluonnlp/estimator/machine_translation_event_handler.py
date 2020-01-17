@@ -55,7 +55,7 @@ class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
             params = estimator.net.collect_params()
             alpha = 1. / max(1, self.step_num - self.avg_start)
             for key, val in estimator.avg_param.items():
-                estimator.avg_param[:] += alpha * \
+                val[:] += alpha * \
                                           (params[key].data(estimator.context[0]) -
                                            val)
 
