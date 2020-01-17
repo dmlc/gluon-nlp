@@ -224,10 +224,14 @@ train_loss = JointActivationRegularizationLoss(loss, args.alpha, args.beta)
 
 sampler = BatchVariableLenTextSampler(bptt=70, length=len(train_data))
 val_sampler = BatchVariableLenTextSampler(bptt=70, length=len(val_data), use_variable_length=False)
+test_sampler = BatchVariableLenTextSampler(bptt=70, length=len(test_data),
+                                           use_variable_length=False)
 train_data_loader = mx.gluon.data.DataLoader(train_data,
                                              batch_sampler=sampler)
 val_data_loader = mx.gluon.data.DataLoader(val_data,
                                            batch_sampler=val_sampler)
+test_data_loader = mx.gluon.data.DataLoader(test_data,
+                                            batch_sampler=test_sampler)
 
 train_metric = mx.metric.Loss(train_loss)
 val_metric = mx.metric.Loss(loss)
@@ -249,3 +253,6 @@ est.fit(train_data=train_data_loader, val_data=val_data_loader,
         epochs=args.epochs,
         event_handlers=event_handlers,
         batch_axis=1)
+
+est.evaluate(val_data=val_data_loader, event_handlers=[HiddenStateHandler()], batch_axis=1)
+est.evaluate(val_data=test_data_loader, event_handlers=[HiddenStateHandler()], batch_axis=1)
