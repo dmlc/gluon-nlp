@@ -26,6 +26,10 @@ from mxnet import gluon, autograd
 import gluonnlp as nlp
 from gluonnlp.utils import Parallel, Parallelizable
 from sampler import LogUniformSampler
+from gluonnlp.estimator import ParallelLanguageModelBatchProcessor
+from gluonnlp.estimator import HiddenStateHandler, MetricResetHandler
+from gluonnlp.estimator import LargeRNNGradientUpdateHandler
+from gluonnlp.estimator import WordLanguageModelCheckpointHandler
 
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
@@ -157,14 +161,16 @@ test_data = nlp.data.PrefetchingStream(test_data)
 # Build the model
 ###############################################################################
 
-eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
-                                             args.nlayers, args.nproj,
-                                             embed_dropout=args.dropout,
-                                             encode_dropout=args.dropout)
 model = nlp.model.language_model.train.BigRNN(ntokens, args.emsize, args.nhid,
                                               args.nlayers, args.nproj, args.k,
                                               embed_dropout=args.dropout,
                                               encode_dropout=args.dropout)
+eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
+                                             args.nlayers, args.nproj,
+                                             embed_dropout=args.dropout,
+                                             encode_dropout=args.dropout,
+                                             params=model.collect_params())
+
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 model.initialize(mx.init.Xavier(factor_type='out'), ctx=context)
 trainer_params = {'learning_rate': args.lr, 'wd': 0, 'eps': args.eps}
@@ -181,5 +187,27 @@ for i, batch in enumerate(train_data):
     tmp = type(batch)
 
 model.hybridize(static_alloc=True, static_shape=True)
-parallel_model = ParallelBigRNN(model, loss)
-parallel = Parallel(len(context), parallel_model)
+
+train_metric = mx.metric.Loss(loss)
+val_metric = mx.metric.Loss(loss)
+batch_processor = ParallelLanguageModelBatchProcessor(loss)
+lm_estimator = LanguageModelEstimator(net=model, loss=loss,
+                                      train_metrics=train_metric,
+                                      val_metrics=val_metric,
+                                      trainer=trainer,
+                                      context=context,
+                                      val_loss=loss,
+                                      val_net=eval_model,
+                                      batch_processor=batch_processor)
+
+hidden_state_handler = HiddenStateHandler()
+gradient_handler = LargeRNNGradientUpdateHandler(batch_size=args.batch_size, clip=args.clip)
+metric_handler = MetricResetHandler(metrics=est.train_metrics,
+                                    log_interval=args.log_interval)
+checkpoint_handler = WrodLanguageModelCheckpointHandler(args.save)
+
+event_handlers = [hidden_state_handler, gradient_handler,
+                  metric_handler, checkpoint_handler]
+
+lm_estimator.fit(train_data=train_data, epochs=args.epochs,
+                 event_handlers=event_handlers, batch_axis=0)
