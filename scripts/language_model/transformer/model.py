@@ -55,7 +55,6 @@ def get_model(name, **kwargs):
         'xlnet_cased_l12_h768_a12': xlnet_cased_l12_h768_a12,
         'xlnet_cased_l24_h1024_a16': xlnet_cased_l24_h1024_a16
     }
-    print(name, kwargs)
     name = name.lower()
     if name not in models:
         raise ValueError('Model %s is not supported. Available options are\n\t%s' %

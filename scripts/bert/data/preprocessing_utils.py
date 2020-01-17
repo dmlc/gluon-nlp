@@ -311,7 +311,7 @@ def check_is_max_context(doc_spans, cur_span_index, position):
 
 SquadExample = collections.namedtuple('SquadExample', [
     'qas_id', 'question_text', 'paragraph_text', 'doc_tokens', 'example_id',
-    'orig_answer_text', 'start_position', 'end_position', 'is_impossible'
+    'orig_answer_text', 'start_position', 'end_position', 'start_offset', 'end_offset', 'is_impossible'
 ])
 
 
@@ -350,7 +350,6 @@ def convert_squad_examples(record, is_training):
             answer_offset] if not is_impossible else -1
         end_position = char_to_word_offset[answer_offset + answer_length -
                                            1] if not is_impossible else -1
-
     example = SquadExample(qas_id=qas_id,
                            question_text=question_text,
                            paragraph_text=paragraph_text,
@@ -359,6 +358,8 @@ def convert_squad_examples(record, is_training):
                            orig_answer_text=orig_answer_text,
                            start_position=start_position,
                            end_position=end_position,
+                           start_offset=answer_offset,
+                           end_offset=answer_offset + len(orig_answer_text) - 1,
                            is_impossible=is_impossible)
     return example
 

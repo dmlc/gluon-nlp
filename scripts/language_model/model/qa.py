@@ -5,7 +5,7 @@ from mxnet.gluon import HybridBlock, Block, loss, nn
 
 
 class PoolerStartLogits(HybridBlock):
-    """ Compute SQuAD start_logits from sequence hidden states. """
+    """ Compute SQuAD start_logits from sequence hidden states."""
     def __init__(self, prefix=None, params=None):
         super(PoolerStartLogits, self).__init__(prefix=prefix, params=params)
         self.dense = nn.Dense(1, flatten=False)
@@ -15,12 +15,19 @@ class PoolerStartLogits(HybridBlock):
         return super(PoolerStartLogits, self).__call__(hidden_states, p_masks)
 
     def hybrid_forward(self, F, hidden_states, p_mask):
-        # pylint: disable=arguments-differ
-        """ Args:
-            **p_mask**: (`optional`) ``torch.FloatTensor`` of shape `(batch_size, seq_len)`
-                invalid position mask such as query and special symbols (PAD, SEP, CLS)
-                1.0 means token should be masked.
+        """Get start logits from the model output.
+
+        Parameters
+        ----------
+        hidden_states : NDArray, shape (batch_size, seq_length, hidden_size)
+        p_mask : NDArray or None, shape(batch_size, seq_length)
+
+        Returns
+        -------
+        x : NDarray, shape(batch_size, seq_length)
+            Masked start logits.
         """
+        # pylint: disable=arguments-differ
         x = self.dense(hidden_states).squeeze(-1)
         if p_mask is not None:
             x = x * (1 - p_mask) - 1e30 * p_mask
@@ -50,6 +57,22 @@ class PoolerEndLogits(Block):
 
     def forward(self, hidden_states, start_states, start_positions, p_mask):
         # pylint: disable=arguments-differ
+        """Get end logits from the model output and start states or start positions.
+
+        Parameters
+        ----------
+        hidden_states : NDArray, shape (batch_size, seq_length, hidden_size)
+        start_states : NDArray, shape (batch_size, seq_length, start_n_top, hidden_size)
+            Used during inference
+        start_positions : NDArray, shape (batch_size)
+            Ground-truth start positions used during training.
+        p_mask : NDArray or None, shape(batch_size, seq_length)
+
+        Returns
+        -------
+        x : NDarray, shape(batch_size, seq_length)
+            Masked end logits.
+        """
         F = mx.ndarray
         if not self._eval:
             start_states = F.gather_nd(
@@ -58,7 +81,7 @@ class PoolerEndLogits(Block):
                     F.contrib.arange_like(hidden_states,
                                           axis=0).expand_dims(1),
                     start_positions.expand_dims(
-                        1)).transpose())  #shape(bsz, hsz)
+                        1)).transpose())  # shape(bsz, hsz)
             start_states = start_states.expand_dims(1)
             start_states = F.broadcast_like(
                 start_states, hidden_states)  # shape (bsz, slen, hsz)
@@ -95,17 +118,31 @@ class XLNetPoolerAnswerClass(Block):
         # pylint: disable=arguments-differ
         return super(XLNetPoolerAnswerClass,
                      self).__call__(hidden_states, start_states, cls_index)
-        # pylint: disable=unused-argument
 
-    def forward(self, sequence, start_states, cls_index):
+    def forward(self, hidden_states, start_states, cls_index):
         # pylint: disable=arguments-differ
-        # get the cls_token's state, currently the last state
+        """Get answerability logits from the model output and start states.
+
+        Parameters
+        ----------
+        hidden_states : NDArray, shape (batch_size, seq_length, hidden_size)
+        start_states : NDArray, shape (batch_size, hidden_size)
+            Typically weighted average hidden_states along second dimension.
+        cls_index : NDArray, shape (batch_size)
+            Index of [CLS] token in sequence.
+
+        Returns
+        -------
+        x : NDarray, shape(batch_size,)
+            CLS logits.
+        """
         F = mx.ndarray
-        index = F.contrib.arange_like(sequence, axis=0,
-                                      ctx=sequence.context).expand_dims(1)
+        index = F.contrib.arange_like(hidden_states,
+                                      axis=0,
+                                      ctx=hidden_states.context).expand_dims(1)
         valid_length_rs = cls_index.reshape((-1, 1)) - 1
         gather_index = F.concat(index, valid_length_rs).T
-        cls_token_state = F.gather_nd(sequence, gather_index)
+        cls_token_state = F.gather_nd(hidden_states, gather_index)
 
         x = self.dense_0(F.concat(start_states, cls_token_state, dim=-1))
         x = self._dropout(x)
@@ -118,7 +155,15 @@ class XLNetForQA(Block):
 
     Parameters
     ----------
-    bert: XLNet base
+    xlnet_base: XLNet Block
+    start_top_n : int
+        Number of start position candidates during inference.
+    end_top_n : int
+        Number of end position candidates for each start position during inference.
+    version_2 : Bool
+        model for squad2.0 includes an extra answer class to predict answerability.
+    is_eval : Bool
+        If set to True, do inference.
     prefix : str or None
         See document of `mx.gluon.Block`.
     params : ParameterDict or None
@@ -155,7 +200,7 @@ class XLNetForQA(Block):
                  p_mask=None,
                  is_impossible=None,
                  mems=None):
-        #pylint: disable=arguments-differ, dangerous-default-value
+        #pylint: disable=arguments-differ
         """Generate the unnormalized score for the given the input sequences."""
         valid_length = [] if valid_length is None else valid_length
         return super(XLNetForQA,
@@ -201,11 +246,32 @@ class XLNetForQA(Block):
             first sentence or the second one.
         valid_length : NDArray or None, shape (batch_size,)
             Valid length of the sequence. This is used to mask the padded tokens.
+        p_mask : NDArray or None, shape (batch_size, seq_length)
+            We do not want special tokens(e.g., [SEP], [PAD]) and question tokens to be
+            included in answer. Set to 1 to mask the token.
+        label : NDArray, shape (batch_size, 1)
+            Ground-truth label(start/end position) for loss computation.
+        is_impossible : NDArray or None, shape (batch_size ,1)
+            Ground-truth label(is impossible) for loss computation. Set to None for squad1.
+        mems : NDArray
+            We do not use memory(a Transformer XL component) during finetuning.
 
         Returns
         -------
-        outputs : NDArray
-            Shape (batch_size, seq_length, 2)
+        For training we have:
+        total_loss : list of NDArray
+            For squad1, we will only have one span loss of Shape (batch_size, )
+            For squad2, we will have a span loss (batch_size, ) and a cls_loss (batch_size, )
+        total_loss_sum : NDArray
+            For squad1, it equals to span_loss
+            For squad2, it equals to span_loss + cls_loss
+
+        For inference we have:
+        start_top_log_probs : NDArray, shape (batch_size, start_n_top, )
+        start_top_index :  NDArray, shape (batch_size, start_n_top)
+        end_top_log_probs : NDArray, shape (batch_size, start_n_top * end_n_top)
+        end_top_index : NDArray, shape (batch_size, start_n_top * end_n_top)
+        cls_logits : NDArray or None, shape (batch_size, )
         """
         if isinstance(valid_length, list) and len(valid_length) == 0:
             valid_length = None

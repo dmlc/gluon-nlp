@@ -278,7 +278,7 @@ batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Pad(axis=0,
                           pad_val=vocab[vocab.padding_token],
                           dtype='int32'),  # input_ids
-    nlp.data.batchify.Pad(axis=0, pad_val=4, dtype='int32'),  # segment_ids
+    nlp.data.batchify.Pad(axis=0, pad_val=3, dtype='int32'),  # segment_ids
     nlp.data.batchify.Stack('float32'),  # valid_length
     nlp.data.batchify.Pad(axis=0, pad_val=1),  # p_mask
     nlp.data.batchify.Stack('float32'),  # start_position
@@ -292,10 +292,12 @@ if pretrained_xlnet_parameters:
                               ctx=ctx,
                               ignore_extra=True,
                               cast_dtype=True)
-
+    
+units = xlnet_base._net._units
 net = XLNetForQA(xlnet_base=xlnet_base,
                  start_top_n=args.start_top_n,
                  end_top_n=args.end_top_n,
+                 units=units,
                  version_2=args.version_2)
 
 net_eval = XLNetForQA(xlnet_base=xlnet_base,
@@ -400,16 +402,16 @@ def convert_examples_to_features(example,
         tok_end_to_orig_index.append(end_orig_pos)
 
     tok_start_position, tok_end_position = -1, -1
-
     # get mapped start/end position
     if is_training and not example.is_impossible:
         start_chartok_pos = _convert_index(orig_to_chartok_index,
-                                           example.start_position,
+                                           example.start_offset,
                                            is_start=True)
+        
         tok_start_position = chartok_to_tok_index[start_chartok_pos]
 
         end_chartok_pos = _convert_index(orig_to_chartok_index,
-                                         example.end_position,
+                                         example.end_offset,
                                          is_start=False)
         tok_end_position = chartok_to_tok_index[end_chartok_pos]
         assert tok_start_position <= tok_end_position
@@ -448,6 +450,7 @@ def convert_examples_to_features(example,
     else:
         positions = [(tok_start_position - st, tok_end_position - st)
                      for (st, _) in doc_spans_indices]
+
     features = [
         SquadXLNetFeautre(example_id=example.example_id,
                           qas_id=example.qas_id,
@@ -477,7 +480,7 @@ def preprocess_dataset(tokenizer,
                        max_seq_length=384,
                        doc_stride=128,
                        max_query_length=64,
-                       num_workers=4,
+                       num_workers=16,
                        load_from_pickle=False,
                        feature_file=None,
                        is_training=True):
@@ -498,10 +501,10 @@ def preprocess_dataset(tokenizer,
                                 is_training=is_training)
         # convert the raw dataset into raw features
         examples = pool.map(example_trans, dataset)
-        raw_features = pool.map(trans, examples)
+        raw_features = list(map(trans, examples)) #pool.map(trans, examples)
         if feature_file:
             with open(feature_file, 'wb') as file:
-                pickle.dump(list(raw_features), file)
+                pickle.dump(raw_features, file)
     else:
         assert feature_file, 'feature file should be provided.'
         with open(feature_file, 'rb') as file:
@@ -517,7 +520,6 @@ def convert_full_features_to_input_features(raw_features):
     """convert the full features into the input features"""
     data_features = mx.gluon.data.SimpleDataset(
         list(itertools.chain.from_iterable(raw_features)))
-
     data_features = data_features.transform(lambda *example: (
         example[0],  # example_id
         example[7],  # inputs_id
@@ -585,14 +587,14 @@ def _apply_gradient_decay():
 
 def train():
     """Training function."""
-    segment = 'train' if not args.debug else 'dev'
+    segment = 'train'
     log.info('Loading %s data...', segment)
     if args.version_2:
         train_data = SQuAD(segment, version='2.0')
     else:
         train_data = SQuAD(segment, version='1.1')
     if args.debug:
-        sampled_data = [train_data[i] for i in range(10)]
+        sampled_data = [train_data[i] for i in range(100)]
         train_data = mx.gluon.data.SimpleDataset(sampled_data)
     log.info('Number of records in Train data: %s', len(train_data))
 
@@ -608,7 +610,6 @@ def train():
 
     train_data_input = convert_full_features_to_input_features(
         train_data_features)
-
     log.info('The number of examples after preprocessing: %s',
              len(train_data_input))
 
