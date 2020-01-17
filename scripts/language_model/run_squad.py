@@ -49,7 +49,7 @@ parser.add_argument(
     help='Pre-trained bert model parameter file. default is None')
 parser.add_argument(
     '--load_pickle',
-    action='store_false',
+    action='store_true',
     help='Whether do data preprocessing or load from pickled file')
 parser.add_argument('--dev_dataset_file',
                     default='./output_dir/out.dev',
