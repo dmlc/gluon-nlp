@@ -207,8 +207,9 @@ class MTCheckpointHandler(CheckpointHandler, TrainEnd):
 
     def train_end(self, estimator, *args, **kwargs):
         ctx = estimator.context
-        save_path = os.path.join(self.model_dir, 'average.params')
-        mx.nd.save(save_path, estimator.avg_param)
+        if estimator.avg_param is not None:
+            save_path = os.path.join(self.model_dir, 'average.params')
+            mx.nd.save(save_path, estimator.avg_param)
         if self.average_checkpoint:
             for j in range(args.num_averages):
                 params = mx.nd.load(os.path.join(self.model_dir,

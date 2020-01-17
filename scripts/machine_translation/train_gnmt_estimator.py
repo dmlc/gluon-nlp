@@ -174,6 +174,9 @@ metric_handler = MTTransformerMetricHandler(metrics=gnmt_estimator.train_metrics
 bleu_handler = ComputeBleuHandler(tgt_vocab=tgt_vocab, tgt_sentence=val_tgt_sentences,
                                   translator=translator, compute_bleu_fn=compute_bleu)
 
+test_bleu_handler = ComputeBleuHandler(tgt_vocab=tgt_vocab, tgt_sentence=test_tgt_sentences,
+                                       translator=translator, compute_bleu_fn=compute_bleu)
+
 val_bleu_handler = ValBleuHandler(val_data=val_data_loader,
                                   val_tgt_vocab=tgt_vocab, val_tgt_sentences=val_tgt_sentences,
                                   translator=translator, compute_bleu_fn=compute_bleu)
@@ -187,11 +190,17 @@ val_validation_handler = MTValidationHandler(val_data=val_data_loader,
                                              event_handlers=val_metric_handler)
 
 event_handlers = [learning_rate_handler, gradient_update_handler, metric_handler,
-                  val_bleu_handler, checkpoint_handler]
+                  val_bleu_handler, checkpoint_handler, val_validation_handler]
 
 gnmt_estimator.fit(train_data=train_data_loader,
                    val_data=val_data_loader,
-                   epochs=args.epochs,
-                   #batches=5,
+                   #epochs=args.epochs,
+                   batches=5,
                    event_handlers=event_handlers,
                    batch_axis=0)
+
+val_event_handlers = [val_metric_handler, bleu_handler]
+test_event_handlers = [val_metric_handler, test_bleu_handler]
+
+gnmt_estimator.evaluate(val_data=val_data_loader, event_handlers=val_event_handlers)
+gnmt_estimator.evaluate(val_data=test_data_loader, event_handlers=test_event_handlers)

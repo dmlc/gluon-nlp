@@ -266,6 +266,13 @@ bleu_handler = ComputeBleuHandler(tgt_vocab=tgt_vocab, tgt_sentence=val_tgt_sent
                                   bpe=bpe, bleu=args.bleu, detokenizer=detokenizer,
                                   _bpe_to_words=_bpe_to_words)
 
+test_bleu_handler = ComputeBleuHandler(tgt_vocab=tgt_vocab, tgt_sentence=test_tgt_sentences,
+                                       translator=translator, compute_bleu_fn=compute_bleu,
+                                       tokenized=tokenized, tokenizer=args.bleu,
+                                       split_compound_word=split_compound_word,
+                                       bpe=bpe, bleu=args.bleu, detokenizer=detokenizer,
+                                       _bpe_to_words=_bpe_to_words)
+
 val_bleu_handler = ValBleuHandler(val_data=val_data_loader, val_tgt_vocab=tgt_vocab,
                                   val_tgt_sentences=val_tgt_sentences, translator=translator,
                                   tokenized=tokenized, tokenizer=args.bleu,
@@ -308,6 +315,9 @@ mt_estimator.fit(train_data=train_data_loader,
 val_event_handlers = [val_metric_handler,
                       bleu_handler]
 
+test_event_handlers = [val_metric_handler,
+                       test_bleu_handler]
+
 mt_estimator.evaluate(val_data=val_data_loader, event_handlers=val_event_handlers)
 
-mt_estimator.evaluate(val_data=test_data_loader, event_handlers=val_event_handlers)
+mt_estimator.evaluate(val_data=test_data_loader, event_handlers=test_event_handlers)
