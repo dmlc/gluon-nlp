@@ -30,6 +30,7 @@ from gluonnlp.estimator import ParallelLanguageModelBatchProcessor
 from gluonnlp.estimator import HiddenStateHandler, MetricResetHandler
 from gluonnlp.estimator import LargeRNNGradientUpdateHandler
 from gluonnlp.estimator import WordLanguageModelCheckpointHandler
+from gluonnlp.estimator import LanguageModelEstimator
 
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
@@ -183,9 +184,6 @@ if args.from_epoch:
     print('Loaded parameters from checkpoint %s'%(checkpoint_name))
 
 
-for i, batch in enumerate(train_data):
-    tmp = type(batch)
-
 model.hybridize(static_alloc=True, static_shape=True)
 
 train_metric = mx.metric.Loss(loss)
@@ -202,9 +200,9 @@ lm_estimator = LanguageModelEstimator(net=model, loss=loss,
 
 hidden_state_handler = HiddenStateHandler()
 gradient_handler = LargeRNNGradientUpdateHandler(batch_size=args.batch_size, clip=args.clip)
-metric_handler = MetricResetHandler(metrics=est.train_metrics,
+metric_handler = MetricResetHandler(metrics=lm_estimator.train_metrics,
                                     log_interval=args.log_interval)
-checkpoint_handler = WrodLanguageModelCheckpointHandler(args.save)
+checkpoint_handler = WordLanguageModelCheckpointHandler(args.save)
 
 event_handlers = [hidden_state_handler, gradient_handler,
                   metric_handler, checkpoint_handler]
