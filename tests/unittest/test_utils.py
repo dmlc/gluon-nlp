@@ -138,3 +138,32 @@ def test_version():
         nlp.utils.check_version(future_version, warning_only=True)
     nlp.utils.check_version(past_version, warning_only=False)
     nlp.utils.check_version(past_version, warning_only=True)
+
+def test_train_valid_split():
+    # Create test set
+    data ={}
+    data['texts'] = ['this is','the test','dataset for',
+                     'train_valid_split','the function',
+                     'for splitting','data into',
+                     'a validation','set and','a training',
+                     'set including','stratify option']
+    data['labels'] = [1,2,3,1,2,3,3,3,3,3,2,2]
+
+    # Create a list of review a label pairs
+    dataset = [[text, int(label)] for text, label in zip(data['texts'], data['labels'])]
+    classes,digitized = np.unique(data['labels'],return_inverse=True)
+    n_classes = len(classes)
+    num_class = np.bincount(digitized)
+
+    train_dataset, valid_dataset = nlp.data.train_valid_split(dataset)
+
+    assert (len(valid_dataset) == np.ceil(.05*len(dataset)).astype(int)) and \
+           (len(train_dataset)+len(valid_dataset) == len(dataset))
+
+    train_dataset, valid_dataset = nlp.data.train_valid_split(dataset,stratify=data['labels'])
+
+    valid_labels = [d[1] for d in valid_dataset]
+    valid_num_class = [np.sum(valid_labels==classes[i]) for i in range(len(classes))]
+
+    assert np.all(np.ceil(.05*num_class).astype(int) == valid_num_class) and \
+           (len(train_dataset) + len(valid_dataset) == len(dataset))
