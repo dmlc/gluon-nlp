@@ -29,7 +29,8 @@ path = sys.path[0]
 sys.path.append(path + '/../bert/data')
 #pylint: disable=wrong-import-position
 from preprocessing_utils import concat_sequences_extended, get_doc_spans, \
-    check_is_max_context, convert_squad_examples, _lcs_match, _convert_index
+    check_is_max_context, convert_squad_examples, _lcs_match, _convert_index, \
+    align_position2doc_spans
 
 parser = argparse.ArgumentParser(
     description='XLNet QA example.'
@@ -418,7 +419,7 @@ def convert_examples_to_features(example,
 
     # get doc spans using sliding window
     doc_spans, doc_spans_indices = get_doc_spans(
-        paragraph_tokenized, max_seq_length - len(query_tokenized) - 2,
+        paragraph_tokenized, max_seq_length - len(query_tokenized) - 3,
         doc_stride)
 
     # record whether the tokens in a docspan have max context
@@ -444,12 +445,19 @@ def convert_examples_to_features(example,
         for doc_span in doc_spans
     ]
 
-    if example.is_impossible:
+    # get the start/end positions aligned to doc spans. If is_impossible or position out of span
+    # set position to cls_index, i.e., last token in the sequence.
+    if not example.is_impossible:
+        positions = [
+            align_position2doc_spans([tok_start_position, tok_end_position],
+                                     doc_idx,
+                                     offset=0,
+                                     default_value=len(seq[0]) - 1)
+            for (doc_idx, seq) in zip(doc_spans_indices, seq_features)
+        ]
+    else:
         positions = [(len(seq_feature[0]) - 1, len(seq_feature[0]) - 1)
                      for seq_feature in seq_features]
-    else:
-        positions = [(tok_start_position - st, tok_end_position - st)
-                     for (st, _) in doc_spans_indices]
 
     features = [
         SquadXLNetFeautre(example_id=example.example_id,
