@@ -205,7 +205,8 @@ parser.add_argument(
     help='The maximum length of an answer that can be generated. This is needed '
     'because the start and end predictions are not conditioned on one another.'
     ' default is 64')
-
+parser.add_argument('--num_workers', type=int, default=4,
+                    help='Number of workers used for data preprocessing')
 parser.add_argument(
     '--null_score_diff_threshold',
     type=float,
@@ -604,6 +605,7 @@ def train():
         vocab=vocab,
         max_seq_length=args.max_seq_length,
         doc_stride=args.doc_stride,
+        num_workers=args.num_workers,
         max_query_length=args.max_query_length,
         load_from_pickle=args.load_pickle,
         feature_file=args.train_dataset_file)
@@ -800,6 +802,7 @@ def evaluate(prefix=''):
         vocab=vocab,
         max_seq_length=args.max_seq_length,
         doc_stride=args.doc_stride,
+        num_workers=args.num_workers,
         max_query_length=args.max_query_length,
         load_from_pickle=args.load_pickle,
         feature_file=args.dev_dataset_file)
