@@ -310,6 +310,7 @@ net_eval = XLNetForQA(xlnet_base=xlnet_base,
                       start_top_n=args.start_top_n,
                       end_top_n=args.end_top_n,
                       version_2=args.version_2,
+                      units=units,
                       is_eval=True,
                       params=net.collect_params())
 
