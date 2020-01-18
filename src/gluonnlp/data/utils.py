@@ -246,7 +246,7 @@ _vocab_sha1 = {'wikitext-2': 'be36dc5238c2e7d69720881647ab72eb506d0131',
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
 
 
-def train_valid_split(dataset, valid_ratio=0.05):
+def train_valid_split(dataset, valid_ratio=0.05, stratify=None):
     """Split the dataset into training and validation sets.
 
     Parameters
@@ -256,6 +256,9 @@ def train_valid_split(dataset, valid_ratio=0.05):
     valid_ratio : float, default 0.05
         Proportion of training samples to use for validation set
         range: [0, 1]
+    stratify : list, default None
+        If not None, data is split in a stratified fashion,
+        using the contents of stratify as class labels.
 
     Returns
     -------
@@ -265,14 +268,45 @@ def train_valid_split(dataset, valid_ratio=0.05):
     if not 0.0 <= valid_ratio <= 1.0:
         raise ValueError('valid_ratio should be in [0, 1]')
 
-    num_train = len(dataset)
-    num_valid = np.ceil(num_train * valid_ratio).astype('int')
-    indices = np.arange(num_train)
+    if not stratify:
+        num_train = len(dataset)
+        num_valid = np.ceil(num_train * valid_ratio).astype('int')
+        indices = np.arange(num_train)
 
-    np.random.shuffle(indices)
-    valid = SimpleDataset([dataset[indices[i]] for i in range(num_valid)])
-    train = SimpleDataset([dataset[indices[i + num_valid]] for i in range(num_train - num_valid)])
-    return train, valid
+        np.random.shuffle(indices)
+        valid = SimpleDataset([dataset[indices[i]] for i in range(num_valid)])
+        train = SimpleDataset(
+            [dataset[indices[i + num_valid]] for i in range(num_train - num_valid)])
+
+        return train, valid
+    else:
+        if not isinstance(stratify, list):
+            raise TypeError('stratify should be a list')
+        if not len(stratify) == len(dataset):
+            raise ValueError('stratify should be the same length as num_train')
+
+        classes, digitized = np.unique(stratify, return_inverse=True)
+        n_classes = len(classes)
+        num_class = np.bincount(digitized)
+        num_valid = np.ceil(valid_ratio * num_class).astype('int')
+
+        valid = []
+        train = []
+
+        for idx in range(n_classes):
+            indices = np.nonzero(stratify == classes[idx])[0]
+            np.random.shuffle(indices)
+            valid += [dataset[indices[i]] for i in range(num_valid[idx])]
+            train += [dataset[indices[i + num_valid[idx]]]
+                      for i in range(num_class[idx] - num_valid[idx])]
+
+        np.random.shuffle(valid)
+        np.random.shuffle(train)
+
+        train = SimpleDataset(train)
+        valid = SimpleDataset(valid)
+
+        return train, valid
 
 
 def short_hash(name):
