@@ -229,7 +229,7 @@ def train(data_train, data_eval, model):
     mlm_metric.reset()
     nsp_metric.reset()
 
-    logging.debug('Creating distributed trainer...')
+    logging.info('Creating distributed trainer...')
     lr = args.lr
     optim_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
     if args.dtype == 'float16':
@@ -275,7 +275,7 @@ def train(data_train, data_eval, model):
     batch_num = 0
     step_num = args.start_step
 
-    logging.debug('Training started')
+    logging.info('Training started')
 
     # create dummy data loader if needed
     parallel_model = DataParallelBERT(model, trainer=fp16_trainer)
@@ -364,11 +364,11 @@ def train(data_train, data_eval, model):
                     save_states(step_num, trainer, args.ckpt_dir, local_rank)
                     if local_rank == 0:
                         save_parameters(step_num, model.bert, args.ckpt_dir)
-                if (step_num + 1) % args.eval_interval == 0 and data_eval:
-                    # eval data is always based on a fixed npz file.
-                    dataset_eval = get_pretrain_data_npz(data_eval, batch_size_eval,
-                                                         1, False, 1, vocab)
-                    evaluate(dataset_eval, model, ctxs, args.log_interval, args.dtype)
+            if (step_num + 1) % args.eval_interval == 0 and data_eval:
+                # eval data is always based on a fixed npz file.
+                dataset_eval = get_pretrain_data_npz(data_eval, batch_size_eval,
+                                                     1, False, 1, vocab)
+                evaluate(dataset_eval, model, ctxs, args.log_interval, args.dtype)
 
             batch_num += 1
 
@@ -397,7 +397,7 @@ if __name__ == '__main__':
                                   dataset_name, vocab, args.dtype,
                                   ckpt_dir=args.ckpt_dir,
                                   start_step=args.start_step)
-    logging.debug('Model created')
+    logging.info('Model created')
     data_eval = args.data_eval
 
     if args.raw:
