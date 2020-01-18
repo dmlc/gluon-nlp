@@ -199,6 +199,10 @@ parser.add_argument('--end_top_n',
                     default=5,
                     help='Number of end-position candidates corresponding '
                     'to a start position')
+parser.add_argument('--n_best_size',
+                    type=int,
+                    default=5,
+                    help='top N results written to file')
 parser.add_argument(
     '--max_answer_length',
     type=int,
