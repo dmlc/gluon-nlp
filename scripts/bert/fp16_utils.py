@@ -166,6 +166,7 @@ class FP16Trainer:
             else:
                 overflow = is_finite.asscalar() < 1
                 if not overflow:
+                    step_size = step_size.asscalar()
                     self.fp32_trainer.update(step_size)
         else:
             # TODO(haibin) optimize the performance when max_norm is not present
