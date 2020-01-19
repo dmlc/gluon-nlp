@@ -760,9 +760,6 @@ def train():
                     log_num / (toc - tic))
 
                 if args.version_2:
-                    if args.accumulate:
-                        step_loss_span = step_loss_span / args.accumulate
-                        step_loss_cls = step_loss_cls / args.accumulate
                     log.info('span_loss: %.4f, cls_loss: %.4f',
                              step_loss_span / log_interval,
                              step_loss_cls / log_interval)
