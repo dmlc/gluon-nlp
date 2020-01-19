@@ -58,7 +58,7 @@ class BertLayerCollector:
         arr = NDArray(handle, writable=False)
         min_range = ndarray.min(arr).asscalar()
         max_range = ndarray.max(arr).asscalar()
-        if name.find('gelu0__mul0') != -1 and max_range > self.clip_max:
+        if name.find('gelu0_leakyrelu0') != -1 and max_range > self.clip_max:
             max_range = self.clip_max
         if name.find('layernorm0_layernorm0') != -1 and min_range < self.clip_min:
             min_range = self.clip_min

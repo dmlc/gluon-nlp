@@ -409,7 +409,8 @@ def calibration(net, dev_data_list, num_calib_batches, quantized_dtype, calib_mo
         collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=logging)
         net = quantize_net_v2(net, quantized_dtype=quantized_dtype,
                               exclude_layers=[],
-                              exclude_layers_match=['elemwise_add'],
+                              quantize_mode='smart',
+                              quantize_granularity='channel-wise',
                               calib_data=dev_data,
                               calib_mode=calib_mode,
                               num_calib_examples=dev_batch_size * num_calib_batches,
