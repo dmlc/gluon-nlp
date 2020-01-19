@@ -253,33 +253,6 @@ You can `train <//github.com/google/sentencepiece/tree/v0.1.82/python#model-trai
 To use sentencepiece vocab for pre-training, please set --sentencepiece=my_vocab.model when using run_pretraining.py.
 
 
-Named Entity Recognition
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-GluonNLP provides training and prediction script for named entity recognition models.
-
-The training script for NER requires python3 and the seqeval package:
-
-.. code-block:: console
-
-    $ pip3 install seqeval --user
-
-Dataset should be formatted in `CoNLL-2003 shared task format <https://www.clips.uantwerpen.be/conll2003/ner/>`_.
-Assuming data files are located in `${DATA_DIR}`, below command trains BERT model for
-named entity recognition, and saves model artifacts to `${MODEL_DIR}` with `large_bert`
-prefix in file names:
-
-.. code-block:: console
-
-    $ python3 finetune_ner.py \
-        --train-path ${DATA_DIR}/train.txt \
-        --dev-path ${DATA_DIR}/dev.txt \
-        --test-path ${DATA_DIR}/test.txt
-        --gpu 0 --learning-rate 1e-5 --dropout-prob 0.1 --num-epochs 100 --batch-size 8 \
-        --optimizer bertadam --bert-model bert_24_1024_16 \
-        --save-checkpoint-prefix ${MODEL_DIR}/large_bert --seed 13531
-
-This achieves Test F1 from `91.5` to `92.2` (`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetuned_conll2003.log>`_).
 
 Export BERT for Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -366,7 +339,7 @@ Here's one example of the ATIS dataset, it uses the `IOB2 format <https://en.wik
 In this example, we demonstrate how to use GluonNLP to fine-tune a pretrained BERT model for joint intent classification and slot labelling. We
 choose to finetune a pretrained BERT model.  We use two datasets `ATIS <https://github.com/yvchen/JointSLU>`__ and `SNIPS <https://github.com/snipsco/nlu-benchmark/tree/master/2017-06-custom-intent-engines>`__.
 
-The training script requires python3 and the seqeval and tqdm packages:
+The training script requires the seqeval and tqdm packages:
 
 .. code-block:: console
 
@@ -377,7 +350,7 @@ For the ATIS dataset, use the following command to run the experiment:
 
 .. code-block:: console
 
-    $ python3 finetune_icsl.py --gpu 0 --dataset atis
+    $ python finetune_icsl.py --gpu 0 --dataset atis
 
 It produces the final slot labelling F1 = `95.83%` and intent classification accuracy = `98.66%`
 
@@ -385,7 +358,7 @@ For the SNIPS dataset, use the following command to run the experiment:
 
 .. code-block:: console
 
-    $ python3 finetune_icsl.py --gpu 0 --dataset snips
+    $ python finetune_icsl.py --gpu 0 --dataset snips
 
 It produces the final slot labelling F1 = `96.06%` and intent classification accuracy = `98.71%`
 
