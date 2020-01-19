@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Language models for training."""
-__all__ = ['AWDRNN', 'StandardRNN', 'BigRNN', 'ParallelBigRNN']
+__all__ = ['AWDRNN', 'StandardRNN', 'BigRNN']
 
 from mxnet import init, nd, autograd
 from mxnet.gluon import nn, Block, HybridBlock, contrib, rnn, ParameterDict
