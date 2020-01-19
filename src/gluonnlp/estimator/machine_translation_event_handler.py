@@ -345,7 +345,7 @@ class ValBleuHandler(EpochEnd):
         for ind, sentence in zip(all_inst_ids, translation_out):
             if self.bleu == 'tweaked':
                 real_translation_out[ind] = sentence
-            elif self.bleu == '13a' or self.beu == 'intl':
+            elif self.bleu == '13a' or self.bleu == 'intl':
                 real_translation_out[ind] = self.detokenizer(self._bpe_to_words(sentence))
             else:
                 raise NotImplementedError
