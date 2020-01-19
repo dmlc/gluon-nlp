@@ -23,6 +23,7 @@ import argparse
 import numpy as np
 import mxnet as mx
 from mxnet import gluon, autograd
+from mxnet.gluon.contrib.estimator import CheckpointHandler
 import gluonnlp as nlp
 from gluonnlp.utils import Parallel, Parallelizable
 from sampler import LogUniformSampler
@@ -31,6 +32,7 @@ from gluonnlp.estimator import HiddenStateHandler, MetricResetHandler
 from gluonnlp.estimator import LargeRNNGradientUpdateHandler
 from gluonnlp.estimator import WordLanguageModelCheckpointHandler
 from gluonnlp.estimator import LanguageModelEstimator
+from gluonnlp.estimator.length_normalized_loss import LengthNormalizedLoss
 
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
@@ -169,8 +171,7 @@ model = nlp.model.language_model.train.BigRNN(ntokens, args.emsize, args.nhid,
 eval_model = nlp.model.language_model.BigRNN(ntokens, args.emsize, args.nhid,
                                              args.nlayers, args.nproj,
                                              embed_dropout=args.dropout,
-                                             encode_dropout=args.dropout,
-                                             params=model.collect_params())
+                                             encode_dropout=args.dropout)
 
 loss = gluon.loss.SoftmaxCrossEntropyLoss()
 model.initialize(mx.init.Xavier(factor_type='out'), ctx=context)
@@ -187,8 +188,11 @@ if args.from_epoch:
 model.hybridize(static_alloc=True, static_shape=True)
 
 train_metric = mx.metric.Loss(loss)
-val_metric = mx.metric.Loss(loss)
-batch_processor = ParallelLanguageModelBatchProcessor(loss)
+val_metric = LengthNormalizedLoss(loss)
+batch_processor = ParallelLanguageModelBatchProcessor(loss=loss,
+                                                      vocab=vocab,
+                                                      batch_size=args.batch_size,
+                                                      val_batch_size=args.batch_size)
 lm_estimator = LanguageModelEstimator(net=model, loss=loss,
                                       train_metrics=train_metric,
                                       val_metrics=val_metric,
@@ -196,16 +200,26 @@ lm_estimator = LanguageModelEstimator(net=model, loss=loss,
                                       context=context,
                                       val_loss=loss,
                                       val_net=eval_model,
-                                      batch_processor=batch_processor)
+                                      batch_processor=batch_processor,
+                                      bptt=args.bptt)
 
 hidden_state_handler = HiddenStateHandler()
 gradient_handler = LargeRNNGradientUpdateHandler(batch_size=args.batch_size, clip=args.clip)
 metric_handler = MetricResetHandler(metrics=lm_estimator.train_metrics,
                                     log_interval=args.log_interval)
-checkpoint_handler = WordLanguageModelCheckpointHandler(args.save)
+checkpoint_handler = CheckpointHandler(model_dir=args.save, model_prefix='largeRNN')
 
 event_handlers = [hidden_state_handler, gradient_handler,
                   metric_handler, checkpoint_handler]
 
-lm_estimator.fit(train_data=train_data, epochs=args.epochs,
-                 event_handlers=event_handlers, batch_axis=0)
+lm_estimator.fit(train_data=train_data,
+                 #epochs=args.epochs,
+                 event_handlers=event_handlers,
+                 batches=5,
+                 batch_axis=0)
+
+val_metric_handler = MetricResetHandler(metrics=lm_estimator.val_metrics)
+lm_estimator.val_net.initialize(mx.init.Xavier(), ctx=context[0])
+lm_estimator.val_net.hybridize(static_alloc=True, static_shape=True)
+lm_estimator.val_net.load_parameters(args.save + '/largeRNN-epoch0batch5.params')
+lm_estimator.evaluate(val_data=test_data, event_handlers=[val_metric_handler])

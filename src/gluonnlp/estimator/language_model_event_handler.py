@@ -28,6 +28,8 @@ from mxnet.gluon.contrib.estimator import EpochEnd, BatchBegin, BatchEnd
 from mxnet.gluon.contrib.estimator import GradientUpdateHandler
 from mxnet.gluon.contrib.estimator import MetricHandler
 from mxnet.gluon.utils import clip_global_norm
+from mxnet.metric import Loss as MetricLoss
+from .length_normalized_loss import LengthNormalizedLoss
 
 __all__ = ['HiddenStateHandler', 'AvgParamHandler', 'LearningRateHandler',
            'RNNGradientUpdateHandler', 'MetricResetHandler',
@@ -152,12 +154,12 @@ class LargeRNNGradientUpdateHandler(GradientUpdateHandler):
             x = embedding_params[0].grad(ctx)
             x[:] *= self.batch_size
             encoder_grad = [p.grad(ctx) for p in encoder_params]
-            gluon.utils.clip_global_norm(encoder_grad, self.clip)
+            clip_global_norm(encoder_grad, self.clip)
             
         estimator.trainer.step(len(estimator.context))
 
 class MetricResetHandler(BatchBegin, MetricHandler):
-    def __init__(self, metrics, log_interval=1):
+    def __init__(self, metrics, log_interval=None):
         super().__init__(metrics=metrics)
         self.batch_id = 0
         self.log_interval = log_interval
@@ -168,10 +170,23 @@ class MetricResetHandler(BatchBegin, MetricHandler):
             metric.reset()
 
     def batch_begin(self, estimator, *args, **kwargs):
-        if self.batch_id % self.log_interval == 1:
-            for metric in self.metrics:
-                metric.reset_local()
+        if self.log_interval is not None:
+            if self.batch_id % self.log_interval == 0:
+                for metric in self.metrics:
+                    metric.reset_local()
         self.batch_id += 1
+
+    def batch_end(self, estimator, *args, **kwargs):
+        pred = kwargs['pred']
+        label = kwargs['label']
+        loss = kwargs['loss']
+        for metric in self.metrics:
+            if isinstance(metric, MetricLoss):
+                metric.update(0, loss)
+            elif isinstance(metric, LengthNormalizedLoss):
+                metric.update(label, loss)
+            else:
+                metric.update(label, pred)
 
 class WordLanguageModelCheckpointHandler(EpochEnd):
     def __init__(self, save):
@@ -195,3 +210,5 @@ class WordLanguageModelCheckpointHandler(EpochEnd):
                 mx.nd.save(self.save, estimator.avg_param)
             else:
                 estimator.net.save_parameters(self.save)
+
+

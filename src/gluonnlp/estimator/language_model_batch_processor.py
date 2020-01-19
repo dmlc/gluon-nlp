@@ -88,26 +88,29 @@ class LanguageModelBatchProcessor(BatchProcessor):
         return data, target, outputs, Ls
 
 class ParallelLanguageModelBatchProcessor(BatchProcessor):
-    def __init__(self, loss):
+    def __init__(self, loss, vocab, batch_size, val_batch_size):
         self.loss = loss
+        self.parallel_model = None
+        self.batch_size = batch_size
+        self.val_batch_size = val_batch_size
+        self.vocab = vocab
 
-    def _get_parallel_model(self):
+    def _get_parallel_model(self, estimator):
         if self.parallel_model is None:
-            self.parallel_model = ParallelBigRNN(estimator.net, self.loss)
+            self.parallel_model = ParallelBigRNN(estimator.net, self.loss, self.batch_size)
             self.parallel_model = Parallel(len(estimator.context), self.parallel_model)
 
     def fit_batch(self, estimator, train_batch, batch_axis=0):
-        self._get_parallel_model()
+        self._get_parallel_model(estimator)
         data, target, mask, sample = train_batch
-        batch_size = data.shape(batch_axis)
         if estimator.hiddens is None:
-            estimator.hiddens = [estimator.net.begin_state(batch_size,
+            estimator.hiddens = [estimator.net.begin_state(batch_size=self.batch_size,
                                                            func=mx.nd.zeros,
                                                            ctx=ctx) for ctx in estimator.context]
         else:
             estimator.hiddens = estimator.detach(estimator.hiddens)
         Ls = []
-        for _, batch in enumerate(zip(data, target, mask, sample, hiddens)):
+        for _, batch in enumerate(zip(data, target, mask, sample, estimator.hiddens)):
             self.parallel_model.put(batch)
 
         for _ in range(len(data)):
@@ -116,7 +119,8 @@ class ParallelLanguageModelBatchProcessor(BatchProcessor):
             estimator.hiddens[index] = hidden
             Ls.append(ls)
 
-        #Ls = [l / estimator.bptt for l in Ls]
+        Ls = [l / (estimator.bptt * len(estimator.context)) for l in Ls]
+        Ls = [mx.nd.sum(l) for l in Ls]
         return data, target, None, Ls
 
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):
@@ -125,16 +129,16 @@ class ParallelLanguageModelBatchProcessor(BatchProcessor):
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
         if estimator.val_hiddens is None:
-            estimator.val_hiddens = estimator.val_net.begin_state(batch_size=batch_size,
+            estimator.val_hiddens = estimator.val_net.begin_state(batch_size=self.val_batch_size,
                                                                func=mx.nd.zeros,
                                                                ctx=ctx)
         else:
             estimator.val_hiddens = estimator.detach(estimator.val_hiddens)
 
-        mask = data != vocab[vocab.padding_token]
+        mask = data != self.vocab[self.vocab.padding_token]
+        mask = mask.reshape(-1)
         output, estimator.val_hiddens = estimator.val_net(data, estimator.val_hiddens)
         output = output.reshape((-3, -1))
         L = estimator.val_loss(output, target.reshape(-1, ) * mask.reshape(-1))
-        L = L * mask
 
-        return data, target, output, L
+        return data, [target, mask], output, L

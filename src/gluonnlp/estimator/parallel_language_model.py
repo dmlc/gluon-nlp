@@ -20,13 +20,15 @@
 """ Gluon Parallel Languange Model """
 
 from gluonnlp.utils import Parallel, Parallelizable
+from mxnet import autograd
 
 __all__ = ['ParallelBigRNN']
 
 class ParallelBigRNN(Parallelizable):
-    def __init__(self, rnn, loss_fn):
+    def __init__(self, rnn, loss_fn, batch_size):
         self._model = rnn
         self._loss = loss_fn
+        self._batch_size = batch_size
 
     def forward_backward(self, x):
         X, y, m, s, h = x
@@ -35,7 +37,7 @@ class ParallelBigRNN(Parallelizable):
             output = output.reshape((-3, -1))
             new_target = new_target.reshape((-1,))
             ls = self._loss(output, new_target) * m.reshape((-1,))
-            ls = ls / args.batch_size
+            ls = ls / self._batch_size
             ls.backward()
         return hidden, ls
 
