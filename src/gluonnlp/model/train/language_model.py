@@ -248,6 +248,9 @@ class StandardRNN(HybridBlock):
         self._dropout = dropout
         self._tie_weights = tie_weights
         self._vocab_size = vocab_size
+        self._shared_params = None
+        if 'params' in kwargs:
+            self._shared_params = kwargs['params']
 
         with self.name_scope():
             self.embedding = self._get_embedding()
@@ -271,8 +274,19 @@ class StandardRNN(HybridBlock):
         output = nn.HybridSequential()
         with output.name_scope():
             if self._tie_weights:
-                output.add(nn.Dense(self._vocab_size, flatten=False,
-                                    params=self.embedding[0].params))
+                if self._shared_params is not None:
+                    # self.embedding[0].params do not contain the bias, it
+                    # may leave the decoder bias uninitialized. We resolve this
+                    # issue by creating a new ParameterDict and stuffing
+                    # every shared params into the ParameterDict.
+                    shared_params = self.embedding[0].params
+                    shared_params = ParameterDict(shared_params.prefix)
+                    shared_params.update(self._shared_params)
+                    output.add(nn.Dense(self._vocab_size, flatten=False,
+                                        params=shared_params))
+                else:
+                    output.add(nn.Dense(self._vocab_size, flatten=False,
+                                        params=self.embedding[0].params))
             else:
                 output.add(nn.Dense(self._vocab_size, flatten=False))
         return output
