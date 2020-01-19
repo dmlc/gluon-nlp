@@ -131,7 +131,7 @@ def remove_docstart_sentence(sentences):
     return ret
 
 
-def bert_tokenize_sentence(sentence, bert_tokenizer):
+def bert_tokenize_sentence(sentence, bert_tokenizer, tagging_first_token):
     """Apply BERT tokenizer on a tagged sentence to break words into sub-words.
     This function assumes input tags are following IOBES, and outputs IOBES tags.
 
@@ -141,6 +141,9 @@ def bert_tokenize_sentence(sentence, bert_tokenizer):
         List of tagged words
     bert_tokenizer: nlp.data.BertTokenizer
         BERT tokenizer
+    tagging_first_token: bool, optional (default: True)
+        By default, only the first token of a word is going to be tagged.
+        If ``tagging_first_token`` is set to False, then the last token of a word is going to be tagged.
 
     Returns
     -------
@@ -151,14 +154,20 @@ def bert_tokenize_sentence(sentence, bert_tokenizer):
         # break a word into sub-word tokens
         sub_token_texts = bert_tokenizer(token.text)
         # only the first token of a word is going to be tagged
-        ret.append(TaggedToken(text=sub_token_texts[0], tag=token.tag))
-        ret += [TaggedToken(text=sub_token_text, tag=NULL_TAG)
-                for sub_token_text in sub_token_texts[1:]]
+        if tagging_first_token:
+            ret.append(TaggedToken(text=sub_token_texts[0], tag=token.tag))
+            ret += [TaggedToken(text=sub_token_text, tag=NULL_TAG)
+                    for sub_token_text in sub_token_texts[1:]]
+        # only the last token of a word is going to be tagged
+        else:
+            ret += [TaggedToken(text=sub_token_text, tag=NULL_TAG)
+                    for sub_token_text in sub_token_texts[:-1]]
+            ret.append(TaggedToken(text=sub_token_texts[-1], tag=token.tag))
 
     return ret
 
 
-def load_segment(file_path, bert_tokenizer):
+def load_segment(file_path, bert_tokenizer, tagging_first_token):
     """Load CoNLL format NER datafile with BIO-scheme tags.
 
     Tagging scheme is converted into BIOES, and words are tokenized into wordpieces
@@ -169,6 +178,10 @@ def load_segment(file_path, bert_tokenizer):
     file_path: str
         Path of the file
     bert_tokenizer: nlp.data.BERTTokenizer
+    tagging_first_token: bool, optional (default: True)
+        By default, only the first token of a word is going to be tagged.
+        If ``tagging_first_token`` is set to False, then the last token of a word is going to be tagged.
+
 
     Returns
     -------
@@ -177,7 +190,7 @@ def load_segment(file_path, bert_tokenizer):
     logging.info('Loading sentences in %s...', file_path)
     bio2_sentences = remove_docstart_sentence(read_bio_as_bio2(file_path))
     bioes_sentences = [bio_bioes(sentence) for sentence in bio2_sentences]
-    subword_sentences = [bert_tokenize_sentence(sentence, bert_tokenizer)
+    subword_sentences = [bert_tokenize_sentence(sentence, bert_tokenizer, tagging_first_token)
                          for sentence in bioes_sentences]
 
     logging.info('load %s, its max seq len: %d',
@@ -203,19 +216,23 @@ class BERTTaggingDataset:
         Length of the input sequence to BERT.
     is_cased: bool
         Whether to use cased model.
+    tagging_first_token: bool, optional (default: True)
+        By default, only the first token of a word is going to be tagged.
+        If ``tagging_first_token`` is set to False, then the last token of a word is going to be tagged.
+
     """
 
     def __init__(self, text_vocab, train_path, dev_path, test_path, seq_len, is_cased,
-                 tag_vocab=None):
+                 tag_vocab=None, tagging_first_token=True):
         self.text_vocab = text_vocab
         self.seq_len = seq_len
 
         self.bert_tokenizer = nlp.data.BERTTokenizer(vocab=text_vocab, lower=not is_cased)
 
         train_sentences = [] if train_path is None else load_segment(train_path,
-                                                                     self.bert_tokenizer)
-        dev_sentences = [] if dev_path is None else load_segment(dev_path, self.bert_tokenizer)
-        test_sentences = [] if test_path is None else load_segment(test_path, self.bert_tokenizer)
+                                                                     self.bert_tokenizer, tagging_first_token)
+        dev_sentences = [] if dev_path is None else load_segment(dev_path, self.bert_tokenizer, tagging_first_token)
+        test_sentences = [] if test_path is None else load_segment(test_path, self.bert_tokenizer, tagging_first_token)
         all_sentences = train_sentences + dev_sentences + test_sentences
 
         if tag_vocab is None:
@@ -318,7 +335,7 @@ class BERTTaggingDataset:
 
 
 def convert_arrays_to_text(text_vocab, tag_vocab,
-                           np_text_ids, np_true_tags, np_pred_tags, np_valid_length):
+                           np_text_ids, np_true_tags, np_pred_tags, np_valid_length, tagging_first_token=True):
     """Convert numpy array data into text
 
     Parameters
@@ -327,6 +344,10 @@ def convert_arrays_to_text(text_vocab, tag_vocab,
     np_true_tags: tag_ids (batch_size, seq_len)
     np_pred_tags: tag_ids (batch_size, seq_len)
     np.array: valid_length (batch_size,) the number of tokens until [SEP] token
+    tagging_first_token: bool, optional (default: True)
+        By default, only the first token of a word is going to be tagged.
+        If ``tagging_first_token`` is set to False, then the last token of a word is going to be tagged.
+
 
     Returns
     -------
@@ -337,19 +358,32 @@ def convert_arrays_to_text(text_vocab, tag_vocab,
     for sample_index in range(np_valid_length.shape[0]):
         sample_len = np_valid_length[sample_index]
         entries = []
+        tmptext = ""
         for i in range(1, sample_len - 1):
             token_text = text_vocab.idx_to_token[np_text_ids[sample_index, i]]
             true_tag = tag_vocab.idx_to_token[int(np_true_tags[sample_index, i])]
             pred_tag = tag_vocab.idx_to_token[int(np_pred_tags[sample_index, i])]
             # we don't need to predict on NULL tags
-            if true_tag == NULL_TAG:
-                last_entry = entries[-1]
-                entries[-1] = PredictedToken(text=last_entry.text + token_text,
-                                             true_tag=last_entry.true_tag,
-                                             pred_tag=last_entry.pred_tag)
+            if tagging_first_token:
+                if true_tag == NULL_TAG:
+                    last_entry = entries[-1]
+                    entries[-1] = PredictedToken(text=last_entry.text + token_text,
+                                                 true_tag=last_entry.true_tag,
+                                                 pred_tag=last_entry.pred_tag)
+                else:
+                    entries.append(PredictedToken(text=token_text,
+                                                  true_tag=true_tag, pred_tag=pred_tag))
             else:
-                entries.append(PredictedToken(text=token_text,
-                                              true_tag=true_tag, pred_tag=pred_tag))
-
+                if true_tag == NULL_TAG:
+                    tmptext += token_text
+                else:
+                    if len(tmptext) > 0:
+                        text = tmptext + token_text
+                        entries.append(PredictedToken(text=text,
+                                                      true_tag=true_tag, pred_tag=pred_tag))
+                        tmptext = ''
+                    else:
+                        entries.append(PredictedToken(text=token_text,
+                                                      true_tag=true_tag, pred_tag=pred_tag))
         predictions.append(entries)
     return predictions
