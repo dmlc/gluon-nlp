@@ -41,11 +41,11 @@ import sys
 import argparse
 import numpy as np
 import mxnet as mx
-from mxnet import gluon, autograd
+from mxnet import gluon
 import gluonnlp as nlp
-from gluonnlp.utils import Parallel, Parallelizable
-from sampler import LogUniformSampler
+from gluonnlp.utils import Parallel
 from gluonnlp.model.train.language_model import ParallelBigRNN
+from sampler import LogUniformSampler
 
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))
