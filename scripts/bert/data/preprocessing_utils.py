@@ -1,10 +1,8 @@
 """Utility classes and functions for data processing"""
 
 __all__ = [
-    'truncate_seqs_equal', 'concat_sequences', 'tokenize_and_align_positions',
-    'get_doc_spans', 'align_position2doc_spans', 'improve_answer_span',
-    'check_is_max_context', 'convert_squad_examples'
-]
+    'truncate_seqs_equal', 'concat_sequences', 'tokenize_and_align_positions', 'get_doc_spans',
+    'align_position2doc_spans', 'improve_answer_span', 'check_is_max_context']
 
 import collections
 import itertools
@@ -35,104 +33,60 @@ def truncate_seqs_equal(seqs, max_len):
             max_len -= minval
         else:  # Truncate all
             lens.data[~lens.mask] = [
-                quotient + 1 if i < remainder else quotient
-                for i in range(lens.count())
+                quotient + 1 if i < remainder else quotient for i in range(lens.count())
             ]
             break
     seqs = [seq[:length] for (seq, length) in zip(seqs, lens.data.tolist())]
     return seqs
 
 
-def concat_sequences(seqs, separators, separator_mask=None):
-    """
-    Insert special tokens for sequence list or a single sequence.
-    For sequence pairs, the input is a list of 2 strings:
-    text_a, text_b.
-    Inputs:
-       text_a: 'is this jacksonville ?'
-       text_b: 'no it is not'
-       separator: [[SEP], [SEP]]
+def concat_sequences(seqs, separators, seq_mask=0, separator_mask=1):
+    """Concatenate sequences in a list into a single sequence, using specified separators.
 
-    Processed:
-       tokens:     'is this jacksonville ? [SEP] no it is not . [SEP]'
-       segment_ids: 0  0    0            0  0    1  1  1  1   1 1
-       p_mask:      0  0    0            0  1    0  0  0  0   0 1
-       valid_length: 11
+    Example 1:
+    seqs: [['is', 'this' ,'jacksonville', '?'], ['no' ,'it' ,'is' ,'not', '.']]
+    separator: [[SEP], [SEP], [CLS]]
+    seq_mask: 0
+    separator_mask: 1
+    Returns:
+       tokens:      is this jacksonville ? [SEP] no it is not . [SEP] [CLS]
+       segment_ids: 0  0    0            0  0    1  1  1  1   1 1     2
+       p_mask:      0  0    0            0  1    0  0  0  0   0 1     1
 
-    Parameters
-    ----------
-    separator : list
-        The special tokens to be appended to each sequence. For example:
-        Given:
-            seqs: [[1, 2], [3, 4], [5, 6]]
-            separator: [[], 7]
-        it will be:
-            [1, 2, 3, 4, 7, 5, 6]
+    Example 2:
+    separator_mask can also be a list.
+    seqs: [['is', 'this' ,'jacksonville', '?'], ['no' ,'it' ,'is' ,'not', '.']]
+    separator: [[SEP], [SEP], [CLS]]
+    seq_mask: 0
+    separator_mask: [[1], [1], [0]]
 
-    seqs : list
-        sequences or a single sequence
-
-    separator_mask : int
-        The mask value for separator
-
-    Returns
-    -------
-    np.array: input token ids in 'int32', shape (batch_size, seq_length)
-    np.array: segment ids in 'int32', shape (batch_size, seq_length)
-    np.array: mask for special tokens
-    """
-    assert isinstance(seqs, collections.abc.Iterable) and len(seqs) > 0
-    if not separator_mask:
-        separator_mask = 1
-    concat = sum((
-        seq + sep
-        for sep, seq in itertools.zip_longest(separators, seqs, fillvalue=[])),
-                 [])
-    segment_ids = sum(
-        ([i] * (len(seq) + len(sep)) for i, (sep, seq) in enumerate(
-            itertools.zip_longest(separators, seqs, fillvalue=[]))), [])
-    p_mask = sum((
-        [0] * len(seq) + [separator_mask] * len(sep)
-        for sep, seq in itertools.zip_longest(separators, seqs, fillvalue=[])),
-                 [])
-    return concat, segment_ids, p_mask
-
-
-def concat_sequences_extended(seqs,
-                              separators,
-                              seq_p_mask,
-                              separator_mask=None):
-    """
-    Insert special tokens for sequence list or a single sequence.
-    Note that different from concat_sequence(), one can specific mask for sequence and
-    mask for separator on element level.
-    For sequence pairs, the input is a list of 2 strings:
-    text_a, text_b.
-    Inputs:
-       text_a: 'is this jacksonville ?'
-       text_b: 'no it is not'
-       separator: [[SEP], [SEP], [CLS]]
-       seq_p_mask: [[1, 1, 1, 1], [0, 0, 0, 0, 0]]
-       separator_mask: [[1], [1], [0]]
-    Processed:
+    Returns:
        tokens:     'is this jacksonville ? [SEP] no it is not . [SEP] [CLS]'
        segment_ids: 0  0    0            0  0    1  1  1  1   1 1     2
        p_mask:      1  1    1            1  1    0  0  0  0   0 1     0
-       valid_length: 11
+
+    Example 3:
+    seq_mask can also be a list.
+    seqs: [['is', 'this' ,'jacksonville', '?'], ['no' ,'it' ,'is' ,'not', '.']]
+    separator: [[SEP], [SEP], [CLS]]
+    seq_mask: [[1, 1, 1, 1], [0, 0, 0, 0, 0]]
+    separator_mask: [[1], [1], [0]]
+
+    Returns:
+       tokens:     'is this jacksonville ? [SEP] no it is not . [SEP] [CLS]'
+       segment_ids: 0  0    0            0  0    1  1  1  1   1 1     2
+       p_mask:      1  1    1            1  1    0  0  0  0   0 1     0
 
     Parameters
     ----------
-    separator : list
-        The special tokens to be appended to each sequence. For example:
-
     seqs : list
-        sequences or a single sequence
-
-    seq_p_mask : list
-        mask value for each element in seqs. Must have the same shape with seqs
-
-    separator_mask : list
-        The mask value for separator
+        sequences to be concatenated
+    separator : list
+        The special tokens to separate sequences.
+    seq_mask : int or list
+        A single mask value for all sequence items or a list of values for each item in sequences
+    separator_mask : int or list
+        A single mask value for all separators or a list of values for each separator
 
     Returns
     -------
@@ -141,26 +95,45 @@ def concat_sequences_extended(seqs,
     np.array: mask for special tokens
     """
     assert isinstance(seqs, collections.abc.Iterable) and len(seqs) > 0
-    assert len(seq_p_mask) == len(seqs), 'sequence position mask ' \
-                                         'should have the same length with sequences.'
-    if not separator_mask:
-        separator_mask = []
-    concat = sum((
-        seq + sep
-        for sep, seq in itertools.zip_longest(separators, seqs, fillvalue=[])),
+    assert isinstance(seq_mask, (list, int))
+    assert isinstance(separator_mask, (list, int))
+    concat = sum((seq + sep for sep, seq in itertools.zip_longest(separators, seqs, fillvalue=[])),
                  [])
     segment_ids = sum(
-        ([i] * (len(seq) + len(sep)) for i, (sep, seq) in enumerate(
-            itertools.zip_longest(separators, seqs, fillvalue=[]))), [])
-    p_mask = sum(
-        (s_mask + mask for sep, seq, s_mask, mask in itertools.zip_longest(
-            separators, seqs, seq_p_mask, separator_mask, fillvalue=[])), [])
+        ([i] * (len(seq) + len(sep))
+         for i, (sep, seq) in enumerate(itertools.zip_longest(separators, seqs, fillvalue=[]))),
+        [])
+    if isinstance(seq_mask, int):
+        seq_mask = [[seq_mask] * len(seq) for seq in seqs]
+    if isinstance(separator_mask, int):
+        separator_mask = [[separator_mask] * len(sep) for sep in separators]
+
+    p_mask = sum((s_mask + mask for sep, seq, s_mask, mask in itertools.zip_longest(
+        separators, seqs, seq_mask, separator_mask, fillvalue=[])), [])
     return concat, segment_ids, p_mask
 
 
-def tokenize_and_align_positions(origin_text, start_position, end_position,
-                                 tokenizer):
-    """Tokenize the text and align the origin positions to the corresponding position"""
+def tokenize_and_align_positions(origin_text, start_position, end_position, tokenizer):
+    """Tokenize the text and align the origin positions to the corresponding position.
+
+    Parameters
+    ----------
+    origin_text : list
+        list of tokens to be tokenized.
+    start_position : int
+        Start position in the origin_text
+    end_position : int
+        End position in the origin_text
+    tokenizer : callable function, e.g., BERTTokenizer.
+
+    Returns
+    -------
+    int: Aligned start position
+    int: Aligned end position
+    list: tokenized text
+    list: map from the origin index to the tokenized sequence index
+    list: map from tokenized sequence index to the origin index
+    """
     orig_to_tok_index = []
     tok_to_orig_index = []
     tokenized_text = []
@@ -177,9 +150,9 @@ def tokenize_and_align_positions(origin_text, start_position, end_position,
 
 
 def get_doc_spans(full_doc, max_length, doc_stride):
-    """A simple function that applying a sliding window on the doc and get doc spans
+    """Obtain document spans by sliding a window across the document
 
-     Parameters
+    Parameters
     ----------
     full_doc: list
         The origin doc text
@@ -198,36 +171,49 @@ def get_doc_spans(full_doc, max_length, doc_stride):
     while start_offset < len(full_doc):
         length = min(max_length, len(full_doc) - start_offset)
         end_offset = start_offset + length
-        doc_spans.append(
-            (full_doc[start_offset:end_offset], (start_offset, end_offset)))
+        doc_spans.append((full_doc[start_offset:end_offset], (start_offset, end_offset)))
         if start_offset + length == len(full_doc):
             break
         start_offset += min(length, doc_stride)
     return list(zip(*doc_spans))
 
 
-def align_position2doc_spans(positions,
-                             doc_spans_indices,
-                             offset=0,
-                             default_value=-1,
+def align_position2doc_spans(positions, doc_spans_indices, offset=0, default_value=-1,
                              all_in_span=True):
-    """Align the origin positions to the corresponding position in doc spans"""
+    """Align original positions to the corresponding document span positions
+
+    Parameters
+    ----------
+    positions: list or int
+        A single or a list of positions to be aligned
+    dic_spans_indices: list or tuple
+        (start_position, end_position)
+    offset: int
+        Offset of aligned positions. Sometimes the doc spans would be added
+        after a question text, in this case, the new position should add
+        len(question_text)
+    default_value: int
+        The default value to return if the positions are not in the doc span.
+    all_in_span: bool
+        If set to True, then as long as one position is out of span, all positions
+        would be set to default_value.
+    Returns
+    -------
+    list: a list of aligned positions
+    """
     if not isinstance(positions, list):
         positions = [positions]
     doc_start, doc_end = doc_spans_indices
-    if all_in_span and not all(
-            [p in range(doc_start, doc_end) for p in positions]):
+    if all_in_span and not all([p in range(doc_start, doc_end) for p in positions]):
         return [default_value] * len(positions)
     new_positions = [
-        p - doc_start +
-        offset if p in range(doc_start, doc_end) else default_value
+        p - doc_start + offset if p in range(doc_start, doc_end) else default_value
         for p in positions
     ]
     return new_positions
 
 
-def improve_answer_span(doc_tokens, input_start, input_end, tokenizer,
-                        orig_answer_text):
+def improve_answer_span(doc_tokens, input_start, input_end, tokenizer, orig_answer_text):
     """Returns tokenized answer spans that better match the annotated answer.
 
     The SQuAD annotations are character based. We first project them to
@@ -252,6 +238,21 @@ def improve_answer_span(doc_tokens, input_start, input_end, tokenizer,
     the word "Japanese". Since our WordPiece tokenizer does not split
     "Japanese", we just use "Japanese" as the annotation. This is fairly rare
     in SQuAD, but does happen.
+
+    Parameters
+    ----------
+    doc_tokens: list
+        A list of doc tokens
+    input_start: int
+        start position of the answer
+    input_end: int
+        end position of the answer
+    tokenizer: callable function
+    orig_answer_text: str
+        origin answer text.
+    Returns
+    -------
+    tuple: a tuple of improved start position and end position
     """
     tok_answer_text = ' '.join(tokenizer(orig_answer_text))
 
@@ -285,6 +286,18 @@ def check_is_max_context(doc_spans, cur_span_index, position):
     and 0 right context.
 
     Note that position is the absolute position in the origin text.
+
+    Parameters
+    ----------
+    doc_spans: list
+        A list of doc spans
+    cur_span_index: int
+        The index of doc span to be checked in doc_spans.
+    position: int
+        Position of the token to be checked.
+    Returns
+    -------
+    bool: True if the token has 'max context'.
     """
     best_score = None
     best_span_index = None
@@ -305,57 +318,3 @@ def check_is_max_context(doc_spans, cur_span_index, position):
             best_span_index = span_index
 
     return cur_span_index == best_span_index
-
-
-SquadExample = collections.namedtuple('SquadExample', [
-    'qas_id', 'question_text', 'paragraph_text', 'doc_tokens', 'example_id',
-    'orig_answer_text', 'start_position', 'end_position', 'is_impossible'
-])
-
-
-def convert_squad_examples(record, is_training):
-    """read a single entry of gluonnlp.data.SQuAD and convert it to an example"""
-    example_id = record[0]
-    qas_id = record[1]
-    question_text = record[2]
-    paragraph_text = record[3]
-    orig_answer_text = record[4][0] if record[4] else ''
-    answer_offset = record[5][0] if record[5] else ''
-    is_impossible = record[6] if len(record) == 7 else False
-
-    answer_length = len(orig_answer_text)
-    doc_tokens = []
-
-    char_to_word_offset = []
-    prev_is_whitespace = True
-
-    for c in paragraph_text:
-        if str.isspace(c):
-            prev_is_whitespace = True
-        else:
-            if prev_is_whitespace:
-                doc_tokens.append(c)
-            else:
-                doc_tokens[-1] += c
-            prev_is_whitespace = False
-        char_to_word_offset.append(len(doc_tokens) - 1)
-
-    if not is_training:
-        start_position = -1
-        end_position = -1
-    else:
-        start_position = char_to_word_offset[
-            answer_offset] if not is_impossible else -1
-        end_position = char_to_word_offset[answer_offset + answer_length -
-                                           1] if not is_impossible else -1
-
-    example = SquadExample(qas_id=qas_id,
-                           question_text=question_text,
-                           paragraph_text=paragraph_text,
-                           doc_tokens=doc_tokens,
-                           example_id=example_id,
-                           orig_answer_text=orig_answer_text,
-                           start_position=start_position,
-                           end_position=end_position,
-                           is_impossible=is_impossible)
-    return example
