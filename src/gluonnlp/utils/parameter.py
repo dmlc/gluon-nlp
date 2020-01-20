@@ -86,7 +86,7 @@ def grad_global_norm(parameters, max_norm=None):
 
     # reduce
     total_norm = nd.add_n(*sum_norms).sqrt()
-    if not max_norm:
+    if max_norm is None:
         return total_norm
     scale = total_norm / max_norm
     # is_finite = 0 if NaN or Inf, 1 otherwise.
