@@ -160,8 +160,6 @@ class XLNetForQA(Block):
         Number of start position candidates during inference.
     end_top_n : int
         Number of end position candidates for each start position during inference.
-    version_2 : Bool
-        model for squad2.0 includes an extra answer class to predict answerability.
     is_eval : Bool
         If set to True, do inference.
     prefix : str or None
@@ -173,7 +171,6 @@ class XLNetForQA(Block):
                  xlnet_base,
                  start_top_n=None,
                  end_top_n=None,
-                 version_2=False,
                  is_eval=False,
                  units=768,
                  prefix=None,
@@ -186,11 +183,9 @@ class XLNetForQA(Block):
             self.loss = loss.SoftmaxCELoss()
             self.start_logits = PoolerStartLogits()
             self.end_logits = PoolerEndLogits(units=units, is_eval=is_eval)
-            self.version2 = version_2
             self.eval = is_eval
-            if version_2:
-                self.answer_class = XLNetPoolerAnswerClass(units=units)
-                self.cls_loss = loss.SigmoidBinaryCrossEntropyLoss()
+            self.answer_class = XLNetPoolerAnswerClass(units=units)
+            self.cls_loss = loss.SigmoidBinaryCrossEntropyLoss()
 
     def __call__(self,
                  inputs,
@@ -282,7 +277,7 @@ class XLNetForQA(Block):
                                          p_masks=p_mask)  # shape (bsz, slen)
         bsz, slen, hsz = output.shape
         if not self.eval:
-            #training
+            # training
             start_positions, end_positions = label
             end_logit = self.end_logits(output,
                                         start_positions=start_positions,
@@ -290,19 +285,19 @@ class XLNetForQA(Block):
             span_loss = (self.loss(start_logits, start_positions) +
                          self.loss(end_logit, end_positions)) / 2
 
-            cls_loss = None
             total_loss = [span_loss]
-            if self.version2:
-                start_log_probs = mx.nd.softmax(start_logits, axis=-1)
-                start_states = mx.nd.batch_dot(output,
-                                               start_log_probs.expand_dims(-1),
-                                               transpose_a=True).squeeze(-1)
 
-                cls_logits = self.answer_class(output, start_states,
-                                               valid_length)
-                cls_loss = self.cls_loss(cls_logits, is_impossible)
-                total_loss.append(0.5 * cls_loss)
-            total_loss_sum = span_loss + 0.5 * cls_loss if cls_loss is not None else span_loss
+            # get cls loss
+            start_log_probs = mx.nd.softmax(start_logits, axis=-1)
+            start_states = mx.nd.batch_dot(output,
+                                           start_log_probs.expand_dims(-1),
+                                           transpose_a=True).squeeze(-1)
+
+            cls_logits = self.answer_class(output, start_states,
+                                           valid_length)
+            cls_loss = self.cls_loss(cls_logits, is_impossible)
+            total_loss.append(0.5 * cls_loss)
+            total_loss_sum = span_loss + 0.5 * cls_loss
             return total_loss, total_loss_sum
         else:
             #inference
@@ -348,11 +343,8 @@ class XLNetForQA(Block):
             start_states = mx.nd.batch_dot(output,
                                            start_probs.expand_dims(-1),
                                            transpose_a=True).squeeze(-1)
-
-            cls_logits = None
-            if self.version2:
-                cls_logits = self.answer_class(output, start_states,
-                                               valid_length)
+            cls_logits = self.answer_class(output, start_states,
+                                           valid_length)
 
             outputs = (start_top_log_probs, start_top_index, end_top_log_probs,
                        end_top_index, cls_logits)
