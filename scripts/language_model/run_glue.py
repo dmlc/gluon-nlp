@@ -224,7 +224,6 @@ def convert_examples_to_features(example,
     tokens_trun = truncate_seqs_equal(tokens_raw, truncate_length)
     # concate the sequences with special tokens, cls_token is added to the end in XlNet
     special_tokens = [[sep_token]] * len(tokens_trun) + [[cls_token]]
-    #special_tokens.append([cls_token])
     tokens, segment_ids, _ = concat_sequences(tokens_trun, special_tokens)
     # convert the token to ids
     input_ids = vocab[tokens]

@@ -52,7 +52,7 @@ from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
 from data.classification import LCQMCTask, ChnSentiCorpTask
 from data.preprocessing_utils import truncate_seqs_equal, concat_sequences
 
-#nlp.utils.check_version('0.8.1', warning_only=True)
+nlp.utils.check_version('0.9', warning_only=True)
 
 tasks = {
     'MRPC': MRPCTask(),
