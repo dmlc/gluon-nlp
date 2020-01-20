@@ -331,7 +331,7 @@ SquadExample = collections.namedtuple('SquadExample', [
 
 
 def convert_squad_examples(record, is_training):
-    """read a single entry of gluonnlp.data.SQuAD and convert it to an example"""
+    """read a single entry of gluonnlp.data.SQuAD and convert it to an example."""
     example_id = record[0]
     qas_id = record[1]
     question_text = record[2]
@@ -380,9 +380,9 @@ def convert_squad_examples(record, is_training):
     return example
 
 
-def preprocess_text(inputs, lower=False, remove_space=True,
+def _preprocess_text(inputs, lower=False, remove_space=True,
                     keep_accents=False):
-    """Simple text preprocess"""
+    """Remove space, convert to lower case, keep accents"""
     if remove_space:
         outputs = ' '.join(inputs.strip().split())
     else:
@@ -398,7 +398,7 @@ def preprocess_text(inputs, lower=False, remove_space=True,
 
 
 def _convert_index(index, pos, M=None, is_start=True):
-    """Working together with _lcs_match(), convert the token index to context index"""
+    """Working best with _lcs_match(), convert the token index to origin text index"""
     if index[pos] is not None:
         return index[pos]
     N = len(index)
@@ -436,7 +436,9 @@ def _convert_index(index, pos, M=None, is_start=True):
 
 
 def _lcs_match(max_dist, seq1, seq2, lower=False):
-    """unlike standard LCS, this is specifically optimized for the setting
+    """Longest common sequence match.
+
+    unlike standard LCS, this is specifically optimized for the setting
     because the mismatch between sentence pieces and original text will be small
     """
     f = np.zeros((max(len(seq1), 1024), max(len(seq2), 1024)),
@@ -456,7 +458,7 @@ def _lcs_match(max_dist, seq1, seq2, lower=False):
                 f[i, j] = f[i, j - 1]
 
             f_prev = f[i - 1, j - 1] if i > 0 and j > 0 else 0
-            if (preprocess_text(token, lower=lower,
+            if (_preprocess_text(token, lower=lower,
                                 remove_space=False) == seq2[j]
                     and f_prev + 1 > f[i, j]):
                 g[(i, j)] = 2
