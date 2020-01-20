@@ -303,13 +303,11 @@ units = xlnet_base._net._units
 net = XLNetForQA(xlnet_base=xlnet_base,
                  start_top_n=args.start_top_n,
                  end_top_n=args.end_top_n,
-                 units=units,
-                 version_2=args.version_2)
+                 units=units)
 
 net_eval = XLNetForQA(xlnet_base=xlnet_base,
                       start_top_n=args.start_top_n,
                       end_top_n=args.end_top_n,
-                      version_2=args.version_2,
                       units=units,
                       is_eval=True,
                       params=net.collect_params())
@@ -325,8 +323,7 @@ if args.model_parameters:
 else:
     net.start_logits.initialize(init=initializer, ctx=ctx)
     net.end_logits.initialize(init=initializer, ctx=ctx)
-    if args.version_2:
-        net.answer_class.initialize(init=initializer, ctx=ctx)
+    net.answer_class.initialize(init=initializer, ctx=ctx)
 
 net.hybridize(static_alloc=True)
 net_eval.hybridize(static_alloc=True)
@@ -479,7 +476,7 @@ def convert_examples_to_features(example,
                           end_position=end,
                           paragraph_text=example.paragraph_text,
                           paragraph_len=len(tokens),
-                          is_impossible=example.is_impossible)
+                          is_impossible=(start == len(tokens) - 1))
         for (tokens, segment_ids, p_mask), (start, end), is_max, t2st, t2ed in
         zip(seq_features, positions, token_is_max_context,
             cur_tok_start_to_orig_index, cur_tok_end_to_orig_index)
