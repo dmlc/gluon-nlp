@@ -73,93 +73,84 @@ parser = argparse.ArgumentParser(
     description='BERT fine-tune examples for classification/regression tasks.',
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-parser.add_argument('--optimizer',
-                    type=str,
-                    default='bertadam',
+parser.add_argument('--optimizer', type=str, default='bertadam',
                     help='The optimizer to be used for training')
 parser.add_argument('--epochs', type=int, default=3, help='number of epochs.')
-parser.add_argument('--training_steps',
-                    type=int,
-                    help='The total training steps. '
-                    'Note that if specified, epochs will be ignored.')
+parser.add_argument(
+    '--training_steps', type=int, help='The total training steps. '
+    'Note that if specified, epochs will be ignored.')
 parser.add_argument(
     '--batch_size',
     type=int,
     default=32,
     help='Batch size. Number of examples per gpu in a minibatch.')
-parser.add_argument('--dev_batch_size',
-                    type=int,
-                    default=8,
-                    help='Batch size for dev set and test set')
-parser.add_argument('--lr',
-                    type=float,
-                    default=5e-5,
-                    help='Initial learning rate')
-parser.add_argument('--epsilon',
-                    type=float,
-                    default=1e-6,
-                    help='Small value to avoid division by 0')
+parser.add_argument(
+    '--dev_batch_size',
+    type=int,
+    default=8,
+    help='Batch size for dev set and test set')
+parser.add_argument(
+    '--lr',
+    type=float,
+    default=3e-5,
+    help='Initial learning rate')
+parser.add_argument(
+    '--epsilon',
+    type=float,
+    default=1e-6,
+    help='Small value to avoid division by 0'
+)
 parser.add_argument(
     '--warmup_ratio',
     type=float,
     default=0.1,
     help='ratio of warmup steps used in NOAM\'s stepsize schedule')
-parser.add_argument('--log_interval',
-                    type=int,
-                    default=10,
-                    help='report interval')
-parser.add_argument('--max_len',
-                    type=int,
-                    default=128,
-                    help='Maximum length of the sentence pairs')
 parser.add_argument(
-    '--pad',
-    action='store_true',
-    help=
-    'Whether to pad to maximum length when preparing data batches. Default is False.'
-)
-parser.add_argument('--seed', type=int, default=2, help='Random seed')
+    '--log_interval',
+    type=int,
+    default=10,
+    help='report interval')
+parser.add_argument(
+    '--max_len',
+    type=int,
+    default=128,
+    help='Maximum length of the sentence pairs')
+parser.add_argument(
+    '--seed', type=int, default=2, help='Random seed')
 parser.add_argument(
     '--accumulate',
     type=int,
     default=None,
-    help=
-    'The number of batches for gradients accumulation to simulate large batch size. '
-    'Default is None')
-parser.add_argument('--gpu',
-                    type=int,
-                    default=None,
-                    help='Which gpu for finetuning.')
+    help='The number of batches for gradients accumulation to simulate large batch size. '
+         'Default is None')
+parser.add_argument(
+    '--gpu', type=int, default=None, help='Which gpu for finetuning.')
 parser.add_argument(
     '--task_name',
     type=str,
     choices=tasks.keys(),
     help='The name of the task to fine-tune. Choices include MRPC, QQP, '
-    'QNLI, RTE, STS-B, CoLA, MNLI, WNLI, SST.')
-parser.add_argument('--bert_model',
-                    type=str,
-                    default='bert_12_768_12',
-                    choices=[
-                        'bert_12_768_12', 'bert_24_1024_16',
-                        'roberta_12_768_12', 'roberta_24_1024_16'
-                    ],
-                    help='The name of pre-trained BERT model to fine-tune')
-parser.add_argument('--bert_dataset',
-                    type=str,
-                    default='book_corpus_wiki_en_uncased',
-                    choices=[
-                        'book_corpus_wiki_en_uncased',
-                        'book_corpus_wiki_en_cased',
-                        'openwebtext_book_corpus_wiki_en_uncased',
-                        'wiki_multilingual_uncased', 'wiki_multilingual_cased',
-                        'wiki_cn_cased',
-                        'openwebtext_ccnews_stories_books_cased'
-                    ],
-                    help='The dataset BERT pre-trained with.')
-parser.add_argument('--pretrained_bert_parameters',
-                    type=str,
-                    default=None,
-                    help='Pre-trained bert model parameter file.')
+         'QNLI, RTE, STS-B, CoLA, MNLI, WNLI, SST.')
+parser.add_argument(
+    '--bert_model',
+    type=str,
+    default='bert_12_768_12',
+    choices=['bert_12_768_12', 'bert_24_1024_16', 'roberta_12_768_12', 'roberta_24_1024_16'],
+    help='The name of pre-trained BERT model to fine-tune')
+parser.add_argument(
+    '--bert_dataset',
+    type=str,
+    default='book_corpus_wiki_en_uncased',
+    choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
+             'openwebtext_book_corpus_wiki_en_uncased', 'wiki_multilingual_uncased',
+             'wiki_multilingual_cased', 'wiki_cn_cased',
+             'openwebtext_ccnews_stories_books_cased'],
+    help='The dataset BERT pre-trained with.')
+parser.add_argument(
+    '--pretrained_bert_parameters',
+    type=str,
+    default=None,
+    help='Pre-trained bert model parameter file.')
 parser.add_argument(
     '--model_parameters',
     type=str,
@@ -175,20 +166,19 @@ parser.add_argument(
 parser.add_argument(
     '--only_inference',
     action='store_true',
-    help=
-    'If set, we skip training and only perform inference on dev and test data.'
-)
-parser.add_argument('--dtype',
-                    type=str,
-                    default='float32',
-                    choices=['float32', 'float16'],
-                    help='The data type for training.')
+    help='If set, we skip training and only perform inference on dev and test data.')
+parser.add_argument(
+    '--dtype',
+    type=str,
+    default='float32',
+    choices=['float32', 'float16'],
+    help='The data type for training.')
 parser.add_argument(
     '--early_stop',
     type=int,
     default=None,
     help='Whether to perform early stopping based on the metric on dev set. '
-    'The provided value is the patience. ')
+         'The provided value is the patience. ')
 
 args = parser.parse_args()
 
@@ -196,8 +186,8 @@ log = logging.getLogger()
 log.setLevel(logging.INFO)
 logging.captureWarnings(True)
 fh = logging.FileHandler('log_{0}.txt'.format(args.task_name))
-formatter = logging.Formatter(
-    fmt='%(levelname)s:%(name)s:%(asctime)s %(message)s', datefmt='%H:%M:%S')
+formatter = logging.Formatter(fmt='%(levelname)s:%(name)s:%(asctime)s %(message)s',
+                              datefmt='%H:%M:%S')
 fh.setLevel(logging.INFO)
 fh.setFormatter(formatter)
 console = logging.StreamHandler()
@@ -241,8 +231,7 @@ if only_inference and not model_parameters:
     warnings.warn('model_parameters is not set. '
                   'Randomly initialized model will be used for inference.')
 
-get_pretrained = not (pretrained_bert_parameters is not None
-                      or model_parameters is not None)
+get_pretrained = not (pretrained_bert_parameters is not None or model_parameters is not None)
 
 use_roberta = 'roberta' in model_name
 get_model_params = {
@@ -283,17 +272,11 @@ if not model_parameters:
 output_dir = args.output_dir
 if pretrained_bert_parameters:
     logging.info('loading bert params from %s', pretrained_bert_parameters)
-    nlp.utils.load_parameters(model.bert,
-                              pretrained_bert_parameters,
-                              ctx=ctx,
-                              ignore_extra=True,
+    nlp.utils.load_parameters(model.bert, pretrained_bert_parameters, ctx=ctx, ignore_extra=True,
                               cast_dtype=True)
 if model_parameters:
     logging.info('loading model params from %s', model_parameters)
-    nlp.utils.load_parameters(model,
-                              model_parameters,
-                              ctx=ctx,
-                              cast_dtype=True)
+    nlp.utils.load_parameters(model, model_parameters, ctx=ctx, cast_dtype=True)
 nlp.utils.mkdir(output_dir)
 
 logging.debug(model)
@@ -308,14 +291,8 @@ else:
     bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 
 
-def convert_examples_to_features(example,
-                                 tokenizer=None,
-                                 truncate_length=512,
-                                 cls_token=None,
-                                 sep_token=None,
-                                 class_labels=None,
-                                 label_alias=None,
-                                 vocab=None,
+def convert_examples_to_features(example, tokenizer=None, truncate_length=512, cls_token=None,
+                                 sep_token=None, class_labels=None, label_alias=None, vocab=None,
                                  is_test=False):
     """convert glue examples into necessary features"""
     if not is_test:
@@ -340,8 +317,7 @@ def convert_examples_to_features(example,
     tokens_trun = truncate_seqs_equal(tokens_raw, truncate_length)
     # concate the sequences with special tokens
     tokens_trun[0] = [cls_token] + tokens_trun[0]
-    tokens, segment_ids, _ = concat_sequences(tokens_trun,
-                                              [[sep_token]] * len(tokens_trun))
+    tokens, segment_ids, _ = concat_sequences(tokens_trun, [[sep_token]] * len(tokens_trun))
     # convert the token to ids
     input_ids = vocab[tokens]
     valid_length = len(input_ids)
@@ -351,27 +327,22 @@ def convert_examples_to_features(example,
         return input_ids, valid_length, segment_ids
 
 
-def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len,
-                    vocab):
+def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab):
     """Train/eval Data preparation function."""
     label_dtype = 'int32' if task.class_labels else 'float32'
     truncate_length = max_len - 3 if task.is_pair else max_len - 2
-    trans = partial(
-        convert_examples_to_features,
-        tokenizer=tokenizer,
-        truncate_length=truncate_length,
-        cls_token=vocab.cls_token if not use_roberta else vocab.bos_token,
-        sep_token=vocab.sep_token if not use_roberta else vocab.eos_token,
-        class_labels=task.class_labels,
-        label_alias=task.label_alias,
-        vocab=vocab)
+    trans = partial(convert_examples_to_features, tokenizer=tokenizer,
+                    truncate_length=truncate_length,
+                    cls_token=vocab.cls_token if not use_roberta else vocab.bos_token,
+                    sep_token=vocab.sep_token if not use_roberta else vocab.eos_token,
+                    class_labels=task.class_labels, label_alias=task.label_alias, vocab=vocab)
 
     # data train
     # task.dataset_train returns (segment_name, dataset)
     train_tsv = task.dataset_train()[1]
     data_train = mx.gluon.data.SimpleDataset(list(map(trans, train_tsv)))
-    data_train_len = data_train.transform(
-        lambda _, valid_length, segment_ids, label: valid_length, lazy=False)
+    data_train_len = data_train.transform(lambda _, valid_length, segment_ids, label: valid_length,
+                                          lazy=False)
     # bucket sampler for training
     pad_val = vocabulary[vocabulary.padding_token]
     batchify_fn = nlp.data.batchify.Tuple(
@@ -379,16 +350,11 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len,
         nlp.data.batchify.Stack(),  # length
         nlp.data.batchify.Pad(axis=0, pad_val=0),  # segment
         nlp.data.batchify.Stack(label_dtype))  # label
-    batch_sampler = nlp.data.sampler.FixedBucketSampler(data_train_len,
-                                                        batch_size=batch_size,
-                                                        num_buckets=10,
-                                                        ratio=0,
-                                                        shuffle=True)
+    batch_sampler = nlp.data.sampler.FixedBucketSampler(data_train_len, batch_size=batch_size,
+                                                        num_buckets=10, ratio=0, shuffle=True)
     # data loader for training
-    loader_train = gluon.data.DataLoader(dataset=data_train,
-                                         num_workers=4,
-                                         batch_sampler=batch_sampler,
-                                         batchify_fn=batchify_fn)
+    loader_train = gluon.data.DataLoader(dataset=data_train, num_workers=4,
+                                         batch_sampler=batch_sampler, batchify_fn=batchify_fn)
 
     # data dev. For MNLI, more than one dev set is available
     dev_tsv = task.dataset_dev()
@@ -396,27 +362,19 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len,
     loader_dev_list = []
     for segment, data in dev_tsv_list:
         data_dev = mx.gluon.data.SimpleDataset(list(map(trans, data)))
-        loader_dev = mx.gluon.data.DataLoader(data_dev,
-                                              batch_size=dev_batch_size,
-                                              num_workers=4,
-                                              shuffle=False,
-                                              batchify_fn=batchify_fn)
+        loader_dev = mx.gluon.data.DataLoader(data_dev, batch_size=dev_batch_size, num_workers=4,
+                                              shuffle=False, batchify_fn=batchify_fn)
         loader_dev_list.append((segment, loader_dev))
 
     # batchify for data test
-    test_batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0, pad_val=pad_val),
-        nlp.data.batchify.Stack(), nlp.data.batchify.Pad(axis=0, pad_val=0))
+    test_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0, pad_val=pad_val),
+                                               nlp.data.batchify.Stack(),
+                                               nlp.data.batchify.Pad(axis=0, pad_val=0))
     # transform for data test
-    test_trans = partial(
-        convert_examples_to_features,
-        tokenizer=tokenizer,
-        truncate_length=max_len,
-        cls_token=vocab.cls_token if not use_roberta else vocab.bos_token,
-        sep_token=vocab.sep_token if not use_roberta else vocab.eos_token,
-        class_labels=None,
-        is_test=True,
-        vocab=vocab)
+    test_trans = partial(convert_examples_to_features, tokenizer=tokenizer, truncate_length=max_len,
+                         cls_token=vocab.cls_token if not use_roberta else vocab.bos_token,
+                         sep_token=vocab.sep_token if not use_roberta else vocab.eos_token,
+                         class_labels=None, is_test=True, vocab=vocab)
 
     # data test. For MNLI, more than one test set is available
     test_tsv = task.dataset_test()
@@ -424,11 +382,8 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len,
     loader_test_list = []
     for segment, data in test_tsv_list:
         data_test = mx.gluon.data.SimpleDataset(list(map(test_trans, data)))
-        loader_test = mx.gluon.data.DataLoader(data_test,
-                                               batch_size=dev_batch_size,
-                                               num_workers=4,
-                                               shuffle=False,
-                                               batchify_fn=test_batchify_fn)
+        loader_test = mx.gluon.data.DataLoader(data_test, batch_size=dev_batch_size, num_workers=4,
+                                               shuffle=False, batchify_fn=test_batchify_fn)
         loader_test_list.append((segment, loader_test))
     return loader_train, loader_dev_list, loader_test_list, len(data_train)
 
@@ -452,16 +407,14 @@ def test(loader_test, segment):
         if use_roberta:
             out = model(input_ids, valid_length)
         else:
-            out = model(input_ids, segment_ids.as_in_context(ctx),
-                        valid_length)
+            out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
         if not task.class_labels:
             # regression task
             for result in out.asnumpy().reshape(-1).tolist():
                 results.append('{:.3f}'.format(result))
         else:
             # classification task
-            indices = mx.nd.topk(out, k=1, ret_typ='indices',
-                                 dtype='int32').asnumpy()
+            indices = mx.nd.topk(out, k=1, ret_typ='indices', dtype='int32').asnumpy()
             for index in indices:
                 results.append(task.class_labels[int(index)])
 
@@ -481,8 +434,7 @@ def test(loader_test, segment):
             f.write(u'%d\t%s\n' % (i, str(pred)))
 
 
-def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id,
-              learning_rate):
+def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, learning_rate):
     """Generate and print out the log message for training. """
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
@@ -490,8 +442,8 @@ def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id,
 
     train_str = '[Epoch %d Batch %d/%d] loss=%.4f, lr=%.7f, metrics:' + \
                 ','.join([i + ':%.4f' for i in metric_nm])
-    logging.info(train_str, epoch_id + 1, batch_id + 1, batch_num,
-                 step_loss / log_interval, learning_rate, *metric_val)
+    logging.info(train_str, epoch_id + 1, batch_id + 1, batch_num, step_loss / log_interval,
+                 learning_rate, *metric_val)
 
 
 def log_eval(batch_id, batch_num, metric, step_loss, log_interval):
@@ -502,21 +454,17 @@ def log_eval(batch_id, batch_num, metric, step_loss, log_interval):
 
     eval_str = '[Batch %d/%d] loss=%.4f, metrics:' + \
                ','.join([i + ':%.4f' for i in metric_nm])
-    logging.info(eval_str, batch_id + 1, batch_num, step_loss / log_interval,
-                 *metric_val)
+    logging.info(eval_str, batch_id + 1, batch_num, step_loss / log_interval, *metric_val)
 
 
 def train(metric):
     """Training function."""
     if not only_inference:
-        logging.info('Now we are doing BERT classification training on %s!',
-                     ctx)
+        logging.info('Now we are doing BERT classification training on %s!', ctx)
 
     all_model_params = model.collect_params()
     optimizer_params = {'learning_rate': lr, 'epsilon': epsilon, 'wd': 0.01}
-    trainer = gluon.Trainer(all_model_params,
-                            args.optimizer,
-                            optimizer_params,
+    trainer = gluon.Trainer(all_model_params, args.optimizer, optimizer_params,
                             update_on_kvstore=False)
     if args.dtype == 'float16':
         amp.init_trainer(trainer)
@@ -568,8 +516,7 @@ def train(metric):
                     new_lr = lr * step_num / num_warmup_steps
                 else:
                     non_warmup_steps = step_num - num_warmup_steps
-                    offset = non_warmup_steps / (num_train_steps -
-                                                 num_warmup_steps)
+                    offset = non_warmup_steps / (num_train_steps - num_warmup_steps)
                     new_lr = lr - offset * lr
                 trainer.set_learning_rate(new_lr)
 
@@ -577,14 +524,12 @@ def train(metric):
                 with mx.autograd.record():
                     input_ids, valid_length, segment_ids, label = seqs
                     input_ids = input_ids.as_in_context(ctx)
-                    valid_length = valid_length.as_in_context(ctx).astype(
-                        'float32')
+                    valid_length = valid_length.as_in_context(ctx).astype('float32')
                     label = label.as_in_context(ctx)
                     if use_roberta:
                         out = model(input_ids, valid_length)
                     else:
-                        out = model(input_ids, segment_ids.as_in_context(ctx),
-                                    valid_length)
+                        out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
                     ls = loss_function(out, label).mean()
                     if args.dtype == 'float16':
                         with amp.scale_loss(ls, trainer) as scaled_loss:
@@ -607,9 +552,8 @@ def train(metric):
                     label = label.reshape((-1))
                 metric.update([label], [out])
                 if (batch_id + 1) % (args.log_interval) == 0:
-                    log_train(batch_id, len(train_data), metric, step_loss,
-                              args.log_interval, epoch_id,
-                              trainer.learning_rate)
+                    log_train(batch_id, len(train_data), metric, step_loss, args.log_interval,
+                              epoch_id, trainer.learning_rate)
                     step_loss = 0
                 if step_num >= num_train_steps:
                     logging.info('Finish training step: %d', step_num)
@@ -647,8 +591,7 @@ def train(metric):
         ckpt_name = 'model_bert_{0}_{1}.params'.format(task_name, epoch_id)
         params_saved = os.path.join(output_dir, ckpt_name)
         nlp.utils.load_parameters(model, params_saved)
-        metric_str = 'Best model at epoch {}. Validation metrics:'.format(
-            epoch_id)
+        metric_str = 'Best model at epoch {}. Validation metrics:'.format(epoch_id)
         metric_str += ','.join([i + ':%.4f' for i in metric_nm])
         logging.info(metric_str, *metric_val)
 
@@ -671,8 +614,7 @@ def evaluate(loader_dev, metric, segment):
         if use_roberta:
             out = model(input_ids, valid_length)
         else:
-            out = model(input_ids, segment_ids.as_in_context(ctx),
-                        valid_length)
+            out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
 
         ls = loss_function(out, label).mean()
         step_loss += ls.asscalar()
@@ -680,15 +622,13 @@ def evaluate(loader_dev, metric, segment):
             label = label.reshape((-1))
         metric.update([label], [out])
         if (batch_id + 1) % (args.log_interval) == 0:
-            log_eval(batch_id, len(loader_dev), metric, step_loss,
-                     args.log_interval)
+            log_eval(batch_id, len(loader_dev), metric, step_loss, args.log_interval)
             step_loss = 0
 
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
         metric_nm, metric_val = [metric_nm], [metric_val]
-    metric_str = 'validation metrics:' + ','.join(
-        [i + ':%.4f' for i in metric_nm])
+    metric_str = 'validation metrics:' + ','.join([i + ':%.4f' for i in metric_nm])
     logging.info(metric_str, *metric_val)
 
     mx.nd.waitall()
