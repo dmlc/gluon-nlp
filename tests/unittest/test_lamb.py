@@ -4,8 +4,6 @@ from mxnet.gluon import data as gdata
 from mxnet import gluon, autograd, nd
 from mxnet.gluon import nn
 
-from gluonnlp.optimizer import LAMB
-
 
 def test_lamb_for_fashion_mnist():
     mnist_train = gdata.vision.FashionMNIST(train=True)

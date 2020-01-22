@@ -141,7 +141,8 @@ def transformerxl(dataset_name: str, vocab: nlp.Vocab, **kwargs):
 def xlnet_cased_l12_h768_a12(dataset_name: Optional[str] = None, vocab: Optional[nlp.Vocab] = None,
                              tokenizer: Optional[XLNetTokenizer] = None, pretrained: bool = True,
                              ctx: mx.Context = mx.cpu(),
-                             root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                             root=os.path.join(get_home_dir(), 'models'),
+                             do_lower_case=False, **kwargs):
     """XLNet model.
 
     References:
@@ -191,14 +192,15 @@ def xlnet_cased_l12_h768_a12(dataset_name: Optional[str] = None, vocab: Optional
                                 dataset_name=dataset_name, root=root, ctx=ctx,
                                 ignore_extra=not kwargs.get('use_decoder', True))
     if tokenizer is None or dataset_name is not None:
-        tokenizer = _get_xlnet_tokenizer(dataset_name, root)
+        tokenizer = _get_xlnet_tokenizer(dataset_name, root, do_lower_case)
     return net, vocab, tokenizer
 
 
 def xlnet_cased_l24_h1024_a16(dataset_name: Optional[str] = None, vocab: Optional[nlp.Vocab] = None,
                               tokenizer: Optional[XLNetTokenizer] = None, pretrained: bool = True,
                               ctx: mx.Context = mx.cpu(),
-                              root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                              root=os.path.join(get_home_dir(), 'models'),
+                              do_lower_case=False, **kwargs):
     """XLNet model.
 
     References:
@@ -248,11 +250,11 @@ def xlnet_cased_l24_h1024_a16(dataset_name: Optional[str] = None, vocab: Optiona
                                 dataset_name=dataset_name, root=root, ctx=ctx,
                                 ignore_extra=not kwargs.get('use_decoder', True))
     if tokenizer is None or dataset_name is not None:
-        tokenizer = _get_xlnet_tokenizer(dataset_name, root)
+        tokenizer = _get_xlnet_tokenizer(dataset_name, root, do_lower_case)
     return net, vocab, tokenizer
 
 
-def _get_xlnet_tokenizer(dataset_name, root):
+def _get_xlnet_tokenizer(dataset_name, root, do_lower_case=False):
     assert dataset_name.lower() == '126gb'
     root = os.path.expanduser(root)
     file_path = os.path.join(root, 'xlnet_126gb-871f0b3c.spiece')
@@ -294,5 +296,5 @@ def _get_xlnet_tokenizer(dataset_name, root):
     if not check_sha1(file_path, sha1_hash):
         raise ValueError('Downloaded file has different hash. Please try again.')
 
-    tokenizer = XLNetTokenizer(file_path)
+    tokenizer = XLNetTokenizer(file_path, lower=do_lower_case)
     return tokenizer
