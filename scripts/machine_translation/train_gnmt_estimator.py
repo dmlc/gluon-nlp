@@ -56,6 +56,7 @@ from gluonnlp.estimator import ComputeBleuHandler, ValBleuHandler
 from gluonnlp.estimator import MTTransformerMetricHandler, MTGNMTLearningRateHandler
 from gluonnlp.estimator import MTCheckpointHandler, MTTransformerMetricHandler
 from gluonnlp.estimator import MTValidationHandler
+from mxnet.gluon.contrib.estimator import LoggingHandler
 
 np.random.seed(100)
 random.seed(100)
@@ -172,14 +173,17 @@ metric_handler = MTTransformerMetricHandler(metrics=gnmt_estimator.train_metrics
                                             grad_interval=1)
 
 bleu_handler = ComputeBleuHandler(tgt_vocab=tgt_vocab, tgt_sentence=val_tgt_sentences,
-                                  translator=translator, compute_bleu_fn=compute_bleu)
+                                  translator=translator, compute_bleu_fn=compute_bleu,
+                                  bleu='tweaked')
 
 test_bleu_handler = ComputeBleuHandler(tgt_vocab=tgt_vocab, tgt_sentence=test_tgt_sentences,
-                                       translator=translator, compute_bleu_fn=compute_bleu)
+                                       translator=translator, compute_bleu_fn=compute_bleu,
+                                       bleu='tweaked')
 
 val_bleu_handler = ValBleuHandler(val_data=val_data_loader,
                                   val_tgt_vocab=tgt_vocab, val_tgt_sentences=val_tgt_sentences,
-                                  translator=translator, compute_bleu_fn=compute_bleu)
+                                  translator=translator, compute_bleu_fn=compute_bleu,
+                                  bleu='tweaked')
 
 checkpoint_handler = MTCheckpointHandler(model_dir=args.save_dir)
 
@@ -189,13 +193,16 @@ val_validation_handler = MTValidationHandler(val_data=val_data_loader,
                                              eval_fn=gnmt_estimator.evaluate,
                                              event_handlers=val_metric_handler)
 
+logging_handler = LoggingHandler(log_interval=args.log_interval,
+                                 metrics=gnmt_estimator.train_metrics)
+
 event_handlers = [learning_rate_handler, gradient_update_handler, metric_handler,
-                  val_bleu_handler, checkpoint_handler, val_validation_handler]
+                  val_bleu_handler, checkpoint_handler, val_validation_handler, logging_handler]
 
 gnmt_estimator.fit(train_data=train_data_loader,
                    val_data=val_data_loader,
-                   #epochs=args.epochs,
-                   batches=5,
+                   epochs=args.epochs,
+                   #batches=5,
                    event_handlers=event_handlers,
                    batch_axis=0)
 

@@ -308,7 +308,6 @@ event_handlers = [param_update_handler,
 mt_estimator.fit(train_data=train_data_loader,
                  val_data=val_data_loader,
                  epochs=args.epochs,
-                 #batches=200,
                  event_handlers=event_handlers,
                  batch_axis=0)
 

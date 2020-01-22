@@ -87,7 +87,7 @@ class MTGNMTBatchProcessor(BatchProcessor):
         src_seq = src_seq.as_in_context(ctx)
         tgt_seq = tgt_seq.as_in_context(ctx)
         src_valid_length = src_valid_length.as_in_context(ctx)
-        tgt_valid_lenght = tgt_valid_length.as_in_context(ctx)
+        tgt_valid_length = tgt_valid_length.as_in_context(ctx)
         with mx.autograd.record():
             out, _ = estimator.net(src_seq, tgt_seq[:, :-1], src_valid_length,
                                    tgt_valid_length - 1)

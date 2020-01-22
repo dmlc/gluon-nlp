@@ -242,7 +242,7 @@ class ComputeBleuHandler(BatchEnd, EpochEnd):
                  tokenizer='13a',
                  split_compound_word=False,
                  bpe=False,
-                 bleu='tweaked',
+                 bleu='13a',
                  detokenizer=None,
                  _bpe_to_words=None):
         self.tgt_vocab = tgt_vocab
@@ -294,6 +294,7 @@ class ComputeBleuHandler(BatchEnd, EpochEnd):
                                                            tokenizer=self.tokenizer,
                                                            split_compound_word=self.split_compound_word,
                                                            bpe=self.bpe)
+        print(estimator.bleu_score)
 
 
 # temporary validation bleu metric hack, it can be removed once bleu metric api is available
@@ -307,7 +308,7 @@ class ValBleuHandler(EpochEnd):
                  tokenizer='13a',
                  split_compound_word=False,
                  bpe=False,
-                 bleu='tweaked',
+                 bleu='13a',
                  detokenizer=None,
                  _bpe_to_words=None):
         self.val_data = val_data
@@ -355,6 +356,7 @@ class ValBleuHandler(EpochEnd):
                                                           tokenizer=self.tokenizer,
                                                           split_compound_word=self.split_compound_word,
                                                           bpe=self.bpe)
+        print(estimator.bleu_score)
 
 class MTTransformerLoggingHandler(LoggingHandler):
     def __init__(self, *args, **kwargs):
