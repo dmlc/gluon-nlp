@@ -68,6 +68,36 @@ def test_parallel(num_workers):
     for para_grad, serial_grad in zip(parallel_grads_np, serial_grads_np):
         mx.test_utils.assert_almost_equal(para_grad, serial_grad)
 
+@pytest.mark.parametrize('max_norm',
+                         [ None, 1, 3])
+def test_grad_global_norm(max_norm):
+    contexts = [mx.cpu(0), mx.cpu(1)]
+    nunits = 100
+    net = mx.gluon.nn.Dense(nunits, weight_initializer='ones', bias_initializer='ones')
+    net.initialize(ctx=contexts)
+    net.hybridize()
+    trainer = mx.gluon.Trainer(net.collect_params(), 'sgd', update_on_kvstore=False)
+    for ctx in contexts:
+        with mx.autograd.record():
+            out = net(mx.nd.ones((1, 1), ctx=ctx))
+        out.backward()
+    trainer.allreduce_grads()
+    if max_norm:
+        norm, ratio, is_finite = nlp.utils.grad_global_norm(net.collect_params().values(),
+                                                            max_norm)
+    else:
+        norm = nlp.utils.grad_global_norm(net.collect_params().values(),
+                                          max_norm)
+    # Reference
+    ref_norm = 0
+    for p in net.collect_params().values():
+        x = p.list_grad()[0].reshape((-1,)).astype('float32', copy=False)
+        dot_product = mx.nd.dot(x, x)
+        ref_norm += mx.nd.add_n(dot_product)
+    ref_norm = ref_norm.sqrt()
+
+    mx.test_utils.assert_almost_equal(ref_norm.asnumpy(), norm.asnumpy(), rtol=1e-7, atol=1e-7)
+
 @pytest.mark.parametrize('max_norm,check_isfinite',
                          [(1, True),
                           (1, False),
@@ -138,3 +168,32 @@ def test_version():
         nlp.utils.check_version(future_version, warning_only=True)
     nlp.utils.check_version(past_version, warning_only=False)
     nlp.utils.check_version(past_version, warning_only=True)
+
+def test_train_valid_split():
+    # Create test set
+    data ={}
+    data['texts'] = ['this is','the test','dataset for',
+                     'train_valid_split','the function',
+                     'for splitting','data into',
+                     'a validation','set and','a training',
+                     'set including','stratify option']
+    data['labels'] = [1,2,3,1,2,3,3,3,3,3,2,2]
+
+    # Create a list of review a label pairs
+    dataset = [[text, int(label)] for text, label in zip(data['texts'], data['labels'])]
+    classes,digitized = np.unique(data['labels'],return_inverse=True)
+    n_classes = len(classes)
+    num_class = np.bincount(digitized)
+
+    train_dataset, valid_dataset = nlp.data.train_valid_split(dataset)
+
+    assert (len(valid_dataset) == np.ceil(.05*len(dataset)).astype(int)) and \
+           (len(train_dataset)+len(valid_dataset) == len(dataset))
+
+    train_dataset, valid_dataset = nlp.data.train_valid_split(dataset,stratify=data['labels'])
+
+    valid_labels = [d[1] for d in valid_dataset]
+    valid_num_class = [np.sum(valid_labels==classes[i]) for i in range(len(classes))]
+
+    assert np.all(np.ceil(.05*num_class).astype(int) == valid_num_class) and \
+           (len(train_dataset) + len(valid_dataset) == len(dataset))
