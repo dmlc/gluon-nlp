@@ -34,8 +34,8 @@ class MachineTranslationEstimator(Estimator):
                  initializer=None,
                  trainer=None,
                  context=None,
-                 evaluation_loss=None,
-                 eval_net=None,
+                 val_loss=None,
+                 val_net=None,
                  batch_processor=MTTransformerBatchProcessor()):
         super().__init__(net=net, loss=loss,
                          train_metrics=train_metrics,
@@ -43,8 +43,8 @@ class MachineTranslationEstimator(Estimator):
                          initializer=initializer,
                          trainer=trainer,
                          context=context,
-                         evaluation_loss=evaluation_loss,
-                         eval_net=eval_net,
+                         val_loss=val_loss,
+                         val_net=val_net,
                          batch_processor=batch_processor)
         self.tgt_valid_length = 0
         self.val_tgt_valid_length = 0

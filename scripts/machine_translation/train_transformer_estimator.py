@@ -246,7 +246,7 @@ mt_estimator = MachineTranslationEstimator(net=model, loss=loss_function,
                                            val_metrics=val_metric,
                                            trainer=trainer,
                                            context=ctx,
-                                           evaluation_loss=test_loss_function,
+                                           val_loss=test_loss_function,
                                            batch_processor=batch_processor)
 
 param_update_handler = MTTransformerParamUpdateHandler(avg_start=average_start,

@@ -70,8 +70,8 @@ class MTTransformerBatchProcessor(BatchProcessor):
         src_valid_length = src_valid_length.as_in_context(ctx)
         tgt_valid_length = tgt_valid_length.as_in_context(ctx)
 
-        out, _ = estimator.eval_net(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
-        loss = estimator.evaluation_loss(out, tgt_seq[:, 1:], tgt_valid_length - 1).sum().asscalar()
+        out, _ = estimator.val_net(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
+        loss = estimator.val_loss(out, tgt_seq[:, 1:], tgt_valid_length - 1).sum().asscalar()
         inst_ids = inst_ids.asnumpy().astype(np.int32).tolist()
         loss = loss * (tgt_seq.shape[1] - 1)
         val_tgt_valid_length = (tgt_valid_length - 1).sum().asscalar()
@@ -105,9 +105,9 @@ class MTGNMTBatchProcessor(BatchProcessor):
         tgt_seq = tgt_seq.as_in_context(ctx)
         src_valid_length = src_valid_length.as_in_context(ctx)
         tgt_valid_length = tgt_valid_length.as_in_context(ctx)
-        out, _ = estimator.eval_net(src_seq, tgt_seq[:, :-1], src_valid_length,
+        out, _ = estimator.val_net(src_seq, tgt_seq[:, :-1], src_valid_length,
                                     tgt_valid_length - 1)
-        loss = estimator.evaluation_loss(out, tgt_seq[:, 1:],
+        loss = estimator.val_loss(out, tgt_seq[:, 1:],
                                          tgt_valid_length - 1).sum().asscalar()
         loss = loss * (tgt_seq.shape[1] - 1)
         val_tgt_valid_length = (tgt_valid_length - 1).sum().asscalar()
