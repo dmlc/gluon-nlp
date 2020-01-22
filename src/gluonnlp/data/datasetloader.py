@@ -35,10 +35,10 @@ from mxnet.gluon.data.dataloader import default_mp_batchify_fn, default_batchify
 from .stream import _PathDataset
 
 
-class ProxyArrayDataset(ArrayDataset):
+class _ProxyArrayDataset(ArrayDataset):
     """When BaseManager is used, proxy[ArrayDataset] does not support indexing."""
     def __init__(self, *args):
-        super(ProxyArrayDataset, self).__init__(*args)
+        super(_ProxyArrayDataset, self).__init__(*args)
 
     def get(self, idx):
         return self[idx]
@@ -237,7 +237,7 @@ class _MultiDatasetWorkerIter:
 
 
 def _manager_register():
-    BaseManager.register('ProxyArrayDataset', ProxyArrayDataset)
+    BaseManager.register('ProxyArrayDataset', _ProxyArrayDataset)
 
 
 class DatasetLoader:
@@ -282,10 +282,10 @@ class DatasetLoader:
     pin_memory : boolean, default False
         If ``True``, the dataloader will copy NDArrays into pinned memory
         before returning them. Copying from CPU pinned memory to GPU is faster
-        than from normal CPU memory.
+        than from normal CPU memory. At the same time, it increases GPU memory.
     circle_length : int, default is 1
-        The number of files to be read at the same time. When circle_length is larger than 1,
-        we merge circle_length files.
+        The number of files to be read at the same time. When `circle_length` is larger than 1,
+        we merge `circle_length` number of files.
     dataset_prefetch : int, default is `num_dataset_workers`
         The number of prefetching datasets only works if `num_workers` > 0.
         If `prefetch` > 0, it allow worker process to prefetch certain datasets before
@@ -307,7 +307,7 @@ class DatasetLoader:
         only be cached for once. When there is no new available processed dataset to be fetched,
         we pop a cached processed dataset.
     num_max_dataset_cached : int, default is 0
-        Maximum number of cached datasets. It is valid only if dataset_cached is True
+        Maximum number of cached datasets. It is valid only if `dataset_cached` is True
     """
     def __init__(self, file_patterns, file_sampler,
                  dataset_fn=None, batch_sampler_fn=None,

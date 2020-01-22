@@ -91,8 +91,8 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
     return model, vocabulary
 
 
-def prepare_pretrain_npy_dataset(filename, allow_pickle=False):
-    """Create dataset based on the files"""
+def prepare_pretrain_npz_dataset(filename, allow_pickle=False):
+    """Create dataset based on the numpy npz files"""
     assert not isinstance(filename, (list, tuple)), \
         'When .npy/.npz data file is loaded, filename must be a string.'
     logging.debug('start to load files %s ...', filename)
@@ -102,7 +102,7 @@ def prepare_pretrain_npy_dataset(filename, allow_pickle=False):
 def prepare_pretrain_text_dataset(filename, tokenizer, max_seq_length, short_seq_prob,
                                   masked_lm_prob, max_predictions_per_seq, whole_word_mask,
                                   vocab, num_workers=1, worker_pool=None):
-    """Create dataset based on the files"""
+    """Create dataset based on the raw text files"""
     dupe_factor = 1
     if not isinstance(filename, (list, tuple)):
         filename = [filename]
@@ -223,7 +223,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle,
                                         batchify_fn=batchify_fn,
                                         num_dataset_workers=num_dataset_workers,
                                         num_batch_workers=num_batch_workers,
-                                        pin_memory=True,
+                                        pin_memory=False,
                                         circle_length=circle_length,
                                         dataset_cached=dataset_cached,
                                         num_max_dataset_cached=num_max_dataset_cached)
@@ -279,7 +279,7 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes,
     dataset_params = {'allow_pickle': True}
     sampler_params = {'batch_size': batch_size, 'shuffle': shuffle,
                       'num_ctxes': num_ctxes, 'num_buckets': num_buckets}
-    dataset_fn = prepare_pretrain_npy_dataset
+    dataset_fn = prepare_pretrain_npz_dataset
     sampler_fn = prepare_pretrain_bucket_sampler
     pad_val = vocab[vocab.padding_token]
     batchify_fn = nlp.data.batchify.Tuple(
@@ -301,7 +301,7 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes,
                                         batchify_fn=batchify_fn,
                                         num_dataset_workers=num_dataset_workers,
                                         num_batch_workers=num_batch_workers,
-                                        pin_memory=True,
+                                        pin_memory=False,
                                         circle_length=circle_length,
                                         dataset_cached=dataset_cached,
                                         num_max_dataset_cached=num_max_dataset_cached)

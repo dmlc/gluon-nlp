@@ -518,10 +518,10 @@ class SplitSampler(Sampler):
       for the ones with fewer samples.
     repeat: int, default 1
       The number of times that items are repeated.
-    shuffle: bool, default False
+    shuffle: bool, default True
       Whether or not to shuffle the items.
     """
-    def __init__(self, length, num_parts=1, part_index=0, even_size=False, repeat=1, shuffle=False):
+    def __init__(self, length, num_parts=1, part_index=0, even_size=False, repeat=1, shuffle=True):
         assert length >= num_parts, \
             'Length (%d) must be greater than or equal to the number of partitions (%d).'%\
             (length, num_parts)

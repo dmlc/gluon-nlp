@@ -229,6 +229,7 @@ iterate through sequence data.
     SortedSampler
     FixedBucketSampler
     SortedBucketSampler
+    SplitSampler
 
 The `FixedBucketSampler` uses following bucket scheme classes to generate bucket keys.
 
@@ -248,6 +249,7 @@ DataLoaders loads data from a dataset and returns mini-batches of data
     :nosignatures:
 
     ShardedDataLoader
+    DatasetLoader
 
 Utilities
 ---------
