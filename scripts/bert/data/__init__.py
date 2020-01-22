@@ -19,4 +19,3 @@
 """BERT data."""
 
 from . import qa, classification, embedding, transform
-
