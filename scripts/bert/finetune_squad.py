@@ -227,14 +227,19 @@ log.info(args)
 if args.comm_backend == 'horovod':
     import horovod.mxnet as hvd
     hvd.init()
-    rank = hvd.rank()
+    rank = hvd.local_rank()
     size = hvd.size()
 else:
     rank = 0
     size = 1
 
 if args.dtype == 'float16':
+    # patch AMP due to issue: https://github.com/apache/incubator-mxnet/issues/17409
     from mxnet.contrib import amp
+    ops = ['_contrib_interleaved_matmul_encdec_qk', '_contrib_interleaved_matmul_encdec_valatt',
+           '_contrib_interleaved_matmul_selfatt_qk', '_contrib_interleaved_matmul_selfatt_valatt']
+    amp.lists.symbol.WIDEST_TYPE_CASTS.extend(ops)
+    # end of the patch
     amp.init()
 
 model_name = args.bert_model
@@ -448,7 +453,7 @@ def train():
                         mx.autograd.backward(l)
                         norm_clip = 1.0 * size * trainer._amp_loss_scaler.loss_scale
                 else:
-                    mx.autograd.backward(l)
+                    mx.autograd.backward(loss)
                     norm_clip = 1.0 * size
 
             # update
