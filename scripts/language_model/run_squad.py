@@ -14,6 +14,7 @@ import collections
 import pickle
 import sys
 import itertools
+import subprocess
 import multiprocessing as mp
 from functools import partial
 import numpy as np
@@ -23,7 +24,6 @@ from gluonnlp.data import SQuAD
 from model.qa import XLNetForQA
 from transformer import model
 from xlnet_qa_evaluate import predict_extended
-from utils_squad_evaluate import EVAL_OPTS, main as evaluate_on_squad
 
 path = sys.path[0]
 sys.path.append(path + '/../bert/data')
@@ -784,7 +784,7 @@ RawResultExtended = collections.namedtuple('RawResultExtended', [
 ])
 
 
-def evaluate(prefix=''):
+def evaluate():
     """Evaluate the model on validation dataset.
     """
     log.info('Loading dev data...')
@@ -874,12 +874,12 @@ def evaluate(prefix=''):
         all_nbest_json[example_qas_id] = nbest_json
 
     output_prediction_file = os.path.join(args.output_dir,
-                                          'predictions_{}.json'.format(prefix))
+                                          'predictions.json')
     output_nbest_file = os.path.join(
-        args.output_dir, 'nbest_predictions_{}.json'.format(prefix))
+        args.output_dir, 'nbest_predictions.json')
     if args.version_2:
         output_null_log_odds_file = os.path.join(
-            args.output_dir, 'null_odds_{}.json'.format(prefix))
+            args.output_dir, 'null_odds.json')
     else:
         output_null_log_odds_file = None
 
@@ -891,21 +891,15 @@ def evaluate(prefix=''):
         with open(output_null_log_odds_file, 'w') as writer:
             writer.write(json.dumps(scores_diff_json, indent=4) + '\n')
 
-    if args.version_2:
-        evaluate_options = EVAL_OPTS(
-            data_file=dev_data_path,
-            pred_file=output_prediction_file,
-            na_prob_file=output_null_log_odds_file,
-            na_prob_thresh=args.null_score_diff_threshold)
+    if os.path.exists(sys.path[0] + '/evaluate-v2.0.py'):
+        arguments = ['--data_file', dev_data_path, '--pred_file', output_prediction_file,
+                     '--na_prob_thresh', str(args.null_score_diff_threshold)]
+        if args.version_2:
+            arguments += ['--na_prob_file', output_null_log_odds_file]
+        subprocess.call([sys.executable, sys.path[0] + '/evaluate-v2.0.py'] + arguments)
     else:
-        evaluate_options = EVAL_OPTS(
-            data_file=dev_data_path,
-            pred_file=output_prediction_file,
-            na_prob_file=None,
-            na_prob_thresh=args.null_score_diff_threshold)
-
-    results = evaluate_on_squad(evaluate_options)
-    return results
+        log.info('Please download evaluate-v2.0.py to get evaluation results for SQuAD. Check index.rst to see'
+                 'how to download evaluate-v2.0.py.')
 
 
 if __name__ == '__main__':

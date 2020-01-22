@@ -2,7 +2,8 @@
 
 __all__ = [
     'truncate_seqs_equal', 'concat_sequences', 'tokenize_and_align_positions', 'get_doc_spans',
-    'align_position2doc_spans', 'improve_answer_span', 'check_is_max_context']
+    'align_position2doc_spans', 'improve_answer_span', 'check_is_max_context'
+]
 
 import collections
 import itertools
@@ -199,6 +200,7 @@ def align_position2doc_spans(positions, doc_spans_indices, offset=0, default_val
     all_in_span: bool
         If set to True, then as long as one position is out of span, all positions
         would be set to default_value.
+
     Returns
     -------
     list: a list of aligned positions
@@ -297,6 +299,7 @@ def check_is_max_context(doc_spans, cur_span_index, position):
         The index of doc span to be checked in doc_spans.
     position: int
         Position of the token to be checked.
+
     Returns
     -------
     bool: True if the token has 'max context'.
@@ -322,16 +325,27 @@ def check_is_max_context(doc_spans, cur_span_index, position):
     return cur_span_index == best_span_index
 
 
-
 SquadExample = collections.namedtuple('SquadExample', [
-    'qas_id', 'question_text', 'paragraph_text', 'doc_tokens', 'example_id',
-    'orig_answer_text', 'start_position', 'end_position', 'start_offset', 'end_offset',
-    'is_impossible'
+    'qas_id', 'question_text', 'paragraph_text', 'doc_tokens', 'example_id', 'orig_answer_text',
+    'start_position', 'end_position', 'start_offset', 'end_offset', 'is_impossible'
 ])
 
 
 def convert_squad_examples(record, is_training):
-    """read a single entry of gluonnlp.data.SQuAD and convert it to an example."""
+    """read a single entry of gluonnlp.data.SQuAD and convert it to an example.
+
+    Parameters
+    ----------
+    record: list
+        An entry of gluonnlp.data.SQuAD
+    is_training: bool
+        If the example is used for training,
+        then a rough start/end position will be generated
+
+    Returns
+    -------
+    SquadExample: An instance of SquadExample
+    """
     example_id = record[0]
     qas_id = record[1]
     question_text = record[2]
@@ -361,28 +375,35 @@ def convert_squad_examples(record, is_training):
         start_position = -1
         end_position = -1
     else:
-        start_position = char_to_word_offset[
-            answer_offset] if not is_impossible else -1
+        start_position = char_to_word_offset[answer_offset] if not is_impossible else -1
         end_position = char_to_word_offset[answer_offset + answer_length -
                                            1] if not is_impossible else -1
     answer_offset = -1 if is_impossible else answer_offset
-    example = SquadExample(qas_id=qas_id,
-                           question_text=question_text,
-                           paragraph_text=paragraph_text,
-                           doc_tokens=doc_tokens,
-                           example_id=example_id,
-                           orig_answer_text=orig_answer_text,
-                           start_position=start_position,
-                           end_position=end_position,
-                           start_offset=answer_offset,
-                           end_offset=answer_offset + len(orig_answer_text) - 1,
-                           is_impossible=is_impossible)
+    example = SquadExample(
+        qas_id=qas_id, question_text=question_text, paragraph_text=paragraph_text,
+        doc_tokens=doc_tokens, example_id=example_id, orig_answer_text=orig_answer_text,
+        start_position=start_position, end_position=end_position, start_offset=answer_offset,
+        end_offset=answer_offset + len(orig_answer_text) - 1, is_impossible=is_impossible)
     return example
 
 
-def _preprocess_text(inputs, lower=False, remove_space=True,
-                    keep_accents=False):
-    """Remove space, convert to lower case, keep accents"""
+def _preprocess_text(inputs, lower=False, remove_space=True, keep_accents=False):
+    """Remove space, convert to lower case, keep accents.
+
+    Parameters
+    ----------
+    inputs: str
+        input string
+    lower: bool
+        If convert the input string to lower case.
+    remove_space: bool
+        If remove the spaces in the input string.
+    keep_accents: bool
+        If keep accents in the input string.
+    Returns
+    -------
+    str: processed input string
+    """
     if remove_space:
         outputs = ' '.join(inputs.strip().split())
     else:
@@ -393,7 +414,6 @@ def _preprocess_text(inputs, lower=False, remove_space=True,
         outputs = ''.join([c for c in outputs if not unicodedata.combining(c)])
     if lower:
         outputs = outputs.lower()
-
     return outputs
 
 
@@ -435,13 +455,31 @@ def _convert_index(index, pos, M=None, is_start=True):
             return index[front]
 
 
-def _lcs_match(max_dist, seq1, seq2, lower=False):
+def _lcs_match(max_dist, seq1, seq2, max_seq_length=1024, lower=False):
     """Longest common sequence match.
 
     unlike standard LCS, this is specifically optimized for the setting
     because the mismatch between sentence pieces and original text will be small
+
+    Parameters
+    ----------
+    max_dist: int
+        The max distance between tokens to be considered.
+    seq1: list
+        The first sequence to be matched.
+    seq2: list
+        The second sequence to be matched.
+    lower: bool
+        If match the lower-cased tokens.
+    Returns
+    -------
+    numpyArray: Token-wise lcs matrix f. Shape of ((max(len(seq1), 1024), max(len(seq2), 1024))
+    Map: The dp path in matrix f.
+        g[(i ,j)] == 2 if token_i in seq1 matches token_j in seq2.
+        g[(i, j)] == 1 if token_i in seq1 matches token_{j-1} in seq2.
+        g[(i, j)] == 0 of token_{i-1} in seq1 matches token_j in seq2.
     """
-    f = np.zeros((max(len(seq1), 1024), max(len(seq2), 1024)),
+    f = np.zeros((max(len(seq1), max_seq_length), max(len(seq2), max_seq_length)),
                  dtype=np.float32)
     g = {}
     for i, token in enumerate(seq1):
@@ -458,8 +496,7 @@ def _lcs_match(max_dist, seq1, seq2, lower=False):
                 f[i, j] = f[i, j - 1]
 
             f_prev = f[i - 1, j - 1] if i > 0 and j > 0 else 0
-            if (_preprocess_text(token, lower=lower,
-                                remove_space=False) == seq2[j]
+            if (_preprocess_text(token, lower=lower, remove_space=False) == seq2[j]
                     and f_prev + 1 > f[i, j]):
                 g[(i, j)] = 2
                 f[i, j] = f_prev + 1
