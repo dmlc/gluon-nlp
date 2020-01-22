@@ -254,5 +254,6 @@ est.fit(train_data=train_data_loader, val_data=val_data_loader,
         event_handlers=event_handlers,
         batch_axis=1)
 
+est.net.load_parameters(args.save)
 est.evaluate(val_data=val_data_loader, event_handlers=[HiddenStateHandler()], batch_axis=1)
 est.evaluate(val_data=test_data_loader, event_handlers=[HiddenStateHandler()], batch_axis=1)

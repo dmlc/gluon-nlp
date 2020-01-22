@@ -208,9 +208,11 @@ gradient_handler = LargeRNNGradientUpdateHandler(batch_size=args.batch_size, cli
 metric_handler = MetricResetHandler(metrics=lm_estimator.train_metrics,
                                     log_interval=args.log_interval)
 checkpoint_handler = CheckpointHandler(model_dir=args.save, model_prefix='largeRNN')
+logging_handler = LoggingHandler(log_interval=args.log_interval,
+                                 metrics=lm_estimator.train_metrics)
 
 event_handlers = [hidden_state_handler, gradient_handler,
-                  metric_handler, checkpoint_handler]
+                  metric_handler, checkpoint_handler, logging_handler]
 
 lm_estimator.fit(train_data=train_data,
                  #epochs=args.epochs,
