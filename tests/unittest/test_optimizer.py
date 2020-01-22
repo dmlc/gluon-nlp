@@ -34,33 +34,54 @@ def compare_ndarray_tuple(t1, t2, rtol=None, atol=None):
 def compare_optimizer(opt1, opt2, shape, dtype, w_stype='default', g_stype='default',
                       rtol=1e-4, atol=1e-5, compare_states=True):
     """Compare opt1 and opt2."""
-    if w_stype == 'default':
-        w2 = mx.random.uniform(shape=shape, ctx=default_context(), dtype=dtype)
-        w1 = w2.copyto(default_context())
-    elif w_stype == 'row_sparse' or w_stype == 'csr':
-        w2 = rand_ndarray(shape, w_stype, density=1, dtype=dtype)
-        w1 = w2.copyto(default_context()).tostype('default')
-    else:
-        raise Exception("type not supported yet")
-    if g_stype == 'default':
-        g2 = mx.random.uniform(shape=shape, ctx=default_context(), dtype=dtype)
-        g1 = g2.copyto(default_context())
-    elif g_stype == 'row_sparse' or g_stype == 'csr':
-        g2 = rand_ndarray(shape, g_stype, dtype=dtype)
-        g1 = g2.copyto(default_context()).tostype('default')
-    else:
-        raise Exception("type not supported yet")
+    if not isinstance(shape, list):
+        if w_stype == 'default':
+            w2 = mx.random.uniform(shape=shape, ctx=default_context(), dtype=dtype)
+            w1 = w2.copyto(default_context())
+        elif w_stype == 'row_sparse' or w_stype == 'csr':
+            w2 = rand_ndarray(shape, w_stype, density=1, dtype=dtype)
+            w1 = w2.copyto(default_context()).tostype('default')
+        else:
+            raise Exception("type not supported yet")
+        if g_stype == 'default':
+            g2 = mx.random.uniform(shape=shape, ctx=default_context(), dtype=dtype)
+            g1 = g2.copyto(default_context())
+        elif g_stype == 'row_sparse' or g_stype == 'csr':
+            g2 = rand_ndarray(shape, g_stype, dtype=dtype)
+            g1 = g2.copyto(default_context()).tostype('default')
+        else:
+            raise Exception("type not supported yet")
 
-    state1 = opt1.create_state_multi_precision(0, w1)
-    state2 = opt2.create_state_multi_precision(0, w2)
-    if compare_states:
-        compare_ndarray_tuple(state1, state2)
+        state1 = opt1.create_state_multi_precision(0, w1)
+        state2 = opt2.create_state_multi_precision(0, w2)
+        if compare_states:
+            compare_ndarray_tuple(state1, state2)
 
-    opt1.update_multi_precision(0, w1, g1, state1)
-    opt2.update_multi_precision(0, w2, g2, state2)
-    if compare_states:
-        compare_ndarray_tuple(state1, state2, rtol=rtol, atol=atol)
-    assert_almost_equal(w1.asnumpy(), w2.asnumpy(), rtol=rtol, atol=atol)
+        opt1.update_multi_precision(0, w1, g1, state1)
+        opt2.update_multi_precision(0, w2, g2, state2)
+        if compare_states:
+            compare_ndarray_tuple(state1, state2, rtol=rtol, atol=atol)
+        assert_almost_equal(w1.asnumpy(), w2.asnumpy(), rtol=rtol, atol=atol)
+    else:
+        # test multi-tensor: Opt1 single-tensor reference, Opt2 multi-tensor
+        from copy import deepcopy
+        ntensors = len(shape)
+        w1, g1 = [], []
+        for s in shape:
+            w1.append(mx.random.uniform(shape=s, ctx=default_context(), dtype=dtype))
+            g1.append(mx.random.uniform(shape=s, ctx=default_context(), dtype=dtype))
+        w1 = tuple(w1)
+        w2 = deepcopy(w1)
+        g1 = tuple(g1)
+        g2 = deepcopy(g1)
+        state2 = [opt2.create_state_multi_precision(0, w2[i]) for i in range(ntensors)]
+        opt2.update_multi_precision(list(range(ntensors)), w2, g2, state2)
+        for i in range(ntensors):
+            state1 = opt1.create_state_multi_precision(i, w1[i])
+            opt1.update_multi_precision(i, w1[i], g1[i], state1)
+            if compare_states:
+                compare_ndarray_tuple(state1, state2[i], rtol, atol)
+            assert_almost_equal(w1[i].asnumpy(), w2[i].asnumpy(), rtol=rtol, atol=atol)
 
 # BERT ADAM
 class PyBERTAdam(mx.optimizer.Optimizer):
@@ -165,3 +186,35 @@ def test_bert_adam():
                     except ImportError:
                         print('skipping test_bert_adam() because an old version of MXNet is found')
                         return
+
+def test_bert_multi_adam():
+    opt1 = PyBERTAdam
+    opt2 = optimizer.BERTAdam
+    # shapes as Bert-large
+    dims_x = [1024, 4096, 1024, 1024]
+    dims_y = [1, 1, 1024, 4096]
+    dims_occurrences = [3, 1, 2, 2]
+    nlayers = 2
+    shapes=[]
+    for l in range(nlayers):
+        for i, (dx,dy) in enumerate(zip(dims_x, dims_y)):
+            for j in range(dims_occurrences[i]):
+                shapes.append((dx,dy))
+    cg_options = [{}, {'clip_gradient': 0.4}, {'clip_gradient': 0.5}]
+    rg_options = [{}, {'rescale_grad': 0.14}, {'rescale_grad': 0.8}]
+    wd_options = [{}, {'wd': 0.03}, {'wd': 0.05}]
+    for dtype in [np.float16, np.float32]:
+        for cg_option in cg_options:
+            for rg_option in rg_options:
+                for wd_option in wd_options:
+                    kwarg = {}
+                    kwarg.update(cg_option)
+                    kwarg.update(rg_option)
+                    kwarg.update(wd_option)
+                    if np.float16 == dtype:
+                        kwarg['multi_precision'] = True
+                        rtol = 1e-3
+                    else:
+                        rtol = 1e-4
+                    compare_optimizer(opt1(**kwarg), opt2(**kwarg), shapes, dtype,
+                                      rtol=rtol, atol=2e-5)

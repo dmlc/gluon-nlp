@@ -34,33 +34,33 @@ utils.assign_node_labels(linux_gpu: 'linux-gpu', linux_cpu: 'linux-cpu')
 utils.main_wrapper(
 core_logic: {
   utils.parallel_stage('Sanity', [
-    build_steps.sanity_lint('gluon-nlp-cpu-py3', 'cpu/py3-master', 'src/gluonnlp')
+    build_steps.sanity_lint('gluon-nlp-cpu-py3-master', 'cpu/py3-master', 'src/gluonnlp')
   ])
 
   utils.parallel_stage('Tests', [
-    build_steps.test_unittest('gluon-nlp-cpu-py3', 'cpu/py3-master',
+    build_steps.test_unittest('gluon-nlp-cpu-py3-master', 'cpu/py3-master',
                               'tests/unittest', 'src/gluonnlp',
-                              'not (gpu or serial)',
+                              'not (gpu or serial or skip_master)',
                               4, false, false),
-    build_steps.test_unittest('gluon-nlp-cpu-py3', 'cpu/py3-master',
+    build_steps.test_unittest('gluon-nlp-cpu-py3-master', 'cpu/py3-master',
                               'tests/unittest', 'src/gluonnlp',
-                              '(not gpu) and serial',
+                              'not (gpu or skip_master) and serial',
                               0, false, false),
-    build_steps.test_unittest('gluon-nlp-cpu-py3', 'cpu/py3-master',
+    build_steps.test_unittest('gluon-nlp-cpu-py3-master', 'cpu/py3-master',
                               'scripts/tests', 'src/gluonnlp',
-                              'not (gpu or serial or integration)',
+                              'not (gpu or serial or integration or skip_master)',
                               4, false, false),
-    build_steps.test_unittest('gluon-nlp-cpu-py3', 'cpu/py3-master',
+    build_steps.test_unittest('gluon-nlp-cpu-py3-master', 'cpu/py3-master',
                               'scripts/tests', 'src/gluonnlp',
-                              '(not (gpu or integration)) and serial',
+                              '(not (gpu or integration or skip_master)) and serial',
                               0, false, false),
-    build_steps.test_unittest('gluon-nlp-cpu-py3', 'cpu/py3-master',
+    build_steps.test_unittest('gluon-nlp-cpu-py3-master', 'cpu/py3-master',
                               'scripts/tests', 'src/gluonnlp',
-                              'not (gpu or serial) and integration',
+                              'not (gpu or serial or skip_master) and integration',
                               4, false, false),
-    build_steps.test_unittest('gluon-nlp-cpu-py3', 'cpu/py3-master',
+    build_steps.test_unittest('gluon-nlp-cpu-py3-master', 'cpu/py3-master',
                               'scripts/tests', 'src/gluonnlp',
-                              '(not gpu) and serial and integration',
+                              'not (gpu or skip_master) and serial and integration',
                               0, false, false)
   ])
 }

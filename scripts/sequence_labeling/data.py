@@ -230,7 +230,7 @@ class BERTTaggingDataset:
 
         if len(test_sentences) > 0:
             logging.info('example test sentences:')
-            for i in range(10):
+            for i in range(2):
                 logging.info(str(test_sentences[i]))
 
         self.train_inputs = [self._encode_as_input(sentence) for sentence in train_sentences]
