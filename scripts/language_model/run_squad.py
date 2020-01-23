@@ -603,7 +603,8 @@ def train():
         epoch_toc = time.time()
         log.info('Time cost=%.2f s, Thoughput=%.2f samples/s', epoch_toc - epoch_tic,
                  total_num / (epoch_toc - epoch_tic))
-        ckpt_name = 'model_xlnet_squad_{0}.params'.format(epoch_id + 1)
+        version_prefix = 'squad2' if args.version_2 else 'squad1'
+        ckpt_name = 'model_{}_{}_{}.params'.format(args.model, version_prefix, epoch_id + 1)
         params_saved = os.path.join(args.output_dir, ckpt_name)
         nlp.utils.save_parameters(net, params_saved)
         log.info('params saved in: %s', params_saved)
