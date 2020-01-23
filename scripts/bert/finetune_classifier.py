@@ -435,16 +435,17 @@ def calibration(net, dev_data_list, num_calib_batches, quantized_dtype, calib_mo
     logging.info('Now we are doing calibration on dev with %s.', ctx)
     for _, dev_data in dev_data_list:
         collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=logging)
-        net = quantize_net_v2(net, quantized_dtype=quantized_dtype,
-                              exclude_layers=[],
-                              quantize_mode='smart',
-                              quantize_granularity='channel-wise',
-                              calib_data=dev_data,
-                              calib_mode=calib_mode,
-                              num_calib_examples=dev_batch_size * num_calib_batches,
-                              ctx=ctx,
-                              LayerOutputCollector=collector,
-                              logger=logging)
+        num_calib_examples=dev_batch_size * num_calib_batches,
+        net = mx.contrib.quantization.quantize_net_v2(net, quantized_dtype=quantized_dtype,
+                                                      exclude_layers=[],
+                                                      quantize_mode='smart',
+                                                      quantize_granularity='channel-wise',
+                                                      calib_data=dev_data,
+                                                      calib_mode=calib_mode,
+                                                      num_calib_examples=num_calib_examples,
+                                                      ctx=ctx,
+                                                      LayerOutputCollector=collector,
+                                                      logger=logging)
         # save params
         ckpt_name = 'model_bert_{0}_quantized_{1}'.format(task_name, calib_mode)
         params_saved = os.path.join(output_dir, ckpt_name)
@@ -699,13 +700,12 @@ def evaluate(loader_dev, metric, segment):
 if __name__ == '__main__':
     if only_calibration:
         try:
-            from mxnet.contrib.quantization import quantize_net_v2
             calibration(model,
                         dev_data_list,
                         num_calib_batches,
                         quantized_dtype,
                         calib_mode)
-        except:
+        except AttributeError:
             nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
             warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
     else:

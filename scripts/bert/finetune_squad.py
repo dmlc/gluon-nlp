@@ -517,16 +517,17 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
         'Currently only supports CPU with MKL-DNN backend.'
     log.info('Now we are doing calibration on dev with %s.', ctx)
     collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=log)
-    net = quantize_net_v2(net, quantized_dtype=quantized_dtype,
-                          exclude_layers=[],
-                          quantize_mode='smart',
-                          quantize_granularity='channel-wise',
-                          calib_data=dev_dataloader,
-                          calib_mode=calib_mode,
-                          num_calib_examples=test_batch_size * num_calib_batches,
-                          ctx=ctx,
-                          LayerOutputCollector=collector,
-                          logger=log)
+    num_calib_examples=test_batch_size * num_calib_batches,
+    net = mx.contrib.quantization.quantize_net_v2(net, quantized_dtype=quantized_dtype,
+                                                  exclude_layers=[],
+                                                  quantize_mode='smart',
+                                                  quantize_granularity='channel-wise',
+                                                  calib_data=dev_dataloader,
+                                                  calib_mode=calib_mode,
+                                                  num_calib_examples=num_calib_examples,
+                                                  ctx=ctx,
+                                                  LayerOutputCollector=collector,
+                                                  logger=log)
     # save params
     ckpt_name = 'model_bert_squad_quantized_{0}'.format(calib_mode)
     params_saved = os.path.join(output_dir, ckpt_name)
@@ -631,12 +632,11 @@ def evaluate():
 if __name__ == '__main__':
     if only_calibration:
         try:
-            from mxnet.contrib.quantization import quantize_net_v2
             calibration(net,
                         num_calib_batches,
                         quantized_dtype,
                         calib_mode)
-        except:
+        except AttributeError:
             nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
             warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
     elif not only_predict:
