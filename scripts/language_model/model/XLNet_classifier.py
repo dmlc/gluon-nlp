@@ -46,7 +46,10 @@ class XLNetClassifier(Block):
 
         This is used for pre-training or fine-tuning a XLNet model.
         """
+<<<<<<< HEAD
         # Note that we are using left pad so we always take the last hidden state
+=======
+>>>>>>> upstream/master
         F = mx.ndarray
         index = F.contrib.arange_like(sequence, axis=0, ctx=sequence.context).expand_dims(1)
         valid_length_rs = valid_length.reshape((-1, 1)) - 1
