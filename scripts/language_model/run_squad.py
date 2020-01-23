@@ -294,6 +294,7 @@ def convert_examples_to_features(example, tokenizer=None, cls_token=None, sep_to
         tok_end_to_orig_index.append(end_orig_pos)
 
     tok_start_position, tok_end_position = -1, -1
+
     # get mapped start/end position
     if is_training and not example.is_impossible:
         start_chartok_pos = _convert_index(orig_to_chartok_index, example.start_offset,
@@ -451,10 +452,7 @@ def train():
     """Training function."""
     segment = 'train'
     log.info('Loading %s data...', segment)
-    if args.version_2:
-        train_data = SQuAD(segment, version='2.0')
-    else:
-        train_data = SQuAD(segment, version='1.1')
+    train_data = SQuAD(segment, version='2.0')
     if args.debug:
         sampled_data = [train_data[i] for i in range(100)]
         train_data = mx.gluon.data.SimpleDataset(sampled_data)
@@ -570,7 +568,6 @@ def train():
                 _apply_gradient_decay()
                 trainer.update(1, ignore_stale_grad=True)
 
-            if args.version_2:
                 step_loss_sep_tmp = np.array(
                     [[span_ls.mean().asscalar(),
                       cls_ls.mean().asscalar()] for span_ls, cls_ls in batch_loss_sep])
@@ -591,10 +588,8 @@ def train():
                     trainer.learning_rate,
                     toc - tic,
                     log_num / (toc - tic))
-
-                if args.version_2:
-                    log.info('span_loss: %.4f, cls_loss: %.4f', step_loss_span / log_interval,
-                             step_loss_cls / log_interval)
+                log.info('span_loss: %.4f, cls_loss: %.4f', step_loss_span / log_interval,
+                         step_loss_cls / log_interval)
 
                 tic = time.time()
                 step_loss = 0.0
@@ -694,27 +689,23 @@ def evaluate():
 
     output_prediction_file = os.path.join(args.output_dir, 'predictions.json')
     output_nbest_file = os.path.join(args.output_dir, 'nbest_predictions.json')
-    if args.version_2:
-        output_null_log_odds_file = os.path.join(args.output_dir, 'null_odds.json')
-    else:
-        output_null_log_odds_file = None
+    output_null_log_odds_file = os.path.join(args.output_dir, 'null_odds.json')
 
     with open(output_prediction_file, 'w') as writer:
         writer.write(json.dumps(all_predictions, indent=4) + '\n')
     with open(output_nbest_file, 'w') as writer:
         writer.write(json.dumps(all_nbest_json, indent=4) + '\n')
-    if args.version_2:
-        with open(output_null_log_odds_file, 'w') as writer:
-            writer.write(json.dumps(scores_diff_json, indent=4) + '\n')
+    with open(output_null_log_odds_file, 'w') as writer:
+        writer.write(json.dumps(scores_diff_json, indent=4) + '\n')
 
     if os.path.exists(sys.path[0] + '/evaluate-v2.0.py'):
         arguments = [
-            '--data_file', dev_data_path, '--pred_file', output_prediction_file,
-            '--na_prob_thresh',
+            dev_data_path, output_prediction_file,
+            '--na-prob-thresh',
             str(args.null_score_diff_threshold)
         ]
         if args.version_2:
-            arguments += ['--na_prob_file', output_null_log_odds_file]
+            arguments += ['--na-prob-file', output_null_log_odds_file]
         subprocess.call([sys.executable, sys.path[0] + '/evaluate-v2.0.py'] + arguments)
     else:
         log.info(
