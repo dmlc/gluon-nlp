@@ -24,10 +24,10 @@ import json
 import os
 import shutil
 import zipfile
-import portalocker
+import tempfile
 
 from mxnet.gluon.data import ArrayDataset
-from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
+from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url, replace_file
 from .registry import register
 from ..base import get_home_dir
 
@@ -140,23 +140,20 @@ class SQuAD(ArrayDataset):
         (data_archive_name, archive_hash), (data_name, data_hash) \
             = self._data_file[self._version][self._segment]
         data_path = os.path.join(self._root, data_name)
-        lock_path = os.path.join(self._root, data_name + '.lock')
-        timeout = int(os.environ.get('GLUON_MODEL_LOCK_TIMEOUT', 300))
 
-        with portalocker.Lock(lock_path, timeout=timeout):
-            if not os.path.exists(data_path) or not check_sha1(data_path, data_hash):
-                file_path = download(_get_repo_file_url('gluon/dataset/squad', data_archive_name),
-                                     path=self._root, sha1_hash=archive_hash)
-
-                with zipfile.ZipFile(file_path, 'r') as zf:
+        if not os.path.exists(data_path) or not check_sha1(data_path, data_hash):
+            with tempfile.NamedTemporaryFile(dir=root) as zip_file:
+                download(_get_repo_file_url('gluon/dataset/squad', data_archive_name),
+                         path=zip_file.name, sha1_hash=archive_hash, inplace=True)
+                with zipfile.ZipFile(zip_file, 'r') as zf:
                     for member in zf.namelist():
                         filename = os.path.basename(member)
-
                         if filename:
                             dest = os.path.join(self._root, filename)
-
-                            with zf.open(member) as source, open(dest, 'wb') as target:
-                                shutil.copyfileobj(source, target)
+                            with zf.open(member) as source:
+                                with tempfile.NamedTemporaryFile(mode='wb', dir=root) as target:
+                                    shutil.copyfileobj(source, target.name)
+                                    replace_file(target.name, dest)
 
     def _read_data(self):
         """Read data.json from disk and flats it to the following format:
