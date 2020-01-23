@@ -44,7 +44,6 @@ import warnings
 
 import numpy as np
 import mxnet as mx
-from mxnet.contrib.quantization import quantize_net_v2
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
@@ -631,10 +630,15 @@ def evaluate():
 
 if __name__ == '__main__':
     if only_calibration:
-        calibration(net,
-                    num_calib_batches,
-                    quantized_dtype,
-                    calib_mode)
+        try:
+            from mxnet.contrib.quantization import quantize_net_v2
+            calibration(net,
+                        num_calib_batches,
+                        quantized_dtype,
+                        calib_mode)
+        except:
+            nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
+            warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
     elif not only_predict:
         train()
         evaluate()

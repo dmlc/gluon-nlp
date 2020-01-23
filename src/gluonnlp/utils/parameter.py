@@ -16,15 +16,89 @@
 # under the License.
 """Utility functions for trainer and parameters."""
 
-__all__ = ['clip_grad_global_norm', 'save_parameters',
+__all__ = ['grad_global_norm', 'clip_grad_global_norm', 'save_parameters',
            'save_states', 'load_parameters', 'load_states']
 
 import warnings
 
-import numpy as np
+from collections import defaultdict
+import mxnet as mx
 from mxnet import nd
 from .. import _constants as C
 from .files import _TempFilePath, _transfer_file_s3
+
+def grad_global_norm(parameters, max_norm=None):
+    """Calculate the 2-norm of gradients of parameters, and how much they should be scaled down
+    such that their 2-norm does not exceed `max_norm`, if `max_norm` if provided.
+
+    If gradients exist for more than one context for a parameter, user needs to explicitly call
+    ``trainer.allreduce_grads`` so that the gradients are summed first before calculating
+    the 2-norm.
+
+    .. note::
+        This function is only for use when `update_on_kvstore` is set to False in trainer.
+
+    Example::
+
+        trainer = Trainer(net.collect_params(), update_on_kvstore=False, ...)
+        for x, y in mx.gluon.utils.split_and_load(X, [mx.gpu(0), mx.gpu(1)]):
+            with mx.autograd.record():
+                y = net(x)
+                loss = loss_fn(y, label)
+            loss.backward()
+        trainer.allreduce_grads()
+        norm = grad_global_norm(net.collect_params().values())
+        ...
+
+    Parameters
+    ----------
+    parameters : list of Parameters
+    max_norm: NDArray, optional
+        The maximum L2 norm threshold. If provided, `ratio` and `is_finite` will be returned.
+
+    Returns
+    -------
+    NDArray
+      Total norm. Shape is (1,)
+    NDArray
+      Ratio for rescaling gradients based on max_norm s.t. grad = grad / ratio.
+      If total norm is NaN, ratio will be NaN, too.
+      Returned if `max_norm` is provided. Shape is (1,)
+    NDArray
+      Whether the total norm is finite, returned if `max_norm` is provided. Shape is (1,)
+    """
+    # distribute gradients among contexts
+    idx = 0
+    arrays = defaultdict(list)
+    sum_norms = []
+    for p in parameters:
+        if p.grad_req != 'null':
+            p_grads = p.list_grad()
+            arrays[idx % len(p_grads)].append(p_grads[idx % len(p_grads)])
+            idx += 1
+    assert len(arrays) > 0, 'No parameter found available for gradient norm.'
+
+    ctx, dtype = arrays[0][0].context, 'float32'
+    for idx, arr in enumerate(arrays.values()):
+        sum_norm = mx.nd.multi_sum_sq(*arr, num_arrays=len(arr))
+        sum_norm = nd.add_n(*sum_norm)
+        sum_norms.append(sum_norm.as_in_context(ctx))
+
+    # reduce
+    total_norm = nd.add_n(*sum_norms).sqrt()
+    if max_norm is None:
+        return total_norm
+    scale = total_norm / max_norm
+    # is_finite = 0 if NaN or Inf, 1 otherwise.
+    is_finite = nd.contrib.isfinite(scale)
+    # if scale is finite, nd.maximum selects the max between scale and 1. That is,
+    # 1 is returned if total_norm does not exceed max_norm.
+    # if scale = NaN or Inf, the result of nd.minimum is undefined. Therefore, we use
+    # choices.take to return NaN or Inf.
+    scale_or_one = nd.maximum(nd.ones((1,), dtype=dtype, ctx=ctx), scale)
+    choices = nd.concat(scale, scale_or_one, dim=0)
+    chosen_scale = choices.take(is_finite)
+    return total_norm, chosen_scale, is_finite
 
 def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
     """Rescales gradients of parameters so that the sum of their 2-norm is smaller than `max_norm`.
@@ -67,33 +141,13 @@ def clip_grad_global_norm(parameters, max_norm, check_isfinite=True):
       False. Otherwise a float is returned.
 
     """
-    def _norm(array):
-        if array.stype == 'default':
-            x = array.reshape((-1))
-            return nd.dot(x, x)
-        return array.norm().square()
-
-    arrays = []
-    i = 0
-    for p in parameters:
-        if p.grad_req != 'null':
-            grad_list = p.list_grad()
-            arrays.append(grad_list[i % len(grad_list)])
-            i += 1
-    assert len(arrays) > 0, 'No parameter found available for gradient norm clipping.'
-    ctx, dtype = arrays[0].context, arrays[0].dtype
-    total_norm = nd.add_n(*[_norm(arr).as_in_context(ctx) for arr in arrays])
-    total_norm = nd.sqrt(total_norm)
+    total_norm, ratio, is_finite = grad_global_norm(parameters, max_norm)
+    scale = 1 / ratio
     if check_isfinite:
-        total_norm = total_norm.asscalar()
-        if not np.isfinite(total_norm):
+        if is_finite != 1:
             warnings.warn(
                 UserWarning('nan or inf is detected. '
                             'Clipping results will be undefined.'), stacklevel=2)
-    scale = max_norm / (total_norm + 1e-8)
-    if check_isfinite:
-        scale = nd.array([scale], dtype=dtype, ctx=ctx)
-    scale = nd.min(nd.concat(scale, nd.ones((1,), dtype=dtype, ctx=ctx), dim=0))
     for p in parameters:
         if p.grad_req != 'null':
             for arr in p.list_grad():
