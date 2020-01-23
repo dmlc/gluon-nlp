@@ -517,7 +517,7 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
         'Currently only supports CPU with MKL-DNN backend.'
     log.info('Now we are doing calibration on dev with %s.', ctx)
     collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=log)
-    num_calib_examples=test_batch_size * num_calib_batches,
+    num_calib_examples = test_batch_size * num_calib_batches
     net = mx.contrib.quantization.quantize_net_v2(net, quantized_dtype=quantized_dtype,
                                                   exclude_layers=[],
                                                   quantize_mode='smart',

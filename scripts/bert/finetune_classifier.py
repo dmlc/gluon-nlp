@@ -435,7 +435,7 @@ def calibration(net, dev_data_list, num_calib_batches, quantized_dtype, calib_mo
     logging.info('Now we are doing calibration on dev with %s.', ctx)
     for _, dev_data in dev_data_list:
         collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=logging)
-        num_calib_examples=dev_batch_size * num_calib_batches,
+        num_calib_examples = dev_batch_size * num_calib_batches
         net = mx.contrib.quantization.quantize_net_v2(net, quantized_dtype=quantized_dtype,
                                                       exclude_layers=[],
                                                       quantize_mode='smart',
