@@ -381,4 +381,3 @@ def convert_squad_examples(record, is_training):
         start_position=start_position, end_position=end_position, start_offset=answer_offset,
         end_offset=answer_offset + len(orig_answer_text) - 1, is_impossible=is_impossible)
     return example
-
