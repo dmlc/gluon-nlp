@@ -39,14 +39,24 @@ class _ProxyArrayDataset(ArrayDataset):
     """When BaseManager is used, proxy[ArrayDataset] does not support indexing."""
     def __init__(self, *args):
         super(_ProxyArrayDataset, self).__init__(*args)
+        self._ref_count = 0
 
     def get(self, idx):
         return self[idx]
 
+    def ref_count(self):
+        return self._ref_count
 
-def _dataset_worker_fn(url, dataset_fn, batch_sampler_fn):
-    """Function to generate the dataset and batch sampler for each worker."""
-    dataset = dataset_fn(url)
+    def incre_ref_count(self):
+        self._ref_count += 1
+
+    def decre_ref_count(self):
+        self._ref_count -= 1
+
+
+def _dataset_worker_fn(urls, dataset_fn, batch_sampler_fn):
+    """Function to generate datasets and batch sampler for each worker."""
+    dataset = dataset_fn(urls)
     batch_sampler = batch_sampler_fn(dataset)
     return dataset, batch_sampler
 
@@ -56,12 +66,14 @@ def _batch_worker_fn(samples, batchify_fn, dataset=None):
     # pylint: disable=unused-argument
     # it is required that each worker process has to fork a new MXIndexedRecordIO handle
     # preserving dataset as global variable can save tons of overhead and is safe in new process
+    dataset.incre_ref_count()
     if isinstance(samples[0], (list, tuple)):
         batch = [batchify_fn([dataset.get(i) for i in shard]) for shard in samples]
     else:
         batch = batchify_fn([dataset.get(i) for i in samples])
     buf = io.BytesIO()
     ForkingPickler(buf, pickle.HIGHEST_PROTOCOL).dump(batch)
+    dataset.incre_ref_count()
     return buf.getvalue()
 
 
@@ -79,8 +91,19 @@ class _MultiBatchWorkerIter:
         self._pin_memory = pin_memory
         self._prefetch = prefetch
         self._dataset = None
-        self._last_dataset = None
         self._batch_iter = None
+
+        # datasets reference list
+        self._dataset_refs = []
+
+    def _count_dataset_ref(self):
+        dataset_refs = []
+        for dataset in self._dataset_refs:
+            if dataset.ref_count() > 0:
+                dataset_refs.append(dataset)
+        if self._dataset and self._dataset.ref_count() > 0:
+            dataset_refs.append(self._dataset)
+        self._dataset_refs = dataset_refs
 
     def _next_dataset(self):
         try:
@@ -101,9 +124,9 @@ class _MultiBatchWorkerIter:
                 return
             else:
                 dataset, batch_sampler = result
-                # Wihout keeping the referebce to the last dataset in the master process,
+                # Without checking the reference counts of previous datasets in the master process,
                 # the key error can be triggered occasionally. This may be a bug in Python.
-                self._last_dataset = self._dataset
+                self._count_dataset_ref()
                 self._dataset = dataset
                 self._batch_iter = iter(batch_sampler)
                 for _ in range(self._prefetch):
@@ -180,15 +203,12 @@ class _MultiDatasetWorkerIter:
         if current_dataset_idx < self._num_datasets:
             circle_length = min(self._circle_length,
                                 self._num_datasets - current_dataset_idx)
-            if self._circle_length > 1:
-                url = [self._dataset[current_dataset_idx + i] for i in range(circle_length)]
-            else:
-                url = self._dataset[current_dataset_idx]
+            urls = [self._dataset[current_dataset_idx + i] for i in range(circle_length)]
         else:
             return
         # push to worker asynchronously
         async_ret = self._worker_pool.apply_async(
-            self._worker_fn, (url, self._dataset_fn, self._batch_sampler_fn))
+            self._worker_fn, (urls, self._dataset_fn, self._batch_sampler_fn))
         # data buffer stores the async result
         self._data_buffer[self._sent_idx] = async_ret
         self._sent_idx += 1
@@ -333,8 +353,10 @@ class DatasetLoader:
         if dataset_cached:
             assert num_max_dataset_cached > 0, \
                 'When dataset_cached is True, num_max_dataset_cached must be positive'
+
         self._dataset = _PathDataset(file_patterns)
         self._file_sampler = file_sampler
+
         assert dataset_fn is not None, 'dataset_fn is not given.'
         assert batch_sampler_fn is not None, 'batch_sampler_fn is not given.'
         if dataset_params is not None:
@@ -345,16 +367,19 @@ class DatasetLoader:
             self._batch_sampler_fn = partial(batch_sampler_fn, **batch_sampler_params)
         else:
             self._batch_sampler_fn = batch_sampler_fn
+
         self._num_dataset_workers = num_dataset_workers
         self._num_batch_workers = num_batch_workers
         self._dataset_prefetch = max(0, int(dataset_prefetch) \
                 if dataset_prefetch is not None else self._num_dataset_workers)
         self._batch_prefetch = max(0, int(batch_prefetch) \
                 if batch_prefetch is not None else 2 * self._num_batch_workers)
+
         self._pin_memory = pin_memory
         self._circle_length = circle_length
         self._dataset_cached = dataset_cached
         self._num_max_dataset_cached = num_max_dataset_cached
+
         self._manager = None
         self._dataset_worker_pool = None
         if self._num_dataset_workers > 0:
@@ -422,3 +447,4 @@ class DatasetLoader:
             self._batch_worker_pool.terminate()
         if self._manager:
             self._manager.shutdown()
+

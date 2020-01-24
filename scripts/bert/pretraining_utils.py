@@ -92,10 +92,13 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
 
 
 def prepare_pretrain_npz_dataset(filename, allow_pickle=False):
-    """Create dataset based on the numpy npz files"""
-    assert not isinstance(filename, (list, tuple)), \
-        'When .npy/.npz data file is loaded, filename must be a string.'
-    logging.debug('start to load files %s ...', filename)
+    """Create dataset based on the numpy npz file"""
+    if isinstance(filename, (list, tuple)):
+        assert len(filename) == 1, \
+            'When .npy/.npz data file is loaded, len(filename) must be 1.' \
+            ' Received len(filename)={}.'.format(len(filename))
+        filename = filename[0]
+    logging.debug('start to load file %s ...', filename)
     return nlp.data.NumpyDataset(filename, allow_pickle=allow_pickle)
 
 
