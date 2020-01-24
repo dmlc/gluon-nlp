@@ -9,7 +9,7 @@ import random
 import logging
 import warnings
 import sys
-import multiprocessing
+from functools import partial
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
@@ -22,7 +22,7 @@ sys.path.append(path + '/../bert/data')
 #pylint: disable=wrong-import-position
 from classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask, \
      QNLITask, CoLATask, MNLITask, WNLITask, XNLITask, LCQMCTask, ChnSentiCorpTask
-from data.transform import XLNetDatasetTransform
+from preprocessing_utils import truncate_seqs_equal, concat_sequences
 
 tasks = {
     'MRPC': MRPCTask(),
@@ -190,6 +190,137 @@ def split_and_load(arrs, _ctxs):
     return zip(*loaded_arrs)
 
 
+def convert_examples_to_features(example,
+                                 tokenizer=None,
+                                 truncate_length=512,
+                                 cls_token=None,
+                                 sep_token=None,
+                                 class_labels=None,
+                                 label_alias=None,
+                                 vocab=None,
+                                 is_test=False):
+    #pylint: disable=redefined-outer-name
+    """convert glue examples into necessary features"""
+    assert vocab
+    if not is_test:
+        label_dtype = 'int32' if class_labels else 'float32'
+        # get the label
+        label = example[-1]
+        example = example[:-1]
+        #create label maps if classification task
+        if class_labels:
+            label_map = {}
+            for (i, l) in enumerate(class_labels):
+                label_map[l] = i
+            if label_alias:
+                for key in label_alias:
+                    label_map[key] = label_map[label_alias[key]]
+            label = label_map[label]
+        label = np.array([label], dtype=label_dtype)
+
+    # tokenize raw text
+    tokens_raw = [tokenizer(l) for l in example]
+    # truncate to the truncate_length,
+    tokens_trun = truncate_seqs_equal(tokens_raw, truncate_length)
+    # concate the sequences with special tokens, cls_token is added to the end in XlNet
+    special_tokens = [[sep_token]] * len(tokens_trun) + [[cls_token]]
+    tokens, segment_ids, _ = concat_sequences(tokens_trun, special_tokens)
+    # convert the token to ids
+    input_ids = vocab[tokens]
+    valid_length = len(input_ids)
+    if not is_test:
+        return input_ids, valid_length, segment_ids, label
+    else:
+        return input_ids, valid_length, segment_ids
+
+
+def preprocess_data(_tokenizer,
+                    _task,
+                    batch_size,
+                    dev_batch_size,
+                    max_len,
+                    _vocab):
+    """Train/eval Data preparation function."""
+    label_dtype = 'int32' if _task.class_labels else 'float32'
+    truncate_length = max_len - 3 if _task.is_pair else max_len - 2
+    trans = partial(convert_examples_to_features,
+                    tokenizer=_tokenizer,
+                    truncate_length=truncate_length,
+                    cls_token=_vocab.cls_token,
+                    sep_token=_vocab.sep_token,
+                    class_labels=_task.class_labels,
+                    label_alias=_task.label_alias,
+                    vocab=_vocab)
+
+    # data train
+    # task.dataset_train returns (segment_name, dataset)
+    train_tsv = _task.dataset_train()[1]
+    data_train = list(map(trans, train_tsv))
+    data_train = mx.gluon.data.SimpleDataset(data_train)
+    data_train_len = data_train.transform(
+        lambda _, valid_length, segment_ids, label: valid_length, lazy=False)
+
+    # bucket sampler for training
+    pad_val = _vocab[_vocab.padding_token]
+    batchify_fn = nlp.data.batchify.Tuple(
+        nlp.data.batchify.Pad(axis=0, pad_val=pad_val),  # input
+        nlp.data.batchify.Stack(),  # length
+        nlp.data.batchify.Pad(axis=0, pad_val=4),  # segment
+        nlp.data.batchify.Stack(label_dtype))  # label
+    batch_sampler = nlp.data.sampler.FixedBucketSampler(data_train_len,
+                                                        batch_size=batch_size,
+                                                        num_buckets=10,
+                                                        ratio=0,
+                                                        shuffle=True)
+    # data loader for training
+    loader_train = gluon.data.DataLoader(dataset=data_train,
+                                         num_workers=4,
+                                         batch_sampler=batch_sampler,
+                                         batchify_fn=batchify_fn)
+
+    # data dev. For MNLI, more than one dev set is available
+    dev_tsv = _task.dataset_dev()
+    dev_tsv_list = dev_tsv if isinstance(dev_tsv, list) else [dev_tsv]
+    loader_dev_list = []
+    for segment, data in dev_tsv_list:
+        data_dev = mx.gluon.data.SimpleDataset(list(map(trans, data)))
+        loader_dev = mx.gluon.data.DataLoader(data_dev,
+                                              batch_size=dev_batch_size,
+                                              num_workers=4,
+                                              shuffle=False,
+                                              batchify_fn=batchify_fn)
+        loader_dev_list.append((segment, loader_dev))
+
+    # batchify for data test
+    test_batchify_fn = nlp.data.batchify.Tuple(
+        nlp.data.batchify.Pad(axis=0, pad_val=pad_val),
+        nlp.data.batchify.Stack(), nlp.data.batchify.Pad(axis=0, pad_val=0))
+
+    # transform for data test
+    test_trans = partial(convert_examples_to_features,
+                         tokenizer=_tokenizer,
+                         truncate_length=max_len,
+                         cls_token=_vocab.cls_token,
+                         sep_token=_vocab.sep_token,
+                         class_labels=None,
+                         is_test=True,
+                         vocab=_vocab)
+
+    # data test. For MNLI, more than one test set is available
+    test_tsv = _task.dataset_test()
+    test_tsv_list = test_tsv if isinstance(test_tsv, list) else [test_tsv]
+    loader_test_list = []
+    for segment, data in test_tsv_list:
+        data_test = mx.gluon.data.SimpleDataset(list(map(test_trans, data)))
+        loader_test = mx.gluon.data.DataLoader(data_test,
+                                               batch_size=dev_batch_size,
+                                               num_workers=4,
+                                               shuffle=False,
+                                               batchify_fn=test_batchify_fn)
+        loader_test_list.append((segment, loader_test))
+    return loader_train, loader_dev_list, loader_test_list, len(data_train)
+
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 logging.captureWarnings(True)
@@ -278,96 +409,9 @@ logging.debug(model)
 model.hybridize(static_alloc=True)
 loss_function.hybridize(static_alloc=True)
 
-# data processing
-do_lower_case = 'uncased' in args.dataset
-
-
-def preprocess_data(_tokenizer,
-                    _task,
-                    _batch_size,
-                    _dev_batch_size,
-                    max_len,
-                    _vocab,
-                    pad=False):
-    """Train/eval Data preparation function."""
-    pool = multiprocessing.Pool()
-
-    # transformation for data train and dev
-    label_dtype = 'float32' if not _task.class_labels else 'int32'
-    trans = XLNetDatasetTransform(_tokenizer,
-                                  max_len,
-                                  vocab=_vocab,
-                                  class_labels=_task.class_labels,
-                                  label_alias=_task.label_alias,
-                                  pad=pad,
-                                  pair=_task.is_pair,
-                                  has_label=True)
-
-    # data train
-    # _task.dataset_train returns (segment_name, dataset)
-    train_tsv = _task.dataset_train()[1]
-    data_train = mx.gluon.data.SimpleDataset(pool.map(trans, train_tsv))
-    # bucket sampler for training
-    pad_val = _vocab[_vocab.padding_token]
-    batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0, pad_val=pad_val),  # input
-        nlp.data.batchify.Stack(),  # length
-        nlp.data.batchify.Pad(axis=0, pad_val=0),  # segment
-        nlp.data.batchify.Stack(label_dtype))  # label
-    # data loader for training
-    loader_train = gluon.data.DataLoader(dataset=data_train,
-                                         num_workers=num_workers,
-                                         batch_size=_batch_size,
-                                         batchify_fn=batchify_fn,
-                                         shuffle=True)
-
-    # data dev. For MNLI, more than one dev set is available
-    dev_tsv = _task.dataset_dev()
-    dev_tsv_list = dev_tsv if isinstance(dev_tsv, list) else [dev_tsv]
-    loader_dev_list = []
-    for segment, data in dev_tsv_list:
-        data_dev = mx.gluon.data.SimpleDataset(pool.map(trans, data))
-        loader_dev = mx.gluon.data.DataLoader(data_dev,
-                                              batch_size=_dev_batch_size,
-                                              num_workers=num_workers,
-                                              shuffle=False,
-                                              batchify_fn=batchify_fn)
-        loader_dev_list.append((segment, loader_dev))
-
-    # batchify for data test
-    test_batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0, pad_val=pad_val),
-        nlp.data.batchify.Stack(), nlp.data.batchify.Pad(axis=0, pad_val=0))
-    # transform for data test
-    test_trans = XLNetDatasetTransform(_tokenizer,
-                                       max_len,
-                                       vocab=_vocab,
-                                       class_labels=None,
-                                       pad=pad,
-                                       pair=_task.is_pair,
-                                       has_label=False)
-
-    # data test. For MNLI, more than one test set is available
-    test_tsv = _task.dataset_test()
-    test_tsv_list = test_tsv if isinstance(test_tsv, list) else [test_tsv]
-    loader_test_list = []
-    for segment, data in test_tsv_list:
-        data_test = mx.gluon.data.SimpleDataset(pool.map(test_trans, data))
-        loader_test = mx.gluon.data.DataLoader(data_test,
-                                               batch_size=_dev_batch_size,
-                                               num_workers=num_workers,
-                                               shuffle=False,
-                                               batchify_fn=test_batchify_fn)
-        loader_test_list.append((segment, loader_test))
-    pool.close()
-    return loader_train, loader_dev_list, loader_test_list, len(data_train)
-
-
-# Get the loader.
 logging.info('processing dataset...')
 train_data, dev_data_list, test_data_list, num_train_examples = preprocess_data(
-    tokenizer, task, args.batch_size, args.dev_batch_size, args.max_len, vocab,
-    args.pad)
+    tokenizer, task, args.batch_size, args.dev_batch_size, args.max_len, vocab)
 
 
 def test(loader_test, segment):
