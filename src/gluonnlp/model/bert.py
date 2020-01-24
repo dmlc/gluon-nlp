@@ -160,6 +160,8 @@ class BERTEncoderCell(HybridBlock):
     dropout : float
     output_attention: bool
         Whether to output the attention weights
+    attention_use_bias : float, default True
+        Whether to use bias term in the attention cell
     weight_initializer : str or Initializer
         Initializer for the input weights matrix, used for the linear
         transformation of the inputs.
@@ -185,6 +187,7 @@ class BERTEncoderCell(HybridBlock):
     """
     def __init__(self, units=128, hidden_size=512, num_heads=4,
                  dropout=0.0, output_attention=False,
+                 attention_use_bias=True,
                  weight_initializer=None, bias_initializer='zeros',
                  prefix=None, params=None, activation='gelu',
                  layer_norm_eps=1e-5):
@@ -194,7 +197,9 @@ class BERTEncoderCell(HybridBlock):
         with self.name_scope():
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
-            self.attention_cell = DotProductSelfAttentionCell(units, num_heads, dropout=dropout)
+            self.attention_cell = DotProductSelfAttentionCell(units, num_heads,
+                                                              use_bias=attention_use_bias,
+                                                              dropout=dropout)
             self.proj = nn.Dense(units=units, flatten=False, use_bias=True,
                                  weight_initializer=weight_initializer,
                                  bias_initializer=bias_initializer, prefix='proj_')
