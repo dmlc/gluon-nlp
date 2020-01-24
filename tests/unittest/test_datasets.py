@@ -199,6 +199,7 @@ def _assert_similarity_dataset(data):
     assert all(data.min <= row[2] <= data.max for row in data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [('all', 352), ('relatedness', 252),
                                             ('similarity', 203)])
@@ -214,6 +215,7 @@ def test_wordsim353(segment, length):
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_men():
@@ -223,6 +225,7 @@ def test_men():
         _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -232,6 +235,7 @@ def test_radinsky_mturk():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -241,6 +245,7 @@ def test_verb143():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 def test_verb130():
@@ -249,6 +254,7 @@ def test_verb130():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -258,6 +264,7 @@ def test_rare_words():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -267,6 +274,7 @@ def test_simlex999():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -276,6 +284,7 @@ def test_simverb3500():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -290,6 +299,7 @@ def test_semeval17task2():
 ###############################################################################
 # Word analogy datasets
 ###############################################################################
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -299,6 +309,7 @@ def test_googleanalogy():
     assert len(data) == 10675 + 8869
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -311,6 +322,7 @@ def test_bigger_analogy():
 ###############################################################################
 # CONLL
 ###############################################################################
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -331,6 +343,7 @@ def test_conll2000():
         assert all(isinstance(c, str) for c in chk), chk
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -351,6 +364,7 @@ def test_conll2001():
                 assert all(isinstance(i, str) for i in clause), clause
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 15806),
@@ -368,6 +382,7 @@ def test_conll2002_ned(segment, length):
         assert all(isinstance(n, str) for n in ner), ner
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 8323),
@@ -384,6 +399,7 @@ def test_conll2002_esp(segment, length):
         assert all(isinstance(n, str) for n in ner), ner
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 8936),
@@ -402,6 +418,7 @@ def test_conll2004(segment, length):
         assert max(len(f) for f in x) == min(len(f) for f in x), x
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -703,7 +720,7 @@ def test_numpy_dataset():
     (nlp.data.GlueMRPC, 'mrpc', 'dev', 408, 3),
     (nlp.data.GlueMRPC, 'mrpc', 'test', 1725, 2),
 ])
-
+@pytest.mark.skipif(datetime.date.today().weekday() != 0)
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_glue_data(cls, name, segment, length, fields):
