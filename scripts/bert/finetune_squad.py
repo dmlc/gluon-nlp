@@ -204,7 +204,8 @@ parser.add_argument('--dtype',
 parser.add_argument('--comm_backend',
                     type=str,
                     default=None,
-                    help='Communication backend. Set to horovod if horovod is used for multi-GPU training')
+                    help='Communication backend. Set to horovod if horovod is used for '
+                         'multi-GPU training')
 
 args = parser.parse_args()
 
@@ -443,7 +444,8 @@ def train():
             with mx.autograd.record():
                 out = net(inputs, token_types,
                           valid_length.astype('float32', copy=False))
-                labels = [start_label.astype('float32', copy=False), end_label.astype('float32', copy=False)]
+                labels = [start_label.astype('float32', copy=False),
+                          end_label.astype('float32', copy=False)]
                 loss = loss_function(out, labels).sum() / num_labels
 
                 if accumulate:
