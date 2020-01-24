@@ -37,21 +37,11 @@ from .stream import _PathDataset
 
 class _ProxyArrayDataset(ArrayDataset):
     """When BaseManager is used, proxy[ArrayDataset] does not support indexing."""
-    def __init__(self, *args):
-        super(_ProxyArrayDataset, self).__init__(*args)
-        self._ref_count = 0
+    def __init__(self, *args, **kwargs):
+        super(_ProxyArrayDataset, self).__init__(*args, **kwargs)
 
     def get(self, idx):
         return self[idx]
-
-    def ref_count(self):
-        return self._ref_count
-
-    def incre_ref_count(self):
-        self._ref_count += 1
-
-    def decre_ref_count(self):
-        self._ref_count -= 1
 
 
 def _dataset_worker_fn(urls, dataset_fn, batch_sampler_fn):
@@ -61,26 +51,25 @@ def _dataset_worker_fn(urls, dataset_fn, batch_sampler_fn):
     return dataset, batch_sampler
 
 
-def _batch_worker_fn(samples, batchify_fn, dataset=None):
+def _batch_worker_fn(samples, batchify_fn, dataset=None, counter=None):
     """Function for processing data in worker process."""
     # pylint: disable=unused-argument
     # it is required that each worker process has to fork a new MXIndexedRecordIO handle
     # preserving dataset as global variable can save tons of overhead and is safe in new process
-    dataset.incre_ref_count()
     if isinstance(samples[0], (list, tuple)):
         batch = [batchify_fn([dataset.get(i) for i in shard]) for shard in samples]
     else:
         batch = batchify_fn([dataset.get(i) for i in samples])
     buf = io.BytesIO()
     ForkingPickler(buf, pickle.HIGHEST_PROTOCOL).dump(batch)
-    dataset.incre_ref_count()
-    return buf.getvalue()
+    return buf.getvalue(), counter
 
 
 class _MultiBatchWorkerIter:
     """Internal multi-worker iterator for DataLoader."""
     def __init__(self, worker_pool, batchify_fn, dataset_iter=None,
-                 pin_memory=False, worker_fn=_batch_worker_fn, prefetch=0):
+                 pin_memory=False, worker_fn=_batch_worker_fn, prefetch=0,
+                 manager=None):
         self._worker_pool = worker_pool
         self._batchify_fn = batchify_fn
         self._data_buffer = {}
@@ -92,16 +81,20 @@ class _MultiBatchWorkerIter:
         self._prefetch = prefetch
         self._dataset = None
         self._batch_iter = None
+        self._manager = manager
 
         # datasets reference list
         self._dataset_refs = []
 
+        # counter reference dict
+        self._counter_ref = {}
+
     def _count_dataset_ref(self):
         dataset_refs = []
         for dataset in self._dataset_refs:
-            if dataset.ref_count() > 0:
+            if self._counter_ref[id(dataset)].value > 0:
                 dataset_refs.append(dataset)
-        if self._dataset and self._dataset.ref_count() > 0:
+        if self._dataset and self._counter_ref[id(self._dataset)].value > 0:
             dataset_refs.append(self._dataset)
         self._dataset_refs = dataset_refs
 
@@ -128,12 +121,16 @@ class _MultiBatchWorkerIter:
                 # the key error can be triggered occasionally. This may be a bug in Python.
                 self._count_dataset_ref()
                 self._dataset = dataset
+                # initialize reference counter
+                self._counter_ref[id(dataset)] = self._manager.Value('i', 0)
                 self._batch_iter = iter(batch_sampler)
                 for _ in range(self._prefetch):
                     self._push_next()
         else:
+            counter = self._counter_ref[id(self._dataset)]
+            counter.value += 1
             async_ret = self._worker_pool.apply_async(
-                self._worker_fn, (r, self._batchify_fn, self._dataset))
+                self._worker_fn, (r, self._batchify_fn, self._dataset, counter))
             self._data_buffer[self._sent_idx] = async_ret
             self._sent_idx += 1
 
@@ -146,7 +143,9 @@ class _MultiBatchWorkerIter:
         assert self._rcvd_idx < self._sent_idx, 'rcvd_idx must be smaller than sent_idx'
         assert self._rcvd_idx in self._data_buffer, 'fatal error with _push_next, rcvd_idx missing'
         ret = self._data_buffer.pop(self._rcvd_idx)
-        batch = pickle.loads(ret.get())
+        batch, counter = ret.get()
+        batch = pickle.loads(batch)
+        counter.value -= 1
         if self._pin_memory:
             batch = _as_in_context(batch, context.cpu_pinned())
         self._rcvd_idx += 1
@@ -381,11 +380,13 @@ class DatasetLoader:
         self._num_max_dataset_cached = num_max_dataset_cached
 
         self._manager = None
+        self._counter_manager = None
         self._dataset_worker_pool = None
         if self._num_dataset_workers > 0:
             _manager_register()
             self._manager = BaseManager()
             self._manager.start()
+            self._counter_manager = multiprocessing.Manager()
             self._dataset_worker_pool = multiprocessing.Pool(self._num_dataset_workers)
         self._batch_worker_pool = None
         if self._num_batch_workers > 0:
@@ -434,7 +435,7 @@ class DatasetLoader:
                                                manager=self._manager)
         return _MultiBatchWorkerIter(self._batch_worker_pool, self._batchify_fn, dataset_iter,
                                      pin_memory=self._pin_memory, worker_fn=_batch_worker_fn,
-                                     prefetch=self._batch_prefetch)
+                                     prefetch=self._batch_prefetch, manager=self._counter_manager)
 
     def __del__(self):
         if self._dataset_worker_pool:
