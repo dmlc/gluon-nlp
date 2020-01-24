@@ -77,6 +77,8 @@ def parse_args():
                             help='Learning rate for optimization')
     arg_parser.add_argument('--warmup-ratio', type=float, default=0.1,
                             help='Warmup ratio for learning rate scheduling')
+    arg_parser.add_argument('--tagging-first-token', type=str2bool, default=True,
+                            help='Choose to use the first or last piece of the word')
     args = arg_parser.parse_args()
     return args
 
@@ -95,7 +97,7 @@ def main(config):
                                             config.dropout_prob)
 
     dataset = BERTTaggingDataset(text_vocab, config.train_path, config.dev_path, config.test_path,
-                                 config.seq_len, config.cased)
+                                 config.seq_len, config.cased,tagging_first_token=config.tagging_first_token)
 
     train_data_loader = dataset.get_train_data_loader(config.batch_size)
     dev_data_loader = dataset.get_dev_data_loader(config.batch_size)
@@ -178,7 +180,8 @@ def main(config):
             np_true_tags = tag_ids.asnumpy()
 
             predictions += convert_arrays_to_text(text_vocab, dataset.tag_vocab, np_text_ids,
-                                                  np_true_tags, np_pred_tags, np_valid_length)
+                                                  np_true_tags, np_pred_tags, np_valid_length,
+                                                  tagging_first_token=config.tagging_first_token)
 
         all_true_tags = [[entry.true_tag for entry in entries] for entries in predictions]
         all_pred_tags = [[entry.pred_tag for entry in entries] for entries in predictions]

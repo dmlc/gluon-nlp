@@ -22,7 +22,7 @@ import logging
 import os
 
 import mxnet as mx
-from ner_utils import get_bert_model, get_context
+from ner_utils import get_bert_model, get_context,str2bool
 from ner_utils import load_metadata
 from data import BERTTaggingDataset, convert_arrays_to_text
 from model import BERTTagger
@@ -68,6 +68,10 @@ def parse_args():
                             help='Number (index) of GPU to run on, e.g. 0. '
                                  'If not specified, CPU context is used.')
     arg_parser.add_argument('--batch-size', type=int, default=32, help='Batch size for training')
+    arg_parser.add_argument('--tagging-first-token', type=str2bool, default=True,
+                            help='Choose to tag first word piece or the last word piece')
+
+
     args = arg_parser.parse_args()
     return args
 
@@ -81,7 +85,7 @@ def main(config):
                                             train_config.dropout_prob)
 
     dataset = BERTTaggingDataset(text_vocab, None, None, config.test_path,
-                                 config.seq_len, train_config.cased, tag_vocab=tag_vocab)
+                                 config.seq_len, train_config.cased, tag_vocab=tag_vocab,tagging_first_token=config.tagging_first_token)
 
     test_data_loader = dataset.get_test_data_loader(config.batch_size)
 
@@ -112,7 +116,7 @@ def main(config):
             np_true_tags = tag_ids.asnumpy()
 
             predictions += convert_arrays_to_text(text_vocab, dataset.tag_vocab, np_text_ids,
-                                                  np_true_tags, np_pred_tags, np_valid_length)
+                                                  np_true_tags, np_pred_tags, np_valid_length,tagging_first_token=config.tagging_first_token)
 
         all_true_tags = [[entry.true_tag for entry in entries] for entries in predictions]
         all_pred_tags = [[entry.pred_tag for entry in entries] for entries in predictions]
