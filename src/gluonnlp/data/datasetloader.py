@@ -447,4 +447,3 @@ class DatasetLoader:
             self._batch_worker_pool.terminate()
         if self._manager:
             self._manager.shutdown()
-
