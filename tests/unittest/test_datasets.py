@@ -98,6 +98,7 @@ def test_imdb():
         assert isinstance(data, str)
         assert score == 0
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_mr():
@@ -106,6 +107,7 @@ def test_mr():
     for i, (data, label) in enumerate(all):
         assert isinstance(data, str)
         assert label <= 1
+
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -126,6 +128,7 @@ def test_sst_1():
         assert isinstance(data, str)
         assert label <= 4
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_sst_2():
@@ -145,6 +148,7 @@ def test_sst_2():
         assert isinstance(data, str)
         assert label <= 1
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_subj():
@@ -153,6 +157,7 @@ def test_subj():
     for i, (data, label) in enumerate(all):
         assert isinstance(data, str)
         assert label <= 1
+
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -168,6 +173,7 @@ def test_trec():
         assert isinstance(data, str)
         assert label <= 5
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_cr():
@@ -177,6 +183,7 @@ def test_cr():
         assert isinstance(data, str)
         assert label <= 1
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_mpqa():
@@ -185,6 +192,7 @@ def test_mpqa():
     for i, (data, label) in enumerate(all):
         assert isinstance(data, str)
         assert label <= 1
+
 
 ###############################################################################
 # Word similarity and relatedness datasets
@@ -602,11 +610,13 @@ def test_intent_slot(dataset, segment, expected_samples):
     assert len(dataset[0]) == 3
     assert all(len(x[0]) == len(x[1]) for x in dataset)
 
+
 def test_counter():
     x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 1})
     y = x.discard(3, '<unk>')
     assert y['a'] == 10
     assert y['<unk>'] == 2
+
 
 # this test is not tested on CI due to long running time
 def _test_gbw_stream():
@@ -632,6 +642,7 @@ def test_concatenation():
     assert dataset[0] == 1
     assert dataset[5] == 6
 
+
 def test_tsv():
     data =  "a,b,c\n"
     data += "d,e,f\n"
@@ -649,6 +660,7 @@ def test_tsv():
     assert len(dataset) == num_samples
     assert len(dataset[0]) == 2
     assert dataset[1] == [u'g', u'i']
+
 
 def test_numpy_dataset():
     a = np.arange(6).reshape((2,3))
@@ -681,6 +693,7 @@ def test_numpy_dataset():
     assert np.all(dataset[1][1] == b[1])
     dataset_b = dataset.get_field('b')
     assert np.all(dataset_b == b)
+
 
 @pytest.mark.parametrize('cls,name,segment,length,fields', [
     (nlp.data.GlueCoLA, 'cola', 'train', 8551, 2),
@@ -732,6 +745,7 @@ def test_glue_data(cls, name, segment, length, fields):
 
     for i, x in enumerate(dataset):
         assert len(x) == fields, x
+
 
 @pytest.mark.serial
 @pytest.mark.remote_required
