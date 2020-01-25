@@ -135,6 +135,41 @@ def test_pretrained_roberta_models(wo_valid_len):
 
 @pytest.mark.serial
 @pytest.mark.remote_required
+@pytest.mark.parametrize('wo_valid_len', [False, True])
+def test_pretrained_distilbert_models(wo_valid_len):
+    models = ['distilbert_6_768_12']
+    pretrained_datasets = ['distilbert_book_corpus_wiki_en_uncased']
+
+    vocab_size = {'distilbert_book_corpus_wiki_en_uncased': 30522}
+    special_tokens = ['[UNK]', '[PAD]', '[SEP]', '[CLS]', '[MASK]']
+    ones = mx.nd.ones((2, 10))
+    valid_length = mx.nd.ones((2,))
+    positions = mx.nd.zeros((2, 3))
+    for model_name in models:
+        for dataset in pretrained_datasets:
+            eprint('testing forward for %s on %s' % (model_name, dataset))
+
+            model, vocab = nlp.model.get_model(model_name, dataset_name=dataset,
+                                               pretrained=True,
+                                               root='tests/data/model/')
+            assert len(vocab) == vocab_size[dataset]
+            for token in special_tokens:
+                assert token in vocab, "Token %s not found in the vocab" % token
+            assert vocab['RandomWordByHaibin'] == vocab[vocab.unknown_token]
+            assert vocab.padding_token == '[PAD]'
+            assert vocab.unknown_token == '[UNK]'
+
+            model.hybridize()
+            if wo_valid_len:
+                output = model(ones, masked_positions=positions)
+            else:
+                output = model(ones, valid_length, positions)
+            output[0].wait_to_read()
+            del model
+            mx.nd.waitall()
+
+@pytest.mark.serial
+@pytest.mark.remote_required
 @pytest.mark.parametrize('disable_missing_parameters', [False, True])
 def test_pretrained_bert_models(disable_missing_parameters):
     models = ['bert_12_768_12', 'bert_24_1024_16']
