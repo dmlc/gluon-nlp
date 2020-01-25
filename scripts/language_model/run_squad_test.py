@@ -704,8 +704,7 @@ def evaluate_squad2():
             '--na-prob-thresh',
             str(args.null_score_diff_threshold)
         ]
-        if args.version_2:
-            arguments += ['--na-prob-file', output_null_log_odds_file]
+        arguments += ['--na-prob-file', output_null_log_odds_file]
         subprocess.call([sys.executable, sys.path[0] + '/evaluate-v2.0.py'] + arguments)
     else:
         log.info(
