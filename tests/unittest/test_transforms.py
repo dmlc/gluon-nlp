@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,7 +14,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-from __future__ import print_function
 
 import os
 import sys
@@ -77,16 +74,10 @@ def test_pad_sequence():
                             assert_allclose(ret_l, gt_npy)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0),
-                    reason="requires python3 or higher")
 def test_moses_tokenizer():
     tokenizer = t.SacreMosesTokenizer()
     text = u"Introducing Gluon: An Easy-to-Use Programming Interface for Flexible Deep Learning."
-    try:
-        ret = tokenizer(text)
-    except ImportError:
-        warnings.warn("NLTK not installed, skip test_moses_tokenizer().")
-        return
+    ret = tokenizer(text)
     assert isinstance(ret, list)
     assert len(ret) > 0
 
@@ -103,17 +94,11 @@ def test_spacy_tokenizer():
     assert len(ret) > 0
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0),
-                    reason="requires python3 or higher")
 def test_moses_detokenizer():
     detokenizer = t.SacreMosesDetokenizer(return_str=False)
     text = ['Introducing', 'Gluon', ':', 'An', 'Easy-to-Use', 'Programming',
             'Interface', 'for', 'Flexible', 'Deep', 'Learning', '.']
-    try:
-        ret = detokenizer(text)
-    except ImportError:
-        warnings.warn("NLTK not installed, skip test_moses_detokenizer().")
-        return
+    ret = detokenizer(text)
     assert isinstance(ret, list)
     assert len(ret) > 0
 
@@ -268,7 +253,10 @@ def test_bert_sentences_transform():
 @pytest.mark.remote_required
 def test_bert_sentencepiece_sentences_transform():
     url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
-    f = download(url, overwrite=True)
+    with warnings.catch_warnings():
+        # UserWarning: File test-682b5d15.bpe exists in file system so the downloaded file is deleted
+        warnings.simplefilter("ignore")
+        f = download(url, overwrite=True)
     bert_vocab = BERTVocab.from_sentencepiece(f)
     bert_tokenizer = t.BERTSPTokenizer(f, bert_vocab, lower=True)
     assert bert_tokenizer.is_first_subword(u'▁this')
@@ -303,7 +291,7 @@ def test_bert_sentencepiece_sentences_transform():
     # token ids
     assert all(processed[0] == np.array(token_ids, dtype='int32'))
     # sequence length
-    assert np.asscalar(processed[1]) == len(tokens) + 2
+    assert processed[1].item() == len(tokens) + 2
     # segment id
     assert all(processed[2] == np.array([0] * max_len, dtype='int32'))
 

@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-
 # Copyright 2016 Timothy Dozat
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from __future__ import print_function
 
 
 import mxnet as mx
@@ -117,8 +114,7 @@ def test_get_elmo_models():
         print('testing forward for %s on dataset %s' % (model_name, dataset))
         model, _ = nlp.model.get_model(model_name,
                                        dataset_name=dataset,
-                                       pretrained=dataset is not None,
-                                       root='tests/data/model/')
+                                       pretrained=dataset is not None)
 
         print(model)
         if not dataset:

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -434,7 +432,12 @@ class SQuADDataPipeline:
 
 class SQuADDataTokenizer:
     """SQuAD data tokenizer, that encapsulate the splitting logic of each entry of SQuAD dataset"""
-    spacy_tokenizer = nlp.data.SpacyTokenizer()
+    try:
+        _spacy_tokenizer = nlp.data.SpacyTokenizer()
+    except (ImportError, AttributeError) as e:
+        _spacy_error = e
+        def _spacy_tokenizer(*args, **kwargs):  # pylint: disable=no-method-argument
+            raise SQuADDataTokenizer._spacy_error
 
     def __init__(self, use_spacy=True):
         """Init new SQuADDataTokenizer object
@@ -513,7 +516,7 @@ class SQuADDataTokenizer:
         tokens : List[str]
             List of tokens
         """
-        tokens = SQuADDataTokenizer.spacy_tokenizer(sent)
+        tokens = SQuADDataTokenizer._spacy_tokenizer(sent)
         return tokens
 
     @staticmethod

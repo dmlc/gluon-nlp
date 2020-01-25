@@ -29,6 +29,8 @@ from which we will sample sequences. GluonNLP makes this a painless process.
 ```{.python .input}
 import mxnet as mx
 import gluonnlp as nlp
+nlp.utils.check_version('0.8.0')
+
 ctx = mx.cpu()
 lm_model, vocab = nlp.model.get_model(name='awd_lstm_lm_1150',
                                       dataset_name='wikitext-2',

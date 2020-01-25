@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-#  coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -19,7 +17,6 @@
 # under the License.
 """Provides command-line interace for training BERT-based named entity recognition model."""
 
-# coding: utf-8
 import argparse
 import logging
 import random
@@ -30,12 +27,13 @@ import mxnet as mx
 import gluonnlp as nlp
 
 from ner_utils import get_context, get_bert_model, dump_metadata, str2bool
-from data.ner import BERTTaggingDataset, convert_arrays_to_text
-from model.ner import BERTTagger, attach_prediction
+from data import BERTTaggingDataset, convert_arrays_to_text
+from model import BERTTagger, attach_prediction
 
 # seqeval is a dependency that is specific to named entity recognition.
 import seqeval.metrics
 
+nlp.utils.check_version('0.7.0')
 
 def parse_args():
     """Parse command line arguments."""
@@ -117,13 +115,7 @@ def main(config):
     num_warmup_steps = int(num_train_steps * config.warmup_ratio)
 
     optimizer_params = {'learning_rate': config.learning_rate}
-    try:
-        trainer = mx.gluon.Trainer(net.collect_params(), config.optimizer, optimizer_params)
-    except ValueError as e:
-        print(e)
-        logging.warning('AdamW optimizer is not found. Please consider upgrading to '
-                        'mxnet>=1.5.0. Now the original Adam optimizer is used instead.')
-        trainer = mx.gluon.Trainer(net.collect_params(), 'adam', optimizer_params)
+    trainer = mx.gluon.Trainer(net.collect_params(), config.optimizer, optimizer_params)
 
     # collect differentiable parameters
     logging.info('Collect params...')

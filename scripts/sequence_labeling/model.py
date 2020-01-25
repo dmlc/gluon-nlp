@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 """Gluon model block for the named entity recognition task."""
+
+from contextlib import ExitStack
 
 import mxnet as mx
 from mxnet.gluon import Block, nn
@@ -93,7 +93,6 @@ def attach_prediction(data_loader, net, ctx, is_train):
         text_ids, token_types, valid_length, tag_ids, flag_nonnull_tag = \
             [x.astype('float32').as_in_context(ctx) for x in data]
 
-        from contextlib import ExitStack
         with ExitStack() as stack:
             if is_train:
                 stack.enter_context(mx.autograd.record())

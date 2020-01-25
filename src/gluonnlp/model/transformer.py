@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -22,26 +20,24 @@
 __all__ = ['TransformerEncoder', 'PositionwiseFFN', 'TransformerEncoderCell',
            'transformer_en_de_512']
 
+import math
 import os
 
-import math
 import numpy as np
 import mxnet as mx
 from mxnet import cpu, gluon
 from mxnet.gluon import nn
 from mxnet.gluon.block import HybridBlock
 from mxnet.gluon.model_zoo import model_store
-from gluonnlp.utils.parallel import Parallelizable
-from .seq2seq_encoder_decoder import Seq2SeqEncoder, Seq2SeqDecoder, _get_attention_cell
-from .block import GELU
-from .translation import NMTModel
-from .utils import _load_vocab, _load_pretrained_params
+
 from ..base import get_home_dir
-
-
-###############################################################################
-#                               BASE ENCODER  BLOCKS                          #
-###############################################################################
+from ..utils.parallel import Parallelizable
+from .block import GELU
+from .seq2seq_encoder_decoder import (Seq2SeqDecoder, Seq2SeqEncoder,
+                                      Seq2SeqOneStepDecoder)
+from .translation import NMTModel
+from .utils import _load_pretrained_params, _load_vocab
+from .attention_cell import _get_attention_cell
 
 def _position_encoding_init(max_length, dim):
     """Init the sinusoid position encoding table """
@@ -52,16 +48,13 @@ def _position_encoding_init(max_length, dim):
     position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])  # dim 2i+1
     return position_enc
 
-def _get_layer_norm(use_bert, units, layer_norm_eps=None):
-    from .bert import BERTLayerNorm
-    layer_norm = BERTLayerNorm if use_bert else nn.LayerNorm
-    if layer_norm_eps:
-        return layer_norm(in_channels=units, epsilon=layer_norm_eps)
-    else:
-        return layer_norm(in_channels=units)
 
-class BasePositionwiseFFN(HybridBlock):
-    """Base Structure of the Positionwise Feed-Forward Neural Network.
+###############################################################################
+#                                ENCODER                                      #
+###############################################################################
+
+class PositionwiseFFN(HybridBlock):
+    """Positionwise Feed-Forward Neural Network.
 
     Parameters
     ----------
@@ -70,44 +63,34 @@ class BasePositionwiseFFN(HybridBlock):
     hidden_size : int
         Number of units in the hidden layer of position-wise feed-forward networks
     dropout : float
+        Dropout probability for the output
     use_residual : bool
+        Add residual connection between the input and the output
+    ffn1_dropout : bool, default False
+        If True, apply dropout both after the first and second Positionwise
+        Feed-Forward Neural Network layers. If False, only apply dropout after
+        the second.
+    activation : str, default 'relu'
+        Activation function
+    layer_norm_eps : float, default 1e-5
+        Epsilon parameter passed to for mxnet.gluon.nn.LayerNorm
     weight_initializer : str or Initializer
         Initializer for the input weights matrix, used for the linear
         transformation of the inputs.
     bias_initializer : str or Initializer
         Initializer for the bias vector.
-    activation : str, default 'relu'
-        Activation function
-    use_bert_layer_norm : bool, default False.
-        Whether to use the BERT-stype layer norm implemented in Tensorflow, where
-        epsilon is added inside the square root. Set to True for pre-trained BERT model.
-    ffn1_dropout : bool, default False
-        If True, apply dropout both after the first and second Positionwise
-        Feed-Forward Neural Network layers. If False, only apply dropout after
-        the second.
     prefix : str, default None
         Prefix for name of `Block`s
         (and name of weight if params is `None`).
     params : Parameter or None
         Container for weight sharing between cells.
         Created if `None`.
-    layer_norm_eps : float, default None
-        Epsilon for layer_norm
-
-    Inputs:
-        - **inputs** : input sequence of shape (batch_size, length, C_in).
-
-    Outputs:
-        - **outputs** : output encoding of shape (batch_size, length, C_out).
     """
 
-    def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
-                 weight_initializer=None, bias_initializer='zeros', activation='relu',
-                 use_bert_layer_norm=False, ffn1_dropout=False, prefix=None, params=None,
-                 layer_norm_eps=None):
-        super(BasePositionwiseFFN, self).__init__(prefix=prefix, params=params)
-        self._hidden_size = hidden_size
-        self._units = units
+    def __init__(self, *, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
+                 ffn1_dropout=False, activation='relu', layer_norm_eps=1e-5,
+                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
+        super().__init__(prefix=prefix, params=params)
         self._use_residual = use_residual
         self._dropout = dropout
         self._ffn1_dropout = ffn1_dropout
@@ -123,21 +106,21 @@ class BasePositionwiseFFN(HybridBlock):
                                   prefix='ffn_2_')
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
-            self.layer_norm = _get_layer_norm(use_bert_layer_norm, units,
-                                              layer_norm_eps=layer_norm_eps)
+            self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=layer_norm_eps)
 
     def _get_activation(self, act):
         """Get activation block based on the name. """
         if isinstance(act, str):
             if act.lower() == 'gelu':
                 return GELU()
+            elif act.lower() == 'approx_gelu':
+                return GELU(approximate=True)
             else:
                 return gluon.nn.Activation(act)
         assert isinstance(act, gluon.Block)
         return act
 
     def hybrid_forward(self, F, inputs):  # pylint: disable=arguments-differ
-        # pylint: disable=unused-argument
         """Position-wise encoding of the inputs.
 
         Parameters
@@ -164,471 +147,7 @@ class BasePositionwiseFFN(HybridBlock):
         return outputs
 
 
-class BaseTransformerEncoderCell(HybridBlock):
-    """Base Structure of the Transformer Encoder Cell.
-
-    Parameters
-    ----------
-    attention_cell : AttentionCell or str, default 'multi_head'
-        Arguments of the attention cell.
-        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
-    units : int
-        Number of units for the output
-    hidden_size : int
-        number of units in the hidden layer of position-wise feed-forward networks
-    num_heads : int
-        Number of heads in multi-head attention
-    scaled : bool
-        Whether to scale the softmax input by the sqrt of the input dimension
-        in multi-head attention
-    dropout : float
-        Dropout probability for the attention cell, positionwise ffn and
-        the attention cell output
-    use_residual : bool
-    output_attention: bool
-        Whether to output the attention weights
-    weight_initializer : str or Initializer
-        Initializer for the input weights matrix, used for the linear
-        transformation of the inputs.
-    bias_initializer : str or Initializer
-        Initializer for the bias vector.
-    use_bert_layer_norm : bool, default False.
-        Whether to use BERTLayerNorm or LayerNorm. Set to True for pre-trained BERT model.
-    use_bert_ffn : bool, default False.
-        Whether to use BERTPositionwiseFFN. Set to True for pre-trained BERT model.
-    attention_use_bias : bool
-        Apply bias term to the linear projections of key, value, query in the attention cell.
-        Default is False.
-    attention_proj_use_bias : bool
-        Apply bias term to the linear projection of the output of attention cell. Default is False.
-    prefix : str, default 'rnn_'
-        Prefix for name of `Block`s
-        (and name of weight if params is `None`).
-    params : Parameter or None
-        Container for weight sharing between cells.
-        Created if `None`.
-    activation : str, default None
-        Activation methods in PositionwiseFFN
-    layer_norm_eps : float, default None
-        Epsilon for layer_norm
-    """
-    def __init__(self, attention_cell='multi_head', units=128,
-                 hidden_size=512, num_heads=4, scaled=True,
-                 dropout=0.0, use_residual=True, output_attention=False,
-                 weight_initializer=None, bias_initializer='zeros',
-                 attention_use_bias=False, attention_proj_use_bias=False,
-                 use_bert_layer_norm=False, use_bert_ffn=False, prefix=None, params=None,
-                 activation='relu', layer_norm_eps=None):
-        super(BaseTransformerEncoderCell, self).__init__(prefix=prefix, params=params)
-        self._units = units
-        self._num_heads = num_heads
-        self._dropout = dropout
-        self._use_residual = use_residual
-        self._output_attention = output_attention
-        with self.name_scope():
-            if dropout:
-                self.dropout_layer = nn.Dropout(rate=dropout)
-            self.attention_cell = _get_attention_cell(attention_cell,
-                                                      units=units,
-                                                      num_heads=num_heads,
-                                                      scaled=scaled,
-                                                      dropout=dropout,
-                                                      use_bias=attention_use_bias)
-            self.proj = nn.Dense(units=units, flatten=False,
-                                 use_bias=attention_proj_use_bias,
-                                 weight_initializer=weight_initializer,
-                                 bias_initializer=bias_initializer,
-                                 prefix='proj_')
-            self.ffn = self._get_positionwise_ffn(use_bert_ffn, units, hidden_size, dropout,
-                                                  use_residual, weight_initializer,
-                                                  bias_initializer, activation=activation,
-                                                  layer_norm_eps=layer_norm_eps)
-            self.layer_norm = _get_layer_norm(use_bert_layer_norm, units,
-                                              layer_norm_eps=layer_norm_eps)
-
-    def _get_positionwise_ffn(self, use_bert, units, hidden_size, dropout, use_residual,
-                              weight_initializer, bias_initializer, activation='relu',
-                              layer_norm_eps=None):
-        from .bert import BERTPositionwiseFFN
-        positionwise_ffn = BERTPositionwiseFFN if use_bert else PositionwiseFFN
-        return positionwise_ffn(units=units, hidden_size=hidden_size, dropout=dropout,
-                                use_residual=use_residual, weight_initializer=weight_initializer,
-                                bias_initializer=bias_initializer, activation=activation,
-                                layer_norm_eps=layer_norm_eps)
-
-    def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=arguments-differ
-        # pylint: disable=unused-argument
-        """Transformer Encoder Attention Cell.
-
-        Parameters
-        ----------
-        inputs : Symbol or NDArray
-            Input sequence. Shape (batch_size, length, C_in)
-        mask : Symbol or NDArray or None
-            Mask for inputs. Shape (batch_size, length, length)
-
-        Returns
-        -------
-        encoder_cell_outputs: list
-            Outputs of the encoder cell. Contains:
-
-            - outputs of the transformer encoder cell. Shape (batch_size, length, C_out)
-            - additional_outputs of all the transformer encoder cell
-        """
-        outputs, attention_weights =\
-            self.attention_cell(inputs, inputs, inputs, mask)
-        outputs = self.proj(outputs)
-        if self._dropout:
-            outputs = self.dropout_layer(outputs)
-        if self._use_residual:
-            outputs = outputs + inputs
-        outputs = self.layer_norm(outputs)
-        outputs = self.ffn(outputs)
-        additional_outputs = []
-        if self._output_attention:
-            additional_outputs.append(attention_weights)
-        return outputs, additional_outputs
-
-
-class BaseTransformerEncoder(HybridBlock, Seq2SeqEncoder):
-    """Base Structure of the Transformer Encoder.
-
-    Parameters
-    ----------
-    attention_cell : AttentionCell or str, default 'multi_head'
-        Arguments of the attention cell.
-        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
-    num_layers : int
-        Number of attention layers.
-    units : int
-        Number of units for the output.
-    hidden_size : int
-        number of units in the hidden layer of position-wise feed-forward networks
-    max_length : int
-        Maximum length of the input sequence
-    num_heads : int
-        Number of heads in multi-head attention
-    scaled : bool
-        Whether to scale the softmax input by the sqrt of the input dimension
-        in multi-head attention
-    dropout : float
-        Dropout probability of the attention probabilities.
-    use_residual : bool
-    output_attention: bool, default False
-        Whether to output the attention weights
-    output_all_encodings: bool, default False
-        Whether to output encodings of all encoder's cells, or only the last one
-    weight_initializer : str or Initializer
-        Initializer for the input weights matrix, used for the linear
-        transformation of the inputs.
-    bias_initializer : str or Initializer
-        Initializer for the bias vector.
-    positional_weight: str, default 'sinusoidal'
-        Type of positional embedding. Can be 'sinusoidal', 'learned'.
-        If set to 'sinusoidal', the embedding is initialized as sinusoidal values and keep constant.
-    use_bert_encoder : bool, default False
-        Whether to use BERTEncoderCell and BERTLayerNorm. Set to True for pre-trained BERT model
-    use_layer_norm_before_dropout: bool, default False
-        Before passing embeddings to attention cells, whether to perform `layernorm -> dropout` or
-        `dropout -> layernorm`. Set to True for pre-trained BERT models.
-    scale_embed : bool, default True
-        Scale the input embeddings by sqrt(embed_size). Set to False for pre-trained BERT models.
-    prefix : str, default 'rnn_'
-        Prefix for name of `Block`s
-        (and name of weight if params is `None`).
-    params : Parameter or None
-        Container for weight sharing between cells.
-        Created if `None`.
-    activation : str, default 'relu'
-        Activation methods in PositionwiseFFN
-    layer_norm_eps : float, default None
-        Epsilon for layer_norm
-    """
-    def __init__(self, attention_cell='multi_head', num_layers=2,
-                 units=512, hidden_size=2048, max_length=50,
-                 num_heads=4, scaled=True, dropout=0.0,
-                 use_residual=True, output_attention=False, output_all_encodings=False,
-                 weight_initializer=None, bias_initializer='zeros',
-                 positional_weight='sinusoidal', use_bert_encoder=False,
-                 use_layer_norm_before_dropout=False, scale_embed=True,
-                 prefix=None, params=None, activation='relu', layer_norm_eps=None):
-        super(BaseTransformerEncoder, self).__init__(prefix=prefix, params=params)
-        assert units % num_heads == 0,\
-            'In TransformerEncoder, The units should be divided exactly ' \
-            'by the number of heads. Received units={}, num_heads={}' \
-            .format(units, num_heads)
-        self._num_layers = num_layers
-        self._max_length = max_length
-        self._num_heads = num_heads
-        self._units = units
-        self._hidden_size = hidden_size
-        self._output_attention = output_attention
-        self._output_all_encodings = output_all_encodings
-        self._dropout = dropout
-        self._use_residual = use_residual
-        self._scaled = scaled
-        self._use_layer_norm_before_dropout = use_layer_norm_before_dropout
-        self._scale_embed = scale_embed
-        self._dtype = 'float32'
-
-        with self.name_scope():
-            if dropout:
-                self.dropout_layer = nn.Dropout(rate=dropout)
-            self.layer_norm = _get_layer_norm(use_bert_encoder, units,
-                                              layer_norm_eps=layer_norm_eps)
-            self.position_weight = self._get_positional(positional_weight, max_length, units,
-                                                        weight_initializer)
-            self.transformer_cells = nn.HybridSequential()
-            for i in range(num_layers):
-                cell = self._get_encoder_cell(use_bert_encoder, units, hidden_size, num_heads,
-                                              attention_cell, weight_initializer, bias_initializer,
-                                              dropout, use_residual, scaled, output_attention, i,
-                                              activation=activation, layer_norm_eps=layer_norm_eps)
-                self.transformer_cells.add(cell)
-
-    def _get_positional(self, weight_type, max_length, units, initializer):
-        if weight_type == 'sinusoidal':
-            encoding = _position_encoding_init(max_length, units)
-            position_weight = self.params.get_constant('const', encoding)
-        elif weight_type == 'learned':
-            position_weight = self.params.get('position_weight', shape=(max_length, units),
-                                              init=initializer)
-        else:
-            raise ValueError('Unexpected value for argument position_weight: %s'%(position_weight))
-        return position_weight
-
-    def _get_encoder_cell(self, use_bert, units, hidden_size, num_heads, attention_cell,
-                          weight_initializer, bias_initializer, dropout, use_residual,
-                          scaled, output_attention, i, activation='relu', layer_norm_eps=None):
-        from .bert import BERTEncoderCell
-        cell = BERTEncoderCell if use_bert else TransformerEncoderCell
-        return cell(units=units, hidden_size=hidden_size,
-                    num_heads=num_heads, attention_cell=attention_cell,
-                    weight_initializer=weight_initializer,
-                    bias_initializer=bias_initializer,
-                    dropout=dropout, use_residual=use_residual,
-                    scaled=scaled, output_attention=output_attention,
-                    prefix='transformer%d_'%i,
-                    activation=activation,
-                    layer_norm_eps=layer_norm_eps)
-
-    def cast(self, dtype):
-        """Cast the data type of the parameters"""
-        self._dtype = dtype
-        super(BaseTransformerEncoder, self).cast(dtype)
-
-    def __call__(self, inputs, states=None, valid_length=None):
-        #pylint: disable=arguments-differ, dangerous-default-value
-        """Encode the inputs given the states and valid sequence length.
-
-        Parameters
-        ----------
-        inputs : NDArray or Symbol
-            Input sequence. Shape (batch_size, length, C_in)
-        states : list of NDArrays or Symbols
-            Initial states. The list of initial states and masks
-        valid_length : NDArray or Symbol
-            Valid lengths of each sequence. This is usually used when part of sequence has
-            been padded. Shape (batch_size,)
-
-        Returns
-        -------
-        encoder_outputs: list
-            Outputs of the encoder. Contains:
-
-            - outputs of the transformer encoder. Shape (batch_size, length, C_out)
-            - additional_outputs of all the transformer encoder
-        """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        valid_length = [] if valid_length is None else valid_length
-        states = [] if states is None else states
-        return super(BaseTransformerEncoder, self).__call__(inputs, states, valid_length)
-
-    def _arange_like(self, F, inputs, axis):
-        """Helper function to generate indices of a range"""
-        if F == mx.ndarray:
-            seq_len = inputs.shape[axis]
-            arange = F.arange(seq_len, dtype=inputs.dtype, ctx=inputs.context)
-        else:
-            input_axis = inputs.slice(begin=(0, 0, 0), end=(1, None, 1)).reshape((-1))
-            zeros = F.zeros_like(input_axis)
-            arange = F.arange(start=0, repeat=1, step=1,
-                              infer_range=True, dtype=self._dtype)
-            arange = F.elemwise_add(arange, zeros)
-        return arange
-
-
-    def hybrid_forward(self, F, inputs, states=None, valid_length=None, position_weight=None):
-        # pylint: disable=arguments-differ
-        """Encode the inputs given the states and valid sequence length.
-
-        Parameters
-        ----------
-        inputs : NDArray or Symbol
-            Input sequence. Shape (batch_size, length, C_in)
-        states : list of NDArrays or Symbols
-            Initial states. The list of initial states and masks
-        valid_length : NDArray or Symbol
-            Valid lengths of each sequence. This is usually used when part of sequence has
-            been padded. Shape (batch_size,)
-        position_weight : NDArray or Symbol
-            The weight of positional encoding. Shape (max_len, C_in).
-
-        Returns
-        -------
-        encoder_outputs: list
-            Outputs of the encoder. Contains:
-
-            - outputs of the transformer encoder. Shape (batch_size, length, C_out)
-            - additional_outputs of all the transformer encoder
-
-        Returns
-        -------
-        outputs : NDArray or Symbol, or List[NDArray] or List[Symbol]
-            If output_all_encodings flag is False, then the output of the last encoder.
-            If output_all_encodings flag is True, then the list of all outputs of all encoders.
-            In both cases, shape of the tensor(s) is/are (batch_size, length, C_out)
-        additional_outputs : list
-            Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, length, length) or
-            (batch_size, num_heads, length, length)
-
-        """
-        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
-        if isinstance(valid_length, list) and len(valid_length) == 0:
-            valid_length = None
-        if isinstance(states, list) and len(states) == 0:
-            states = None
-
-        steps = self._arange_like(F, inputs, axis=1)
-        if valid_length is not None:
-            ones = F.ones_like(steps)
-            mask = F.broadcast_lesser(F.reshape(steps, shape=(1, -1)),
-                                      F.reshape(valid_length, shape=(-1, 1)))
-            mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
-                                   F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
-            if states is None:
-                states = [mask]
-            else:
-                states.append(mask)
-
-        if self._scale_embed:
-            # XXX: input.shape[-1] and self._units are expected to be the same
-            inputs = inputs * math.sqrt(self._units)
-
-        if states is None:
-            states = [steps]
-        else:
-            states.append(steps)
-
-        if states is not None:
-            steps = states[-1]
-            # positional encoding
-            positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
-            inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
-        if self._dropout:
-            if self._use_layer_norm_before_dropout:
-                inputs = self.layer_norm(inputs)
-                inputs = self.dropout_layer(inputs)
-            else:
-                inputs = self.dropout_layer(inputs)
-                inputs = self.layer_norm(inputs)
-        else:
-            inputs = self.layer_norm(inputs)
-        outputs = inputs
-        if valid_length is not None:
-            mask = states[-2]
-        else:
-            mask = None
-
-        all_encodings_outputs = []
-        additional_outputs = []
-        for cell in self.transformer_cells:
-            outputs, attention_weights = cell(inputs, mask)
-            inputs = outputs
-            if self._output_all_encodings:
-                if valid_length is not None:
-                    outputs = F.SequenceMask(outputs, sequence_length=valid_length,
-                                             use_sequence_length=True, axis=1)
-                all_encodings_outputs.append(outputs)
-
-            if self._output_attention:
-                additional_outputs.append(attention_weights)
-
-        if valid_length is not None:
-            outputs = F.SequenceMask(outputs, sequence_length=valid_length,
-                                     use_sequence_length=True, axis=1)
-
-        if self._output_all_encodings:
-            return all_encodings_outputs, additional_outputs
-        else:
-            return outputs, additional_outputs
-
-###############################################################################
-#                                ENCODER                                      #
-###############################################################################
-
-class PositionwiseFFN(BasePositionwiseFFN):
-    """Structure of the Positionwise Feed-Forward Neural Network for
-    Transformer.
-
-    Computes the positionwise encoding of the inputs.
-
-    Parameters
-    ----------
-    units : int
-        Number of units for the output
-    hidden_size : int
-        Number of units in the hidden layer of position-wise feed-forward networks
-    dropout : float
-        Dropout probability for the output
-    use_residual : bool
-        Add residual connection between the input and the output
-    ffn1_dropout : bool, default False
-        If True, apply dropout both after the first and second Positionwise
-        Feed-Forward Neural Network layers. If False, only apply dropout after
-        the second.
-    weight_initializer : str or Initializer
-        Initializer for the input weights matrix, used for the linear
-        transformation of the inputs.
-    bias_initializer : str or Initializer
-        Initializer for the bias vector.
-    prefix : str, default None
-        Prefix for name of `Block`s (and name of weight if params is `None`).
-    params : Parameter or None
-        Container for weight sharing between cells. Created if `None`.
-    activation : str, default 'relu'
-        Activation methods in PositionwiseFFN
-    layer_norm_eps : float, default None
-        Epsilon for layer_norm
-
-    Inputs:
-        - **inputs** : input sequence of shape (batch_size, length, C_in).
-
-    Outputs:
-        - **outputs** : output encoding of shape (batch_size, length, C_out).
-    """
-
-    def __init__(self, units=512, hidden_size=2048, dropout=0.0, use_residual=True,
-                 ffn1_dropout=False, weight_initializer=None, bias_initializer='zeros', prefix=None,
-                 params=None, activation='relu', layer_norm_eps=None):
-        super(PositionwiseFFN, self).__init__(
-            units=units,
-            hidden_size=hidden_size,
-            dropout=dropout,
-            use_residual=use_residual,
-            weight_initializer=weight_initializer,
-            bias_initializer=bias_initializer,
-            prefix=prefix,
-            params=params,
-            # extra configurations for transformer
-            activation=activation,
-            use_bert_layer_norm=False,
-            layer_norm_eps=layer_norm_eps,
-            ffn1_dropout=ffn1_dropout)
-
-
-class TransformerEncoderCell(BaseTransformerEncoderCell):
+class TransformerEncoderCell(HybridBlock):
     """Structure of the Transformer Encoder Cell.
 
     Parameters
@@ -649,6 +168,10 @@ class TransformerEncoderCell(BaseTransformerEncoderCell):
     use_residual : bool
     output_attention: bool
         Whether to output the attention weights
+    attention_use_bias : bool, default False
+        Whether to use bias when projecting the query/key/values in the attention cell.
+    attention_proj_use_bias : bool, default False
+        Whether to use bias when projecting the output of the attention cell.
     weight_initializer : str or Initializer
         Initializer for the input weights matrix, used for the linear
         transformation of the inputs.
@@ -660,7 +183,7 @@ class TransformerEncoderCell(BaseTransformerEncoderCell):
         Container for weight sharing between cells. Created if `None`.
     activation : str, default None
         Activation methods in PositionwiseFFN
-    layer_norm_eps : float, default None
+    layer_norm_eps : float, default 1e-5
         Epsilon for layer_norm
 
     Inputs:
@@ -672,28 +195,65 @@ class TransformerEncoderCell(BaseTransformerEncoderCell):
             Shape (batch_size, length, C_out)
         - **additional_outputs**: the additional output of all the transformer encoder cell.
     """
-    def __init__(self, attention_cell='multi_head', units=128,
-                 hidden_size=512, num_heads=4, scaled=True,
-                 dropout=0.0, use_residual=True, output_attention=False,
-                 weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None, activation='relu', layer_norm_eps=None):
-        super(TransformerEncoderCell, self).__init__(attention_cell=attention_cell,
-                                                     units=units, hidden_size=hidden_size,
-                                                     num_heads=num_heads, scaled=scaled,
-                                                     dropout=dropout, use_residual=use_residual,
-                                                     output_attention=output_attention,
-                                                     weight_initializer=weight_initializer,
-                                                     bias_initializer=bias_initializer,
-                                                     prefix=prefix, params=params,
-                                                     # extra configurations for transformer
-                                                     attention_use_bias=False,
-                                                     attention_proj_use_bias=False,
-                                                     use_bert_layer_norm=False,
-                                                     use_bert_ffn=False,
-                                                     activation=activation,
-                                                     layer_norm_eps=layer_norm_eps)
 
-class TransformerEncoder(BaseTransformerEncoder):
+    def __init__(self, *, attention_cell='multi_head', units=128, hidden_size=512, num_heads=4,
+                 scaled=True, dropout=0.0, use_residual=True, output_attention=False,
+                 attention_proj_use_bias=False, attention_use_bias=False, weight_initializer=None,
+                 bias_initializer='zeros', prefix=None, params=None, activation='relu',
+                 layer_norm_eps=1e-5):
+        super().__init__(prefix=prefix, params=params)
+        self._dropout = dropout
+        self._use_residual = use_residual
+        self._output_attention = output_attention
+        with self.name_scope():
+            if dropout:
+                self.dropout_layer = nn.Dropout(rate=dropout)
+            self.attention_cell = _get_attention_cell(attention_cell, units=units,
+                                                      num_heads=num_heads, scaled=scaled,
+                                                      dropout=dropout, use_bias=attention_use_bias)
+            self.proj = nn.Dense(units=units, flatten=False, use_bias=attention_proj_use_bias,
+                                 weight_initializer=weight_initializer,
+                                 bias_initializer=bias_initializer, prefix='proj_')
+            self.ffn = PositionwiseFFN(units=units, hidden_size=hidden_size, dropout=dropout,
+                                       use_residual=use_residual,
+                                       weight_initializer=weight_initializer,
+                                       bias_initializer=bias_initializer, activation=activation,
+                                       layer_norm_eps=layer_norm_eps)
+            self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=layer_norm_eps)
+
+
+    def hybrid_forward(self, F, inputs, mask=None):  # pylint: disable=arguments-differ
+        """Transformer Encoder Attention Cell.
+
+        Parameters
+        ----------
+        inputs : Symbol or NDArray
+            Input sequence. Shape (batch_size, length, C_in)
+        mask : Symbol or NDArray or None
+            Mask for inputs. Shape (batch_size, length, length)
+
+        Returns
+        -------
+        encoder_cell_outputs: list
+            Outputs of the encoder cell. Contains:
+
+            - outputs of the transformer encoder cell. Shape (batch_size, length, C_out)
+            - additional_outputs of all the transformer encoder cell
+        """
+        outputs, attention_weights = self.attention_cell(inputs, inputs, inputs, mask)
+        outputs = self.proj(outputs)
+        if self._dropout:
+            outputs = self.dropout_layer(outputs)
+        if self._use_residual:
+            outputs = outputs + inputs
+        outputs = self.layer_norm(outputs)
+        outputs = self.ffn(outputs)
+        additional_outputs = []
+        if self._output_attention:
+            additional_outputs.append(attention_weights)
+        return outputs, additional_outputs
+
+class TransformerEncoder(HybridBlock, Seq2SeqEncoder):
     """Structure of the Transformer Encoder.
 
     Parameters
@@ -714,11 +274,19 @@ class TransformerEncoder(BaseTransformerEncoder):
     scaled : bool
         Whether to scale the softmax input by the sqrt of the input dimension
         in multi-head attention
+    scale_embed : bool, default True
+        Whether to scale the input embeddings by the sqrt of the `units`.
+    norm_inputs : bool, default True
+        Whether to normalize the input embeddings with LayerNorm. If dropout is
+        enabled, normalization happens after dropout is applied to inputs.
     dropout : float
         Dropout probability of the attention probabilities.
     use_residual : bool
-    output_attention: bool
+        Whether to use residual connection.
+    output_attention: bool, default False
         Whether to output the attention weights
+    output_all_encodings: bool, default False
+        Whether to output encodings of all encoder's cells, or only the last one
     weight_initializer : str or Initializer
         Initializer for the input weights matrix, used for the linear
         transformation of the inputs.
@@ -742,26 +310,143 @@ class TransformerEncoder(BaseTransformerEncoder):
             The attention weights will have shape (batch_size, length, mem_length) or
             (batch_size, num_heads, length, mem_length)
     """
-    def __init__(self, attention_cell='multi_head', num_layers=2,
-                 units=512, hidden_size=2048, max_length=50,
-                 num_heads=4, scaled=True, dropout=0.0,
-                 use_residual=True, output_attention=False,
-                 weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
-        super(TransformerEncoder, self).__init__(attention_cell=attention_cell,
-                                                 num_layers=num_layers, units=units,
-                                                 hidden_size=hidden_size, max_length=max_length,
-                                                 num_heads=num_heads, scaled=scaled,
-                                                 dropout=dropout, use_residual=use_residual,
-                                                 output_attention=output_attention,
-                                                 weight_initializer=weight_initializer,
-                                                 bias_initializer=bias_initializer,
-                                                 prefix=prefix, params=params,
-                                                 # extra configurations for transformer
-                                                 positional_weight='sinusoidal',
-                                                 use_bert_encoder=False,
-                                                 use_layer_norm_before_dropout=False,
-                                                 scale_embed=True)
+
+    def __init__(self, *, attention_cell='multi_head', num_layers=2, units=512, hidden_size=2048,
+                 max_length=50, num_heads=4, scaled=True, scale_embed=True, norm_inputs=True,
+                 dropout=0.0, use_residual=True, output_attention=False, output_all_encodings=False,
+                 weight_initializer=None, bias_initializer='zeros', prefix=None, params=None):
+        super().__init__(prefix=prefix, params=params)
+        assert units % num_heads == 0,\
+            'In TransformerEncoder, The units should be divided exactly ' \
+            'by the number of heads. Received units={}, num_heads={}' \
+            .format(units, num_heads)
+        self._max_length = max_length
+        self._units = units
+        self._output_attention = output_attention
+        self._output_all_encodings = output_all_encodings
+        self._dropout = dropout
+        self._scale_embed = scale_embed
+        self._norm_inputs = norm_inputs
+
+        with self.name_scope():
+            if dropout:
+                self.dropout_layer = nn.Dropout(rate=dropout)
+            if self._norm_inputs:
+                self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=1e-5)
+            self.position_weight = self.params.get_constant(
+                'const', _position_encoding_init(max_length, units))
+            self.transformer_cells = nn.HybridSequential()
+            for i in range(num_layers):
+                cell = TransformerEncoderCell(
+                    units=units, hidden_size=hidden_size, num_heads=num_heads,
+                    attention_cell=attention_cell, weight_initializer=weight_initializer,
+                    bias_initializer=bias_initializer, dropout=dropout, use_residual=use_residual,
+                    scaled=scaled, output_attention=output_attention, prefix='transformer%d_' % i)
+                self.transformer_cells.add(cell)
+
+    def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
+        """Encode the inputs given the states and valid sequence length.
+
+        Parameters
+        ----------
+        inputs : NDArray or Symbol
+            Input sequence. Shape (batch_size, length, C_in)
+        states : list of NDArrays or Symbols
+            Initial states. The list of initial states and masks
+        valid_length : NDArray or Symbol
+            Valid lengths of each sequence. This is usually used when part of sequence has
+            been padded. Shape (batch_size,)
+        Returns
+        -------
+        encoder_outputs: list
+            Outputs of the encoder. Contains:
+
+            - outputs of the transformer encoder. Shape (batch_size, length, C_out)
+            - additional_outputs of all the transformer encoder
+        """
+        return super().__call__(inputs, states, valid_length)
+
+    def hybrid_forward(self, F, inputs, states=None, valid_length=None, position_weight=None):
+        # pylint: disable=arguments-differ
+        """Encode the inputs given the states and valid sequence length.
+
+        Parameters
+        ----------
+        inputs : NDArray or Symbol
+            Input sequence. Shape (batch_size, length, C_in)
+        states : list of NDArrays or Symbols
+            Initial states. The list of initial states and masks
+        valid_length : NDArray or Symbol
+            Valid lengths of each sequence. This is usually used when part of sequence has
+            been padded. Shape (batch_size,)
+        position_weight : NDArray or Symbol
+            The weight of positional encoding. Shape (max_len, C_in).
+
+        Returns
+        -------
+        outputs : NDArray or Symbol, or List[NDArray] or List[Symbol]
+            If output_all_encodings flag is False, then the output of the last encoder.
+            If output_all_encodings flag is True, then the list of all outputs of all encoders.
+            In both cases, shape of the tensor(s) is/are (batch_size, length, C_out)
+        additional_outputs : list
+            Either be an empty list or contains the attention weights in this step.
+            The attention weights will have shape (batch_size, length, length) or
+            (batch_size, num_heads, length, length)
+
+        """
+        steps = F.contrib.arange_like(inputs, axis=1)
+        if valid_length is not None:
+            ones = F.ones_like(steps)
+            mask = F.broadcast_lesser(F.reshape(steps, shape=(1, -1)),
+                                      F.reshape(valid_length, shape=(-1, 1)))
+            mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
+                                   F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
+            if states is None:
+                states = [mask]
+            else:
+                states.append(mask)
+        else:
+            mask = None
+
+        if states is None:
+            states = [steps]
+        else:
+            states.append(steps)
+
+        if self._scale_embed:
+            inputs = inputs * math.sqrt(self._units)
+        # Positional encoding
+        positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
+        inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
+
+        if self._dropout:
+            inputs = self.dropout_layer(inputs)
+
+        if self._norm_inputs:
+            inputs = self.layer_norm(inputs)
+
+        all_encodings_outputs = []
+        additional_outputs = []
+        for cell in self.transformer_cells:
+            outputs, attention_weights = cell(inputs, mask)
+            inputs = outputs
+            if self._output_all_encodings:
+                if valid_length is not None:
+                    outputs = F.SequenceMask(outputs, sequence_length=valid_length,
+                                             use_sequence_length=True, axis=1)
+                all_encodings_outputs.append(outputs)
+
+            if self._output_attention:
+                additional_outputs.append(attention_weights)
+
+        if valid_length is not None and not self._output_all_encodings:
+            # if self._output_all_encodings, SequenceMask is already applied above
+            outputs = F.SequenceMask(outputs, sequence_length=valid_length,
+                                     use_sequence_length=True, axis=1)
+
+        if self._output_all_encodings:
+            return all_encodings_outputs, additional_outputs
+        return outputs, additional_outputs
 
 ###############################################################################
 #                                DECODER                                      #
@@ -785,7 +470,9 @@ class TransformerDecoderCell(HybridBlock):
         Whether to scale the softmax input by the sqrt of the input dimension
         in multi-head attention
     dropout : float
+        Dropout probability.
     use_residual : bool
+        Whether to use residual connection.
     output_attention: bool
         Whether to output the attention weights
     weight_initializer : str or Initializer
@@ -893,50 +580,12 @@ class TransformerDecoderCell(HybridBlock):
         return outputs, additional_outputs
 
 
-class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
-    """Structure of the Transformer Decoder.
-
-    Parameters
-    ----------
-    attention_cell : AttentionCell or str, default 'multi_head'
-        Arguments of the attention cell.
-        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
-    num_layers : int
-    units : int
-    hidden_size : int
-        number of units in the hidden layer of position-wise feed-forward networks
-    max_length : int
-        Maximum length of the input sequence. This is used for constructing position encoding
-    num_heads : int
-        Number of heads in multi-head attention
-    scaled : bool
-        Whether to scale the softmax input by the sqrt of the input dimension
-        in multi-head attention
-    dropout : float
-    use_residual : bool
-    output_attention: bool
-        Whether to output the attention weights
-    weight_initializer : str or Initializer
-        Initializer for the input weights matrix, used for the linear
-        transformation of the inputs.
-    bias_initializer : str or Initializer
-        Initializer for the bias vector.
-    scale_embed : bool, default True
-        Scale the input embeddings by sqrt(embed_size).
-    prefix : str, default 'rnn_'
-        Prefix for name of `Block`s
-        (and name of weight if params is `None`).
-    params : Parameter or None
-        Container for weight sharing between cells.
-        Created if `None`.
-    """
-    def __init__(self, attention_cell='multi_head', num_layers=2,
-                 units=128, hidden_size=2048, max_length=50,
-                 num_heads=4, scaled=True, dropout=0.0,
-                 use_residual=True, output_attention=False,
-                 weight_initializer=None, bias_initializer='zeros',
-                 scale_embed=True, prefix=None, params=None):
-        super(TransformerDecoder, self).__init__(prefix=prefix, params=params)
+class _BaseTransformerDecoder(HybridBlock):
+    def __init__(self, attention_cell='multi_head', num_layers=2, units=128, hidden_size=2048,
+                 max_length=50, num_heads=4, scaled=True, scale_embed=True, norm_inputs=True,
+                 dropout=0.0, use_residual=True, output_attention=False, weight_initializer=None,
+                 bias_initializer='zeros', prefix=None, params=None):
+        super().__init__(prefix=prefix, params=params)
         assert units % num_heads == 0, 'In TransformerDecoder, the units should be divided ' \
                                        'exactly by the number of heads. Received units={}, ' \
                                        'num_heads={}'.format(units, num_heads)
@@ -950,27 +599,24 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         self._output_attention = output_attention
         self._scaled = scaled
         self._scale_embed = scale_embed
+        self._norm_inputs = norm_inputs
         with self.name_scope():
             if dropout:
                 self.dropout_layer = nn.Dropout(rate=dropout)
-            self.layer_norm = nn.LayerNorm()
+            if self._norm_inputs:
+                self.layer_norm = nn.LayerNorm()
             encoding = _position_encoding_init(max_length, units)
-            self.position_weight = self.params.get_constant('const', encoding)
+            self.position_weight = self.params.get_constant('const', encoding.astype(np.float32))
             self.transformer_cells = nn.HybridSequential()
             for i in range(num_layers):
                 self.transformer_cells.add(
-                    TransformerDecoderCell(
-                        units=units,
-                        hidden_size=hidden_size,
-                        num_heads=num_heads,
-                        attention_cell=attention_cell,
-                        weight_initializer=weight_initializer,
-                        bias_initializer=bias_initializer,
-                        dropout=dropout,
-                        scaled=scaled,
-                        use_residual=use_residual,
-                        output_attention=output_attention,
-                        prefix='transformer%d_' % i))
+                    TransformerDecoderCell(units=units, hidden_size=hidden_size,
+                                           num_heads=num_heads, attention_cell=attention_cell,
+                                           weight_initializer=weight_initializer,
+                                           bias_initializer=bias_initializer, dropout=dropout,
+                                           scaled=scaled, use_residual=use_residual,
+                                           output_attention=output_attention,
+                                           prefix='transformer%d_' % i))
 
     def init_state_from_encoder(self, encoder_outputs, encoder_valid_length=None):
         """Initialize the state from the encoder outputs.
@@ -986,7 +632,7 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
             The decoder states, includes:
 
             - mem_value : NDArray
-            - mem_masks : NDArray, optional
+            - mem_masks : NDArray or None
         """
         mem_value = encoder_outputs
         decoder_states = [mem_value]
@@ -998,10 +644,12 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
                 mx.nd.arange(mem_length, ctx=ctx, dtype=dtype).reshape((1, -1)),
                 encoder_valid_length.reshape((-1, 1)))
             decoder_states.append(mem_masks)
-        self._encoder_valid_length = encoder_valid_length
+        else:
+            decoder_states.append(None)
         return decoder_states
 
-    def decode_seq(self, inputs, states, valid_length=None):
+    def hybrid_forward(self, F, inputs, states, valid_length=None, position_weight=None):
+        #pylint: disable=arguments-differ
         """Decode the decoder inputs. This function is only used for training.
 
         Parameters
@@ -1017,58 +665,188 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
         -------
         output : NDArray, Shape (batch_size, length, C_out)
         states : list
-            The decoder states, includes:
-
+            The decoder states:
             - mem_value : NDArray
-            - mem_masks : NDArray, optional
+            - mem_masks : NDArray or None
         additional_outputs : list of list
             Either be an empty list or contains the attention weights in this step.
             The attention weights will have shape (batch_size, length, mem_length) or
             (batch_size, num_heads, length, mem_length)
         """
-        batch_size = inputs.shape[0]
-        length = inputs.shape[1]
-        length_array = mx.nd.arange(length, ctx=inputs.context, dtype=inputs.dtype)
-        mask = mx.nd.broadcast_lesser_equal(
-            length_array.reshape((1, -1)),
-            length_array.reshape((-1, 1)))
-        if valid_length is not None:
-            arange = mx.nd.arange(length, ctx=valid_length.context, dtype=valid_length.dtype)
-            batch_mask = mx.nd.broadcast_lesser(
-                arange.reshape((1, -1)),
-                valid_length.reshape((-1, 1)))
-            mask = mx.nd.broadcast_mul(mx.nd.expand_dims(batch_mask, -1),
-                                       mx.nd.expand_dims(mask, 0))
-        else:
-            mask = mx.nd.broadcast_axes(mx.nd.expand_dims(mask, axis=0), axis=0, size=batch_size)
-        states = [None] + states
-        output, states, additional_outputs = self.forward(inputs, states, mask)
-        states = states[1:]
-        if valid_length is not None:
-            output = mx.nd.SequenceMask(output,
-                                        sequence_length=valid_length,
-                                        use_sequence_length=True,
-                                        axis=1)
-        return output, states, additional_outputs
 
-    def __call__(self, step_input, states): #pylint: disable=arguments-differ
+        length_array = F.contrib.arange_like(inputs, axis=1)
+        mask = F.broadcast_lesser_equal(length_array.reshape((1, -1)),
+                                        length_array.reshape((-1, 1)))
+        if valid_length is not None:
+            batch_mask = F.broadcast_lesser(length_array.reshape((1, -1)),
+                                            valid_length.reshape((-1, 1)))
+            batch_mask = F.expand_dims(batch_mask, -1)
+            mask = F.broadcast_mul(batch_mask, F.expand_dims(mask, 0))
+        else:
+            mask = F.expand_dims(mask, axis=0)
+            mask = F.broadcast_like(mask, inputs, lhs_axes=(0, ), rhs_axes=(0, ))
+
+        mem_value, mem_mask = states
+        if mem_mask is not None:
+            mem_mask = F.expand_dims(mem_mask, axis=1)
+            mem_mask = F.broadcast_like(mem_mask, inputs, lhs_axes=(1, ), rhs_axes=(1, ))
+
+        if self._scale_embed:
+            inputs = inputs * math.sqrt(self._units)
+
+        # Positional Encoding
+        steps = F.contrib.arange_like(inputs, axis=1)
+        positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
+        inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
+
+        if self._dropout:
+            inputs = self.dropout_layer(inputs)
+
+        if self._norm_inputs:
+            inputs = self.layer_norm(inputs)
+
+        additional_outputs = []
+        attention_weights_l = []
+        outputs = inputs
+        for cell in self.transformer_cells:
+            outputs, attention_weights = cell(outputs, mem_value, mask, mem_mask)
+            if self._output_attention:
+                attention_weights_l.append(attention_weights)
+        if self._output_attention:
+            additional_outputs.extend(attention_weights_l)
+
+        if valid_length is not None:
+            outputs = F.SequenceMask(outputs, sequence_length=valid_length,
+                                     use_sequence_length=True, axis=1)
+        return outputs, states, additional_outputs
+
+
+class TransformerDecoder(_BaseTransformerDecoder, Seq2SeqDecoder):
+    """Transformer Decoder.
+
+    Multi-step ahead decoder for use during training with teacher forcing.
+
+    Parameters
+    ----------
+    attention_cell : AttentionCell or str, default 'multi_head'
+        Arguments of the attention cell.
+        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
+    num_layers : int
+        Number of attention layers.
+    units : int
+        Number of units for the output.
+    hidden_size : int
+        number of units in the hidden layer of position-wise feed-forward networks
+    max_length : int
+        Maximum length of the input sequence. This is used for constructing position encoding
+    num_heads : int
+        Number of heads in multi-head attention
+    scaled : bool
+        Whether to scale the softmax input by the sqrt of the input dimension
+        in multi-head attention
+    scale_embed : bool, default True
+        Whether to scale the input embeddings by the sqrt of the `units`.
+    norm_inputs : bool, default True
+        Whether to normalize the input embeddings with LayerNorm. If dropout is
+        enabled, normalization happens after dropout is applied to inputs.
+    dropout : float
+        Dropout probability.
+    use_residual : bool
+        Whether to use residual connection.
+    output_attention: bool
+        Whether to output the attention weights
+    weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    prefix : str, default 'rnn_'
+        Prefix for name of `Block`s
+        (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells.
+        Created if `None`.
+    """
+
+
+class TransformerOneStepDecoder(_BaseTransformerDecoder, Seq2SeqOneStepDecoder):
+    """Transformer Decoder.
+
+    One-step ahead decoder for use during inference.
+
+    Parameters
+    ----------
+    attention_cell : AttentionCell or str, default 'multi_head'
+        Arguments of the attention cell.
+        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
+    num_layers : int
+        Number of attention layers.
+    units : int
+        Number of units for the output.
+    hidden_size : int
+        number of units in the hidden layer of position-wise feed-forward networks
+    max_length : int
+        Maximum length of the input sequence. This is used for constructing position encoding
+    num_heads : int
+        Number of heads in multi-head attention
+    scaled : bool
+        Whether to scale the softmax input by the sqrt of the input dimension
+        in multi-head attention
+    scale_embed : bool, default True
+        Whether to scale the input embeddings by the sqrt of the `units`.
+    norm_inputs : bool, default True
+        Whether to normalize the input embeddings with LayerNorm. If dropout is
+        enabled, normalization happens after dropout is applied to inputs.
+    dropout : float
+        Dropout probability.
+    use_residual : bool
+        Whether to use residual connection.
+    output_attention: bool
+        Whether to output the attention weights
+    weight_initializer : str or Initializer
+        Initializer for the input weights matrix, used for the linear
+        transformation of the inputs.
+    bias_initializer : str or Initializer
+        Initializer for the bias vector.
+    prefix : str, default 'rnn_'
+        Prefix for name of `Block`s
+        (and name of weight if params is `None`).
+    params : Parameter or None
+        Container for weight sharing between cells.
+        Created if `None`.
+    """
+
+    def forward(self, step_input, states):  # pylint: disable=arguments-differ
+        # We implement forward, as the number of states changes between the
+        # first and later calls of the one-step ahead Transformer decoder. This
+        # is due to the lack of numpy shape semantics. Once we enable numpy
+        # shape semantic in the GluonNLP code-base, the number of states should
+        # stay constant, but the first state element will be an array of shape
+        # (batch_size, 0, C_in) at the first call.
+        if len(states) == 3:  # step_input from prior call is included
+            last_embeds, _, _ = states
+            inputs = mx.nd.concat(last_embeds, mx.nd.expand_dims(step_input, axis=1), dim=1)
+            states = states[1:]
+        else:
+            inputs = mx.nd.expand_dims(step_input, axis=1)
+        return super().forward(inputs, states)
+
+    def hybrid_forward(self, F, inputs, states, position_weight):
+        # pylint: disable=arguments-differ
         """One-step-ahead decoding of the Transformer decoder.
 
         Parameters
         ----------
-        step_input : NDArray
+        step_input : NDArray, Shape (batch_size, C_in)
         states : list of NDArray
 
         Returns
         -------
         step_output : NDArray
-            The output of the decoder.
-            In the train mode, Shape is (batch_size, length, C_out)
-            In the test mode, Shape is (batch_size, C_out)
+            The output of the decoder. Shape is (batch_size, C_out)
         new_states: list
             Includes
             - last_embeds : NDArray or None
-                It is only given during testing
             - mem_value : NDArray
             - mem_masks : NDArray, optional
 
@@ -1077,107 +855,15 @@ class TransformerDecoder(HybridBlock, Seq2SeqDecoder):
             The attention weights will have shape (batch_size, length, mem_length) or
             (batch_size, num_heads, length, mem_length)
         """
-        return super(TransformerDecoder, self).__call__(step_input, states)
+        outputs, states, additional_outputs = super().hybrid_forward(
+            F, inputs, states, valid_length=None, position_weight=position_weight)
 
-    def forward(self, step_input, states, mask=None):  #pylint: disable=arguments-differ, missing-docstring
-        input_shape = step_input.shape
-        mem_mask = None
-        # If it is in testing, transform input tensor to a tensor with shape NTC
-        # Otherwise remove the None in states.
-        if len(input_shape) == 2:
-            if self._encoder_valid_length is not None:
-                has_last_embeds = len(states) == 3
-            else:
-                has_last_embeds = len(states) == 2
-            if has_last_embeds:
-                last_embeds = states[0]
-                step_input = mx.nd.concat(last_embeds,
-                                          mx.nd.expand_dims(step_input, axis=1),
-                                          dim=1)
-                states = states[1:]
-            else:
-                step_input = mx.nd.expand_dims(step_input, axis=1)
-        elif states[0] is None:
-            states = states[1:]
-        has_mem_mask = (len(states) == 2)
-        if has_mem_mask:
-            _, mem_mask = states
-            augmented_mem_mask = mx.nd.expand_dims(mem_mask, axis=1)\
-                .broadcast_axes(axis=1, size=step_input.shape[1])
-            states[-1] = augmented_mem_mask
-        if mask is None:
-            length_array = mx.nd.arange(step_input.shape[1], ctx=step_input.context,
-                                        dtype=step_input.dtype)
-            mask = mx.nd.broadcast_lesser_equal(
-                length_array.reshape((1, -1)),
-                length_array.reshape((-1, 1)))
-            mask = mx.nd.broadcast_axes(mx.nd.expand_dims(mask, axis=0),
-                                        axis=0, size=step_input.shape[0])
-        steps = mx.nd.arange(step_input.shape[1], ctx=step_input.context)
-        states.append(steps)
-        if self._scale_embed:
-            scaled_step_input = step_input * math.sqrt(step_input.shape[-1])
-        # pylint: disable=too-many-function-args
-        step_output, step_additional_outputs = \
-            super(TransformerDecoder, self).forward(scaled_step_input, states, mask)
-        states = states[:-1]
-        if has_mem_mask:
-            states[-1] = mem_mask
-        new_states = [step_input] + states
-        # If it is in testing, only output the last one
-        if len(input_shape) == 2:
-            step_output = step_output[:, -1, :]
-        return step_output, new_states, step_additional_outputs
+        # Append inputs to states: They are needed in the next one-step ahead decoding step
+        new_states = [inputs] + states
+        # Only return one-step ahead
+        step_output = F.slice_axis(outputs, axis=1, begin=-1, end=None).reshape((0, -1))
 
-    def hybrid_forward(self, F, step_input, states, mask=None, position_weight=None):
-        #pylint: disable=arguments-differ
-        """
-
-        Parameters
-        ----------
-        step_input : NDArray or Symbol, Shape (batch_size, length, C_in)
-        states : list of NDArray or Symbol
-        mask : NDArray or Symbol
-        position_weight : NDArray or Symbol
-
-        Returns
-        -------
-        step_output : NDArray or Symbol
-            The output of the decoder. Shape is (batch_size, length, C_out)
-        step_additional_outputs : list
-            Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, length, mem_length) or
-            (batch_size, num_heads, length, mem_length)
-
-        """
-        has_mem_mask = (len(states) == 3)
-        if has_mem_mask:
-            mem_value, mem_mask, steps = states
-        else:
-            mem_value, steps = states
-            mem_mask = None
-        # Positional Encoding
-        step_input = F.broadcast_add(step_input,
-                                     F.expand_dims(F.Embedding(steps,
-                                                               position_weight,
-                                                               self._max_length,
-                                                               self._units),
-                                                   axis=0))
-        if self._dropout:
-            step_input = self.dropout_layer(step_input)
-        step_input = self.layer_norm(step_input)
-        inputs = step_input
-        outputs = inputs
-        step_additional_outputs = []
-        attention_weights_l = []
-        for cell in self.transformer_cells:
-            outputs, attention_weights = cell(inputs, mem_value, mask, mem_mask)
-            if self._output_attention:
-                attention_weights_l.append(attention_weights)
-            inputs = outputs
-        if self._output_attention:
-            step_additional_outputs.extend(attention_weights_l)
-        return outputs, step_additional_outputs
+        return step_output, new_states, additional_outputs
 
 
 
@@ -1220,40 +906,35 @@ def get_transformer_encoder_decoder(num_layers=2,
     Returns
     -------
     encoder : TransformerEncoder
-    decoder :TransformerDecoder
+    decoder : TransformerDecoder
+    one_step_ahead_decoder : TransformerOneStepDecoder
     """
-    encoder = TransformerEncoder(num_layers=num_layers,
-                                 num_heads=num_heads,
-                                 max_length=max_src_length,
-                                 units=units,
-                                 hidden_size=hidden_size,
-                                 dropout=dropout,
-                                 scaled=scaled,
-                                 use_residual=use_residual,
-                                 weight_initializer=weight_initializer,
-                                 bias_initializer=bias_initializer,
-                                 prefix=prefix + 'enc_', params=params)
-    decoder = TransformerDecoder(num_layers=num_layers,
-                                 num_heads=num_heads,
-                                 max_length=max_tgt_length,
-                                 units=units,
-                                 hidden_size=hidden_size,
-                                 dropout=dropout,
-                                 scaled=scaled,
-                                 use_residual=use_residual,
-                                 weight_initializer=weight_initializer,
-                                 bias_initializer=bias_initializer,
-                                 prefix=prefix + 'dec_', params=params)
-    return encoder, decoder
+    encoder = TransformerEncoder(
+        num_layers=num_layers, num_heads=num_heads, max_length=max_src_length, units=units,
+        hidden_size=hidden_size, dropout=dropout, scaled=scaled, use_residual=use_residual,
+        weight_initializer=weight_initializer, bias_initializer=bias_initializer,
+        prefix=prefix + 'enc_', params=params)
+    decoder = TransformerDecoder(
+        num_layers=num_layers, num_heads=num_heads, max_length=max_tgt_length, units=units,
+        hidden_size=hidden_size, dropout=dropout, scaled=scaled, use_residual=use_residual,
+        weight_initializer=weight_initializer, bias_initializer=bias_initializer,
+        prefix=prefix + 'dec_', params=params)
+    one_step_ahead_decoder = TransformerOneStepDecoder(
+        num_layers=num_layers, num_heads=num_heads, max_length=max_tgt_length, units=units,
+        hidden_size=hidden_size, dropout=dropout, scaled=scaled, use_residual=use_residual,
+        weight_initializer=weight_initializer, bias_initializer=bias_initializer,
+        prefix=prefix + 'dec_', params=decoder.collect_params())
+    return encoder, decoder, one_step_ahead_decoder
 
 
-def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_vocab,
-                           encoder, decoder, share_embed, embed_size, tie_weights,
+def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_vocab, encoder,
+                           decoder, one_step_ahead_decoder, share_embed, embed_size, tie_weights,
                            embed_initializer, pretrained, ctx, root, **kwargs):
     src_vocab = _load_vocab(dataset_name + '_src', src_vocab, root)
     tgt_vocab = _load_vocab(dataset_name + '_tgt', tgt_vocab, root)
     kwargs['encoder'] = encoder
     kwargs['decoder'] = decoder
+    kwargs['one_step_ahead_decoder'] = one_step_ahead_decoder
     kwargs['src_vocab'] = src_vocab
     kwargs['tgt_vocab'] = tgt_vocab
     kwargs['share_embed'] = share_embed
@@ -1306,16 +987,13 @@ def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pre
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
-    encoder, decoder = get_transformer_encoder_decoder(units=predefined_args['num_units'],
-                                                       hidden_size=predefined_args['hidden_size'],
-                                                       dropout=predefined_args['dropout'],
-                                                       num_layers=predefined_args['num_layers'],
-                                                       num_heads=predefined_args['num_heads'],
-                                                       max_src_length=530,
-                                                       max_tgt_length=549,
-                                                       scaled=predefined_args['scaled'])
-    return _get_transformer_model(NMTModel, 'transformer_en_de_512', dataset_name,
-                                  src_vocab, tgt_vocab, encoder, decoder,
+    encoder, decoder, one_step_ahead_decoder = get_transformer_encoder_decoder(
+        units=predefined_args['num_units'], hidden_size=predefined_args['hidden_size'],
+        dropout=predefined_args['dropout'], num_layers=predefined_args['num_layers'],
+        num_heads=predefined_args['num_heads'], max_src_length=530, max_tgt_length=549,
+        scaled=predefined_args['scaled'])
+    return _get_transformer_model(NMTModel, 'transformer_en_de_512', dataset_name, src_vocab,
+                                  tgt_vocab, encoder, decoder, one_step_ahead_decoder,
                                   predefined_args['share_embed'], predefined_args['embed_size'],
                                   predefined_args['tie_weights'],
                                   predefined_args['embed_initializer'], pretrained, ctx, root)

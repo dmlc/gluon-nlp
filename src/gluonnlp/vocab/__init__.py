@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -20,10 +18,10 @@
 # pylint: disable=wildcard-import
 """Vocabulary."""
 
-from . import subwords, vocab, bert
+from . import bert, elmo, subwords, vocab
+from .bert import *
+from .elmo import *
 from .subwords import *
 from .vocab import *
-from .elmo import *
-from .bert import *
 
 __all__ = vocab.__all__ + subwords.__all__ + elmo.__all__ + bert.__all__

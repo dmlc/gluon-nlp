@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -20,6 +18,10 @@
 # pylint: disable=wildcard-import
 """NLP Metrics."""
 
-from .masked_accuracy import *
+from . import masked_accuracy
+from . import length_normalized_loss
 
-__all__ = masked_accuracy.__all__
+from .masked_accuracy import *
+from .length_normalized_loss import *
+
+__all__ = masked_accuracy.__all__ + length_normalized_loss.__all__

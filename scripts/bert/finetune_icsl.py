@@ -8,8 +8,6 @@ joint intent classification and slot labelling, with Gluon NLP Toolkit.
 
 """
 
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -42,7 +40,7 @@ from seqeval.metrics import f1_score as ner_f1_score
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer, ATISDataset, SNIPSDataset
 
-
+nlp.utils.check_version('0.7.0')
 
 class BERTForICSL(Block):
     """Model
@@ -330,10 +328,10 @@ def train(args):
     dev_data_bert = dev_data.transform(idsl_transform, lazy=False)
     test_data_bert = test_data.transform(idsl_transform, lazy=False)
     # Construct the DataLoader
-    batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(),    # Subword ID
-                                          nlp.data.batchify.Pad(),    # Subword Mask
-                                          nlp.data.batchify.Pad(),    # Beginning of subword
-                                          nlp.data.batchify.Pad(),    # Tag IDs
+    batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(pad_val=0),  # Subword ID
+                                          nlp.data.batchify.Pad(pad_val=0),  # Subword Mask
+                                          nlp.data.batchify.Pad(pad_val=0),  # Beginning of subword
+                                          nlp.data.batchify.Pad(pad_val=0),  # Tag IDs
                                           nlp.data.batchify.Stack(),  # Intent Label
                                           nlp.data.batchify.Stack())  # Valid Length
     train_batch_sampler = nlp.data.sampler.SortedBucketSampler(

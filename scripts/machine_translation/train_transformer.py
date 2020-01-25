@@ -14,8 +14,6 @@ This example shows how to implement the Transformer model with Gluon NLP Toolkit
 }
 """
 
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -35,33 +33,37 @@ This example shows how to implement the Transformer model with Gluon NLP Toolkit
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import argparse
-import time
-import random
-import os
 import logging
 import math
+import os
+import random
+import time
+
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
+
 import gluonnlp as nlp
-
-from gluonnlp.loss import MaskedSoftmaxCELoss, LabelSmoothing
+from gluonnlp.loss import LabelSmoothing, MaskedSoftmaxCELoss
+from gluonnlp.model.transformer import ParallelTransformer, get_transformer_encoder_decoder
 from gluonnlp.model.translation import NMTModel
-from gluonnlp.model.transformer import get_transformer_encoder_decoder, ParallelTransformer
 from gluonnlp.utils.parallel import Parallel
-from translation import BeamSearchTranslator
-
-from utils import logging_config
-from bleu import _bpe_to_words, compute_bleu
 import dataprocessor
+from bleu import _bpe_to_words, compute_bleu
+from translation import BeamSearchTranslator
+from utils import logging_config
 
 np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
 
-parser = argparse.ArgumentParser(description='Neural Machine Translation Example.'
-                                             'We train the Transformer Model')
-parser.add_argument('--dataset', type=str, default='WMT2016BPE', help='Dataset to use.')
+nlp.utils.check_version('0.9.0')
+
+parser = argparse.ArgumentParser(
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    description='Neural Machine Translation Example with the Transformer Model.')
+parser.add_argument('--dataset', type=str.upper, default='WMT2016BPE', help='Dataset to use.',
+                    choices=['IWSLT2015', 'WMT2016BPE', 'WMT2014BPE', 'TOY'])
 parser.add_argument('--src_lang', type=str, default='en', help='Source language')
 parser.add_argument('--tgt_lang', type=str, default='de', help='Target language')
 parser.add_argument('--epochs', type=int, default=10, help='upper epoch limit')
@@ -172,17 +174,15 @@ if args.tgt_max_len > 0:
     tgt_max_len = args.tgt_max_len
 else:
     tgt_max_len = max_len[1]
-encoder, decoder = get_transformer_encoder_decoder(units=args.num_units,
-                                                   hidden_size=args.hidden_size,
-                                                   dropout=args.dropout,
-                                                   num_layers=args.num_layers,
-                                                   num_heads=args.num_heads,
-                                                   max_src_length=max(src_max_len, 500),
-                                                   max_tgt_length=max(tgt_max_len, 500),
-                                                   scaled=args.scaled)
+encoder, decoder, one_step_ahead_decoder = get_transformer_encoder_decoder(
+    units=args.num_units, hidden_size=args.hidden_size, dropout=args.dropout,
+    num_layers=args.num_layers, num_heads=args.num_heads, max_src_length=max(src_max_len, 500),
+    max_tgt_length=max(tgt_max_len, 500), scaled=args.scaled)
 model = NMTModel(src_vocab=src_vocab, tgt_vocab=tgt_vocab, encoder=encoder, decoder=decoder,
-                 share_embed=args.dataset != 'TOY', embed_size=args.num_units,
-                 tie_weights=args.dataset != 'TOY', embed_initializer=None, prefix='transformer_')
+                 one_step_ahead_decoder=one_step_ahead_decoder,
+                 share_embed=args.dataset not in ('TOY', 'IWSLT2015'), embed_size=args.num_units,
+                 tie_weights=args.dataset not in ('TOY', 'IWSLT2015'), embed_initializer=None,
+                 prefix='transformer_')
 model.initialize(init=mx.init.Xavier(magnitude=args.magnitude), ctx=ctx)
 static_alloc = True
 model.hybridize(static_alloc=static_alloc)
@@ -203,7 +203,7 @@ loss_function.hybridize(static_alloc=static_alloc)
 test_loss_function = MaskedSoftmaxCELoss()
 test_loss_function.hybridize(static_alloc=static_alloc)
 
-rescale_loss = 100
+rescale_loss = 100.
 parallel_model = ParallelTransformer(model, label_smoothing, loss_function, rescale_loss)
 detokenizer = nlp.data.SacreMosesDetokenizer()
 
@@ -317,7 +317,7 @@ def train():
                 if average_param_dict is None:
                     average_param_dict = {k: v.data(ctx[0]).copy() for k, v in
                                           model.collect_params().items()}
-                trainer.step(float(loss_denom) / args.batch_size / 100.0)
+                trainer.step(float(loss_denom) / args.batch_size / rescale_loss)
                 param_dict = model.collect_params()
                 param_dict.zero_grad()
                 if step_num > average_start:
@@ -327,7 +327,7 @@ def train():
             step_loss += sum([L.asscalar() for L in Ls])
             if batch_id % grad_interval == grad_interval - 1 or\
                     batch_id == len(train_data_loader) - 1:
-                log_avg_loss += step_loss / loss_denom * args.batch_size * 100.0
+                log_avg_loss += step_loss / loss_denom * args.batch_size * rescale_loss
                 loss_denom = 0
                 step_loss = 0
             log_wc += src_wc + tgt_wc

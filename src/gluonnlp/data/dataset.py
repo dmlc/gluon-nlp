@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -95,8 +93,8 @@ class TSVDataset(SimpleDataset):
         # b\tLaoban\tZha
         # discard the first line and select the 0th and 2nd fields
         dataset = data.TSVDataset('test.tsv', num_discard_samples=1, field_indices=[0, 2])
-        assert dataset[0] == [u'a', u'Jiang']
-        assert dataset[1] == [u'b', u'Zha']
+        assert dataset[0] == ['a', 'Jiang']
+        assert dataset[1] == ['b', 'Zha']
 
     Parameters
     ----------

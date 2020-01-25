@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -20,11 +18,12 @@
 
 import time
 from functools import reduce
-
 import numpy as np
+import gluonnlp as nlp
 
 from scripts.parsing.common.data import DataLoader
 
+nlp.utils.check_version('0.7.0')
 
 def evaluate_official_script(parser, vocab, num_buckets_test, test_batch_size,
                              test_file, output_file, debug=False):

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -19,14 +17,12 @@
 
 """Convolutional encoder."""
 
-from __future__ import absolute_import
-from __future__ import print_function
 
 __all__ = ['ConvolutionalEncoder']
 
 from mxnet import gluon
 from mxnet.gluon import nn
-from gluonnlp.initializer import HighwayBias
+from ..initializer import HighwayBias
 
 from .highway import Highway
 

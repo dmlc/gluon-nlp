@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from __future__ import print_function
 
 import sys
 
@@ -27,7 +24,9 @@ import gluonnlp as nlp
 import pytest
 
 @pytest.mark.parametrize('f', [nlp.model.NCEDense, nlp.model.SparseNCEDense])
-def test_nce_loss(f):
+@pytest.mark.parametrize('cls_dtype', ['float32', 'int32'])
+@pytest.mark.parametrize('count_dtype', ['float32', 'int32'])
+def test_nce_loss(f, cls_dtype, count_dtype):
     ctx = mx.cpu()
     batch_size = 2
     num_sampled = 3
@@ -40,9 +39,9 @@ def test_nce_loss(f):
     trainer = mx.gluon.Trainer(model.collect_params(), 'sgd')
     x = mx.nd.ones((batch_size, num_hidden))
     y = mx.nd.ones((batch_size,))
-    sampled_cls = mx.nd.ones((num_sampled,))
-    sampled_cls_cnt = mx.nd.ones((num_sampled,))
-    true_cls_cnt = mx.nd.ones((batch_size,))
+    sampled_cls = mx.nd.ones((num_sampled,), dtype=cls_dtype)
+    sampled_cls_cnt = mx.nd.ones((num_sampled,), dtype=count_dtype)
+    true_cls_cnt = mx.nd.ones((batch_size,), dtype=count_dtype)
     samples = (sampled_cls, sampled_cls_cnt, true_cls_cnt)
     with mx.autograd.record():
         pred, new_y = model(x, samples, y)
@@ -53,7 +52,9 @@ def test_nce_loss(f):
     mx.nd.waitall()
 
 @pytest.mark.parametrize('f', [nlp.model.ISDense, nlp.model.SparseISDense])
-def test_is_softmax_loss(f):
+@pytest.mark.parametrize('cls_dtype', ['float32', 'int32'])
+@pytest.mark.parametrize('count_dtype', ['float32', 'int32'])
+def test_is_softmax_loss(f, cls_dtype, count_dtype):
     ctx = mx.cpu()
     batch_size = 2
     num_sampled = 3
@@ -66,9 +67,9 @@ def test_is_softmax_loss(f):
     trainer = mx.gluon.Trainer(model.collect_params(), 'sgd')
     x = mx.nd.ones((batch_size, num_hidden))
     y = mx.nd.ones((batch_size,))
-    sampled_cls = mx.nd.ones((num_sampled,))
-    sampled_cls_cnt = mx.nd.ones((num_sampled,))
-    true_cls_cnt = mx.nd.ones((batch_size,))
+    sampled_cls = mx.nd.ones((num_sampled,), dtype=cls_dtype)
+    sampled_cls_cnt = mx.nd.ones((num_sampled,), dtype=count_dtype)
+    true_cls_cnt = mx.nd.ones((batch_size,), dtype=count_dtype)
     samples = (sampled_cls, sampled_cls_cnt, true_cls_cnt)
     with mx.autograd.record():
         pred, new_y = model(x, samples, y)

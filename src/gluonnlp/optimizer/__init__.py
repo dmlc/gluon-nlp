@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -20,7 +18,8 @@
 # pylint: disable=wildcard-import
 """NLP optimizer."""
 
-from .bert_adam import *
-from .lamb import *
+from . import bert_adam
 
-__all__ = bert_adam.__all__ + lamb.__all__
+from .bert_adam import *
+
+__all__ = bert_adam.__all__

@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -18,9 +16,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-from __future__ import unicode_literals
-from __future__ import absolute_import
-from __future__ import print_function
 
 import collections
 import os
@@ -137,7 +132,7 @@ def extract_weights(args):
         if 'w_0' in ernie_name:
             fluid_array = fluid_array.transpose()
         state_dict[gluon_name] = fluid_array
-        print(f'{ernie_name} -> {gluon_name} {fluid_array.shape}')
+        print('{} -> {} {}'.format(ernie_name, gluon_name, fluid_array.shape))
     print('extract weights done!'.center(60, '='))
     return state_dict
 
