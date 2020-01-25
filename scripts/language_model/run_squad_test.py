@@ -810,6 +810,5 @@ def evaluate_squad1():
 if __name__ == '__main__':
     if not args.only_predict:
         train()
-        evaluate()
-    else:
-        evaluate()
+    evaluate_squad1()
+    evaluate_squad2()
