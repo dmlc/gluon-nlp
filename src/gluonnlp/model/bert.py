@@ -806,7 +806,7 @@ class DistilBERTModel(BERTModel):
 
         This is used in fine-tuning a DistilBERT model.
         """
-        return super(DistilBERTaModel, self).__call__(inputs, [], valid_length=valid_length,
+        return super(DistilBERTModel, self).__call__(inputs, [], valid_length=valid_length,
                                                       masked_positions=masked_positions)
 
 class BERTClassifier(HybridBlock):
