@@ -741,7 +741,7 @@ class RoBERTaModel(BERTModel):
         return super(RoBERTaModel, self).__call__(inputs, [], valid_length=valid_length,
                                                   masked_positions=masked_positions)
 
-class DistilBERTaModel(BERTModel):
+class DistilBERTModel(BERTModel):
     """DistilBERT Model.
 
     Parameters
@@ -791,7 +791,7 @@ class DistilBERTaModel(BERTModel):
     def __init__(self, encoder, vocab_size=None, units=None,
                  embed_size=None, embed_dropout=0.0, embed_initializer=None,
                  word_embed=None, prefix=None, params=None):
-        super(DistilBERTaModel, self).__init__(encoder, vocab_size=vocab_size,
+        super(DistilBERTModel, self).__init__(encoder, vocab_size=vocab_size,
                                            token_type_vocab_size=None, units=units,
                                            embed_size=embed_size, embed_dropout=embed_dropout,
                                            embed_initializer=embed_initializer,
