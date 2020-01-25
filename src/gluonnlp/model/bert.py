@@ -19,8 +19,9 @@
 """BERT models."""
 # pylint: disable=too-many-lines
 
-__all__ = ['BERTModel', 'RoBERTaModel', 'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
-           'BERTLayerNorm', 'bert_12_768_12', 'bert_24_1024_16',
+__all__ = ['BERTModel', 'RoBERTaModel', 'DistilBERTModel',
+           'BERTEncoder', 'BERTEncoderCell', 'BERTPositionwiseFFN',
+           'BERTLayerNorm', 'distilbert_6_768_12', 'bert_12_768_12', 'bert_24_1024_16',
            'ernie_12_768_12', 'roberta_12_768_12', 'roberta_24_1024_16']
 
 import os
@@ -603,6 +604,76 @@ class RoBERTaModel(BERTModel):
         return super(RoBERTaModel, self).__call__(inputs, [], valid_length=valid_length,
                                                   masked_positions=masked_positions)
 
+class DistilBERTaModel(BERTModel):
+    """DistilBERT Model.
+
+    Parameters
+    ----------
+    encoder : BERTEncoder
+        Bidirectional encoder that encodes the input sentence.
+    vocab_size : int or None, default None
+        The size of the vocabulary.
+    units : int or None, default None
+        Number of units for the final pooler layer.
+    embed_size : int or None, default None
+        Size of the embedding vectors. It is used to generate the word and token type
+        embeddings if word_embed and token_type_embed are None.
+    embed_dropout : float, default 0.0
+        Dropout rate of the embedding weights. It is used to generate the source and target
+        embeddings if word_embed and token_type_embed are None.
+    embed_initializer : Initializer, default None
+        Initializer of the embedding weights. It is used to generate the source and target
+        embeddings if word_embed and token_type_embed are None.
+    word_embed : Block or None, default None
+        The word embedding. If set to None, word_embed will be constructed using embed_size and
+        embed_dropout.
+    prefix : str or None
+        See document of `mx.gluon.Block`.
+    params : ParameterDict or None
+        See document of `mx.gluon.Block`.
+
+    Inputs:
+        - **inputs**: input sequence tensor, shape (batch_size, seq_length)
+        - **valid_length**: optional tensor of input sequence valid lengths, shape (batch_size,)
+        - **masked_positions**: optional tensor of position of tokens for masked LM decoding,
+            shape (batch_size, num_masked_positions).
+
+    Outputs:
+        - **sequence_outputs**: Encoded sequence, which can be either a tensor of the last
+            layer of the Encoder, or a list of all sequence encodings of all layers.
+            In both cases shape of the tensor(s) is/are (batch_size, seq_length, units).
+        - **attention_outputs**: output list of all intermediate encodings per layer
+            Returned only if BERTEncoder.output_attention is True.
+            List of num_layers length of tensors of shape
+            (num_masks, num_attention_heads, seq_length, seq_length)
+        - **masked_lm_outputs**: output tensor of sequence decoding for masked language model
+            prediction. Returned only if use_decoder True.
+            Shape (batch_size, num_masked_positions, vocab_size)
+    """
+
+    def __init__(self, encoder, vocab_size=None, units=None,
+                 embed_size=None, embed_dropout=0.0, embed_initializer=None,
+                 word_embed=None, prefix=None, params=None):
+        super(DistilBERTaModel, self).__init__(encoder, vocab_size=vocab_size,
+                                           token_type_vocab_size=None, units=units,
+                                           embed_size=embed_size, embed_dropout=embed_dropout,
+                                           embed_initializer=embed_initializer,
+                                           word_embed=word_embed, token_type_embed=None,
+                                           use_pooler=False, use_decoder=False,
+                                           use_classifier=False, use_token_type_embed=False,
+                                           prefix=prefix, params=params)
+
+    def __call__(self, inputs, valid_length=None, masked_positions=None):
+        # pylint: disable=dangerous-default-value
+        """Generate the representation given the inputs.
+
+        This is used in fine-tuning a DistilBERT model.
+        """
+        # XXX Temporary hack for hybridization as hybridblock does not support None inputs
+        valid_length = [] if valid_length is None else valid_length
+        masked_positions = [] if masked_positions is None else masked_positions
+        return super(DistilBERTaModel, self).__call__(inputs, [], valid_length=valid_length,
+                                                      masked_positions=masked_positions)
 
 ###############################################################################
 #                               GET MODEL                                     #
@@ -613,6 +684,7 @@ model_store._model_sha1.update(
     {name: checksum for checksum, name in [
         ('5656dac6965b5054147b0375337d5a6a7a2ff832', 'bert_12_768_12_book_corpus_wiki_en_cased'),
         ('75cc780f085e8007b3bf6769c6348bb1ff9a3074', 'bert_12_768_12_book_corpus_wiki_en_uncased'),
+        ('e0864cc40b3d00fcfb1a878a728650d9148c9a1d', 'distilbert_6_768_12_distilbert_book_corpus_wiki_en_uncased'),
         ('a56e24015a777329c795eed4ed21c698af03c9ff',
          'bert_12_768_12_openwebtext_book_corpus_wiki_en_uncased'),
         ('5cf21fcddb5ae1a4c21c61201643460c9d65d3b0',
@@ -669,6 +741,22 @@ roberta_24_1024_16_hparams = {
     'layer_norm_eps': 1e-5
 }
 
+distilbert_6_768_12_hparams = {
+    'attention_cell': 'multi_head',
+    'num_layers': 6,
+    'units': 768,
+    'hidden_size': 3072,
+    'max_length': 512,
+    'num_heads': 12,
+    'scaled': True,
+    'dropout': 0.1,
+    'use_residual': True,
+    'embed_size': 768,
+    'embed_dropout': 0.1,
+    'token_type_vocab_size': 2,
+    'word_embed': None,
+}
+
 bert_12_768_12_hparams = {
     'attention_cell': 'multi_head',
     'num_layers': 12,
@@ -720,6 +808,7 @@ ernie_12_768_12_hparams = {
 }
 
 bert_hparams = {
+    'distilbert_6_768_12': distilbert_6_768_12_hparams,
     'bert_12_768_12': bert_12_768_12_hparams,
     'bert_24_1024_16': bert_24_1024_16_hparams,
     'roberta_12_768_12': roberta_12_768_12_hparams,
@@ -877,6 +966,58 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
                           pretrained_allow_missing=pretrained_allow_missing, **kwargs)
 
+def distilbert_6_768_12(dataset_name='distil_book_corpus_wiki_en_uncased', vocab=None,
+                        pretrained=True, ctx=mx.cpu(), use_pooler=True,
+                        root=os.path.join(get_home_dir(), 'models'),
+                        pretrained_allow_missing=False, **kwargs):
+    """DistilBERT model: https://arxiv.org/abs/1910.01108
+
+    The number of layers (L) is 6, number of units (H) is 768, and the
+    number of self-attention heads (A) is 12.
+
+    Parameters
+    ----------
+    dataset_name : str or None, default None
+        If not None, the dataset name is used to load a vocabulary for the
+        dataset. If the `pretrained` argument is set to True, the dataset name
+        is further used to select the pretrained parameters to load.
+        Options include 'book_corpus_wiki_en_uncased' and 'book_corpus_wiki_en_cased'.
+    vocab : gluonnlp.vocab.BERTVocab or None, default None
+        Vocabulary for the dataset. Must be provided if dataset_name is not
+        specified. Ignored if dataset_name is specified.
+    pretrained : bool, default True
+        Whether to load the pretrained weights for model.
+    ctx : Context, default CPU
+        The context in which to load the pretrained weights.
+    root : str, default '$MXNET_HOME/models'
+        Location for keeping the model parameters.
+        MXNET_HOME defaults to '~/.mxnet'.
+    use_pooler : bool, default True
+        Whether to include the pooler which converts the encoded sequence tensor of shape
+        (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
+        for for segment level classification task.
+    use_decoder : bool, default True
+        Whether to include the decoder for masked language model prediction.
+    use_classifier : bool, default True
+        Whether to include the classifier for next sentence classification.
+    pretrained_allow_missing : bool, default False
+        Whether to ignore if any parameters for the BERTModel are missing in
+        the pretrained weights for model.
+        Some BERTModels for example do not provide decoder or classifier
+        weights. In that case it is still possible to construct a BERTModel
+        with use_decoder=True and/or use_classifier=True, but the respective
+        parameters will be missing from the pretrained file.
+        If pretrained_allow_missing=True, this will be ignored and the
+        parameters will be left uninitialized. Otherwise AssertionError is
+        raised.
+
+    Returns
+    -------
+    DistilBERTModel, gluonnlp.vocab.Vocab
+    """
+    return get_roberta_model(model_name='distilbert_6_768_12', vocab=vocab,
+                             dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
+                             root=root, use_decoder=False, **kwargs)
 
 def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                       use_decoder=True,

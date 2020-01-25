@@ -17,15 +17,16 @@
 # specific language governing permissions and limitations
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
-""" Script for converting pytorch-transformer model to Gluon.
+""" Script for converting the distilbert model from pytorch-transformer to Gluon.
 
 Usage: 
 
-read TODOs in convert_pytorch_transformers.py and update code
-
-pip install pytorch-transformers
+pip3 install pytorch-transformers
 
 python3 convert_pytorch_transformers.py
+
+If you are not converting the distilbert model, please change the code section noted
+by "TODO".
 
  """
 
@@ -51,7 +52,6 @@ model_name = 'bert_12_768_12'
 model.save_pretrained(dir_name)
 tokenizer.save_pretrained(dir_name)
 
-
 ####################################################################
 #                  SHOW PYTORCH PARAMETER LIST                     #
 ####################################################################
@@ -73,13 +73,12 @@ hash_full, hash_short = get_hash(tmp_file_path)
 gluon_vocab_path = os.path.expanduser(os.path.join(gluon_dir_name, hash_short + '.vocab'))
 with open(gluon_vocab_path, 'w') as f:
     f.write(vocab.to_json())
-    logging.info('vocab file saved to %s. hash = %s', gluon_vocab_path, hash_full)
+    print('vocab file saved to {}. hash = {}'.format(gluon_vocab_path, hash_full))
 
 ####################################################################
 #                       CONVERT PARAMS OPTIONS                     #
 ####################################################################
 torch_to_gluon_config_names = {
-  #"activation": 'activation',
   "attention_dropout": 'dropout',
   "dim": 'embed_size',
   "dropout": 'dropout',
@@ -89,7 +88,6 @@ torch_to_gluon_config_names = {
   "n_layers": 'num_layers',
   "output_attentions": 'output_attention',
   "output_hidden_states": 'output_all_encodings',
-  #"sinusoidal_pos_embds": true,
   "vocab_size": 'vocab_size',
 }
 
@@ -179,7 +177,7 @@ if len(params) != len(loaded_params):
 param_path = os.path.join(gluon_dir_name, 'net.params')
 bert.save_parameters(param_path)
 hash_full, hash_short = get_hash(param_path)
-logging.info('param saved to %s. hash = %s', param_path, hash_full)
+print('param saved to {}. hash = {}'.format(param_path, hash_full))
 
 
 ####################################################################
@@ -190,7 +188,7 @@ text = 'Hello, my dog is cute'
 gluon_tokenizer = nlp.data.BERTTokenizer(vocab, lower=True)
 transform = nlp.data.BERTSentenceTransform(gluon_tokenizer, max_seq_length=512, pair=False, pad=False)
 sample = transform([text])
-words, valid_len, segments = mx.nd.array([sample[0]]), mx.nd.array([sample[1]]), mx.nd.array([sample[2]]);
+words, valid_len, _ = mx.nd.array([sample[0]]), mx.nd.array([sample[1]]), mx.nd.array([sample[2]]);
 # TODO: for some tokenizers, no need to truncate words
 words = words[:,1:-1]
 seq_encoding = bert(words, None)
