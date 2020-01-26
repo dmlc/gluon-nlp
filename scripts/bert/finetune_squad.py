@@ -475,10 +475,10 @@ def train():
 
             if (batch_id + 1) % log_interval == 0:
                 toc = time.time()
-                log.info('Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f} Thoughput={:.2f} samples/s'
+                log.info('Batch: {}/{}, Loss={:.4f}, lr={:.7f} Thoughput={:.2f} samples/s'
                          .format(step_num, num_train_steps,
                                  step_loss / log_interval,
-                                 trainer.learning_rate, toc - tic, log_num/(toc - tic)))
+                                 trainer.learning_rate, log_num/(toc - tic)))
                 tic = time.time()
                 step_loss = 0.0
                 log_num = 0
