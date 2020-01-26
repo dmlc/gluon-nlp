@@ -154,8 +154,8 @@ class SQuAD(ArrayDataset):
                             temp_dst = dest + str(uuid.uuid4())
                             with zf.open(member) as source:
                                 with open(temp_dst, 'wb') as target:
-                                   shutil.copyfileobj(source, target)
-                                   replace_file(temp_dst, dest)
+                                    shutil.copyfileobj(source, target)
+                                    replace_file(temp_dst, dest)
 
     def _read_data(self):
         """Read data.json from disk and flats it to the following format:
