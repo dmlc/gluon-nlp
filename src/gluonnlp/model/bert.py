@@ -792,7 +792,7 @@ class DistilBERTModel(BERTModel):
                                               prefix=prefix, params=params)
 
     def __call__(self, inputs, valid_length=None):
-        # pylint: disable=dangerous-default-value
+        # pylint: disable=dangerous-default-value, signature-differs
         """Generate the representation given the inputs.
 
         This is used in fine-tuning a DistilBERT model.
@@ -1230,7 +1230,6 @@ def distilbert_6_768_12(dataset_name='distil_book_corpus_wiki_en_uncased', vocab
                         pretrained=True, ctx=mx.cpu(),
                         output_attention=False,
                         output_all_encodings=False,
-                        use_pooler=True,
                         root=os.path.join(get_home_dir(), 'models'),
                         **kwargs):
     """DistilBERT model: https://arxiv.org/abs/1910.01108
