@@ -143,7 +143,6 @@ def test_pretrained_distilbert_models(wo_valid_len):
     special_tokens = ['[UNK]', '[PAD]', '[SEP]', '[CLS]', '[MASK]']
     ones = mx.nd.ones((2, 10))
     valid_length = mx.nd.ones((2,))
-    positions = mx.nd.zeros((2, 3))
     for model_name in models:
         for dataset in pretrained_datasets:
             eprint('testing forward for %s on %s' % (model_name, dataset))
@@ -160,9 +159,9 @@ def test_pretrained_distilbert_models(wo_valid_len):
 
             model.hybridize()
             if wo_valid_len:
-                output = model(ones, masked_positions=positions)
+                output = model(ones)
             else:
-                output = model(ones, valid_length, positions)
+                output = model(ones, valid_length)
             output[0].wait_to_read()
             del model
             mx.nd.waitall()

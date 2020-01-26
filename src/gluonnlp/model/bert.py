@@ -755,19 +755,11 @@ class DistilBERTModel(BERTModel):
     embed_size : int or None, default None
         Size of the embedding vectors. It is used to generate the word and token type
         embeddings if word_embed and token_type_embed are None.
-    embed_dropout : float, default 0.0
-        Dropout rate of the embedding weights. It is used to generate the source and target
-        embeddings if word_embed and token_type_embed are None.
     embed_initializer : Initializer, default None
         Initializer of the embedding weights. It is used to generate the source and target
         embeddings if word_embed and token_type_embed are None.
     word_embed : Block or None, default None
-        The word embedding. If set to None, word_embed will be constructed using embed_size and
-        embed_dropout.
-    use_pooler : bool, default True
-        Whether to include the pooler which converts the encoded sequence tensor of shape
-        (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
-        for segment level classification task.
+        The word embedding. If set to None, word_embed will be constructed using embed_size.
     prefix : str or None
         See document of `mx.gluon.Block`.
     params : ParameterDict or None
@@ -776,8 +768,6 @@ class DistilBERTModel(BERTModel):
     Inputs:
         - **inputs**: input sequence tensor, shape (batch_size, seq_length)
         - **valid_length**: optional tensor of input sequence valid lengths, shape (batch_size,)
-        - **masked_positions**: optional tensor of position of tokens for masked LM decoding,
-            shape (batch_size, num_masked_positions).
 
     Outputs:
         - **sequence_outputs**: Encoded sequence, which can be either a tensor of the last
@@ -787,31 +777,27 @@ class DistilBERTModel(BERTModel):
             Returned only if BERTEncoder.output_attention is True.
             List of num_layers length of tensors of shape
             (num_masks, num_attention_heads, seq_length, seq_length)
-        - **masked_lm_outputs**: output tensor of sequence decoding for masked language model
-            prediction. Returned only if use_decoder True.
-            Shape (batch_size, num_masked_positions, vocab_size)
     """
 
     def __init__(self, encoder, vocab_size=None, units=None,
-                 embed_size=None, embed_dropout=0.0, embed_initializer=None,
-                 word_embed=None, use_pooler=True, prefix=None, params=None):
+                 embed_size=None, embed_initializer=None,
+                 word_embed=None, prefix=None, params=None):
         super(DistilBERTModel, self).__init__(encoder, vocab_size=vocab_size,
                                               token_type_vocab_size=None, units=units,
-                                              embed_size=embed_size, embed_dropout=embed_dropout,
+                                              embed_size=embed_size,
                                               embed_initializer=embed_initializer,
                                               word_embed=word_embed, token_type_embed=None,
-                                              use_pooler=use_pooler, use_decoder=False,
+                                              use_pooler=False, use_decoder=False,
                                               use_classifier=False, use_token_type_embed=False,
                                               prefix=prefix, params=params)
 
-    def __call__(self, inputs, valid_length=None, masked_positions=None):
+    def __call__(self, inputs, valid_length=None):
         # pylint: disable=dangerous-default-value
         """Generate the representation given the inputs.
 
         This is used in fine-tuning a DistilBERT model.
         """
-        return super(DistilBERTModel, self).__call__(inputs, [], valid_length=valid_length,
-                                                     masked_positions=masked_positions)
+        return super(DistilBERTModel, self).__call__(inputs, [], valid_length=valid_length)
 
 class BERTClassifier(HybridBlock):
     """Model for sentence (pair) classification task with BERT.
@@ -1040,8 +1026,6 @@ distilbert_6_768_12_hparams = {
     'dropout': 0.1,
     'use_residual': True,
     'embed_size': 768,
-    'embed_dropout': 0.1,
-    'token_type_vocab_size': 2,
     'word_embed': None,
 }
 
@@ -1243,7 +1227,10 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
                           pretrained_allow_missing=pretrained_allow_missing, **kwargs)
 
 def distilbert_6_768_12(dataset_name='distil_book_corpus_wiki_en_uncased', vocab=None,
-                        pretrained=True, ctx=mx.cpu(), use_pooler=True,
+                        pretrained=True, ctx=mx.cpu(),
+                        output_attention=False,
+                        output_all_encodings=False,
+                        use_pooler=True,
                         root=os.path.join(get_home_dir(), 'models'),
                         **kwargs):
     """DistilBERT model: https://arxiv.org/abs/1910.01108
@@ -1268,20 +1255,13 @@ def distilbert_6_768_12(dataset_name='distil_book_corpus_wiki_en_uncased', vocab
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
-    use_pooler : bool, default True
-        Whether to include the pooler which converts the encoded sequence tensor of shape
-        (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
-        for for segment level classification task.
-    use_decoder : bool, default True
-        Whether to include the decoder for masked language model prediction.
-    use_classifier : bool, default True
-        Whether to include the classifier for next sentence classification.
 
     Returns
     -------
     DistilBERTModel, gluonnlp.vocab.Vocab
     """
-    predefined_args = bert_hparams['distilbert_6_768_12']
+    model_name = 'distilbert_6_768_12'
+    predefined_args = bert_hparams[model_name]
     mutable_args = ['use_residual', 'dropout', 'word_embed']
     mutable_args = frozenset(mutable_args)
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
@@ -1305,11 +1285,9 @@ def distilbert_6_768_12(dataset_name='distil_book_corpus_wiki_en_uncased', vocab
     net = DistilBERTModel(encoder, len(bert_vocab),
                           units=predefined_args['units'],
                           embed_size=predefined_args['embed_size'],
-                          word_embed=predefined_args['word_embed'],
-                          use_pooler=use_pooler)
+                          word_embed=predefined_args['word_embed'])
     if pretrained:
-        ignore_extra = not use_pooler
-        _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=ignore_extra,
+        _load_pretrained_params(net, model_name, dataset_name, root, ctx,
                                 allow_missing=False)
     return net, bert_vocab
 
