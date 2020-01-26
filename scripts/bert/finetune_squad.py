@@ -228,11 +228,13 @@ log.info(args)
 if args.comm_backend == 'horovod':
     import horovod.mxnet as hvd
     hvd.init()
-    rank = hvd.local_rank()
+    rank = hvd.rank()
     size = hvd.size()
+    local_rank = hvd.local_rank()
 else:
     rank = 0
     size = 1
+    local_rank = 0
 
 if args.dtype == 'float16':
     # patch AMP due to issue: https://github.com/apache/incubator-mxnet/issues/17409
@@ -257,7 +259,7 @@ epochs = args.epochs
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 lr = args.lr
-ctx = mx.gpu(rank) if args.gpu else mx.cpu()
+ctx = mx.gpu(local_rank) if args.gpu else mx.cpu()
 
 accumulate = args.accumulate
 log_interval = args.log_interval * accumulate if accumulate else args.log_interval
