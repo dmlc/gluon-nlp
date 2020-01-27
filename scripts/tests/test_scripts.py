@@ -334,7 +334,7 @@ def test_export(task):
 @pytest.mark.parametrize('sentencepiece', [False, True])
 def test_finetune_squad(sentencepiece):
     arguments = ['--optimizer', 'adam', '--batch_size', '32',
-                 '--gpu', '0', '--epochs', '1', '--debug', '--max_seq_length', '32',
+                 '--gpu', '--epochs', '1', '--debug', '--max_seq_length', '32',
                  '--max_query_length', '8', '--doc_stride', '384']
     if sentencepiece:
         # the downloaded bpe vocab
