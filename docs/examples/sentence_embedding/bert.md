@@ -41,6 +41,7 @@ import random
 import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
+from gluonnlp.calibration import BertLayerCollector
 # this notebook assumes that all required scripts are already
 # downloaded from the corresponding tutorial webpage on http://gluon-nlp.mxnet.io
 from bert import data
@@ -292,6 +293,47 @@ for epoch_id in range(num_epochs):
                                  step_loss / log_interval,
                                  trainer.learning_rate, metric.get()[1]))
             step_loss = 0
+```
+
+## Quantize the model
+
+GluonNLP also delivered some int8 quantization methods to improve the performance and reduce the deployment costs for the natural language inference tasks. In real production, there are two main benefits of lower precision (INT8). First, the computation can be accelerated by the low precision instruction, like Intel Vector Neural Network Instruction (VNNI). Second, lower precision data type would save the memory bandwidth and allow for better cache locality and save the power. The new feature can get up to 4X performance speedup in the latest [AWS EC2 C5 instances](https://aws.amazon.com/blogs/aws/now-available-new-c5-instance-sizes-and-bare-metal-instances/) under the [Intel Deep Learning Boost (VNNI)](https://www.intel.ai/intel-deep-learning-boost/) enabled hardware with less than 0.5% accuracy drop.
+
+Now we have a fine-tuned model on MRPC training dataset and in this section, we will quantize the model into int8 data type on a subset of MRPC validation dataset.
+
+```{.python .input}
+# The hyperparameters
+dev_batch_size = 32
+num_calib_batches = 5
+quantized_dtype = 'auto'
+calib_mode = 'customize'
+
+# Calibration function
+def calibration(net, dev_data, num_calib_batches, quantized_dtype, calib_mode):
+    """calibration function on the dev dataset."""
+    print('Now we are doing calibration on dev with %s.', mx.cpu())
+    collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=None)
+    num_calib_examples = dev_batch_size * num_calib_batches
+    quantized_net = mx.contrib.quantization.quantize_net_v2(net, quantized_dtype=quantized_dtype,
+                                                            exclude_layers=[],
+                                                            quantize_mode='smart',
+                                                            quantize_granularity='channel-wise',
+                                                            calib_data=dev_data,
+                                                            calib_mode=calib_mode,
+                                                            num_calib_examples=num_calib_examples,
+                                                            ctx=mx.cpu(),
+                                                            LayerOutputCollector=collector,
+                                                            logger=None)
+
+try:
+    calibration(bert_classifier,
+                bert_dataloader,
+                num_calib_batches,
+                quantized_dtype,
+                calib_mode)
+except AttributeError:
+    nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
+    warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
 ```
 
 ## Conclusion
