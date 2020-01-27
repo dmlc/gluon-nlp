@@ -89,7 +89,6 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
     mlm_loss.hybridize(static_alloc=True, static_shape=True)
 
     model = BERTForPretrain(model, nsp_loss, mlm_loss, len(vocabulary))
-    model.hybridize(static_alloc=True, static_shape=True)
     return model, vocabulary
 
 
