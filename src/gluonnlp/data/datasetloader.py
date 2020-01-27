@@ -89,13 +89,20 @@ class _MultiBatchWorkerIter:
         # counter reference dict
         self._counter_ref = {}
 
-    def _count_dataset_ref(self):
+    def _count_dataset_ref(self, new_dataset):
         dataset_refs = []
         for dataset in self._dataset_refs:
             if self._counter_ref[id(dataset)].value > 0:
                 dataset_refs.append(dataset)
-        if self._dataset and self._counter_ref[id(self._dataset)].value > 0:
-            dataset_refs.append(self._dataset)
+            else:
+                del self._counter_ref[id(dataset)]
+        if self._dataset:
+            if self._counter_ref[id(self._dataset)].value > 0:
+                if id(new_dataset) != id(self._dataset):
+                    dataset_refs.append(self._dataset)
+            else:
+                del self._counter_ref[id(self._dataset)]
+
         self._dataset_refs = dataset_refs
 
     def _next_dataset(self):
@@ -119,10 +126,11 @@ class _MultiBatchWorkerIter:
                 dataset, batch_sampler = result
                 # Without checking the reference counts of previous datasets in the master process,
                 # the key error can be triggered occasionally. This may be a bug in Python.
-                self._count_dataset_ref()
+                self._count_dataset_ref(dataset)
                 self._dataset = dataset
                 # initialize reference counter
-                self._counter_ref[id(dataset)] = self._manager.Value('i', 0)
+                if id(dataset) not in self._counter_ref:
+                    self._counter_ref[id(dataset)] = self._manager.Value('i', 0)
                 self._batch_iter = iter(batch_sampler)
                 for _ in range(self._prefetch):
                     self._push_next()
