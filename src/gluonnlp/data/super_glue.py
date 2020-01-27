@@ -146,20 +146,13 @@ class SuperGlueCB(_SuperGlueDataset):
     >>> len(cb_val)
     56
     >>> sorted(cb_val[0].items())
-    [('hypothesis', 'Valence was helping'),
-     ('idx', 0),
-     ('label', 'contradiction'),
-     ('premise',
-      "Valence the void-brain, Valence the virtuous valet. Why couldn't the figger choose his own portion of titanic anatomy to shaft? Did he think he was helping?")]
+    [('hypothesis', 'Valence was helping'), ('idx', 0), ('label', 'contradiction'), ('premise', "Valence the void-brain, Valence the virtuous valet. Why couldn't the figger choose his own portion of titanic anatomy to shaft? Did he think he was helping?")]
     >>> cb_test = gluonnlp.data.SuperGlueCB('test', root='./datasets/cb')
     -etc-
     >>> len(cb_test)
     250
     >>> sorted(cb_test[0].items())
-    [('hypothesis', 'Polly was not an experienced ocean sailor'),
-     ('idx', 0),
-     ('premise',
-      'Polly had to think quickly. They were still close enough to shore for him to return her to the police if she admitted she was not an experienced ocean sailor.')]
+    [('hypothesis', 'Polly was not an experienced ocean sailor'), ('idx', 0), ('premise', 'Polly had to think quickly. They were still close enough to shore for him to return her to the police if she admitted she was not an experienced ocean sailor.')]
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_cb')):
@@ -272,30 +265,13 @@ class SuperGlueWiC(_SuperGlueDataset):
     >>> len(wic_val)
     638
     >>> sorted(wic_val[3].items())
-    [('end1', 31),
-     ('end2', 35),
-     ('idx', 3),
-     ('label', True),
-     ('sentence1', 'She gave her hair a quick brush.'),
-     ('sentence2', 'The dentist recommended two brushes a day.'),
-     ('start1', 26),
-     ('start2', 28),
-     ('version', 1.1),
-     ('word', 'brush')]
+    [('end1', 31), ('end2', 35), ('idx', 3), ('label', True), ('sentence1', 'She gave her hair a quick brush.'), ('sentence2', 'The dentist recommended two brushes a day.'), ('start1', 26), ('start2', 28), ('version', 1.1), ('word', 'brush')]
     >>> wic_test = gluonnlp.data.SuperGlueWiC('test', root='./datasets/wic')
     -etc-
     >>> len(wic_test)
     1400
     >>> sorted(wic_test[0].items())
-    [('end1', 46),
-     ('end2', 22),
-     ('idx', 0),
-     ('sentence1', 'The smell of fried onions makes my mouth water.'),
-     ('sentence2', 'His eyes were watering.'),
-     ('start1', 41),
-     ('start2', 14),
-     ('version', 1.1),
-     ('word', 'water')]
+    [('end1', 46), ('end2', 22), ('idx', 0), ('sentence1', 'The smell of fried onions makes my mouth water.'), ('sentence2', 'His eyes were watering.'), ('start1', 41), ('start2', 14), ('version', 1.1), ('word', 'water')]
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_wic')):
@@ -341,22 +317,13 @@ class SuperGlueCOPA(_SuperGlueDataset):
     >>> len(copa_val)
     100
     >>> sorted(copa_val[0].items())
-    [('choice1', 'The toilet filled with water.'),
-     ('choice2', 'Water flowed from the spout.'),
-     ('idx', 0),
-     ('label', 1),
-     ('premise', 'The man turned on the faucet.'),
-     ('question', 'effect')]
+    [('choice1', 'The toilet filled with water.'), ('choice2', 'Water flowed from the spout.'), ('idx', 0), ('label', 1), ('premise', 'The man turned on the faucet.'), ('question', 'effect')]
     >>> copa_test = gluonnlp.data.SuperGlueCOPA('test', root='./datasets/copa')
     -etc-
     >>> len(copa_test)
     500
     >>> sorted(copa_test[0].items())
-    [('choice1', 'It was fragile.'),
-     ('choice2', 'It was small.'),
-     ('idx', 0),
-     ('premise', 'The item was packaged in bubble wrap.'),
-     ('question', 'cause')]
+    [('choice1', 'It was fragile.'), ('choice2', 'It was small.'), ('idx', 0), ('premise', 'The item was packaged in bubble wrap.'), ('question', 'cause')]
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_copa')):
@@ -580,11 +547,7 @@ class SuperGlueAXb(_SuperGlueDataset):
     >>> len(ax_b)
     1104
     >>> sorted(ax_b[0].items())
-    [('idx', '0'),
-     ('label', 'not_entailment'),
-     ('logic', 'Negation'),
-     ('sentence1', 'The cat sat on the mat.'),
-     ('sentence2', 'The cat did not sit on the mat.')]
+    [('idx', '0'), ('label', 'not_entailment'), ('logic', 'Negation'), ('sentence1', 'The cat sat on the mat.'), ('sentence2', 'The cat did not sit on the mat.')]
     """
     def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'superglue_ax_b')):
         data_file = ('AX-b', '398c5a376eb436f790723cd217ac040334140000',
@@ -620,12 +583,7 @@ class SuperGlueAXg(_SuperGlueDataset):
     >>> len(ax_g)
     356
     >>> sorted(ax_g[0].items())
-    [('hypothesis', 'The accountant sought help filing taxes.'),
-     ('idx', 0),
-     ('label', 'not_entailment'),
-     ('pair_id', 551646),
-     ('premise',
-      'The taxpayer met with the accountant to get help filing his taxes.')]
+    [('hypothesis', 'The accountant sought help filing taxes.'), ('idx', 0), ('label', 'not_entailment'), ('pair_id', 551646), ('premise', 'The taxpayer met with the accountant to get help filing his taxes.')]
     """
     def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'superglue_ax_g')):
         data_file = ('AX-g', 'd8c92498496854807dfeacd344eddf466d7f468a',
