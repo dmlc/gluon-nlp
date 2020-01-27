@@ -88,11 +88,7 @@ class SuperGlueRTE(_SuperGlueDataset):
     >>> len(rte_val)
     277
     >>> sorted(rte_val[0].items())
-    [('hypothesis', 'Christopher Reeve had an accident.'),
-     ('idx', 0),
-     ('label', 'not_entailment'),
-     ('premise',
-      'Dana Reeve, the widow of the actor Christopher Reeve, has died of lung cancer at age 44, according to the Christopher Reeve Foundation.')]
+    [('hypothesis', 'Christopher Reeve had an accident.'), ('idx', 0), ('label', 'not_entailment'), ('premise', 'Dana Reeve, the widow of the actor Christopher Reeve, has died of lung cancer at age 44, according to the Christopher Reeve Foundation.')]
     >>> rte_test = gluonnlp.data.SuperGlueRTE('test', root='./datasets/rte')
     -etc-
     >>> len(rte_test)
@@ -198,28 +194,13 @@ class SuperGlueWSC(_SuperGlueDataset):
     >>> len(wsc_val)
     104
     >>> sorted(wsc_val[5].items())
-    [('idx', 5),
-     ('label', True),
-     ('target',
-      {'span2_index': 9,
-       'span1_index': 6,
-       'span1_text': 'The table',
-       'span2_text': 'it'}),
-     ('text',
-      'The large ball crashed right through the table because it was made of styrofoam.')]
+    [('idx', 5), ('label', True), ('target', {'span2_index': 9, 'span1_index': 6, 'span1_text': 'The table', 'span2_text': 'it'}), ('text', 'The large ball crashed right through the table because it was made of styrofoam.')]
     >>> wsc_test = gluonnlp.data.SuperGlueWSC('test', root='./datasets/wsc')
     -etc-
     >>> len(wsc_test)
     146
     >>> sorted(wsc_test[16].items())
-    [('idx', 16),
-     ('target',
-      {'span1_text': 'life',
-       'span1_index': 1,
-       'span2_text': 'it',
-       'span2_index': 21}),
-     ('text',
-      'Your life is yours and yours alone, and if the pain outweighs the benefit, you should have the option to end it .')]
+    [('idx', 16), ('target', {'span1_text': 'life', 'span1_index': 1, 'span2_text': 'it', 'span2_index': 21}), ('text', 'Your life is yours and yours alone, and if the pain outweighs the benefit, you should have the option to end it .')]
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_wsc')):
@@ -498,7 +479,7 @@ class SuperGlueReCoRD(_SuperGlueDataset):
     >>> len(record_val)
     7481
     >>> sorted(record_val[0].keys())
-    ['idx', 'passage', 'question']
+    ['idx', 'passage', 'qas', 'source']
     >>> record_test = gluonnlp.data.SuperGlueReCoRD('test', root='./datasets/record')
     -etc-
     >>> len(record_test)
