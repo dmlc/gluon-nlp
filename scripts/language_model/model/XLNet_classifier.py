@@ -41,24 +41,25 @@ class XLNetClassifier(Block):
         """
         return super(XLNetClassifier, self).__call__(inputs, token_types, valid_length, mems)
 
-    def _apply_pooling(self, sequence):
+    def _apply_pooling(self, sequence, valid_length):
         """Generate the representation given the inputs.
 
         This is used for pre-training or fine-tuning a XLNet model.
         """
-        # Note that we are using left pad so we always take the last hidden state
-        outputs = sequence.slice(begin=(0, -1, 0), end=(None, -2, None), step=(None, -1, None))
-        outputs = outputs.reshape(shape=(-1, self._units))
-        return self.pooler(outputs)
-
-    def _padding_mask(self, inputs, valid_length_start):
-        #we are using left pad
         F = mx.ndarray
-        valid_length_start = valid_length_start.astype('int32')
-        steps = F.contrib.arange_like(inputs, axis=1) + 1
+        index = F.contrib.arange_like(sequence, axis=0, ctx=sequence.context).expand_dims(1)
+        valid_length_rs = valid_length.reshape((-1, 1)) - 1
+        gather_index = F.concat(index, valid_length_rs).T
+        cls_states = F.gather_nd(sequence, gather_index)
+        return self.pooler(cls_states)
+
+    def _padding_mask(self, inputs, valid_length):
+        F = mx.ndarray
+        valid_length = valid_length.astype(inputs.dtype)
+        steps = F.contrib.arange_like(inputs, axis=1)
         ones = F.ones_like(steps)
-        mask = F.broadcast_greater(F.reshape(steps, shape=(1, -1)),
-                                   F.reshape(valid_length_start, shape=(-1, 1)))
+        mask = F.broadcast_lesser(F.reshape(steps, shape=(1, -1)),
+                                  F.reshape(valid_length, shape=(-1, 1)))
         mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
                                F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
         return mask
@@ -82,9 +83,8 @@ class XLNetClassifier(Block):
         outputs : NDArray
             Shape (batch_size, num_classes)
         """
-        valid_length_start = inputs.shape[1] - valid_length
-        attention_mask = self._padding_mask(inputs, valid_length_start).astype('float32')
+        attention_mask = self._padding_mask(inputs, valid_length).astype('float32')
         output, _ = self.xlnet(inputs, token_types, mems, attention_mask)
-        output = self._apply_pooling(output)
+        output = self._apply_pooling(output, valid_length.astype('float32'))
         pooler_out = self.pooler(output)
         return self.classifier(pooler_out)
