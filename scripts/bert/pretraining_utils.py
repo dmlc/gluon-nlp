@@ -71,12 +71,13 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
                                             pretrained=pretrained, ctx=ctx)
 
     if not pretrained:
-        model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
+        logging.info('Using truncated norm initialization')
+        model.initialize(init=nlp.initializer.TruncNorm(0.02), ctx=ctx)
     model.cast(dtype)
 
     if ckpt_dir and start_step:
         param_path = os.path.join(ckpt_dir, '%07d.params'%start_step)
-        nlp.utils.load_parameters(model, param_path, ctx=ctx)
+        nlp.utils.load_parameters(model, param_path, ctx=ctx, cast_dtype=True)
         logging.info('Loading step %d checkpoints from %s.', start_step, param_path)
 
     model.hybridize(static_alloc=True, static_shape=True)
@@ -88,6 +89,7 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
     mlm_loss.hybridize(static_alloc=True, static_shape=True)
 
     model = BERTForPretrain(model, nsp_loss, mlm_loss, len(vocabulary))
+    model.hybridize(static_alloc=True, static_shape=True)
     return model, vocabulary
 
 

@@ -142,6 +142,9 @@ parser.add_argument('--dataset_cached', action='store_true',
                     help='Whether or not to cache the last processed training dataset.')
 parser.add_argument('--num_max_dataset_cached', type=int, default=0,
                     help='Maximum number of cached processed training dataset.')
+# stage 2
+parser.add_argument('--phase2', action='store_true', help='phase 2 training')
+parser.add_argument('--phase1_num_steps', type=int, help='number of steps for phase 1')
 # communication
 parser.add_argument('--comm_backend', type=str, default='device',
                     choices=['horovod', 'dist_sync_device', 'device'],
@@ -152,9 +155,8 @@ parser.add_argument('--gpus', type=str, default=None,
 args = parser.parse_args()
 
 # logging
+nlp.utils.mkdir(args.ckpt_dir)
 level = logging.DEBUG if args.verbose else logging.INFO
-logging.getLogger().setLevel(level)
-logging.info(args)
 os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
 
 class DataParallelBERT(nlp.utils.Parallelizable):
@@ -220,6 +222,12 @@ def init_comm(backend):
 
 backend = args.comm_backend
 store, num_workers, rank, local_rank, is_master_node, ctxs = init_comm(backend)
+
+logging.basicConfig(filename=os.path.join(args.ckpt_dir, ('phase1_log.' if not args.phase2 else 'phase2_log.') + str(rank)))
+logging.getLogger().setLevel(level)
+logging.info(args)
+logging.info(os.environ)
+
 assert args.total_batch_size % (args.accumulate * num_workers) == 0
 assert args.total_batch_size_eval % (args.accumulate * num_workers) == 0
 batch_size = int(args.total_batch_size / num_workers / args.accumulate)
@@ -247,7 +255,7 @@ def train(data_train, data_eval, model):
 
     dynamic_loss_scale = args.dtype == 'float16'
     if dynamic_loss_scale:
-        loss_scale_param = {'scale_window': 2000 / num_workers}
+        loss_scale_param = {'scale_window': 2000 / num_workers, 'init_scale': 2**10}
     else:
         loss_scale_param = None
 
@@ -285,6 +293,9 @@ def train(data_train, data_eval, model):
     batch_num = 0
     step_num = args.start_step
 
+    if args.phase2:
+        step_num -= args.phase1_num_steps
+
     logging.info('Training started')
 
     # create dummy data loader if needed
@@ -303,15 +314,12 @@ def train(data_train, data_eval, model):
                 break
             if batch_num % accumulate == 0:
                 step_num += 1
-                # if accumulate > 1, grad_req is set to 'add', and zero_grad is required
-                if accumulate > 1:
-                    param_dict.zero_grad()
                 # update learning rate
                 if step_num <= num_warmup_steps:
                     new_lr = lr * step_num / num_warmup_steps
                 else:
-                    offset = lr * step_num / num_train_steps
-                    new_lr = lr - offset
+                    offset = (num_train_steps - step_num) / (num_train_steps - num_warmup_steps)
+                    new_lr = lr * max(offset, 0)
                 trainer.set_learning_rate(new_lr)
                 if args.profile:
                     profile(step_num, 10, 14, profile_name=args.profile + str(rank))
@@ -322,21 +330,20 @@ def train(data_train, data_eval, model):
             ns_label_list, ns_pred_list = [], []
             mask_label_list, mask_pred_list, mask_weight_list = [], [], []
 
-            with mx.autograd.record():
-                num_data = len(data_list)
-                for i in range(num_data):
-                    parallel.put(data_list[i])
-                for _ in range(num_data):
-                    (next_sentence_label, classified, masked_id,
-                     decoded, masked_weight, ls1, ls2, valid_length) = parallel.get()
-                    ns_label_list.append(next_sentence_label)
-                    ns_pred_list.append(classified)
-                    mask_label_list.append(masked_id)
-                    mask_pred_list.append(decoded)
-                    mask_weight_list.append(masked_weight)
-                    running_mlm_loss += ls1.as_in_context(mx.cpu()) / len(ctxs)
-                    running_nsp_loss += ls2.as_in_context(mx.cpu()) / len(ctxs)
-                    running_num_tks += valid_length.sum().as_in_context(mx.cpu())
+            num_data = len(data_list)
+            for i in range(num_data):
+                parallel.put(data_list[i])
+            for _ in range(num_data):
+                (next_sentence_label, classified, masked_id,
+                 decoded, masked_weight, ls1, ls2, valid_length) = parallel.get()
+                ns_label_list.append(next_sentence_label)
+                ns_pred_list.append(classified)
+                mask_label_list.append(masked_id)
+                mask_pred_list.append(decoded)
+                mask_weight_list.append(masked_weight)
+                running_mlm_loss += ls1.as_in_context(mx.cpu()) / len(ctxs)
+                running_nsp_loss += ls2.as_in_context(mx.cpu()) / len(ctxs)
+                running_num_tks += valid_length.sum().as_in_context(mx.cpu())
             # pre fetch next batch
             try:
                 next_data_batch = next(data_train_iter)
@@ -346,6 +353,8 @@ def train(data_train, data_eval, model):
             # update
             if (batch_num + 1) % accumulate == 0:
                 fp16_trainer.step(1, max_norm=1.0 * num_workers)
+                if accumulate > 1:
+                    param_dict.zero_grad()
             # update metrics
             if args.no_compute_acc:
                 mask_pred_list[0].wait_to_read()
@@ -354,7 +363,7 @@ def train(data_train, data_eval, model):
                 mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
 
             # logging
-            if (step_num + 1) % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
+            if step_num % (args.log_interval) == 0 and (batch_num + 1) % accumulate == 0:
                 if args.no_compute_acc:
                     log_noacc(begin_time, running_num_tks, running_mlm_loss / accumulate,
                               running_nsp_loss / accumulate, step_num,
@@ -369,12 +378,12 @@ def train(data_train, data_eval, model):
                 running_mlm_loss = running_nsp_loss = running_num_tks = 0
 
             # saving checkpoints
-            if (step_num + 1) % args.ckpt_interval == 0 and (batch_num + 1) % accumulate == 0:
+            if step_num % args.ckpt_interval == 0 and (batch_num + 1) % accumulate == 0:
                 if is_master_node:
                     save_states(step_num, trainer, args.ckpt_dir, local_rank)
                     if local_rank == 0:
                         save_parameters(step_num, model.bert, args.ckpt_dir)
-            if (step_num + 1) % args.eval_interval == 0 and data_eval:
+            if step_num % args.eval_interval == 0 and data_eval and (batch_num + 1) % accumulate == 0:
                 # eval data is always based on a fixed npz file.
                 dataset_eval = get_pretrain_data_npz(data_eval, batch_size_eval,
                                                      1, False, 1, vocab)
@@ -385,14 +394,13 @@ def train(data_train, data_eval, model):
     if is_master_node:
         save_states(step_num, trainer, args.ckpt_dir, local_rank)
         if local_rank == 0:
-            save_parameters(step_num, model, args.ckpt_dir)
+            save_parameters(step_num, model.bert, args.ckpt_dir)
     mx.nd.waitall()
     train_end_time = time.time()
     logging.info('Train cost={:.1f}s'.format(train_end_time - train_begin_time))
 
 if __name__ == '__main__':
     random_seed = random.randint(0, 1000)
-    nlp.utils.mkdir(args.ckpt_dir)
 
     dataset_name, vocab = args.dataset_name, None
     if args.sentencepiece:
@@ -451,6 +459,7 @@ if __name__ == '__main__':
                                               args.max_predictions_per_seq)
         else:
             shuffle = True
+            logging.info('args.num_buckets: {}, num_workers: {}, rank: {}'.format(args.num_buckets, num_workers, rank))
             data_train = get_dataset_fn(args.data, batch_size,
                                         len(ctxs), shuffle, args.num_buckets, vocab,
                                         num_parts=num_workers, part_idx=rank,
