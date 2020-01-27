@@ -87,18 +87,21 @@ class SuperGlueRTE(_SuperGlueDataset):
     -etc-
     >>> len(rte_val)
     277
-    >>> sorted(rte_val[0].keys())
-    ['hypothesis', 'idx', 'label', 'premise']
-    >>> rte_val[0]
-    {'premise': 'Dana Reeve, the widow of the actor Christopher Reeve, has died of lung cancer at age 44, according to the Christopher Reeve Foundation.', 'hypothesis': 'Christopher Reeve had an accident.', 'label': 'not_entailment', 'idx': 0}
+    >>> sorted(rte_val[0].items())
+    [('hypothesis', 'Christopher Reeve had an accident.'),
+     ('idx', 0),
+     ('label', 'not_entailment'),
+     ('premise',
+      'Dana Reeve, the widow of the actor Christopher Reeve, has died of lung cancer at age 44, according to the Christopher Reeve Foundation.')]
     >>> rte_test = gluonnlp.data.SuperGlueRTE('test', root='./datasets/rte')
     -etc-
     >>> len(rte_test)
     3000
-    >>> sorted(rte_test[0].keys())
-    ['hypothesis', 'idx', 'premise']
-    >>> rte_test[0]
-    {'premise': "Mangla was summoned after Madhumita's sister Nidhi Shukla, who was the first witness in the case.", 'hypothesis': 'Shukla is related to Mangla.', 'idx': 0}
+    >>> sorted(rte_test[0].items())
+    [('hypothesis', 'Shukla is related to Mangla.'),
+     ('idx', 0),
+     ('premise',
+      "Mangla was summoned after Madhumita's sister Nidhi Shukla, who was the first witness in the case.")]
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_rte')):
@@ -142,18 +145,21 @@ class SuperGlueCB(_SuperGlueDataset):
     -etc-
     >>> len(cb_val)
     56
-    >>> sorted(cb_val[0].keys())
-    ['hypothesis', 'idx', 'label', 'premise']
-    >>> cb_val[0]
-    {'premise': "Valence the void-brain, Valence the virtuous valet. Why couldn't the figger choose his own portion of titanic anatomy to shaft? Did he think he was helping?", 'hypothesis': 'Valence was helping', 'label': 'contradiction', 'idx': 0}
+    >>> sorted(cb_val[0].items())
+    [('hypothesis', 'Valence was helping'),
+     ('idx', 0),
+     ('label', 'contradiction'),
+     ('premise',
+      "Valence the void-brain, Valence the virtuous valet. Why couldn't the figger choose his own portion of titanic anatomy to shaft? Did he think he was helping?")]
     >>> cb_test = gluonnlp.data.SuperGlueCB('test', root='./datasets/cb')
     -etc-
     >>> len(cb_test)
     250
-    >>> sorted(cb_test[0].keys())
-    ['hypothesis', 'idx', 'premise']
-    >>> cb_test[0]
-    {'premise': 'Polly had to think quickly. They were still close enough to shore for him to return her to the police if she admitted she was not an experienced ocean sailor.', 'hypothesis': 'Polly was not an experienced ocean sailor', 'idx': 0}
+    >>> sorted(cb_test[0].items())
+    [('hypothesis', 'Polly was not an experienced ocean sailor'),
+     ('idx', 0),
+     ('premise',
+      'Polly had to think quickly. They were still close enough to shore for him to return her to the police if she admitted she was not an experienced ocean sailor.')]
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_cb')):
@@ -198,18 +204,29 @@ class SuperGlueWSC(_SuperGlueDataset):
     -etc-
     >>> len(wsc_val)
     104
-    >>> sorted(wsc_val[0].keys())
-    ['idx', 'label', 'target', 'text']
-    >>> wsc_val[5]
-    {'text': 'The large ball crashed right through the table because it was made of styrofoam.', 'target': {'span2_index': 9, 'span1_index': 6, 'span1_text': 'The table', 'span2_text': 'it'}, 'idx': 5, 'label': True}
+    >>> sorted(wsc_val[5].items())
+    [('idx', 5),
+     ('label', True),
+     ('target',
+      {'span2_index': 9,
+       'span1_index': 6,
+       'span1_text': 'The table',
+       'span2_text': 'it'}),
+     ('text',
+      'The large ball crashed right through the table because it was made of styrofoam.')]
     >>> wsc_test = gluonnlp.data.SuperGlueWSC('test', root='./datasets/wsc')
     -etc-
     >>> len(wsc_test)
     146
-    >>> sorted(wsc_test[0].keys())
-    ['idx', 'target', 'text']
-    >>> wsc_test[16]
-    {'text': 'Your life is yours and yours alone, and if the pain outweighs the benefit, you should have the option to end it .', 'target': {'span1_text': 'life', 'span1_index': 1, 'span2_text': 'it', 'span2_index': 21}, 'idx': 16}
+    >>> sorted(wsc_test[16].items())
+    [('idx', 16),
+     ('target',
+      {'span1_text': 'life',
+       'span1_index': 1,
+       'span2_text': 'it',
+       'span2_index': 21}),
+     ('text',
+      'Your life is yours and yours alone, and if the pain outweighs the benefit, you should have the option to end it .')]
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_wsc')):
@@ -254,35 +271,31 @@ class SuperGlueWiC(_SuperGlueDataset):
     -etc-
     >>> len(wic_val)
     638
-    >>> sorted(wic_val[0].keys())
-    ['end1',
-     'end2',
-     'idx',
-     'label',
-     'sentence1',
-     'sentence2',
-     'start1',
-     'start2',
-     'version',
-     'word']
-    >>> wic_val[3]
-    {'word': 'brush', 'sentence1': 'She gave her hair a quick brush.', 'sentence2': 'The dentist recommended two brushes a day.', 'idx': 3, 'label': True, 'start1': 26, 'start2': 28, 'end1': 31, 'end2': 35, 'version': 1.1}
+    >>> sorted(wic_val[3].items())
+    [('end1', 31),
+     ('end2', 35),
+     ('idx', 3),
+     ('label', True),
+     ('sentence1', 'She gave her hair a quick brush.'),
+     ('sentence2', 'The dentist recommended two brushes a day.'),
+     ('start1', 26),
+     ('start2', 28),
+     ('version', 1.1),
+     ('word', 'brush')]
     >>> wic_test = gluonnlp.data.SuperGlueWiC('test', root='./datasets/wic')
     -etc-
     >>> len(wic_test)
     1400
-    >>> sorted(wic_test[0].keys())
-    ['end1',
-     'end2',
-     'idx',
-     'sentence1',
-     'sentence2',
-     'start1',
-     'start2',
-     'version',
-     'word']
-    >>> wic_test[0]
-    {'word': 'water', 'sentence1': 'The smell of fried onions makes my mouth water.', 'sentence2': 'His eyes were watering.', 'idx': 0, 'start1': 41, 'start2': 14, 'end1': 46, 'end2': 22, 'version': 1.1}
+    >>> sorted(wic_test[0].items())
+    [('end1', 46),
+     ('end2', 22),
+     ('idx', 0),
+     ('sentence1', 'The smell of fried onions makes my mouth water.'),
+     ('sentence2', 'His eyes were watering.'),
+     ('start1', 41),
+     ('start2', 14),
+     ('version', 1.1),
+     ('word', 'water')]
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_wic')):
@@ -327,18 +340,23 @@ class SuperGlueCOPA(_SuperGlueDataset):
     -etc-
     >>> len(copa_val)
     100
-    >>> sorted(copa_val[0].keys())
-    ['choice1', 'choice2', 'idx', 'label', 'premise', 'question']
-    >>> copa_val[0]
-    {'premise': 'The man turned on the faucet.', 'choice1': 'The toilet filled with water.', 'choice2': 'Water flowed from the spout.', 'question': 'effect', 'label': 1, 'idx': 0}
+    >>> sorted(copa_val[0].items())
+    [('choice1', 'The toilet filled with water.'),
+     ('choice2', 'Water flowed from the spout.'),
+     ('idx', 0),
+     ('label', 1),
+     ('premise', 'The man turned on the faucet.'),
+     ('question', 'effect')]
     >>> copa_test = gluonnlp.data.SuperGlueCOPA('test', root='./datasets/copa')
     -etc-
     >>> len(copa_test)
     500
-    >>> sorted(copa_test[0].keys())
-    ['choice1', 'choice2', 'idx', 'premise', 'question']
-    >>> copa_test[0]
-    {'premise': 'The item was packaged in bubble wrap.', 'choice1': 'It was fragile.', 'choice2': 'It was small.', 'question': 'cause', 'idx': 0}
+    >>> sorted(copa_test[0].items())
+    [('choice1', 'It was fragile.'),
+     ('choice2', 'It was small.'),
+     ('idx', 0),
+     ('premise', 'The item was packaged in bubble wrap.'),
+     ('question', 'cause')]
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_copa')):
@@ -561,10 +579,12 @@ class SuperGlueAXb(_SuperGlueDataset):
     -etc-
     >>> len(ax_b)
     1104
-    >>> sorted(ax_b[0].keys())
-    ['idx', 'label', 'logic', 'sentence1', 'sentence2']
-    >>> ax_b[0]
-    {'idx': '0', 'label': 'not_entailment', 'sentence1': 'The cat sat on the mat.', 'sentence2': 'The cat did not sit on the mat.', 'logic': 'Negation'}
+    >>> sorted(ax_b[0].items())
+    [('idx', '0'),
+     ('label', 'not_entailment'),
+     ('logic', 'Negation'),
+     ('sentence1', 'The cat sat on the mat.'),
+     ('sentence2', 'The cat did not sit on the mat.')]
     """
     def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'superglue_ax_b')):
         data_file = ('AX-b', '398c5a376eb436f790723cd217ac040334140000',
@@ -599,10 +619,13 @@ class SuperGlueAXg(_SuperGlueDataset):
     -etc-
     >>> len(ax_g)
     356
-    >>> sorted(ax_g[0].keys())
-    ['hypothesis', 'idx', 'label', 'pair_id', 'premise']
-    >>> ax_g[0]
-    {'hypothesis': 'The accountant sought help filing taxes.', 'idx': 0, 'label': 'not_entailment', 'pair_id': 551646, 'premise': 'The taxpayer met with the accountant to get help filing his taxes.'}
+    >>> sorted(ax_g[0].items())
+    [('hypothesis', 'The accountant sought help filing taxes.'),
+     ('idx', 0),
+     ('label', 'not_entailment'),
+     ('pair_id', 551646),
+     ('premise',
+      'The taxpayer met with the accountant to get help filing his taxes.')]
     """
     def __init__(self, root=os.path.join(get_home_dir(), 'datasets', 'superglue_ax_g')):
         data_file = ('AX-g', 'd8c92498496854807dfeacd344eddf466d7f468a',
