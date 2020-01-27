@@ -223,7 +223,9 @@ def init_comm(backend):
 backend = args.comm_backend
 store, num_workers, rank, local_rank, is_master_node, ctxs = init_comm(backend)
 
-logging.basicConfig(filename=os.path.join(args.ckpt_dir, ('phase1_log.' if not args.phase2 else 'phase2_log.') + str(rank)))
+filename = os.path.join(args.ckpt_dir,
+                        ('phase1_log.' if not args.phase2 else 'phase2_log.') + str(rank))
+logging.basicConfig(filename=filename)
 logging.getLogger().setLevel(level)
 logging.info(args)
 logging.info(os.environ)
@@ -383,7 +385,8 @@ def train(data_train, data_eval, model):
                     save_states(step_num, trainer, args.ckpt_dir, local_rank)
                     if local_rank == 0:
                         save_parameters(step_num, model.bert, args.ckpt_dir)
-            if step_num % args.eval_interval == 0 and data_eval and (batch_num + 1) % accumulate == 0:
+            if step_num % args.eval_interval == 0 and data_eval \
+                    and (batch_num + 1) % accumulate == 0:
                 # eval data is always based on a fixed npz file.
                 dataset_eval = get_pretrain_data_npz(data_eval, batch_size_eval,
                                                      1, False, 1, vocab)
@@ -459,7 +462,9 @@ if __name__ == '__main__':
                                               args.max_predictions_per_seq)
         else:
             shuffle = True
-            logging.info('args.num_buckets: {}, num_workers: {}, rank: {}'.format(args.num_buckets, num_workers, rank))
+            logging.info('args.num_buckets: {}, num_workers: {}, rank: {}'.format(args.num_buckets,
+                                                                                  num_workers,
+                                                                                  rank))
             data_train = get_dataset_fn(args.data, batch_size,
                                         len(ctxs), shuffle, args.num_buckets, vocab,
                                         num_parts=num_workers, part_idx=rank,
