@@ -1344,7 +1344,7 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
     -------
     RoBERTaModel, gluonnlp.vocab.Vocab
     """
-    predefined_args = bert_hparams[model_name]
+    predefined_args = bert_hparams[model_name].copy()
     if not hparam_allow_override:
         mutable_args = ['use_residual', 'dropout', 'word_embed']
         mutable_args = frozenset(mutable_args)
@@ -1457,7 +1457,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
     -------
     BERTModel, gluonnlp.vocab.BERTVocab
     """
-    predefined_args = bert_hparams[model_name]
+    predefined_args = bert_hparams[model_name].copy()
     if not hparam_allow_override:
         mutable_args = ['use_residual', 'dropout', 'word_embed']
         mutable_args = frozenset(mutable_args)
