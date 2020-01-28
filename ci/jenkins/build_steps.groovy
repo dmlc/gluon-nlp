@@ -64,31 +64,6 @@ def test_unittest(workspace_name, conda_env_name,
   }]
 }
 
-def test_unittest_dev(workspace_name, conda_env_name,
-                  test_path, cov_path,
-                  mark,
-                      threads, gpu, skip_report, k) {
-    capture_flag = env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no'
-    node_type = gpu?NODE_LINUX_GPU:NODE_LINUX_CPU
-    return ["${conda_env_name}: ${test_path} -m '${mark}'": {
-        node(node_type) {
-            ws(workspace_name) {
-                timeout(time: max_time, unit: 'MINUTES') {
-                    utils.init_git()
-                    sh """
-          set -ex
-          source ci/prepare_clean_env.sh ${conda_env_name}
-          pytest -v ${capture_flag} -n ${threads} -k '${k}' -m '${mark}' --durations=30 --cov ${cov_path} --cov-report=term --cov-report xml ${test_path}
-          set +ex
-          """
-                    if (!skip_report) utils.publish_test_coverage('GluonNLPCodeCov')
-                }
-            }
-        }
-    }]
-}
-
-
 def test_doctest(workspace_name, conda_env_name,
                  test_path, cov_path, threads) {
   capture_flag = env.BRANCH_NAME.startsWith('PR-')?'':'--capture=no'
