@@ -312,7 +312,7 @@ def test_finetune_train(early_stop, bert_model, dataset, dtype):
     epochs = early_stop + 2 if early_stop else 2
     arguments = ['--log_interval', '100', '--epsilon', '1e-8',
                  '--task_name', dataset, '--bert_model', bert_model,
-                 '--gpu', '--epochs', str(epochs), '--dtype', dtype]
+                 '--gpu', '0', '--epochs', str(epochs), '--dtype', dtype]
     if early_stop is not None:
         arguments += ['--early_stop', str(early_stop)]
     if 'roberta' in bert_model:
