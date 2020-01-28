@@ -71,8 +71,7 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
                                             pretrained=pretrained, ctx=ctx)
 
     if not pretrained:
-        logging.info('Using truncated norm initialization')
-        model.initialize(init=nlp.initializer.TruncNorm(0.02), ctx=ctx)
+        model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
     model.cast(dtype)
 
     if ckpt_dir and start_step:
