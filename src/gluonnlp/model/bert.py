@@ -30,13 +30,12 @@ from mxnet.gluon.model_zoo import model_store
 from ..base import get_home_dir
 from .block import GELU
 from .seq2seq_encoder_decoder import Seq2SeqEncoder
-from .transformer import PositionwiseFFN
+from .transformer import TransformerEncoderCell
 from .utils import _load_pretrained_params, _load_vocab
 
 ###############################################################################
 #                              COMPONENTS                                     #
 ###############################################################################
-
 
 class BERTEncoder(HybridBlock, Seq2SeqEncoder):
     """Structure of the BERT Encoder.
@@ -47,6 +46,9 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
 
     Parameters
     ----------
+    attention_cell : AttentionCell or str, default 'multi_head'
+        Arguments of the attention cell.
+        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
     num_layers : int
         Number of attention layers.
     units : int
@@ -57,8 +59,12 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         Maximum length of the input sequence
     num_heads : int
         Number of heads in multi-head attention
+    scaled : bool
+        Whether to scale the softmax input by the sqrt of the input dimension
+        in multi-head attention
     dropout : float
         Dropout probability of the attention probabilities and embedding.
+    use_residual : bool
     output_attention: bool, default False
         Whether to output the attention weights
     output_all_encodings: bool, default False
@@ -78,21 +84,21 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         Epsilon for layer_norm
 
     Inputs:
-        - **inputs** : input sequence of shape (length, batch_size, C_in)
-        - **states** : list of tensors for initial states and valid length for self attention.
+        - **inputs** : input sequence of shape (batch_size, length, C_in)
+        - **states** : list of tensors for initial states and masks.
         - **valid_length** : valid lengths of each sequence. Usually used when part of sequence
             has been padded. Shape is (batch_size, )
 
     Outputs:
-        - **outputs** : the output of the encoder. Shape is (length, batch_size, C_out)
+        - **outputs** : the output of the encoder. Shape is (batch_size, length, C_out)
         - **additional_outputs** : list of tensors.
             Either be an empty list or contains the attention weights in this step.
             The attention weights will have shape (batch_size, num_heads, length, mem_length)
 
     """
 
-    def __init__(self, *, num_layers=2, units=512, hidden_size=2048,
-                 max_length=50, num_heads=4, dropout=0.0,
+    def __init__(self, *, attention_cell='multi_head', num_layers=2, units=512, hidden_size=2048,
+                 max_length=50, num_heads=4, scaled=True, dropout=0.0, use_residual=True,
                  output_attention=False, output_all_encodings=False, weight_initializer=None,
                  bias_initializer='zeros', prefix=None, params=None, activation='gelu',
                  layer_norm_eps=1e-12):
@@ -115,10 +121,11 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
                                                    init=weight_initializer)
             self.transformer_cells = nn.HybridSequential()
             for i in range(num_layers):
-                cell = BERTEncoderCell(
+                cell = TransformerEncoderCell(
                     units=units, hidden_size=hidden_size, num_heads=num_heads,
-                    weight_initializer=weight_initializer,
-                    bias_initializer=bias_initializer, dropout=dropout,
+                    attention_cell=attention_cell, weight_initializer=weight_initializer,
+                    bias_initializer=bias_initializer, dropout=dropout, use_residual=use_residual,
+                    attention_proj_use_bias=True, attention_use_bias=True, scaled=scaled,
                     output_attention=output_attention, prefix='transformer%d_' % i,
                     activation=activation, layer_norm_eps=layer_norm_eps)
                 self.transformer_cells.add(cell)
@@ -131,7 +138,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         inputs : NDArray or Symbol
             Input sequence. Shape (batch_size, length, C_in)
         states : list of NDArrays or Symbols
-            Initial states. The list of initial states and valid length for self attention
+            Initial states. The list of initial states and masks
         valid_length : NDArray or Symbol
             Valid lengths of each sequence. This is usually used when part of sequence has
             been padded. Shape (batch_size,)
@@ -153,9 +160,9 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         Parameters
         ----------
         inputs : NDArray or Symbol
-            Input sequence. Shape (length, batch_size, C_in)
+            Input sequence. Shape (batch_size, length, C_in)
         states : list of NDArrays or Symbols
-            Initial states. The list of initial states and valid length for self attention
+            Initial states. The list of initial states and masks
         valid_length : NDArray or Symbol
             Valid lengths of each sequence. This is usually used when part of sequence has
             been padded. Shape (batch_size,)
@@ -165,27 +172,26 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         outputs : NDArray or Symbol, or List[NDArray] or List[Symbol]
             If output_all_encodings flag is False, then the output of the last encoder.
             If output_all_encodings flag is True, then the list of all outputs of all encoders.
-            In both cases, shape of the tensor(s) is/are (length, batch_size, C_out)
+            In both cases, shape of the tensor(s) is/are (batch_size, length, C_out)
         additional_outputs : list
             Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, length) or
+            The attention weights will have shape (batch_size, length, length) or
             (batch_size, num_heads, length, length)
 
         """
-        # axis 0 is for length
-        steps = F.contrib.arange_like(inputs, axis=0)
+        steps = F.contrib.arange_like(inputs, axis=1)
         if valid_length is not None:
-            zeros = F.zeros_like(steps)
-            # valid_length for attention, shape = (batch_size, seq_length)
-            attn_valid_len = F.broadcast_add(F.reshape(valid_length, shape=(-1, 1)),
-                                             F.reshape(zeros, shape=(1, -1)))
-            attn_valid_len = F.cast(attn_valid_len, dtype='int32')
+            ones = F.ones_like(steps)
+            mask = F.broadcast_lesser(F.reshape(steps, shape=(1, -1)),
+                                      F.reshape(valid_length, shape=(-1, 1)))
+            mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
+                                   F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
             if states is None:
-                states = [attn_valid_len]
+                states = [mask]
             else:
-                states.append(attn_valid_len)
+                states.append(mask)
         else:
-            attn_valid_len = None
+            mask = None
 
         if states is None:
             states = [steps]
@@ -194,7 +200,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
 
         # positional encoding
         positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
-        inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=1))
+        inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
 
         if self._dropout:
             inputs = self.dropout_layer(inputs)
@@ -204,12 +210,12 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         all_encodings_outputs = []
         additional_outputs = []
         for cell in self.transformer_cells:
-            outputs, attention_weights = cell(inputs, attn_valid_len)
+            outputs, attention_weights = cell(inputs, mask)
             inputs = outputs
             if self._output_all_encodings:
                 if valid_length is not None:
                     outputs = F.SequenceMask(outputs, sequence_length=valid_length,
-                                             use_sequence_length=True, axis=0)
+                                             use_sequence_length=True, axis=1)
                 all_encodings_outputs.append(outputs)
 
             if self._output_attention:
@@ -218,7 +224,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         if valid_length is not None and not self._output_all_encodings:
             # if self._output_all_encodings, SequenceMask is already applied above
             outputs = F.SequenceMask(outputs, sequence_length=valid_length,
-                                     use_sequence_length=True, axis=0)
+                                     use_sequence_length=True, axis=1)
 
         if self._output_all_encodings:
             return all_encodings_outputs, additional_outputs
@@ -419,15 +425,8 @@ class BERTModel(HybridBlock):
         if self._use_token_type_embed:
             type_embedding = self.token_type_embed(token_types)
             embedding = embedding + type_embedding
-        # (batch, seq_len, C) -> (seq_len, batch, C)
-        embedding = embedding.transpose((1, 0, 2))
         # encoding
         outputs, additional_outputs = self.encoder(embedding, valid_length=valid_length)
-        # (seq_len, batch, C) -> (batch, seq_len, C)
-        if isinstance(outputs, (list, tuple)):
-            outputs = [o.transpose((1, 0, 2)) for o in outputs]
-        else:
-            outputs = outputs.transpose((1, 0, 2))
         return outputs, additional_outputs
 
     def _apply_pooling(self, sequence):
@@ -732,60 +731,75 @@ model_store._model_sha1.update(
     ]})
 
 roberta_12_768_12_hparams = {
+    'attention_cell': 'multi_head',
     'num_layers': 12,
     'units': 768,
     'hidden_size': 3072,
     'max_length': 512,
     'num_heads': 12,
+    'scaled': True,
     'dropout': 0.1,
+    'use_residual': True,
     'embed_size': 768,
     'word_embed': None,
     'layer_norm_eps': 1e-5
 }
 
 roberta_24_1024_16_hparams = {
+    'attention_cell': 'multi_head',
     'num_layers': 24,
     'units': 1024,
     'hidden_size': 4096,
     'max_length': 512,
     'num_heads': 16,
+    'scaled': True,
     'dropout': 0.1,
+    'use_residual': True,
     'embed_size': 1024,
     'word_embed': None,
     'layer_norm_eps': 1e-5
 }
 
 bert_12_768_12_hparams = {
+    'attention_cell': 'multi_head',
     'num_layers': 12,
     'units': 768,
     'hidden_size': 3072,
     'max_length': 512,
     'num_heads': 12,
+    'scaled': True,
     'dropout': 0.1,
+    'use_residual': True,
     'embed_size': 768,
     'token_type_vocab_size': 2,
     'word_embed': None,
 }
 
 bert_24_1024_16_hparams = {
+    'attention_cell': 'multi_head',
     'num_layers': 24,
     'units': 1024,
     'hidden_size': 4096,
     'max_length': 512,
     'num_heads': 16,
+    'scaled': True,
     'dropout': 0.1,
+    'use_residual': True,
     'embed_size': 1024,
     'token_type_vocab_size': 2,
     'word_embed': None,
 }
 
 ernie_12_768_12_hparams = {
+    'attention_cell': 'multi_head',
     'num_layers': 12,
     'units': 768,
     'hidden_size': 3072,
     'max_length': 513,
     'num_heads': 12,
+    'scaled': True,
     'dropout': 0.1,
+    'use_residual': True,
     'embed_size': 768,
     'token_type_vocab_size': 2,
     'word_embed': None,
@@ -1124,14 +1138,17 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
         'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     # encoder
-    encoder = BERTEncoder(num_layers=predefined_args['num_layers'],
+    encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
+                          num_layers=predefined_args['num_layers'],
                           units=predefined_args['units'],
                           hidden_size=predefined_args['hidden_size'],
                           max_length=predefined_args['max_length'],
                           num_heads=predefined_args['num_heads'],
+                          scaled=predefined_args['scaled'],
                           dropout=predefined_args['dropout'],
                           output_attention=output_attention,
                           output_all_encodings=output_all_encodings,
+                          use_residual=predefined_args['use_residual'],
                           activation=predefined_args.get('activation', 'gelu'),
                           layer_norm_eps=predefined_args.get('layer_norm_eps', 1e-5))
 
@@ -1230,14 +1247,17 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     # encoder
-    encoder = BERTEncoder(num_layers=predefined_args['num_layers'],
+    encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
+                          num_layers=predefined_args['num_layers'],
                           units=predefined_args['units'],
                           hidden_size=predefined_args['hidden_size'],
                           max_length=predefined_args['max_length'],
                           num_heads=predefined_args['num_heads'],
+                          scaled=predefined_args['scaled'],
                           dropout=predefined_args['dropout'],
                           output_attention=output_attention,
                           output_all_encodings=output_all_encodings,
+                          use_residual=predefined_args['use_residual'],
                           activation=predefined_args.get('activation', 'gelu'),
                           layer_norm_eps=predefined_args.get('layer_norm_eps', 1e-12))
 
