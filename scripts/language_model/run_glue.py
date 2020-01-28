@@ -224,7 +224,6 @@ def convert_examples_to_features(example,
     tokens_trun = truncate_seqs_equal(tokens_raw, truncate_length)
     # concate the sequences with special tokens, cls_token is added to the end in XlNet
     special_tokens = [[sep_token]] * len(tokens_trun) + [[cls_token]]
-    #special_tokens.append([cls_token])
     tokens, segment_ids, _ = concat_sequences(tokens_trun, special_tokens)
     # convert the token to ids
     input_ids = vocab[tokens]
@@ -235,35 +234,38 @@ def convert_examples_to_features(example,
         return input_ids, valid_length, segment_ids
 
 
-def preprocess_data(tokenizer,
-                    task,
+def preprocess_data(_tokenizer,
+                    _task,
                     batch_size,
                     dev_batch_size,
                     max_len,
-                    vocab):
-    #pylint: disable=redefined-outer-name
+                    _vocab):
     """Train/eval Data preparation function."""
-    label_dtype = 'int32' if task.class_labels else 'float32'
-    truncate_length = max_len - 3 if task.is_pair else max_len - 2
+    label_dtype = 'int32' if _task.class_labels else 'float32'
+    truncate_length = max_len - 3 if _task.is_pair else max_len - 2
     trans = partial(convert_examples_to_features,
-                    tokenizer=tokenizer,
+                    tokenizer=_tokenizer,
                     truncate_length=truncate_length,
-                    cls_token=vocab.cls_token,
-                    sep_token=vocab.sep_token,
-                    class_labels=task.class_labels,
-                    label_alias=task.label_alias,
-                    vocab=vocab)
+                    cls_token=_vocab.cls_token,
+                    sep_token=_vocab.sep_token,
+                    class_labels=_task.class_labels,
+                    label_alias=_task.label_alias,
+                    vocab=_vocab)
 
     # data train
     # task.dataset_train returns (segment_name, dataset)
-    train_tsv = task.dataset_train()[1]
+    train_tsv = _task.dataset_train()[1]
     data_train = list(map(trans, train_tsv))
     data_train = mx.gluon.data.SimpleDataset(data_train)
     data_train_len = data_train.transform(
         lambda _, valid_length, segment_ids, label: valid_length, lazy=False)
 
     # bucket sampler for training
+<<<<<<< HEAD
     pad_val = vocab[vocab.padding_token]
+=======
+    pad_val = _vocab[_vocab.padding_token]
+>>>>>>> upstream/master
     batchify_fn = nlp.data.batchify.Tuple(
         nlp.data.batchify.Pad(axis=0, pad_val=pad_val),  # input
         nlp.data.batchify.Stack(),  # length
@@ -281,7 +283,7 @@ def preprocess_data(tokenizer,
                                          batchify_fn=batchify_fn)
 
     # data dev. For MNLI, more than one dev set is available
-    dev_tsv = task.dataset_dev()
+    dev_tsv = _task.dataset_dev()
     dev_tsv_list = dev_tsv if isinstance(dev_tsv, list) else [dev_tsv]
     loader_dev_list = []
     for segment, data in dev_tsv_list:
@@ -300,16 +302,16 @@ def preprocess_data(tokenizer,
 
     # transform for data test
     test_trans = partial(convert_examples_to_features,
-                         tokenizer=tokenizer,
+                         tokenizer=_tokenizer,
                          truncate_length=max_len,
-                         cls_token=vocab.cls_token,
-                         sep_token=vocab.sep_token,
+                         cls_token=_vocab.cls_token,
+                         sep_token=_vocab.sep_token,
                          class_labels=None,
                          is_test=True,
-                         vocab=vocab)
+                         vocab=_vocab)
 
     # data test. For MNLI, more than one test set is available
-    test_tsv = task.dataset_test()
+    test_tsv = _task.dataset_test()
     test_tsv_list = test_tsv if isinstance(test_tsv, list) else [test_tsv]
     loader_test_list = []
     for segment, data in test_tsv_list:

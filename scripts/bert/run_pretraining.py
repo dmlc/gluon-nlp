@@ -79,6 +79,8 @@ parser.add_argument('--accumulate', type=int, default=1,
                     help='Number of batches for gradient accumulation. '
                          'total_batch_size = batch_size_per_worker * num_worker * accumulate.')
 parser.add_argument('--num_steps', type=int, default=20, help='Number of optimization steps')
+parser.add_argument('--optimizer', type=str, default='bertadam',
+                    help='The optimization algorithm')
 parser.add_argument('--start_step', type=int, default=0,
                     help='Start optimization step from the checkpoint.')
 parser.add_argument('--lr', type=float, default=1e-4, help='Learning rate')
@@ -227,7 +229,7 @@ def train(data_train, data_eval, model):
     mlm_metric.reset()
     nsp_metric.reset()
 
-    logging.debug('Creating distributed trainer...')
+    logging.info('Creating distributed trainer...')
     lr = args.lr
     optim_params = {'learning_rate': lr, 'epsilon': 1e-6, 'wd': 0.01}
     if args.dtype == 'float16':
@@ -241,9 +243,9 @@ def train(data_train, data_eval, model):
 
     # backend specific implementation
     if backend == 'horovod':
-        trainer = hvd.DistributedTrainer(param_dict, 'bertadam', optim_params)
+        trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optim_params)
     else:
-        trainer = mx.gluon.Trainer(param_dict, 'bertadam', optim_params,
+        trainer = mx.gluon.Trainer(param_dict, args.optimizer, optim_params,
                                    update_on_kvstore=False)
     fp16_trainer = FP16Trainer(trainer, dynamic_loss_scale=dynamic_loss_scale,
                                loss_scaler_params=loss_scale_param)
@@ -273,7 +275,7 @@ def train(data_train, data_eval, model):
     batch_num = 0
     step_num = args.start_step
 
-    logging.debug('Training started')
+    logging.info('Training started')
 
     # create dummy data loader if needed
     parallel_model = DataParallelBERT(model, trainer=fp16_trainer)
@@ -362,11 +364,11 @@ def train(data_train, data_eval, model):
                     save_states(step_num, trainer, args.ckpt_dir, local_rank)
                     if local_rank == 0:
                         save_parameters(step_num, model.bert, args.ckpt_dir)
-                if (step_num + 1) % args.eval_interval == 0 and data_eval:
-                    # eval data is always based on a fixed npz file.
-                    dataset_eval = get_pretrain_data_npz(data_eval, batch_size_eval,
-                                                         1, False, 1, vocab)
-                    evaluate(dataset_eval, model, ctxs, args.log_interval, args.dtype)
+            if (step_num + 1) % args.eval_interval == 0 and data_eval:
+                # eval data is always based on a fixed npz file.
+                dataset_eval = get_pretrain_data_npz(data_eval, batch_size_eval,
+                                                     1, False, 1, vocab)
+                evaluate(dataset_eval, model, ctxs, args.log_interval, args.dtype)
 
             batch_num += 1
 
@@ -395,7 +397,7 @@ if __name__ == '__main__':
                                   dataset_name, vocab, args.dtype,
                                   ckpt_dir=args.ckpt_dir,
                                   start_step=args.start_step)
-    logging.debug('Model created')
+    logging.info('Model created')
     data_eval = args.data_eval
 
     if args.raw:
