@@ -57,6 +57,12 @@ Model Zoo
 
       Transfer pre-trained language representations to language understanding tasks.
 
+   .. card::
+      :title: Sequence Labeling
+      :link: sequence_labeling/index.html
+
+      Assigning labels to each tokens in a text sequence.
+
 .. toctree::
    :hidden:
    :maxdepth: 1
@@ -70,3 +76,4 @@ Model Zoo
    text_generation/index
    parsing/index
    bert/index
+   sequence_labeling/index

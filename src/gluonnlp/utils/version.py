@@ -19,7 +19,7 @@ import warnings
 
 __all__ = ['check_version']
 
-def check_version(min_version, warning_only=False):
+def check_version(min_version, warning_only=False, library=None):
     """Check the version of gluonnlp satisfies the provided minimum version.
     An exception is thrown if the check does not pass.
 
@@ -29,14 +29,22 @@ def check_version(min_version, warning_only=False):
         Minimum version
     warning_only : bool
         Printing a warning instead of throwing an exception.
+    library: optional module, default None
+        The target library for version check. Checks gluonnlp by default
     """
     # pylint: disable=import-outside-toplevel
     from .. import __version__
+    if library is None:
+        version = __version__
+        name = 'GluonNLP'
+    else:
+        version = library.__version__
+        name = library.__name__
     from packaging.version import parse
-    bad_version = parse(__version__.replace('.dev', '')) < parse(min_version)
+    bad_version = parse(version.replace('.dev', '')) < parse(min_version)
     if bad_version:
-        msg = 'Installed GluonNLP version (%s) does not satisfy the ' \
-              'minimum required version (%s)'%(__version__, min_version)
+        msg = 'Installed {} version {} does not satisfy the ' \
+              'minimum required version {}'.format(name, version, min_version)
         if warning_only:
             warnings.warn(msg)
         else:
