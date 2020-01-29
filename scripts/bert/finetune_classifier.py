@@ -1,11 +1,8 @@
 """
 Sentence Pair Classification with Bidirectional Encoder Representations from Transformers
-
 =========================================================================================
-
 This example shows how to implement finetune a model with pre-trained BERT parameters for
 sentence pair classification, with Gluon NLP Toolkit.
-
 @article{devlin2018bert,
   title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
   author={Devlin, Jacob and Chang, Ming-Wei and Lee, Kenton and Toutanova, Kristina},
@@ -105,57 +102,52 @@ parser.add_argument(
     type=float,
     default=0.1,
     help='ratio of warmup steps used in NOAM\'s stepsize schedule')
-parser.add_argument('--log_interval',
-                    type=int,
-                    default=10,
-                    help='report interval')
-parser.add_argument('--max_len',
-                    type=int,
-                    default=128,
-                    help='Maximum length of the sentence pairs')
+parser.add_argument(
+    '--log_interval',
+    type=int,
+    default=10,
+    help='report interval')
+parser.add_argument(
+    '--max_len',
+    type=int,
+    default=128,
+    help='Maximum length of the sentence pairs')
 parser.add_argument(
     '--seed', type=int, default=2, help='Random seed')
 parser.add_argument(
     '--accumulate',
     type=int,
     default=None,
-    help=
-    'The number of batches for gradients accumulation to simulate large batch size. '
-    'Default is None')
-parser.add_argument('--gpu',
-                    type=int,
-                    default=None,
-                    help='Which gpu for finetuning.')
+    help='The number of batches for gradients accumulation to simulate large batch size. '
+         'Default is None')
+parser.add_argument(
+    '--gpu', type=int, default=None, help='Which gpu for finetuning.')
 parser.add_argument(
     '--task_name',
     type=str,
     choices=tasks.keys(),
     help='The name of the task to fine-tune. Choices include MRPC, QQP, '
-    'QNLI, RTE, STS-B, CoLA, MNLI, WNLI, SST.')
-parser.add_argument('--bert_model',
-                    type=str,
-                    default='bert_12_768_12',
-                    choices=[
-                        'bert_12_768_12', 'bert_24_1024_16',
-                        'roberta_12_768_12', 'roberta_24_1024_16'
-                    ],
-                    help='The name of pre-trained BERT model to fine-tune')
-parser.add_argument('--bert_dataset',
-                    type=str,
-                    default='book_corpus_wiki_en_uncased',
-                    choices=[
-                        'book_corpus_wiki_en_uncased',
-                        'book_corpus_wiki_en_cased',
-                        'openwebtext_book_corpus_wiki_en_uncased',
-                        'wiki_multilingual_uncased', 'wiki_multilingual_cased',
-                        'wiki_cn_cased',
-                        'openwebtext_ccnews_stories_books_cased'
-                    ],
-                    help='The dataset BERT pre-trained with.')
-parser.add_argument('--pretrained_bert_parameters',
-                    type=str,
-                    default=None,
-                    help='Pre-trained bert model parameter file.')
+         'QNLI, RTE, STS-B, CoLA, MNLI, WNLI, SST.')
+parser.add_argument(
+    '--bert_model',
+    type=str,
+    default='bert_12_768_12',
+    choices=['bert_12_768_12', 'bert_24_1024_16', 'roberta_12_768_12', 'roberta_24_1024_16'],
+    help='The name of pre-trained BERT model to fine-tune')
+parser.add_argument(
+    '--bert_dataset',
+    type=str,
+    default='book_corpus_wiki_en_uncased',
+    choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
+             'openwebtext_book_corpus_wiki_en_uncased', 'wiki_multilingual_uncased',
+             'wiki_multilingual_cased', 'wiki_cn_cased',
+             'openwebtext_ccnews_stories_books_cased'],
+    help='The dataset BERT pre-trained with.')
+parser.add_argument(
+    '--pretrained_bert_parameters',
+    type=str,
+    default=None,
+    help='Pre-trained bert model parameter file.')
 parser.add_argument(
     '--model_parameters',
     type=str,
@@ -171,20 +163,19 @@ parser.add_argument(
 parser.add_argument(
     '--only_inference',
     action='store_true',
-    help=
-    'If set, we skip training and only perform inference on dev and test data.'
-)
-parser.add_argument('--dtype',
-                    type=str,
-                    default='float32',
-                    choices=['float32', 'float16'],
-                    help='The data type for training.')
+    help='If set, we skip training and only perform inference on dev and test data.')
+parser.add_argument(
+    '--dtype',
+    type=str,
+    default='float32',
+    choices=['float32', 'float16'],
+    help='The data type for training.')
 parser.add_argument(
     '--early_stop',
     type=int,
     default=None,
     help='Whether to perform early stopping based on the metric on dev set. '
-    'The provided value is the patience. ')
+         'The provided value is the patience. ')
 
 args = parser.parse_args()
 
@@ -282,10 +273,7 @@ if pretrained_bert_parameters:
                               cast_dtype=True)
 if model_parameters:
     logging.info('loading model params from %s', model_parameters)
-    nlp.utils.load_parameters(model,
-                              model_parameters,
-                              ctx=ctx,
-                              cast_dtype=True)
+    nlp.utils.load_parameters(model, model_parameters, ctx=ctx, cast_dtype=True)
 nlp.utils.mkdir(output_dir)
 
 logging.debug(model)
@@ -416,16 +404,14 @@ def test(loader_test, segment):
         if use_roberta:
             out = model(input_ids, valid_length)
         else:
-            out = model(input_ids, segment_ids.as_in_context(ctx),
-                        valid_length)
+            out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
         if not task.class_labels:
             # regression task
             for result in out.asnumpy().reshape(-1).tolist():
                 results.append('{:.3f}'.format(result))
         else:
             # classification task
-            indices = mx.nd.topk(out, k=1, ret_typ='indices',
-                                 dtype='int32').asnumpy()
+            indices = mx.nd.topk(out, k=1, ret_typ='indices', dtype='int32').asnumpy()
             for index in indices:
                 results.append(task.class_labels[int(index)])
 
@@ -445,8 +431,7 @@ def test(loader_test, segment):
             f.write(u'%d\t%s\n' % (i, str(pred)))
 
 
-def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id,
-              learning_rate):
+def log_train(batch_id, batch_num, metric, step_loss, log_interval, epoch_id, learning_rate):
     """Generate and print out the log message for training. """
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
@@ -472,8 +457,7 @@ def log_eval(batch_id, batch_num, metric, step_loss, log_interval):
 def train(metric):
     """Training function."""
     if not only_inference:
-        logging.info('Now we are doing BERT classification training on %s!',
-                     ctx)
+        logging.info('Now we are doing BERT classification training on %s!', ctx)
 
     all_model_params = model.collect_params()
     optimizer_params = {'learning_rate': lr, 'epsilon': epsilon, 'wd': 0.01}
@@ -529,8 +513,7 @@ def train(metric):
                     new_lr = lr * step_num / num_warmup_steps
                 else:
                     non_warmup_steps = step_num - num_warmup_steps
-                    offset = non_warmup_steps / (num_train_steps -
-                                                 num_warmup_steps)
+                    offset = non_warmup_steps / (num_train_steps - num_warmup_steps)
                     new_lr = lr - offset * lr
                 trainer.set_learning_rate(new_lr)
 
@@ -538,14 +521,12 @@ def train(metric):
                 with mx.autograd.record():
                     input_ids, valid_length, segment_ids, label = seqs
                     input_ids = input_ids.as_in_context(ctx)
-                    valid_length = valid_length.as_in_context(ctx).astype(
-                        'float32')
+                    valid_length = valid_length.as_in_context(ctx).astype('float32')
                     label = label.as_in_context(ctx)
                     if use_roberta:
                         out = model(input_ids, valid_length)
                     else:
-                        out = model(input_ids, segment_ids.as_in_context(ctx),
-                                    valid_length)
+                        out = model(input_ids, segment_ids.as_in_context(ctx), valid_length)
                     ls = loss_function(out, label).mean()
                     if args.dtype == 'float16':
                         with amp.scale_loss(ls, trainer) as scaled_loss:
@@ -568,9 +549,8 @@ def train(metric):
                     label = label.reshape((-1))
                 metric.update([label], [out])
                 if (batch_id + 1) % (args.log_interval) == 0:
-                    log_train(batch_id, len(train_data), metric, step_loss,
-                              args.log_interval, epoch_id,
-                              trainer.learning_rate)
+                    log_train(batch_id, len(train_data), metric, step_loss, args.log_interval,
+                              epoch_id, trainer.learning_rate)
                     step_loss = 0
                 if step_num >= num_train_steps:
                     logging.info('Finish training step: %d', step_num)
@@ -608,8 +588,7 @@ def train(metric):
         ckpt_name = 'model_bert_{0}_{1}.params'.format(task_name, epoch_id)
         params_saved = os.path.join(output_dir, ckpt_name)
         nlp.utils.load_parameters(model, params_saved)
-        metric_str = 'Best model at epoch {}. Validation metrics:'.format(
-            epoch_id)
+        metric_str = 'Best model at epoch {}. Validation metrics:'.format(epoch_id)
         metric_str += ','.join([i + ':%.4f' for i in metric_nm])
         logging.info(metric_str, *metric_val)
 
@@ -640,15 +619,13 @@ def evaluate(loader_dev, metric, segment):
             label = label.reshape((-1))
         metric.update([label], [out])
         if (batch_id + 1) % (args.log_interval) == 0:
-            log_eval(batch_id, len(loader_dev), metric, step_loss,
-                     args.log_interval)
+            log_eval(batch_id, len(loader_dev), metric, step_loss, args.log_interval)
             step_loss = 0
 
     metric_nm, metric_val = metric.get()
     if not isinstance(metric_nm, list):
         metric_nm, metric_val = [metric_nm], [metric_val]
-    metric_str = 'validation metrics:' + ','.join(
-        [i + ':%.4f' for i in metric_nm])
+    metric_str = 'validation metrics:' + ','.join([i + ':%.4f' for i in metric_nm])
     logging.info(metric_str, *metric_val)
 
     mx.nd.waitall()
