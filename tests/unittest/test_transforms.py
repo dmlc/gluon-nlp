@@ -26,11 +26,11 @@ from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download
 from numpy.testing import assert_allclose
 
-from gluonnlp.data import count_tokens
+from gluonnlp.data import count_tokens, get_tokenizer
 from gluonnlp.data import transforms as t
 from gluonnlp.model.utils import _load_vocab
 from gluonnlp.vocab import BERTVocab, Vocab
-from gluonnlp.model import get_model, get_tokenizer
+from gluonnlp.model import get_model
 
 
 def test_clip_sequence():

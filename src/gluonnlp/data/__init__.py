@@ -47,7 +47,7 @@ __all__ = (['batchify'] + utils.__all__ + transforms.__all__ + sampler.__all__ +
 
 
 def get_tokenizer(model_name, dataset_name,
-                  vocab=None, root=os.path.join(get_home_dir(), 'models'),
+                  vocab=None, root=os.path.join(get_home_dir(), 'data'),
                   **kwargs):
     """Returns a pre-defined tokenizer by name.
 
@@ -92,7 +92,7 @@ def get_tokenizer(model_name, dataset_name,
     ...                                     dataset_name=dataset_name,
     ...                                     pretrained=False, root='./model')
     -etc-
-    >>> tokenizer = gluonnlp.model.get_tokenizer(model_name, dataset_name, vocab)
+    >>> tokenizer = gluonnlp.data.get_tokenizer(model_name, dataset_name, vocab)
     >>> tokenizer('Habit is second nature.')
     ['habit', 'is', 'second', 'nature', '.']
     """
