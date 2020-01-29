@@ -355,18 +355,17 @@ def _download_vocab_tokenizer(root, file_name, file_path):
 
     temp_num = str(random.Random().randint(1, sys.maxsize))
     temp_root = os.path.join(root, temp_num)
-    temp_file_path = os.path.join(temp_root, file_name + '.vocab')
+    temp_file_path = os.path.join(temp_root, file_name)
     temp_zip_file_path = os.path.join(root, temp_num + file_name + '.zip')
 
     repo_url = _get_repo_url()
     download(_url_format.format(repo_url=repo_url, file_name=file_name),
              path=temp_zip_file_path, overwrite=True)
     with zipfile.ZipFile(temp_zip_file_path) as zf:
-        if not os.path.exists(file_path):
-            utils.mkdir(temp_root)
-            zf.extractall(temp_root)
-            os.replace(temp_file_path, file_path)
-            shutil.rmtree(temp_root)
+        utils.mkdir(temp_root)
+        zf.extractall(temp_root)
+        os.replace(temp_file_path, file_path)
+        shutil.rmtree(temp_root)
 
 def _load_pretrained_vocab(name, root, cls=None):
     """Load the accompanying vocabulary object for pre-trained model.
@@ -393,7 +392,7 @@ def _load_pretrained_vocab(name, root, cls=None):
             print('Detected mismatch in the content of model vocab file. Downloading again.')
     else:
         print('Vocab file is not found. Downloading.')
-    _download_vocab_tokenizer(root, file_name, file_path)
+    _download_vocab_tokenizer(root, file_name + file_ext, file_path)
     if check_sha1(file_path, sha1_hash):
         return _load_vocab_file(file_path, cls, **special_tokens)
     else:
@@ -412,7 +411,7 @@ def _load_pretrained_sentencepiece_tokenizer(name, root, **kwargs):
             print('Detected mismatch in the content of model tokenizer file. Downloading again.')
     else:
         print('tokenizer file is not found. Downloading.')
-    _download_vocab_tokenizer(root, file_name, file_path)
+    _download_vocab_tokenizer(root, file_name + file_ext, file_path)
     if check_sha1(file_path, sha1_hash):
         assert file_path.endswith('.spiece')
         return SentencepieceTokenizer(file_path, **kwargs)
