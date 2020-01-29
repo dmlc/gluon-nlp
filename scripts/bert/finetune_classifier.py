@@ -1,8 +1,11 @@
 """
 Sentence Pair Classification with Bidirectional Encoder Representations from Transformers
+
 =========================================================================================
+
 This example shows how to implement finetune a model with pre-trained BERT parameters for
 sentence pair classification, with Gluon NLP Toolkit.
+
 @article{devlin2018bert,
   title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
   author={Devlin, Jacob and Chang, Ming-Wei and Lee, Kenton and Toutanova, Kristina},
