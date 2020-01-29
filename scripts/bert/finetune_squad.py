@@ -237,12 +237,6 @@ else:
     local_rank = 0
 
 if args.dtype == 'float16':
-    # patch AMP due to issue: https://github.com/apache/incubator-mxnet/issues/17409
-    from mxnet.contrib import amp
-    ops = ['_contrib_interleaved_matmul_encdec_qk', '_contrib_interleaved_matmul_encdec_valatt',
-           '_contrib_interleaved_matmul_selfatt_qk', '_contrib_interleaved_matmul_selfatt_valatt']
-    amp.lists.symbol.WIDEST_TYPE_CASTS.extend(ops)
-    # end of the patch
     amp.init()
 
 model_name = args.bert_model
