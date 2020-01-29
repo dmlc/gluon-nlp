@@ -350,18 +350,21 @@ def _get_vocab_tokenizer_info(name, root):
     return file_name, file_ext, sha1_hash, special_tokens
 
 
-def _download_vocab_tokenizer(root, file_name, file_path):
+def _download_vocab_tokenizer(root, file_name, file_ext, file_path):
     utils.mkdir(root)
 
     temp_num = str(random.Random().randint(1, sys.maxsize))
     temp_root = os.path.join(root, temp_num)
-    temp_file_path = os.path.join(temp_root, file_name)
-    temp_zip_file_path = os.path.join(root, temp_num + file_name + '.zip')
+    temp_file_path = os.path.join(temp_root, file_name + file_ext)
+    temp_zip_file_path = os.path.join(temp_root, temp_num + '_' + file_name + '.zip')
 
     repo_url = _get_repo_url()
     download(_url_format.format(repo_url=repo_url, file_name=file_name),
              path=temp_zip_file_path, overwrite=True)
     with zipfile.ZipFile(temp_zip_file_path) as zf:
+        assert (file_name + file_ext in zf.namelist(),
+                '{} not part of {}. Only have: {}'.format(file_name + file_ext, file_name + '.zip',
+                                                          zf.namelist()))
         utils.mkdir(temp_root)
         zf.extractall(temp_root)
         os.replace(temp_file_path, file_path)
@@ -392,7 +395,7 @@ def _load_pretrained_vocab(name, root, cls=None):
             print('Detected mismatch in the content of model vocab file. Downloading again.')
     else:
         print('Vocab file is not found. Downloading.')
-    _download_vocab_tokenizer(root, file_name + file_ext, file_path)
+    _download_vocab_tokenizer(root, file_name, file_ext, file_path)
     if check_sha1(file_path, sha1_hash):
         return _load_vocab_file(file_path, cls, **special_tokens)
     else:
@@ -411,7 +414,7 @@ def _load_pretrained_sentencepiece_tokenizer(name, root, **kwargs):
             print('Detected mismatch in the content of model tokenizer file. Downloading again.')
     else:
         print('tokenizer file is not found. Downloading.')
-    _download_vocab_tokenizer(root, file_name + file_ext, file_path)
+    _download_vocab_tokenizer(root, file_name, file_ext, file_path)
     if check_sha1(file_path, sha1_hash):
         assert file_path.endswith('.spiece')
         return SentencepieceTokenizer(file_path, **kwargs)
