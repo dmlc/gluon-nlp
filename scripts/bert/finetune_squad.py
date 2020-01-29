@@ -237,6 +237,7 @@ else:
     local_rank = 0
 
 if args.dtype == 'float16':
+    from mxnet.contrib import amp
     amp.init()
 
 model_name = args.bert_model
