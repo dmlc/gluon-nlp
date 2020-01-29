@@ -467,7 +467,7 @@ def train():
                                  (accumulate if accumulate else 1)) == 0:
                 toc = time.time()
                 log.info(
-                    'Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f} Thoughput={:.2f} samples/s'  # pylint: disable=line-too-long
+                    'Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} Time cost={:.1f} Thoughput={:.2f} samples/s'
                     .format(epoch_id, batch_id, len(train_dataloader),
                             step_loss / log_interval, trainer.learning_rate,
                             toc - tic, log_num / (toc - tic)))
