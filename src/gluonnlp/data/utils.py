@@ -362,9 +362,8 @@ def _download_vocab_tokenizer(root, file_name, file_ext, file_path):
     download(_url_format.format(repo_url=repo_url, file_name=file_name),
              path=temp_zip_file_path, overwrite=True)
     with zipfile.ZipFile(temp_zip_file_path) as zf:
-        assert (file_name + file_ext in zf.namelist(),
-                '{} not part of {}. Only have: {}'.format(file_name + file_ext, file_name + '.zip',
-                                                          zf.namelist()))
+        assert file_name + file_ext in zf.namelist(), '{} not part of {}. Only have: {}'.format(
+            file_name + file_ext, file_name + '.zip', zf.namelist())
         utils.mkdir(temp_root)
         zf.extractall(temp_root)
         os.replace(temp_file_path, file_path)
