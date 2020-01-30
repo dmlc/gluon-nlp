@@ -35,7 +35,7 @@ from .sentiment import *
 from .stream import *
 from .transforms import *
 from .translation import *
-from .utils import *
+from .utils import *, _load_pretrained_sentencepiece_tokenizer
 from .word_embedding_evaluation import *
 from .intent_slot import *
 
