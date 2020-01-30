@@ -5,7 +5,7 @@ import gluonnlp as nlp
 
 
 def prepare_dataset(filename, allow_pickle=False):
-    return nlp.data.NumpyDataset(filename, allow_pickle=allow_pickle)
+    return nlp.data.NumpyDataset(filename[0], allow_pickle=allow_pickle)
 
 
 def prepare_bucket_sampler(dataset, batch_size, shuffle=False, num_buckets=1):

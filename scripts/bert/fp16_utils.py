@@ -32,7 +32,7 @@ class FP16Trainer:
       parameters using FP16.
     loss_scaler_params : dict
         Key-word arguments to be passed to loss scaler constructor. For example,
-        `{"init_scale" : 2.**15, "scale_window" : 2000, "tolerance" : 0.05}`
+        `{"init_scale" : 2.**10, "scale_window" : 2000, "tolerance" : 0.05}`
         for `DynamicLossScaler`.
         See each `LossScaler` for a list of supported arguments'
     """
@@ -135,8 +135,8 @@ class DynamicLossScaler(LossScaler):
     Everytime when a NaN is detected in the gradient, the scale is reduced (by default)
     by 2x. On the other hand, if a NaN is not detected for a long time
     (e.g. 2000 steps), then the scale is increased (by default) by 2x."""
-    def __init__(self, init_scale=2.**15, scale_factor=2., scale_window=2000,
-                 tolerance=0.01):
+    def __init__(self, init_scale=2.**10, scale_factor=2., scale_window=2000,
+                 tolerance=0.):
         self.loss_scale = init_scale
         self.scale_factor = scale_factor
         self.scale_window = scale_window
