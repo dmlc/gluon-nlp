@@ -296,4 +296,4 @@ SQuAD1.1:
 SQuAD2.0:
 .. code-block:: console
 
-    $ python evaluate-v2.0.py --data_file dev-v2.0.json --pred_file predictions.json --na-prob-file null_odds.json
+    $ python evaluate-v2.0.py dev-v2.0.json predictions.json --na-prob-file null_odds.json
