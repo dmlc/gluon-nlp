@@ -352,7 +352,7 @@ def log_noacc(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, s
     running_nsp_loss = running_nsp_loss / log_interval
     lr = trainer.learning_rate if trainer else 0
     # pylint: disable=line-too-long
-    logging.info('[step {}]\tmlm_loss={:7.5f}\tnsp_loss={:5.2f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/batch'
+    logging.info('[step {}]\tmlm_loss={:7.5f}\tnsp_loss={:5.2f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/step'
                  .format(step_num, running_mlm_loss.asscalar(), running_nsp_loss.asscalar(),
                          throughput.asscalar(), lr, duration, duration*1000/log_interval))
     # pylint: enable=line-too-long
@@ -367,7 +367,7 @@ def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_nu
     running_nsp_loss = running_nsp_loss / log_interval
     lr = trainer.learning_rate if trainer else 0
     # pylint: disable=line-too-long
-    logging.info('[step {}]\tmlm_loss={:7.5f}\tmlm_acc={:4.2f}\tnsp_loss={:5.2f}\tnsp_acc={:5.2f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/batch'
+    logging.info('[step {}]\tmlm_loss={:7.5f}\tmlm_acc={:4.2f}\tnsp_loss={:5.2f}\tnsp_acc={:5.2f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/step'
                  .format(step_num, running_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, running_nsp_loss.asscalar(),
                          nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration, duration*1000/log_interval))
     # pylint: enable=line-too-long

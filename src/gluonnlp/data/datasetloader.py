@@ -26,28 +26,29 @@ import io
 import pickle
 import warnings
 import multiprocessing
-from multiprocessing.managers import BaseManager
 from functools import partial
 from mxnet import context
-from mxnet.gluon.data import ArrayDataset
 from mxnet.gluon.data.dataloader import ForkingPickler, _as_in_context
 from mxnet.gluon.data.dataloader import default_mp_batchify_fn, default_batchify_fn
 from .stream import _PathDataset
 
 
-class _ProxyArrayDataset(ArrayDataset):
-    """When BaseManager is used, proxy[ArrayDataset] does not support indexing."""
-    def __init__(self, *args, **kwargs):
-        super(_ProxyArrayDataset, self).__init__(*args, **kwargs)
-
-    def get(self, idx):
-        return self[idx]
+# manager for creating shared object
+_manager = None
+_dataset = None
+def _initialize_dataset_worker(manager):
+    global _manager
+    _manager = manager
 
 
 def _dataset_worker_fn(urls, dataset_fn, batch_sampler_fn):
     """Function to generate datasets and batch sampler for each worker."""
+    global _manager, _dataset
     dataset = dataset_fn(urls)
     batch_sampler = batch_sampler_fn(dataset)
+    if _manager:
+        dataset = _manager.list(zip(*dataset._data))
+    _dataset = dataset
     return dataset, batch_sampler
 
 
@@ -56,10 +57,16 @@ def _batch_worker_fn(samples, batchify_fn, dataset=None, counter=None):
     # pylint: disable=unused-argument
     # it is required that each worker process has to fork a new MXIndexedRecordIO handle
     # preserving dataset as global variable can save tons of overhead and is safe in new process
-    if isinstance(samples[0], (list, tuple)):
-        batch = [batchify_fn([dataset.get(i) for i in shard]) for shard in samples]
+    if len(dataset[0]) > 1:
+        if isinstance(samples[0], (list, tuple)):
+            batch = [batchify_fn([dataset[i] for i in shard]) for shard in samples]
+        else:
+            batch = batchify_fn([dataset[i] for i in samples])
     else:
-        batch = batchify_fn([dataset.get(i) for i in samples])
+        if isinstance(samples[0], (list, tuple)):
+            batch = [batchify_fn([dataset[i][0] for i in shard]) for shard in samples]
+        else:
+            batch = batchify_fn([dataset[i][0] for i in samples])
     buf = io.BytesIO()
     ForkingPickler(buf, pickle.HIGHEST_PROTOCOL).dump(batch)
     return buf.getvalue(), counter
@@ -88,6 +95,10 @@ class _MultiBatchWorkerIter:
 
         # counter reference dict
         self._counter_ref = {}
+
+        # pre-fetch
+        for _ in range(self._prefetch):
+            self._push_next()
 
     def _count_dataset_ref(self, new_dataset):
         dataset_refs = []
@@ -132,8 +143,7 @@ class _MultiBatchWorkerIter:
                 if id(dataset) not in self._counter_ref:
                     self._counter_ref[id(dataset)] = self._manager.Value('i', 0)
                 self._batch_iter = iter(batch_sampler)
-                for _ in range(self._prefetch):
-                    self._push_next()
+                self._push_next()
         else:
             counter = self._counter_ref[id(self._dataset)]
             counter.value += 1
@@ -172,8 +182,7 @@ class _MultiDatasetWorkerIter:
                  dataset_fn, batch_sampler_fn,
                  worker_fn=_dataset_worker_fn,
                  prefetch=0, dataset=None, circle_length=1,
-                 cached=False, num_max_cached=0,
-                 manager=None):
+                 cached=False, num_max_cached=0):
         if cached:
             assert num_max_cached > 0,\
                 'When cached is turned on, num_max_cached must be positive.'
@@ -185,9 +194,6 @@ class _MultiDatasetWorkerIter:
         self._circle_length = circle_length
         self._cached = cached
         self._num_max_cached = num_max_cached
-
-        # manager for creating shared memory
-        self._manager = manager
 
         # send and receive index for datasets
         self._rcvd_idx = 0
@@ -234,8 +240,6 @@ class _MultiDatasetWorkerIter:
         if len(self._cached_dataset) == 0 or self._data_buffer[self._rcvd_idx].ready():
             ret = self._data_buffer.pop(self._rcvd_idx)
             dataset, batch_sampler = ret.get()
-            if self._manager:
-                dataset = self._manager.ProxyArrayDataset(*dataset._data)
             self._rcvd_idx += 1
             if self._cached and len(self._cached_dataset) < self._num_max_cached:
                 self._cached_dataset.append((dataset, batch_sampler))
@@ -261,10 +265,6 @@ class _MultiDatasetWorkerIter:
     def __iter__(self):
         """Returns the iterator object"""
         return self
-
-
-def _manager_register():
-    BaseManager.register('ProxyArrayDataset', _ProxyArrayDataset)
 
 
 class DatasetLoader:
@@ -388,14 +388,12 @@ class DatasetLoader:
         self._num_max_dataset_cached = num_max_dataset_cached
 
         self._manager = None
-        self._counter_manager = None
         self._dataset_worker_pool = None
         if self._num_dataset_workers > 0:
-            _manager_register()
-            self._manager = BaseManager()
-            self._manager.start()
-            self._counter_manager = multiprocessing.Manager()
-            self._dataset_worker_pool = multiprocessing.Pool(self._num_dataset_workers)
+            self._manager = multiprocessing.Manager()
+            self._dataset_worker_pool = multiprocessing.Pool(self._num_dataset_workers,
+                                                             initializer=_initialize_dataset_worker,
+                                                             initargs=[self._manager])
         self._batch_worker_pool = None
         if self._num_batch_workers > 0:
             self._batch_worker_pool = multiprocessing.Pool(self._num_batch_workers)
@@ -439,11 +437,10 @@ class DatasetLoader:
                                                prefetch=self._dataset_prefetch,
                                                circle_length=self._circle_length,
                                                cached=self._dataset_cached,
-                                               num_max_cached=self._num_max_dataset_cached,
-                                               manager=self._manager)
+                                               num_max_cached=self._num_max_dataset_cached)
         return _MultiBatchWorkerIter(self._batch_worker_pool, self._batchify_fn, dataset_iter,
                                      pin_memory=self._pin_memory, worker_fn=_batch_worker_fn,
-                                     prefetch=self._batch_prefetch, manager=self._counter_manager)
+                                     prefetch=self._batch_prefetch, manager=self._manager)
 
     def __del__(self):
         if self._dataset_worker_pool:
@@ -454,5 +451,3 @@ class DatasetLoader:
         if self._batch_worker_pool:
             assert isinstance(self._batch_worker_pool, multiprocessing.pool.Pool)
             self._batch_worker_pool.terminate()
-        if self._manager:
-            self._manager.shutdown()
