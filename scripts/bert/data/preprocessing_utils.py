@@ -2,7 +2,8 @@
 
 __all__ = [
     'truncate_seqs_equal', 'concat_sequences', 'tokenize_and_align_positions', 'get_doc_spans',
-    'align_position2doc_spans', 'improve_answer_span', 'check_is_max_context'
+    'align_position2doc_spans', 'improve_answer_span', 'check_is_max_context',
+    'convert_squad_examples'
 ]
 
 import collections
