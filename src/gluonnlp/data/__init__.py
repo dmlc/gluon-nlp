@@ -41,6 +41,7 @@ from .utils import *
 from .utils import _load_pretrained_sentencepiece_tokenizer
 from .word_embedding_evaluation import *
 from .intent_slot import *
+from ..base import get_home_dir
 
 __all__ = (['batchify'] + utils.__all__ + transforms.__all__ + sampler.__all__ + dataset.__all__ +
            corpora.__all__ + sentiment.__all__ + word_embedding_evaluation.__all__ +
