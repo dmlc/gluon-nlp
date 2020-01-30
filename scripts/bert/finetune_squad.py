@@ -78,35 +78,31 @@ parser.add_argument('--model_parameters',
                     default=None,
                     help='Model parameter file')
 
-parser.add_argument(
-    '--bert_model',
-    type=str,
-    default='bert_12_768_12',
-    help='BERT model name. options are bert_12_768_12 and bert_24_1024_16.')
+parser.add_argument('--bert_model',
+                    type=str,
+                    default='bert_12_768_12',
+                    help='BERT model name. options are bert_12_768_12 and bert_24_1024_16.')
 
-parser.add_argument(
-    '--bert_dataset',
-    type=str,
-    default='book_corpus_wiki_en_uncased',
-    help='BERT dataset name.'
-    'options are book_corpus_wiki_en_uncased and book_corpus_wiki_en_cased.')
+parser.add_argument('--bert_dataset',
+                    type=str,
+                    default='book_corpus_wiki_en_uncased',
+                    help='BERT dataset name.'
+                    'options are book_corpus_wiki_en_uncased and book_corpus_wiki_en_cased.')
 
-parser.add_argument(
-    '--pretrained_bert_parameters',
-    type=str,
-    default=None,
-    help='Pre-trained bert model parameter file. default is None')
+parser.add_argument('--pretrained_bert_parameters',
+                    type=str,
+                    default=None,
+                    help='Pre-trained bert model parameter file. default is None')
 
 parser.add_argument('--uncased',
                     action='store_false',
                     help='if not set, inputs are converted to lower case.')
 
-parser.add_argument(
-    '--output_dir',
-    type=str,
-    default='./output_dir',
-    help='The output directory where the model params will be written.'
-    ' default is ./output_dir')
+parser.add_argument('--output_dir',
+                    type=str,
+                    default='./output_dir',
+                    help='The output directory where the model params will be written.'
+                    ' default is ./output_dir')
 
 parser.add_argument('--epochs',
                     type=int,
@@ -118,14 +114,8 @@ parser.add_argument('--training_steps',
                     'if trainin_steps is specified.')
 parser.add_argument('--batch_size',
                     type=int,
-                    help='training steps, epochs will be ignored '
-                    'if trainin_steps is specified.')
-parser.add_argument(
-    '--batch_size',
-    type=int,
-    default=32,
-    help='Batch size. Number of examples per gpu in a minibatch. default is 32'
-)
+                    default=32,
+                    help='Batch size. Number of examples per gpu in a minibatch. default is 32')
 
 parser.add_argument('--test_batch_size',
                     type=int,
@@ -137,100 +127,84 @@ parser.add_argument('--optimizer',
                     default='bertadam',
                     help='optimization algorithm. default is bertadam')
 
-parser.add_argument(
-    '--accumulate',
-    type=int,
-    default=None,
-    help='The number of batches for '
-    'gradients accumulation to simulate large batch size. Default is None')
+parser.add_argument('--accumulate',
+                    type=int,
+                    default=None,
+                    help='The number of batches for '
+                    'gradients accumulation to simulate large batch size. Default is None')
 
 parser.add_argument('--lr',
                     type=float,
                     default=5e-5,
                     help='Initial learning rate. default is 5e-5')
 
-parser.add_argument(
-    '--warmup_ratio',
-    type=float,
-    default=0.1,
-    help='ratio of warmup steps that linearly increase learning rate from '
-    '0 to target learning rate. default is 0.1')
+parser.add_argument('--warmup_ratio',
+                    type=float,
+                    default=0.1,
+                    help='ratio of warmup steps that linearly increase learning rate from '
+                    '0 to target learning rate. default is 0.1')
 
 parser.add_argument('--log_interval',
                     type=int,
                     default=50,
                     help='report interval. default is 50')
 
-parser.add_argument(
-    '--max_seq_length',
-    type=int,
-    default=384,
-    help='The maximum total input sequence length after WordPiece tokenization.'
-    'Sequences longer than this will be truncated, and sequences shorter '
-    'than this will be padded. default is 384')
+parser.add_argument('--max_seq_length',
+                    type=int,
+                    default=384,
+                    help='The maximum total input sequence length after WordPiece tokenization.'
+                    'Sequences longer than this will be truncated, and sequences shorter '
+                    'than this will be padded. default is 384')
 
-parser.add_argument(
-    '--doc_stride',
-    type=int,
-    default=128,
-    help='When splitting up a long document into chunks, how much stride to '
-    'take between chunks. default is 128')
+parser.add_argument('--doc_stride',
+                    type=int,
+                    default=128,
+                    help='When splitting up a long document into chunks, how much stride to '
+                    'take between chunks. default is 128')
 
-parser.add_argument(
-    '--max_query_length',
-    type=int,
-    default=64,
-    help='The maximum number of tokens for the question. Questions longer than '
-    'this will be truncated to this length. default is 64')
+parser.add_argument('--max_query_length',
+                    type=int,
+                    default=64,
+                    help='The maximum number of tokens for the question. Questions longer than '
+                    'this will be truncated to this length. default is 64')
 
-parser.add_argument(
-    '--n_best_size',
-    type=int,
-    default=20,
-    help='The total number of n-best predictions to generate in the '
-    'nbest_predictions.json output file. default is 20')
+parser.add_argument('--n_best_size',
+                    type=int,
+                    default=20,
+                    help='The total number of n-best predictions to generate in the '
+                    'nbest_predictions.json output file. default is 20')
 
-parser.add_argument(
-    '--max_answer_length',
-    type=int,
-    default=30,
-    help='The maximum length of an answer that can be generated. This is needed '
-    'because the start and end predictions are not conditioned on one another.'
-    ' default is 30')
+parser.add_argument('--max_answer_length',
+                    type=int,
+                    default=30,
+                    help='The maximum length of an answer that can be generated. This is needed '
+                    'because the start and end predictions are not conditioned on one another.'
+                    ' default is 30')
 
-parser.add_argument(
-    '--version_2',
-    action='store_true',
-    help='SQuAD examples whether contain some that do not have an answer.')
+parser.add_argument('--version_2',
+                    action='store_true',
+                    help='SQuAD examples whether contain some that do not have an answer.')
 
-parser.add_argument(
-    '--null_score_diff_threshold',
-    type=float,
-    default=0.0,
-    help=
-    'If null_score - best_non_null is greater than the threshold predict null.'
-    'Typical values are between -1.0 and -5.0. default is 0.0')
+parser.add_argument('--null_score_diff_threshold',
+                    type=float,
+                    default=0.0,
+                    help='If null_score - best_non_null is greater than the threshold predict null.'
+                    'Typical values are between -1.0 and -5.0. default is 0.0')
 
-parser.add_argument(
-    '--gpu',
-    type=int,
-    default=None,
-    help='which gpu to use for finetuning. CPU is used if not set.')
+parser.add_argument('--gpu',
+                    type=int,
+                    default=None,
+                    help='which gpu to use for finetuning. CPU is used if not set.')
 
-parser.add_argument(
-    '--sentencepiece',
-    type=str,
-    default=None,
-    help=
-    'Path to the sentencepiece .model file for both tokenization and vocab.')
+parser.add_argument('--sentencepiece',
+                    type=str,
+                    default=None,
+                    help='Path to the sentencepiece .model file for both tokenization and vocab.')
 
 parser.add_argument('--debug',
                     action='store_true',
                     help='Run the example in test mode for sanity checks')
 
-parser.add_argument('--load_feature_from_pickle',
-                    action='store_true',
-                    help='load features from file if set')
 args = parser.parse_args()
 
 output_dir = args.output_dir
@@ -259,6 +233,7 @@ if pretrained_bert_parameters and model_parameters:
                      'BertForQA model parameters.')
 lower = args.uncased
 
+epochs = args.epochs
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 lr = args.lr
@@ -267,11 +242,12 @@ ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 accumulate = args.accumulate
 log_interval = args.log_interval
 if accumulate:
-    log.info('Using gradient accumulation. Effective batch size = {}'.format(
-        accumulate * batch_size))
+    log.info('Using gradient accumulation. Effective batch size = {}'.
+             format(accumulate*batch_size))
 
 optimizer = args.optimizer
 warmup_ratio = args.warmup_ratio
+
 
 version_2 = args.version_2
 null_score_diff_threshold = args.null_score_diff_threshold
@@ -283,37 +259,33 @@ n_best_size = args.n_best_size
 max_answer_length = args.max_answer_length
 
 if max_seq_length <= max_query_length + 3:
-    raise ValueError(
-        'The max_seq_length (%d) must be greater than max_query_length '
-        '(%d) + 3' % (max_seq_length, max_query_length))
+    raise ValueError('The max_seq_length (%d) must be greater than max_query_length '
+                     '(%d) + 3' % (max_seq_length, max_query_length))
 
 # vocabulary and tokenizer
 if args.sentencepiece:
-    logging.info('loading vocab file from sentence piece model: %s',
-                 args.sentencepiece)
+    logging.info('loading vocab file from sentence piece model: %s', args.sentencepiece)
     if dataset_name:
-        warnings.warn(
-            'Both --dataset_name and --sentencepiece are provided. '
-            'The vocabulary will be loaded based on --sentencepiece.')
+        warnings.warn('Both --dataset_name and --sentencepiece are provided. '
+                      'The vocabulary will be loaded based on --sentencepiece.')
     vocab = nlp.vocab.BERTVocab.from_sentencepiece(args.sentencepiece)
     dataset_name = None
 else:
     vocab = None
 
 pretrained = not model_parameters and not pretrained_bert_parameters and not args.sentencepiece
-bert, vocab = nlp.model.get_model(name=model_name,
-                                  dataset_name=dataset_name,
-                                  vocab=vocab,
-                                  pretrained=pretrained,
-                                  ctx=ctx,
-                                  use_pooler=False,
-                                  use_decoder=False,
-                                  use_classifier=False)
+bert, vocab = nlp.model.get_model(
+    name=model_name,
+    dataset_name=dataset_name,
+    vocab=vocab,
+    pretrained=pretrained,
+    ctx=ctx,
+    use_pooler=False,
+    use_decoder=False,
+    use_classifier=False)
 
 if args.sentencepiece:
-    tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece,
-                                         vocab,
-                                         lower=lower)
+    tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab, lower=lower)
 else:
     tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=lower)
 
@@ -321,7 +293,8 @@ batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack(),
     nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
     nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
-    nlp.data.batchify.Stack('float32'), nlp.data.batchify.Stack('float32'),
+    nlp.data.batchify.Stack('float32'),
+    nlp.data.batchify.Stack('float32'),
     nlp.data.batchify.Stack('float32'))
 
 net = BertForQA(bert=bert)
@@ -330,11 +303,8 @@ if model_parameters:
     nlp.utils.load_parameters(net, model_parameters, ctx=ctx, cast_dtype=True)
 elif pretrained_bert_parameters:
     # only load BertModel parameters
-    nlp.utils.load_parameters(bert,
-                              pretrained_bert_parameters,
-                              ctx=ctx,
-                              ignore_extra=True,
-                              cast_dtype=True)
+    nlp.utils.load_parameters(bert, pretrained_bert_parameters, ctx=ctx,
+                              ignore_extra=True, cast_dtype=True)
     net.span_classifier.initialize(init=mx.init.Normal(0.02), ctx=ctx)
 elif pretrained:
     # only load BertModel parameters
@@ -446,10 +416,9 @@ def train():
                 log_num += len(inputs)
                 total_num += len(inputs)
 
-                out = net(
-                    inputs.astype('float32').as_in_context(ctx),
-                    token_types.astype('float32').as_in_context(ctx),
-                    valid_length.astype('float32').as_in_context(ctx))
+                out = net(inputs.astype('float32').as_in_context(ctx),
+                          token_types.astype('float32').as_in_context(ctx),
+                          valid_length.astype('float32').as_in_context(ctx))
 
                 ls = loss_function(out, [
                     start_label.astype('float32').as_in_context(ctx),
@@ -467,8 +436,7 @@ def train():
 
             step_loss += ls.asscalar()
 
-            if (batch_id + 1) % (log_interval *
-                                 (accumulate if accumulate else 1)) == 0:
+            if (batch_id + 1) % (log_interval * (accumulate if accumulate else 1)) == 0:
                 toc = time.time()
                 log.info('Epoch: {}, Batch: {}/{}, Loss={:.4f}, lr={:.7f} '
                          'Time cost={:.1f} Thoughput={:.2f} samples/s'
@@ -572,15 +540,12 @@ def evaluate():
         all_predictions[example_qas_id] = prediction
 
     with io.open(os.path.join(output_dir, 'predictions.json'),
-                 'w',
-                 encoding='utf-8') as fout:
+                 'w', encoding='utf-8') as fout:
         data = json.dumps(all_predictions, ensure_ascii=False)
         fout.write(data)
 
     if version_2:
-        log.info(
-            'Please run evaluate-v2.0.py to get evaluation results for SQuAD 2.0'
-        )
+        log.info('Please run evaluate-v2.0.py to get evaluation results for SQuAD 2.0')
     else:
         F1_EM = get_F1_EM(dev_data, all_predictions)
         log.info(F1_EM)

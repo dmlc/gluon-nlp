@@ -452,6 +452,7 @@ def train():
     """Training function."""
     segment = 'train'
     log.info('Loading %s data...', segment)
+    # Note that for XLNet, the authors always use squad2 dataset for training
     train_data = SQuAD(segment, version='2.0')
     if args.debug:
         sampled_data = [train_data[i] for i in range(100)]
@@ -579,8 +580,8 @@ def train():
             if (batch_id + 1) % log_interval == 0:
                 toc = time.time()
                 log.info(
-                    'Epoch: %d, Batch: %d/%d, Loss=%.4f, lr=%.7f Time cost=%.1f Thoughput=%.2f samples/s'  # pylint: disable=line-too-long
-                    ,
+                    'Epoch: %d, Batch: %d/%d, Loss=%.4f, lr=%.7f '
+                    'Time cost=%.1f Thoughput=%.2f samples/s',
                     epoch_id + 1,
                     batch_id + 1,
                     len(train_dataloader),
@@ -711,7 +712,7 @@ def evaluate():
     else:
         log.info(
             'Please download evaluate-v2.0.py to get evaluation results for SQuAD. '
-            'Check index.rst to see how to download evaluate-v2.0.py.')
+            'Check index.rst for the detail.')
 
 if __name__ == '__main__':
     if not args.only_predict:
