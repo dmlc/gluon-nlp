@@ -43,7 +43,7 @@ __all__ = (['batchify'] + utils.__all__ + transforms.__all__ + sampler.__all__ +
            corpora.__all__ + sentiment.__all__ + word_embedding_evaluation.__all__ +
            stream.__all__ + conll.__all__ + translation.__all__ + registry.__all__ +
            question_answering.__all__ + dataloader.__all__ + candidate_sampler.__all__ +
-           intent_slot.__all__ + glue.__all__ + ['get_tokenizer'])  # pytype: disable=attribute-error
+           intent_slot.__all__ + glue.__all__ + ['get_tokenizer']) # pytype: disable=attribute-error
 
 
 def get_tokenizer(model_name, dataset_name,
@@ -96,9 +96,6 @@ def get_tokenizer(model_name, dataset_name,
     >>> tokenizer('Habit is second nature.')
     ['habit', 'is', 'second', 'nature', '.']
     """
-    from ..data.utils import _load_pretrained_sentencepiece_tokenizer  # pylint: disable=import-outside-toplevel
-    from ..data import BERTTokenizer, GPT2BPETokenizer  # pylint: disable=import-outside-toplevel
-
     model_name, dataset_name = model_name.lower(), dataset_name.lower()
     model_dataset_name = '_'.join([model_name, dataset_name])
     model_dataset_names = {'roberta_12_768_12_openwebtext_ccnews_stories_books_cased':
