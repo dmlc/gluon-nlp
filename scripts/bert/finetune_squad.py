@@ -519,13 +519,6 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
         nlp.data.batchify.Stack('float32'),
         nlp.data.batchify.Stack('float32'))
 
-    dev_dataset = preprocess_dataset(tokenizer,
-                                     dev_data,
-                                     max_seq_length=max_seq_length,
-                                     doc_stride=doc_stride,
-                                     max_query_length=max_query_length,
-                                     input_features=False)
-
     dev_data_transform = preprocess_dataset(tokenizer,
                                             dev_data,
                                             max_seq_length=max_seq_length,
