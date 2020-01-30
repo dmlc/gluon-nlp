@@ -421,7 +421,7 @@ def _get_gpt2_model(model_name=None, dataset_name=None, vocab=None, pretrained=T
     -------
     GPT2Model, gluonnlp.vocab.Vocab
     """
-    predefined_args = gpt2_hparams[model_name]
+    predefined_args = gpt2_hparams[model_name].copy()
     mutable_args = ['dropout']
     mutable_args = frozenset(mutable_args)
     assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
