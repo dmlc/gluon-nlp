@@ -261,11 +261,7 @@ def preprocess_data(_tokenizer,
         lambda _, valid_length, segment_ids, label: valid_length, lazy=False)
 
     # bucket sampler for training
-<<<<<<< HEAD
-    pad_val = vocab[vocab.padding_token]
-=======
     pad_val = _vocab[_vocab.padding_token]
->>>>>>> upstream/master
     batchify_fn = nlp.data.batchify.Tuple(
         nlp.data.batchify.Pad(axis=0, pad_val=pad_val),  # input
         nlp.data.batchify.Stack(),  # length
