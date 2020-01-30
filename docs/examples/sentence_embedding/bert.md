@@ -308,10 +308,20 @@ num_calib_batches = 5
 quantized_dtype = 'auto'
 calib_mode = 'customize'
 
+# sampler for evaluation
+pad_val = vocabulary[vocabulary.padding_token]
+batchify_fn = nlp.data.batchify.Tuple(
+    nlp.data.batchify.Pad(axis=0, pad_val=pad_val),  # input
+    nlp.data.batchify.Pad(axis=0, pad_val=0),  # segment
+    nlp.data.batchify.Stack(),  # length
+    nlp.data.batchify.Stack('int32'))  # label
+dev_dataloader = mx.gluon.data.DataLoader(data_train, batch_size=dev_batch_size, num_workers=4,
+                                           shuffle=False, batchify_fn=batchify_fn)
+
 # Calibration function
 def calibration(net, dev_data, num_calib_batches, quantized_dtype, calib_mode):
     """calibration function on the dev dataset."""
-    print('Now we are doing calibration on dev with %s.', mx.cpu())
+    print('Now we are doing calibration on dev with cpu.')
     collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=None)
     num_calib_examples = dev_batch_size * num_calib_batches
     quantized_net = mx.contrib.quantization.quantize_net_v2(net, quantized_dtype=quantized_dtype,
@@ -324,14 +334,55 @@ def calibration(net, dev_data, num_calib_batches, quantized_dtype, calib_mode):
                                                             ctx=mx.cpu(),
                                                             LayerOutputCollector=collector,
                                                             logger=None)
+    print('Calibration done with success.')
+    return quantized_net
 
+# will remove until mxnet 1.7 release.
 try:
-    calibration(bert_classifier,
-                bert_dataloader,
-                num_calib_batches,
-                quantized_dtype,
-                calib_mode)
+    quantized_net = calibration(bert_classifier,
+                                dev_dataloader,
+                                num_calib_batches,
+                                quantized_dtype,
+                                calib_mode)
 except AttributeError:
+    nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
+    warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
+```
+
+## Deployment
+
+After quantization, we can also export the quantized model for inference deployment.
+
+```{.python .input}
+prefix = './model_bert_squad_quantized'
+
+def deployment(net, prefix, dataloader):
+    net.export(prefix, epoch=0)
+    print('Saving quantized model at ', prefix)
+    print('load symbol file directly as SymbolBlock for model deployment.')
+    static_net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(prefix), 
+                                    ['data0', 'data1', 'data2'],
+                                    '{}-0000.params'.format(prefix))
+    static_net.hybridize(static_alloc=True, static_shape=True)
+    for batch_id, (token_ids, segment_ids, valid_length, label) in enumerate(dev_dataloader):
+            token_ids = token_ids.as_in_context(mx.cpu())
+            valid_length = valid_length.as_in_context(mx.cpu())
+            segment_ids = segment_ids.as_in_context(mx.cpu())
+            label = label.as_in_context(mx.cpu())
+            out = static_net(token_ids, segment_ids, valid_length.astype('float32'))
+            metric.update([label], [out])
+
+            # Printing vital information
+            if (batch_id + 1) % (log_interval) == 0:
+                print('[Batch {}/{}], acc={:.3f}'
+                            .format(batch_id + 1, len(bert_dataloader),
+                                    metric.get()[1]))
+    return metric
+
+# will remove until mxnet 1.7 release.
+try:
+    eval_metric = deployment(quantized_net, prefix, dev_dataloader)
+except NameError:
     nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
     warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
 ```
