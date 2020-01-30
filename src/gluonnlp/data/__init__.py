@@ -18,6 +18,8 @@
 # pylint: disable=wildcard-import
 """This module includes common utilities such as data readers and counter."""
 
+import os
+
 from . import (batchify, candidate_sampler, conll, corpora, dataloader,
                dataset, question_answering, registry, sampler, sentiment,
                stream, transforms, translation, utils,
