@@ -258,7 +258,6 @@ if pretrained_bert_parameters and model_parameters:
                      'BertForQA model parameters.')
 lower = args.uncased
 
-epochs = args.epochs
 batch_size = args.batch_size
 test_batch_size = args.test_batch_size
 lr = args.lr
@@ -390,7 +389,6 @@ def train():
 
     step_size = batch_size * accumulate if accumulate else batch_size
     num_train_steps = int(num_train_examples / step_size * args.epochs)
-    epochs = args.epochs
     if args.training_steps:
         num_train_steps = args.training_steps
 
@@ -448,20 +446,14 @@ def train():
             log_num += num_labels
             total_num += num_labels
 
-            inputs = inputs.as_in_context(ctx)
-            token_types = token_types.as_in_context(ctx)
-            valid_length = valid_length.as_in_context(ctx)
-            start_label = start_label.as_in_context(ctx)
-            end_label = end_label.as_in_context(ctx)
-
             with mx.autograd.record():
                 out = net(inputs.as_in_context(ctx),
                           token_types.as_in_context(ctx),
                           valid_length.as_in_context(ctx).astype('float32'))
 
                 loss = loss_function(out, [
-                    start_label.astype('float32').as_in_context(ctx),
-                    end_label.astype('float32').as_in_context(ctx)
+                    start_label.as_in_context(ctx).astype('float32'),
+                    end_label.as_in_context(ctx).astype('float32')
                 ]).sum() / num_labels
 
                 if accumulate:
