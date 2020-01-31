@@ -133,7 +133,7 @@ bert.initialize(init=mx.init.Normal(0.02))
 ones = mx.nd.ones((2, 8))
 out = bert(ones, None, mx.nd.array([5, 6]), mx.nd.array([[1], [2]]))
 params = bert._collect_params_with_prefix()
- 
+
 
 
 mapping = {

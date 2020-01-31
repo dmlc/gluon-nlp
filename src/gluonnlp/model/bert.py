@@ -130,7 +130,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
                     activation=activation, layer_norm_eps=layer_norm_eps)
                 self.transformer_cells.add(cell)
 
-    def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
+    def __call__(self, inputs, states=None, valid_length=None):  # pylint: disable=arguments-differ
         """Encode the inputs given the states and valid sequence length.
 
         Parameters
@@ -469,6 +469,7 @@ class BERTModel(HybridBlock):
         decoded = self.decoder(encoded)
         return decoded
 
+
 class RoBERTaModel(BERTModel):
     """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
 
@@ -611,6 +612,7 @@ class BERTClassifier(HybridBlock):
         _, pooler_out = self.bert(inputs, token_types, valid_length)
         return self.classifier(pooler_out)
 
+
 class RoBERTaClassifier(HybridBlock):
     """Model for sentence (pair) classification task with BERT.
 
@@ -725,6 +727,7 @@ model_store._model_sha1.update(
         ('55f15c5d23829f6ee87622b68711b15fef50e55b', 'bert_12_768_12_biobert_v1.1_pubmed_cased'),
         ('60281c98ba3572dfdaac75131fa96e2136d70d5c', 'bert_12_768_12_clinicalbert_uncased'),
         ('f869f3f89e4237a769f1b7edcbdfe8298b480052', 'ernie_12_768_12_baidu_ernie_uncased'),
+        ('ccf0593e03b91b73be90c191d885446df935eb64', 'bert_12_768_12_kobert_news_wiki_ko_cased')
     ]})
 
 roberta_12_768_12_hparams = {
@@ -836,7 +839,8 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         'scibert_basevocab_uncased', 'scibert_basevocab_cased',
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
         'biobert_v1.1_pubmed',
-        'clinicalbert'
+        'clinicalbert',
+        'kobert_news_wiki_ko_cased'
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
         specified. Ignored if dataset_name is specified.
@@ -1056,6 +1060,7 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
                              use_decoder=use_decoder, root=root,
                              hparam_allow_override=hparam_allow_override, **kwargs)
 
+
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
                     use_classifier=True, hparam_allow_override=False, **kwargs):
@@ -1192,6 +1197,7 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
                                 allow_missing=False)
     return net, bert_vocab
 
+
 def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    use_pooler=True, use_decoder=True, use_classifier=True, output_attention=False,
                    output_all_encodings=False, use_token_type_embed=True,
@@ -1217,7 +1223,8 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         'scibert_basevocab_uncased','scibert_basevocab_cased',
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
         'biobert_v1.1_pubmed',
-        'clinicalbert'
+        'clinicalbert',
+        'kobert_news_wiki_ko_cased'
         are additionally supported.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
@@ -1269,7 +1276,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
 
     Returns
     -------
-    BERTModel, gluonnlp.vocab.BERTVocab
+    (BERTModel, gluonnlp.vocab.BERTVocab)
     """
     predefined_args = bert_hparams[model_name].copy()
     if not hparam_allow_override:
@@ -1294,7 +1301,6 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
                           layer_norm_eps=predefined_args.get('layer_norm_eps', 1e-12))
 
     from ..vocab import BERTVocab  # pylint: disable=import-outside-toplevel
-    # bert_vocab
     bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     # BERT
     net = BERTModel(encoder, len(bert_vocab),
