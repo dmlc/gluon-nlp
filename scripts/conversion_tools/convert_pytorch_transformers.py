@@ -30,12 +30,22 @@ by "TODO".
 
  """
 
+import argparse
 import pytorch_transformers
 import torch
 import mxnet as mx
 import gluonnlp as nlp
 import os, logging, json
 from utils import get_hash, load_text_vocab, tf_vocab_to_gluon_vocab
+
+parser = argparse.ArgumentParser(description='Conversion script for pytorch-transformer '
+                                             'distilbert model',
+                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--out_dir', type=str, help='Full path to the output folder',
+                    default='./converted-model')
+
+args = parser.parse_args()
+
 
 ####################################################################
 #                  LOAD A BERT MODEL FROM PYTORCH                  #
@@ -45,7 +55,7 @@ tokenizer = pytorch_transformers.tokenization_distilbert.DistilBertTokenizer.fro
 model = pytorch_transformers.DistilBertModel.from_pretrained('distilbert-base-uncased')
 
 dir_name = './temp'
-gluon_dir_name = './gluon-model'
+gluon_dir_name = args.out_dir
 nlp.utils.mkdir(dir_name)
 nlp.utils.mkdir(gluon_dir_name)
 model_name = 'bert_12_768_12'

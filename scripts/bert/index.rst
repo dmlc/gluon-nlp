@@ -1,5 +1,5 @@
-Bidirectional Encoder Representations from Transformers
--------------------------------------------------------
+BERT
+----
 
 :download:`Download scripts </model_zoo/bert.zip>`
 

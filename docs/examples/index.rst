@@ -98,7 +98,7 @@ Sentence Embedding
       embeddings to predict Yelp review rating.
 
    .. card::
-      :title: BERT: Bidirectional Encoder Representations from Transformers
+      :title: BERT Fine-tuning
       :link: sentence_embedding/bert.html
 
       See how to use GluonNLP to fine-tune a sentence pair classification model with
