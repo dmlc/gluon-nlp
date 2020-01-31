@@ -63,6 +63,18 @@ Model Zoo
 
       Assigning labels to each tokens in a text sequence.
 
+   .. card::
+      :title: Sequence Labeling
+      :link: sequence_labeling/index.html
+
+      Assigning labels to each tokens in a text sequence.
+
+   .. card::
+      :title: Model Conversion
+      :link: model_zoo/conversion_tools/index.html
+
+      Converting NLP models from other frameworks to GluonNLP.
+
 .. toctree::
    :hidden:
    :maxdepth: 1
@@ -77,3 +89,4 @@ Model Zoo
    parsing/index
    bert/index
    sequence_labeling/index
+   conversion_tools/index
