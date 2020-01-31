@@ -87,6 +87,8 @@ rate=0.5, mode=training)
     existing_params = _find_params(block, local_param_regex)
     for (local_param_name, param), \
             (ref_params_list, ref_reg_params_list) in existing_params.items():
+        if isinstance(param, WeightDropParameter):
+            continue
         dropped_param = WeightDropParameter(param, rate, weight_dropout_mode, axes)
         for ref_params in ref_params_list:
             ref_params[param.name] = dropped_param
@@ -277,3 +279,29 @@ def _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_ext
     path = '_'.join([model_name, dataset_name])
     model_file = model_store.get_model_file(path, root=root)
     net.load_parameters(model_file, ctx=ctx, ignore_extra=ignore_extra, allow_missing=allow_missing)
+
+def _get_cell_type(cell_type):
+    """Get the object type of the cell by parsing the input
+
+    Parameters
+    ----------
+    cell_type : str or type
+
+    Returns
+    -------
+    cell_constructor: type
+        The constructor of the RNNCell
+    """
+    if isinstance(cell_type, str):
+        if cell_type == 'lstm':
+            return rnn.LSTMCell
+        elif cell_type == 'gru':
+            return rnn.GRUCell
+        elif cell_type == 'relu_rnn':
+            return functools.partial(rnn.RNNCell, activation='relu')
+        elif cell_type == 'tanh_rnn':
+            return functools.partial(rnn.RNNCell, activation='tanh')
+        else:
+            raise NotImplementedError
+    else:
+        return cell_type

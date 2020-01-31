@@ -114,15 +114,27 @@ Results using `bert_12_768_12`:
 
 .. editing URL for the following table: https://tinyurl.com/y4n8q84w
 
-+---------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+
-| Dataset             | MRPC                                                                                                         | RTE                                                                                                         | SST-2                                                                                                       | MNLI-M/MM                                                                                                    | XNLI (Chinese)                                                                                               |
-+=====================+==============================================================================================================+=============================================================================================================+=============================================================================================================+==============================================================================================================+==============================================================================================================+
-| Validation Accuracy | 88.7%                                                                                                        | 70.8%                                                                                                       | 93%                                                                                                         | 84.55%, 84.66%                                                                                               | 78.27%                                                                                                       |
-+---------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+
-| Log                 | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_mrpc.log>`__       | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_rte.log>`__       | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_sst.log>`__       | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_mnli.log>`__       | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_xnli.log>`__       |
-+---------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+
-| Command             | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_mrpc.sh>`__    | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_rte.sh>`__    | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_sst.sh>`__    | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_mnli.sh>`__    | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetuned_xnli.sh>`__    |
-+---------------------+--------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------+
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|Task Name        |Metrics              |Results on Dev Set     |log                                                                                                                                         |command                                                                                                                                                          |
++=================+=====================+=======================+============================================================================================================================================+=================================================================================================================================================================+
+| CoLA            |Matthew Corr.        |60.32                  |`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_CoLA_base_mx1.6.0rc1.log>`__                                 |`command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_CoLA_base_mx1.6.0rc1.sh>`__                                                   |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| SST-2           |Accuracy             |93.46                  |`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_SST_base_mx1.6.0rc1.log>`__                                  |`command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_SST_base_mx1.6.0rc1.sh>`__                                                    |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| MRPC            |Accuracy/F1          |88.73/91.96            |`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_MRPC_base_mx1.6.0rc1.log>`__                                 |`command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_MRPC_base_mx1.6.0rc1.sh>`__                                                   |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| STS-B           |Pearson Corr.        |90.34                  |`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_STS-B_base_mx1.6.0rc1.log>`__                                |`command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_STS-B_base_mx1.6.0rc1.sh>`__                                                  |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| QQP             |Accuracy             |91                     |`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_QQP_base_mx1.6.0rc1.log>`__                                  |`command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_QQP_base_mx1.6.0rc1.sh>`__                                                    |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| MNLI            |Accuracy(m/mm)       |84.29/85.07            |`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_MNLI_base_mx1.6.0rc1.log>`__                                 |`command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_MNLI_base_mx1.6.0rc1.sh>`__                                                   |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| XNLI (Chinese)  |Accuracy             |78.43                  |`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_XNLI_base_mx1.6.0rc1.log>`__                                 |`command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_XNLI-B_base_mx1.6.0rc1.sh>`__                                                 |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| RTE             |Accuracy             |74                     |`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_RTE_base_mx1.6.0rc1.log>`__                                  |`command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_RTE_base_mx1.6.0rc1.sh>`__                                                    |
++-----------------+---------------------+-----------------------+--------------------------------------------------------------------------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+
 
 Results using `roberta_12_768_12`:
 
@@ -143,17 +155,19 @@ Results using `roberta_12_768_12`:
 Question Answering on SQuAD
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-+---------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
-| Dataset | SQuAD 1.1                                                                                                                               | SQuAD 1.1                                                                                                                                | SQuAD 2.0                                                                                                                                |
-+=========+=========================================================================================================================================+==========================================================================================================================================+==========================================================================================================================================+
-| Model   | bert_12_768_12                                                                                                                          | bert_24_1024_16                                                                                                                          | bert_24_1024_16                                                                                                                          |
-+---------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
-| F1 / EM | 88.53 / 80.98                                                                                                                           | 90.97 / 84.05                                                                                                                            | 77.96 / 81.02                                                                                                                            |
-+---------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
-| Log     | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_base_mx1.5.0b20190216.log>`__         | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_large_mx1.5.0b20190216.log>`__         | `log <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad2.0_large_mx1.5.0b20160216.log>`__         |
-+---------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
-| Command | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_base_mx1.5.0b20190216.sh>`__      | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad1.1_large_mx1.5.0b20190216.sh>`__      | `command <https://raw.githubusercontent.com/dmlc/web-data/master/gluonnlp/logs/bert/finetune_squad2.0_large_mx1.5.0b20160216.sh>`__      |
-+---------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
++-----------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
+| Dataset   | SQuAD 1.1                                                                                                                               | SQuAD 1.1                                                                                                                                | SQuAD 2.0                                                                                                                                |
++===========+=========================================================================================================================================+==========================================================================================================================================+==========================================================================================================================================+
+| Model     | bert_12_768_12                                                                                                                          | bert_24_1024_16                                                                                                                          | bert_24_1024_16                                                                                                                          |
++-----------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
+| F1 / EM   | 88.58 / 81.26                                                                                                                           | 90.97 / 84.22                                                                                                                            | 77.96 / 81.02                                                                                                                            |
++-----------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
+| Log       | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_squad1.1_base_mx1.6.0rc1.log>`__                         | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_squad1.1_large_mx1.6.0rc1.log>`__                         | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_squad2.0_large_mx1.6.0rc1.log>`__                         |
++-----------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
+| Command   | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_squad1.1_base_mx1.6.0rc1.sh>`__                      | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_squad1.1_large_mx1.6.0rc1.sh>`__                      | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_squad2.0_large_mx1.6.0rc1.sh>`__                      |
++-----------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
+| Prediction| `predictions.json <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_squad1.1_base_mx1.6.0rc1.json>`__           | `predictions.json <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_squad1.1_large_mx1.6.0rc1.json>`__           | `predictions.json <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_squad2.0_large_mx1.6.0rc1.json>`__           |
++-----------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 
 For all model settings above, we set learing rate = 3e-5 and optimizer = adam.
 
@@ -253,33 +267,6 @@ You can `train <//github.com/google/sentencepiece/tree/v0.1.82/python#model-trai
 To use sentencepiece vocab for pre-training, please set --sentencepiece=my_vocab.model when using run_pretraining.py.
 
 
-Named Entity Recognition
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-GluonNLP provides training and prediction script for named entity recognition models.
-
-The training script for NER requires python3 and the seqeval package:
-
-.. code-block:: console
-
-    $ pip3 install seqeval --user
-
-Dataset should be formatted in `CoNLL-2003 shared task format <https://www.clips.uantwerpen.be/conll2003/ner/>`_.
-Assuming data files are located in `${DATA_DIR}`, below command trains BERT model for
-named entity recognition, and saves model artifacts to `${MODEL_DIR}` with `large_bert`
-prefix in file names:
-
-.. code-block:: console
-
-    $ python3 finetune_ner.py \
-        --train-path ${DATA_DIR}/train.txt \
-        --dev-path ${DATA_DIR}/dev.txt \
-        --test-path ${DATA_DIR}/test.txt
-        --gpu 0 --learning-rate 1e-5 --dropout-prob 0.1 --num-epochs 100 --batch-size 8 \
-        --optimizer bertadam --bert-model bert_24_1024_16 \
-        --save-checkpoint-prefix ${MODEL_DIR}/large_bert --seed 13531
-
-This achieves Test F1 from `91.5` to `92.2` (`log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetuned_conll2003.log>`_).
 
 Export BERT for Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -300,8 +287,8 @@ The goal of this BERT Embedding is to obtain the token embedding from BERT's pre
 
 .. code-block:: shell
 
-    python bert/embedding.py --sentences "GluonNLP is a toolkit that enables easy text preprocessing, datasets loading and neural models building to help you speed up your Natural Language Processing (NLP) research."
-    Text: GluonNLP is a toolkit that enables easy text preprocessing, datasets loading and neural models building to help you speed up your Natural Language Processing (NLP) research.
+    python embedding.py --sentences "GluonNLP is a toolkit that enables easy text preprocessing, datasets loading and neural models building to help you speed up your Natural Language Processing (NLP) research."
+    Text: g ##lu ##on ##nl ##p is a tool ##kit that enables easy text prep ##ro ##ces ##sing , data ##set ##s loading and neural models building to help you speed up your natural language processing ( nl ##p ) research .
     Tokens embedding: [array([-0.11881411, -0.59530115,  0.627092  , ...,  0.00648153,
        -0.03886228,  0.03406909], dtype=float32), array([-0.7995638 , -0.6540758 , -0.00521846, ..., -0.42272145,
        -0.5787281 ,  0.7021201 ], dtype=float32), array([-0.7406778 , -0.80276626,  0.3931962 , ..., -0.49068323,
@@ -366,7 +353,7 @@ Here's one example of the ATIS dataset, it uses the `IOB2 format <https://en.wik
 In this example, we demonstrate how to use GluonNLP to fine-tune a pretrained BERT model for joint intent classification and slot labelling. We
 choose to finetune a pretrained BERT model.  We use two datasets `ATIS <https://github.com/yvchen/JointSLU>`__ and `SNIPS <https://github.com/snipsco/nlu-benchmark/tree/master/2017-06-custom-intent-engines>`__.
 
-The training script requires python3 and the seqeval and tqdm packages:
+The training script requires the seqeval and tqdm packages:
 
 .. code-block:: console
 
@@ -377,7 +364,7 @@ For the ATIS dataset, use the following command to run the experiment:
 
 .. code-block:: console
 
-    $ python3 finetune_icsl.py --gpu 0 --dataset atis
+    $ python finetune_icsl.py --gpu 0 --dataset atis
 
 It produces the final slot labelling F1 = `95.83%` and intent classification accuracy = `98.66%`
 
@@ -385,7 +372,7 @@ For the SNIPS dataset, use the following command to run the experiment:
 
 .. code-block:: console
 
-    $ python3 finetune_icsl.py --gpu 0 --dataset snips
+    $ python finetune_icsl.py --gpu 0 --dataset snips
 
 It produces the final slot labelling F1 = `96.06%` and intent classification accuracy = `98.71%`
 

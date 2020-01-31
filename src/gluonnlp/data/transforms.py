@@ -35,6 +35,7 @@ import io
 import os
 import time
 import unicodedata
+import warnings
 import zipfile
 from typing import List, Optional
 
@@ -339,7 +340,9 @@ class JiebaTokenizer:
 
     def __init__(self):
         try:
-            import jieba  # pylint: disable=import-outside-toplevel
+            with warnings.catch_warnings():  # jieba uses deprecated imp module
+                warnings.simplefilter('ignore')
+                import jieba  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise ImportError(
                 'jieba is not installed. You must install jieba in order to use the '
@@ -538,6 +541,7 @@ class SentencepieceTokenizer(_SentencepieceProcessor):
 
     def __init__(self, path, num_best=0, alpha=1.0):
         super(SentencepieceTokenizer, self).__init__(path)
+        self._path = path
         self._nbest = num_best
         self._alpha = alpha
 

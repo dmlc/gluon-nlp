@@ -19,7 +19,9 @@
 """NLP Metrics."""
 
 from . import masked_accuracy
+from . import length_normalized_loss
 
 from .masked_accuracy import *
+from .length_normalized_loss import *
 
-__all__ = masked_accuracy.__all__
+__all__ = masked_accuracy.__all__ + length_normalized_loss.__all__

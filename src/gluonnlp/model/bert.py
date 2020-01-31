@@ -63,7 +63,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         Whether to scale the softmax input by the sqrt of the input dimension
         in multi-head attention
     dropout : float
-        Dropout probability of the attention probabilities.
+        Dropout probability of the attention probabilities and embedding.
     use_residual : bool
     output_attention: bool, default False
         Whether to output the attention weights
@@ -130,7 +130,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
                     activation=activation, layer_norm_eps=layer_norm_eps)
                 self.transformer_cells.add(cell)
 
-    def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
+    def __call__(self, inputs, states=None, valid_length=None):  # pylint: disable=arguments-differ
         """Encode the inputs given the states and valid sequence length.
 
         Parameters
@@ -252,18 +252,14 @@ class BERTModel(HybridBlock):
     embed_size : int or None, default None
         Size of the embedding vectors. It is used to generate the word and token type
         embeddings if word_embed and token_type_embed are None.
-    embed_dropout : float, default 0.0
-        Dropout rate of the embedding weights. It is used to generate the source and target
-        embeddings if word_embed and token_type_embed are None.
     embed_initializer : Initializer, default None
         Initializer of the embedding weights. It is used to generate the source and target
         embeddings if word_embed and token_type_embed are None.
     word_embed : Block or None, default None
-        The word embedding. If set to None, word_embed will be constructed using embed_size and
-        embed_dropout.
+        The word embedding. If set to None, word_embed will be constructed using embed_size.
     token_type_embed : Block or None, default None
         The token type embedding (segment embedding). If set to None and the token_type_embed will
-        be constructed using embed_size and embed_dropout.
+        be constructed using embed_size.
     use_pooler : bool, default True
         Whether to include the pooler which converts the encoded sequence tensor of shape
         (batch_size, seq_length, units) to a tensor of shape (batch_size, units)
@@ -306,7 +302,7 @@ class BERTModel(HybridBlock):
     """
 
     def __init__(self, encoder, vocab_size=None, token_type_vocab_size=None, units=None,
-                 embed_size=None, embed_dropout=0.0, embed_initializer=None,
+                 embed_size=None, embed_initializer=None,
                  word_embed=None, token_type_embed=None, use_pooler=True, use_decoder=True,
                  use_classifier=True, use_token_type_embed=True, prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
@@ -318,11 +314,11 @@ class BERTModel(HybridBlock):
         self.encoder = encoder
         # Construct word embedding
         self.word_embed = self._get_embed(word_embed, vocab_size, embed_size,
-                                          embed_initializer, embed_dropout, 'word_embed_')
+                                          embed_initializer, 'word_embed_')
         # Construct token type embedding
         if use_token_type_embed:
             self.token_type_embed = self._get_embed(token_type_embed, token_type_vocab_size,
-                                                    embed_size, embed_initializer, embed_dropout,
+                                                    embed_size, embed_initializer,
                                                     'token_type_embed_')
         if self._use_pooler:
             # Construct pooler
@@ -354,7 +350,7 @@ class BERTModel(HybridBlock):
             'The weights of word embedding are not tied with those of decoder'
         return decoder
 
-    def _get_embed(self, embed, vocab_size, embed_size, initializer, dropout, prefix):
+    def _get_embed(self, embed, vocab_size, embed_size, initializer, prefix):
         """ Construct an embedding block. """
         if embed is None:
             assert embed_size is not None, '"embed_size" cannot be None if "word_embed" or ' \
@@ -364,8 +360,6 @@ class BERTModel(HybridBlock):
                 with embed.name_scope():
                     embed.add(nn.Embedding(input_dim=vocab_size, output_dim=embed_size,
                                            weight_initializer=initializer))
-                    if dropout:
-                        embed.add(nn.Dropout(rate=dropout))
         assert isinstance(embed, HybridBlock)
         return embed
 
@@ -475,6 +469,7 @@ class BERTModel(HybridBlock):
         decoded = self.decoder(encoded)
         return decoded
 
+
 class RoBERTaModel(BERTModel):
     """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
 
@@ -489,15 +484,11 @@ class RoBERTaModel(BERTModel):
     embed_size : int or None, default None
         Size of the embedding vectors. It is used to generate the word and token type
         embeddings if word_embed and token_type_embed are None.
-    embed_dropout : float, default 0.0
-        Dropout rate of the embedding weights. It is used to generate the source and target
-        embeddings if word_embed and token_type_embed are None.
     embed_initializer : Initializer, default None
         Initializer of the embedding weights. It is used to generate the source and target
         embeddings if word_embed and token_type_embed are None.
     word_embed : Block or None, default None
-        The word embedding. If set to None, word_embed will be constructed using embed_size and
-        embed_dropout.
+        The word embedding. If set to None, word_embed will be constructed using embed_size.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
     prefix : str or None
@@ -525,12 +516,12 @@ class RoBERTaModel(BERTModel):
     """
 
     def __init__(self, encoder, vocab_size=None, units=None,
-                 embed_size=None, embed_dropout=0.0, embed_initializer=None,
+                 embed_size=None, embed_initializer=None,
                  word_embed=None, use_decoder=True,
                  prefix=None, params=None):
         super(RoBERTaModel, self).__init__(encoder, vocab_size=vocab_size,
                                            token_type_vocab_size=None, units=units,
-                                           embed_size=embed_size, embed_dropout=embed_dropout,
+                                           embed_size=embed_size,
                                            embed_initializer=embed_initializer,
                                            word_embed=word_embed, token_type_embed=None,
                                            use_pooler=False, use_decoder=use_decoder,
@@ -621,6 +612,7 @@ class BERTClassifier(HybridBlock):
         _, pooler_out = self.bert(inputs, token_types, valid_length)
         return self.classifier(pooler_out)
 
+
 class RoBERTaClassifier(HybridBlock):
     """Model for sentence (pair) classification task with BERT.
 
@@ -635,7 +627,7 @@ class RoBERTaClassifier(HybridBlock):
     num_classes : int, default is 2
         The number of target classes.
     dropout : float or None, default 0.0.
-        Dropout probability for the bert output.
+        Dropout probability for the RoBERTa output.
     prefix : str or None
         See document of `mx.gluon.Block`.
     params : ParameterDict or None
@@ -735,6 +727,7 @@ model_store._model_sha1.update(
         ('55f15c5d23829f6ee87622b68711b15fef50e55b', 'bert_12_768_12_biobert_v1.1_pubmed_cased'),
         ('60281c98ba3572dfdaac75131fa96e2136d70d5c', 'bert_12_768_12_clinicalbert_uncased'),
         ('f869f3f89e4237a769f1b7edcbdfe8298b480052', 'ernie_12_768_12_baidu_ernie_uncased'),
+        ('ccf0593e03b91b73be90c191d885446df935eb64', 'bert_12_768_12_kobert_news_wiki_ko_cased')
     ]})
 
 roberta_12_768_12_hparams = {
@@ -748,7 +741,6 @@ roberta_12_768_12_hparams = {
     'dropout': 0.1,
     'use_residual': True,
     'embed_size': 768,
-    'embed_dropout': 0.1,
     'word_embed': None,
     'layer_norm_eps': 1e-5
 }
@@ -764,7 +756,6 @@ roberta_24_1024_16_hparams = {
     'dropout': 0.1,
     'use_residual': True,
     'embed_size': 1024,
-    'embed_dropout': 0.1,
     'word_embed': None,
     'layer_norm_eps': 1e-5
 }
@@ -780,7 +771,6 @@ bert_12_768_12_hparams = {
     'dropout': 0.1,
     'use_residual': True,
     'embed_size': 768,
-    'embed_dropout': 0.1,
     'token_type_vocab_size': 2,
     'word_embed': None,
 }
@@ -796,7 +786,6 @@ bert_24_1024_16_hparams = {
     'dropout': 0.1,
     'use_residual': True,
     'embed_size': 1024,
-    'embed_dropout': 0.1,
     'token_type_vocab_size': 2,
     'word_embed': None,
 }
@@ -812,7 +801,6 @@ ernie_12_768_12_hparams = {
     'dropout': 0.1,
     'use_residual': True,
     'embed_size': 768,
-    'embed_dropout': 0.1,
     'token_type_vocab_size': 2,
     'word_embed': None,
     'activation': 'relu',
@@ -830,7 +818,8 @@ bert_hparams = {
 
 def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
-                   use_classifier=True, pretrained_allow_missing=False, **kwargs):
+                   use_classifier=True, pretrained_allow_missing=False,
+                   hparam_allow_override=False, **kwargs):
     """Generic BERT BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
@@ -850,7 +839,8 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         'scibert_basevocab_uncased', 'scibert_basevocab_cased',
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
         'biobert_v1.1_pubmed',
-        'clinicalbert'
+        'clinicalbert',
+        'kobert_news_wiki_ko_cased'
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
         specified. Ignored if dataset_name is specified.
@@ -888,6 +878,9 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     The pretrained parameters for dataset_name
     'openwebtext_book_corpus_wiki_en_uncased' were obtained by running the
@@ -920,13 +913,15 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     return get_bert_model(model_name='bert_12_768_12', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
+                          pretrained_allow_missing=pretrained_allow_missing,
+                          hparam_allow_override=hparam_allow_override, **kwargs)
 
 
 def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(), use_pooler=True,
                     use_decoder=True, use_classifier=True,
                     root=os.path.join(get_home_dir(), 'models'),
-                    pretrained_allow_missing=False, **kwargs):
+                    pretrained_allow_missing=False,
+                    hparam_allow_override=False, **kwargs):
     """Generic BERT LARGE model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
@@ -967,6 +962,9 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -975,12 +973,14 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     return get_bert_model(model_name='bert_24_1024_16', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
+                          pretrained_allow_missing=pretrained_allow_missing,
+                          hparam_allow_override=hparam_allow_override, **kwargs)
 
 
 def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                       use_decoder=True,
-                      root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                      root=os.path.join(get_home_dir(), 'models'),
+                      hparam_allow_override=False, **kwargs):
     """Generic RoBERTa BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
@@ -1005,6 +1005,9 @@ def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu
         MXNET_HOME defaults to '~/.mxnet'.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -1012,12 +1015,14 @@ def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu
     """
     return get_roberta_model(model_name='roberta_12_768_12', vocab=vocab, dataset_name=dataset_name,
                              pretrained=pretrained, ctx=ctx,
-                             use_decoder=use_decoder, root=root, **kwargs)
+                             use_decoder=use_decoder, root=root,
+                             hparam_allow_override=hparam_allow_override, **kwargs)
 
 
 def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                        use_decoder=True,
-                       root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                       root=os.path.join(get_home_dir(), 'models'),
+                       hparam_allow_override=False, **kwargs):
     """Generic RoBERTa LARGE model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
@@ -1042,6 +1047,9 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
         MXNET_HOME defaults to '~/.mxnet'.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -1049,12 +1057,13 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
     """
     return get_roberta_model(model_name='roberta_24_1024_16', vocab=vocab,
                              dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
-                             use_decoder=use_decoder,
-                             root=root, **kwargs)
+                             use_decoder=use_decoder, root=root,
+                             hparam_allow_override=hparam_allow_override, **kwargs)
+
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
-                    use_classifier=True, **kwargs):
+                    use_classifier=True, hparam_allow_override=False, **kwargs):
     """Baidu ERNIE model.
 
     Reference:
@@ -1088,6 +1097,9 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
         Whether to include the decoder for masked language model prediction.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -1096,13 +1108,14 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     return get_bert_model(model_name='ernie_12_768_12', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                          pretrained_allow_missing=False, **kwargs)
+                          pretrained_allow_missing=False,
+                          hparam_allow_override=hparam_allow_override, **kwargs)
 
 
 def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                      use_decoder=True, output_attention=False,
-                      output_all_encodings=False, root=os.path.join(get_home_dir(), 'models'),
-                      **kwargs):
+                      use_decoder=True, output_attention=False, output_all_encodings=False,
+                      root=os.path.join(get_home_dir(), 'models'), ignore_extra=False,
+                      hparam_allow_override=False, **kwargs):
     """Any RoBERTa pretrained model.
 
     Parameters
@@ -1136,17 +1149,25 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
         Whether to include attention weights of each encoding cell to the output.
     output_all_encodings : bool, default False
         Whether to output encodings of all encoder cells.
+    ignore_extra : bool, default False
+        Whether to silently ignore parameters from the file that are not
+        present in this Block.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     RoBERTaModel, gluonnlp.vocab.Vocab
     """
-    predefined_args = bert_hparams[model_name]
-    mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
-    mutable_args = frozenset(mutable_args)
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-        'Cannot override predefined model settings.'
+    predefined_args = bert_hparams[model_name].copy()
+    if not hparam_allow_override:
+        mutable_args = ['use_residual', 'dropout', 'word_embed']
+        mutable_args = frozenset(mutable_args)
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
+
     # encoder
     encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
                           num_layers=predefined_args['num_layers'],
@@ -1168,20 +1189,21 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
     net = RoBERTaModel(encoder, len(bert_vocab),
                        units=predefined_args['units'],
                        embed_size=predefined_args['embed_size'],
-                       embed_dropout=predefined_args['embed_dropout'],
                        word_embed=predefined_args['word_embed'],
                        use_decoder=use_decoder)
     if pretrained:
-        ignore_extra = not use_decoder
+        ignore_extra = ignore_extra or not use_decoder
         _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=ignore_extra,
                                 allow_missing=False)
     return net, bert_vocab
+
 
 def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    use_pooler=True, use_decoder=True, use_classifier=True, output_attention=False,
                    output_all_encodings=False, use_token_type_embed=True,
                    root=os.path.join(get_home_dir(), 'models'),
-                   pretrained_allow_missing=False, **kwargs):
+                   pretrained_allow_missing=False, ignore_extra=False,
+                   hparam_allow_override=False, **kwargs):
     """Any BERT pretrained model.
 
     Parameters
@@ -1201,7 +1223,8 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         'scibert_basevocab_uncased','scibert_basevocab_cased',
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
         'biobert_v1.1_pubmed',
-        'clinicalbert'
+        'clinicalbert',
+        'kobert_news_wiki_ko_cased'
         are additionally supported.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
@@ -1244,16 +1267,23 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+    ignore_extra : bool, default False
+        Whether to silently ignore parameters from the file that are not
+        present in this Block.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
-    BERTModel, gluonnlp.vocab.BERTVocab
+    (BERTModel, gluonnlp.vocab.BERTVocab)
     """
-    predefined_args = bert_hparams[model_name]
-    mutable_args = ['use_residual', 'dropout', 'embed_dropout', 'word_embed']
-    mutable_args = frozenset(mutable_args)
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-        'Cannot override predefined model settings.'
+    predefined_args = bert_hparams[model_name].copy()
+    if not hparam_allow_override:
+        mutable_args = ['use_residual', 'dropout', 'word_embed']
+        mutable_args = frozenset(mutable_args)
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     # encoder
     encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
@@ -1271,20 +1301,18 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
                           layer_norm_eps=predefined_args.get('layer_norm_eps', 1e-12))
 
     from ..vocab import BERTVocab  # pylint: disable=import-outside-toplevel
-    # bert_vocab
     bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     # BERT
     net = BERTModel(encoder, len(bert_vocab),
                     token_type_vocab_size=predefined_args['token_type_vocab_size'],
                     units=predefined_args['units'],
                     embed_size=predefined_args['embed_size'],
-                    embed_dropout=predefined_args['embed_dropout'],
                     word_embed=predefined_args['word_embed'],
                     use_pooler=use_pooler, use_decoder=use_decoder,
                     use_classifier=use_classifier,
                     use_token_type_embed=use_token_type_embed)
     if pretrained:
-        ignore_extra = not (use_pooler and use_decoder and use_classifier)
+        ignore_extra = ignore_extra or not (use_pooler and use_decoder and use_classifier)
         _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=ignore_extra,
                                 allow_missing=pretrained_allow_missing)
     return net, bert_vocab

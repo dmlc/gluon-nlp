@@ -70,7 +70,8 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
     """
     # model
     model, vocabulary = nlp.model.get_model(model, dataset_name=dataset_name, vocab=vocab,
-                                            pretrained=pretrained, ctx=ctx)
+                                            pretrained=pretrained, ctx=ctx,
+                                            hparam_allow_override=True)
 
     if not pretrained:
         model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
