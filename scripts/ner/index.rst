@@ -1,5 +1,5 @@
-Sequence Labeling
------------------
+Named Entity Recognition
+------------------------
 
 :download:`Download scripts </model_zoo/ner.zip>`
 
