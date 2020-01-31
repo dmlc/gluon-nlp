@@ -43,7 +43,7 @@ Model Zoo
       :title: Natural Language Inference
       :link: natural_language_inference/index.html
 
-      Determine if the premise semantically entails the hypothesis.
+      Determining if the premise semantically entails the hypothesis.
 
    .. card::
       :title: Text Generation
@@ -55,19 +55,19 @@ Model Zoo
       :title: BERT
       :link: bert/index.html
 
-      Transfer pre-trained language representations to language understanding tasks.
+      Transferring pre-trained language representations to language understanding tasks.
 
    .. card::
       :title: Named Entity Recognition
       :link: ner/index.html
 
-      Locate and classify named entity mentioned in unstructured texts.
+      Locating and classifying named entity mentioned in unstructured texts.
 
    .. card::
       :title: Intent Classification and Slot Labeling
       :link: intent_cls_slot_labeling/index.html
 
-      Predict the intent of the query and extracts semantic concepts in the query.
+      Predicting the intent of the query and extracting semantic concepts in the query.
 
 .. toctree::
    :hidden:
