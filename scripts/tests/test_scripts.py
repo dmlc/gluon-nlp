@@ -381,7 +381,7 @@ def test_bert_ner():
 @pytest.mark.integration
 def test_bert_icsl():
     folder = './scripts/intent_cls_slot_labeling'
-    arguments = ['--gpu', '0', '--dataset', 'atis', 'epochs', '1']
+    arguments = ['--gpu', '0', '--dataset', 'atis', '--epochs', '1']
     script = folder + '/finetune_icsl.py'
     process = subprocess.check_call([sys.executable, script] + arguments)
     time.sleep(5)
