@@ -58,10 +58,16 @@ Model Zoo
       Transfer pre-trained language representations to language understanding tasks.
 
    .. card::
-      :title: Sequence Labeling
-      :link: sequence_labeling/index.html
+      :title: Named Entity Recognition
+      :link: ner/index.html
 
-      Assigning labels to each tokens in a text sequence.
+      Locate and classify named entity mentioned in unstructured texts.
+
+   .. card::
+      :title: Intent Classification and Slot Labeling
+      :link: intent_cls_slot_labeling/index.html
+
+      Predict the intent of the query and extracts semantic concepts in the query.
 
 .. toctree::
    :hidden:
@@ -76,4 +82,5 @@ Model Zoo
    text_generation/index
    parsing/index
    bert/index
-   sequence_labeling/index
+   ner/index
+   intent_cls_slot_labeling/index
