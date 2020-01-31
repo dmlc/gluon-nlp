@@ -3,7 +3,9 @@ Intent Classification and Slot Labeling
 
 :download:`Download scripts </model_zoo/intent_cls_slot_labeling.zip>`
 
-Reference: Devlin, Jacob, et al. "`Bert: Pre-training of deep bidirectional transformers for language understanding. <https://arxiv.org/abs/1810.04805>`_" arXiv preprint arXiv:1810.04805 (2018).
+Reference:
+- Devlin, Jacob, et al. "`Bert: Pre-training of deep bidirectional transformers for language understanding. <https://arxiv.org/abs/1810.04805>`_" arXiv preprint arXiv:1810.04805 (2018).
+- Chen, Qian, et al. "`BERT for Joint Intent Classification and Slot Filling. <https://arxiv.org/pdf/1902.10909.pdf>`_"  arXiv preprint arXiv:1902.10909 (2019).
 
 Joint Intent Classification and Slot Labelling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
