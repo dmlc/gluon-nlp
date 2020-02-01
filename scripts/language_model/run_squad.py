@@ -118,6 +118,10 @@ parser.add_argument(
     help='The maximum number of tokens for the question. Questions longer than '
     'this will be truncated to this length. default is 64')
 
+parser.add_argument(
+    '--round_to', type=int, default=1,
+    help='The length of padded sequences will be rounded to be multiple of this argument.')
+
 parser.add_argument('--start_top_n', type=int, default=5,
                     help='Number of start-position candidates')
 parser.add_argument('--end_top_n', type=int, default=5,
@@ -195,10 +199,11 @@ xlnet_base, vocab, tokenizer = model.get_model(**get_model_params)
 
 batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack('int32'),  # example_id
-    nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], dtype='int32'),  # input_ids
-    nlp.data.batchify.Pad(axis=0, pad_val=3, dtype='int32'),  # segment_ids
+    nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], dtype='int32',
+                          round_to=args.round_to),  # input_ids
+    nlp.data.batchify.Pad(axis=0, pad_val=3, dtype='int32', round_to=args.round_to),  # segment_ids
     nlp.data.batchify.Stack('float32'),  # valid_length
-    nlp.data.batchify.Pad(axis=0, pad_val=1),  # p_mask
+    nlp.data.batchify.Pad(axis=0, pad_val=1, round_to=args.round_to),  # p_mask
     nlp.data.batchify.Stack('float32'),  # start_position
     nlp.data.batchify.Stack('float32'),  # end_position
     nlp.data.batchify.Stack('float32'))  # is_impossible
@@ -581,14 +586,9 @@ def train():
                 toc = time.time()
                 log.info(
                     'Epoch: %d, Batch: %d/%d, Loss=%.4f, lr=%.7f '
-                    'Time cost=%.1f Thoughput=%.2f samples/s',
-                    epoch_id + 1,
-                    batch_id + 1,
-                    len(train_dataloader),
-                    step_loss / log_interval,
-                    trainer.learning_rate,
-                    toc - tic,
-                    log_num / (toc - tic))
+                    'Time cost=%.1f Thoughput=%.2f samples/s', epoch_id + 1, batch_id + 1,
+                    len(train_dataloader), step_loss / log_interval, trainer.learning_rate,
+                    toc - tic, log_num / (toc - tic))
                 log.info('span_loss: %.4f, cls_loss: %.4f', step_loss_span / log_interval,
                          step_loss_cls / log_interval)
 
@@ -702,17 +702,16 @@ def evaluate():
 
     if os.path.exists(sys.path[0] + '/evaluate-v2.0.py'):
         arguments = [
-            dev_data_path, output_prediction_file,
-            '--na-prob-thresh',
+            dev_data_path, output_prediction_file, '--na-prob-thresh',
             str(args.null_score_diff_threshold)
         ]
         if args.version_2:
             arguments += ['--na-prob-file', output_null_log_odds_file]
         subprocess.call([sys.executable, sys.path[0] + '/evaluate-v2.0.py'] + arguments)
     else:
-        log.info(
-            'Please download evaluate-v2.0.py to get evaluation results for SQuAD. '
-            'Check index.rst for the detail.')
+        log.info('Please download evaluate-v2.0.py to get evaluation results for SQuAD. '
+                 'Check index.rst for the detail.')
+
 
 if __name__ == '__main__':
     if not args.only_predict:
