@@ -156,6 +156,9 @@ parser.add_argument('--max_seq_length',
                     'Sequences longer than this will be truncated, and sequences shorter '
                     'than this will be padded. default is 384')
 
+parser.add_argument('--round_to', type=int, default=1,
+    help='The length of padded sequences will be rounded to be multiple of this argument.')
+
 parser.add_argument('--doc_stride',
                     type=int,
                     default=128,
@@ -291,8 +294,8 @@ else:
 
 batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack(),
-    nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
-    nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
+    nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], round_to=args.round_to),
+    nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], round_to=args.round_to),
     nlp.data.batchify.Stack('float32'),
     nlp.data.batchify.Stack('float32'),
     nlp.data.batchify.Stack('float32'))

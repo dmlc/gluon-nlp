@@ -129,12 +129,9 @@ parser.add_argument('--max_len',
                     type=int,
                     default=128,
                     help='Maximum length of the sentence pairs')
-parser.add_argument(
-    '--pad',
-    default=True,
-    action='store_true',
-    help='Whether to pad to maximum length when preparing data batches. '
-    'Have to be true currently due to left padding')
+
+parser.add_argument('--round_to', type=int, default=1,
+    help='The length of padded sequences will be rounded to be multiple of this argument.')
 
 parser.add_argument(
     '--only_inference',
@@ -263,9 +260,9 @@ def preprocess_data(_tokenizer,
     # bucket sampler for training
     pad_val = _vocab[_vocab.padding_token]
     batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0, pad_val=pad_val),  # input
+        nlp.data.batchify.Pad(axis=0, pad_val=pad_val, round_to=args.round_to),  # input
         nlp.data.batchify.Stack(),  # length
-        nlp.data.batchify.Pad(axis=0, pad_val=4),  # segment
+        nlp.data.batchify.Pad(axis=0, pad_val=4, round_to=args.round_to),  # segment
         nlp.data.batchify.Stack(label_dtype))  # label
     batch_sampler = nlp.data.sampler.FixedBucketSampler(data_train_len,
                                                         batch_size=batch_size,
@@ -293,8 +290,9 @@ def preprocess_data(_tokenizer,
 
     # batchify for data test
     test_batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0, pad_val=pad_val),
-        nlp.data.batchify.Stack(), nlp.data.batchify.Pad(axis=0, pad_val=0))
+        nlp.data.batchify.Pad(axis=0, pad_val=pad_val, round_to=args.round_to),
+        nlp.data.batchify.Stack(),
+        nlp.data.batchify.Pad(axis=0, pad_val=0, round_to=args.round_to))
 
     # transform for data test
     test_trans = partial(convert_examples_to_features,
