@@ -156,7 +156,8 @@ parser.add_argument('--max_seq_length',
                     'Sequences longer than this will be truncated, and sequences shorter '
                     'than this will be padded. default is 384')
 
-parser.add_argument('--round_to', type=int, default=1,
+parser.add_argument(
+    '--round_to', type=int, default=1,
     help='The length of padded sequences will be rounded to be multiple of this argument.')
 
 parser.add_argument('--doc_stride',
