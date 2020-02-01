@@ -132,7 +132,7 @@ parser.add_argument('--max_len',
 
 parser.add_argument(
     '--round_to', type=int, default=1,
-    help='The length of padded sequences will be rounded to be multiple of this argument.')
+    help='The length of padded sequences will be rounded up to be multiple of this argument.')
 
 parser.add_argument(
     '--only_inference',
