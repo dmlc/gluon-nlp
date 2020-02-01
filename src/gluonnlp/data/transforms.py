@@ -541,6 +541,7 @@ class SentencepieceTokenizer(_SentencepieceProcessor):
 
     def __init__(self, path, num_best=0, alpha=1.0):
         super(SentencepieceTokenizer, self).__init__(path)
+        self._path = path
         self._nbest = num_best
         self._alpha = alpha
 
