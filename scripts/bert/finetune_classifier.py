@@ -183,12 +183,6 @@ parser.add_argument(
 args = parser.parse_args()
 
 
-# patch AMP due to issue: https://github.com/apache/incubator-mxnet/issues/17409
-ops = ['_contrib_interleaved_matmul_encdec_qk', '_contrib_interleaved_matmul_encdec_valatt',
-       '_contrib_interleaved_matmul_selfatt_qk', '_contrib_interleaved_matmul_selfatt_valatt']
-amp.lists.symbol.WIDEST_TYPE_CASTS.extend(ops)
-# end of the patch
-
 log = logging.getLogger()
 log.setLevel(logging.INFO)
 
