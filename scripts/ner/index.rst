@@ -1,7 +1,7 @@
-Sequence Labeling
------------------
+Named Entity Recognition
+------------------------
 
-:download:`Download scripts </model_zoo/sequence_labeling.zip>`
+:download:`Download scripts </model_zoo/ner.zip>`
 
 Reference: Devlin, Jacob, et al. "`Bert: Pre-training of deep bidirectional transformers for language understanding. <https://arxiv.org/abs/1810.04805>`_" arXiv preprint arXiv:1810.04805 (2018).
 
