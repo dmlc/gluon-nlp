@@ -34,7 +34,7 @@ class PoolerStartLogits(HybridBlock):
         return x
 
 
-class PoolerEndLogits(Block):
+class PoolerEndLogits(HybridBlock):
     """ Compute SQuAD end_logits from sequence hidden states and start token hidden state."""
     def __init__(self, units=768, is_eval=False, prefix=None, params=None):
         super(PoolerEndLogits, self).__init__(prefix=prefix, params=params)
@@ -55,7 +55,7 @@ class PoolerEndLogits(Block):
                      self).__call__(hidden_states, start_states,
                                     start_positions, p_masks)
 
-    def forward(self, hidden_states, start_states, start_positions, p_mask):
+    def hybrid_forward(self, F, hidden_states, start_states, start_positions, p_mask):
         # pylint: disable=arguments-differ
         """Get end logits from the model output and start states or start positions.
 
@@ -73,7 +73,6 @@ class PoolerEndLogits(Block):
         x : NDarray, shape(batch_size, seq_length)
             Masked end logits.
         """
-        F = mx.ndarray
         if not self._eval:
             start_states = F.gather_nd(
                 hidden_states,
