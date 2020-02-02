@@ -375,18 +375,6 @@ def test_bert_ner():
     process = subprocess.check_call([sys.executable, script] + arguments)
     time.sleep(5)
 
-@pytest.mark.serial
-@pytest.mark.gpu
-@pytest.mark.remote_required
-@pytest.mark.integration
-def test_finetune_squad_with_round_to():
-    arguments = ['--optimizer', 'adam', '--batch_size', '32',
-                 '--gpu', '0', '--epochs', '1', '--debug', '--max_seq_length', '32',
-                 '--max_query_length', '8', '--doc_stride', '384', '--round_to', '8']
-
-    process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
-                                    + arguments)
-    time.sleep(5)
 
 @pytest.mark.serial
 @pytest.mark.gpu
@@ -399,6 +387,21 @@ def test_xlnet_finetune_glue_with_round_to(dataset):
     process = subprocess.check_call([sys.executable, './scripts/language_model/run_glue.py']
                                     + arguments)
     time.sleep(5)
+
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+def test_finetune_squad_with_round_to():
+    arguments = ['--optimizer', 'adam', '--batch_size', '32',
+                 '--gpu', '--epochs', '1', '--debug', '--max_seq_length', '32',
+                 '--max_query_length', '8', '--doc_stride', '384', '--round_to', '8']
+    process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
+                                    + arguments)
+    time.sleep(5)
+
+
 def test_bert_icsl():
     folder = './scripts/intent_cls_slot_labeling'
     arguments = ['--gpu', '0', '--dataset', 'atis', '--epochs', '1']
