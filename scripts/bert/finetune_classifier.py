@@ -116,8 +116,10 @@ parser.add_argument(
     default=128,
     help='Maximum length of the sentence pairs')
 parser.add_argument(
-    '--round_to', type=int, default=1,
-    help='The length of padded sequences will be rounded up to be multiple of this argument.')
+    '--round_to', type=int, default=None,
+    help='The length of padded sequences will be rounded up to be multiple of this argument.'
+         'When round to is set to 8, training throughput may increase for mixed precision'
+         'training on GPUs with tensorcores.')
 parser.add_argument(
     '--seed', type=int, default=2, help='Random seed')
 parser.add_argument(

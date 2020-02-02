@@ -157,8 +157,10 @@ parser.add_argument('--max_seq_length',
                     'than this will be padded. default is 384')
 
 parser.add_argument(
-    '--round_to', type=int, default=1,
-    help='The length of padded sequences will be rounded up to be multiple of this argument.')
+    '--round_to', type=int, default=None,
+    help='The length of padded sequences will be rounded up to be multiple of this argument.'
+         'When round to is set to 8, training throughput may increase for mixed precision'
+         'training on GPUs with tensorcores.')
 
 parser.add_argument('--doc_stride',
                     type=int,
