@@ -15,21 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
-"""
-Bert layer output collector with threshold clipping for calibration
-===================================================================
+"""Bert layer output collector with threshold clipping for calibration"""
 
-This collector is designed for collect and clip the layer outputs of bert
-while calibration with Gluon NLP Toolkit.
-
-@article{devlin2018bert,
-  title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
-  author={Devlin, Jacob and Chang, Ming- \
-      Wei and Lee, Kenton and Toutanova, Kristina},
-  journal={arXiv preprint arXiv:1810.04805},
-  year={2018}
-}
-"""
 import ctypes
 from mxnet import ndarray
 from mxnet.base import NDArrayHandle, py_str
