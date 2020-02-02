@@ -254,11 +254,8 @@ class XLNetForQA(Block):
         -------
         For training we have:
         total_loss : list of NDArray
-            For squad1, we will only have one span loss of Shape (batch_size, )
-            For squad2, we will have a span loss (batch_size, ) and a cls_loss (batch_size, )
+            Specifically, we have a span loss (batch_size, ) and a cls_loss (batch_size, )
         total_loss_sum : NDArray
-            For squad1, it equals to span_loss
-            For squad2, it equals to span_loss + cls_loss
 
         For inference we have:
         start_top_log_probs : NDArray, shape (batch_size, start_n_top, )
