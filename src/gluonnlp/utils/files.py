@@ -25,6 +25,7 @@ import logging
 import tempfile
 import glob as _glob
 from .. import _constants as C
+import mxnet as mx
 
 def glob(url, separator=','):
     """Return a list of paths matching a pathname pattern.
