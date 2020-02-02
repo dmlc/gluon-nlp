@@ -119,8 +119,10 @@ parser.add_argument(
     'this will be truncated to this length. default is 64')
 
 parser.add_argument(
-    '--round_to', type=int, default=1,
-    help='The length of padded sequences will be rounded to be multiple of this argument.')
+    '--round_to', type=int, default=None,
+    help='The length of padded sequences will be rounded up to be multiple of this argument.'
+         'When round to is set to 8, training throughput may increase for mixed precision'
+         'training on GPUs with tensorcores.')
 
 parser.add_argument('--start_top_n', type=int, default=5,
                     help='Number of start-position candidates')
