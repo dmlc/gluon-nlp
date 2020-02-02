@@ -41,5 +41,5 @@ def test_bert_checkpoints():
     p = subprocess.check_call([sys.executable, script] + arguments)
     with open('log_SST.txt', 'r') as f:
         x = f.read()
-        find = re.compile('accuracy:0.[0-9]+').search(str(x))[0]
+        find = re.compile('accuracy:0.[0-9]+').search(str(x)).group(0)
         assert float(find[len('accuracy:'):]) > 0.92
