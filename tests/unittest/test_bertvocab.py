@@ -15,8 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import functools
-
 import mxnet as mx
 import pytest
 from mxnet.test_utils import *
@@ -26,8 +24,7 @@ import gluonnlp as nlp
 
 @pytest.fixture
 def counter():
-    return nlp.data.utils.Counter( ['a', 'b', 'b', 'c', 'c', 'c',
-                                    'some_word$'])
+    return nlp.data.utils.Counter(['a', 'b', 'b', 'c', 'c', 'c', 'some_word$'])
 
 
 @pytest.mark.serial
@@ -60,20 +57,30 @@ def test_bertvocab():
                                              pretrained=True, ctx=ctx, use_pooler=True,
                                              use_decoder=False, use_classifier=False)
 
+    bert_base6, vocab6 = nlp.model.get_model('bert_12_768_12',
+                                                dataset_name='kobert_news_wiki_ko_cased',
+                                                pretrained=True, ctx=ctx, use_pooler=True,
+                                                use_decoder=False, use_classifier=False)
+
     assert vocab1.cls_token == vocab2.cls_token == vocab3.cls_token == \
-        vocab4.cls_token == vocab5.cls_token == nlp.vocab.bert.CLS_TOKEN
+        vocab4.cls_token == vocab5.cls_token == vocab6.cls_token == \
+        nlp.vocab.bert.CLS_TOKEN
 
     assert vocab1.sep_token == vocab2.sep_token == vocab3.sep_token == \
-        vocab4.sep_token == vocab5.sep_token == nlp.vocab.bert.SEP_TOKEN
+        vocab4.sep_token == vocab5.sep_token == vocab6.sep_token == \
+        nlp.vocab.bert.SEP_TOKEN
 
     assert vocab1.mask_token == vocab2.mask_token == vocab3.mask_token == \
-        vocab4.mask_token == vocab5.mask_token == nlp.vocab.bert.MASK_TOKEN
+        vocab4.mask_token == vocab5.mask_token == vocab6.mask_token == \
+        nlp.vocab.bert.MASK_TOKEN
 
     assert vocab1.padding_token == vocab2.padding_token == vocab3.padding_token == \
-        vocab4.padding_token == vocab5.padding_token == nlp.vocab.bert.PADDING_TOKEN
+        vocab4.padding_token == vocab5.padding_token == vocab6.padding_token == \
+        nlp.vocab.bert.PADDING_TOKEN
 
     assert vocab1.unknown_token == vocab2.unknown_token == vocab3.unknown_token == \
-        vocab4.unknown_token == vocab5.unknown_token == nlp.vocab.bert.UNKNOWN_TOKEN
+        vocab4.unknown_token == vocab5.unknown_token == vocab6.unknown_token == \
+        nlp.vocab.bert.UNKNOWN_TOKEN
 
 
 @pytest.mark.remote_required
@@ -94,7 +101,7 @@ def test_bert_vocab_from_sentencepiece():
     assert u'<eos>' == bert_vocab.eos_token
     assert u'<eos>' in bert_vocab
     reserved_tokens = [u'[MASK]', u'[SEP]', u'[CLS]', u'<eos>', u'[PAD]']
-    assert  len(reserved_tokens) == len(bert_vocab.reserved_tokens)
+    assert len(reserved_tokens) == len(bert_vocab.reserved_tokens)
     assert all(t in bert_vocab.reserved_tokens for t in reserved_tokens)
     num_tokens = len(spm)
     for i in range(num_tokens):

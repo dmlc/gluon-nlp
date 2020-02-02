@@ -26,10 +26,11 @@ from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download
 from numpy.testing import assert_allclose
 
-from gluonnlp.data import count_tokens
+from gluonnlp.data import count_tokens, get_tokenizer
 from gluonnlp.data import transforms as t
 from gluonnlp.model.utils import _load_vocab
 from gluonnlp.vocab import BERTVocab, Vocab
+from gluonnlp.model import get_model
 
 
 def test_clip_sequence():
@@ -315,3 +316,87 @@ def test_gpt2_transforms():
 
     recovered_sentence = detokenizer([vocab.idx_to_token[i] for i in indices])
     assert recovered_sentence == s
+
+
+@pytest.mark.remote_required
+def test_get_tokenizer():
+    test_sent = 'Apple, 사과, 沙果'
+    models = [
+        (
+            'roberta_12_768_12', 'openwebtext_ccnews_stories_books_cased', [
+                'Apple', ',', 'Ġì', 'Ĥ¬', 'ê', '³', '¼', ',', 'Ġæ', '²', 'Ļ',
+                'æ', 'ŀ', 'ľ'
+            ]
+        ), (
+            'roberta_24_1024_16', 'openwebtext_ccnews_stories_books_cased', [
+                'Apple', ',', 'Ġì', 'Ĥ¬', 'ê', '³', '¼', ',', 'Ġæ', '²', 'Ļ',
+                'æ', 'ŀ', 'ľ'
+            ]
+        ), (
+            'bert_12_768_12', 'book_corpus_wiki_en_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'book_corpus_wiki_en_uncased',
+            ['apple', ',', 'ᄉ', '##ᅡ', '##ᄀ', '##ᅪ', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'openwebtext_book_corpus_wiki_en_uncased',
+            ['apple', ',', 'ᄉ', '##ᅡ', '##ᄀ', '##ᅪ', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'wiki_multilingual_cased',
+            ['app', '##le', ',', '[UNK]', ',', '沙', '果']
+        ), (
+            'bert_12_768_12', 'wiki_multilingual_uncased',
+            ['[UNK]', ',', 'ᄉ', '##ᅡ', u'##\u1100\u116a', ',', '沙', '果']
+        ), (
+            'bert_12_768_12', 'wiki_cn_cased',
+            ['[UNK]', ',', 'ᄉ', '##ᅡ', '##ᄀ', '##ᅪ', ',', '沙', '果']
+        ), (
+            'bert_24_1024_16', 'book_corpus_wiki_en_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_24_1024_16', 'book_corpus_wiki_en_uncased',
+            ['apple', ',', 'ᄉ', '##ᅡ', '##ᄀ', '##ᅪ', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'scibert_scivocab_uncased',
+            ['apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'scibert_scivocab_cased',
+            ['Appl', '##e', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'scibert_basevocab_uncased',
+            ['apple', ',', 'ᄉ', '##ᅡ', '##ᄀ', '##ᅪ', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'scibert_basevocab_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'biobert_v1.0_pmc_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'biobert_v1.0_pubmed_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'biobert_v1.0_pubmed_pmc_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'biobert_v1.1_pubmed_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'clinicalbert_uncased',
+            ['apple', ',', 'ᄉ', '##ᅡ', '##ᄀ', '##ᅪ', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'kobert_news_wiki_ko_cased',
+            ['▁A', 'p', 'p', 'le', ',', '▁사과', ',', '▁', '沙果']
+        ), (
+            'ernie_12_768_12', 'baidu_ernie_uncased',
+            ['apple', ',', '[UNK]', ',', '沙', '果']
+        )
+    ]
+    for model_nm, dataset_nm, expected in models:
+        _, vocab = get_model(
+            model_nm, dataset_name=dataset_nm, pretrained=False
+        )
+        tok = get_tokenizer(
+            model_name=model_nm, dataset_name=dataset_nm, vocab=vocab
+        )
+        predicted = tok(test_sent)
+        assert predicted == expected
