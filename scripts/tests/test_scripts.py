@@ -374,3 +374,28 @@ def test_bert_ner():
     script = folder + '/finetune_bert.py'
     process = subprocess.check_call([sys.executable, script] + arguments)
     time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+def test_finetune_squad_with_round_to():
+    arguments = ['--optimizer', 'adam', '--batch_size', '32',
+                 '--gpu', '0', '--epochs', '1', '--debug', '--max_seq_length', '32',
+                 '--max_query_length', '8', '--doc_stride', '384', '--round_to', '8']
+
+    process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
+                                    + arguments)
+    time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+@pytest.mark.parametrize('dataset', ['MRPC'])
+def test_xlnet_finetune_glue_with_round_to(dataset):
+    arguments = ['--batch_size', '32', '--task_name', dataset,
+                 '--gpu', '1', '--epochs', '1', '--max_len', '32', '--round_to', '8']
+    process = subprocess.check_call([sys.executable, './scripts/language_model/run_glue.py']
+                                    + arguments)
+    time.sleep(5)
