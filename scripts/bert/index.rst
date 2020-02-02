@@ -175,7 +175,14 @@ Note that the BERT model is memory-consuming. If you have limited GPU memory, yo
 
 .. code-block:: console
 
-    $ python finetune_squad.py --optimizer adam --accumulate 2 --batch_size 6 --lr 3e-5 --epochs 2 --gpu 0
+    $ python finetune_squad.py --optimizer adam --accumulate 2 --batch_size 6 --lr 3e-5 --epochs 2 --gpu
+
+We support multi-GPU training via horovod:
+
+.. code-block:: console
+
+    $ HOROVOD_WITH_MXNET=1 HOROVOD_GPU_ALLREDUCE=NCCL pip install horovod --user --no-cache-dir
+    $ horovodrun -np 8 python finetune_squad.py --bert_model bert_24_1024_16 --batch_size 4 --lr 3e-5 --epochs 2 --gpu --dtype float16 --comm_backend horovod
 
 SQuAD 2.0
 +++++++++
