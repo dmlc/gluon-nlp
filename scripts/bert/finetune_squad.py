@@ -50,6 +50,7 @@ import mxnet as mx
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
+from gluonnlp.calibration import BertLayerCollector
 from model.qa import BertForQALoss, BertForQA
 from bert_qa_evaluate import get_F1_EM, predict, PredResult
 from data.preprocessing_utils import improve_answer_span, \
@@ -156,6 +157,11 @@ parser.add_argument('--max_seq_length',
                     'Sequences longer than this will be truncated, and sequences shorter '
                     'than this will be padded. default is 384')
 
+parser.add_argument(
+    '--pad',
+    action='store_true',
+    help='Whether to pad to maximum length when preparing data batches. Default is False.')
+
 parser.add_argument('--doc_stride',
                     type=int,
                     default=128,
@@ -214,6 +220,27 @@ parser.add_argument('--comm_backend',
                     default=None,
                     help='Communication backend. Set to horovod if horovod is used for '
                          'multi-GPU training')
+
+parser.add_argument('--deploy', action='store_true',
+                    help='whether load static model for deployment')
+
+parser.add_argument('--model_prefix', type=str, required=False,
+                    help='load static model as hybridblock.')
+
+parser.add_argument('--only_calibration', action='store_true',
+                    help='quantize model')
+
+parser.add_argument('--num_calib_batches', type=int, default=10,
+                    help='number of batches for calibration')
+
+parser.add_argument('--quantized_dtype', type=str, default='auto',
+                    choices=['auto', 'int8', 'uint8'],
+                    help='quantization destination data type for input data')
+
+parser.add_argument('--calib_mode', type=str, default='customize',
+                    choices=['none', 'naive', 'entropy', 'customize'],
+                    help='calibration mode used for generating calibration table '
+                         'for the quantized symbol.')
 
 args = parser.parse_args()
 
@@ -277,6 +304,7 @@ version_2 = args.version_2
 null_score_diff_threshold = args.null_score_diff_threshold
 
 max_seq_length = args.max_seq_length
+pad = args.pad
 doc_stride = args.doc_stride
 max_query_length = args.max_query_length
 n_best_size = args.n_best_size
@@ -321,6 +349,10 @@ batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack('float32'),
     nlp.data.batchify.Stack('float32'))
 
+# load symbolic model
+deploy = args.deploy
+model_prefix = args.model_prefix
+
 net = BertForQA(bert=bert)
 if model_parameters:
     # load complete BertForQA parameters
@@ -342,6 +374,18 @@ net.hybridize(static_alloc=True)
 loss_function = BertForQALoss()
 loss_function.hybridize(static_alloc=True)
 
+if deploy:
+    logging.info('load symbol file directly as SymbolBlock for model deployment')
+    net = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(args.model_prefix),
+                                       ['data0', 'data1', 'data2'],
+                                       '{}-0000.params'.format(args.model_prefix))
+    net.hybridize(static_alloc=True, static_shape=True)
+
+# calibration config
+only_calibration = args.only_calibration
+num_calib_batches = args.num_calib_batches
+quantized_dtype = args.quantized_dtype
+calib_mode = args.calib_mode
 
 def train():
     """Training function."""
@@ -502,6 +546,58 @@ def train():
     if rank == 0:
         net.save_parameters(os.path.join(output_dir, 'net.params'))
 
+def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
+    """calibration function on the dev dataset."""
+    log.info('Loading dev data...')
+    if version_2:
+        dev_data = SQuAD('dev', version='2.0')
+    else:
+        dev_data = SQuAD('dev', version='1.1')
+    if args.debug:
+        sampled_data = [dev_data[0], dev_data[1], dev_data[2]]
+        dev_data = mx.gluon.data.SimpleDataset(sampled_data)
+    log.info('Number of records in dev data:{}'.format(len(dev_data)))
+
+    batchify_fn_calib = nlp.data.batchify.Tuple(
+        nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
+        nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
+        nlp.data.batchify.Stack('float32'),
+        nlp.data.batchify.Stack('float32'))
+
+    dev_data_transform = preprocess_dataset(tokenizer,
+                                            dev_data,
+                                            max_seq_length=max_seq_length,
+                                            doc_stride=doc_stride,
+                                            max_query_length=max_query_length,
+                                            input_features=True,
+                                            for_calibration=True)
+
+    dev_dataloader = mx.gluon.data.DataLoader(
+        dev_data_transform,
+        batchify_fn=batchify_fn_calib,
+        num_workers=4, batch_size=test_batch_size,
+        shuffle=False, last_batch='keep')
+
+    assert ctx == mx.cpu(), \
+        'Currently only supports CPU with MKL-DNN backend.'
+    log.info('Now we are doing calibration on dev with %s.', ctx)
+    collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=log)
+    num_calib_examples = test_batch_size * num_calib_batches
+    net = mx.contrib.quantization.quantize_net_v2(net, quantized_dtype=quantized_dtype,
+                                                  exclude_layers=[],
+                                                  quantize_mode='smart',
+                                                  quantize_granularity='channel-wise',
+                                                  calib_data=dev_dataloader,
+                                                  calib_mode=calib_mode,
+                                                  num_calib_examples=num_calib_examples,
+                                                  ctx=ctx,
+                                                  LayerOutputCollector=collector,
+                                                  logger=log)
+    # save params
+    ckpt_name = 'model_bert_squad_quantized_{0}'.format(calib_mode)
+    params_saved = os.path.join(output_dir, ckpt_name)
+    net.export(params_saved, epoch=0)
+    log.info('Saving quantized model at %s', output_dir)
 
 def evaluate():
     """Evaluate the model on validation dataset."""
@@ -689,7 +785,8 @@ def preprocess_dataset(tokenizer,
                        input_features=True,
                        num_workers=4,
                        load_from_pickle=False,
-                       feature_file=None):
+                       feature_file=None,
+                       for_calibration=False):
     """Loads a dataset into features"""
     vocab = tokenizer.vocab if vocab is None else vocab
     trans = partial(convert_examples_to_features,
@@ -724,13 +821,20 @@ def preprocess_dataset(tokenizer,
         # Thus we need to flatten it for training.
         data_feature = mx.gluon.data.SimpleDataset(
             list(itertools.chain.from_iterable(raw_features)))
-        data_feature = data_feature.transform(lambda *example: (
-            example[0],  # example_id
-            example[7],  # inputs_id
-            example[9],  # segment_ids
-            example[3],  # valid_length,
-            example[10],  # start_position,
-            example[11]))  # end_position
+        if for_calibration:
+            data_feature = data_feature.transform(lambda *example: (
+                example[7],  # inputs_id
+                example[9],  # segment_ids
+                example[3],  # valid_length,
+                example[10]))  # start_position,
+        else:
+            data_feature = data_feature.transform(lambda *example: (
+                example[0],  # example_id
+                example[7],  # inputs_id
+                example[9],  # segment_ids
+                example[3],  # valid_length,
+                example[10],  # start_position,
+                example[11]))  # end_position
     else:
         data_feature = mx.gluon.data.SimpleDataset(list(raw_features))
 
@@ -741,8 +845,17 @@ def preprocess_dataset(tokenizer,
 
 
 if __name__ == '__main__':
-    if not only_predict:
+    if only_calibration:
+        try:
+            calibration(net,
+                        num_calib_batches,
+                        quantized_dtype,
+                        calib_mode)
+        except AttributeError:
+            nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
+            warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
+    elif not only_predict:
         train()
         evaluate()
-    elif model_parameters:
+    elif model_parameters or deploy:
         evaluate()
