@@ -393,7 +393,7 @@ def test_bert_icsl():
 @pytest.mark.integration
 def test_xlnet_finetune_squad():
     arguments = ['--optimizer', 'bertadam', '--batch_size', '16',
-                 '--gpu', '2', '--epochs', '1', '--debug', '--max_seq_length', '32',
+                 '--gpu', '1', '--epochs', '1', '--debug', '--max_seq_length', '32',
                  '--max_query_length', '8', '--doc_stride', '384', '--round_to', '8']
     process = subprocess.check_call([sys.executable, './scripts/language_model/run_squad.py']
                                     + arguments)
