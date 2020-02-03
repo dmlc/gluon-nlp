@@ -117,6 +117,11 @@ parser.add_argument(
     default=128,
     help='Maximum length of the sentence pairs')
 parser.add_argument(
+    '--round_to', type=int, default=None,
+    help='The length of padded sequences will be rounded up to be multiple of this argument.'
+         'When round to is set to 8, training throughput may increase for mixed precision'
+         'training on GPUs with tensorcores.')
+parser.add_argument(
     '--seed', type=int, default=2, help='Random seed')
 parser.add_argument(
     '--accumulate',
@@ -379,8 +384,8 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab)
     # bucket sampler for training
     pad_val = vocabulary[vocabulary.padding_token]
     batchify_fn = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0, pad_val=pad_val),  # input
-        nlp.data.batchify.Pad(axis=0, pad_val=0),  # segment
+        nlp.data.batchify.Pad(axis=0, pad_val=pad_val, round_to=args.round_to),  # input
+        nlp.data.batchify.Pad(axis=0, pad_val=0, round_to=args.round_to),  # segment
         nlp.data.batchify.Stack(),  # length
         nlp.data.batchify.Stack(label_dtype))  # label
     batch_sampler = nlp.data.sampler.FixedBucketSampler(data_train_len, batch_size=batch_size,
@@ -400,9 +405,10 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab)
         loader_dev_list.append((segment, loader_dev))
 
     # batchify for data test
-    test_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0, pad_val=pad_val),
-                                               nlp.data.batchify.Pad(axis=0, pad_val=0),
-                                               nlp.data.batchify.Stack())
+    test_batchify_fn = nlp.data.batchify.Tuple(
+        nlp.data.batchify.Pad(axis=0, pad_val=pad_val, round_to=args.round_to),
+        nlp.data.batchify.Pad(axis=0, pad_val=0, round_to=args.round_to),
+        nlp.data.batchify.Stack())
     # transform for data test
     test_trans = partial(convert_examples_to_features, tokenizer=tokenizer, truncate_length=max_len,
                          cls_token=vocab.cls_token if not use_roberta else vocab.bos_token,

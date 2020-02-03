@@ -158,9 +158,10 @@ parser.add_argument('--max_seq_length',
                     'than this will be padded. default is 384')
 
 parser.add_argument(
-    '--pad',
-    action='store_true',
-    help='Whether to pad to maximum length when preparing data batches. Default is False.')
+    '--round_to', type=int, default=None,
+    help='The length of padded sequences will be rounded up to be multiple of this argument.'
+         'When round to is set to 8, training throughput may increase for mixed precision'
+         'training on GPUs with tensorcores.')
 
 parser.add_argument('--doc_stride',
                     type=int,
@@ -304,7 +305,6 @@ version_2 = args.version_2
 null_score_diff_threshold = args.null_score_diff_threshold
 
 max_seq_length = args.max_seq_length
-pad = args.pad
 doc_stride = args.doc_stride
 max_query_length = args.max_query_length
 n_best_size = args.n_best_size
@@ -343,8 +343,8 @@ else:
 
 batchify_fn = nlp.data.batchify.Tuple(
     nlp.data.batchify.Stack(),
-    nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
-    nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
+    nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], round_to=args.round_to),
+    nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], round_to=args.round_to),
     nlp.data.batchify.Stack('float32'),
     nlp.data.batchify.Stack('float32'),
     nlp.data.batchify.Stack('float32'))
@@ -559,8 +559,8 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
     log.info('Number of records in dev data:{}'.format(len(dev_data)))
 
     batchify_fn_calib = nlp.data.batchify.Tuple(
-        nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
-        nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token]),
+        nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], round_to=args.round_to),
+        nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], round_to=args.round_to),
         nlp.data.batchify.Stack('float32'),
         nlp.data.batchify.Stack('float32'))
 
