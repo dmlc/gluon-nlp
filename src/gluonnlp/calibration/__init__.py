@@ -16,6 +16,6 @@
 # under the License.
 
 # pylint: disable=wildcard-import
-"""BERT data."""
-
-from . import classification, embedding, transform
+"""This module includes calibration utilities such as layer collector."""
+from . import collector
+from .collector import *

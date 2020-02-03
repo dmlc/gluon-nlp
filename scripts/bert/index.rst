@@ -195,6 +195,34 @@ To get the score of the dev data, you need to download the dev dataset (`dev-v2.
 
     $ python evaluate-v2.0.py dev-v2.0.json predictions.json
 
+BERT INT8 Quantization
+~~~~~~~~~~~~~~~~~~~~~~
+
+GluonNLP provides the following example scripts to quantize fine-tuned
+BERT models into int8 data type. Note that INT8 Quantization needs a nightly
+version of `mxnet-mkl <https://apache-mxnet.s3-us-west-2.amazonaws.com/dist/index.html>`_.
+
+Sentence Classification
++++++++++++++++++++++++
+
++-----------+-------------------+---------------+---------------+---------+---------+-----+---------+
+|  Dataset  | Model             | FP32 Accuracy | INT8 Accuracy | FP32 F1 | INT8 F1 | Log | Command |
++===========+===================+===============+===============+=========+=========+=====+=========+
+| MRPC      | bert_12_768_12    | 87.01         | 87.01         | 90.97   | 90.88   |     |         |
++-----------+-------------------+---------------+---------------+---------+---------+-----+---------+
+| SST-2     | bert_12_768_12    | 93.23         | 93.00         |         |         |     |         |
++-----------+-------------------+---------------+---------------+---------+---------+-----+---------+
+
+Question Answering
+++++++++++++++++++
+
++-----------+-------------------+---------+---------+---------+---------+-----+---------+
+|  Dataset  | Model             | FP32 EM | INT8 EM | FP32 F1 | INT8 F1 | Log | Command |
++===========+===================+=========+=========+=========+=========+=====+=========+
+| SQuAD 1.1 | bert_12_768_12    | 81.18   | 80.32   | 88.58   | 88.10   |     |         |
++-----------+-------------------+---------+---------+---------+---------+-----+---------+
+
+For all model settings above, we use a subset of evaluation dataset for calibration.
 
 Pre-training from Scratch
 ~~~~~~~~~~~~~~~~~~~~~~~~~
