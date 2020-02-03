@@ -22,8 +22,8 @@ import os
 
 from . import (batchify, candidate_sampler, conll, corpora, dataloader,
                dataset, question_answering, registry, sampler, sentiment,
-               stream, transforms, translation, utils,
-               word_embedding_evaluation, intent_slot, glue)
+               stream, transforms, translation, utils, word_embedding_evaluation,
+               intent_slot, glue, datasetloader)
 from .candidate_sampler import *
 from .conll import *
 from .glue import *
@@ -41,13 +41,16 @@ from .utils import *
 from .utils import _load_pretrained_sentencepiece_tokenizer
 from .word_embedding_evaluation import *
 from .intent_slot import *
+from .datasetloader import *
+
 from ..base import get_home_dir
 
-__all__ = (['batchify'] + utils.__all__ + transforms.__all__ + sampler.__all__ + dataset.__all__ +
-           corpora.__all__ + sentiment.__all__ + word_embedding_evaluation.__all__ +
-           stream.__all__ + conll.__all__ + translation.__all__ + registry.__all__ +
-           question_answering.__all__ + dataloader.__all__ + candidate_sampler.__all__ +
-           intent_slot.__all__ + glue.__all__ + ['get_tokenizer']) # pytype: disable=attribute-error
+__all__ = (['batchify', 'get_tokenizer'] + utils.__all__ + transforms.__all__
+           + sampler.__all__ + dataset.__all__ + corpora.__all__ + sentiment.__all__
+           + word_embedding_evaluation.__all__ + stream.__all__ + conll.__all__
+           + translation.__all__ + registry.__all__ + question_answering.__all__
+           + dataloader.__all__ + candidate_sampler.__all__ + intent_slot.__all__
+           + glue.__all__ + datasetloader.__all__)  # pytype: disable=attribute-error
 
 
 def get_tokenizer(model_name, dataset_name,

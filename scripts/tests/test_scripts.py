@@ -235,7 +235,7 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.parametrize('optimizer', ['bertadam', 'lamb'])
 def test_bert_pretrain(backend, optimizer):
     # test data creation
-    process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
+    process = subprocess.check_call([sys.executable, './scripts/bert/data/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
                                      '--output_dir', 'test/bert/data',
                                      '--dataset_name', 'book_corpus_wiki_en_uncased',
