@@ -405,9 +405,10 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab)
         loader_dev_list.append((segment, loader_dev))
 
     # batchify for data test
-    test_batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0, pad_val=pad_val, round_to=args.round_to),
-                                               nlp.data.batchify.Pad(axis=0, pad_val=0, round_to=args.round_to),
-                                               nlp.data.batchify.Stack())
+    test_batchify_fn = nlp.data.batchify.Tuple(
+        nlp.data.batchify.Pad(axis=0, pad_val=pad_val, round_to=args.round_to),
+        nlp.data.batchify.Pad(axis=0, pad_val=0, round_to=args.round_to),
+        nlp.data.batchify.Stack())
     # transform for data test
     test_trans = partial(convert_examples_to_features, tokenizer=tokenizer, truncate_length=max_len,
                          cls_token=vocab.cls_token if not use_roberta else vocab.bos_token,
