@@ -70,12 +70,6 @@ Model Zoo
       Predicting the intent of the query and extracting semantic concepts in the query.
 
    .. card::
-      :title: Sequence Labeling
-      :link: sequence_labeling/index.html
-
-      Assigning labels to each tokens in a text sequence.
-
-   .. card::
       :title: Model Conversion
       :link: model_zoo/conversion_tools/index.html
 
