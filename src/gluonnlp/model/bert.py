@@ -30,216 +30,12 @@ from mxnet.gluon.model_zoo import model_store
 from ..base import get_home_dir
 from .block import GELU
 from .seq2seq_encoder_decoder import Seq2SeqEncoder
-from .transformer import PositionwiseFFN
+from .transformer import TransformerEncoderCell
 from .utils import _load_pretrained_params, _load_vocab
 
 ###############################################################################
 #                              COMPONENTS                                     #
 ###############################################################################
-
-class DotProductSelfAttentionCell(HybridBlock):
-    r"""Multi-head Dot Product Self Attention Cell.
-
-    In the DotProductSelfAttentionCell, the input query/key/value will be linearly projected
-    for `num_heads` times with different projection matrices. Each projected key, value, query
-    will be used to calculate the attention weights and values. The output of each head will be
-    concatenated to form the final output.
-
-    This is a more efficient implementation of MultiHeadAttentionCell with
-    DotProductAttentionCell as the base_cell:
-
-    score = <W_q h_q, W_k h_k> / sqrt(dim_q)
-
-    Parameters
-    ----------
-    units : int
-        Total number of projected units for query. Must be divided exactly by num_heads.
-    num_heads : int
-        Number of parallel attention heads
-    use_bias : bool, default True
-        Whether to use bias when projecting the query/key/values
-    weight_initializer : str or `Initializer` or None, default None
-        Initializer of the weights.
-    bias_initializer : str or `Initializer`, default 'zeros'
-        Initializer of the bias.
-    prefix : str or None, default None
-        See document of `Block`.
-    params : str or None, default None
-        See document of `Block`.
-
-    Inputs:
-      - **qkv** : Symbol or NDArray
-        Query / Key / Value vector. Shape (query_length, batch_size, C_in)
-      - **valid_len** : Symbol or NDArray or None, default None
-        Valid length of the query/key/value slots. Shape (batch_size, query_length)
-
-    Outputs:
-      - **context_vec** : Symbol or NDArray
-        Shape (query_length, batch_size, context_vec_dim)
-      - **att_weights** : Symbol or NDArray
-        Attention weights of multiple heads.
-        Shape (batch_size, num_heads, query_length, memory_length)
-    """
-    def __init__(self, units, num_heads, dropout=0.0, use_bias=True,
-                 weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
-        self._num_heads = num_heads
-        self._use_bias = use_bias
-        self._dropout = dropout
-        self.units = units
-        with self.name_scope():
-            if self._use_bias:
-                self.query_bias = self.params.get('query_bias', shape=(self.units,),
-                                                  init=bias_initializer)
-                self.key_bias = self.params.get('key_bias', shape=(self.units,),
-                                                init=bias_initializer)
-                self.value_bias = self.params.get('value_bias', shape=(self.units,),
-                                                  init=bias_initializer)
-            weight_shape = (self.units, self.units)
-            self.query_weight = self.params.get('query_weight', shape=weight_shape,
-                                                init=weight_initializer,
-                                                allow_deferred_init=True)
-            self.key_weight = self.params.get('key_weight', shape=weight_shape,
-                                              init=weight_initializer,
-                                              allow_deferred_init=True)
-            self.value_weight = self.params.get('value_weight', shape=weight_shape,
-                                                init=weight_initializer,
-                                                allow_deferred_init=True)
-            self.dropout_layer = nn.Dropout(self._dropout)
-
-    def _collect_params_with_prefix(self, prefix=''):
-        # the registered parameter names in v0.8 are the following:
-        # prefix_proj_query.weight, prefix_proj_query.bias
-        # prefix_proj_value.weight, prefix_proj_value.bias
-        # prefix_proj_key.weight, prefix_proj_key.bias
-        # this is a temporary fix to keep backward compatibility, due to an issue in MXNet:
-        # https://github.com/apache/incubator-mxnet/issues/17220
-        if prefix:
-            prefix += '.'
-        ret = {prefix + 'proj_' + k.replace('_', '.') : v for k, v in self._reg_params.items()}
-        for name, child in self._children.items():
-            ret.update(child._collect_params_with_prefix(prefix + name))
-        return ret
-
-    # pylint: disable=arguments-differ
-    def hybrid_forward(self, F, qkv, valid_len, query_bias, key_bias, value_bias,
-                       query_weight, key_weight, value_weight):
-        in_bias = F.concat(query_bias, key_bias, value_bias, dim=0)
-        in_weight = F.concat(query_weight, key_weight, value_weight, dim=0)
-        # qkv_proj shape = (seq_length, batch_size, num_heads * head_dim * 3)
-        qkv_proj = F.FullyConnected(data=qkv, weight=in_weight, bias=in_bias,
-                                    num_hidden=self.units*3, no_bias=False, flatten=False)
-        att_score = F.contrib.interleaved_matmul_selfatt_qk(qkv_proj, heads=self._num_heads)
-        if valid_len is not None:
-            valid_len = F.broadcast_axis(F.expand_dims(valid_len, axis=1),
-                                         axis=1, size=self._num_heads)
-            valid_len = valid_len.reshape(shape=(-1, 0), reverse=True)
-            att_weights = F.softmax(att_score, length=valid_len, use_length=True, axis=-1)
-        else:
-            att_weights = F.softmax(att_score, axis=-1)
-        # att_weights shape = (batch_size, seq_length, seq_length)
-        att_weights = self.dropout_layer(att_weights)
-        context_vec = F.contrib.interleaved_matmul_selfatt_valatt(qkv_proj, att_weights,
-                                                                  heads=self._num_heads)
-        att_weights = att_weights.reshape(shape=(-1, self._num_heads, 0, 0), reverse=True)
-        return context_vec, att_weights
-
-
-class BERTEncoderCell(HybridBlock):
-    """Structure of the BERT Encoder Cell.
-
-    Parameters
-    ----------
-    units : int
-        Number of units for the output
-    hidden_size : int
-        number of units in the hidden layer of position-wise feed-forward networks
-    num_heads : int
-        Number of heads in multi-head attention
-    dropout : float
-    output_attention: bool
-        Whether to output the attention weights
-    attention_use_bias : float, default True
-        Whether to use bias term in the attention cell
-    weight_initializer : str or Initializer
-        Initializer for the input weights matrix, used for the linear
-        transformation of the inputs.
-    bias_initializer : str or Initializer
-        Initializer for the bias vector.
-    prefix : str, default None
-        Prefix for name of `Block`s. (and name of weight if params is `None`).
-    params : Parameter or None
-        Container for weight sharing between cells. Created if `None`.
-    activation : str, default 'gelu'
-        Activation methods in PositionwiseFFN
-    layer_norm_eps : float, default 1e-5
-        Epsilon for layer_norm
-
-    Inputs:
-        - **inputs** : input sequence. Shape (length, batch_size, C_in)
-        - **valid_length** : valid length of inputs for attention. Shape (batch_size, length)
-
-    Outputs:
-        - **outputs**: output tensor of the transformer encoder cell.
-            Shape (length, batch_size, C_out)
-        - **additional_outputs**: the additional output of all the BERT encoder cell.
-    """
-    def __init__(self, units=128, hidden_size=512, num_heads=4,
-                 dropout=0.0, output_attention=False,
-                 attention_use_bias=True,
-                 weight_initializer=None, bias_initializer='zeros',
-                 prefix=None, params=None, activation='gelu',
-                 layer_norm_eps=1e-5):
-        super().__init__(prefix=prefix, params=params)
-        self._dropout = dropout
-        self._output_attention = output_attention
-        with self.name_scope():
-            if dropout:
-                self.dropout_layer = nn.Dropout(rate=dropout)
-            self.attention_cell = DotProductSelfAttentionCell(units, num_heads,
-                                                              use_bias=attention_use_bias,
-                                                              dropout=dropout)
-            self.proj = nn.Dense(units=units, flatten=False, use_bias=True,
-                                 weight_initializer=weight_initializer,
-                                 bias_initializer=bias_initializer, prefix='proj_')
-            self.ffn = PositionwiseFFN(units=units, hidden_size=hidden_size, dropout=dropout,
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer, activation=activation,
-                                       layer_norm_eps=layer_norm_eps)
-            self.layer_norm = nn.LayerNorm(in_channels=units, epsilon=layer_norm_eps)
-
-
-    def hybrid_forward(self, F, inputs, valid_len=None):  # pylint: disable=arguments-differ
-        """Transformer Encoder Attention Cell.
-
-        Parameters
-        ----------
-        inputs : Symbol or NDArray
-            Input sequence. Shape (length, batch_size, C_in)
-        valid_len : Symbol or NDArray or None
-            Valid length for inputs. Shape (batch_size, length)
-
-        Returns
-        -------
-        encoder_cell_outputs: list
-            Outputs of the encoder cell. Contains:
-
-            - outputs of the transformer encoder cell. Shape (length, batch_size, C_out)
-            - additional_outputs of all the transformer encoder cell
-        """
-        outputs, attention_weights = self.attention_cell(inputs, valid_len)
-        outputs = self.proj(outputs)
-        if self._dropout:
-            outputs = self.dropout_layer(outputs)
-        # use residual
-        outputs = outputs + inputs
-        outputs = self.layer_norm(outputs)
-        outputs = self.ffn(outputs)
-        additional_outputs = []
-        if self._output_attention:
-            additional_outputs.append(attention_weights)
-        return outputs, additional_outputs
 
 class BERTEncoder(HybridBlock, Seq2SeqEncoder):
     """Structure of the BERT Encoder.
@@ -250,6 +46,9 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
 
     Parameters
     ----------
+    attention_cell : AttentionCell or str, default 'multi_head'
+        Arguments of the attention cell.
+        Can be 'multi_head', 'scaled_luong', 'scaled_dot', 'dot', 'cosine', 'normed_mlp', 'mlp'
     num_layers : int
         Number of attention layers.
     units : int
@@ -260,8 +59,12 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         Maximum length of the input sequence
     num_heads : int
         Number of heads in multi-head attention
+    scaled : bool
+        Whether to scale the softmax input by the sqrt of the input dimension
+        in multi-head attention
     dropout : float
         Dropout probability of the attention probabilities and embedding.
+    use_residual : bool
     output_attention: bool, default False
         Whether to output the attention weights
     output_all_encodings: bool, default False
@@ -281,21 +84,21 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         Epsilon for layer_norm
 
     Inputs:
-        - **inputs** : input sequence of shape (length, batch_size, C_in)
-        - **states** : list of tensors for initial states and valid length for self attention.
+        - **inputs** : input sequence of shape (batch_size, length, C_in)
+        - **states** : list of tensors for initial states and masks.
         - **valid_length** : valid lengths of each sequence. Usually used when part of sequence
             has been padded. Shape is (batch_size, )
 
     Outputs:
-        - **outputs** : the output of the encoder. Shape is (length, batch_size, C_out)
+        - **outputs** : the output of the encoder. Shape is (batch_size, length, C_out)
         - **additional_outputs** : list of tensors.
             Either be an empty list or contains the attention weights in this step.
             The attention weights will have shape (batch_size, num_heads, length, mem_length)
 
     """
 
-    def __init__(self, *, num_layers=2, units=512, hidden_size=2048,
-                 max_length=50, num_heads=4, dropout=0.0,
+    def __init__(self, *, attention_cell='multi_head', num_layers=2, units=512, hidden_size=2048,
+                 max_length=50, num_heads=4, scaled=True, dropout=0.0, use_residual=True,
                  output_attention=False, output_all_encodings=False, weight_initializer=None,
                  bias_initializer='zeros', prefix=None, params=None, activation='gelu',
                  layer_norm_eps=1e-12):
@@ -318,15 +121,16 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
                                                    init=weight_initializer)
             self.transformer_cells = nn.HybridSequential()
             for i in range(num_layers):
-                cell = BERTEncoderCell(
+                cell = TransformerEncoderCell(
                     units=units, hidden_size=hidden_size, num_heads=num_heads,
-                    weight_initializer=weight_initializer,
-                    bias_initializer=bias_initializer, dropout=dropout,
+                    attention_cell=attention_cell, weight_initializer=weight_initializer,
+                    bias_initializer=bias_initializer, dropout=dropout, use_residual=use_residual,
+                    attention_proj_use_bias=True, attention_use_bias=True, scaled=scaled,
                     output_attention=output_attention, prefix='transformer%d_' % i,
                     activation=activation, layer_norm_eps=layer_norm_eps)
                 self.transformer_cells.add(cell)
 
-    def __call__(self, inputs, states=None, valid_length=None): #pylint: disable=arguments-differ
+    def __call__(self, inputs, states=None, valid_length=None):  # pylint: disable=arguments-differ
         """Encode the inputs given the states and valid sequence length.
 
         Parameters
@@ -334,7 +138,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         inputs : NDArray or Symbol
             Input sequence. Shape (batch_size, length, C_in)
         states : list of NDArrays or Symbols
-            Initial states. The list of initial states and valid length for self attention
+            Initial states. The list of initial states and masks
         valid_length : NDArray or Symbol
             Valid lengths of each sequence. This is usually used when part of sequence has
             been padded. Shape (batch_size,)
@@ -356,9 +160,9 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         Parameters
         ----------
         inputs : NDArray or Symbol
-            Input sequence. Shape (length, batch_size, C_in)
+            Input sequence. Shape (batch_size, length, C_in)
         states : list of NDArrays or Symbols
-            Initial states. The list of initial states and valid length for self attention
+            Initial states. The list of initial states and masks
         valid_length : NDArray or Symbol
             Valid lengths of each sequence. This is usually used when part of sequence has
             been padded. Shape (batch_size,)
@@ -368,27 +172,26 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         outputs : NDArray or Symbol, or List[NDArray] or List[Symbol]
             If output_all_encodings flag is False, then the output of the last encoder.
             If output_all_encodings flag is True, then the list of all outputs of all encoders.
-            In both cases, shape of the tensor(s) is/are (length, batch_size, C_out)
+            In both cases, shape of the tensor(s) is/are (batch_size, length, C_out)
         additional_outputs : list
             Either be an empty list or contains the attention weights in this step.
-            The attention weights will have shape (batch_size, length) or
+            The attention weights will have shape (batch_size, length, length) or
             (batch_size, num_heads, length, length)
 
         """
-        # axis 0 is for length
-        steps = F.contrib.arange_like(inputs, axis=0)
+        steps = F.contrib.arange_like(inputs, axis=1)
         if valid_length is not None:
-            zeros = F.zeros_like(steps)
-            # valid_length for attention, shape = (batch_size, seq_length)
-            attn_valid_len = F.broadcast_add(F.reshape(valid_length, shape=(-1, 1)),
-                                             F.reshape(zeros, shape=(1, -1)))
-            attn_valid_len = F.cast(attn_valid_len, dtype='int32')
+            ones = F.ones_like(steps)
+            mask = F.broadcast_lesser(F.reshape(steps, shape=(1, -1)),
+                                      F.reshape(valid_length, shape=(-1, 1)))
+            mask = F.broadcast_mul(F.expand_dims(mask, axis=1),
+                                   F.broadcast_mul(ones, F.reshape(ones, shape=(-1, 1))))
             if states is None:
-                states = [attn_valid_len]
+                states = [mask]
             else:
-                states.append(attn_valid_len)
+                states.append(mask)
         else:
-            attn_valid_len = None
+            mask = None
 
         if states is None:
             states = [steps]
@@ -397,7 +200,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
 
         # positional encoding
         positional_embed = F.Embedding(steps, position_weight, self._max_length, self._units)
-        inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=1))
+        inputs = F.broadcast_add(inputs, F.expand_dims(positional_embed, axis=0))
 
         if self._dropout:
             inputs = self.dropout_layer(inputs)
@@ -407,12 +210,12 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         all_encodings_outputs = []
         additional_outputs = []
         for cell in self.transformer_cells:
-            outputs, attention_weights = cell(inputs, attn_valid_len)
+            outputs, attention_weights = cell(inputs, mask)
             inputs = outputs
             if self._output_all_encodings:
                 if valid_length is not None:
                     outputs = F.SequenceMask(outputs, sequence_length=valid_length,
-                                             use_sequence_length=True, axis=0)
+                                             use_sequence_length=True, axis=1)
                 all_encodings_outputs.append(outputs)
 
             if self._output_attention:
@@ -421,7 +224,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
         if valid_length is not None and not self._output_all_encodings:
             # if self._output_all_encodings, SequenceMask is already applied above
             outputs = F.SequenceMask(outputs, sequence_length=valid_length,
-                                     use_sequence_length=True, axis=0)
+                                     use_sequence_length=True, axis=1)
 
         if self._output_all_encodings:
             return all_encodings_outputs, additional_outputs
@@ -622,15 +425,8 @@ class BERTModel(HybridBlock):
         if self._use_token_type_embed:
             type_embedding = self.token_type_embed(token_types)
             embedding = embedding + type_embedding
-        # (batch, seq_len, C) -> (seq_len, batch, C)
-        embedding = embedding.transpose((1, 0, 2))
         # encoding
         outputs, additional_outputs = self.encoder(embedding, valid_length=valid_length)
-        # (seq_len, batch, C) -> (batch, seq_len, C)
-        if isinstance(outputs, (list, tuple)):
-            outputs = [o.transpose((1, 0, 2)) for o in outputs]
-        else:
-            outputs = outputs.transpose((1, 0, 2))
         return outputs, additional_outputs
 
     def _apply_pooling(self, sequence):
@@ -672,6 +468,7 @@ class BERTModel(HybridBlock):
         encoded = encoded.reshape_like(masked_positions, lhs_begin=-2, lhs_end=-1, rhs_begin=0)
         decoded = self.decoder(encoded)
         return decoded
+
 
 class RoBERTaModel(BERTModel):
     """Generic Model for BERT (Bidirectional Encoder Representations from Transformers).
@@ -815,6 +612,7 @@ class BERTClassifier(HybridBlock):
         _, pooler_out = self.bert(inputs, token_types, valid_length)
         return self.classifier(pooler_out)
 
+
 class RoBERTaClassifier(HybridBlock):
     """Model for sentence (pair) classification task with BERT.
 
@@ -929,63 +727,79 @@ model_store._model_sha1.update(
         ('55f15c5d23829f6ee87622b68711b15fef50e55b', 'bert_12_768_12_biobert_v1.1_pubmed_cased'),
         ('60281c98ba3572dfdaac75131fa96e2136d70d5c', 'bert_12_768_12_clinicalbert_uncased'),
         ('f869f3f89e4237a769f1b7edcbdfe8298b480052', 'ernie_12_768_12_baidu_ernie_uncased'),
+        ('ccf0593e03b91b73be90c191d885446df935eb64', 'bert_12_768_12_kobert_news_wiki_ko_cased')
     ]})
 
 roberta_12_768_12_hparams = {
+    'attention_cell': 'multi_head',
     'num_layers': 12,
     'units': 768,
     'hidden_size': 3072,
     'max_length': 512,
     'num_heads': 12,
+    'scaled': True,
     'dropout': 0.1,
+    'use_residual': True,
     'embed_size': 768,
     'word_embed': None,
     'layer_norm_eps': 1e-5
 }
 
 roberta_24_1024_16_hparams = {
+    'attention_cell': 'multi_head',
     'num_layers': 24,
     'units': 1024,
     'hidden_size': 4096,
     'max_length': 512,
     'num_heads': 16,
+    'scaled': True,
     'dropout': 0.1,
+    'use_residual': True,
     'embed_size': 1024,
     'word_embed': None,
     'layer_norm_eps': 1e-5
 }
 
 bert_12_768_12_hparams = {
+    'attention_cell': 'multi_head',
     'num_layers': 12,
     'units': 768,
     'hidden_size': 3072,
     'max_length': 512,
     'num_heads': 12,
+    'scaled': True,
     'dropout': 0.1,
+    'use_residual': True,
     'embed_size': 768,
     'token_type_vocab_size': 2,
     'word_embed': None,
 }
 
 bert_24_1024_16_hparams = {
+    'attention_cell': 'multi_head',
     'num_layers': 24,
     'units': 1024,
     'hidden_size': 4096,
     'max_length': 512,
     'num_heads': 16,
+    'scaled': True,
     'dropout': 0.1,
+    'use_residual': True,
     'embed_size': 1024,
     'token_type_vocab_size': 2,
     'word_embed': None,
 }
 
 ernie_12_768_12_hparams = {
+    'attention_cell': 'multi_head',
     'num_layers': 12,
     'units': 768,
     'hidden_size': 3072,
     'max_length': 513,
     'num_heads': 12,
+    'scaled': True,
     'dropout': 0.1,
+    'use_residual': True,
     'embed_size': 768,
     'token_type_vocab_size': 2,
     'word_embed': None,
@@ -1004,7 +818,8 @@ bert_hparams = {
 
 def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
-                   use_classifier=True, pretrained_allow_missing=False, **kwargs):
+                   use_classifier=True, pretrained_allow_missing=False,
+                   hparam_allow_override=False, **kwargs):
     """Generic BERT BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
@@ -1024,7 +839,8 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         'scibert_basevocab_uncased', 'scibert_basevocab_cased',
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
         'biobert_v1.1_pubmed',
-        'clinicalbert'
+        'clinicalbert',
+        'kobert_news_wiki_ko_cased'
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
         specified. Ignored if dataset_name is specified.
@@ -1062,6 +878,9 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     The pretrained parameters for dataset_name
     'openwebtext_book_corpus_wiki_en_uncased' were obtained by running the
@@ -1094,13 +913,15 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
     return get_bert_model(model_name='bert_12_768_12', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
+                          pretrained_allow_missing=pretrained_allow_missing,
+                          hparam_allow_override=hparam_allow_override, **kwargs)
 
 
 def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(), use_pooler=True,
                     use_decoder=True, use_classifier=True,
                     root=os.path.join(get_home_dir(), 'models'),
-                    pretrained_allow_missing=False, **kwargs):
+                    pretrained_allow_missing=False,
+                    hparam_allow_override=False, **kwargs):
     """Generic BERT LARGE model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
@@ -1141,6 +962,9 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -1149,12 +973,14 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     return get_bert_model(model_name='bert_24_1024_16', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                          pretrained_allow_missing=pretrained_allow_missing, **kwargs)
+                          pretrained_allow_missing=pretrained_allow_missing,
+                          hparam_allow_override=hparam_allow_override, **kwargs)
 
 
 def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                       use_decoder=True,
-                      root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                      root=os.path.join(get_home_dir(), 'models'),
+                      hparam_allow_override=False, **kwargs):
     """Generic RoBERTa BASE model.
 
     The number of layers (L) is 12, number of units (H) is 768, and the
@@ -1179,6 +1005,9 @@ def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu
         MXNET_HOME defaults to '~/.mxnet'.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -1186,12 +1015,14 @@ def roberta_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu
     """
     return get_roberta_model(model_name='roberta_12_768_12', vocab=vocab, dataset_name=dataset_name,
                              pretrained=pretrained, ctx=ctx,
-                             use_decoder=use_decoder, root=root, **kwargs)
+                             use_decoder=use_decoder, root=root,
+                             hparam_allow_override=hparam_allow_override, **kwargs)
 
 
 def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                        use_decoder=True,
-                       root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                       root=os.path.join(get_home_dir(), 'models'),
+                       hparam_allow_override=False, **kwargs):
     """Generic RoBERTa LARGE model.
 
     The number of layers (L) is 24, number of units (H) is 1024, and the
@@ -1216,6 +1047,9 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
         MXNET_HOME defaults to '~/.mxnet'.
     use_decoder : bool, default True
         Whether to include the decoder for masked language model prediction.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -1223,12 +1057,13 @@ def roberta_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cp
     """
     return get_roberta_model(model_name='roberta_24_1024_16', vocab=vocab,
                              dataset_name=dataset_name, pretrained=pretrained, ctx=ctx,
-                             use_decoder=use_decoder,
-                             root=root, **kwargs)
+                             use_decoder=use_decoder, root=root,
+                             hparam_allow_override=hparam_allow_override, **kwargs)
+
 
 def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                     root=os.path.join(get_home_dir(), 'models'), use_pooler=True, use_decoder=True,
-                    use_classifier=True, **kwargs):
+                    use_classifier=True, hparam_allow_override=False, **kwargs):
     """Baidu ERNIE model.
 
     Reference:
@@ -1262,6 +1097,9 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
         Whether to include the decoder for masked language model prediction.
     use_classifier : bool, default True
         Whether to include the classifier for next sentence classification.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
@@ -1270,13 +1108,14 @@ def ernie_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
     return get_bert_model(model_name='ernie_12_768_12', vocab=vocab, dataset_name=dataset_name,
                           pretrained=pretrained, ctx=ctx, use_pooler=use_pooler,
                           use_decoder=use_decoder, use_classifier=use_classifier, root=root,
-                          pretrained_allow_missing=False, **kwargs)
+                          pretrained_allow_missing=False,
+                          hparam_allow_override=hparam_allow_override, **kwargs)
 
 
 def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                      use_decoder=True, output_attention=False,
-                      output_all_encodings=False, root=os.path.join(get_home_dir(), 'models'),
-                      **kwargs):
+                      use_decoder=True, output_attention=False, output_all_encodings=False,
+                      root=os.path.join(get_home_dir(), 'models'), ignore_extra=False,
+                      hparam_allow_override=False, **kwargs):
     """Any RoBERTa pretrained model.
 
     Parameters
@@ -1310,26 +1149,37 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
         Whether to include attention weights of each encoding cell to the output.
     output_all_encodings : bool, default False
         Whether to output encodings of all encoder cells.
+    ignore_extra : bool, default False
+        Whether to silently ignore parameters from the file that are not
+        present in this Block.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     RoBERTaModel, gluonnlp.vocab.Vocab
     """
-    predefined_args = bert_hparams[model_name]
-    mutable_args = ['use_residual', 'dropout', 'word_embed']
-    mutable_args = frozenset(mutable_args)
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-        'Cannot override predefined model settings.'
+    predefined_args = bert_hparams[model_name].copy()
+    if not hparam_allow_override:
+        mutable_args = ['use_residual', 'dropout', 'word_embed']
+        mutable_args = frozenset(mutable_args)
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
+
     # encoder
-    encoder = BERTEncoder(num_layers=predefined_args['num_layers'],
+    encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
+                          num_layers=predefined_args['num_layers'],
                           units=predefined_args['units'],
                           hidden_size=predefined_args['hidden_size'],
                           max_length=predefined_args['max_length'],
                           num_heads=predefined_args['num_heads'],
+                          scaled=predefined_args['scaled'],
                           dropout=predefined_args['dropout'],
                           output_attention=output_attention,
                           output_all_encodings=output_all_encodings,
+                          use_residual=predefined_args['use_residual'],
                           activation=predefined_args.get('activation', 'gelu'),
                           layer_norm_eps=predefined_args.get('layer_norm_eps', 1e-5))
 
@@ -1342,16 +1192,18 @@ def get_roberta_model(model_name=None, dataset_name=None, vocab=None, pretrained
                        word_embed=predefined_args['word_embed'],
                        use_decoder=use_decoder)
     if pretrained:
-        ignore_extra = not use_decoder
+        ignore_extra = ignore_extra or not use_decoder
         _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=ignore_extra,
                                 allow_missing=False)
     return net, bert_vocab
+
 
 def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
                    use_pooler=True, use_decoder=True, use_classifier=True, output_attention=False,
                    output_all_encodings=False, use_token_type_embed=True,
                    root=os.path.join(get_home_dir(), 'models'),
-                   pretrained_allow_missing=False, **kwargs):
+                   pretrained_allow_missing=False, ignore_extra=False,
+                   hparam_allow_override=False, **kwargs):
     """Any BERT pretrained model.
 
     Parameters
@@ -1371,7 +1223,8 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         'scibert_basevocab_uncased','scibert_basevocab_cased',
         'biobert_v1.0_pmc', 'biobert_v1.0_pubmed', 'biobert_v1.0_pubmed_pmc',
         'biobert_v1.1_pubmed',
-        'clinicalbert'
+        'clinicalbert',
+        'kobert_news_wiki_ko_cased'
         are additionally supported.
     vocab : gluonnlp.vocab.BERTVocab or None, default None
         Vocabulary for the dataset. Must be provided if dataset_name is not
@@ -1414,31 +1267,40 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
         If pretrained_allow_missing=True, this will be ignored and the
         parameters will be left uninitialized. Otherwise AssertionError is
         raised.
+    ignore_extra : bool, default False
+        Whether to silently ignore parameters from the file that are not
+        present in this Block.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
-    BERTModel, gluonnlp.vocab.BERTVocab
+    (BERTModel, gluonnlp.vocab.BERTVocab)
     """
-    predefined_args = bert_hparams[model_name]
-    mutable_args = ['use_residual', 'dropout', 'word_embed']
-    mutable_args = frozenset(mutable_args)
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-        'Cannot override predefined model settings.'
+    predefined_args = bert_hparams[model_name].copy()
+    if not hparam_allow_override:
+        mutable_args = ['use_residual', 'dropout', 'word_embed']
+        mutable_args = frozenset(mutable_args)
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     # encoder
-    encoder = BERTEncoder(num_layers=predefined_args['num_layers'],
+    encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
+                          num_layers=predefined_args['num_layers'],
                           units=predefined_args['units'],
                           hidden_size=predefined_args['hidden_size'],
                           max_length=predefined_args['max_length'],
                           num_heads=predefined_args['num_heads'],
+                          scaled=predefined_args['scaled'],
                           dropout=predefined_args['dropout'],
                           output_attention=output_attention,
                           output_all_encodings=output_all_encodings,
+                          use_residual=predefined_args['use_residual'],
                           activation=predefined_args.get('activation', 'gelu'),
                           layer_norm_eps=predefined_args.get('layer_norm_eps', 1e-12))
 
     from ..vocab import BERTVocab  # pylint: disable=import-outside-toplevel
-    # bert_vocab
     bert_vocab = _load_vocab(dataset_name, vocab, root, cls=BERTVocab)
     # BERT
     net = BERTModel(encoder, len(bert_vocab),
@@ -1450,7 +1312,7 @@ def get_bert_model(model_name=None, dataset_name=None, vocab=None, pretrained=Tr
                     use_classifier=use_classifier,
                     use_token_type_embed=use_token_type_embed)
     if pretrained:
-        ignore_extra = not (use_pooler and use_decoder and use_classifier)
+        ignore_extra = ignore_extra or not (use_pooler and use_decoder and use_classifier)
         _load_pretrained_params(net, model_name, dataset_name, root, ctx, ignore_extra=ignore_extra,
                                 allow_missing=pretrained_allow_missing)
     return net, bert_vocab
