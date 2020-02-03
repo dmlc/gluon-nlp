@@ -235,6 +235,8 @@ _vocab_sha1 = {'wikitext-2':
                ['2b804f8f90f9f93c07994b703ce508725061cf43', '.vocab', {}],
                'wiki_multilingual_cased':
                ['0247cb442074237c38c62021f36b7a4dbd2e55f7', '.vocab', {}],
+               'distilbert_book_corpus_wiki_en_uncased':
+               ['80ef760a6bdafec68c99b691c94ebbb918c90d02', '.vocab', {}],
                'wiki_cn_cased':
                ['ddebd8f3867bca5a61023f73326fb125cf12b4f5', '.vocab', {}],
                'wiki_multilingual_uncased':
@@ -265,7 +267,6 @@ _vocab_sha1 = {'wikitext-2':
                ['0d74490383bbc5c62b8bcea74d8b74a1bb1280b3', '.vocab', {}],
                'kobert_news_wiki_ko_cased':
                ['f86b1a8355819ba5ab55e7ea4a4ec30fdb5b084f', '.spiece', {'padding_token': '[PAD]'}]}
-
 
 _url_format = '{repo_url}gluon/dataset/vocab/{file_name}.zip'
 

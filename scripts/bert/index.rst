@@ -1,5 +1,5 @@
-Bidirectional Encoder Representations from Transformers
--------------------------------------------------------
+BERT
+----
 
 :download:`Download scripts </model_zoo/bert.zip>`
 
@@ -96,6 +96,24 @@ Additionally, GluonNLP supports the "`RoBERTa <https://arxiv.org/abs/1907.11692>
     tokenizer = nlp.data.GPT2BPETokenizer();
     text = [vocab.bos_token] + tokenizer('Hello world!') + [vocab.eos_token];
     seq_encoding = model(mx.nd.array([vocab[text]]))
+
+Finally, GluonNLP also supports the "`DistilBERT <https://arxiv.org/abs/1910.01108>`_" model:
+
++-----------------------------------------+----------------------+
+|                                         | distilbert_6_768_12  |
++=========================================+======================+
+| distil_book_corpus_wiki_en_uncased      | ✓                    |
++-----------------------------------------+----------------------+
+
+.. code-block:: python
+
+    import gluonnlp as nlp; import mxnet as mx;
+    model, vocab = nlp.model.get_model('distilbert_6_768_12', dataset_name='distil_book_corpus_wiki_en_uncased');
+    tokenizer = nlp.data.BERTTokenizer(vocab, lower=True);
+    transform = nlp.data.BERTSentenceTransform(tokenizer, max_seq_length=512, pair=False, pad=False);
+    sample = transform(['Hello world!']);
+    words, valid_len = mx.nd.array([sample[0]]), mx.nd.array([sample[1]])
+    seq_encoding, cls_encoding = model(words, valid_len);
 
 .. hint::
 

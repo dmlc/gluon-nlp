@@ -69,6 +69,12 @@ Model Zoo
 
       Predicting the intent of the query and extracting semantic concepts in the query.
 
+   .. card::
+      :title: Model Conversion
+      :link: model_zoo/conversion_tools/index.html
+
+      Converting NLP models from other frameworks to GluonNLP.
+
 .. toctree::
    :hidden:
    :maxdepth: 1
@@ -84,3 +90,4 @@ Model Zoo
    bert/index
    ner/index
    intent_cls_slot_labeling/index
+   conversion_tools/index

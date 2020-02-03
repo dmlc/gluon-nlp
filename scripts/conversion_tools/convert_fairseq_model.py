@@ -124,7 +124,6 @@ encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
 # BERT model
 bert = BERTModel(encoder, len(vocab),
                  units=predefined_args['units'], embed_size=predefined_args['embed_size'],
-                 embed_dropout=predefined_args['embed_dropout'],
                  word_embed=predefined_args['word_embed'], use_pooler=False,
                  use_token_type_embed=False, use_classifier=False)
 
