@@ -409,3 +409,15 @@ def test_finetune_squad_with_round_to():
     process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
                                     + arguments)
     time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+def test_xlnet_finetune_squad():
+    arguments = ['--optimizer', 'bertadam', '--batch_size', '16',
+                 '--gpu', '1', '--epochs', '1', '--debug', '--max_seq_length', '32',
+                 '--max_query_length', '8', '--doc_stride', '384', '--round_to', '8']
+    process = subprocess.check_call([sys.executable, './scripts/language_model/run_squad.py']
+                                    + arguments)
+    time.sleep(5)
