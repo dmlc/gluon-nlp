@@ -172,6 +172,26 @@ The `General Language Understanding Evaluation (GLUE) benchmark <https://glueben
     GlueMRPC
 
 
+SuperGLUE Benchmark
+~~~~~~~~~~~~~~~~~~~~
+
+The `SuperGLUE Benchmark <https://super.gluebenchmark.com>`_ a new benchmark styled after GLUE with a new set of more difficult language understanding tasks.
+
+.. autosummary::
+    :nosignatures:
+
+    SuperGlueRTE
+    SuperGlueCB
+    SuperGlueWSC
+    SuperGlueWiC
+    SuperGlueCOPA
+    SuperGlueMultiRC
+    SuperGlueBoolQ
+    SuperGlueReCoRD
+    SuperGlueAXb
+    SuperGlueAXg
+
+
 Datasets
 --------
 
@@ -184,6 +204,7 @@ load custom datasets.
     TextLineDataset
     CorpusDataset
     TSVDataset
+
 
 DataStreams
 -----------

@@ -746,6 +746,48 @@ def test_glue_data(cls, name, segment, length, fields):
     for i, x in enumerate(dataset):
         assert len(x) == fields, x
 
+@pytest.mark.parametrize('cls,name,segment,length,fields', [
+    (nlp.data.SuperGlueRTE, 'rte', 'train', 2490, 4),
+    (nlp.data.SuperGlueRTE, 'rte', 'val', 277, 4),
+    (nlp.data.SuperGlueRTE, 'rte', 'test', 3000, 3),
+    (nlp.data.SuperGlueCB, 'cb', 'train', 250, 4),
+    (nlp.data.SuperGlueCB, 'cb', 'val', 56, 4),
+    (nlp.data.SuperGlueCB, 'cb', 'test', 250, 3),
+    (nlp.data.SuperGlueWSC, 'wsc', 'train', 554, 4),
+    (nlp.data.SuperGlueWSC, 'wsc', 'val', 104, 4),
+    (nlp.data.SuperGlueWSC, 'wsc', 'test', 146, 3),
+    (nlp.data.SuperGlueWiC, 'wic', 'train', 5428, 10),
+    (nlp.data.SuperGlueWiC, 'wic', 'val', 638, 10),
+    (nlp.data.SuperGlueWiC, 'wic', 'test', 1400, 9),
+    (nlp.data.SuperGlueCOPA, 'copa', 'train', 400, 6),
+    (nlp.data.SuperGlueCOPA, 'copa', 'val', 100, 6),
+    (nlp.data.SuperGlueCOPA, 'copa', 'test', 500, 5),
+    (nlp.data.SuperGlueMultiRC, 'multirc', 'train', 456, 2),
+    (nlp.data.SuperGlueMultiRC, 'multirc', 'val', 83, 2),
+    (nlp.data.SuperGlueMultiRC, 'multirc', 'test', 166, 2),
+    (nlp.data.SuperGlueBoolQ, 'boolq', 'train', 9427, 4),
+    (nlp.data.SuperGlueBoolQ, 'boolq', 'val', 3270, 4),
+    (nlp.data.SuperGlueBoolQ, 'boolq', 'test', 3245, 3),
+    (nlp.data.SuperGlueReCoRD, 'record', 'train', 65709, 4),
+    (nlp.data.SuperGlueReCoRD, 'record', 'val', 7481, 4),
+    (nlp.data.SuperGlueReCoRD, 'record', 'test', 7484, 4),
+    # in AX-b dataset, number of fields may differ
+    (nlp.data.SuperGlueAXb, 'ax_b', None, 1104, None),
+    (nlp.data.SuperGlueAXg, 'ax_g', None, 356, 5),
+])
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_superglue_data(cls, name, segment, length, fields):
+    if segment:
+        dataset = cls(segment=segment, root=os.path.join(
+            'tests', 'externaldata', 'superglue', name))
+    else:
+        dataset = cls(root=os.path.join('tests', 'externaldata', 'superglue', name))
+    assert len(dataset) == length, len(dataset)
+
+    if fields:
+        for i, x in enumerate(dataset):
+            assert len(x) == fields, x
 
 @pytest.mark.serial
 @pytest.mark.remote_required
