@@ -33,7 +33,7 @@ def test_awdrnn_weight_share(weight_tied):
     mode = 'lstm'
     vocab = 400
     context = [mx.cpu()]
-    
+
     model = nlp.model.train.AWDRNN(mode, vocab,
                                    tie_weights=weight_tied)
     model_eval = nlp.model.train.AWDRNN(mode, vocab,
@@ -52,7 +52,7 @@ def test_standardrnn_weight_share(weight_tied):
     emb_size = 200
     hidden_size = 200
     nlayers = 2
-    
+
     model = nlp.model.train.StandardRNN(mode, vocab,
                                         emb_size, hidden_size,
                                         nlayers, weight_tied)
