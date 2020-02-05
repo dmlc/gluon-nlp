@@ -94,10 +94,8 @@ class SuperGlueRTE(_SuperGlueDataset):
     >>> len(rte_test)
     3000
     >>> sorted(rte_test[0].items())
-    [('hypothesis', 'Shukla is related to Mangla.'),
-     ('idx', 0),
-     ('premise',
-      "Mangla was summoned after Madhumita's sister Nidhi Shukla, who was the first witness in the case.")]
+    [('hypothesis', 'Shukla is related to Mangla.'), ('idx', 0), ('premise', "Mangla was summoned after Madhumita's sister Nidhi Shukla, who was the first witness in the case.")]
+
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_rte')):
@@ -194,7 +192,7 @@ class SuperGlueWSC(_SuperGlueDataset):
     >>> len(wsc_val)
     104
     >>> sorted(wsc_val[5].items())
-    [('idx', 5), ('label', True), ('target', {'span2_index': 9, 'span1_index': 6, 'span1_text': 'The table', 'span2_text': 'it'}), ('text', 'The large ball crashed right through the table because it was made of styrofoam.')]
+    [('idx', 5), ('label', True), ('target', OrderedDict([('span2_index', 9), ('span1_index', 6), ('span1_text', 'The table'), ('span2_text', 'it')])), ('text', 'The large ball crashed right through the table because it was made of styrofoam.')]
     >>> wsc_test = gluonnlp.data.SuperGlueWSC('test', root='./datasets/wsc')
     -etc-
     >>> len(wsc_test)
