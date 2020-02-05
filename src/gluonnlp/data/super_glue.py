@@ -198,7 +198,7 @@ class SuperGlueWSC(_SuperGlueDataset):
     >>> len(wsc_test)
     146
     >>> sorted(wsc_test[16].items())
-    [('idx', 16), ('target', {'span1_text': 'life', 'span1_index': 1, 'span2_text': 'it', 'span2_index': 21}), ('text', 'Your life is yours and yours alone, and if the pain outweighs the benefit, you should have the option to end it .')]
+    [('idx', 16), ('target', OrderedDict([('span1_text', 'life'), ('span1_index', 1), ('span2_text', 'it'), ('span2_index', 21)])), ('text', 'Your life is yours and yours alone, and if the pain outweighs the benefit, you should have the option to end it .')]
     """
     def __init__(self, segment='train',
                  root=os.path.join(get_home_dir(), 'datasets', 'superglue_wsc')):
