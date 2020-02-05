@@ -28,7 +28,7 @@ def _check_initialized(net):
             return False
         return True
 
-@pytest.mark.parameterize('weight_tied', [False, True])
+@pytest.mark.parametrize('weight_tied', [False, True])
 def test_awdrnn_weight_share(weight_tied):
     mode = 'lstm'
     vocab = 400
@@ -44,7 +44,7 @@ def test_awdrnn_weight_share(weight_tied):
     assert _check_initialized(model) == True
     assert _check_initialized(model_eval) == True
 
-@pytest.mark.parameterize('weight_tied', [False, True])
+@pytest.mark.parametrize('weight_tied', [False, True])
 def test_standardrnn_weight_share(weight_tied):
     mode = 'lstm'
     vocab = 400
