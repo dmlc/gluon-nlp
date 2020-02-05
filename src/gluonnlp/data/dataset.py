@@ -20,16 +20,19 @@
 Files can be loaded into formats that are immediately ready for training and evaluation."""
 __all__ = ['TextLineDataset', 'CorpusDataset', 'ConcatDataset', 'TSVDataset', 'NumpyDataset']
 
+import bisect
+import collections
 import io
+import json
 import os
 import warnings
-import bisect
-import json
+
 import numpy as np
 
-from mxnet.gluon.data import SimpleDataset, Dataset, ArrayDataset
+from mxnet.gluon.data import ArrayDataset, Dataset, SimpleDataset
 
-from .utils import concat_sequence, line_splitter, whitespace_splitter, Splitter
+from .utils import (Splitter, concat_sequence, line_splitter,
+                    whitespace_splitter)
 
 
 class ConcatDataset(Dataset):
@@ -325,7 +328,7 @@ class _JsonlDataset(SimpleDataset):
             samples = []
             with open(filename, 'r', encoding=self._encoding) as fin:
                 for line in fin.readlines():
-                    samples.append(json.loads(line))
+                    samples.append(json.loads(line, object_pairs_hook=collections.OrderedDict))
             samples = self._read_samples(samples)
             all_samples += samples
         return all_samples
