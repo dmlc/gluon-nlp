@@ -28,6 +28,7 @@ def _check_initialized(net):
             return False
         return True
 
+@pytest.mark.filterwarnings('ignore:UserWarning')
 @pytest.mark.parametrize('weight_tied', [False, True])
 def test_awdrnn_weight_share(weight_tied):
     mode = 'lstm'
