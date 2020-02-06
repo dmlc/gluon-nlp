@@ -15,6 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 
+import warnings
+
 import mxnet as mx
 import gluonnlp as nlp
 import pytest
@@ -28,22 +30,23 @@ def _check_initialized(net):
             return False
         return True
 
-@pytest.mark.filterwarnings('ignore:UserWarning')
 @pytest.mark.parametrize('weight_tied', [False, True])
 def test_awdrnn_weight_share(weight_tied):
     mode = 'lstm'
     vocab = 400
     context = [mx.cpu()]
 
-    model = nlp.model.train.AWDRNN(mode, vocab,
-                                   tie_weights=weight_tied)
-    model_eval = nlp.model.train.AWDRNN(mode, vocab,
-                                        tie_weights=weight_tied,
-                                        params=model.collect_params())
-    model.initialize(mx.init.Xavier(), ctx=context)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        model = nlp.model.train.AWDRNN(mode, vocab,
+                                       tie_weights=weight_tied)
+        model_eval = nlp.model.train.AWDRNN(mode, vocab,
+                                            tie_weights=weight_tied,
+                                            params=model.collect_params())
+        model.initialize(mx.init.Xavier(), ctx=context)
 
-    assert _check_initialized(model) == True
-    assert _check_initialized(model_eval) == True
+        assert _check_initialized(model) == True
+        assert _check_initialized(model_eval) == True
 
 @pytest.mark.parametrize('weight_tied', [False, True])
 def test_standardrnn_weight_share(weight_tied):
