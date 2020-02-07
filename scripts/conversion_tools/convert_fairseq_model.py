@@ -124,7 +124,6 @@ encoder = BERTEncoder(attention_cell=predefined_args['attention_cell'],
 # BERT model
 bert = BERTModel(encoder, len(vocab),
                  units=predefined_args['units'], embed_size=predefined_args['embed_size'],
-                 embed_dropout=predefined_args['embed_dropout'],
                  word_embed=predefined_args['word_embed'], use_pooler=False,
                  use_token_type_embed=False, use_classifier=False)
 
@@ -133,7 +132,7 @@ bert.initialize(init=mx.init.Normal(0.02))
 ones = mx.nd.ones((2, 8))
 out = bert(ones, None, mx.nd.array([5, 6]), mx.nd.array([[1], [2]]))
 params = bert._collect_params_with_prefix()
- 
+
 
 
 mapping = {

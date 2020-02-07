@@ -170,10 +170,10 @@ def evaluate(data_loader):
         tgt_valid_length = tgt_valid_length.as_in_context(ctx)
         # Calculating Loss
         out, _ = model(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
-        loss = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean().asscalar()
+        loss = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).sum().asscalar()
         all_inst_ids.extend(inst_ids.asnumpy().astype(np.int32).tolist())
         avg_loss += loss * (tgt_seq.shape[1] - 1)
-        avg_loss_denom += (tgt_seq.shape[1] - 1)
+        avg_loss_denom += (tgt_valid_length - 1).sum().asscalar()
         # Translate
         samples, _, sample_valid_length = translator.translate(
             src_seq=src_seq, src_valid_length=src_valid_length)
@@ -199,7 +199,8 @@ def train():
 
     best_valid_bleu = 0.0
     for epoch_id in range(args.epochs):
-        log_avg_loss = 0
+        log_loss = 0
+        log_denom = 0
         log_avg_gnorm = 0
         log_wc = 0
         log_start_time = time.time()
@@ -213,15 +214,18 @@ def train():
             with mx.autograd.record():
                 out, _ = model(src_seq, tgt_seq[:, :-1], src_valid_length, tgt_valid_length - 1)
                 loss = loss_function(out, tgt_seq[:, 1:], tgt_valid_length - 1).mean()
-                loss = loss * (tgt_seq.shape[1] - 1) / (tgt_valid_length - 1).mean()
+                loss = loss * (tgt_seq.shape[1] - 1)
+                log_loss += loss * tgt_seq.shape[0]
+                log_denom += (tgt_valid_length - 1).sum()
+                loss = loss / (tgt_valid_length - 1).mean()
                 loss.backward()
             grads = [p.grad(ctx) for p in model.collect_params().values()]
             gnorm = gluon.utils.clip_global_norm(grads, args.clip)
             trainer.step(1)
             src_wc = src_valid_length.sum().asscalar()
             tgt_wc = (tgt_valid_length - 1).sum().asscalar()
-            step_loss = loss.asscalar()
-            log_avg_loss += step_loss
+            log_loss = log_loss.asscalar()
+            log_denom = log_denom.asscalar()
             log_avg_gnorm += gnorm
             log_wc += src_wc + tgt_wc
             if (batch_id + 1) % args.log_interval == 0:
@@ -229,12 +233,13 @@ def train():
                 logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, gnorm={:.4f}, '
                              'throughput={:.2f}K wps, wc={:.2f}K'
                              .format(epoch_id, batch_id + 1, len(train_data_loader),
-                                     log_avg_loss / args.log_interval,
-                                     np.exp(log_avg_loss / args.log_interval),
+                                     log_loss / log_denom,
+                                     np.exp(log_loss / log_denom),
                                      log_avg_gnorm / args.log_interval,
                                      wps / 1000, log_wc / 1000))
                 log_start_time = time.time()
-                log_avg_loss = 0
+                log_loss = 0
+                log_denom = 0
                 log_avg_gnorm = 0
                 log_wc = 0
         valid_loss, valid_translation_out = evaluate(val_data_loader)

@@ -37,7 +37,7 @@ def test_bert_dataset_transform():
     bert_cls_dataset_t = BERTDatasetTransform(tokenizer, 15,
                                               class_labels=[label_cls], pad=True,
                                               pair=True)
-    token_ids, length, type_ids, label_ids = bert_cls_dataset_t((text_a, text_b, label_cls))
+    token_ids, type_ids, length, label_ids = bert_cls_dataset_t((text_a, text_b, label_cls))
 
     text_a_tokens = ['is', 'this', 'jack', '##son', '##ville', '?']
     text_b_tokens = ['no', 'it', 'is', 'not']
@@ -65,7 +65,7 @@ def test_bert_dataset_transform():
     # test BERTDatasetTransform for regression task
     label_reg = 0.2
     bert_reg_dataset_t = BERTDatasetTransform(tokenizer, 15, pad=True, pair=True)
-    token_ids, length, type_ids, label_reg_val = bert_reg_dataset_t((text_a, text_b, label_reg))
+    token_ids, type_ids, length, label_reg_val = bert_reg_dataset_t((text_a, text_b, label_reg))
     assert all(token_ids == valid_token_ids)
     assert length == len(vocab_tokens) + 3
     assert all(type_ids == valid_type_ids)

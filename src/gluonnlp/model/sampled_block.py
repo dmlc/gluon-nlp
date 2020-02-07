@@ -68,15 +68,15 @@ class _SampledDenseHelper(HybridBlock):
 
         # remove accidental hits
         if self._remove_accidental_hits:
-            label_vec = F.reshape(label, (-1, 1))
-            sample_vec = F.reshape(sampled_candidates, (1, -1))
-            mask = F.broadcast_equal(label_vec, sample_vec) * -1e37
+            label_vec = F.reshape(label, (-1, 1)).astype('int32')
+            sample_vec = F.reshape(sampled_candidates, (1, -1)).astype('int32')
+            mask = F.broadcast_equal(label_vec, sample_vec).astype('float32') * -1e37
             pred_sampled = pred_sampled + mask
 
         # subtract log(q)
-        expected_count_sampled = F.reshape(expected_count_sampled,
-                                           shape=(1, self._num_sampled))
-        expected_count_true = expected_count_true.reshape((-1,))
+        expected_count_sampled = expected_count_sampled.astype('float32')
+        expected_count_sampled = expected_count_sampled.reshape(shape=(1, self._num_sampled))
+        expected_count_true = expected_count_true.astype('float32').reshape((-1,))
         pred_true = pred_true - F.log(expected_count_true)
         pred_true = pred_true.reshape((-1, 1))
         pred_sampled = F.broadcast_sub(pred_sampled, F.log(expected_count_sampled))
@@ -172,7 +172,7 @@ class _SampledDense(HybridBlock):
         # (batch_size,)
         label = F.reshape(label, shape=(-1,))
         # (num_sampled+batch_size,)
-        ids = F.concat(sampled_candidates, label, dim=0)
+        ids = F.concat(sampled_candidates.astype('int32'), label.astype('int32'), dim=0)
         # lookup weights and biases
         # (num_sampled+batch_size, dim)
         w_all = F.Embedding(data=ids, weight=weight,
@@ -475,7 +475,7 @@ class _SparseSampledDense(Block):
         # (batch_size,)
         label = label.reshape(shape=(-1,))
         # (num_sampled+batch_size,)
-        ids = nd.concat(sampled_candidates, label, dim=0)
+        ids = nd.concat(sampled_candidates.astype('int32'), label.astype('int32'), dim=0)
         # lookup weights and biases
         weight = self.weight.row_sparse_data(ids)
         bias = self.bias.data(ids.context)
