@@ -44,7 +44,7 @@ from .word_embedding_evaluation import *
 from .intent_slot import *
 from .datasetloader import *
 from .classification import *
-from baidu_ernie_data import *
+from .baidu_ernie_data import *
 from ..base import get_home_dir
 
 __all__ = (['batchify', 'get_tokenizer'] + utils.__all__ + transforms.__all__
