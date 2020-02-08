@@ -1,7 +1,7 @@
 """test data preprocessing utils"""
 
 import numpy as np
-from ..bert.data.preprocessing_utils import truncate_seqs_equal, concat_sequences
+from ..data_utils.preprocessing_utils import truncate_seqs_equal, concat_sequences
 
 
 def test_truncate():
