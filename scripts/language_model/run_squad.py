@@ -25,10 +25,7 @@ from model.qa import XLNetForQA
 from transformer import model
 from xlnet_qa_evaluate import predict_extended
 
-path = sys.path[0]
-sys.path.append(path + '/../bert/data')
-#pylint: disable=wrong-import-position
-from preprocessing_utils import concat_sequences, get_doc_spans, \
+from ..data_utils.preprocessing_utils import concat_sequences, get_doc_spans, \
     check_is_max_context, convert_squad_examples, _lcs_match, _convert_index, \
     align_position2doc_spans
 
