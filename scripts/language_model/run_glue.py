@@ -8,6 +8,7 @@ import argparse
 import random
 import logging
 import warnings
+import sys
 from functools import partial
 import numpy as np
 import mxnet as mx
@@ -16,7 +17,11 @@ import gluonnlp as nlp
 from gluonnlp.data.classification import tasks
 from model.XLNet_classifier import XLNetClassifier
 from transformer import model
-from ..data_utils.preprocessing_utils import truncate_seqs_equal, concat_sequences
+
+path = sys.path[0]
+sys.path.append(path + '/../data_utils')
+#pylint: disable=wrong-import-position
+from preprocessing_utils import truncate_seqs_equal, concat_sequences
 
 parser = argparse.ArgumentParser(
     description='XLNet fine-tune examples for classification/regression tasks.',

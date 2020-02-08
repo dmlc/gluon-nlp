@@ -39,6 +39,7 @@ import argparse
 import random
 import logging
 import warnings
+import sys
 from functools import partial
 import numpy as np
 import mxnet as mx
@@ -49,7 +50,11 @@ from gluonnlp.data import BERTTokenizer
 from gluonnlp.data.classification import tasks
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
 from gluonnlp.calibration import BertLayerCollector
-from ..data_utils.preprocessing_utils import truncate_seqs_equal, concat_sequences
+
+path = sys.path[0]
+sys.path.append(path + '/../data_utils')
+#pylint: disable=wrong-import-position
+from preprocessing_utils import truncate_seqs_equal, concat_sequences
 
 nlp.utils.check_version('0.9', warning_only=True)
 
