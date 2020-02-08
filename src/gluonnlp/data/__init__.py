@@ -43,7 +43,8 @@ from .utils import _load_pretrained_sentencepiece_tokenizer
 from .word_embedding_evaluation import *
 from .intent_slot import *
 from .datasetloader import *
-
+from .classification import *
+from baidu_ernie_data import *
 from ..base import get_home_dir
 
 __all__ = (['batchify', 'get_tokenizer'] + utils.__all__ + transforms.__all__
@@ -51,8 +52,8 @@ __all__ = (['batchify', 'get_tokenizer'] + utils.__all__ + transforms.__all__
            + word_embedding_evaluation.__all__ + stream.__all__ + conll.__all__
            + translation.__all__ + registry.__all__ + question_answering.__all__
            + dataloader.__all__ + candidate_sampler.__all__ + intent_slot.__all__
-           + glue.__all__ + super_glue.__all__
-           + datasetloader.__all__)  # pytype: disable=attribute-error
+           + glue.__all__ + super_glue.__all__ + classification.__all__
+           + baidu_ernie_data.__all__ + datasetloader.__all__)  # pytype: disable=attribute-error
 
 
 def get_tokenizer(model_name, dataset_name,
