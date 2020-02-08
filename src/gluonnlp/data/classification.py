@@ -91,7 +91,31 @@ class GlueTask:
         return 'test', self.get_dataset(segment='test')
 
 class MRPCTask(GlueTask):
-    """The MRPC task on GlueBenchmark."""
+    """The MRPC task on GlueBenchmark.
+
+    Examples
+    --------
+    >>> MRPC = MRPCTask()
+    -etc-
+    >>> MRPC.class_labels
+    ['0', '1']
+    >>> type(MRPC.metrics.get_metric(0))
+    mxnet.metric.Accuracy
+    >>> type(MRPC.metrics.get_metric(1))
+    mxnet.metric.F1
+    >>> MRPC.dataset_train()[0]
+    'train'
+    >>> len(MRPC.dataset_train()[1])
+    3668
+    >>> MRPC.dataset_dev()[0]
+    'dev'
+    >>> len(MRPC.dataset_dev()[1])
+    408
+    >>> MRPC.dataset_test()[0]
+    'test'
+    >>> len(MRPC.dataset_test()[1])
+    1725
+    """
     def __init__(self):
         is_pair = True
         class_labels = ['0', '1']
@@ -111,7 +135,31 @@ class MRPCTask(GlueTask):
         return GlueMRPC(segment=segment)
 
 class QQPTask(GlueTask):
-    """The Quora Question Pairs task on GlueBenchmark."""
+    """The Quora Question Pairs task on GlueBenchmark.
+
+    Examples
+    --------
+    >>> QQP = QQPTask()
+    -etc-
+    >>> QQP.class_labels
+    ['0', '1']
+    >>> type(QQP.metrics.get_metric(0))
+    mxnet.metric.Accuracy
+    >>> type(QQP.metrics.get_metric(1))
+    mxnet.metric.F1
+    >>> QQP.dataset_train()[0]
+    'train'
+    >>> len(QQP.dataset_train()[1])
+    363849
+    >>> QQP.dataset_dev()[0]
+    'dev'
+    >>> len(QQP.dataset_dev()[1])
+    40430
+    >>> QQP.dataset_test()[0]
+    'test'
+    >>> len(QQP.dataset_test()[1])
+    390965
+    """
     def __init__(self):
         is_pair = True
         class_labels = ['0', '1']
@@ -132,7 +180,29 @@ class QQPTask(GlueTask):
 
 
 class RTETask(GlueTask):
-    """The Recognizing Textual Entailment task on GlueBenchmark."""
+    """The Recognizing Textual Entailment task on GlueBenchmark.
+
+    Examples
+    --------
+    >>> RTE = RTETask()
+    -etc-
+    >>> RTE.class_labels
+    ['not_entailment', 'entailment']
+    >>> type(RTE.metrics)
+    mxnet.metric.Accuracy
+    >>> RTE.dataset_train()[0]
+    'train'
+    >>> len(RTE.dataset_train()[1])
+    2490
+    >>> RTE.dataset_dev()[0]
+    'dev'
+    >>> len(RTE.dataset_dev()[1])
+    277
+    >>> RTE.dataset_test()[0]
+    'test'
+    >>> len(RTE.dataset_test()[1])
+    3000
+    """
     def __init__(self):
         is_pair = True
         class_labels = ['not_entailment', 'entailment']
@@ -150,7 +220,29 @@ class RTETask(GlueTask):
         return GlueRTE(segment=segment)
 
 class QNLITask(GlueTask):
-    """The SQuAD NLI task on GlueBenchmark."""
+    """The SQuAD NLI task on GlueBenchmark.
+
+    Examples
+    --------
+    >>> QNLI = QNLITask()
+    -etc-
+    >>> QNLI.class_labels
+    ['not_entailment', 'entailment']
+    >>> type(QNLI.metrics)
+    mxnet.metric.Accuracy
+    >>> QNLI.dataset_train()[0]
+    'train'
+    >>> len(QNLI.dataset_train()[1])
+    108436
+    >>> QNLI.dataset_dev()[0]
+    'dev'
+    >>> len(QNLI.dataset_dev()[1])
+    5732
+    >>> QNLI.dataset_test()[0]
+    'test'
+    >>> len(QNLI.dataset_test()[1])
+    5740
+    """
     def __init__(self):
         is_pair = True
         class_labels = ['not_entailment', 'entailment']
@@ -168,7 +260,29 @@ class QNLITask(GlueTask):
         return GlueQNLI(segment=segment)
 
 class STSBTask(GlueTask):
-    """The Sentence Textual Similarity Benchmark task on GlueBenchmark."""
+    """The Sentence Textual Similarity Benchmark task on GlueBenchmark.
+
+    Examples
+    --------
+    >>> STSB = STSBTask()
+    -etc-
+    >>> STSB.class_labels
+    -etc-
+    >>> type(STSB.metrics)
+    mxnet.metric.PearsonCorrelation
+    >>> STSB.dataset_train()[0]
+    'train'
+    >>> len(STSB.dataset_train()[1])
+    5749
+    >>> STSB.dataset_dev()[0]
+    'dev'
+    >>> len(STSB.dataset_dev()[1])
+    1500
+    >>> STSB.dataset_test()[0]
+    'test'
+    >>> len(STSB.dataset_test()[1])
+    1379
+    """
     def __init__(self):
         is_pair = True
         class_labels = None
@@ -186,7 +300,29 @@ class STSBTask(GlueTask):
         return GlueSTSB(segment=segment)
 
 class CoLATask(GlueTask):
-    """The Warstdadt acceptability task on GlueBenchmark."""
+    """The Warstdadt acceptability task on GlueBenchmark.
+
+    Examples
+    --------
+    >>> CoLA = CoLATask()
+    -etc-
+    >>> CoLA.class_labels
+    ['0', '1']
+    >>> type(CoLA.metrics)
+    mxnet.metric.MCC
+    >>> CoLA.dataset_train()[0]
+    'train'
+    >>> len(CoLA.dataset_train()[1])
+    8551
+    >>> CoLA.dataset_dev()[0]
+    'dev'
+    >>> len(CoLA.dataset_dev()[1])
+    1043
+    >>> CoLA.dataset_test()[0]
+    'test'
+    >>> len(CoLA.dataset_test()[1])
+    1063
+    """
     def __init__(self):
         is_pair = False
         class_labels = ['0', '1']
@@ -204,7 +340,29 @@ class CoLATask(GlueTask):
         return GlueCoLA(segment=segment)
 
 class SSTTask(GlueTask):
-    """The Stanford Sentiment Treebank task on GlueBenchmark."""
+    """The Stanford Sentiment Treebank task on GlueBenchmark.
+
+    Examples
+    --------
+    >>> SST = SSTTask()
+    -etc-
+    >>> SST.class_labels
+    ['0', '1']
+    >>> type(SST.metrics)
+    mxnet.metric.Accuracy
+    >>> SST.dataset_train()[0]
+    'train'
+    >>> len(SST.dataset_train()[1])
+    67349
+    >>> SST.dataset_dev()[0]
+    'dev'
+    >>> len(SST.dataset_dev()[1])
+    872
+    >>> SST.dataset_test()[0]
+    'test'
+    >>> len(SST.dataset_test()[1])
+    1821
+    """
     def __init__(self):
         is_pair = False
         class_labels = ['0', '1']
@@ -222,7 +380,29 @@ class SSTTask(GlueTask):
         return GlueSST2(segment=segment)
 
 class WNLITask(GlueTask):
-    """The Winograd NLI task on GlueBenchmark."""
+    """The Winograd NLI task on GlueBenchmark.
+
+    Examples
+    --------
+    >>> WNLI = WNLITask()
+    -etc-
+    >>> WNLI.class_labels
+    ['0', '1']
+    >>> type(WNLI.metrics)
+    mxnet.metric.Accuracy
+    >>> WNLI.dataset_train()[0]
+    'train'
+    >>> len(WNLI.dataset_train()[1])
+    635
+    >>> WNLI.dataset_dev()[0]
+    'dev'
+    >>> len(WNLI.dataset_dev()[1])
+    71
+    >>> WNLI.dataset_test()[0]
+    'test'
+    >>> len(WNLI.dataset_test()[1])
+    146
+    """
     def __init__(self):
         is_pair = True
         class_labels = ['0', '1']
@@ -240,7 +420,37 @@ class WNLITask(GlueTask):
         return GlueWNLI(segment=segment)
 
 class MNLITask(GlueTask):
-    """The Multi-Genre Natural Language Inference task on GlueBenchmark."""
+    """The Multi-Genre Natural Language Inference task on GlueBenchmark.
+
+    Examples
+    --------
+    >>> MNLI = MNLITask()
+    -etc-
+    >>> MNLI.class_labels
+    ['neutral', 'entailment', 'contradiction']
+    >>> type(MNLI.metrics)
+    mxnet.metric.Accuracy
+    >>> MNLI.dataset_train()[0]
+    'train'
+    >>> len(MNLI.dataset_train()[1])
+    392702
+    >>> MNLI.dataset_dev()[0][0]
+    'dev_matched'
+    >>> len(MNLI.dataset_dev()[0][1])
+    9815
+    >>> MNLI.dataset_dev()[1][0]
+    'dev_mismatched'
+    >>> len(MNLI.dataset_dev()[1][1])
+    9832
+    >>> MNLI.dataset_test()[0][0]
+    'test_matched'
+    >>> len(MNLI.dataset_test()[0][1])
+    9796
+    >>> MNLI.dataset_test()[1][0]
+    'test_mismatched'
+    >>> len(MNLI.dataset_test()[1][1])
+    9847
+    """
     def __init__(self):
         is_pair = True
         class_labels = ['neutral', 'entailment', 'contradiction']
@@ -283,6 +493,26 @@ class XNLITask(GlueTask):
 
     <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
 
+    Examples
+    --------
+    >>> XNLI = XNLITask()
+    -etc-
+    >>> XNLI.class_labels
+    ['neutral', 'entailment', 'contradiction']
+    >>> type(XNLI.metrics)
+    mxnet.metric.Accuracy
+    >>> XNLI.dataset_train()[0]
+    'train'
+    >>> len(XNLI.dataset_train()[1])
+    392702
+    >>> XNLI.dataset_dev()[0]
+    'dev'
+    >>> len(XNLI.dataset_dev()[1])
+    2490
+    >>> XNLI.dataset_test()[0]
+    'test'
+    >>> len(XNLI.dataset_test()[1])
+    5010
     """
     def __init__(self):
         is_pair = True
@@ -301,33 +531,31 @@ class XNLITask(GlueTask):
         """
         return BaiduErnieXNLI(segment)
 
-class LCQMCTask(GlueTask):
-    """The LCQMC task using the dataset released from Baidu
-
-    <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
-
-    """
-    def __init__(self):
-        is_pair = True
-        class_labels = ['0', '1']
-        metric = Accuracy()
-        super(LCQMCTask, self).__init__(class_labels, metric, is_pair)
-
-    def get_dataset(self, segment='train'):
-        """Get the corresponding dataset for LCQMC.
-
-        Parameters
-        ----------
-        segment : str, default 'train'
-            Dataset segments. Options are 'dev', 'test', 'train'
-        """
-        return BaiduErnieLCQMC(segment)
-
 class ChnSentiCorpTask(GlueTask):
     """The ChnSentiCorp task using the dataset released from Baidu
 
     <https://github.com/PaddlePaddle/LARK/tree/develop/ERNIE>.
 
+    Examples
+    --------
+    >>> ChnSentiCorp = ChnSentiCorpTask()
+    -etc-
+    >>> ChnSentiCorp.class_labels
+    ['0', '1']
+    >>> type(ChnSentiCorp.metrics)
+    mxnet.metric.Accuracy
+    >>> ChnSentiCorp.dataset_train()[0]
+    'train'
+    >>> len(ChnSentiCorp.dataset_train()[1])
+    9600
+    >>> ChnSentiCorp.dataset_dev()[0]
+    'dev'
+    >>> len(ChnSentiCorp.dataset_dev()[1])
+    1200
+    >>> ChnSentiCorp.dataset_test()[0]
+    'test'
+    >>> len(ChnSentiCorp.dataset_test()[1])
+    1200
     """
     def __init__(self):
         is_pair = False
@@ -356,6 +584,5 @@ tasks = {
     'WNLI': WNLITask(),
     'SST': SSTTask(),
     'XNLI': XNLITask(),
-    'LCQMC': LCQMCTask(),
     'ChnSentiCorp': ChnSentiCorpTask()
 }
