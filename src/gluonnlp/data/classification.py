@@ -96,7 +96,6 @@ class MRPCTask(GlueTask):
     Examples
     --------
     >>> MRPC = MRPCTask()
-    -etc-
     >>> MRPC.class_labels
     ['0', '1']
     >>> type(MRPC.metrics.get_metric(0))
@@ -140,7 +139,6 @@ class QQPTask(GlueTask):
     Examples
     --------
     >>> QQP = QQPTask()
-    -etc-
     >>> QQP.class_labels
     ['0', '1']
     >>> type(QQP.metrics.get_metric(0))
@@ -185,7 +183,6 @@ class RTETask(GlueTask):
     Examples
     --------
     >>> RTE = RTETask()
-    -etc-
     >>> RTE.class_labels
     ['not_entailment', 'entailment']
     >>> type(RTE.metrics)
@@ -225,7 +222,6 @@ class QNLITask(GlueTask):
     Examples
     --------
     >>> QNLI = QNLITask()
-    -etc-
     >>> QNLI.class_labels
     ['not_entailment', 'entailment']
     >>> type(QNLI.metrics)
@@ -265,9 +261,7 @@ class STSBTask(GlueTask):
     Examples
     --------
     >>> STSB = STSBTask()
-    -etc-
     >>> STSB.class_labels
-    -etc-
     >>> type(STSB.metrics)
     mxnet.metric.PearsonCorrelation
     >>> STSB.dataset_train()[0]
@@ -305,7 +299,6 @@ class CoLATask(GlueTask):
     Examples
     --------
     >>> CoLA = CoLATask()
-    -etc-
     >>> CoLA.class_labels
     ['0', '1']
     >>> type(CoLA.metrics)
@@ -345,7 +338,6 @@ class SSTTask(GlueTask):
     Examples
     --------
     >>> SST = SSTTask()
-    -etc-
     >>> SST.class_labels
     ['0', '1']
     >>> type(SST.metrics)
@@ -385,7 +377,6 @@ class WNLITask(GlueTask):
     Examples
     --------
     >>> WNLI = WNLITask()
-    -etc-
     >>> WNLI.class_labels
     ['0', '1']
     >>> type(WNLI.metrics)
@@ -425,7 +416,6 @@ class MNLITask(GlueTask):
     Examples
     --------
     >>> MNLI = MNLITask()
-    -etc-
     >>> MNLI.class_labels
     ['neutral', 'entailment', 'contradiction']
     >>> type(MNLI.metrics)
@@ -496,7 +486,6 @@ class XNLITask(GlueTask):
     Examples
     --------
     >>> XNLI = XNLITask()
-    -etc-
     >>> XNLI.class_labels
     ['neutral', 'entailment', 'contradiction']
     >>> type(XNLI.metrics)
@@ -539,7 +528,6 @@ class ChnSentiCorpTask(GlueTask):
     Examples
     --------
     >>> ChnSentiCorp = ChnSentiCorpTask()
-    -etc-
     >>> ChnSentiCorp.class_labels
     ['0', '1']
     >>> type(ChnSentiCorp.metrics)
