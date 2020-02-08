@@ -1,6 +1,5 @@
-# Word Embedding
-
-```eval_rst
+Word Embedding
+==============
 
 .. container:: cards
 
@@ -20,11 +19,11 @@
 
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
 
-   word_embedding
-   word_embedding_training
-```
+   word_embedding.ipynb
+   word_embedding_training.ipynb
 
 
 

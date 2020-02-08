@@ -1,6 +1,5 @@
-# Sentence Embedding
-
-```eval_rst
+Sentence Embedding
+==================
 
 .. container:: cards
 
@@ -26,12 +25,12 @@
       pre-trained BERT parameters.
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
 
-   elmo_sentence_representation
-   self_attentive_sentence_embedding
-   bert
-```
+   elmo_sentence_representation.ipynb
+   self_attentive_sentence_embedding.ipynb
+   bert.ipynb
 
 
 

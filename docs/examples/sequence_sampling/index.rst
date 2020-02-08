@@ -1,6 +1,5 @@
-# Sequence Sampling
-
-```eval_rst
+Sequence Sampling
+=================
 
 .. container:: cards
 
@@ -13,10 +12,10 @@
 
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
 
-   sequence_sampling
-```
+   sequence_sampling.ipynb
 
 
 

@@ -1,6 +1,5 @@
-# Language Model
-
-```eval_rst
+Language Model
+==============
 
 .. container:: cards
 
@@ -13,10 +12,10 @@
 
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
 
-   language_model
-```
+   language_model.ipynb
 
 
 

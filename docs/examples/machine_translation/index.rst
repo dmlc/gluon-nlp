@@ -1,6 +1,5 @@
-# Machine Translation
-
-```eval_rst
+Machine Translation
+===================
 
 .. container:: cards
 
@@ -19,11 +18,11 @@
 
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
 
-   gnmt
-   transformer
-```
+   gnmt.ipynb
+   transformer.ipynb
 
 
 

@@ -1,6 +1,5 @@
-# Sentiment Analysis
-
-```eval_rst
+Sentiment Analysis
+==================
 
 .. container:: cards
 
@@ -12,10 +11,9 @@
 
 
 .. toctree::
+   :hidden:
    :maxdepth: 2
 
-   sentiment_analysis
-```
-
+   sentiment_analysis.ipynb
 
 
