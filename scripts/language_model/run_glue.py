@@ -8,7 +8,6 @@ import argparse
 import random
 import logging
 import warnings
-import sys
 from functools import partial
 import numpy as np
 import mxnet as mx
