@@ -53,7 +53,7 @@ from gluonnlp.data import SQuAD
 from gluonnlp.calibration import BertLayerCollector
 from model.qa import BertForQALoss, BertForQA
 from bert_qa_evaluate import get_F1_EM, predict, PredResult
-from data.preprocessing_utils import improve_answer_span, \
+from ..data_utils.preprocessing_utils import improve_answer_span, \
     concat_sequences, tokenize_and_align_positions, get_doc_spans, align_position2doc_spans, \
     check_is_max_context, convert_squad_examples
 

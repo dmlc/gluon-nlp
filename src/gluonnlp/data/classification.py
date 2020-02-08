@@ -11,21 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""BERT classification/regression datasets."""
+"""GLUE classification/regression datasets."""
 
 
 __all__ = [
     'MRPCTask', 'QQPTask', 'QNLITask', 'RTETask', 'STSBTask',
-    'CoLATask', 'MNLITask', 'WNLITask', 'SSTTask', 'XNLITask'
+    'CoLATask', 'MNLITask', 'WNLITask', 'SSTTask', 'XNLITask', 'tasks'
 ]
 
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
-from gluonnlp.data import GlueCoLA, GlueSST2, GlueSTSB, GlueMRPC
-from gluonnlp.data import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
-try:
-    from .baidu_ernie_data import BaiduErnieXNLI, BaiduErnieLCQMC, BaiduErnieChnSentiCorp
-except ImportError:
-    from baidu_ernie_data import BaiduErnieXNLI, BaiduErnieLCQMC, BaiduErnieChnSentiCorp
+from .glue import GlueCoLA, GlueSST2, GlueSTSB, GlueMRPC
+from .glue import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
+from .baidu_ernie_data import BaiduErnieXNLI, BaiduErnieLCQMC, BaiduErnieChnSentiCorp
 
 
 class GlueTask:
@@ -347,3 +344,18 @@ class ChnSentiCorpTask(GlueTask):
             Dataset segments. Options are 'dev', 'test', 'train'
         """
         return BaiduErnieChnSentiCorp(segment)
+
+tasks = {
+    'MRPC': MRPCTask(),
+    'QQP': QQPTask(),
+    'QNLI': QNLITask(),
+    'RTE': RTETask(),
+    'STS-B': STSBTask(),
+    'CoLA': CoLATask(),
+    'MNLI': MNLITask(),
+    'WNLI': WNLITask(),
+    'SST': SSTTask(),
+    'XNLI': XNLITask(),
+    'LCQMC': LCQMCTask(),
+    'ChnSentiCorp': ChnSentiCorpTask()
+}

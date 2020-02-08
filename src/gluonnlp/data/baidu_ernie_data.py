@@ -22,9 +22,9 @@ import os
 import tarfile
 from urllib.request import urlretrieve
 
-from gluonnlp.base import get_home_dir
-from gluonnlp.data.dataset import TSVDataset
-from gluonnlp.data.registry import register
+from ..base import get_home_dir
+from .dataset import TSVDataset
+from .registry import register
 
 _baidu_ernie_data_url = 'https://ernie.bj.bcebos.com/task_data_zh.tgz'
 

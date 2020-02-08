@@ -46,29 +46,12 @@ from mxnet import gluon
 from mxnet.contrib.amp import amp
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
+from gluonnlp.data.classification import tasks
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
 from gluonnlp.calibration import BertLayerCollector
-from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask
-from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
-from data.classification import LCQMCTask, ChnSentiCorpTask
-from data.preprocessing_utils import truncate_seqs_equal, concat_sequences
+from ..data_utils.preprocessing_utils import truncate_seqs_equal, concat_sequences
 
 nlp.utils.check_version('0.9', warning_only=True)
-
-tasks = {
-    'MRPC': MRPCTask(),
-    'QQP': QQPTask(),
-    'QNLI': QNLITask(),
-    'RTE': RTETask(),
-    'STS-B': STSBTask(),
-    'CoLA': CoLATask(),
-    'MNLI': MNLITask(),
-    'WNLI': WNLITask(),
-    'SST': SSTTask(),
-    'XNLI': XNLITask(),
-    'LCQMC': LCQMCTask(),
-    'ChnSentiCorp': ChnSentiCorpTask()
-}
 
 parser = argparse.ArgumentParser(
     description='BERT fine-tune examples for classification/regression tasks.',

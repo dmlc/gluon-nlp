@@ -14,30 +14,10 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
+from gluonnlp.data.classification import tasks
 from model.XLNet_classifier import XLNetClassifier
 from transformer import model
-
-path = sys.path[0]
-sys.path.append(path + '/../bert/data')
-#pylint: disable=wrong-import-position
-from classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask, \
-     QNLITask, CoLATask, MNLITask, WNLITask, XNLITask, LCQMCTask, ChnSentiCorpTask
-from preprocessing_utils import truncate_seqs_equal, concat_sequences
-
-tasks = {
-    'MRPC': MRPCTask(),
-    'QQP': QQPTask(),
-    'QNLI': QNLITask(),
-    'RTE': RTETask(),
-    'STS-B': STSBTask(),
-    'CoLA': CoLATask(),
-    'MNLI': MNLITask(),
-    'WNLI': WNLITask(),
-    'SST': SSTTask(),
-    'XNLI': XNLITask(),
-    'LCQMC': LCQMCTask(),
-    'ChnSentiCorp': ChnSentiCorpTask()
-}
+from ..data_utils.preprocessing_utils import truncate_seqs_equal, concat_sequences
 
 parser = argparse.ArgumentParser(
     description='XLNet fine-tune examples for classification/regression tasks.',

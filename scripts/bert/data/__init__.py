@@ -18,4 +18,4 @@
 # pylint: disable=wildcard-import
 """BERT data."""
 
-from . import classification, embedding, transform
+from . import embedding, transform, dataloader, pretrain

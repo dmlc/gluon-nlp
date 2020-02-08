@@ -124,7 +124,6 @@ class BERTDatasetTransform:
             if self.class_labels:
                 label = self._label_map[label]
             label = np.array([label], dtype=self._label_dtype)
-            return input_ids, segment_ids, valid_length, label
+            return input_ids, valid_length, segment_ids, label
         else:
-            input_ids, valid_length, segment_ids = self._bert_xform(line)
-            return input_ids, segment_ids, valid_length
+            return self._bert_xform(line)
