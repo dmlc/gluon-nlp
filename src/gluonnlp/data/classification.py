@@ -22,7 +22,7 @@ __all__ = [
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
 from .glue import GlueCoLA, GlueSST2, GlueSTSB, GlueMRPC
 from .glue import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
-from .baidu_ernie_data import BaiduErnieXNLI, BaiduErnieLCQMC, BaiduErnieChnSentiCorp
+from .baidu_ernie_data import BaiduErnieXNLI, BaiduErnieChnSentiCorp
 
 
 class GlueTask:
