@@ -103,15 +103,15 @@ class MRPCTask(GlueTask):
     >>> type(MRPC.metrics.get_metric(1))
     <class 'mxnet.metric.F1'>
     >>> MRPC.dataset_train()[0]
-    train
+    'train'
     >>> len(MRPC.dataset_train()[1])
     3668
     >>> MRPC.dataset_dev()[0]
-    dev
+    'dev'
     >>> len(MRPC.dataset_dev()[1])
     408
     >>> MRPC.dataset_test()[0]
-    test
+    'test'
     >>> len(MRPC.dataset_test()[1])
     1725
     """
@@ -146,15 +146,15 @@ class QQPTask(GlueTask):
     >>> type(QQP.metrics.get_metric(1))
     <class 'mxnet.metric.F1'>
     >>> QQP.dataset_train()[0]
-    train
+    'train'
     >>> len(QQP.dataset_train()[1])
     363849
     >>> QQP.dataset_dev()[0]
-    dev
+    'dev'
     >>> len(QQP.dataset_dev()[1])
     40430
     >>> QQP.dataset_test()[0]
-    test
+    'test'
     >>> len(QQP.dataset_test()[1])
     390965
     """
@@ -188,15 +188,15 @@ class RTETask(GlueTask):
     >>> type(RTE.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> RTE.dataset_train()[0]
-    train
+    'train'
     >>> len(RTE.dataset_train()[1])
     2490
     >>> RTE.dataset_dev()[0]
-    dev
+    'dev'
     >>> len(RTE.dataset_dev()[1])
     277
     >>> RTE.dataset_test()[0]
-    test
+    'test'
     >>> len(RTE.dataset_test()[1])
     3000
     """
@@ -227,15 +227,15 @@ class QNLITask(GlueTask):
     >>> type(QNLI.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> QNLI.dataset_train()[0]
-    train
+    'train'
     >>> len(QNLI.dataset_train()[1])
     108436
     >>> QNLI.dataset_dev()[0]
-    dev
+    'dev'
     >>> len(QNLI.dataset_dev()[1])
     5732
     >>> QNLI.dataset_test()[0]
-    test
+    'test'
     >>> len(QNLI.dataset_test()[1])
     5740
     """
@@ -265,15 +265,15 @@ class STSBTask(GlueTask):
     >>> type(STSB.metrics)
     <class 'mxnet.metric.PearsonCorrelation'>
     >>> STSB.dataset_train()[0]
-    train
+    'train'
     >>> len(STSB.dataset_train()[1])
     5749
     >>> STSB.dataset_dev()[0]
-    dev
+    'dev'
     >>> len(STSB.dataset_dev()[1])
     1500
     >>> STSB.dataset_test()[0]
-    test
+    'test'
     >>> len(STSB.dataset_test()[1])
     1379
     """
@@ -304,15 +304,15 @@ class CoLATask(GlueTask):
     >>> type(CoLA.metrics)
     <class 'mxnet.metric.MCC'>
     >>> CoLA.dataset_train()[0]
-    train
+    'train'
     >>> len(CoLA.dataset_train()[1])
     8551
     >>> CoLA.dataset_dev()[0]
-    dev
+    'dev'
     >>> len(CoLA.dataset_dev()[1])
     1043
     >>> CoLA.dataset_test()[0]
-    test
+    'test'
     >>> len(CoLA.dataset_test()[1])
     1063
     """
@@ -343,15 +343,15 @@ class SSTTask(GlueTask):
     >>> type(SST.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> SST.dataset_train()[0]
-    train
+    'train'
     >>> len(SST.dataset_train()[1])
     67349
     >>> SST.dataset_dev()[0]
-    dev
+    'dev'
     >>> len(SST.dataset_dev()[1])
     872
     >>> SST.dataset_test()[0]
-    test
+    'test'
     >>> len(SST.dataset_test()[1])
     1821
     """
@@ -382,15 +382,15 @@ class WNLITask(GlueTask):
     >>> type(WNLI.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> WNLI.dataset_train()[0]
-    train
+    'train'
     >>> len(WNLI.dataset_train()[1])
     635
     >>> WNLI.dataset_dev()[0]
-    dev
+    'dev'
     >>> len(WNLI.dataset_dev()[1])
     71
     >>> WNLI.dataset_test()[0]
-    test
+    'test'
     >>> len(WNLI.dataset_test()[1])
     146
     """
@@ -421,23 +421,23 @@ class MNLITask(GlueTask):
     >>> type(MNLI.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> MNLI.dataset_train()[0]
-    train
+    'train'
     >>> len(MNLI.dataset_train()[1])
     392702
     >>> MNLI.dataset_dev()[0][0]
-    dev_matched
+    'dev_matched'
     >>> len(MNLI.dataset_dev()[0][1])
     9815
     >>> MNLI.dataset_dev()[1][0]
-    dev_mismatched
+    'dev_mismatched'
     >>> len(MNLI.dataset_dev()[1][1])
     9832
     >>> MNLI.dataset_test()[0][0]
-    test_matched
+    'test_matched'
     >>> len(MNLI.dataset_test()[0][1])
     9796
     >>> MNLI.dataset_test()[1][0]
-    test_mismatched
+    'test_mismatched'
     >>> len(MNLI.dataset_test()[1][1])
     9847
     """
@@ -491,15 +491,15 @@ class XNLITask(GlueTask):
     >>> type(XNLI.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> XNLI.dataset_train()[0]
-    train
+    'train'
     >>> len(XNLI.dataset_train()[1])
     392702
     >>> XNLI.dataset_dev()[0]
-    dev
+    'dev'
     >>> len(XNLI.dataset_dev()[1])
     2490
     >>> XNLI.dataset_test()[0]
-    test
+    'test'
     >>> len(XNLI.dataset_test()[1])
     5010
     """
@@ -533,15 +533,15 @@ class ChnSentiCorpTask(GlueTask):
     >>> type(ChnSentiCorp.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> ChnSentiCorp.dataset_train()[0]
-    train
+    'train'
     >>> len(ChnSentiCorp.dataset_train()[1])
     9600
     >>> ChnSentiCorp.dataset_dev()[0]
-    dev
+    'dev'
     >>> len(ChnSentiCorp.dataset_dev()[1])
     1200
     >>> ChnSentiCorp.dataset_test()[0]
-    test
+    'test'
     >>> len(ChnSentiCorp.dataset_test()[1])
     1200
     """
