@@ -8,8 +8,6 @@ __all__ = [
 
 import collections
 import itertools
-import unicodedata
-import numpy as np
 import numpy.ma as ma
 
 
@@ -163,16 +161,16 @@ def tokenize_and_align_positions(origin_text, start_position, end_position, toke
     >>> vocab_tokens = ['is', 'this', 'jack', '##son', '##ville', '?']
     >>> bert_vocab = BERTVocab(count_tokens(vocab_tokens))
     >>> tokenizer = BERTTokenizer(vocab=bert_vocab)
-    >>> start_position, end_position, tokenized_text, orig_to_tok_index, tok_to_orig_index = tokenize_and_align_positions(origin_text, 0, 2, tokenizer)
-    >>> start_position
+    >>> out = tokenize_and_align_positions(origin_text, 0, 2, tokenizer)
+    >>> out[0] # start_position
     0
-    >>> end_position
+    >>> out[1] # end_position
     4
-    >>> tokenized_text
+    >>> out[2] # tokenized_text
     ['is', 'this', 'jack', '##son', '##ville', '?']
-    >>> orig_to_tok_index
+    >>> out[3] # orig_to_tok_index
     [0, 1, 2, 5]
-    >>> tok_to_orig_index
+    >>> out[4] # tok_to_orig_index
     [0, 1, 2, 2, 2, 3]
     """
     orig_to_tok_index = []
@@ -246,10 +244,9 @@ def align_position2doc_spans(positions, doc_spans_indices, offset=0, default_val
     --------
     >>> positions = [2, 6]
     >>> doc_span_indices = [1, 4]
-    >>> default_value = -2
-    >>> align_position2doc_spans(positions, doc_span_indices, default_value=default_value)
+    >>> align_position2doc_spans(positions, doc_span_indices, default_value=-2)
     [-2, -2]
-    >>> align_position2doc_spans(positions, doc_span_indices, default_value=default_value, all_in_span=False)
+    >>> align_position2doc_spans(positions, doc_span_indices, default_value=-2, all_in_span=False)
     [1, -2]
     """
     if not isinstance(positions, list):

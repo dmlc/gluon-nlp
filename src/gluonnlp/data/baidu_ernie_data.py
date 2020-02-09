@@ -69,7 +69,6 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
     Examples
     --------
     >>> xnli_dev = BaiduErnieXNLI('dev', root='./datasets/baidu_ernie_task_data/')
-    -etc-
     >>> len(xnli_dev)
     2490
     >>> len(xnli_dev[0])
@@ -77,7 +76,6 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
     >>> xnli_dev[0]
     ['他说，妈妈，我回来了。', '校车把他放下后，他立即给他妈妈打了电话。', 'neutral']
     >>> xnli_test = BaiduErnieXNLI('test', root='./datasets/baidu_ernie_task_data/')
-    -etc-
     >>> len(xnli_test)
     5010
     >>> len(xnli_test[0])
@@ -123,7 +121,6 @@ class BaiduErnieLCQMC(_BaiduErnieDataset):
     Examples
     --------
     >>> lcqmc_dev = BaiduErnieLCQMC('dev', root='./datasets/baidu_ernie_task_data/')
-    -etc-
     >>> len(lcqmc_dev)
     8802
     >>> len(lcqmc_dev[0])
@@ -131,7 +128,6 @@ class BaiduErnieLCQMC(_BaiduErnieDataset):
     >>> lcqmc_dev[0]
     ['开初婚未育证明怎么弄？', '初婚未育情况证明怎么开？', '1']
     >>> lcqmc_test = BaiduErnieLCQMC('test', root='./datasets/baidu_ernie_task_data/')
-    -etc-
     >>> len(lcqmc_test)
     12500
     >>> len(lcqmc_test[0])
@@ -175,7 +171,6 @@ class BaiduErnieChnSentiCorp(_BaiduErnieDataset):
     Examples
     --------
     >>> chnsenticorp_dev = BaiduErnieChnSentiCorp('dev', root='./datasets/baidu_ernie_task_data/')
-    -etc-
     >>> len(chnsenticorp_dev)
     1200
     >>> len(chnsenticorp_dev[0])
@@ -183,7 +178,6 @@ class BaiduErnieChnSentiCorp(_BaiduErnieDataset):
     >>> chnsenticorp_dev[2]
     ['商品的不足暂时还没发现，京东的订单处理速度实在.......周二就打包完成，周五才发货...', '0']
     >>> chnsenticorp_test = BaiduErnieChnSentiCorp('test', root='./datasets/baidu_ernie_task_data/')
-    -etc-
     >>> len(chnsenticorp_test)
     1200
     >>> len(chnsenticorp_test[0])
