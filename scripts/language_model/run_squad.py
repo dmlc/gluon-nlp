@@ -300,7 +300,7 @@ def convert_examples_to_features(example, tokenizer=None, cls_token=None, sep_to
     # get mapped start/end position
     if is_training and not example.is_impossible:
         start_chartok_pos = convert_index(orig_to_chartok_index, example.start_offset,
-                                           is_start=True)
+                                          is_start=True)
         tok_start_position = chartok_to_tok_index[start_chartok_pos]
 
         end_chartok_pos = convert_index(orig_to_chartok_index, example.end_offset, is_start=False)
