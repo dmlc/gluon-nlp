@@ -1,4 +1,4 @@
-"""Utility classes and functions for data processing"""
+"""Utility classes and functions for data preprocessing"""
 
 __all__ = [
     'truncate_seqs_equal', 'concat_sequences', 'tokenize_and_align_positions', 'get_doc_spans',
@@ -13,19 +13,36 @@ import numpy as np
 import numpy.ma as ma
 
 
-def truncate_seqs_equal(seqs, max_len):
-    """truncate a list of seqs so that the total length equals max length.
+def truncate_seqs_equal(sequences, max_len):
+    """truncate a list of seqs equally so that the total length equals max length.
 
-    Trying to truncate the seqs to equal length.
+    Parameters
+    ----------
+    sequences : list of list of object
+        Sequences of tokens, each of which is an iterable of tokens.
+    max_len : int
+        Max length to be truncated to.
 
     Returns
     -------
     list : list of truncated sequence keeping the origin order
+
+    Examples
+    --------
+    >>> seqs = [[1, 2, 3], [4, 5, 6]]
+    >>> truncate_seqs_equal(seqs, 6)
+    [[1, 2, 3], [4, 5, 6]]
+    >>> seqs = [[1, 2, 3], [4, 5, 6]]
+    >>> truncate_seqs_equal(seqs, 4)
+    [[1, 2], [4, 5]]
+    >>> seqs = [[1, 2, 3], [4, 5, 6]]
+    >>> truncate_seqs_equal(seqs, 3)
+    [[1, 2], [4]]
     """
-    assert isinstance(seqs, list)
-    lens = list(map(len, seqs))
+    assert isinstance(sequences, list)
+    lens = list(map(len, sequences))
     if sum(lens) <= max_len:
-        return seqs
+        return sequences
 
     lens = ma.masked_array(lens, mask=[0] * len(lens))
     while True:
@@ -40,8 +57,8 @@ def truncate_seqs_equal(seqs, max_len):
                 quotient + 1 if i < remainder else quotient for i in range(lens.count())
             ]
             break
-    seqs = [seq[:length] for (seq, length) in zip(seqs, lens.data.tolist())]
-    return seqs
+    sequences = [seq[:length] for (seq, length) in zip(sequences, lens.data.tolist())]
+    return sequences
 
 
 def concat_sequences(seqs, separators, seq_mask=0, separator_mask=1):
@@ -83,13 +100,13 @@ def concat_sequences(seqs, separators, seq_mask=0, separator_mask=1):
 
     Parameters
     ----------
-    seqs : list
+    seqs : list of list of object
         sequences to be concatenated
-    separator : list
+    separator : list of list of object
         The special tokens to separate sequences.
-    seq_mask : int or list
+    seq_mask : int or list of list of int
         A single mask value for all sequence items or a list of values for each item in sequences
-    separator_mask : int or list
+    separator_mask : int or list of list of int
         A single mask value for all separators or a list of values for each separator
 
     Returns
@@ -137,6 +154,26 @@ def tokenize_and_align_positions(origin_text, start_position, end_position, toke
     list: tokenized text
     list: map from the origin index to the tokenized sequence index
     list: map from tokenized sequence index to the origin index
+
+    Examples
+    --------
+    >>> from gluonnlp.vocab import BERTVocab
+    >>> from gluonnlp.data import count_tokens, BERTTokenizer
+    >>> origin_text = ['is', 'this', 'jacksonville', '?']
+    >>> vocab_tokens = ['is', 'this', 'jack', '##son', '##ville', '?']
+    >>> bert_vocab = BERTVocab(count_tokens(vocab_tokens))
+    >>> tokenizer = BERTTokenizer(vocab=bert_vocab)
+    >>> start_position, end_position, tokenized_text, orig_to_tok_index, tok_to_orig_index = tokenize_and_align_positions(origin_text, 0, 2, tokenizer)
+    >>> start_position
+    0
+    >>> end_position
+    4
+    >>> tokenized_text
+    ['is', 'this', 'jack', '##son', '##ville', '?']
+    >>> orig_to_tok_index
+    [0, 1, 2, 5]
+    >>> tok_to_orig_index
+    [0, 1, 2, 2, 2, 3]
     """
     orig_to_tok_index = []
     tok_to_orig_index = []
@@ -190,12 +227,11 @@ def align_position2doc_spans(positions, doc_spans_indices, offset=0, default_val
     ----------
     positions: list or int
         A single or a list of positions to be aligned
-    dic_spans_indices: list or tuple
-        (start_position, end_position)
+    doc_spans_indices: list or tuple
+        Contains the start/end position of the doc_spans. Typically, (start_position, end_position)
     offset: int
-        Offset of aligned positions. Sometimes the doc spans would be added
-        after a question text, in this case, the new position should add
-        len(question_text)
+        Offset of aligned positions. Sometimes the doc spans would be added to the back of
+        a question text, in this case, the new position should add len(question_text).
     default_value: int
         The default value to return if the positions are not in the doc span.
     all_in_span: bool
@@ -205,6 +241,16 @@ def align_position2doc_spans(positions, doc_spans_indices, offset=0, default_val
     Returns
     -------
     list: a list of aligned positions
+
+    Examples
+    --------
+    >>> positions = [2, 6]
+    >>> doc_span_indices = [1, 4]
+    >>> default_value = -2
+    >>> align_position2doc_spans(positions, doc_span_indices, default_value=default_value)
+    [-2, -2]
+    >>> align_position2doc_spans(positions, doc_span_indices, default_value=default_value, all_in_span=False)
+    [1, -2]
     """
     if not isinstance(positions, list):
         positions = [positions]
@@ -386,119 +432,3 @@ def convert_squad_examples(record, is_training):
         start_position=start_position, end_position=end_position, start_offset=answer_offset,
         end_offset=answer_offset + len(orig_answer_text) - 1, is_impossible=is_impossible)
     return example
-
-
-def _preprocess_text(inputs, lower=False, remove_space=True, keep_accents=False):
-    """Remove space, convert to lower case, keep accents.
-
-    Parameters
-    ----------
-    inputs: str
-        input string
-    lower: bool
-        If convert the input string to lower case.
-    remove_space: bool
-        If remove the spaces in the input string.
-    keep_accents: bool
-        If keep accents in the input string.
-    Returns
-    -------
-    str: processed input string
-    """
-    if remove_space:
-        outputs = ' '.join(inputs.strip().split())
-    else:
-        outputs = inputs
-    outputs = outputs.replace('``', '"').replace('\'\'', '"')
-    if not keep_accents:
-        outputs = unicodedata.normalize('NFKD', outputs)
-        outputs = ''.join([c for c in outputs if not unicodedata.combining(c)])
-    if lower:
-        outputs = outputs.lower()
-    return outputs
-
-
-def _convert_index(index, pos, M=None, is_start=True):
-    """Working best with _lcs_match(), convert the token index to origin text index"""
-    if index[pos] is not None:
-        return index[pos]
-    N = len(index)
-    rear = pos
-    while rear < N - 1 and index[rear] is None:
-        rear += 1
-    front = pos
-    while front > 0 and index[front] is None:
-        front -= 1
-    assert index[front] is not None or index[rear] is not None
-    if index[front] is None:
-        if index[rear] >= 1:
-            if is_start:
-                return 0
-            else:
-                return index[rear] - 1
-        return index[rear]
-    if index[rear] is None:
-        if M is not None and index[front] < M - 1:
-            if is_start:
-                return index[front] + 1
-            else:
-                return M - 1
-        return index[front]
-    if is_start:
-        if index[rear] > index[front] + 1:
-            return index[front] + 1
-        else:
-            return index[rear]
-    else:
-        if index[rear] > index[front] + 1:
-            return index[rear] - 1
-        else:
-            return index[front]
-
-
-def _lcs_match(max_dist, seq1, seq2, max_seq_length=1024, lower=False):
-    """Longest common sequence match.
-
-    unlike standard LCS, this is specifically optimized for the setting
-    because the mismatch between sentence pieces and original text will be small
-
-    Parameters
-    ----------
-    max_dist: int
-        The max distance between tokens to be considered.
-    seq1: list
-        The first sequence to be matched.
-    seq2: list
-        The second sequence to be matched.
-    lower: bool
-        If match the lower-cased tokens.
-    Returns
-    -------
-    numpyArray: Token-wise lcs matrix f. Shape of ((max(len(seq1), 1024), max(len(seq2), 1024))
-    Map: The dp path in matrix f.
-        g[(i ,j)] == 2 if token_i in seq1 matches token_j in seq2.
-        g[(i, j)] == 1 if token_i in seq1 matches token_{j-1} in seq2.
-        g[(i, j)] == 0 of token_{i-1} in seq1 matches token_j in seq2.
-    """
-    f = np.zeros((max(len(seq1), max_seq_length), max(len(seq2), max_seq_length)),
-                 dtype=np.float32)
-    g = {}
-    for i, token in enumerate(seq1):
-        for j in range(i - max_dist, i + max_dist):
-            if j >= len(seq2) or j < 0:
-                continue
-
-            if i > 0:
-                g[(i, j)] = 0
-                f[i, j] = f[i - 1, j]
-
-            if j > 0 and f[i, j - 1] > f[i, j]:
-                g[(i, j)] = 1
-                f[i, j] = f[i, j - 1]
-
-            f_prev = f[i - 1, j - 1] if i > 0 and j > 0 else 0
-            if (_preprocess_text(token, lower=lower, remove_space=False) == seq2[j]
-                    and f_prev + 1 > f[i, j]):
-                g[(i, j)] = 2
-                f[i, j] = f_prev + 1
-    return f, g

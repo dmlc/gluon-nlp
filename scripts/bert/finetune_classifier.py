@@ -48,13 +48,9 @@ from mxnet.contrib.amp import amp
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
 from gluonnlp.data.classification import tasks
+from gluonnlp.data.preprocessing_utils import truncate_seqs_equal, concat_sequences
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
 from gluonnlp.calibration import BertLayerCollector
-
-path = sys.path[0]
-sys.path.append(path + '/../data_utils')
-#pylint: disable=wrong-import-position
-from preprocessing_utils import truncate_seqs_equal, concat_sequences
 
 nlp.utils.check_version('0.9', warning_only=True)
 

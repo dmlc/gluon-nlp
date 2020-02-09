@@ -15,13 +15,9 @@ import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 from gluonnlp.data.classification import tasks
+from gluonnlp.data.preprocessing_utils import truncate_seqs_equal, concat_sequences
 from model.XLNet_classifier import XLNetClassifier
 from transformer import model
-
-path = sys.path[0]
-sys.path.append(path + '/../data_utils')
-#pylint: disable=wrong-import-position
-from preprocessing_utils import truncate_seqs_equal, concat_sequences
 
 parser = argparse.ArgumentParser(
     description='XLNet fine-tune examples for classification/regression tasks.',

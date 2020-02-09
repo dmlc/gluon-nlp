@@ -51,16 +51,12 @@ import mxnet as mx
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
+from gluonnlp.data.preprocessing_utils import improve_answer_span, \
+    concat_sequences, tokenize_and_align_positions, get_doc_spans, align_position2doc_spans, \
+    check_is_max_context, convert_squad_examples
 from gluonnlp.calibration import BertLayerCollector
 from model.qa import BertForQALoss, BertForQA
 from bert_qa_evaluate import get_F1_EM, predict, PredResult
-
-path = sys.path[0]
-sys.path.append(path + '/../data_utils')
-#pylint: disable=wrong-import-position
-from preprocessing_utils import improve_answer_span, \
-    concat_sequences, tokenize_and_align_positions, get_doc_spans, align_position2doc_spans, \
-    check_is_max_context, convert_squad_examples
 
 np.random.seed(6)
 random.seed(6)
