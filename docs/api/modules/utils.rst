@@ -36,6 +36,14 @@ Serialization and Deserialization
     save_parameters
     save_states
 
+Setting Seed
+---------------------------------
+
+.. autosummary::
+    :nosignatures:
+
+    set_seed
+
 
 API Reference
 -------------
