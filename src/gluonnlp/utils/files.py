@@ -17,7 +17,7 @@
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 """Utility functions for files."""
 
-__all__ = ['mkdir', 'glob']
+__all__ = ['mkdir', 'glob', 'remove']
 
 import os
 import warnings
@@ -45,8 +45,28 @@ def glob(url, separator=','):
         result.extend(_glob.glob(os.path.expanduser(pattern.strip())))
     return result
 
+def remove(filename):
+    """Remove a file
+
+    Parameters
+    ----------
+    filename : str
+        The name of the target file to remove
+    """
+    if C.S3_PREFIX in filename:
+        msg = 'Removing objects on S3 is not supported: {}'.format(filename)
+        raise NotImplementedError(msg)
+    try:
+        os.remove(filename)
+    except OSError as e:
+        # file has already been removed.
+        if e.errno == 2:
+            pass
+        else:
+            raise e
+
 def mkdir(dirname):
-    """Create directory.
+    """Create a directory.
 
     Parameters
     ----------
@@ -85,7 +105,7 @@ class _TempFilePath:
 def _transfer_file_s3(filename, s3_filename, upload=True):
     """Transfer a file between S3 and local file system."""
     try:
-        import boto3
+        import boto3  # pylint: disable=import-outside-toplevel
     except ImportError:
         raise ImportError('boto3 is required to support s3 URI. Please install'
                           'boto3 via `pip install boto3`')

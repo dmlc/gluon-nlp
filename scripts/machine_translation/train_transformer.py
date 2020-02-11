@@ -57,7 +57,7 @@ np.random.seed(100)
 random.seed(100)
 mx.random.seed(10000)
 
-nlp.utils.check_version('0.7.0')
+nlp.utils.check_version('0.9.0')
 
 parser = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -203,7 +203,7 @@ loss_function.hybridize(static_alloc=static_alloc)
 test_loss_function = MaskedSoftmaxCELoss()
 test_loss_function.hybridize(static_alloc=static_alloc)
 
-rescale_loss = 100
+rescale_loss = 100.
 parallel_model = ParallelTransformer(model, label_smoothing, loss_function, rescale_loss)
 detokenizer = nlp.data.SacreMosesDetokenizer()
 
@@ -317,7 +317,7 @@ def train():
                 if average_param_dict is None:
                     average_param_dict = {k: v.data(ctx[0]).copy() for k, v in
                                           model.collect_params().items()}
-                trainer.step(float(loss_denom) / args.batch_size / 100.0)
+                trainer.step(float(loss_denom) / args.batch_size / rescale_loss)
                 param_dict = model.collect_params()
                 param_dict.zero_grad()
                 if step_num > average_start:
@@ -327,7 +327,7 @@ def train():
             step_loss += sum([L.asscalar() for L in Ls])
             if batch_id % grad_interval == grad_interval - 1 or\
                     batch_id == len(train_data_loader) - 1:
-                log_avg_loss += step_loss / loss_denom * args.batch_size * 100.0
+                log_avg_loss += step_loss / loss_denom * args.batch_size * rescale_loss
                 loss_denom = 0
                 step_loss = 0
             log_wc += src_wc + tgt_wc

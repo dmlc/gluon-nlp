@@ -21,6 +21,7 @@ import os
 import io
 import random
 import warnings
+import threading
 
 from flaky import flaky
 import mxnet as mx
@@ -97,6 +98,7 @@ def test_imdb():
         assert isinstance(data, str)
         assert score == 0
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_mr():
@@ -105,6 +107,7 @@ def test_mr():
     for i, (data, label) in enumerate(all):
         assert isinstance(data, str)
         assert label <= 1
+
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -125,6 +128,7 @@ def test_sst_1():
         assert isinstance(data, str)
         assert label <= 4
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_sst_2():
@@ -144,6 +148,7 @@ def test_sst_2():
         assert isinstance(data, str)
         assert label <= 1
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_subj():
@@ -152,6 +157,7 @@ def test_subj():
     for i, (data, label) in enumerate(all):
         assert isinstance(data, str)
         assert label <= 1
+
 
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -167,6 +173,7 @@ def test_trec():
         assert isinstance(data, str)
         assert label <= 5
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_cr():
@@ -176,6 +183,7 @@ def test_cr():
         assert isinstance(data, str)
         assert label <= 1
 
+
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_mpqa():
@@ -184,6 +192,7 @@ def test_mpqa():
     for i, (data, label) in enumerate(all):
         assert isinstance(data, str)
         assert label <= 1
+
 
 ###############################################################################
 # Word similarity and relatedness datasets
@@ -198,6 +207,7 @@ def _assert_similarity_dataset(data):
     assert all(data.min <= row[2] <= data.max for row in data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [('all', 352), ('relatedness', 252),
                                             ('similarity', 203)])
@@ -213,6 +223,7 @@ def test_wordsim353(segment, length):
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_men():
@@ -222,6 +233,7 @@ def test_men():
         _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -231,6 +243,7 @@ def test_radinsky_mturk():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -240,6 +253,7 @@ def test_verb143():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 def test_verb130():
@@ -248,6 +262,7 @@ def test_verb130():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -257,6 +272,7 @@ def test_rare_words():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -266,6 +282,7 @@ def test_simlex999():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -275,6 +292,7 @@ def test_simverb3500():
     _assert_similarity_dataset(data)
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -289,6 +307,7 @@ def test_semeval17task2():
 ###############################################################################
 # Word analogy datasets
 ###############################################################################
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -298,6 +317,7 @@ def test_googleanalogy():
     assert len(data) == 10675 + 8869
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -310,6 +330,7 @@ def test_bigger_analogy():
 ###############################################################################
 # CONLL
 ###############################################################################
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -330,6 +351,7 @@ def test_conll2000():
         assert all(isinstance(c, str) for c in chk), chk
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -350,6 +372,7 @@ def test_conll2001():
                 assert all(isinstance(i, str) for i in clause), clause
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 15806),
@@ -367,6 +390,7 @@ def test_conll2002_ned(segment, length):
         assert all(isinstance(n, str) for n in ner), ner
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 8323),
@@ -383,6 +407,7 @@ def test_conll2002_esp(segment, length):
         assert all(isinstance(n, str) for n in ner), ner
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.parametrize('segment,length', [
     ('train', 8936),
@@ -401,6 +426,7 @@ def test_conll2004(segment, length):
         assert max(len(f) for f in x) == min(len(f) for f in x), x
 
 
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @flaky(max_runs=2, min_passes=1)
 @pytest.mark.serial
 @pytest.mark.remote_required
@@ -584,11 +610,13 @@ def test_intent_slot(dataset, segment, expected_samples):
     assert len(dataset[0]) == 3
     assert all(len(x[0]) == len(x[1]) for x in dataset)
 
+
 def test_counter():
     x = nlp.data.Counter({'a': 10, 'b': 1, 'c': 1})
     y = x.discard(3, '<unk>')
     assert y['a'] == 10
     assert y['<unk>'] == 2
+
 
 # this test is not tested on CI due to long running time
 def _test_gbw_stream():
@@ -614,6 +642,7 @@ def test_concatenation():
     assert dataset[0] == 1
     assert dataset[5] == 6
 
+
 def test_tsv():
     data =  "a,b,c\n"
     data += "d,e,f\n"
@@ -631,6 +660,7 @@ def test_tsv():
     assert len(dataset) == num_samples
     assert len(dataset[0]) == 2
     assert dataset[1] == [u'g', u'i']
+
 
 def test_numpy_dataset():
     a = np.arange(6).reshape((2,3))
@@ -663,6 +693,7 @@ def test_numpy_dataset():
     assert np.all(dataset[1][1] == b[1])
     dataset_b = dataset.get_field('b')
     assert np.all(dataset_b == b)
+
 
 @pytest.mark.parametrize('cls,name,segment,length,fields', [
     (nlp.data.GlueCoLA, 'cola', 'train', 8551, 2),
@@ -702,6 +733,7 @@ def test_numpy_dataset():
     (nlp.data.GlueMRPC, 'mrpc', 'dev', 408, 3),
     (nlp.data.GlueMRPC, 'mrpc', 'test', 1725, 2),
 ])
+@pytest.mark.skipif(datetime.date.today().weekday() != 0, reason='connection refused')
 @pytest.mark.serial
 @pytest.mark.remote_required
 def test_glue_data(cls, name, segment, length, fields):
@@ -713,3 +745,62 @@ def test_glue_data(cls, name, segment, length, fields):
 
     for i, x in enumerate(dataset):
         assert len(x) == fields, x
+
+@pytest.mark.parametrize('cls,name,segment,length,fields', [
+    (nlp.data.SuperGlueRTE, 'rte', 'train', 2490, 4),
+    (nlp.data.SuperGlueRTE, 'rte', 'val', 277, 4),
+    (nlp.data.SuperGlueRTE, 'rte', 'test', 3000, 3),
+    (nlp.data.SuperGlueCB, 'cb', 'train', 250, 4),
+    (nlp.data.SuperGlueCB, 'cb', 'val', 56, 4),
+    (nlp.data.SuperGlueCB, 'cb', 'test', 250, 3),
+    (nlp.data.SuperGlueWSC, 'wsc', 'train', 554, 4),
+    (nlp.data.SuperGlueWSC, 'wsc', 'val', 104, 4),
+    (nlp.data.SuperGlueWSC, 'wsc', 'test', 146, 3),
+    (nlp.data.SuperGlueWiC, 'wic', 'train', 5428, 10),
+    (nlp.data.SuperGlueWiC, 'wic', 'val', 638, 10),
+    (nlp.data.SuperGlueWiC, 'wic', 'test', 1400, 9),
+    (nlp.data.SuperGlueCOPA, 'copa', 'train', 400, 6),
+    (nlp.data.SuperGlueCOPA, 'copa', 'val', 100, 6),
+    (nlp.data.SuperGlueCOPA, 'copa', 'test', 500, 5),
+    (nlp.data.SuperGlueMultiRC, 'multirc', 'train', 456, 2),
+    (nlp.data.SuperGlueMultiRC, 'multirc', 'val', 83, 2),
+    (nlp.data.SuperGlueMultiRC, 'multirc', 'test', 166, 2),
+    (nlp.data.SuperGlueBoolQ, 'boolq', 'train', 9427, 4),
+    (nlp.data.SuperGlueBoolQ, 'boolq', 'val', 3270, 4),
+    (nlp.data.SuperGlueBoolQ, 'boolq', 'test', 3245, 3),
+    (nlp.data.SuperGlueReCoRD, 'record', 'train', 65709, 4),
+    (nlp.data.SuperGlueReCoRD, 'record', 'val', 7481, 4),
+    (nlp.data.SuperGlueReCoRD, 'record', 'test', 7484, 4),
+    # in AX-b dataset, number of fields may differ
+    (nlp.data.SuperGlueAXb, 'ax_b', None, 1104, None),
+    (nlp.data.SuperGlueAXg, 'ax_g', None, 356, 5),
+])
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_superglue_data(cls, name, segment, length, fields):
+    if segment:
+        dataset = cls(segment=segment, root=os.path.join(
+            'tests', 'externaldata', 'superglue', name))
+    else:
+        dataset = cls(root=os.path.join('tests', 'externaldata', 'superglue', name))
+    assert len(dataset) == length, len(dataset)
+
+    if fields:
+        for i, x in enumerate(dataset):
+            assert len(x) == fields, x
+
+@pytest.mark.serial
+@pytest.mark.remote_required
+def test_parallel_load_pretrained_vocab():
+    def fn(name):
+        root = 'test_parallel_load_pretrained_vocab'
+        _ = nlp.data.utils._load_pretrained_vocab(name, root=root)
+    threads = []
+    name = 'openwebtext_book_corpus_wiki_en_uncased'
+    for _ in range(10):
+        x = threading.Thread(target=fn, args=(name,))
+        threads.append(x)
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()

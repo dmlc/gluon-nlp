@@ -54,7 +54,7 @@ parser.add_argument('--tf_config_name', type=str,
 parser.add_argument('--out_dir',
                     type=str,
                     default=os.path.join('~', 'output'),
-                    help='Path to output folder. The folder must exist.')
+                    help='Path to output folder.')
 parser.add_argument('--debug', action='store_true', help='debugging mode')
 args = parser.parse_args()
 logging.getLogger().setLevel(logging.DEBUG if args.debug else logging.INFO)
@@ -139,7 +139,7 @@ for source_name in tf_names:
 
 # BERT config
 tf_config_names_to_gluon_config_names = {
-    'attention_probs_dropout_prob': 'embed_dropout',
+    'attention_probs_dropout_prob': 'dropout',
     'hidden_act': None,
     'hidden_dropout_prob': 'dropout',
     'hidden_size': 'units',
@@ -196,7 +196,6 @@ bert = BERTModel(encoder, len(vocab),
                  token_type_vocab_size=predefined_args['token_type_vocab_size'],
                  units=predefined_args['units'],
                  embed_size=predefined_args['embed_size'],
-                 embed_dropout=predefined_args['embed_dropout'],
                  word_embed=predefined_args['word_embed'],
                  use_pooler=use_pooler, use_decoder=use_decoder,
                  use_classifier=use_classifier)

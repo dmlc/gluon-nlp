@@ -107,7 +107,7 @@ def compare_transformerxl(args, kwargs, corpus):
 
         loss, mems, last_hidden = model(features_nd, labels_nd, mems)
 
-        loss_p, _, mems_p, all_hidden_p = model_p(features_p, labels_p, mems_p)
+        loss_p, _, mems_p, all_hidden_p = model_p(features_p, mems=mems_p, labels=labels_p)
 
         for i in range(kwargs['num_layers']):
             a_b = mems_p[i][:, 0].numpy() - mems[i][0].asnumpy()
@@ -123,6 +123,7 @@ def compare_transformerxl(args, kwargs, corpus):
         stdev = np.std(a_b)
         print('Loss: Maximum error {err:.2e} at position {pos}. stdev={stdev:.2e}'.format(
             i=i, err=max_error, pos=np.unravel_index(argmax_error, shape=a_b.shape), stdev=stdev))
+        assert max_error < 5e-5
 
 
 if __name__ == '__main__':

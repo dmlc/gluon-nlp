@@ -421,7 +421,7 @@ def train():
         else:
             model.save_parameters('{}.val.params'.format(args.save))
         val_L = evaluate(val_data, val_batch_size, '{}.val.params'.format(args.save), context[0])
-        print('[Epoch %d] time cost %.2fs, valid loss %.2f, valid ppl %.2f，lr %.2f' % (
+        print('[Epoch %d] time cost %.2fs, valid loss %.2f, valid ppl %.2f, lr %.2f' % (
             epoch, time.time() - start_epoch_time, val_L, math.exp(val_L),
             trainer.learning_rate))
 

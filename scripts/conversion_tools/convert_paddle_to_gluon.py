@@ -132,7 +132,7 @@ def extract_weights(args):
         if 'w_0' in ernie_name:
             fluid_array = fluid_array.transpose()
         state_dict[gluon_name] = fluid_array
-        print(f'{ernie_name} -> {gluon_name} {fluid_array.shape}')
+        print('{} -> {} {}'.format(ernie_name, gluon_name, fluid_array.shape))
     print('extract weights done!'.center(60, '='))
     return state_dict
 
@@ -164,7 +164,7 @@ def save_model(new_gluon_parameters, output_dir):
 
     # BERT config
     tf_config_names_to_gluon_config_names = {
-        'attention_probs_dropout_prob': 'embed_dropout',
+        'attention_probs_dropout_prob': 'dropout',
         'hidden_act': None,
         'hidden_dropout_prob': 'dropout',
         'hidden_size': 'units',
@@ -200,7 +200,6 @@ def save_model(new_gluon_parameters, output_dir):
     bert = BERTModel(encoder, len(vocab),
                      token_type_vocab_size=predefined_args['token_type_vocab_size'],
                      units=predefined_args['units'], embed_size=predefined_args['embed_size'],
-                     embed_dropout=predefined_args['embed_dropout'],
                      word_embed=predefined_args['word_embed'], use_pooler=True,
                      use_decoder=False, use_classifier=False)
 

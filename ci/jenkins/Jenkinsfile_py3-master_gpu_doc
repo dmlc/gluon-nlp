@@ -34,18 +34,18 @@ utils.assign_node_labels(linux_gpu: 'linux-gpu', linux_cpu: 'linux-cpu')
 utils.main_wrapper(
 core_logic: {
   utils.parallel_stage('Doc Test', [
-    build_steps.test_doctest('gluon-nlp-cpu-py3', 'cpu/py3',
+    build_steps.test_doctest('gluon-nlp-cpu-py3-master', 'cpu/py3-master',
                  'src/gluonnlp', 'src/gluonnlp', 4)
   ])
 
   // Compile example notebooks, Doctest & Create Website
   node {  // Single node parallelism
-    ws('gluon-nlp-cpu-py3') {
+    ws('gluon-nlp-cpu-py3-master') {
       stage("Prepare conda environment for website") {
         utils.init_git()
         // Require a full environment here due to sphinx build step
         // after compiling and downloading the notebooks
-        sh 'source ci/prepare_clean_env.sh cpu/py3'
+        sh 'source ci/prepare_clean_env.sh cpu/py3-master'
       }
 
       stage("Create Website") {
@@ -67,7 +67,7 @@ core_logic: {
               if (env.BRANCH_NAME.startsWith('PR-')){
                 sh """
                 set +e
-                conda activate ./conda/cpu/py3
+                conda activate ./conda/cpu/py3-master
 
                 python3 ci/batch/submit-job.py --region us-east-1 --wait \
                   --timeout 1800 --saved-output ./docs/examples --conda-env docker/py3 \
@@ -100,7 +100,7 @@ core_logic: {
               } else {
                 sh """
                 set +e
-                conda activate ./conda/cpu/py3
+                conda activate ./conda/cpu/py3-master
 
                 python3 ci/batch/submit-job.py --region us-east-1 --wait \
                   --timeout 1800 --saved-output ./docs/examples --conda-env docker/py3 \
@@ -147,7 +147,7 @@ core_logic: {
           path = env.BRANCH_NAME
         }
         sh """
-        conda activate ./conda/cpu/py3
+        conda activate ./conda/cpu/py3-master
         make docs
         ci/upload_doc.sh ${bucket} ${path}
         """
@@ -156,7 +156,7 @@ core_logic: {
   }
 
   utils.parallel_stage('Documentation', [
-    build_steps.website_linkcheck('gluon-nlp-cpu-py3', 'cpu/py3')
+    build_steps.website_linkcheck('gluon-nlp-cpu-py3-master', 'cpu/py3-master')
   ])
 
   utils.parallel_stage('Deploy', [

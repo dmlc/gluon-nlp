@@ -22,7 +22,7 @@ __all__ = ['ConvolutionalEncoder']
 
 from mxnet import gluon
 from mxnet.gluon import nn
-from gluonnlp.initializer import HighwayBias
+from ..initializer import HighwayBias
 
 from .highway import Highway
 
