@@ -30,7 +30,8 @@ VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
 requirements = [
     'numpy>=1.16.0',
-    'cython'
+    'cython',
+    'packaging'
 ]
 
 setup(
@@ -73,6 +74,7 @@ setup(
             'tqdm',
             'sacremoses',
             'regex',
+            'packaging',
         ],
         'dev': [
             'pytest',

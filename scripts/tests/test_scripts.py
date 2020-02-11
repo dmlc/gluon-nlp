@@ -230,10 +230,12 @@ def test_bert_embedding(use_pretrained):
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
+@pytest.mark.skip_master  # TODO remove once https://github.com/apache/incubator-mxnet/issues/17292 is fixed
 @pytest.mark.parametrize('backend', ['horovod', 'device'])
-def test_bert_pretrain(backend):
+@pytest.mark.parametrize('optimizer', ['bertadam', 'lamb'])
+def test_bert_pretrain(backend, optimizer):
     # test data creation
-    process = subprocess.check_call([sys.executable, './scripts/bert/create_pretraining_data.py',
+    process = subprocess.check_call([sys.executable, './scripts/bert/data/create_pretraining_data.py',
                                      '--input_file', './scripts/bert/sample_text.txt',
                                      '--output_dir', 'test/bert/data',
                                      '--dataset_name', 'book_corpus_wiki_en_uncased',
@@ -249,7 +251,8 @@ def test_bert_pretrain(backend):
                  '--ckpt_dir', './test/bert/ckpt',
                  '--num_steps', '20', '--num_buckets', '1',
                  '--pretrained',
-                 '--comm_backend', backend]
+                 '--comm_backend', backend,
+                 '--optimizer', optimizer]
 
     if backend == 'device':
         arguments += ['--gpus', '0']
@@ -330,8 +333,9 @@ def test_export(task):
 @pytest.mark.integration
 @pytest.mark.parametrize('sentencepiece', [False, True])
 def test_finetune_squad(sentencepiece):
-    arguments = ['--optimizer', 'adam', '--batch_size', '12',
-                 '--gpu', '0', '--epochs', '2', '--debug']
+    arguments = ['--optimizer', 'adam', '--batch_size', '32',
+                 '--gpu', '--epochs', '1', '--debug', '--max_seq_length', '32',
+                 '--max_query_length', '8', '--doc_stride', '384']
     if sentencepiece:
         # the downloaded bpe vocab
         url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
@@ -351,5 +355,69 @@ def test_xlnet_finetune_glue(dataset):
     arguments = ['--batch_size', '32', '--task_name', dataset,
                  '--gpu', '1', '--epochs', '1', '--max_len', '32']
     process = subprocess.check_call([sys.executable, './scripts/language_model/run_glue.py']
+                                    + arguments)
+    time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+def test_bert_ner():
+    folder = './scripts/ner'
+    arguments = ['--train-path', folder + '/dataset_sample/train_sample.txt',
+                 '--dev-path', folder + '/dataset_sample/validation_sample.txt',
+                 '--test-path', folder + '/dataset_sample/test_sample.txt',
+                 '--gpu', '0', '--learning-rate', '1e-5',
+                 '--warmup-ratio', '0', '--batch-size', '1',
+                 '--num-epochs', '1', '--bert-model', 'bert_24_1024_16',
+                 '--save-checkpoint-prefix', './test_bert_ner']
+    script = folder + '/finetune_bert.py'
+    process = subprocess.check_call([sys.executable, script] + arguments)
+    time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+def test_bert_icsl():
+    folder = './scripts/intent_cls_slot_labeling'
+    arguments = ['--gpu', '0', '--dataset', 'atis', '--epochs', '1']
+    script = folder + '/finetune_icsl.py'
+    process = subprocess.check_call([sys.executable, script] + arguments)
+    time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+@pytest.mark.parametrize('dataset', ['MRPC'])
+def test_xlnet_finetune_glue_with_round_to(dataset):
+    arguments = ['--batch_size', '32', '--task_name', dataset,
+                 '--gpu', '1', '--epochs', '1', '--max_len', '32', '--round_to', '8']
+    process = subprocess.check_call([sys.executable, './scripts/language_model/run_glue.py']
+                                    + arguments)
+    time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+def test_finetune_squad_with_round_to():
+    arguments = ['--optimizer', 'adam', '--batch_size', '32',
+                 '--gpu', '--epochs', '1', '--debug', '--max_seq_length', '32',
+                 '--max_query_length', '8', '--doc_stride', '384', '--round_to', '8']
+    process = subprocess.check_call([sys.executable, './scripts/bert/finetune_squad.py']
+                                    + arguments)
+    time.sleep(5)
+
+@pytest.mark.serial
+@pytest.mark.gpu
+@pytest.mark.remote_required
+@pytest.mark.integration
+def test_xlnet_finetune_squad():
+    arguments = ['--optimizer', 'bertadam', '--batch_size', '16',
+                 '--gpu', '1', '--epochs', '1', '--debug', '--max_seq_length', '32',
+                 '--max_query_length', '8', '--doc_stride', '384', '--round_to', '8']
+    process = subprocess.check_call([sys.executable, './scripts/language_model/run_squad.py']
                                     + arguments)
     time.sleep(5)

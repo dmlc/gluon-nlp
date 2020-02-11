@@ -19,6 +19,7 @@
 """NLP toolkit."""
 
 import warnings
+import mxnet
 
 from . import loss
 from . import data
@@ -31,7 +32,7 @@ from . import optimizer
 from . import initializer
 from .vocab import Vocab
 
-__version__ = '0.9.0.dev'
+__version__ = '0.10.0.dev'
 
 __all__ = ['data',
            'model',
@@ -45,3 +46,4 @@ __all__ = ['data',
            'metric']
 
 warnings.filterwarnings(module='gluonnlp', action='default', category=DeprecationWarning)
+utils.version.check_version('1.6.0', warning_only=True, library=mxnet)

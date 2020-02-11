@@ -23,6 +23,7 @@ from mxnet import sym
 
 from ..utils import _get_rnn_layer, apply_weight_drop
 from ..sampled_block import ISDense, SparseISDense
+from ...utils import Parallelizable
 
 class AWDRNN(HybridBlock):
     """AWD language model by salesforce.
@@ -247,6 +248,9 @@ class StandardRNN(HybridBlock):
         self._dropout = dropout
         self._tie_weights = tie_weights
         self._vocab_size = vocab_size
+        self._shared_params = None
+        if 'params' in kwargs:
+            self._shared_params = kwargs['params']
 
         with self.name_scope():
             self.embedding = self._get_embedding()
@@ -270,8 +274,19 @@ class StandardRNN(HybridBlock):
         output = nn.HybridSequential()
         with output.name_scope():
             if self._tie_weights:
-                output.add(nn.Dense(self._vocab_size, flatten=False,
-                                    params=self.embedding[0].params))
+                if self._shared_params is not None:
+                    # self.embedding[0].params do not contain the bias, it
+                    # may leave the decoder bias uninitialized. We resolve this
+                    # issue by creating a new ParameterDict and stuffing
+                    # every shared params into the ParameterDict.
+                    shared_params = self.embedding[0].params
+                    shared_params = ParameterDict(shared_params.prefix)
+                    shared_params.update(self._shared_params)
+                    output.add(nn.Dense(self._vocab_size, flatten=False,
+                                        params=shared_params))
+                else:
+                    output.add(nn.Dense(self._vocab_size, flatten=False,
+                                        params=self.embedding[0].params))
             else:
                 output.add(nn.Dense(self._vocab_size, flatten=False))
         return output
@@ -506,3 +521,46 @@ class BigRNN(Block):
         out = out.reshape((length, batch_size, -1))
         new_target = new_target.reshape((length, batch_size))
         return out, out_states, new_target
+
+class ParallelBigRNN(Parallelizable):
+    """Data parallel BigRNN model for training.
+
+    Parameters
+    ----------
+    model : HybridBlock
+        The RNN model to be parallelized
+    loss_fn : function
+        A function computes the loss of given predictions.
+    batch_size : int
+        Defines the batch size at each iteration
+    ----------
+    """
+    def __init__(self, model, loss_fn, batch_size):
+        self._model = model
+        self._loss = loss_fn
+        self._batch_size = batch_size
+
+    def forward_backward(self, x):
+        """Defines the forward computation.
+
+        Parameters
+        ----------
+        x : tuple
+        It contains the input, target, masked, sampled and hidden states
+
+        Returns
+        ----------
+        hidden : NDArray
+        Next hidden states computed by the parallel model
+        ls : NDArray
+        Loss computed with provided loss function
+        """
+        X, y, m, s, h = x
+        with autograd.record():
+            output, hidden, new_target = self._model(X, y, h, s)
+            output = output.reshape((-3, -1))
+            new_target = new_target.reshape((-1,))
+            ls = self._loss(output, new_target) * m.reshape((-1,))
+            ls = ls / self._batch_size
+            ls.backward()
+        return hidden, ls

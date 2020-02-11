@@ -27,9 +27,7 @@ import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 
-from data.pretrain import BERTSamplerFn, BERTDataLoaderFn
-from data.dataloader import SimpleDatasetFn, DatasetLoader
-from create_pretraining_data import create_training_instances
+from data.create_pretraining_data import create_training_instances
 
 
 __all__ = ['get_model_loss', 'get_pretrain_data_npz', 'get_dummy_dataloader',
@@ -70,7 +68,8 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
     """
     # model
     model, vocabulary = nlp.model.get_model(model, dataset_name=dataset_name, vocab=vocab,
-                                            pretrained=pretrained, ctx=ctx)
+                                            pretrained=pretrained, ctx=ctx,
+                                            hparam_allow_override=True)
 
     if not pretrained:
         model.initialize(init=mx.init.Normal(0.02), ctx=ctx)
@@ -78,7 +77,7 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
 
     if ckpt_dir and start_step:
         param_path = os.path.join(ckpt_dir, '%07d.params'%start_step)
-        nlp.utils.load_parameters(model, param_path, ctx=ctx)
+        nlp.utils.load_parameters(model, param_path, ctx=ctx, cast_dtype=True)
         logging.info('Loading step %d checkpoints from %s.', start_step, param_path)
 
     model.hybridize(static_alloc=True, static_shape=True)
@@ -92,52 +91,62 @@ def get_model_loss(ctx, model, pretrained, dataset_name, vocab, dtype,
     model = BERTForPretrain(model, nsp_loss, mlm_loss, len(vocabulary))
     return model, vocabulary
 
-class BERTPretrainDataset(mx.gluon.data.ArrayDataset):
-    """Dataset for BERT pre-training.
 
-    Each record contains the following numpy ndarrays: input_ids, masked_lm_ids,
-    masked_lm_positions, masked_lm_weights, next_sentence_labels, segment_ids, valid_lengths.
+def prepare_pretrain_npz_dataset(filename, allow_pickle=False):
+    """Create dataset based on the numpy npz file"""
+    if isinstance(filename, (list, tuple)):
+        assert len(filename) == 1, \
+            'When .npy/.npz data file is loaded, len(filename) must be 1.' \
+            ' Received len(filename)={}.'.format(len(filename))
+        filename = filename[0]
+    logging.debug('start to load file %s ...', filename)
+    return nlp.data.NumpyDataset(filename, allow_pickle=allow_pickle)
 
-    Parameters
-    ----------
-    filename : str
-        Path to the input text file.
-    tokenizer : BERTTokenizer
-        The BERTTokenizer
-    max_seq_length : int
-        The hard limit of maximum sequence length of sentence pairs
-    short_seq_prob : float
-        The probability of sampling sequences shorter than the max_seq_length.
-    masked_lm_prob : float
-        The probability of replacing texts with masks/random words/original words.
-    max_predictions_per_seq : int
-        The hard limit of the number of predictions for masked words
-    whole_word_mask : bool
-        Whether to use whole word masking.
-    vocab : BERTVocab
-        The BERTVocab
-    num_workers : int
-        The number of worker processes for dataset contruction.
-    worker_pool : multiprocessing.Pool
-        The worker process pool. Must be provided if num_workers > 1.
-    """
-    def __init__(self, filename, tokenizer, max_seq_length, short_seq_prob,
-                 masked_lm_prob, max_predictions_per_seq, whole_word_mask,
-                 vocab, num_workers=1, worker_pool=None):
-        logging.debug('start to load file %s ...', filename)
-        dupe_factor = 1
-        instances = create_training_instances(([filename], tokenizer, max_seq_length,
-                                               short_seq_prob, masked_lm_prob,
-                                               max_predictions_per_seq,
-                                               whole_word_mask, vocab,
-                                               dupe_factor, num_workers,
-                                               worker_pool, None))
-        super(BERTPretrainDataset, self).__init__(*instances)
+
+def prepare_pretrain_text_dataset(filename, tokenizer, max_seq_length, short_seq_prob,
+                                  masked_lm_prob, max_predictions_per_seq, whole_word_mask,
+                                  vocab, num_workers=1, worker_pool=None):
+    """Create dataset based on the raw text files"""
+    dupe_factor = 1
+    if not isinstance(filename, (list, tuple)):
+        filename = [filename]
+    logging.debug('start to load files %s ...', filename)
+    instances = create_training_instances((filename, tokenizer, max_seq_length,
+                                           short_seq_prob, masked_lm_prob,
+                                           max_predictions_per_seq,
+                                           whole_word_mask, vocab,
+                                           dupe_factor, num_workers,
+                                           worker_pool, None))
+    return mx.gluon.data.ArrayDataset(*instances)
+
+
+def prepare_pretrain_bucket_sampler(dataset, batch_size, shuffle=False,
+                                    num_ctxes=1, num_buckets=1):
+    """Create data sampler based on the dataset"""
+    if isinstance(dataset, nlp.data.NumpyDataset):
+        lengths = dataset.get_field('valid_lengths')
+    else:
+        lengths = dataset.transform(lambda input_ids, segment_ids, masked_lm_positions, \
+                                           masked_lm_ids, masked_lm_weights, \
+                                           next_sentence_labels, valid_lengths: \
+                                        valid_lengths, lazy=False)
+    # calculate total batch size for all GPUs
+    batch_size = batch_size * num_ctxes
+    sampler = nlp.data.FixedBucketSampler(lengths,
+                                          batch_size=batch_size,
+                                          num_buckets=num_buckets,
+                                          ratio=0,
+                                          shuffle=shuffle)
+    logging.debug('Sampler created for a new dataset:\n%s', sampler.stats())
+    return sampler
+
 
 def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle,
                            num_buckets, vocab, tokenizer, max_seq_length, short_seq_prob,
                            masked_lm_prob, max_predictions_per_seq, whole_word_mask,
-                           num_parts=1, part_idx=0, num_workers=1):
+                           num_parts=1, part_idx=0, num_dataset_workers=1, num_batch_workers=1,
+                           circle_length=1, repeat=1,
+                           dataset_cached=False, num_max_dataset_cached=0):
     """Get a data iterator from raw text documents.
 
     Parameters
@@ -168,30 +177,69 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle,
         The number of partitions for the dataset.
     part_idx : int
         The index of the partition to read.
-    num_workers : int
-        The number of worker processes for dataset contruction.
+    num_dataset_workers : int
+        The number of worker processes for dataset construction.
+    num_batch_workers : int
+        The number of worker processes for batch construction.
+    circle_length : int, default is 1
+        The number of files to be read for a single worker at the same time.
+        When circle_length is larger than 1, we merge circle_length files.
+    repeat : int, default is 1
+        The number of times that files are repeated.
+    dataset_cached : bool, default is False
+        Whether or not to cache last processed dataset.
+        Each processed dataset can only be cached for once.
+        When there is no new available processed dataset to be fetched,
+        we pop a cached processed dataset.
+    num_max_dataset_cached : int, default is 0
+        Maximum number of cached datasets. It is valid only if dataset_cached is True
     """
     num_files = len(nlp.utils.glob(data))
     logging.info('%d files are found.', num_files)
     assert num_files >= num_parts, \
-        'The number of training text files must be no less than the number of ' \
+        'The number of text files must be no less than the number of ' \
         'workers/partitions (%d). Only %d files at %s are found.'%(num_parts, num_files, data)
     dataset_params = {'tokenizer': tokenizer, 'max_seq_length': max_seq_length,
                       'short_seq_prob': short_seq_prob, 'masked_lm_prob': masked_lm_prob,
                       'max_predictions_per_seq': max_predictions_per_seq, 'vocab':vocab,
                       'whole_word_mask': whole_word_mask}
-    dataset_fn = SimpleDatasetFn(BERTPretrainDataset, dataset_params)
-    sampler_fn = BERTSamplerFn(batch_size, shuffle, num_ctxes, num_buckets)
-    dataloader_fn = BERTDataLoaderFn(num_ctxes, vocab)
-
-    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
-    dataloader = DatasetLoader(data, split_sampler, dataset_fn, sampler_fn, dataloader_fn,
-                               num_dataset_workers=num_workers)
+    sampler_params = {'batch_size': batch_size, 'shuffle': shuffle,
+                      'num_ctxes': num_ctxes, 'num_buckets': num_buckets}
+    dataset_fn = prepare_pretrain_text_dataset
+    sampler_fn = prepare_pretrain_bucket_sampler
+    pad_val = vocab[vocab.padding_token]
+    batchify_fn = nlp.data.batchify.Tuple(
+        nlp.data.batchify.Pad(pad_val=pad_val, round_to=8),  # input_id
+        nlp.data.batchify.Pad(pad_val=pad_val),  # masked_id
+        nlp.data.batchify.Pad(pad_val=0),  # masked_position
+        nlp.data.batchify.Pad(pad_val=0),  # masked_weight
+        nlp.data.batchify.Stack(),  # next_sentence_label
+        nlp.data.batchify.Pad(pad_val=0, round_to=8),  # segment_id
+        nlp.data.batchify.Stack())
+    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts,
+                                          part_index=part_idx, repeat=repeat)
+    dataloader = nlp.data.DatasetLoader(data,
+                                        file_sampler=split_sampler,
+                                        dataset_fn=dataset_fn,
+                                        batch_sampler_fn=sampler_fn,
+                                        dataset_params=dataset_params,
+                                        batch_sampler_params=sampler_params,
+                                        batchify_fn=batchify_fn,
+                                        num_dataset_workers=num_dataset_workers,
+                                        num_batch_workers=num_batch_workers,
+                                        pin_memory=False,
+                                        circle_length=circle_length,
+                                        dataset_cached=dataset_cached,
+                                        num_max_dataset_cached=num_max_dataset_cached)
     return dataloader
 
 
-def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, num_buckets,
-                          vocab, num_parts=1, part_idx=0, num_workers=1):
+def get_pretrain_data_npz(data, batch_size, num_ctxes,
+                          shuffle, num_buckets,
+                          vocab, num_parts=1, part_idx=0,
+                          num_dataset_workers=1, num_batch_workers=1,
+                          circle_length=1, repeat=1,
+                          dataset_cached=False, num_max_dataset_cached=0):
     """Get a data iterator from pre-processed npz files.
 
     Parameters
@@ -210,23 +258,57 @@ def get_pretrain_data_npz(data, batch_size, num_ctxes, shuffle, num_buckets,
         The number of partitions for the dataset.
     part_idx : int
         The index of the partition to read.
-    num_workers : int
-        The number of worker processes for dataset contruction.
+    num_dataset_workers : int
+        The number of worker processes for dataset construction.
+    num_batch_workers : int
+        The number of worker processes for batch contruction.
+    circle_length : int, default is 1
+        The number of files to be read for a single worker at the same time.
+        When circle_length is larger than 1, we merge circle_length files.
+    repeat : int, default is 1
+        The number of times that files are repeated.
+    dataset_cached : bool, default is False
+        Whether or not to cache last processed dataset.
+        Each processed dataset can only be cached for once.
+        When there is no new available processed dataset to be fetched,
+        we pop a cached processed dataset.
+    num_max_dataset_cached : int, default is 0
+        Maximum number of cached datasets. It is valid only if dataset_cached is True
     """
     num_files = len(nlp.utils.glob(data))
     logging.info('%d files are found.', num_files)
     assert num_files >= num_parts, \
-        'The number of training text files must be no less than the number of ' \
+        'The number of text files must be no less than the number of ' \
         'workers/partitions (%d). Only %d files at %s are found.'%(num_parts, num_files, data)
-    #split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
-    dataset_params = {'allow_pickle' : True}
-    dataset_fn = SimpleDatasetFn(nlp.data.NumpyDataset, dataset_params)
-    sampler_fn = BERTSamplerFn(batch_size, shuffle, num_ctxes, num_buckets)
-    dataloader_fn = BERTDataLoaderFn(num_ctxes, vocab)
-
-    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts, part_index=part_idx)
-    dataloader = DatasetLoader(data, split_sampler, dataset_fn, sampler_fn, dataloader_fn,
-                               num_dataset_workers=num_workers)
+    dataset_params = {'allow_pickle': True}
+    sampler_params = {'batch_size': batch_size, 'shuffle': shuffle,
+                      'num_ctxes': num_ctxes, 'num_buckets': num_buckets}
+    dataset_fn = prepare_pretrain_npz_dataset
+    sampler_fn = prepare_pretrain_bucket_sampler
+    pad_val = vocab[vocab.padding_token]
+    batchify_fn = nlp.data.batchify.Tuple(
+        nlp.data.batchify.Pad(pad_val=pad_val, round_to=8),  # input_id
+        nlp.data.batchify.Pad(pad_val=pad_val),  # masked_id
+        nlp.data.batchify.Pad(pad_val=0),  # masked_position
+        nlp.data.batchify.Pad(pad_val=0),  # masked_weight
+        nlp.data.batchify.Stack(),  # next_sentence_label
+        nlp.data.batchify.Pad(pad_val=0, round_to=8),  # segment_id
+        nlp.data.batchify.Stack())
+    split_sampler = nlp.data.SplitSampler(num_files, num_parts=num_parts,
+                                          part_index=part_idx, repeat=repeat)
+    dataloader = nlp.data.DatasetLoader(data,
+                                        file_sampler=split_sampler,
+                                        dataset_fn=dataset_fn,
+                                        batch_sampler_fn=sampler_fn,
+                                        dataset_params=dataset_params,
+                                        batch_sampler_params=sampler_params,
+                                        batchify_fn=batchify_fn,
+                                        num_dataset_workers=num_dataset_workers,
+                                        num_batch_workers=num_batch_workers,
+                                        pin_memory=False,
+                                        circle_length=circle_length,
+                                        dataset_cached=dataset_cached,
+                                        num_max_dataset_cached=num_max_dataset_cached)
     return dataloader
 
 
@@ -271,7 +353,7 @@ def log_noacc(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, s
     running_nsp_loss = running_nsp_loss / log_interval
     lr = trainer.learning_rate if trainer else 0
     # pylint: disable=line-too-long
-    logging.info('[step {}]\tmlm_loss={:7.5f}\tnsp_loss={:5.2f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/batch'
+    logging.info('[step {}]\tmlm_loss={:7.5f}\tnsp_loss={:5.2f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/step'
                  .format(step_num, running_mlm_loss.asscalar(), running_nsp_loss.asscalar(),
                          throughput.asscalar(), lr, duration, duration*1000/log_interval))
     # pylint: enable=line-too-long
@@ -286,10 +368,11 @@ def log(begin_time, running_num_tks, running_mlm_loss, running_nsp_loss, step_nu
     running_nsp_loss = running_nsp_loss / log_interval
     lr = trainer.learning_rate if trainer else 0
     # pylint: disable=line-too-long
-    logging.info('[step {}]\tmlm_loss={:7.5f}\tmlm_acc={:4.2f}\tnsp_loss={:5.2f}\tnsp_acc={:5.2f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/batch'
+    logging.info('[step {}]\tmlm_loss={:7.5f}\tmlm_acc={:4.2f}\tnsp_loss={:5.2f}\tnsp_acc={:5.2f}\tthroughput={:.1f}K tks/s\tlr={:.7f} time={:.2f}, latency={:.1f} ms/step'
                  .format(step_num, running_mlm_loss.asscalar(), mlm_metric.get()[1] * 100, running_nsp_loss.asscalar(),
                          nsp_metric.get()[1] * 100, throughput.asscalar(), lr, duration, duration*1000/log_interval))
     # pylint: enable=line-too-long
+
 
 def split_and_load(arrs, ctx):
     """split and load arrays to a list of contexts"""
@@ -297,6 +380,7 @@ def split_and_load(arrs, ctx):
     # split and load
     loaded_arrs = [mx.gluon.utils.split_and_load(arr, ctx, even_split=False) for arr in arrs]
     return zip(*loaded_arrs)
+
 
 class BERTForPretrain(mx.gluon.Block):
     """Model for pre-training MLM and NSP with BERT.
@@ -336,6 +420,7 @@ class BERTForPretrain(mx.gluon.Block):
         ls1 = ls1.sum() / num_masks
         ls2 = ls2.mean()
         return classified, decoded, ls1, ls2
+
 
 def evaluate(data_eval, model, ctx, log_interval, dtype):
     """Evaluation function."""
@@ -419,7 +504,7 @@ def generate_dev_set(tokenizer, vocab, cache_file, args):
                                args.short_seq_prob, args.masked_lm_prob,
                                args.max_predictions_per_seq,
                                args.whole_word_mask, vocab,
-                               1, args.num_data_workers,
+                               1, args.num_dataset_workers,
                                worker_pool, cache_file))
     logging.info('Done generating validation set on rank 0.')
 
