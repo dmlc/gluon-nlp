@@ -34,7 +34,8 @@ from mxnet import gluon, autograd, metric
 from mxnet.gluon import HybridBlock
 from mxnet.gluon.data import DataLoader
 from mxnet.gluon.contrib.estimator import Estimator
-from mxnet.gluon.contrib.estimator.event_handler import EarlyStoppingHandler, CheckpointHandler, GradientUpdateHandler
+from mxnet.gluon.contrib.estimator.event_handler import EarlyStoppingHandler, \
+	CheckpointHandler, GradientUpdateHandler
 from mxnet.gluon.contrib.estimator.batch_processor import BatchProcessor
 import gluonnlp as nlp
 
@@ -286,8 +287,9 @@ loss_fn = gluon.loss.SigmoidBCELoss()
 
 
 class FituneLmBatchProcessor(BatchProcessor):
+    """subclass for FituneLm"""
     def __init__(self):
-        pass
+        super().__init__()
 
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):
         data = mx.nd.transpose(val_batch[0][0])
@@ -333,11 +335,12 @@ class FituneLmBatchProcessor(BatchProcessor):
 
 
 class ClipGradientHandler(GradientUpdateHandler):
+    """handler for clipping gradient"""
     def __init__(self, clip=None, **kwargs):
         super().__init__(**kwargs)
         self.clip = clip
 
-    def batch_end(self, estimator, *args, **kwargs):
+    def batch_end(self, estimator, *argss, **kwargs):
         loss = kwargs['loss']
         batch_size = 0
         if not isinstance(loss, list):
