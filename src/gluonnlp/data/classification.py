@@ -49,7 +49,7 @@ class GlueTask:
         self.is_pair = is_pair
         self.label_alias = label_alias
 
-    def get_dataset(self, segment='train'):
+    def get_dataset(self, file_path=None, segment='train'):
         """Get the corresponding dataset for the task.
 
         Parameters
@@ -108,7 +108,6 @@ class MRPCTask(GlueTask):
     >>> len(MRPC.dataset_train()[1])
     3668
     >>> MRPC.dataset_dev()[0]
-    -etc-
     'dev'
     >>> len(MRPC.dataset_dev()[1])
     408
@@ -148,6 +147,7 @@ class QQPTask(GlueTask):
     <class 'mxnet.metric.Accuracy'>
     >>> type(QQP.metrics.get_metric(1))
     <class 'mxnet.metric.F1'>
+    >>> import warnings
     >>> with warnings.catch_warnings():
     ...     # Ignore warnings triggered by invalid entries in GlueQQP dev set
     ...     warnings.simplefilter("ignore")
@@ -564,6 +564,7 @@ class LCQMCTask(GlueTask):
         super(LCQMCTask, self).__init__(class_labels, metric, is_pair)
 
     def get_dataset(self, file_path, segment='train'):
+        # pylint: disable=arguments-differ
         """Get the corresponding dataset for LCQMC.
 
         Parameters
@@ -592,12 +593,10 @@ class ChnSentiCorpTask(GlueTask):
     >>> len(ChnSentiCorp.dataset_train()[1])
     9600
     >>> ChnSentiCorp.dataset_dev()[0]
-    -etc-
     'dev'
     >>> len(ChnSentiCorp.dataset_dev()[1])
     1200
     >>> ChnSentiCorp.dataset_test()[0]
-    -etc-
     'test'
     >>> len(ChnSentiCorp.dataset_test()[1])
     1200

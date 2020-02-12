@@ -290,8 +290,8 @@ def convert_examples_to_features(example, tokenizer=None, cls_token=None, sep_to
     tok_start_to_orig_index = []
     tok_end_to_orig_index = []
     for i in range(len(paragraph_tokenized)): # for each token in the tokenized paragraph
-        start_chartok_pos = tok_start_to_chartok_index[i] # first character's position in origin text
-        end_chartok_pos = tok_end_to_chartok_index[i] # last character's position in origin text
+        start_chartok_pos = tok_start_to_chartok_index[i] # first character's index in origin text
+        end_chartok_pos = tok_end_to_chartok_index[i] # last character's index in origin text
         start_orig_pos = convert_index(chartok_to_orig_index, start_chartok_pos, n, is_start=True)
         end_orig_pos = convert_index(chartok_to_orig_index, end_chartok_pos, m, is_start=False)
 
