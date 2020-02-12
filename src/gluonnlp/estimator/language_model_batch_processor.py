@@ -119,7 +119,7 @@ class ParallelLanguageModelBatchProcessor(BatchProcessor):
             estimator.hiddens[index] = hidden
             Ls.append(ls)
 
-        Ls = [l / (estimator.bptt * len(estimator.context)) for l in Ls]
+        Ls = [l / estimator.bptt for l in Ls]
         Ls = [mx.nd.sum(l) for l in Ls]
         return data, target, None, Ls
 

@@ -21,11 +21,12 @@
 
 import copy
 import warnings
+import time
 
 import mxnet as mx
 from mxnet.gluon.contrib.estimator import TrainBegin, TrainEnd, EpochBegin
 from mxnet.gluon.contrib.estimator import EpochEnd, BatchBegin, BatchEnd
-from mxnet.gluon.contrib.estimator import GradientUpdateHandler
+from mxnet.gluon.contrib.estimator import GradientUpdateHandler, LoggingHandler
 from mxnet.gluon.contrib.estimator import MetricHandler
 from mxnet.gluon.utils import clip_global_norm
 from mxnet.metric import Loss as MetricLoss
@@ -33,7 +34,7 @@ from .length_normalized_loss import LengthNormalizedLoss
 
 __all__ = ['HiddenStateHandler', 'AvgParamHandler', 'LearningRateHandler',
            'RNNGradientUpdateHandler', 'MetricResetHandler',
-           'WordLanguageModelCheckpointHandler',
+           'WordLanguageModelCheckpointHandler', 'ParallelLoggingHandler',
            'LargeRNNGradientUpdateHandler']
 
 class HiddenStateHandler(EpochBegin):
@@ -212,3 +213,25 @@ class WordLanguageModelCheckpointHandler(EpochEnd):
                 estimator.net.save_parameters(self.save)
 
 
+class ParallelLoggingHandler(LoggingHandler):
+    def __init__(self, *args, **kwargs):
+        super(ParallelLoggingHandler, self).__init__(*args, **kwargs)
+
+    def batch_end(self, estimator, *args, **kwargs):
+        if isinstance(self.log_interval, int):
+            batch_time = time.time() - self.batch_start
+            msg = '[Epoch %d][Batch %d]' % (self.current_epoch, self.batch_index)
+            cur_batches = kwargs['batch'][0]
+            for batch in cur_batches:
+                self.processed_samples += batch.shape[0]
+            msg += '[Samples %s]' % (self.processed_samples)
+            self.log_interval_time += batch_time
+            if self.batch_index % self.log_interval == self.log_interval - 1:
+                msg += 'time/interval %.3fs ' % self.log_interval_time
+                self.log_interval_time = 0
+                for metric in self.metrics:
+                    name, val = metric.get()
+                    msg += '%s: %.4f, ' % (name, val)
+                estimator.logger.info(msg.rstrip(', '))
+        self.batch_index += 1
+                
