@@ -149,20 +149,17 @@ class QQPTask(GlueTask):
     <class 'mxnet.metric.F1'>
     >>> import warnings
     >>> with warnings.catch_warnings():
-    ...     # Ignore warnings triggered by invalid entries in GlueQQP train set
+    ...     # Ignore warnings triggered by invalid entries in GlueQQP set
     ...     warnings.simplefilter("ignore")
     ...     QQP.dataset_train()[0]
     -etc-
     'train'
-    >>> len(QQP.dataset_train()[1])
+    ...     len(QQP.dataset_train()[1])
     363849
-    >>> with warnings.catch_warnings():
-    ...     # Ignore warnings triggered by invalid entries in GlueQQP dev set
-    ...     warnings.simplefilter("ignore")
     ...     QQP.dataset_dev()[0]
     -etc-
     'dev'
-    >>> len(QQP.dataset_dev()[1])
+    ...     len(QQP.dataset_dev()[1])
     40430
     >>> QQP.dataset_test()[0]
     -etc-
