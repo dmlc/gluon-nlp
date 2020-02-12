@@ -154,13 +154,6 @@ class QQPTask(GlueTask):
     ...     QQP.dataset_train()[0]
     -etc-
     'train'
-    ...     len(QQP.dataset_train()[1])
-    363849
-    ...     QQP.dataset_dev()[0]
-    -etc-
-    'dev'
-    ...     len(QQP.dataset_dev()[1])
-    40430
     >>> QQP.dataset_test()[0]
     -etc-
     'test'
