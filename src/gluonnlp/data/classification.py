@@ -49,7 +49,7 @@ class GlueTask:
         self.is_pair = is_pair
         self.label_alias = label_alias
 
-    def get_dataset(self, file_path=None, segment='train'):
+    def get_dataset(self, segment='train'):
         """Get the corresponding dataset for the task.
 
         Parameters
