@@ -24,7 +24,7 @@ from . import (batchify, candidate_sampler, conll, corpora, dataloader,
                dataset, question_answering, registry, sampler, sentiment,
                stream, super_glue, transforms, translation, utils,
                word_embedding_evaluation, intent_slot, glue, datasetloader,
-               classification, baidu_ernie_data, preprocessing_utils)
+               classification, baidu_ernie_data, bert, xlnet)
 from .candidate_sampler import *
 from .conll import *
 from .glue import *
@@ -46,7 +46,6 @@ from .intent_slot import *
 from .datasetloader import *
 from .classification import *
 from .baidu_ernie_data import *
-from .preprocessing_utils import *
 from ..base import get_home_dir
 
 __all__ = (['batchify', 'get_tokenizer'] + utils.__all__ + transforms.__all__

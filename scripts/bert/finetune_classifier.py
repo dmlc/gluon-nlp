@@ -47,7 +47,7 @@ from mxnet.contrib.amp import amp
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
 from gluonnlp.data.classification import tasks
-from gluonnlp.data.preprocessing_utils import truncate_seqs_equal, concat_sequences
+from gluonnlp.data.bert import truncate_seqs_equal, concat_sequences
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
 from gluonnlp.calibration import BertLayerCollector
 

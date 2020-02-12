@@ -29,17 +29,19 @@ from .registry import register
 _baidu_ernie_data_url = 'https://ernie.bj.bcebos.com/task_data_zh.tgz'
 
 class _BaiduErnieDataset(TSVDataset):
-    def __init__(self, root, dataset_name, segment, **kwargs):
-        root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
-        self._root = root
-        download_data_path = os.path.join(self._root, 'task_data.tgz')
-        if not os.path.exists(download_data_path):
-            urlretrieve(_baidu_ernie_data_url, download_data_path)
-            tar_file = tarfile.open(download_data_path, mode='r:gz')
-            tar_file.extractall(self._root)
-        filename = os.path.join(self._root, 'task_data', dataset_name, '%s.tsv' % segment)
+    def __init__(self, root=None, dataset_name=None, segment=None, filename=None, **kwargs):
+        assert(filename or (root and dataset_name and segment))
+        if not filename:
+            root = os.path.expanduser(root)
+            if not os.path.isdir(root):
+                os.makedirs(root)
+            self._root = root
+            download_data_path = os.path.join(self._root, 'task_data.tgz')
+            if not os.path.exists(download_data_path):
+                urlretrieve(_baidu_ernie_data_url, download_data_path)
+                tar_file = tarfile.open(download_data_path, mode='r:gz')
+                tar_file.extractall(self._root)
+            filename = os.path.join(self._root, 'task_data', dataset_name, '%s.tsv' % segment)
         super(_BaiduErnieDataset, self).__init__(filename, **kwargs)
 
 
@@ -112,9 +114,8 @@ class BaiduErnieLCQMC(_BaiduErnieDataset):
     ----------
     segment : {'train', 'dev', 'test'}, default 'train'
         Dataset segment.
-    root : str, default '$MXNET_HOME/datasets/baidu_ernie_task_data'
-        Path to temp folder for storing data.
-        MXNET_HOME defaults to '~/.mxnet'.
+    file_path : str
+        Path to the downloaded dataset file.
     return_all_fields : bool, default False
         Return all fields available in the dataset.
 
@@ -135,9 +136,7 @@ class BaiduErnieLCQMC(_BaiduErnieDataset):
     >>> lcqmc_test[0]
     ['谁有狂三这张高清的', '这张高清图，谁有']
     """
-    def __init__(self, segment='train',
-                 root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data'),
-                 return_all_fields=False):
+    def __init__(self, file_path, segment='train', return_all_fields=False):
         A_IDX, B_IDX, LABEL_IDX = 0, 1, 2
         if segment in ['train', 'dev']:
             field_indices = [A_IDX, B_IDX, LABEL_IDX] if not return_all_fields else None
@@ -146,7 +145,7 @@ class BaiduErnieLCQMC(_BaiduErnieDataset):
             field_indices = [A_IDX, B_IDX] if not return_all_fields else None
             num_discard_samples = 1
 
-        super(BaiduErnieLCQMC, self).__init__(root, 'lcqmc', segment,
+        super(BaiduErnieLCQMC, self).__init__(filename=file_path,
                                               num_discard_samples=num_discard_samples,
                                               field_indices=field_indices)
 
@@ -178,6 +177,7 @@ class BaiduErnieChnSentiCorp(_BaiduErnieDataset):
     >>> chnsenticorp_dev[2]
     ['商品的不足暂时还没发现，京东的订单处理速度实在.......周二就打包完成，周五才发货...', '0']
     >>> chnsenticorp_test = BaiduErnieChnSentiCorp('test', root='./datasets/baidu_ernie_task_data/')
+
     >>> len(chnsenticorp_test)
     1200
     >>> len(chnsenticorp_test[0])

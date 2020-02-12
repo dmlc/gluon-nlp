@@ -14,7 +14,7 @@ import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
 from gluonnlp.data.classification import tasks
-from gluonnlp.data.preprocessing_utils import truncate_seqs_equal, concat_sequences
+from gluonnlp.data.bert import truncate_seqs_equal, concat_sequences
 from model.XLNet_classifier import XLNetClassifier
 from transformer import model
 

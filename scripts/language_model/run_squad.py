@@ -21,12 +21,12 @@ import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
-from gluonnlp.data.preprocessing_utils import concat_sequences, get_doc_spans, \
+from gluonnlp.data.bert import concat_sequences, get_doc_spans, \
     check_is_max_context, convert_squad_examples, align_position2doc_spans
+from gluonnlp.data.xlnet import lcs_match, convert_index
 from model.qa import XLNetForQA
 from transformer import model
 from xlnet_qa_evaluate import predict_extended
-from data_utils.qa_utils import lcs_match, convert_index
 parser = argparse.ArgumentParser(description='XLNet QA example.'
                                  'We fine-tune the XLNet model on SQuAD dataset.')
 

@@ -22,7 +22,7 @@ __all__ = [
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
 from .glue import GlueCoLA, GlueSST2, GlueSTSB, GlueMRPC
 from .glue import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
-from .baidu_ernie_data import BaiduErnieXNLI, BaiduErnieChnSentiCorp
+from .baidu_ernie_data import BaiduErnieXNLI, BaiduErnieChnSentiCorp, BaiduErnieLCQMC
 
 
 class GlueTask:
@@ -99,18 +99,22 @@ class MRPCTask(GlueTask):
     >>> MRPC.class_labels
     ['0', '1']
     >>> type(MRPC.metrics.get_metric(0))
+    -etc-
     <class 'mxnet.metric.Accuracy'>
     >>> type(MRPC.metrics.get_metric(1))
     <class 'mxnet.metric.F1'>
     >>> MRPC.dataset_train()[0]
+    -etc-
     'train'
     >>> len(MRPC.dataset_train()[1])
     3668
     >>> MRPC.dataset_dev()[0]
+    -etc-
     'dev'
     >>> len(MRPC.dataset_dev()[1])
     408
     >>> MRPC.dataset_test()[0]
+    -etc-
     'test'
     >>> len(MRPC.dataset_test()[1])
     1725
@@ -146,14 +150,17 @@ class QQPTask(GlueTask):
     >>> type(QQP.metrics.get_metric(1))
     <class 'mxnet.metric.F1'>
     >>> QQP.dataset_train()[0]
+    -etc-
     'train'
     >>> len(QQP.dataset_train()[1])
     363849
     >>> QQP.dataset_dev()[0]
+    -etc-
     'dev'
     >>> len(QQP.dataset_dev()[1])
     40430
     >>> QQP.dataset_test()[0]
+    -etc-
     'test'
     >>> len(QQP.dataset_test()[1])
     390965
@@ -188,14 +195,17 @@ class RTETask(GlueTask):
     >>> type(RTE.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> RTE.dataset_train()[0]
+    -etc-
     'train'
     >>> len(RTE.dataset_train()[1])
     2490
     >>> RTE.dataset_dev()[0]
+    -etc-
     'dev'
     >>> len(RTE.dataset_dev()[1])
     277
     >>> RTE.dataset_test()[0]
+    -etc-
     'test'
     >>> len(RTE.dataset_test()[1])
     3000
@@ -227,14 +237,17 @@ class QNLITask(GlueTask):
     >>> type(QNLI.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> QNLI.dataset_train()[0]
+    -etc-
     'train'
     >>> len(QNLI.dataset_train()[1])
     108436
     >>> QNLI.dataset_dev()[0]
+    -etc-
     'dev'
     >>> len(QNLI.dataset_dev()[1])
     5732
     >>> QNLI.dataset_test()[0]
+    -etc-
     'test'
     >>> len(QNLI.dataset_test()[1])
     5740
@@ -265,14 +278,17 @@ class STSBTask(GlueTask):
     >>> type(STSB.metrics)
     <class 'mxnet.metric.PearsonCorrelation'>
     >>> STSB.dataset_train()[0]
+    -etc-
     'train'
     >>> len(STSB.dataset_train()[1])
     5749
     >>> STSB.dataset_dev()[0]
+    -etc-
     'dev'
     >>> len(STSB.dataset_dev()[1])
     1500
     >>> STSB.dataset_test()[0]
+    -etc-
     'test'
     >>> len(STSB.dataset_test()[1])
     1379
@@ -304,14 +320,17 @@ class CoLATask(GlueTask):
     >>> type(CoLA.metrics)
     <class 'mxnet.metric.MCC'>
     >>> CoLA.dataset_train()[0]
+    -etc-
     'train'
     >>> len(CoLA.dataset_train()[1])
     8551
     >>> CoLA.dataset_dev()[0]
+    -etc-
     'dev'
     >>> len(CoLA.dataset_dev()[1])
     1043
     >>> CoLA.dataset_test()[0]
+    -etc-
     'test'
     >>> len(CoLA.dataset_test()[1])
     1063
@@ -343,14 +362,17 @@ class SSTTask(GlueTask):
     >>> type(SST.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> SST.dataset_train()[0]
+    -etc-
     'train'
     >>> len(SST.dataset_train()[1])
     67349
     >>> SST.dataset_dev()[0]
+    -etc-
     'dev'
     >>> len(SST.dataset_dev()[1])
     872
     >>> SST.dataset_test()[0]
+    -etc-
     'test'
     >>> len(SST.dataset_test()[1])
     1821
@@ -382,14 +404,17 @@ class WNLITask(GlueTask):
     >>> type(WNLI.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> WNLI.dataset_train()[0]
+    -etc-
     'train'
     >>> len(WNLI.dataset_train()[1])
     635
     >>> WNLI.dataset_dev()[0]
+    -etc-
     'dev'
     >>> len(WNLI.dataset_dev()[1])
     71
     >>> WNLI.dataset_test()[0]
+    -etc-
     'test'
     >>> len(WNLI.dataset_test()[1])
     146
@@ -421,22 +446,27 @@ class MNLITask(GlueTask):
     >>> type(MNLI.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> MNLI.dataset_train()[0]
+    -etc-
     'train'
     >>> len(MNLI.dataset_train()[1])
     392702
     >>> MNLI.dataset_dev()[0][0]
+    -etc-
     'dev_matched'
     >>> len(MNLI.dataset_dev()[0][1])
     9815
     >>> MNLI.dataset_dev()[1][0]
+    -etc-
     'dev_mismatched'
     >>> len(MNLI.dataset_dev()[1][1])
     9832
     >>> MNLI.dataset_test()[0][0]
+    -etc-
     'test_matched'
     >>> len(MNLI.dataset_test()[0][1])
     9796
     >>> MNLI.dataset_test()[1][0]
+    -etc-
     'test_mismatched'
     >>> len(MNLI.dataset_test()[1][1])
     9847
@@ -491,14 +521,17 @@ class XNLITask(GlueTask):
     >>> type(XNLI.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> XNLI.dataset_train()[0]
+    -etc-
     'train'
     >>> len(XNLI.dataset_train()[1])
     392702
     >>> XNLI.dataset_dev()[0]
+    -etc-
     'dev'
     >>> len(XNLI.dataset_dev()[1])
     2490
     >>> XNLI.dataset_test()[0]
+    -etc-
     'test'
     >>> len(XNLI.dataset_test()[1])
     5010
@@ -520,6 +553,31 @@ class XNLITask(GlueTask):
         """
         return BaiduErnieXNLI(segment)
 
+class LCQMCTask(GlueTask):
+    """The LCQMC task.
+
+    Note that this dataset is no longer public. You can apply to the dataset owners for LCQMC.
+    http://icrc.hitsz.edu.cn/info/1037/1146.htm
+
+    """
+    def __init__(self):
+        is_pair = True
+        class_labels = ['0', '1']
+        metric = Accuracy()
+        super(LCQMCTask, self).__init__(class_labels, metric, is_pair)
+
+    def get_dataset(self, file_path, segment='train'):
+        """Get the corresponding dataset for LCQMC.
+
+        Parameters
+        ----------
+        file_path : str
+            Path to the dataset file
+        segment : str, default 'train'
+            Dataset segments. Options are 'dev', 'test', 'train'
+        """
+        return BaiduErnieLCQMC(file_path, segment)
+
 class ChnSentiCorpTask(GlueTask):
     """The ChnSentiCorp task using the dataset released from Baidu
 
@@ -533,14 +591,17 @@ class ChnSentiCorpTask(GlueTask):
     >>> type(ChnSentiCorp.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> ChnSentiCorp.dataset_train()[0]
+    -etc-
     'train'
     >>> len(ChnSentiCorp.dataset_train()[1])
     9600
     >>> ChnSentiCorp.dataset_dev()[0]
+    -etc-
     'dev'
     >>> len(ChnSentiCorp.dataset_dev()[1])
     1200
     >>> ChnSentiCorp.dataset_test()[0]
+    -etc-
     'test'
     >>> len(ChnSentiCorp.dataset_test()[1])
     1200
@@ -572,5 +633,6 @@ tasks = {
     'WNLI': WNLITask(),
     'SST': SSTTask(),
     'XNLI': XNLITask(),
+    'LCQMC': LCQMCTask(),
     'ChnSentiCorp': ChnSentiCorpTask()
 }
