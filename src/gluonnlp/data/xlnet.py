@@ -33,42 +33,58 @@ def _preprocess_text(inputs, lower=False, remove_space=True, keep_accents=False)
     return outputs
 
 
-def convert_index(index, pos, M=None, is_start=True):
-    """Working best with _lcs_match(), convert the token index to origin text index"""
-    if index[pos] is not None:
-        return index[pos]
-    N = len(index)
+def convert_index(index_map, pos, M=None, is_start=True):
+    """Working best with lcs_match(), convert the token index to origin text index
+
+    Parameters
+    ----------
+    index_map: list of int
+        Typically, it is a map form origin indices to converted indices
+    pos: int
+        The origin index to be converted.
+    M: int
+        The maximum index.
+    is_start: bool
+        True if pos is a start position.
+
+    Returns
+    -------
+    int : the converted index regarding index_map
+    """
+    if index_map[pos] is not None:
+        return index_map[pos]
+    N = len(index_map)
     rear = pos
-    while rear < N - 1 and index[rear] is None:
+    while rear < N - 1 and index_map[rear] is None:
         rear += 1
     front = pos
-    while front > 0 and index[front] is None:
+    while front > 0 and index_map[front] is None:
         front -= 1
-    assert index[front] is not None or index[rear] is not None
-    if index[front] is None:
-        if index[rear] >= 1:
+    assert index_map[front] is not None or index_map[rear] is not None
+    if index_map[front] is None:
+        if index_map[rear] >= 1:
             if is_start:
                 return 0
             else:
-                return index[rear] - 1
-        return index[rear]
-    if index[rear] is None:
-        if M is not None and index[front] < M - 1:
+                return index_map[rear] - 1
+        return index_map[rear]
+    if index_map[rear] is None:
+        if M is not None and index_map[front] < M - 1:
             if is_start:
-                return index[front] + 1
+                return index_map[front] + 1
             else:
                 return M - 1
-        return index[front]
+        return index_map[front]
     if is_start:
-        if index[rear] > index[front] + 1:
-            return index[front] + 1
+        if index_map[rear] > index_map[front] + 1:
+            return index_map[front] + 1
         else:
-            return index[rear]
+            return index_map[rear]
     else:
-        if index[rear] > index[front] + 1:
-            return index[rear] - 1
+        if index_map[rear] > index_map[front] + 1:
+            return index_map[rear] - 1
         else:
-            return index[front]
+            return index_map[front]
 
 
 def lcs_match(max_dist, seq1, seq2, max_seq_length=1024, lower=False):

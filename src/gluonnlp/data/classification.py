@@ -99,7 +99,6 @@ class MRPCTask(GlueTask):
     >>> MRPC.class_labels
     ['0', '1']
     >>> type(MRPC.metrics.get_metric(0))
-    -etc-
     <class 'mxnet.metric.Accuracy'>
     >>> type(MRPC.metrics.get_metric(1))
     <class 'mxnet.metric.F1'>
@@ -149,6 +148,9 @@ class QQPTask(GlueTask):
     <class 'mxnet.metric.Accuracy'>
     >>> type(QQP.metrics.get_metric(1))
     <class 'mxnet.metric.F1'>
+    >>> with warnings.catch_warnings():
+    ...     # Ignore warnings triggered by invalid entries in GlueQQP dev set
+    ...     warnings.simplefilter("ignore")
     >>> QQP.dataset_train()[0]
     -etc-
     'train'
@@ -456,7 +458,6 @@ class MNLITask(GlueTask):
     >>> len(MNLI.dataset_dev()[0][1])
     9815
     >>> MNLI.dataset_dev()[1][0]
-    -etc-
     'dev_mismatched'
     >>> len(MNLI.dataset_dev()[1][1])
     9832
@@ -466,7 +467,6 @@ class MNLITask(GlueTask):
     >>> len(MNLI.dataset_test()[0][1])
     9796
     >>> MNLI.dataset_test()[1][0]
-    -etc-
     'test_mismatched'
     >>> len(MNLI.dataset_test()[1][1])
     9847
@@ -521,17 +521,14 @@ class XNLITask(GlueTask):
     >>> type(XNLI.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> XNLI.dataset_train()[0]
-    -etc-
     'train'
     >>> len(XNLI.dataset_train()[1])
     392702
     >>> XNLI.dataset_dev()[0]
-    -etc-
     'dev'
     >>> len(XNLI.dataset_dev()[1])
     2490
     >>> XNLI.dataset_test()[0]
-    -etc-
     'test'
     >>> len(XNLI.dataset_test()[1])
     5010
@@ -591,7 +588,6 @@ class ChnSentiCorpTask(GlueTask):
     >>> type(ChnSentiCorp.metrics)
     <class 'mxnet.metric.Accuracy'>
     >>> ChnSentiCorp.dataset_train()[0]
-    -etc-
     'train'
     >>> len(ChnSentiCorp.dataset_train()[1])
     9600

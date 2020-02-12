@@ -57,7 +57,7 @@ __all__ = (['batchify', 'get_tokenizer'] + utils.__all__ + transforms.__all__
            + dataloader.__all__ + candidate_sampler.__all__ + intent_slot.__all__
            + glue.__all__ + super_glue.__all__ + classification.__all__
            + baidu_ernie_data.__all__ + datasetloader.__all__
-           +bert.__all__ + xlnet.__all__)  # pytype: disable=attribute-error
+           + bert.__all__ + xlnet.__all__)  # pytype: disable=attribute-error
 
 
 def get_tokenizer(model_name, dataset_name,

@@ -246,9 +246,9 @@ def convert_examples_to_features(example, tokenizer=None, cls_token=None, sep_to
     #tokenize paragraph and get start/end position of the answer in tokenized paragraph
     paragraph_tokenized = tokenizer(example.paragraph_text)
 
-    chartok_to_tok_index = []
-    tok_start_to_chartok_index = []
-    tok_end_to_chartok_index = []
+    chartok_to_tok_index = [] # char to its corresponding token's index
+    tok_start_to_chartok_index = [] # token index to its first character's index
+    tok_end_to_chartok_index = [] # token index to its last character's index
     char_cnt = 0
     for i, token in enumerate(paragraph_tokenized):
         chartok_to_tok_index.extend([i] * len(token))
@@ -260,6 +260,7 @@ def convert_examples_to_features(example, tokenizer=None, cls_token=None, sep_to
 
     # XLNet takes a more complicated strategy to match the origin text
     # and the tokenized tokens
+    # Get the LCS matching between origin text and token-concatenated text.
     n, m = len(example.paragraph_text), len(tok_cat_text)
     max_dist = abs(n - m) + 5
     for _ in range(2):
@@ -268,6 +269,7 @@ def convert_examples_to_features(example, tokenizer=None, cls_token=None, sep_to
             break
         max_dist *= 2
 
+    # Get the mapping from orgin text/tokenized text to tokenized text/origin text
     orig_to_chartok_index = [None] * n
     chartok_to_orig_index = [None] * m
     i, j = n - 1, m - 1
@@ -286,9 +288,9 @@ def convert_examples_to_features(example, tokenizer=None, cls_token=None, sep_to
     # get start/end mapping
     tok_start_to_orig_index = []
     tok_end_to_orig_index = []
-    for i in range(len(paragraph_tokenized)):
-        start_chartok_pos = tok_start_to_chartok_index[i]
-        end_chartok_pos = tok_end_to_chartok_index[i]
+    for i in range(len(paragraph_tokenized)): # for each token in the tokenized paragraph
+        start_chartok_pos = tok_start_to_chartok_index[i] # first character's position in origin text
+        end_chartok_pos = tok_end_to_chartok_index[i] # last character's position in origin text
         start_orig_pos = convert_index(chartok_to_orig_index, start_chartok_pos, n, is_start=True)
         end_orig_pos = convert_index(chartok_to_orig_index, end_chartok_pos, m, is_start=False)
 

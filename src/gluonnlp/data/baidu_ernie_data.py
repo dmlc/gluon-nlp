@@ -118,23 +118,6 @@ class BaiduErnieLCQMC(_BaiduErnieDataset):
         Path to the downloaded dataset file.
     return_all_fields : bool, default False
         Return all fields available in the dataset.
-
-    Examples
-    --------
-    >>> lcqmc_dev = BaiduErnieLCQMC('dev', root='./datasets/baidu_ernie_task_data/')
-    >>> len(lcqmc_dev)
-    8802
-    >>> len(lcqmc_dev[0])
-    3
-    >>> lcqmc_dev[0]
-    ['开初婚未育证明怎么弄？', '初婚未育情况证明怎么开？', '1']
-    >>> lcqmc_test = BaiduErnieLCQMC('test', root='./datasets/baidu_ernie_task_data/')
-    >>> len(lcqmc_test)
-    12500
-    >>> len(lcqmc_test[0])
-    2
-    >>> lcqmc_test[0]
-    ['谁有狂三这张高清的', '这张高清图，谁有']
     """
     def __init__(self, file_path, segment='train', return_all_fields=False):
         A_IDX, B_IDX, LABEL_IDX = 0, 1, 2
