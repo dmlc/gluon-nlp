@@ -1,6 +1,9 @@
-"""Utility classes and functions for xlnet squad preprocessing"""
+"""Utility functions for xlnet squad preprocessing"""
 
 __all__ = ['convert_index', 'lcs_match']
+
+import unicodedata
+import numpy as np
 
 def _preprocess_text(inputs, lower=False, remove_space=True, keep_accents=False):
     """Remove space, convert to lower case, keep accents.

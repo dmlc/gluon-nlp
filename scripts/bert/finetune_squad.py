@@ -50,8 +50,9 @@ import mxnet as mx
 
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
-from gluonnlp.data.bert import improve_answer_span, \
-    concat_sequences, tokenize_and_align_positions, get_doc_spans, align_position2doc_spans, \
+from gluonnlp.data.bert.glue import concat_sequences
+from gluonnlp.data.bert.squad import improve_answer_span, \
+    tokenize_and_align_positions, get_doc_spans, align_position2doc_spans, \
     check_is_max_context, convert_squad_examples
 from gluonnlp.calibration import BertLayerCollector
 from model.qa import BertForQALoss, BertForQA
