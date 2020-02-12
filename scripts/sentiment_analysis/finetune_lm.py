@@ -288,9 +288,6 @@ loss_fn = gluon.loss.SigmoidBCELoss()
 
 class FituneLmBatchProcessor(BatchProcessor):
     """subclass for FituneLm"""
-    def __init__(self):
-        super().__init__()
-
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):
         data = mx.nd.transpose(val_batch[0][0])
         valid_length = val_batch[0][1].astype(np.float32)
@@ -300,11 +297,11 @@ class FituneLmBatchProcessor(BatchProcessor):
                                                        estimator.context)
         label_list = gluon.utils.split_and_load(label, estimator.context)
         pred = [
-            estimator.eval_net(data, valid_length)
+            estimator.val_net(data, valid_length)
             for data, valid_length in zip(data_list, valid_length_list)
         ]
         loss = [
-            estimator.evaluation_loss(y_hat, y)
+            estimator.val_loss(y_hat, y)
             for y_hat, y in zip(pred, label_list)
         ]
         pre_labels = [(pred_pro > 0.5).reshape(-1, ) for pred_pro in pred]
@@ -340,7 +337,7 @@ class ClipGradientHandler(GradientUpdateHandler):
         super().__init__(**kwargs)
         self.clip = clip
 
-    def batch_end(self, estimator, *argss, **kwargs):
+    def batch_end(self, estimator, *args, **kwargs):## pylint: disable = W0621
         loss = kwargs['loss']
         batch_size = 0
         if not isinstance(loss, list):
