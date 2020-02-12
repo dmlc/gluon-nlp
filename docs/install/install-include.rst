@@ -118,7 +118,7 @@ Select your preferences and run the install command.
            .. code-block:: bash
 
               pip install --pre --upgrade mxnet
-              git clone https://github.com/dmlc/gluon-nlp
+              git clone https://github.com/dmlc/gluon-nlp --branch master
               cd gluon-nlp && python setup.py install --user
 
         .. container:: cuda

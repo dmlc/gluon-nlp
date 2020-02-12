@@ -26,10 +26,9 @@ Word Embedding
 
 .. toctree::
    :hidden:
-   :maxdepth: 1
+   :maxdepth: 2
 
-   word_embedding/word_embedding.ipynb
-   word_embedding/word_embedding_training.ipynb
+   word_embedding/index
 
 
 Language Model
@@ -47,9 +46,9 @@ Language Model
 
 .. toctree::
    :hidden:
-   :maxdepth: 1
+   :maxdepth: 2
 
-   language_model/language_model.ipynb
+   language_model/index
 
 
 Machine Translation
@@ -72,10 +71,9 @@ Machine Translation
 
 .. toctree::
    :hidden:
-   :maxdepth: 1
+   :maxdepth: 2
 
-   machine_translation/gnmt.ipynb
-   machine_translation/transformer.ipynb
+   machine_translation/index
 
 
 Sentence Embedding
@@ -106,11 +104,9 @@ Sentence Embedding
 
 .. toctree::
    :hidden:
-   :maxdepth: 1
+   :maxdepth: 2
 
-   sentence_embedding/elmo_sentence_representation.ipynb
-   sentence_embedding/self_attentive_sentence_embedding.ipynb
-   sentence_embedding/bert.ipynb
+   sentence_embedding/index
 
 
 Sentiment Analysis
@@ -126,9 +122,9 @@ Sentiment Analysis
 
 .. toctree::
    :hidden:
-   :maxdepth: 1
+   :maxdepth: 2
 
-   sentiment_analysis/sentiment_analysis.ipynb
+   sentiment_analysis/index
 
 
 Sequence Sampling
@@ -145,6 +141,6 @@ Sequence Sampling
 
 .. toctree::
    :hidden:
-   :maxdepth: 1
+   :maxdepth: 2
 
-   sequence_sampling/sequence_sampling.ipynb
+   sequence_sampling/index
