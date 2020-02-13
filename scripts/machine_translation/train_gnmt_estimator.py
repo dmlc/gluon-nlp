@@ -50,13 +50,13 @@ from translation import BeamSearchTranslator
 from utils import logging_config
 from bleu import compute_bleu
 import dataprocessor
-from gluonnlp.estimator import MachineTranslationEstimator, LengthNormalizedLoss
+from gluonnlp.metric import LengthNormalizedLoss
+from gluonnlp.estimator import MachineTranslationEstimator
 from gluonnlp.estimator import MTGNMTBatchProcessor, MTGNMTGradientUpdateHandler
 from gluonnlp.estimator import ComputeBleuHandler, ValBleuHandler
 from gluonnlp.estimator import MTTransformerMetricHandler, MTGNMTLearningRateHandler
 from gluonnlp.estimator import MTCheckpointHandler, MTTransformerMetricHandler
-from gluonnlp.estimator import MTValidationHandler
-from mxnet.gluon.contrib.estimator import LoggingHandler
+from mxnet.gluon.contrib.estimator import LoggingHandler, ValidationHandler
 
 np.random.seed(100)
 random.seed(100)
@@ -189,7 +189,7 @@ checkpoint_handler = MTCheckpointHandler(model_dir=args.save_dir)
 
 val_metric_handler = MTTransformerMetricHandler(metrics=gnmt_estimator.val_metrics)
 
-val_validation_handler = MTValidationHandler(val_data=val_data_loader,
+val_validation_handler = ValidationHandler(val_data=val_data_loader,
                                              eval_fn=gnmt_estimator.evaluate,
                                              event_handlers=val_metric_handler)
 
