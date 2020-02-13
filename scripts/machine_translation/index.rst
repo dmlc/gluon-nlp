@@ -10,7 +10,7 @@ Use the following command to train the GNMT model on the IWSLT2015 dataset.
 
 .. code-block:: console
 
-   $ MXNET_GPU_MEM_POOL_TYPE=Round python train_gnmt.py --src_lang en --tgt_lang vi --batch_size 128 \
+   $ MXNET_GPU_MEM_POOL_TYPE=Round python train_gnmt_estimator.py --src_lang en --tgt_lang vi --batch_size 128 \
                    --optimizer adam --lr 0.001 --lr_update_factor 0.5 --beam_size 10 --bucket_scheme exp \
                    --num_hidden 512 --save_dir gnmt_en_vi_l2_h512_beam10 --epochs 12 --gpu 0
 
@@ -23,7 +23,7 @@ Use the following commands to train the Transformer model on the WMT14 dataset f
 
 .. code-block:: console
 
-   $ MXNET_GPU_MEM_POOL_TYPE=Round python train_transformer.py --dataset WMT2014BPE \
+   $ MXNET_GPU_MEM_POOL_TYPE=Round python train_transformer_estimator.py --dataset WMT2014BPE \
                           --src_lang en --tgt_lang de --batch_size 2700 \
                           --optimizer adam --num_accumulated 16 --lr 2.0 --warmup_steps 4000 \
                           --save_dir transformer_en_de_u512 --epochs 30 --gpus 0,1,2,3,4,5,6,7 --scaled \

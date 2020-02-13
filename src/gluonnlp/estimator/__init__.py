@@ -20,8 +20,6 @@
 from .machine_translation_estimator import *
 from .machine_translation_event_handler import *
 from .machine_translation_batch_processor import *
-from .length_normalized_loss import *
 
 __all__ = (machine_translation_estimator.__all__ + machine_translation_event_handler.__all__
-           + machine_translation_batch_processor.__all__
-           + length_normalized_loss.__all__)
+           + machine_translation_batch_processor.__all__)
