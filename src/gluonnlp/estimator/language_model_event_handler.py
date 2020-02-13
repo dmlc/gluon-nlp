@@ -44,7 +44,11 @@ class HiddenStateHandler(EpochBegin):
     def epoch_begin(self, estimator, *args, **kwargs):
         estimator.hiddens = None
         estimator.val_hiddens = None
-    
+
+"""TODO: Implement a general average parameter handler or rename it with
+   NTASGD average parameter handler
+
+"""
 class AvgParamHandler(BatchEnd, EpochEnd):
     def __init__(self, data_length):
         self.epoch_id = 0
@@ -92,6 +96,9 @@ class AvgParamHandler(BatchEnd, EpochEnd):
         self.batch_id = 0
         self.epoch_id += 1
 
+"""TODO: Can we replace learning rate handler with learning rate scheduler
+   Problem: Learning rate scheduler cannot take feedback from each iteration
+"""
 class LearningRateHandler(BatchBegin, BatchEnd, EpochEnd):
     def __init__(self, lr_update_interval=30, lr_update_factor=0.1):
         self.lr_batch_start = 0
@@ -159,6 +166,10 @@ class LargeRNNGradientUpdateHandler(GradientUpdateHandler):
             
         estimator.trainer.step(len(estimator.context))
 
+"""This event handler reset local metrics for each few iterations
+
+   TODO: shall we move the lengthnormalizedloss part out to be an independent handler
+"""
 class MetricResetHandler(BatchBegin, MetricHandler):
     def __init__(self, metrics, log_interval=None):
         super().__init__(metrics=metrics)
