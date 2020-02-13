@@ -22,7 +22,6 @@
 from .language_model_estimator import *
 from .language_model_event_handler import *
 from .language_model_batch_processor import *
-from .loss import *
 
 __all__ = (language_model_estimator.__all__ + language_model_event_handler.__all__ +
-           language_model_batch_processor.__all__ + loss.__all__)
+           language_model_batch_processor.__all__)

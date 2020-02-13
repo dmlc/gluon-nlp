@@ -17,7 +17,7 @@
 
 
 from mxnet import gluon
-from ..loss import ActivationRegularizationLoss, TemporalActivationRegularizationLoss
+from . import ActivationRegularizationLoss, TemporalActivationRegularizationLoss
 
 __all__ = ['JointActivationRegularizationLoss']
 

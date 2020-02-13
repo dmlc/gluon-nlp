@@ -24,7 +24,7 @@ import mxnet as mx
 from mxnet import gluon, autograd
 import gluonnlp as nlp
 from mxnet.gluon.contrib.estimator import LoggingHandler
-from gluonnlp.estimator import JointActivationRegularizationLoss
+from gluonnlp.loss.joint_loss import JointActivationRegularizationLoss
 from gluonnlp.estimator import LanguageModelEstimator
 from gluonnlp.estimator import HiddenStateHandler, AvgParamHandler
 from gluonnlp.estimator import LearningRateHandler, RNNGradientUpdateHandler
