@@ -32,13 +32,13 @@ from mxnet.gluon.contrib.estimator import MetricHandler, LoggingHandler
 from mxnet.gluon.contrib.estimator import ValidationHandler
 from mxnet import gluon
 from mxnet.metric import Loss as MetricLoss
-from .length_normalized_loss import LengthNormalizedLoss
+from ..metric.length_normalized_loss import LengthNormalizedLoss
 
 __all__ = ['MTTransformerParamUpdateHandler', 'TransformerLearningRateHandler',
            'MTTransformerMetricHandler', 'TransformerGradientAccumulationHandler',
            'ComputeBleuHandler', 'ValBleuHandler', 'MTGNMTGradientUpdateHandler',
            'MTGNMTLearningRateHandler', 'MTCheckpointHandler',
-           'MTTransformerLoggingHandler', 'MTValidationHandler']
+           'MTTransformerLoggingHandler']
 
 class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
     def __init__(self, avg_start, grad_interval=1):
@@ -154,6 +154,8 @@ class TransformerGradientAccumulationHandler(GradientUpdateHandler,
         if self.loss_denom > 0:
             self._update_gradient(estimator)
 
+"""TODO: merge this event handler with metricresethandler for language model
+"""
 class MTTransformerMetricHandler(MetricHandler, BatchBegin):
     def __init__(self, *args, grad_interval=None,  **kwargs):
         super(MTTransformerMetricHandler, self).__init__(*args, **kwargs)
@@ -379,19 +381,3 @@ class MTTransformerLoggingHandler(LoggingHandler):
                     msg += '%s: %.4f, ' % (name, val)
                 estimator.logger.info(msg.rstrip(', '))
         self.batch_index += 1
-
-# TODO: change the mxnet validation_handler to include event_handlers
-class MTValidationHandler(ValidationHandler):
-    def __init__(self, event_handlers,  *args, **kwargs):
-        super(MTValidationHandler, self).__init__(*args, **kwargs)
-        self.event_handlers = event_handlers
-
-    def batch_end(self, estimator, *args, **kwargs):
-        self.current_batch += 1
-        if self.batch_period and self.current_batch % self.batch_period == 0:
-            self.eval_fn(val_data=self.val_data, event_handlers=self.event_handlers)
-
-    def epoch_end(self, estimator, *args, **kwargs):
-        self.current_epoch += 1
-        if self.epoch_period and self.current_epoch % self.epoch_period == 0:
-            self.eval_fn(val_data=self.val_data, event_handlers=self.event_handlers)

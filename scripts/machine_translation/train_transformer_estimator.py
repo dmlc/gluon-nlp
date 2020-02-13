@@ -42,8 +42,8 @@ import time
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
-
 import gluonnlp as nlp
+
 from gluonnlp.loss import LabelSmoothing, MaskedSoftmaxCELoss
 from gluonnlp.model.transformer import ParallelTransformer, get_transformer_encoder_decoder
 from gluonnlp.model.translation import NMTModel
@@ -52,12 +52,14 @@ import dataprocessor
 from bleu import _bpe_to_words, compute_bleu
 from translation import BeamSearchTranslator
 from utils import logging_config
-from gluonnlp.estimator import MachineTranslationEstimator, LengthNormalizedLoss
+from gluonnlp.metric import LengthNormalizedLoss
+from gluonnlp.estimator import MachineTranslationEstimator
 from gluonnlp.estimator import MTTransformerBatchProcessor, MTTransformerParamUpdateHandler
 from gluonnlp.estimator import TransformerLearningRateHandler, MTTransformerMetricHandler
 from gluonnlp.estimator import TransformerGradientAccumulationHandler, ComputeBleuHandler
 from gluonnlp.estimator import ValBleuHandler, MTCheckpointHandler
-from gluonnlp.estimator import MTTransformerLoggingHandler, MTValidationHandler
+from gluonnlp.estimator import MTTransformerLoggingHandler
+from mxnet.gluon.contrib.estimator import ValidationHandler
 
 np.random.seed(100)
 random.seed(100)
@@ -288,9 +290,9 @@ checkpoint_handler = MTCheckpointHandler(model_dir=args.save_dir,
 
 val_metric_handler = MTTransformerMetricHandler(metrics=mt_estimator.val_metrics)
 
-val_validation_handler = MTValidationHandler(val_data=val_data_loader,
-                                             eval_fn=mt_estimator.evaluate,
-                                             event_handlers=val_metric_handler)
+val_validation_handler = ValidationHandler(val_data=val_data_loader,
+                                           eval_fn=mt_estimator.evaluate,
+                                           event_handlers=val_metric_handler)
 
 log_interval = args.log_interval * grad_interval
 logging_handler = MTTransformerLoggingHandler(log_interval=log_interval,
