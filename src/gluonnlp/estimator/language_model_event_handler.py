@@ -30,7 +30,7 @@ from mxnet.gluon.contrib.estimator import GradientUpdateHandler, LoggingHandler
 from mxnet.gluon.contrib.estimator import MetricHandler
 from mxnet.gluon.utils import clip_global_norm
 from mxnet.metric import Loss as MetricLoss
-from .length_normalized_loss import LengthNormalizedLoss
+from ..metric.length_normalized_loss import LengthNormalizedLoss
 
 __all__ = ['HiddenStateHandler', 'AvgParamHandler', 'LearningRateHandler',
            'RNNGradientUpdateHandler', 'MetricResetHandler',

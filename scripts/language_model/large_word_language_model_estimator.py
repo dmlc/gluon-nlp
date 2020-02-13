@@ -35,7 +35,7 @@ from gluonnlp.estimator import LargeRNNGradientUpdateHandler
 from gluonnlp.estimator import WordLanguageModelCheckpointHandler
 from gluonnlp.estimator import LanguageModelEstimator
 from gluonnlp.estimator import ParallelLoggingHandler
-from gluonnlp.estimator.length_normalized_loss import LengthNormalizedLoss
+from gluonnlp.metric.length_normalized_loss import LengthNormalizedLoss
 
 curr_path = os.path.dirname(os.path.abspath(os.path.expanduser(__file__)))
 sys.path.append(os.path.join(curr_path, '..', '..'))

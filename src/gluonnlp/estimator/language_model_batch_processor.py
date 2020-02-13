@@ -23,7 +23,7 @@ import mxnet as mx
 from mxnet.gluon.contrib.estimator import BatchProcessor
 from mxnet.gluon.utils import split_and_load
 from ..utils import Parallel
-from .parallel_language_model import ParallelBigRNN
+from ..model.train.language_model import ParallelBigRNN
 
 __all__ = ['LanguageModelBatchProcessor', 'ParallelLanguageModelBatchProcessor']
 
