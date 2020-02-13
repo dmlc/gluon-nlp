@@ -47,35 +47,35 @@ The dataset used for training the models is wikitext-2.
 
 For all the above model settings, we set Tied = True and NTASGD = True .
 
-[1] awd_lstm_lm_1150_wikitext-2 (Val PPL 68.71 Test PPL 65.62 )
+[1] awd_lstm_lm_1150_wikitext-2 (Val PPL 68.52 Test PPL 65.68 )
 
 .. code-block:: console
 
-   $ python word_language_model.py --gpu 0 --tied --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save awd_lstm_lm_1150_wikitext-2
+   $ python word_language_model_estimator.py --gpu 0 --tied --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save awd_lstm_lm_1150_wikitext-2
 
-[2] awd_lstm_lm_600_wikitext-2 (Val PPL 84.89 Test PPL 80.67)
-
-.. code-block:: console
-
-   $ python word_language_model.py --gpu 0 --emsize 200 --nhid 600 --epochs 750 --dropout 0.2 --dropout_h 0.1 --dropout_i 0.3 --dropout_e 0.05 --weight_drop 0.2 --tied --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save awd_lstm_lm_600_wikitext-2
-
-[3] standard_lstm_lm_1500_wikitext-2 (Val PPL 86.51 Test PPL 82.29)
+[2] awd_lstm_lm_600_wikitext-2 (Val PPL 83.92 Test PPL 80.09)
 
 .. code-block:: console
 
-   $ python word_language_model.py --gpu 0 --emsize 1500 --nhid 1500 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.65 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save standard_lstm_lm_1500_wikitext-2
+   $ python word_language_model_estimator.py --gpu 0 --emsize 200 --nhid 600 --epochs 750 --dropout 0.2 --dropout_h 0.1 --dropout_i 0.3 --dropout_e 0.05 --weight_drop 0.2 --tied --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save awd_lstm_lm_600_wikitext-2
 
-[4] standard_lstm_lm_650_wikitext-2 (Val PPL 90.96 Test PPL 86.91)
-
-.. code-block:: console
-
-   $ python word_language_model.py --gpu 0 --emsize 650 --nhid 650 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.5 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save standard_lstm_lm_650_wikitext-2
-
-[5] standard_lstm_lm_200_wikitext-2 (Val PPL 107.59 Test PPL 101.64)
+[3] standard_lstm_lm_1500_wikitext-2 (Val PPL 85.23 Test PPL 81.44)
 
 .. code-block:: console
 
-   $ python word_language_model.py --gpu 0 --emsize 200 --nhid 200 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.2 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save standard_lstm_lm_200_wikitext-2
+   $ python word_language_model_estimator.py --gpu 0 --emsize 1500 --nhid 1500 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.65 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save standard_lstm_lm_1500_wikitext-2
+
+[4] standard_lstm_lm_650_wikitext-2 (Val PPL 94.51 Test PPL 90.28)
+
+.. code-block:: console
+
+   $ python word_language_model_estimator.py --gpu 0 --emsize 650 --nhid 650 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.5 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save standard_lstm_lm_650_wikitext-2
+
+[5] standard_lstm_lm_200_wikitext-2 (Val PPL 107.44 Test PPL 101.19)
+
+.. code-block:: console
+
+   $ python word_language_model_estimator.py --gpu 0 --emsize 200 --nhid 200 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.2 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save standard_lstm_lm_200_wikitext-2
 
 Cache Language Model
 ~~~~~~~~~~~~~~~~~~~~~
@@ -181,8 +181,8 @@ The dataset used for training the models is Google's 1 billion words dataset.
 
 .. code-block:: console
 
-   $ python large_word_language_model.py --gpus 0,1,2,3 --clip=10
-   $ python large_word_language_model.py --gpus 4 --eval-only --batch-size=1
+   $ python large_word_language_model_estimator.py --gpus 0,1,2,3 --clip=10
+   $ python large_word_language_model_estimator.py --gpus 4 --eval-only --batch-size=1
 
 
 XLNet: Generalized Autoregressive Pretraining for Language Understanding
