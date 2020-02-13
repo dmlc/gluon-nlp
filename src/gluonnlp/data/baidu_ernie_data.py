@@ -28,9 +28,10 @@ from .registry import register
 
 _baidu_ernie_data_url = 'https://ernie.bj.bcebos.com/task_data_zh.tgz'
 
+
 class _BaiduErnieDataset(TSVDataset):
     def __init__(self, root=None, dataset_name=None, segment=None, filename=None, **kwargs):
-        assert(filename or (root and dataset_name and segment))
+        assert (filename or (root and dataset_name and segment))
         if not filename:
             root = os.path.expanduser(root)
             if not os.path.isdir(root):
@@ -52,11 +53,11 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
 
     Original from:
     Conneau, Alexis, et al. "Xnli: Evaluating cross-lingual sentence representations."
-        arXiv preprint arXiv:1809.05053 (2018).
-        https://github.com/facebookresearch/XNLI
+    arXiv preprint arXiv:1809.05053 (2018).
+    https://github.com/facebookresearch/XNLI
 
     Licensed under a Creative Commons Attribution-NonCommercial 4.0 International License.
-        License details: https://creativecommons.org/licenses/by-nc/4.0/
+    License details: https://creativecommons.org/licenses/by-nc/4.0/
 
     Parameters
     ----------
@@ -85,8 +86,8 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
     >>> xnli_test[0]
     ['嗯，我根本没想过，但是我很沮丧，最后我又和他说话了。', '我还没有和他再次谈论。']
     """
-    def __init__(self, segment='train',
-                 root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data'),
+    def __init__(self, segment='train', root=os.path.join(get_home_dir(), 'datasets',
+                                                          'baidu_ernie_data'),
                  return_all_fields=False):
         A_IDX, B_IDX, LABEL_IDX = 0, 1, 2
         if segment in ['train', 'dev']:
@@ -96,9 +97,10 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
             field_indices = [A_IDX, B_IDX] if not return_all_fields else None
             num_discard_samples = 1
 
-        super(BaiduErnieXNLI, self).__init__(root, 'xnli', segment,
-                                             num_discard_samples=num_discard_samples,
-                                             field_indices=field_indices)
+        super(BaiduErnieXNLI,
+              self).__init__(root, 'xnli', segment, num_discard_samples=num_discard_samples,
+                             field_indices=field_indices)
+
 
 @register(segment=['train', 'dev', 'test'])
 class BaiduErnieLCQMC(_BaiduErnieDataset):
@@ -128,9 +130,9 @@ class BaiduErnieLCQMC(_BaiduErnieDataset):
             field_indices = [A_IDX, B_IDX] if not return_all_fields else None
             num_discard_samples = 1
 
-        super(BaiduErnieLCQMC, self).__init__(filename=file_path,
-                                              num_discard_samples=num_discard_samples,
-                                              field_indices=field_indices)
+        super(BaiduErnieLCQMC,
+              self).__init__(filename=file_path, num_discard_samples=num_discard_samples,
+                             field_indices=field_indices)
 
 
 @register(segment=['train', 'dev', 'test'])
@@ -168,8 +170,8 @@ class BaiduErnieChnSentiCorp(_BaiduErnieDataset):
     >>> chnsenticorp_test[0]
     ['这个宾馆比较陈旧了，特价的房间也很一般。总体来说一般']
     """
-    def __init__(self, segment='train',
-                 root=os.path.join(get_home_dir(), 'datasets', 'baidu_ernie_data'),
+    def __init__(self, segment='train', root=os.path.join(get_home_dir(), 'datasets',
+                                                          'baidu_ernie_data'),
                  return_all_fields=False):
         LABEL_IDX, A_IDX = 0, 1
         if segment in ['train', 'dev']:
@@ -179,6 +181,6 @@ class BaiduErnieChnSentiCorp(_BaiduErnieDataset):
             field_indices = [A_IDX] if not return_all_fields else None
             num_discard_samples = 1
 
-        super(BaiduErnieChnSentiCorp, self).__init__(root, 'chnsenticorp', segment,
-                                                     num_discard_samples=num_discard_samples,
-                                                     field_indices=field_indices)
+        super(BaiduErnieChnSentiCorp,
+              self).__init__(root, 'chnsenticorp', segment,
+                             num_discard_samples=num_discard_samples, field_indices=field_indices)

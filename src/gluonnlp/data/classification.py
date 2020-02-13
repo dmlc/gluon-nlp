@@ -16,7 +16,7 @@
 
 __all__ = [
     'MRPCTask', 'QQPTask', 'QNLITask', 'RTETask', 'STSBTask',
-    'CoLATask', 'MNLITask', 'WNLITask', 'SSTTask', 'XNLITask', 'tasks'
+    'CoLATask', 'MNLITask', 'WNLITask', 'SSTTask', 'XNLITask', 'get_task'
 ]
 
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
@@ -610,17 +610,35 @@ class ChnSentiCorpTask(GlueTask):
         """
         return BaiduErnieChnSentiCorp(segment)
 
-tasks = {
-    'MRPC': MRPCTask(),
-    'QQP': QQPTask(),
-    'QNLI': QNLITask(),
-    'RTE': RTETask(),
-    'STS-B': STSBTask(),
-    'CoLA': CoLATask(),
-    'MNLI': MNLITask(),
-    'WNLI': WNLITask(),
-    'SST': SSTTask(),
-    'XNLI': XNLITask(),
-    'LCQMC': LCQMCTask(),
-    'ChnSentiCorp': ChnSentiCorpTask()
-}
+def get_task(task):
+    """Returns a pre-defined glue task by name.
+
+    Parameters
+    ----------
+    task : str
+        Options include 'MRPC', 'QNLI', 'RTE', 'STS-B', 'CoLA',
+        'MNLI', 'WNLI', 'SST', 'XNLI', 'LCQMC', 'ChnSentiCorp'
+
+    Returns
+    -------
+    GlueTask
+    """
+    tasks = {
+    'mrpc': MRPCTask(),
+    'qqp': QQPTask(),
+    'qnli': QNLITask(),
+    'rte': RTETask(),
+    'sts-b': STSBTask(),
+    'cola': CoLATask(),
+    'mnli': MNLITask(),
+    'wnli': WNLITask(),
+    'sst': SSTTask(),
+    'xnli': XNLITask(),
+    'lcqmc': LCQMCTask(),
+    'chnsenticorp': ChnSentiCorpTask()
+    }
+    if task.lower() not in tasks:
+        raise ValueError(
+            'Task name %s is not supported. Available options are\n\t%s'%(
+                task, '\n\t'.join(sorted(tasks.keys()))))
+    return tasks[task.lower()].copy()

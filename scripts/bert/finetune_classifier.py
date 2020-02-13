@@ -46,7 +46,7 @@ from mxnet import gluon
 from mxnet.contrib.amp import amp
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
-from gluonnlp.data.classification import tasks
+from gluonnlp.data.classification import get_task
 from gluonnlp.data.bert.glue import truncate_seqs_equal, concat_sequences
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
 from gluonnlp.calibration import BertLayerCollector
@@ -221,7 +221,7 @@ mx.random.seed(args.seed)
 
 ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 
-task = tasks[task_name]
+task = get_task(task_name)
 
 # data type with mixed precision training
 if args.dtype == 'float16':

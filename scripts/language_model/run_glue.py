@@ -13,7 +13,7 @@ import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
-from gluonnlp.data.classification import tasks
+from gluonnlp.data.classification import get_task
 from gluonnlp.data.bert.glue import truncate_seqs_equal, concat_sequences
 from model.XLNet_classifier import XLNetClassifier
 from transformer import model
@@ -330,7 +330,7 @@ mx.random.seed(args.seed)
 num_workers = 0
 ctxs = [mx.cpu(0)] if not args.gpu else [mx.gpu(i) for i in range(args.gpu)]
 
-task = tasks[args.task_name]
+task = get_task(args.task_name)
 
 # model and loss
 if args.only_inference and not args.model_parameters:
