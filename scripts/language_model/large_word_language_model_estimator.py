@@ -20,6 +20,8 @@ import math
 import os
 import sys
 import argparse
+import re
+
 import numpy as np
 import mxnet as mx
 from mxnet import gluon, autograd
@@ -229,7 +231,9 @@ lm_estimator.val_net.initialize(mx.init.Xavier(), ctx=context[0])
 lm_estimator.val_net.hybridize(static_alloc=True, static_shape=True)
 
 for epoch_id in range(args.epochs):
-    total_batch = 78028
-    checkpoint_path = args.save + '/largeRNN-epoch%dbatch%d.params' % (epoch_id, total_batch)
-    lm_estimator.val_net.load_parameters(checkpoint_path)
-    lm_estimator.evaluate(val_data=test_data, event_handlers=[val_metric_handler, val_logging_handler])
+    for filename in os.listdir(args.save):
+        file_pattern = 'largeRNN-epoch%dbatch\d+.params' % (epoch_id)
+        if re.match(file_pattern + '',filename):
+            checkpoint_path = args.save + '/' + filename
+            lm_estimator.val_net.load_parameters(checkpoint_path)
+            lm_estimator.evaluate(val_data=test_data, event_handlers=[val_metric_handler, val_logging_handler])
