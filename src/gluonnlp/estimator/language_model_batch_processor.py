@@ -62,7 +62,6 @@ class LanguageModelBatchProcessor(BatchProcessor):
         return data, target, outputs, Ls
 
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):
-        batch_axis = 1 #temporary work around, removed after estimator is fixed
         data = val_batch[:-1]
         target = val_batch[1:]
         batch_size = val_batch.shape[batch_axis]
