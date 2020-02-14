@@ -15,15 +15,17 @@
 # specific language governing permissions and limitations
 # under the License.
 
+""" word language model training script """
+
 import argparse
-import time
-import math
 import os
 import sys
+
 import mxnet as mx
-from mxnet import gluon, autograd
-import gluonnlp as nlp
+from mxnet import gluon
 from mxnet.gluon.contrib.estimator import LoggingHandler
+from mxnet.gluon.data.sampler import BatchSampler
+import gluonnlp as nlp
 from gluonnlp.loss.joint_loss import JointActivationRegularizationLoss
 from gluonnlp.estimator import LanguageModelEstimator
 from gluonnlp.estimator import HiddenStateHandler, AvgParamHandler
@@ -31,10 +33,24 @@ from gluonnlp.estimator import LearningRateHandler, RNNGradientUpdateHandler
 from gluonnlp.estimator import WordLanguageModelCheckpointHandler
 from gluonnlp.estimator import LanguageModelBatchProcessor
 from gluonnlp.estimator import MetricResetHandler
-from mxnet.gluon.data.sampler import BatchSampler
+
 
 class BatchVariableLenTextSampler(BatchSampler):
+    """Sample text of variable length
+
+    Generate batch of text of variable length from the training dataset
+
+    Parameters
+    ----------
+    bptt : int
+        bptt variable
+    length : int
+        base sequence length for sampling
+    use_variable_length : bool
+        generate sequence of variable length or not
+    """
     def __init__(self, bptt, length, use_variable_length=True):
+        super(BatchVariableLenTextSampler, self).__init__()
         self.bptt = bptt
         self.length = length
         self.index = 0
@@ -192,19 +208,6 @@ model.hybridize(static_alloc=True)
 
 print(model)
 
-
-def check_initialized(net):
-    params = net.collect_params()
-    for param in params:
-        try:
-            params[param].list_ctx()
-        except RuntimeError:
-            return False
-    return True
-    
-print(check_initialized(model))
-print(check_initialized(model_eval))
-                                    
 if args.optimizer == 'sgd':
     trainer_params = {'learning_rate': args.lr,
                       'momentum': 0,
@@ -243,11 +246,15 @@ est = LanguageModelEstimator(net=model, loss=train_loss,
                              val_loss=loss,
                              val_net=model_eval,
                              batch_processor=batch_processor)
-event_handlers = [HiddenStateHandler(), AvgParamHandler(data_length=len(train_data)),
-                  LearningRateHandler(lr_update_interval=args.lr_update_interval, lr_update_factor=args.lr_update_factor),
+event_handlers = [HiddenStateHandler(),
+                  AvgParamHandler(data_length=len(train_data)),
+                  LearningRateHandler(lr_update_interval=args.lr_update_interval,
+                                      lr_update_factor=args.lr_update_factor),
                   RNNGradientUpdateHandler(clip=args.clip),
-                  LoggingHandler(log_interval=args.log_interval, metrics=est.train_metrics + est.val_metrics),
-                  MetricResetHandler(metrics=est.train_metrics, log_interval=args.log_interval),
+                  LoggingHandler(log_interval=args.log_interval,
+                                 metrics=est.train_metrics + est.val_metrics),
+                  MetricResetHandler(metrics=est.train_metrics,
+                                     log_interval=args.log_interval),
                   WordLanguageModelCheckpointHandler(args.save)]
 est.fit(train_data=train_data_loader, val_data=val_data_loader,
         epochs=args.epochs,
