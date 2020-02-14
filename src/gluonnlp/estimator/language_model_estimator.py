@@ -25,7 +25,7 @@ from .language_model_batch_processor import LanguageModelBatchProcessor
 __all__ = ['LanguageModelEstimator']
 
 class LanguageModelEstimator(Estimator):
-    '''Language Model Estimator
+    """Language Model Estimator
 
     Estimator class to facilitate the language model training and validation process
 
@@ -56,7 +56,7 @@ class LanguageModelEstimator(Estimator):
     bptt : int
         bptt value for the language model training. It decides how many time steps
         to backpropate
-    '''
+    """
     def __init__(self, net, loss, train_metrics=None,
                  val_metrics=None,
                  initializer=None,

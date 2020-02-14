@@ -36,10 +36,10 @@ __all__ = ['HiddenStateHandler', 'AvgParamHandler', 'LearningRateHandler',
            'LargeRNNGradientUpdateHandler']
 
 class HiddenStateHandler(EpochBegin):
-    '''Hidden state reset event handler
+    """Hidden state reset event handler
 
     Reset hidden states for language model at each epoch
-    '''
+    """
     def __init__(self):
         pass
 
@@ -48,7 +48,7 @@ class HiddenStateHandler(EpochBegin):
         estimator.val_hiddens = None
 
 class AvgParamHandler(BatchEnd, EpochEnd):
-    '''NTASGD average parameter event handler
+    """NTASGD average parameter event handler
 
     Average model parameters used in word language model estimator
 
@@ -57,7 +57,7 @@ class AvgParamHandler(BatchEnd, EpochEnd):
     data_length: int
         Length of training data, i.e., len(train_data). It is used to normalize the weight
         average coefficient.
-    '''
+    """
     def __init__(self, data_length):
         self.epoch_id = 0
         self.batch_id = 0
@@ -110,7 +110,7 @@ class AvgParamHandler(BatchEnd, EpochEnd):
         self.epoch_id += 1
 
 class LearningRateHandler(BatchBegin, BatchEnd, EpochEnd):
-    '''NTASGD learning rate event handler
+    """NTASGD learning rate event handler
 
     Dynamically adjust the learning rate during word language model training
     TODO: Investigate whether the learing rate event handler can be replaced with
@@ -123,7 +123,7 @@ class LearningRateHandler(BatchBegin, BatchEnd, EpochEnd):
         language model
     lr_update_factor : float
         learning rate decay factor used when updating the learning rate
-    '''
+    """
     def __init__(self, lr_update_interval=30, lr_update_factor=0.1):
         self.lr_batch_start = 0
         self.best_val = float('Inf')
@@ -157,15 +157,15 @@ class LearningRateHandler(BatchBegin, BatchEnd, EpochEnd):
                 self.update_lr_epoch = 0
 
 class RNNGradientUpdateHandler(GradientUpdateHandler):
-    '''NTASGD gradient clipping update event handler
+    """NTASGD gradient clipping update event handler
 
     clipping gradient during word language model training
     Parameters
     ----------
     clip : clip
         Gradient clipping threshold. Gradient norm exceeds this value should be scaled
-        down within the valid range. 
-    '''
+        down within the valid range.
+    """
     def __init__(self, clip=None, **kwargs):
         super().__init__(**kwargs)
         self.clip = clip
@@ -181,7 +181,7 @@ class RNNGradientUpdateHandler(GradientUpdateHandler):
         estimator.trainer.step(1)
 
 class LargeRNNGradientUpdateHandler(GradientUpdateHandler):
-    '''Parallel Large RNN gradient clipping update event handler
+    """Parallel Large RNN gradient clipping update event handler
 
     Rescale gradients of embedding parameters and clipping gradients of encoder parameters
     during training parallel large RNN
@@ -193,7 +193,7 @@ class LargeRNNGradientUpdateHandler(GradientUpdateHandler):
     clip : float
         gradient clipping threshold. Gradients of encoder parameters exceed this value
         should be scaled down within the valid range.
-    '''
+    """
     def __init__(self, batch_size, clip=None, **kwargs):
         super().__init__(**kwargs)
         self.batch_size = batch_size
@@ -212,7 +212,7 @@ class LargeRNNGradientUpdateHandler(GradientUpdateHandler):
         estimator.trainer.step(len(estimator.context))
 
 class MetricResetHandler(BatchBegin, MetricHandler):
-    '''Event handler for reseting local metrics
+    """Event handler for reseting local metrics
 
     Reset local metrics for each few iterations and add support of LengthNormalizedMetrics
     to compute both local and global metrics.
@@ -225,8 +225,8 @@ class MetricResetHandler(BatchBegin, MetricHandler):
         Metrics to be reset during training
     log_interval : int or None
         If log_interval is of int type, it represents the interval of reseting local
-        metrics. Otherwise, metrics do not need to be reset. 
-    '''
+        metrics. Otherwise, metrics do not need to be reset.
+    """
     def __init__(self, metrics, log_interval=None):
         super().__init__(metrics=metrics)
         self.batch_id = 0
@@ -257,15 +257,15 @@ class MetricResetHandler(BatchBegin, MetricHandler):
                 metric.update(label, pred)
 
 class WordLanguageModelCheckpointHandler(EpochEnd):
-    '''Checkpoint Event handler of word language model
+    """Checkpoint Event handler of word language model
 
     Save the model checkpoint of word language model
-    
+
     Parameters
     ----------
     save : string
         The model checkpoint save path prefix
-    '''
+    """
     def __init__(self, save):
         self.save = save
         self.best_val = float('Inf')
@@ -290,11 +290,11 @@ class WordLanguageModelCheckpointHandler(EpochEnd):
 
 
 class ParallelLoggingHandler(LoggingHandler):
-    '''Logging handler of Parallel language model training
+    """Logging handler of Parallel language model training
 
     Generating logging information of parallel large RNN training. This event handler
     is designed specifically to handle the batches taken from multiple gpus.
-    '''
+    """
     def __init__(self, *args, **kwargs):
         super(ParallelLoggingHandler, self).__init__(*args, **kwargs)
 
@@ -315,4 +315,3 @@ class ParallelLoggingHandler(LoggingHandler):
                     msg += '%s: %.4f, ' % (name, val)
                 estimator.logger.info(msg.rstrip(', '))
         self.batch_index += 1
-

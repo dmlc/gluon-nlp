@@ -28,10 +28,10 @@ from ..model.train.language_model import ParallelBigRNN
 __all__ = ['LanguageModelBatchProcessor', 'ParallelLanguageModelBatchProcessor']
 
 class LanguageModelBatchProcessor(BatchProcessor):
-    '''Word language model batch processor
+    """Word language model batch processor
 
     Batch training and validation for word language model
-    '''
+    """
     def __init__(self):
         super(LanguageModelBatchProcessor, self).__init__()
 
@@ -93,7 +93,7 @@ class LanguageModelBatchProcessor(BatchProcessor):
         return data, target, outputs, Ls
 
 class ParallelLanguageModelBatchProcessor(BatchProcessor):
-    '''Parallel large RNN batch processor
+    """Parallel large RNN batch processor
 
     Batch training and validation for parallel large RNN model
 
@@ -107,9 +107,9 @@ class ParallelLanguageModelBatchProcessor(BatchProcessor):
         Training batch size. It is used to construct the initial hidden states of
         model
     val_batch_size : int
-        Validation batch size. It is used to construct the initial hidden states 
+        Validation batch size. It is used to construct the initial hidden states
         of validation model.
-    '''
+    """
     def __init__(self, loss, vocab, batch_size, val_batch_size):
         super(ParallelLanguageModelBatchProcessor, self).__init__()
         self.loss = loss
