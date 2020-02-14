@@ -17,6 +17,9 @@
 # pylint: disable=eval-used, redefined-outer-name
 
 """ Gluon NLP Estimator Module """
+from . import machine_translation_estimator, machine_translation_event_handler
+from . import machine_translation_batch_processor
+
 from .machine_translation_estimator import *
 from .machine_translation_event_handler import *
 from .machine_translation_batch_processor import *
