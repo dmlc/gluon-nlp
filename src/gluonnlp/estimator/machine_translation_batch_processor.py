@@ -101,7 +101,7 @@ class MTGNMTBatchProcessor(BatchProcessor):
     Batch training and validation on the GNMT network for the machine translation task.
     '''
     def __init__(self):
-        super(MTGNMTBatchProcess, self).__init__()
+        super(MTGNMTBatchProcessor, self).__init__()
 
     def fit_batch(self, estimator, train_batch, batch_axis=0):
         ctx = estimator.context[0]
