@@ -19,22 +19,46 @@
 # pylint: disable=wildcard-import, unused-variable
 """ Gluon Languange Model Estimator """
 
-import copy
-import warnings
-
-import numpy as np
-import mxnet as mx
 from mxnet.gluon.contrib.estimator import Estimator
-from mxnet.gluon.utils import split_and_load
-from mxnet.gluon.utils import clip_global_norm
-from mxnet.metric import Loss as metric_loss
 from .language_model_batch_processor import LanguageModelBatchProcessor
 
 __all__ = ['LanguageModelEstimator']
 
 class LanguageModelEstimator(Estimator):
+    '''Language Model Estimator
+
+    Estimator class to facilitate the language model training and validation process
+
+    Parameters
+    ----------
+    net : gluon.Block
+        The model used for training.
+    loss : gluon.loss.Loss
+        Loss (objective) function to calculate during training.
+    train_metrics : EvalMetric or list of EvalMetric
+        Training metrics for evaluating models on training dataset.
+    val_metrics : EvalMetric or list of EvalMetric
+        Validation metrics for evaluating models on validation dataset.
+    initializer : Initializer
+        Initializer to initialize the network.
+    trainer : Trainer
+        Trainer to apply optimizer on network parameters.
+    context : Context or list of Context
+        Device(s) to run the training on.
+    val_net : gluon.Block
+        The model used for validation. The validation model does not necessarily belong to
+        the same model class as the training model.
+    val_loss : gluon.loss.loss
+        Loss (objective) function to calculate during validation. If set val_loss
+        None, it will use the same loss function as self.loss
+    batch_processor: BatchProcessor
+        BatchProcessor provides customized fit_batch() and evaluate_batch() methods
+    bptt : int
+        bptt value for the language model training. It decides how many time steps
+        to backpropate
+    '''
     def __init__(self, net, loss, train_metrics=None,
-                 val_metrics = None,
+                 val_metrics=None,
                  initializer=None,
                  trainer=None,
                  context=None,
@@ -56,12 +80,10 @@ class LanguageModelEstimator(Estimator):
         self.avg_param = None
         self.bptt = bptt
         self.ntasgd = False
-        
+
     def detach(self, hidden):
         if isinstance(hidden, (tuple, list)):
             hidden = [self.detach(h) for h in hidden]
         else:
             hidden = hidden.detach()
         return hidden
-
-

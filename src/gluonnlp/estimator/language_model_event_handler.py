@@ -19,13 +19,11 @@
 # pylint: disable=wildcard-import, unused-variable
 """ Gluon Language Model Event Handler """
 
-import copy
-import warnings
 import time
 
 import mxnet as mx
-from mxnet.gluon.contrib.estimator import TrainBegin, TrainEnd, EpochBegin
-from mxnet.gluon.contrib.estimator import EpochEnd, BatchBegin, BatchEnd
+from mxnet.gluon.contrib.estimator import EpochBegin, EpochEnd
+from mxnet.gluon.contrib.estimator import BatchBegin, BatchEnd
 from mxnet.gluon.contrib.estimator import GradientUpdateHandler, LoggingHandler
 from mxnet.gluon.contrib.estimator import MetricHandler
 from mxnet.gluon.utils import clip_global_norm
@@ -38,6 +36,10 @@ __all__ = ['HiddenStateHandler', 'AvgParamHandler', 'LearningRateHandler',
            'LargeRNNGradientUpdateHandler']
 
 class HiddenStateHandler(EpochBegin):
+    '''Hidden state reset event handler
+
+    Reset hidden states for language model at each epoch
+    '''
     def __init__(self):
         pass
 
@@ -45,11 +47,17 @@ class HiddenStateHandler(EpochBegin):
         estimator.hiddens = None
         estimator.val_hiddens = None
 
-"""TODO: Implement a general average parameter handler or rename it with
-   NTASGD average parameter handler
-
-"""
 class AvgParamHandler(BatchEnd, EpochEnd):
+    '''NTASGD average parameter event handler
+
+    Average model parameters used in word language model estimator
+
+    Parameters
+    ----------
+    data_length: int
+        Length of training data, i.e., len(train_data). It is used to normalize the weight
+        average coefficient.
+    '''
     def __init__(self, data_length):
         self.epoch_id = 0
         self.batch_id = 0
@@ -63,8 +71,10 @@ class AvgParamHandler(BatchEnd, EpochEnd):
         parameters = estimator.net.collect_params()
         if estimator.ntasgd:
             if estimator.avg_param is None:
-                estimator.avg_param = {k.split(estimator.net._prefix)[1]: v.data(estimator.context[0]).copy()
-                                       for k, v in parameters.items()}
+                estimator.avg_param =
+                {k.split(estimator.net._prefix)[1]:
+                 v.data(estimator.context[0]).copy()
+                 for k, v in parameters.items()}
             else:
                 gamma = 1. / max(1, self.epoch_id * (self.data_length // estimator.bptt) +
                                  self.batch_id - self.avg_trigger + 2)
@@ -82,8 +92,11 @@ class AvgParamHandler(BatchEnd, EpochEnd):
         if self.avg_trigger == 0:
             if self.t > self.n and val_metrics[0].get()[1] > min(self.valid_losses[-self.n:]):
                 if estimator.avg_param is None:
-                    estimator.avg_param = {k.split(estimator.net._prefix)[1]: v.data(estimator.context[0]).copy()
-                                           for k, v in parameters.items()}
+                    estimator.avg_param =
+                    {k.split(estimator.net._prefix)[1]:
+                     v.data(estimator.context[0]).copy()
+                     for k, v in
+                     parameters.items()}
                 else:
                     for key, val in parameters.items():
                         estimator.avg_param[key.split(estimator.net._prefix)[1]] \
@@ -96,10 +109,21 @@ class AvgParamHandler(BatchEnd, EpochEnd):
         self.batch_id = 0
         self.epoch_id += 1
 
-"""TODO: Can we replace learning rate handler with learning rate scheduler
-   Problem: Learning rate scheduler cannot take feedback from each iteration
-"""
 class LearningRateHandler(BatchBegin, BatchEnd, EpochEnd):
+    '''NTASGD learning rate event handler
+
+    Dynamically adjust the learning rate during word language model training
+    TODO: Investigate whether the learing rate event handler can be replaced with
+    learning rate scheduler
+
+    Parameters
+    ----------
+    lr_update_interval : int
+        Epoch interval of updating the learning rate during training the word
+        language model
+    lr_update_factor : float
+        learning rate decay factor used when updating the learning rate
+    '''
     def __init__(self, lr_update_interval=30, lr_update_factor=0.1):
         self.lr_batch_start = 0
         self.best_val = float('Inf')
@@ -133,6 +157,15 @@ class LearningRateHandler(BatchBegin, BatchEnd, EpochEnd):
                 self.update_lr_epoch = 0
 
 class RNNGradientUpdateHandler(GradientUpdateHandler):
+    '''NTASGD gradient clipping update event handler
+
+    clipping gradient during word language model training
+    Parameters
+    ----------
+    clip : clip
+        Gradient clipping threshold. Gradient norm exceeds this value should be scaled
+        down within the valid range. 
+    '''
     def __init__(self, clip=None, **kwargs):
         super().__init__(**kwargs)
         self.clip = clip
@@ -143,12 +176,24 @@ class RNNGradientUpdateHandler(GradientUpdateHandler):
         parameters = estimator.net.collect_params()
         grads = [p.grad(ctx) for p in parameters.values() for ctx in estimator.context]
         if self.clip is not None:
-            # use multi context clipping later
             clip_global_norm(grads, self.clip)
 
         estimator.trainer.step(1)
 
 class LargeRNNGradientUpdateHandler(GradientUpdateHandler):
+    '''Parallel Large RNN gradient clipping update event handler
+
+    Rescale gradients of embedding parameters and clipping gradients of encoder parameters
+    during training parallel large RNN
+
+    Parameters
+    ----------
+    batch_size : int
+        batch size per gpu used during training parallel large RNN
+    clip : float
+        gradient clipping threshold. Gradients of encoder parameters exceed this value
+        should be scaled down within the valid range.
+    '''
     def __init__(self, batch_size, clip=None, **kwargs):
         super().__init__(**kwargs)
         self.batch_size = batch_size
@@ -163,14 +208,25 @@ class LargeRNNGradientUpdateHandler(GradientUpdateHandler):
             x[:] *= self.batch_size
             encoder_grad = [p.grad(ctx) for p in encoder_params]
             clip_global_norm(encoder_grad, self.clip)
-            
+
         estimator.trainer.step(len(estimator.context))
 
-"""This event handler reset local metrics for each few iterations
-
-   TODO: shall we move the lengthnormalizedloss part out to be an independent handler
-"""
 class MetricResetHandler(BatchBegin, MetricHandler):
+    '''Event handler for reseting local metrics
+
+    Reset local metrics for each few iterations and add support of LengthNormalizedMetrics
+    to compute both local and global metrics.
+    TODO: Move this event handler to be reusable by other estimators, e.g.,
+    MachineTranslationEstimator
+
+    Parameters
+    ----------
+    Metrics : mxnet.metric
+        Metrics to be reset during training
+    log_interval : int or None
+        If log_interval is of int type, it represents the interval of reseting local
+        metrics. Otherwise, metrics do not need to be reset. 
+    '''
     def __init__(self, metrics, log_interval=None):
         super().__init__(metrics=metrics)
         self.batch_id = 0
@@ -201,6 +257,15 @@ class MetricResetHandler(BatchBegin, MetricHandler):
                 metric.update(label, pred)
 
 class WordLanguageModelCheckpointHandler(EpochEnd):
+    '''Checkpoint Event handler of word language model
+
+    Save the model checkpoint of word language model
+    
+    Parameters
+    ----------
+    save : string
+        The model checkpoint save path prefix
+    '''
     def __init__(self, save):
         self.save = save
         self.best_val = float('Inf')
@@ -225,6 +290,11 @@ class WordLanguageModelCheckpointHandler(EpochEnd):
 
 
 class ParallelLoggingHandler(LoggingHandler):
+    '''Logging handler of Parallel language model training
+
+    Generating logging information of parallel large RNN training. This event handler
+    is designed specifically to handle the batches taken from multiple gpus.
+    '''
     def __init__(self, *args, **kwargs):
         super(ParallelLoggingHandler, self).__init__(*args, **kwargs)
 
@@ -245,4 +315,4 @@ class ParallelLoggingHandler(LoggingHandler):
                     msg += '%s: %.4f, ' % (name, val)
                 estimator.logger.info(msg.rstrip(', '))
         self.batch_index += 1
-                
+

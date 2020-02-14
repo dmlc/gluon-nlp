@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 
-
+""" Joint activation regularization loss """
 from mxnet import gluon
 from . import ActivationRegularizationLoss, TemporalActivationRegularizationLoss
 

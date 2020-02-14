@@ -28,8 +28,12 @@ from ..model.train.language_model import ParallelBigRNN
 __all__ = ['LanguageModelBatchProcessor', 'ParallelLanguageModelBatchProcessor']
 
 class LanguageModelBatchProcessor(BatchProcessor):
+    '''Word language model batch processor
+
+    Batch training and validation for word language model
+    '''
     def __init__(self):
-        pass
+        super(LanguageModelBatchProcessor, self).__init__()
 
     def fit_batch(self, estimator, train_batch, batch_axis=0):
         data = train_batch[:-1]
@@ -43,12 +47,13 @@ class LanguageModelBatchProcessor(BatchProcessor):
                                                            ctx=ctx) for ctx in estimator.context]
         else:
             estimator.hiddens = estimator.detach(estimator.hiddens)
-        
+
         Ls = []
         outputs = []
         data_size = 0
         with mx.autograd.record():
             for i, (X, y, h) in enumerate(zip(data, target, estimator.hiddens)):
+                data_size = X.size
                 output, h, encoder_hs, dropped_encoder_hs = estimator.net(X, h)
                 l = estimator.loss(output, y, encoder_hs, dropped_encoder_hs)
                 Ls.append(l / (len(estimator.context) * X.size))
@@ -58,7 +63,7 @@ class LanguageModelBatchProcessor(BatchProcessor):
         for L in Ls:
             L.backward()
 
-        Ls = [l * (len(estimator.context) * X.size) for l in Ls]
+        Ls = [l * (len(estimator.context) * data_size) for l in Ls]
         return data, target, outputs, Ls
 
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):
@@ -73,7 +78,8 @@ class LanguageModelBatchProcessor(BatchProcessor):
         if estimator.val_hiddens is None:
             estimator.val_hiddens = \
             [estimator.val_net.begin_state(batch_size //
-                                            len(estimator.context), func=mx.nd.zeros, ctx=ctx) for ctx \
+                                           len(estimator.context),
+                                           func=mx.nd.zeros, ctx=ctx) for ctx
              in estimator.context]
         else:
             estimator.val_hiddens = estimator.detach(estimator.val_hiddens)
@@ -87,7 +93,25 @@ class LanguageModelBatchProcessor(BatchProcessor):
         return data, target, outputs, Ls
 
 class ParallelLanguageModelBatchProcessor(BatchProcessor):
+    '''Parallel large RNN batch processor
+
+    Batch training and validation for parallel large RNN model
+
+    Parameters
+    ----------
+    loss : mxnet.gluon.loss.Loss
+        Training loss function for parallel large rnn model
+    vocab : gluonnlp.vocab
+        Vocab of training and validation dataset
+    batch_size : int
+        Training batch size. It is used to construct the initial hidden states of
+        model
+    val_batch_size : int
+        Validation batch size. It is used to construct the initial hidden states 
+        of validation model.
+    '''
     def __init__(self, loss, vocab, batch_size, val_batch_size):
+        super(ParallelLanguageModelBatchProcessor, self).__init__()
         self.loss = loss
         self.parallel_model = None
         self.batch_size = batch_size
@@ -128,9 +152,9 @@ class ParallelLanguageModelBatchProcessor(BatchProcessor):
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
         if estimator.val_hiddens is None:
-            estimator.val_hiddens = estimator.val_net.begin_state(batch_size=self.val_batch_size,
-                                                               func=mx.nd.zeros,
-                                                               ctx=ctx)
+            estimator.val_hiddens =
+            estimator.val_net.begin_state(batch_size=self.val_batch_size,
+                                          func=mx.nd.zeros, ctx=ctx)
         else:
             estimator.val_hiddens = estimator.detach(estimator.val_hiddens)
 
