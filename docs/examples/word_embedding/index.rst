@@ -24,6 +24,14 @@ Representation Learning
       See how to use GluonNLP's model API to automatically download the pre-trained ELMo
       model from NAACL2018 best paper, and extract features with it.
 
+   .. card::
+      :title: Fine-tuning Pre-trained BERT Model
+      :link: ../sentence_embedding/bert.html
+
+      See how to use GluonNLP to fine-tune a sentence pair classification model with
+      pre-trained BERT parameters.
+
+
 .. toctree::
    :hidden:
    :maxdepth: 2
