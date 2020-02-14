@@ -71,7 +71,7 @@ class AvgParamHandler(BatchEnd, EpochEnd):
         parameters = estimator.net.collect_params()
         if estimator.ntasgd:
             if estimator.avg_param is None:
-                estimator.avg_param =
+                estimator.avg_param = \
                 {k.split(estimator.net._prefix)[1]:
                  v.data(estimator.context[0]).copy()
                  for k, v in parameters.items()}
@@ -92,7 +92,7 @@ class AvgParamHandler(BatchEnd, EpochEnd):
         if self.avg_trigger == 0:
             if self.t > self.n and val_metrics[0].get()[1] > min(self.valid_losses[-self.n:]):
                 if estimator.avg_param is None:
-                    estimator.avg_param =
+                    estimator.avg_param = \
                     {k.split(estimator.net._prefix)[1]:
                      v.data(estimator.context[0]).copy()
                      for k, v in

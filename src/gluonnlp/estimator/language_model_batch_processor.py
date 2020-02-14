@@ -152,7 +152,7 @@ class ParallelLanguageModelBatchProcessor(BatchProcessor):
         data = data.as_in_context(ctx)
         target = target.as_in_context(ctx)
         if estimator.val_hiddens is None:
-            estimator.val_hiddens =
+            estimator.val_hiddens = \
             estimator.val_net.begin_state(batch_size=self.val_batch_size,
                                           func=mx.nd.zeros, ctx=ctx)
         else:
