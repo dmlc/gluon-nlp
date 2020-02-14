@@ -63,10 +63,11 @@ def concat_sequences(seqs, separators, seq_mask=0, separator_mask=1):
     separator: [[SEP], [SEP], [CLS]]
     seq_mask: 0
     separator_mask: 1
+
     Returns:
-       tokens:      is this jacksonville ? [SEP] no it is not . [SEP] [CLS]
-       segment_ids: 0  0    0            0  0    1  1  1  1   1 1     2
-       p_mask:      0  0    0            0  1    0  0  0  0   0 1     1
+    tokens:      is this jacksonville ? [SEP] no it is not . [SEP] [CLS]
+    segment_ids: 0  0    0            0  0    1  1  1  1   1 1     2
+    p_mask:      0  0    0            0  1    0  0  0  0   0 1     1
 
     Example 2:
     separator_mask can also be a list.
@@ -76,9 +77,9 @@ def concat_sequences(seqs, separators, seq_mask=0, separator_mask=1):
     separator_mask: [[1], [1], [0]]
 
     Returns:
-       tokens:     'is this jacksonville ? [SEP] no it is not . [SEP] [CLS]'
-       segment_ids: 0  0    0            0  0    1  1  1  1   1 1     2
-       p_mask:      1  1    1            1  1    0  0  0  0   0 1     0
+    tokens:     'is this jacksonville ? [SEP] no it is not . [SEP] [CLS]'
+    segment_ids: 0  0    0            0  0    1  1  1  1   1 1     2
+    p_mask:      1  1    1            1  1    0  0  0  0   0 1     0
 
     Example 3:
     seq_mask can also be a list.
@@ -88,9 +89,9 @@ def concat_sequences(seqs, separators, seq_mask=0, separator_mask=1):
     separator_mask: [[1], [1], [0]]
 
     Returns:
-       tokens:     'is this jacksonville ? [SEP] no it is not . [SEP] [CLS]'
-       segment_ids: 0  0    0            0  0    1  1  1  1   1 1     2
-       p_mask:      1  1    1            1  1    0  0  0  0   0 1     0
+    tokens:     'is this jacksonville ? [SEP] no it is not . [SEP] [CLS]'
+    segment_ids: 0  0    0            0  0    1  1  1  1   1 1     2
+    p_mask:      1  1    1            1  1    0  0  0  0   0 1     0
 
     Parameters
     ----------
