@@ -202,7 +202,7 @@ The following pre-trained XLNet models are available from the **get_model** API:
 | 126gb             | ✓                        | ✓                           |
 +-------------------+--------------------------+-----------------------------+
 
-where **126gb*** refers to the 126 GB large training dataset used by the XLNet
+where **126gb** refers to the 126 GB large training dataset used by the XLNet
 paper authors.
 
 .. code-block:: python
@@ -289,11 +289,13 @@ You can either put the evaluate script under the same folder with run_squad.py t
 or run it manually by yourself. To run the evaluate script, you can use the following commands:
 
 SQuAD1.1:
+
 .. code-block:: console
 
     $ python evaluate-v2.0.py dev-v2.0.json predictions.json
 
 SQuAD2.0:
+
 .. code-block:: console
 
     $ python evaluate-v2.0.py dev-v2.0.json predictions.json --na-prob-file null_odds.json
