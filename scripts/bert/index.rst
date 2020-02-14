@@ -117,7 +117,7 @@ GluonNLP also supports the "`DistilBERT <https://arxiv.org/abs/1910.01108>`_" mo
     words, valid_len = mx.nd.array([sample[0]]), mx.nd.array([sample[1]])
     seq_encoding, cls_encoding = model(words, valid_len);
 
-Finally, GluonNLP also suports Korean BERT pre-trained model, [KoBERT](https://github.com/SKTBrain/KoBERT), trained with Korean wiki dataset ('kobert_news_wiki_ko_cased').
+Finally, GluonNLP also suports Korean BERT pre-trained model, "`KoBERT <https://github.com/SKTBrain/KoBERT>`_", using Korean wiki dataset (`kobert_news_wiki_ko_cased`).
 
 .. code-block:: python
 
