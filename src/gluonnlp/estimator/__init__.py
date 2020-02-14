@@ -19,6 +19,9 @@
 # pylint: disable=wildcard-import, unused-variable
 
 """ Gluon NLP Estimator Module """
+from . import language_model_estimator, language_model_event_handler
+from . import language_model_batch_processor
+
 from .language_model_estimator import *
 from .language_model_event_handler import *
 from .language_model_batch_processor import *
