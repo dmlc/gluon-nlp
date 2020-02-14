@@ -296,7 +296,7 @@ class MTCheckpointHandler(CheckpointHandler, TrainEnd):
             save_path = os.path.join(self.model_dir, 'average.params')
             mx.nd.save(save_path, estimator.avg_param)
         if self.average_checkpoint:
-            for j in range(args.num_averages):
+            for j in range(self.num_averages):
                 params = mx.nd.load(os.path.join(self.model_dir,
                                                  'epoch{:d}.params'.format(self.epochs - j - 1)))
                 alpha = 1. / (j + 1)
