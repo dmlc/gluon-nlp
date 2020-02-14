@@ -90,6 +90,8 @@ parser.add_argument('--gpu',
                     help='Number of gpus for finetuning.')
 parser.add_argument('--task_name',
                     default='MRPC',
+                    choices=['MRPC', 'QNLI', 'RTE', 'STS-B', 'CoLA',
+                             'MNLI', 'WNLI', 'SST', 'XNLI', 'LCQMC', 'ChnSentiCorp'],
                     type=str,
                     help='The name of the task to fine-tune.')
 

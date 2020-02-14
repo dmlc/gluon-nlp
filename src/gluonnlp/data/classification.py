@@ -19,6 +19,7 @@ __all__ = [
     'CoLATask', 'MNLITask', 'WNLITask', 'SSTTask', 'XNLITask', 'get_task'
 ]
 
+from copy import copy
 from mxnet.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
 from .glue import GlueCoLA, GlueSST2, GlueSTSB, GlueMRPC
 from .glue import GlueQQP, GlueRTE, GlueMNLI, GlueQNLI, GlueWNLI
@@ -624,21 +625,21 @@ def get_task(task):
     GlueTask
     """
     tasks = {
-    'mrpc': MRPCTask(),
-    'qqp': QQPTask(),
-    'qnli': QNLITask(),
-    'rte': RTETask(),
-    'sts-b': STSBTask(),
-    'cola': CoLATask(),
-    'mnli': MNLITask(),
-    'wnli': WNLITask(),
-    'sst': SSTTask(),
-    'xnli': XNLITask(),
-    'lcqmc': LCQMCTask(),
-    'chnsenticorp': ChnSentiCorpTask()
+        'mrpc': MRPCTask(),
+        'qqp': QQPTask(),
+        'qnli': QNLITask(),
+        'rte': RTETask(),
+        'sts-b': STSBTask(),
+        'cola': CoLATask(),
+        'mnli': MNLITask(),
+        'wnli': WNLITask(),
+        'sst': SSTTask(),
+        'xnli': XNLITask(),
+        'lcqmc': LCQMCTask(),
+        'chnsenticorp': ChnSentiCorpTask()
     }
     if task.lower() not in tasks:
         raise ValueError(
             'Task name %s is not supported. Available options are\n\t%s'%(
                 task, '\n\t'.join(sorted(tasks.keys()))))
-    return tasks[task.lower()].copy()
+    return copy(tasks[task.lower()])

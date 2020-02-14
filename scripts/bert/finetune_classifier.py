@@ -117,7 +117,8 @@ parser.add_argument(
 parser.add_argument(
     '--task_name',
     type=str,
-    choices=tasks.keys(),
+    choices=['MRPC', 'QNLI', 'RTE', 'STS-B', 'CoLA',
+             'MNLI', 'WNLI', 'SST', 'XNLI', 'LCQMC', 'ChnSentiCorp'],
     help='The name of the task to fine-tune. Choices include MRPC, QQP, '
          'QNLI, RTE, STS-B, CoLA, MNLI, WNLI, SST.')
 parser.add_argument(

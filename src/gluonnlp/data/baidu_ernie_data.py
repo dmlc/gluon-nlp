@@ -106,7 +106,8 @@ class BaiduErnieXNLI(_BaiduErnieDataset):
 class BaiduErnieLCQMC(_BaiduErnieDataset):
     """ The LCQMC dataset original from:
     Xin Liu, Qingcai Chen, Chong Deng, Huajun Zeng, Jing Chen, Dongfang Li, Buzhou Tang,
-        LCQMC: A Large-scale Chinese Question Matching Corpus,COLING2018.
+    LCQMC: A Large-scale Chinese Question Matching Corpus,COLING2018.
+
     No license granted. You can request a private license via
     http://icrc.hitsz.edu.cn/LCQMC_Application_Form.pdf
     The code fits the dataset format which was redistributed by Baidu in ERNIE repo.
