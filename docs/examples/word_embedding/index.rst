@@ -17,7 +17,7 @@ Representation Learning
       Learn how to train fastText and word2vec embeddings on your own dataset, and determine
       embedding quality through intrinsic evaluation.
 
-  .. card::
+   .. card::
       :title: Extracting Sentence Features with Pre-trained ELMo
       :link: ../sentence_embedding/elmo_sentence_representation.html
 
