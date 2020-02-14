@@ -26,7 +26,7 @@ from ..utils.parallel import Parallel
 __all__ = ['MTTransformerBatchProcessor', 'MTGNMTBatchProcessor']
 
 class MTTransformerBatchProcessor(BatchProcessor):
-    '''Batch processor for transformer training on Machine translation
+    """Batch processor for transformer training on Machine translation
 
     The batch training and validation procedure on transformer network
 
@@ -40,7 +40,7 @@ class MTTransformerBatchProcessor(BatchProcessor):
         Apply label smoothing on the given network
     loss_function : mxnet.gluon.loss
         training loss function
-    '''
+    """
     def __init__(self, rescale_loss=100,
                  batch_size=1024,
                  label_smoothing=None,
@@ -96,10 +96,10 @@ class MTTransformerBatchProcessor(BatchProcessor):
         return src_seq, [tgt_seq, val_tgt_valid_length], out, loss
 
 class MTGNMTBatchProcessor(BatchProcessor):
-    '''Batch processor for GNMT training
+    """Batch processor for GNMT training
 
     Batch training and validation on the GNMT network for the machine translation task.
-    '''
+    """
     def __init__(self):
         super(MTGNMTBatchProcessor, self).__init__()
 

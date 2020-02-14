@@ -23,7 +23,7 @@ from .machine_translation_batch_processor import MTTransformerBatchProcessor
 __all__ = ['MachineTranslationEstimator']
 
 class MachineTranslationEstimator(Estimator):
-    '''Estimator class for machine translation tasks
+    """Estimator class for machine translation tasks
 
     Facilitates training and validation on machine translation tasks
     Parameters
@@ -50,7 +50,7 @@ class MachineTranslationEstimator(Estimator):
         None, it will use the same loss function as self.loss
     batch_processor: BatchProcessor
         BatchProcessor provides customized fit_batch() and evaluate_batch() methods
-    '''
+    """
     def __init__(self, net, loss,
                  train_metrics=None,
                  val_metrics=None,

@@ -38,7 +38,7 @@ __all__ = ['MTTransformerParamUpdateHandler', 'TransformerLearningRateHandler',
            'MTTransformerLoggingHandler']
 
 class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
-    '''Transformer average parameter update handler
+    """Transformer average parameter update handler
 
     Update weighted average parameters of the transformer during training
 
@@ -48,7 +48,7 @@ class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
         the starting epoch of performing average sgd update
     grad_interval : int
         The interval of update avarege model parameters
-    '''
+    """
     def __init__(self, avg_start, grad_interval=1):
         self.batch_id = 0
         self.grad_interval = grad_interval
@@ -79,7 +79,7 @@ class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
         self._update_avg_param(estimator)
 
 class MTGNMTLearningRateHandler(EpochEnd):
-    '''GNMT learning rate update handler
+    """GNMT learning rate update handler
 
     dynamically adjust the learning rate during GNMT training
 
@@ -89,7 +89,7 @@ class MTGNMTLearningRateHandler(EpochEnd):
         total number of epoches for GNMT training
     lr_update_factor : float
         the decaying factor of learning rate
-    '''
+    """
     def __init__(self, epochs, lr_update_factor):
         self.epoch_id = 0
         self.epochs = epochs
@@ -102,7 +102,7 @@ class MTGNMTLearningRateHandler(EpochEnd):
         self.epoch_id += 1
 
 class TransformerLearningRateHandler(EpochBegin, BatchBegin):
-    '''Transformer learning rate update handler
+    """Transformer learning rate update handler
 
     dynamically adjust the learning rate during transformer training
 
@@ -116,7 +116,7 @@ class TransformerLearningRateHandler(EpochBegin, BatchBegin):
         number of warmup steps used in training schedule
     grad_interval : int
         the interval of updating learning rate
-    '''
+    """
     def __init__(self, lr,
                  num_units=512,
                  warmup_steps=4000,
@@ -140,7 +140,7 @@ class TransformerLearningRateHandler(EpochBegin, BatchBegin):
         self.batch_id += 1
 
 class MTGNMTGradientUpdateHandler(GradientUpdateHandler):
-    '''Gradient update handler of GNMT training
+    """Gradient update handler of GNMT training
 
     clip gradient if gradient norm exceeds some threshold during GNMT training
 
@@ -149,7 +149,7 @@ class MTGNMTGradientUpdateHandler(GradientUpdateHandler):
     clip : float
         gradient norm threshold. If gradient norm exceeds this value, it should be
         scaled down to the valid range.
-    '''
+    """
     def __init__(self, clip):
         super(MTGNMTGradientUpdateHandler, self).__init__()
         self.clip = clip
@@ -164,9 +164,9 @@ class TransformerGradientAccumulationHandler(GradientUpdateHandler,
                                              TrainBegin,
                                              EpochBegin,
                                              EpochEnd):
-    '''Gradient accumulation handler for transformer training
+    """Gradient accumulation handler for transformer training
 
-    Accumulates gradients of the network for a few iterations, and updates 
+    Accumulates gradients of the network for a few iterations, and updates
     network parameters with the accumulated gradients
 
     Parameters
@@ -177,7 +177,7 @@ class TransformerGradientAccumulationHandler(GradientUpdateHandler,
         number of tokens per gpu in a minibatch
     rescale_loss : float
         normalization constant
-    '''
+    """
     def __init__(self, grad_interval=1,
                  batch_size=1024,
                  rescale_loss=100):
@@ -213,7 +213,7 @@ class TransformerGradientAccumulationHandler(GradientUpdateHandler,
             self._update_gradient(estimator)
 
 class MTTransformerMetricHandler(MetricHandler, BatchBegin):
-    '''Metric update handler for transformer training
+    """Metric update handler for transformer training
 
     Reset the local metric stats for every few iterations and include the LengthNormalizedLoss
     for metrics update
@@ -223,7 +223,7 @@ class MTTransformerMetricHandler(MetricHandler, BatchBegin):
     ----------
     grad_interval : int
         interval of resetting local metrics during transformer training
-    '''
+    """
     def __init__(self, *args, grad_interval=None, **kwargs):
         super(MTTransformerMetricHandler, self).__init__(*args, **kwargs)
         self.grad_interval = grad_interval
@@ -252,7 +252,7 @@ class MTTransformerMetricHandler(MetricHandler, BatchBegin):
                 metric.update(label, pred)
 
 class MTCheckpointHandler(CheckpointHandler, TrainEnd):
-    '''Checkpoint handler for machine translation tasks training
+    """Checkpoint handler for machine translation tasks training
 
     save model parameter checkpoint and average parameter checkpoint during transformer
     or GNMT training
@@ -267,7 +267,7 @@ class MTCheckpointHandler(CheckpointHandler, TrainEnd):
         performing average sgd on last average_start epochs
     epochs : int
         total epochs of machine translation model training
-    '''
+    """
     def __init__(self, *args,
                  average_checkpoint=None,
                  num_averages=None,
@@ -317,12 +317,12 @@ class MTCheckpointHandler(CheckpointHandler, TrainEnd):
 
 
 class ComputeBleuHandler(BatchEnd, EpochEnd):
-    '''Bleu score computation handler
+    """Bleu score computation handler
 
     this event handler serves as a temporary workaround for computing Bleu score for
     estimator training.
     TODO: please remove this event handler after bleu metrics is merged to api
-    '''
+    """
     def __init__(self,
                  tgt_vocab,
                  tgt_sentence,
@@ -387,12 +387,12 @@ class ComputeBleuHandler(BatchEnd, EpochEnd):
         print(estimator.bleu_score)
 
 class ValBleuHandler(EpochEnd):
-    '''Handler of validation Bleu score computation
+    """Handler of validation Bleu score computation
 
-    This handler is similar to the ComputeBleuHandler. It computes the Bleu score on the 
+    This handler is similar to the ComputeBleuHandler. It computes the Bleu score on the
     validation dataset
     TODO: please remove this event handler after bleu metric is available in the api
-    '''
+    """
     def __init__(self, val_data,
                  val_tgt_vocab,
                  val_tgt_sentences,
@@ -454,11 +454,11 @@ class ValBleuHandler(EpochEnd):
         print(estimator.bleu_score)
 
 class MTTransformerLoggingHandler(LoggingHandler):
-    '''Logging handler for transformer training
+    """Logging handler for transformer training
 
-    Logging the training metrics for transformer training. This handler is introduced 
-    due to batch cannot be handled by default LoggingHandler 
-    '''
+    Logging the training metrics for transformer training. This handler is introduced
+    due to batch cannot be handled by default LoggingHandler
+    """
     def __init__(self, *args, **kwargs):
         super(MTTransformerLoggingHandler, self).__init__(*args, **kwargs)
 
