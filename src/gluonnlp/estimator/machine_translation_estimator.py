@@ -17,17 +17,40 @@
 # pylint: disable=eval-used, redefined-outer-name
 """ Gluon Machine Translation Estimator """
 
-import copy
-import warnings
-
-import numpy as np
-import mxnet as mx
 from mxnet.gluon.contrib.estimator import Estimator
 from .machine_translation_batch_processor import MTTransformerBatchProcessor
 
 __all__ = ['MachineTranslationEstimator']
 
 class MachineTranslationEstimator(Estimator):
+    '''Estimator class for machine translation tasks
+
+    Facilitates training and validation on machine translation tasks
+    Parameters
+    ----------
+    net : gluon.Block
+        The model used for training.
+    loss : gluon.loss.Loss
+        Loss (objective) function to calculate during training.
+    train_metrics : EvalMetric or list of EvalMetric
+        Training metrics for evaluating models on training dataset.
+    val_metrics : EvalMetric or list of EvalMetric
+        Validation metrics for evaluating models on validation dataset.
+    initializer : Initializer
+        Initializer to initialize the network.
+    trainer : Trainer
+        Trainer to apply optimizer on network parameters.
+    context : Context or list of Context
+        Device(s) to run the training on.
+    val_net : gluon.Block
+        The model used for validation. The validation model does not necessarily belong to
+        the same model class as the training model.
+    val_loss : gluon.loss.loss
+        Loss (objective) function to calculate during validation. If set val_loss
+        None, it will use the same loss function as self.loss
+    batch_processor: BatchProcessor
+        BatchProcessor provides customized fit_batch() and evaluate_batch() methods
+    '''
     def __init__(self, net, loss,
                  train_metrics=None,
                  val_metrics=None,

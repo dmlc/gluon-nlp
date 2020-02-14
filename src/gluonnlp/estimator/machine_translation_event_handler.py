@@ -17,8 +17,6 @@
 # pylint: disable=eval-used, redefined-outer-name
 """ Gluon Machine Translation Event Handler """
 
-import copy
-import warnings
 import math
 import os
 import time
@@ -29,7 +27,6 @@ from mxnet.gluon.contrib.estimator import TrainBegin, TrainEnd, EpochBegin
 from mxnet.gluon.contrib.estimator import EpochEnd, BatchBegin, BatchEnd
 from mxnet.gluon.contrib.estimator import GradientUpdateHandler, CheckpointHandler
 from mxnet.gluon.contrib.estimator import MetricHandler, LoggingHandler
-from mxnet.gluon.contrib.estimator import ValidationHandler
 from mxnet import gluon
 from mxnet.metric import Loss as MetricLoss
 from ..metric.length_normalized_loss import LengthNormalizedLoss
@@ -41,6 +38,17 @@ __all__ = ['MTTransformerParamUpdateHandler', 'TransformerLearningRateHandler',
            'MTTransformerLoggingHandler']
 
 class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
+    '''Transformer average parameter update handler
+
+    Update weighted average parameters of the transformer during training
+
+    Parameters
+    ----------
+    avg_start : int
+        the starting epoch of performing average sgd update
+    grad_interval : int
+        The interval of update avarege model parameters
+    '''
     def __init__(self, avg_start, grad_interval=1):
         self.batch_id = 0
         self.grad_interval = grad_interval
@@ -59,7 +67,7 @@ class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
 
     def epoch_begin(self, estimator, *args, **kwargs):
         self.batch_id = 0
-                
+
     def batch_end(self, estimator, *args, **kwargs):
         if self.batch_id % self.grad_interval == 0:
             self.step_num += 1
@@ -71,6 +79,17 @@ class MTTransformerParamUpdateHandler(EpochBegin, BatchEnd, EpochEnd):
         self._update_avg_param(estimator)
 
 class MTGNMTLearningRateHandler(EpochEnd):
+    '''GNMT learning rate update handler
+
+    dynamically adjust the learning rate during GNMT training
+
+    Parameters
+    ----------
+    epochs : int
+        total number of epoches for GNMT training
+    lr_update_factor : float
+        the decaying factor of learning rate
+    '''
     def __init__(self, epochs, lr_update_factor):
         self.epoch_id = 0
         self.epochs = epochs
@@ -83,6 +102,21 @@ class MTGNMTLearningRateHandler(EpochEnd):
         self.epoch_id += 1
 
 class TransformerLearningRateHandler(EpochBegin, BatchBegin):
+    '''Transformer learning rate update handler
+
+    dynamically adjust the learning rate during transformer training
+
+    Parameters
+    ----------
+    lr : float
+        initial learning rate for transformer training
+    num_units : int
+        dimension of the embedding vector
+    warmup_steps : int
+        number of warmup steps used in training schedule
+    grad_interval : int
+        the interval of updating learning rate
+    '''
     def __init__(self, lr,
                  num_units=512,
                  warmup_steps=4000,
@@ -106,6 +140,16 @@ class TransformerLearningRateHandler(EpochBegin, BatchBegin):
         self.batch_id += 1
 
 class MTGNMTGradientUpdateHandler(GradientUpdateHandler):
+    '''Gradient update handler of GNMT training
+
+    clip gradient if gradient norm exceeds some threshold during GNMT training
+
+    Parameters
+    ----------
+    clip : float
+        gradient norm threshold. If gradient norm exceeds this value, it should be
+        scaled down to the valid range.
+    '''
     def __init__(self, clip):
         super(MTGNMTGradientUpdateHandler, self).__init__()
         self.clip = clip
@@ -113,13 +157,27 @@ class MTGNMTGradientUpdateHandler(GradientUpdateHandler):
     def batch_end(self, estimator, *args, **kwargs):
         grads = [p.grad(estimator.context[0])
                  for p in estimator.net.collect_params().values()]
-        gnorm = gluon.utils.clip_global_norm(grads, self.clip)
+        gluon.utils.clip_global_norm(grads, self.clip)
         estimator.trainer.step(1)
 
 class TransformerGradientAccumulationHandler(GradientUpdateHandler,
                                              TrainBegin,
                                              EpochBegin,
                                              EpochEnd):
+    '''Gradient accumulation handler for transformer training
+
+    Accumulates gradients of the network for a few iterations, and updates 
+    network parameters with the accumulated gradients
+
+    Parameters
+    ----------
+    grad_interval : int
+        the interval of updating gradients
+    batch_size : int
+        number of tokens per gpu in a minibatch
+    rescale_loss : float
+        normalization constant
+    '''
     def __init__(self, grad_interval=1,
                  batch_size=1024,
                  rescale_loss=100):
@@ -154,10 +212,19 @@ class TransformerGradientAccumulationHandler(GradientUpdateHandler,
         if self.loss_denom > 0:
             self._update_gradient(estimator)
 
-"""TODO: merge this event handler with metricresethandler for language model
-"""
 class MTTransformerMetricHandler(MetricHandler, BatchBegin):
-    def __init__(self, *args, grad_interval=None,  **kwargs):
+    '''Metric update handler for transformer training
+
+    Reset the local metric stats for every few iterations and include the LengthNormalizedLoss
+    for metrics update
+    TODO : Refactor this event handler and share it with other estimators
+
+    Parameters
+    ----------
+    grad_interval : int
+        interval of resetting local metrics during transformer training
+    '''
+    def __init__(self, *args, grad_interval=None, **kwargs):
         super(MTTransformerMetricHandler, self).__init__(*args, **kwargs)
         self.grad_interval = grad_interval
 
@@ -185,6 +252,22 @@ class MTTransformerMetricHandler(MetricHandler, BatchBegin):
                 metric.update(label, pred)
 
 class MTCheckpointHandler(CheckpointHandler, TrainEnd):
+    '''Checkpoint handler for machine translation tasks training
+
+    save model parameter checkpoint and average parameter checkpoint during transformer
+    or GNMT training
+
+    Parameters
+    ----------
+    average_checkpoint : bool
+        whether store the average parameters of last few iterations
+    num_averages : int
+        number of last few model checkpoints to be averaged
+    average_start : int
+        performing average sgd on last average_start epochs
+    epochs : int
+        total epochs of machine translation model training
+    '''
     def __init__(self, *args,
                  average_checkpoint=None,
                  num_averages=None,
@@ -219,7 +302,7 @@ class MTCheckpointHandler(CheckpointHandler, TrainEnd):
                 alpha = 1. / (j + 1)
                 for k, v in estimator.net._collect_params_with_prefix().items():
                     for c in ctx:
-                        v.data(c)[:] == alpha * (params[k].as_in_context(c) - v.data(c))
+                        v.data(c)[:] = alpha * (params[k].as_in_context(c) - v.data(c))
             save_path = os.path.join(self.model_dir,
                                      'average_checkpoint_{}.params'.format(self.num_averages))
             estimator.net.save_parameters(save_path)
@@ -232,9 +315,14 @@ class MTCheckpointHandler(CheckpointHandler, TrainEnd):
             estimator.net.load_parameters(os.path.join(self.model_dir,
                                                        'valid_best.params'), ctx)
 
-# A temporary workaround for computing the bleu function. After bleu is in the metric
-# api, this event handler could be removed.
+
 class ComputeBleuHandler(BatchEnd, EpochEnd):
+    '''Bleu score computation handler
+
+    this event handler serves as a temporary workaround for computing Bleu score for
+    estimator training.
+    TODO: please remove this event handler after bleu metrics is merged to api
+    '''
     def __init__(self,
                  tgt_vocab,
                  tgt_sentence,
@@ -265,7 +353,6 @@ class ComputeBleuHandler(BatchEnd, EpochEnd):
     def batch_end(self, estimator, *args, **kwargs):
         ctx = estimator.context[0]
         batch = kwargs['batch']
-        label = kwargs['label']
         src_seq, tgt_seq, src_valid_length, tgt_valid_length, inst_ids = batch
         src_seq = src_seq.as_in_context(ctx)
         tgt_seq = tgt_seq.as_in_context(ctx)
@@ -280,7 +367,7 @@ class ComputeBleuHandler(BatchEnd, EpochEnd):
             self.translation_out.append(
                 [self.tgt_vocab.idx_to_token[ele] for ele in
                  max_score_sample[i][1:(sample_valid_length[i] - 1)]])
-        
+
     def epoch_end(self, estimator, *args, **kwargs):
         real_translation_out = [None for _ in range(len(self.all_inst_ids))]
         for ind, sentence in zip(self.all_inst_ids, self.translation_out):
@@ -290,17 +377,22 @@ class ComputeBleuHandler(BatchEnd, EpochEnd):
                 real_translation_out[ind] = self.detokenizer(self._bpe_to_words(sentence))
             else:
                 raise NotImplementedError
-        estimator.bleu_score, _, _, _, _ = self.compute_bleu_fn([self.tgt_sentence],
-                                                           real_translation_out,
-                                                           tokenized=self.tokenized,
-                                                           tokenizer=self.tokenizer,
-                                                           split_compound_word=self.split_compound_word,
-                                                           bpe=self.bpe)
+        estimator.bleu_score, _, _, _, _ = \
+        self.compute_bleu_fn([self.tgt_sentence],
+                             real_translation_out,
+                             tokenized=self.tokenized,
+                             tokenizer=self.tokenizer,
+                             split_compound_word=self.split_compound_word,
+                             bpe=self.bpe)
         print(estimator.bleu_score)
 
-
-# temporary validation bleu metric hack, it can be removed once bleu metric api is available
 class ValBleuHandler(EpochEnd):
+    '''Handler of validation Bleu score computation
+
+    This handler is similar to the ComputeBleuHandler. It computes the Bleu score on the 
+    validation dataset
+    TODO: please remove this event handler after bleu metric is available in the api
+    '''
     def __init__(self, val_data,
                  val_tgt_vocab,
                  val_tgt_sentences,
@@ -352,15 +444,21 @@ class ValBleuHandler(EpochEnd):
                 real_translation_out[ind] = self.detokenizer(self._bpe_to_words(sentence))
             else:
                 raise NotImplementedError
-        estimator.bleu_score, _, _, _, _ = self.compute_bleu_fn([self.val_tgt_sentences],
-                                                          real_translation_out,
-                                                          tokenized=self.tokenized,
-                                                          tokenizer=self.tokenizer,
-                                                          split_compound_word=self.split_compound_word,
-                                                          bpe=self.bpe)
+        estimator.bleu_score, _, _, _, _ = \
+        self.compute_bleu_fn([self.val_tgt_sentences],
+                             real_translation_out,
+                             tokenized=self.tokenized,
+                             tokenizer=self.tokenizer,
+                             split_compound_word=self.split_compound_word,
+                             bpe=self.bpe)
         print(estimator.bleu_score)
 
 class MTTransformerLoggingHandler(LoggingHandler):
+    '''Logging handler for transformer training
+
+    Logging the training metrics for transformer training. This handler is introduced 
+    due to batch cannot be handled by default LoggingHandler 
+    '''
     def __init__(self, *args, **kwargs):
         super(MTTransformerLoggingHandler, self).__init__(*args, **kwargs)
 
@@ -372,7 +470,7 @@ class MTTransformerLoggingHandler(LoggingHandler):
             for batch in cur_batches:
                 self.processed_samples += batch[0].shape[0]
             msg += '[Samples %s]' % (self.processed_samples)
-            self.log_interval_time +=  batch_time
+            self.log_interval_time += batch_time
             if self.batch_index % self.log_interval == 0:
                 msg += 'time/interval: %.3fs ' % self.log_interval_time
                 self.log_interval_time = 0

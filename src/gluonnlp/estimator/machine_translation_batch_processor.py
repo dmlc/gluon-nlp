@@ -20,17 +20,32 @@
 import numpy as np
 import mxnet as mx
 from mxnet.gluon.contrib.estimator import BatchProcessor
-from mxnet.gluon.utils import split_and_load
 from ..model.transformer import ParallelTransformer
 from ..utils.parallel import Parallel
 
 __all__ = ['MTTransformerBatchProcessor', 'MTGNMTBatchProcessor']
 
 class MTTransformerBatchProcessor(BatchProcessor):
+    '''Batch processor for transformer training on Machine translation
+
+    The batch training and validation procedure on transformer network
+
+    Parameters
+    ----------
+    rescale_loss : int
+        normalization constant for loss computation
+    batch_size : int
+        number of tokens per gpu in a minibatch
+    label_smoothing : HybridBlock
+        Apply label smoothing on the given network
+    loss_function : mxnet.gluon.loss
+        training loss function
+    '''
     def __init__(self, rescale_loss=100,
                  batch_size=1024,
                  label_smoothing=None,
                  loss_function=None):
+        super(MTTransformerBatchProcessor, self).__init__()
         self.rescale_loss = rescale_loss
         self.batch_size = batch_size
         self.label_smoothing = label_smoothing
@@ -49,9 +64,12 @@ class MTTransformerBatchProcessor(BatchProcessor):
         self._get_parallel_model(estimator)
         data = [shard[0] for shard in train_batch]
         target = [shard[1] for shard in train_batch]
-        src_word_count, tgt_word_count, bs = np.sum([(shard[2].sum(),
-                                                      shard[3].sum(), shard[0].shape[0]) for shard in train_batch],
-                                                    axis=0)
+        _, tgt_word_count, bs = np.sum([(shard[2].sum(),
+                                         shard[3].sum(),
+                                         shard[0].shape[0])
+                                        for shard in
+                                        train_batch],
+                                       axis=0)
         estimator.tgt_valid_length = tgt_word_count.asscalar() - bs
         seqs = [[seq.as_in_context(context) for seq in shard]
                 for context, shard in zip(estimator.context, train_batch)]
@@ -78,8 +96,12 @@ class MTTransformerBatchProcessor(BatchProcessor):
         return src_seq, [tgt_seq, val_tgt_valid_length], out, loss
 
 class MTGNMTBatchProcessor(BatchProcessor):
+    '''Batch processor for GNMT training
+
+    Batch training and validation on the GNMT network for the machine translation task.
+    '''
     def __init__(self):
-        pass
+        super(MTGNMTBatchProcess, self).__init__()
 
     def fit_batch(self, estimator, train_batch, batch_axis=0):
         ctx = estimator.context[0]
@@ -100,15 +122,15 @@ class MTGNMTBatchProcessor(BatchProcessor):
 
     def evaluate_batch(self, estimator, val_batch, batch_axis=0):
         ctx = estimator.context[0]
-        src_seq, tgt_seq, src_valid_length, tgt_valid_length, inst_ids = val_batch
+        src_seq, tgt_seq, src_valid_length, tgt_valid_length, _ = val_batch
         src_seq = src_seq.as_in_context(ctx)
         tgt_seq = tgt_seq.as_in_context(ctx)
         src_valid_length = src_valid_length.as_in_context(ctx)
         tgt_valid_length = tgt_valid_length.as_in_context(ctx)
         out, _ = estimator.val_net(src_seq, tgt_seq[:, :-1], src_valid_length,
-                                    tgt_valid_length - 1)
+                                   tgt_valid_length - 1)
         loss = estimator.val_loss(out, tgt_seq[:, 1:],
-                                         tgt_valid_length - 1).sum().asscalar()
+                                  tgt_valid_length - 1).sum().asscalar()
         loss = loss * (tgt_seq.shape[1] - 1)
         val_tgt_valid_length = (tgt_valid_length - 1).sum().asscalar()
         return src_seq, [tgt_seq, val_tgt_valid_length], out, loss
