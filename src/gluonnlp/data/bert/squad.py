@@ -145,9 +145,9 @@ def improve_answer_span(doc_tokens, input_start, input_end, tokenizer, orig_answ
     whitespace-tokenized words. But then after WordPiece tokenization, we can
     often find a "better match". For example:
 
-      Question: What year was John Smith born?
-      Context: The leader was John Smith (1895-1943).
-      Answer: 1895
+    Question: What year was John Smith born?
+    Context: The leader was John Smith (1895-1943).
+    Answer: 1895
 
     The original whitespace-tokenized answer will be "(1895-1943).". However
     after tokenization, our tokens will be "( 1895 - 1943 ) .". So we can match
@@ -155,9 +155,9 @@ def improve_answer_span(doc_tokens, input_start, input_end, tokenizer, orig_answ
 
     However, this is not always possible. Consider the following:
 
-      Question: What country is the top exporter of electornics?
-      Context: The Japanese electronics industry is the lagest in the world.
-      Answer: Japan
+    Question: What country is the top exporter of electornics?
+    Context: The Japanese electronics industry is the lagest in the world.
+    Answer: Japan
 
     In this case, the annotator chose "Japan" as a character sub-span of
     the word "Japanese". Since our WordPiece tokenizer does not split
@@ -195,11 +195,11 @@ def check_is_max_context(doc_spans, cur_span_index, position):
 
     Because of the sliding window approach taken to scoring documents, a single
     token can appear in multiple documents. E.g.
-     Doc: the man went to the store and bought a gallon of milk
-     Span A: the man went to the
-     Span B: to the store and bought
-     Span C: and bought a gallon of
-     ...
+    Doc: the man went to the store and bought a gallon of milk
+    Span A: the man went to the
+    Span B: to the store and bought
+    Span C: and bought a gallon of
+    ...
 
     Now the word 'bought' will have two scores from spans B and C. We only
     want to consider the score with "maximum context", which we define as
