@@ -121,7 +121,6 @@ Finally, GluonNLP also suports Korean BERT pre-trained model, [KoBERT](https://g
 
 .. code-block:: python
 
-    !pip install -U https://github.com/dmlc/gluon-nlp/archive/v0.9.0.tar.gz
     import gluonnlp as nlp; import mxnet as mx;
     model, vocab = nlp.model.get_model('bert_12_768_12', dataset_name='kobert_news_wiki_ko_cased',use_decoder=False, use_classifier=False)
     tok = nlp.data.get_tokenizer('bert_12_768_12', 'kobert_news_wiki_ko_cased')
