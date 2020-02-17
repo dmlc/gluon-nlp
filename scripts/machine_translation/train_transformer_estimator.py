@@ -46,10 +46,6 @@ import gluonnlp as nlp
 from gluonnlp.loss import LabelSmoothing, MaskedSoftmaxCELoss
 from gluonnlp.model.transformer import ParallelTransformer, get_transformer_encoder_decoder
 from gluonnlp.model.translation import NMTModel
-import dataprocessor
-from bleu import _bpe_to_words, compute_bleu
-from translation import BeamSearchTranslator
-from utils import logging_config
 from gluonnlp.metric import LengthNormalizedLoss
 from gluonnlp.estimator import MachineTranslationEstimator
 from gluonnlp.estimator import MTTransformerBatchProcessor, MTTransformerParamUpdateHandler
@@ -57,6 +53,11 @@ from gluonnlp.estimator import TransformerLearningRateHandler, MTTransformerMetr
 from gluonnlp.estimator import TransformerGradientAccumulationHandler, ComputeBleuHandler
 from gluonnlp.estimator import ValBleuHandler, MTCheckpointHandler
 from gluonnlp.estimator import MTTransformerLoggingHandler
+
+import dataprocessor
+from bleu import _bpe_to_words, compute_bleu
+from translation import BeamSearchTranslator
+from utils import logging_config
 
 np.random.seed(100)
 random.seed(100)
