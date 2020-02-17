@@ -22,42 +22,12 @@ The dataset used for training the models is wikitext-2.
 +---------------+----------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+
 | Test PPL      | 65.62                                                                                                                      | 80.67                                                                                                                     | 82.29                                                                                                                           | 86.91                                                                                                                          | 101.64                                                                                                                         |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+
-| Command       | [1]                                                                                                                        | [2]                                                                                                                       | [3]                                                                                                                             | [4]                                                                                                                            | [5]                                                                                                                            |
+| Command       | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/awd_lstm_lm_1150_wikitext-2.sh>`__     | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/awd_lstm_lm_600_wikitext-2.sh>`__     | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/standard_lstm_lm_1500_wikitext-2.sh>`__     | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/standard_lstm_lm_650_wikitext-2.sh>`__     | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/standard_lstm_lm_200_wikitext-2.sh>`__     |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+
 | Training logs | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/awd_lstm_lm_1150_wikitext-2.log>`__        | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/awd_lstm_lm_600_wikitext-2.log>`__        | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/standard_lstm_lm_1500_wikitext-2.log>`__        | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/standard_lstm_lm_650_wikitext-2.log>`__        | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/standard_lstm_lm_200_wikitext-2.log>`__        |
 +---------------+----------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------+
 
 For all the above model settings, we set Tied = True and NTASGD = True .
-
-[1] awd_lstm_lm_1150_wikitext-2 (Val PPL 68.52 Test PPL 65.68 )
-
-.. code-block:: console
-
-   $ python word_language_model_estimator.py --gpu 0 --tied --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save awd_lstm_lm_1150_wikitext-2
-
-[2] awd_lstm_lm_600_wikitext-2 (Val PPL 83.92 Test PPL 80.09)
-
-.. code-block:: console
-
-   $ python word_language_model_estimator.py --gpu 0 --emsize 200 --nhid 600 --epochs 750 --dropout 0.2 --dropout_h 0.1 --dropout_i 0.3 --dropout_e 0.05 --weight_drop 0.2 --tied --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save awd_lstm_lm_600_wikitext-2
-
-[3] standard_lstm_lm_1500_wikitext-2 (Val PPL 85.23 Test PPL 81.44)
-
-.. code-block:: console
-
-   $ python word_language_model_estimator.py --gpu 0 --emsize 1500 --nhid 1500 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.65 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save standard_lstm_lm_1500_wikitext-2
-
-[4] standard_lstm_lm_650_wikitext-2 (Val PPL 94.51 Test PPL 90.28)
-
-.. code-block:: console
-
-   $ python word_language_model_estimator.py --gpu 0 --emsize 650 --nhid 650 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.5 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save standard_lstm_lm_650_wikitext-2
-
-[5] standard_lstm_lm_200_wikitext-2 (Val PPL 107.44 Test PPL 101.19)
-
-.. code-block:: console
-
-   $ python word_language_model_estimator.py --gpu 0 --emsize 200 --nhid 200 --nlayers 2 --lr 20 --epochs 750 --batch_size 20 --bptt 35 --dropout 0.2 --dropout_h 0 --dropout_i 0 --dropout_e 0 --weight_drop 0 --tied --wd 0 --alpha 0 --beta 0 --ntasgd --lr_update_interval 30 --lr_update_factor 0.1 --save standard_lstm_lm_200_wikitext-2
 
 Cache Language Model
 ~~~~~~~~~~~~~~~~~~~~~
@@ -79,42 +49,12 @@ The dataset used for training the models is wikitext-2.
 +---------------------+-----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------+
 | Test PPL            | 51.46                                                                                                                             | 62.19                                                                                                                            | 62.79                                                                                                                                  | 65.85                                                                                                                                 | 73.74                                                                                                                                 |
 +---------------------+-----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------+
-| Command             | [1]                                                                                                                               | [2]                                                                                                                              | [3]                                                                                                                                    | [4]                                                                                                                                   | [5]                                                                                                                                   |
+| Command             | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/cache_awd_lstm_lm_1150_wikitext-2.sh>`__      | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/cache_awd_lstm_lm_600_wikitext-2.sh>`__      | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/cache_standard_lstm_lm_1500_wikitext-2.sh>`__      | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/cache_standard_lstm_lm_650_wikitext-2.sh>`__      | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/cache_standard_lstm_lm_200_wikitext-2.sh>`__      |
 +---------------------+-----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------+
 | Training logs       | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/cache_awd_lstm_lm_1150_wikitext-2.log>`__         | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/cache_awd_lstm_lm_600_wikitext-2.log>`__         | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/cache_standard_lstm_lm_1500_wikitext-2.log>`__         | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/cache_standard_lstm_lm_650_wikitext-2.log>`__         | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/cache_standard_lstm_lm_200_wikitext-2.log>`__         |
 +---------------------+-----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------+
 
 For all the above model settings, we set lambdas = 0.1279, theta = 0.662, window = 2000 and bptt= 2000 .
-
-[1] cache_awd_lstm_lm_1150_wikitext-2 (Val PPL 53.41 Test PPL 51.46)
-
-.. code-block:: console
-
-   $ python cache_language_model.py --gpus 0 --model_name awd_lstm_lm_1150
-
-[2] cache_awd_lstm_lm_600_wikitext-2 (Val PPL 64.51 Test PPL 62.19)
-
-.. code-block:: console
-
-   $ python cache_language_model.py --gpus 0 --model_name awd_lstm_lm_600
-
-[3] cache_standard_lstm_lm_1500_wikitext-2 (Val PPL 65.54 Test PPL 62.79)
-
-.. code-block:: console
-
-   $ python cache_language_model.py --gpus 0 --model_name standard_lstm_lm_1500
-
-[4] cache_standard_lstm_lm_650_wikitext-2 (Val PPL 68.47 Test PPL 65.85)
-
-.. code-block:: console
-
-   $ python cache_language_model.py --gpus 0 --model_name standard_lstm_lm_650
-
-[5] cache_standard_lstm_lm_200_wikitext-2 (Val PPL 77.51 Test PPL 73.74)
-
-.. code-block:: console
-
-   $ python cache_language_model.py --gpus 0 --model_name standard_lstm_lm_200
 
 Large Scale Word Language Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -130,41 +70,16 @@ The dataset used for training the models is Google's 1 billion words dataset.
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
 | Model           | LSTM-2048-512                                                                                                                |
 +=================+==============================================================================================================================+
-| Mode            | LSTMP                                                                                                                        |
-+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Num layers      | 1                                                                                                                            |
-+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Embed size      | 512                                                                                                                          |
-+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Hidden size     | 2048                                                                                                                         |
-+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Projection size | 512                                                                                                                          |
-+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Dropout         | 0.1                                                                                                                          |
-+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Learning rate   | 0.2                                                                                                                          |
-+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Num samples     | 8192                                                                                                                         |
-+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Batch size      | 128                                                                                                                          |
-+-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Gradient clip   | 10.0                                                                                                                         |
-+-----------------+------------------------------------------------------------------------------------------------------------------------------+
 | Test perplexity | 43.62                                                                                                                        |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Num epochs      | 50                                                                                                                           |
+| Command         | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw.sh>`__               |
++-----------------+------------------------------------------------------------------------------------------------------------------------------+
+| Command         | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw-eval.sh>`__          |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
 | Training logs   | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw.log>`__              |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
 | Evaluation logs | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw-eval.log>`__         |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
-
-[1] LSTM-2048-512 (Test PPL 43.62)
-
-.. code-block:: console
-
-   $ python large_word_language_model_estimator.py --gpus 0,1,2,3 --clip=10
-   $ python large_word_language_model_estimator.py --gpus 4 --eval-only --batch-size=1
 
 
 XLNet: Generalized Autoregressive Pretraining for Language Understanding
