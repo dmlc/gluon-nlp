@@ -31,7 +31,7 @@ This example shows how to implement the GNMT model with Gluon NLP Toolkit.
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-# pylint:disable=redefined-outer-name,logging-format-interpolation
+# pylint:disable=redefined-outer-name,logging-format-interpolation,unexpected-keyword-arg
 
 import argparse
 import random
@@ -202,7 +202,6 @@ event_handlers = [learning_rate_handler, gradient_update_handler, metric_handler
 gnmt_estimator.fit(train_data=train_data_loader,
                    val_data=val_data_loader,
                    epochs=args.epochs,
-                   #batches=5,
                    event_handlers=event_handlers,
                    batch_axis=0)
 

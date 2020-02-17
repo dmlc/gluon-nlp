@@ -30,7 +30,7 @@ This example shows how to implement the Transformer model with Gluon NLP Toolkit
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-# pylint:disable=redefined-outer-name,logging-format-interpolation
+# pylint:disable=redefined-outer-name,logging-format-interpolation,unexpected-keyword-arg
 
 import argparse
 import logging
