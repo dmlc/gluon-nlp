@@ -1,4 +1,4 @@
-# Machine Translation with Transformers
+# Using Pre-trained Transformer
 
 In this notebook, we will show how to use Transformer introduced in [1] and evaluate the pre-trained model with GluonNLP. Transformer model is shown to be more accurate and easier to parallelize than previous seq2seq-based models such as Google Neural Machine Translation. We will use the state-of-the-art pre-trained Transformer model, evaluate the pre-trained Transformer model on newstest2014 and translate a few sentences ourselves with the `BeamSearchTranslator`;
 

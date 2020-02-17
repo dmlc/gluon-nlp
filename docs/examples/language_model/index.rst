@@ -1,5 +1,5 @@
-Language Model
-==============
+Language Modeling
+=================
 
 .. container:: cards
 

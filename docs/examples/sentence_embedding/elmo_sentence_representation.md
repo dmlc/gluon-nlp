@@ -1,4 +1,4 @@
-# Extract Sentence Features with Pre-trained ELMo
+# Extracting Sentence Features with Pre-trained ELMo
 
 While word embeddings have been shown to capture syntactic and semantic information of words as well as have become a standard component in many state-of-the-art NLP architectures, their context-free nature limits their ability to represent context-dependent information.
 Peters et. al. proposed a deep contextualized word representation method, called Embeddings from Language Models, or ELMo for short [1].
