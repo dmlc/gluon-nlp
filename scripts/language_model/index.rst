@@ -72,9 +72,9 @@ The dataset used for training the models is Google's 1 billion words dataset.
 +=================+==============================================================================================================================+
 | Test perplexity | 43.62                                                                                                                        |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Command         | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw.sh>`__               |
+| Command         | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw.sh>`__           |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
-| Command         | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw-eval.sh>`__          |
+| Command         | `command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw-eval.sh>`__      |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
 | Training logs   | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/language_model/big_rnn_lm_2048_512_gbw.log>`__              |
 +-----------------+------------------------------------------------------------------------------------------------------------------------------+
