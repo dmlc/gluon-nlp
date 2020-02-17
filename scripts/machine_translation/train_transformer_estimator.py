@@ -34,20 +34,18 @@ This example shows how to implement the Transformer model with Gluon NLP Toolkit
 
 import argparse
 import logging
-import math
 import os
 import random
-import time
 
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
-import gluonnlp as nlp
+from mxnet.gluon.contrib.estimator import ValidationHandler
 
+import gluonnlp as nlp
 from gluonnlp.loss import LabelSmoothing, MaskedSoftmaxCELoss
 from gluonnlp.model.transformer import ParallelTransformer, get_transformer_encoder_decoder
 from gluonnlp.model.translation import NMTModel
-from gluonnlp.utils.parallel import Parallel
 import dataprocessor
 from bleu import _bpe_to_words, compute_bleu
 from translation import BeamSearchTranslator
@@ -59,7 +57,6 @@ from gluonnlp.estimator import TransformerLearningRateHandler, MTTransformerMetr
 from gluonnlp.estimator import TransformerGradientAccumulationHandler, ComputeBleuHandler
 from gluonnlp.estimator import ValBleuHandler, MTCheckpointHandler
 from gluonnlp.estimator import MTTransformerLoggingHandler
-from mxnet.gluon.contrib.estimator import ValidationHandler
 
 np.random.seed(100)
 random.seed(100)

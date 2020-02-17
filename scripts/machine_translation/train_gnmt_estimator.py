@@ -34,29 +34,29 @@ This example shows how to implement the GNMT model with Gluon NLP Toolkit.
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import argparse
-import time
 import random
 import os
 import logging
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
-import gluonnlp as nlp
+from mxnet.gluon.contrib.estimator import LoggingHandler, ValidationHandler
 
+import gluonnlp as nlp
 from gluonnlp.model.translation import NMTModel
 from gluonnlp.loss import MaskedSoftmaxCELoss
-from gnmt import get_gnmt_encoder_decoder
-from translation import BeamSearchTranslator
-from utils import logging_config
-from bleu import compute_bleu
-import dataprocessor
 from gluonnlp.metric import LengthNormalizedLoss
 from gluonnlp.estimator import MachineTranslationEstimator
 from gluonnlp.estimator import MTGNMTBatchProcessor, MTGNMTGradientUpdateHandler
 from gluonnlp.estimator import ComputeBleuHandler, ValBleuHandler
 from gluonnlp.estimator import MTTransformerMetricHandler, MTGNMTLearningRateHandler
-from gluonnlp.estimator import MTCheckpointHandler, MTTransformerMetricHandler
-from mxnet.gluon.contrib.estimator import LoggingHandler, ValidationHandler
+from gluonnlp.estimator import MTCheckpointHandler
+
+from gnmt import get_gnmt_encoder_decoder
+from translation import BeamSearchTranslator
+from utils import logging_config
+from bleu import compute_bleu
+import dataprocessor
 
 np.random.seed(100)
 random.seed(100)
@@ -190,8 +190,8 @@ checkpoint_handler = MTCheckpointHandler(model_dir=args.save_dir)
 val_metric_handler = MTTransformerMetricHandler(metrics=gnmt_estimator.val_metrics)
 
 val_validation_handler = ValidationHandler(val_data=val_data_loader,
-                                             eval_fn=gnmt_estimator.evaluate,
-                                             event_handlers=val_metric_handler)
+                                           eval_fn=gnmt_estimator.evaluate,
+                                           event_handlers=val_metric_handler)
 
 logging_handler = LoggingHandler(log_interval=args.log_interval,
                                  metrics=gnmt_estimator.train_metrics)
