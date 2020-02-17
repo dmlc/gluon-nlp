@@ -11,7 +11,7 @@ Sentiment Analysis
 
    .. card::
       :title: Training Structured Self-attentive Sentence Embedding
-      :link: ../sentence_embedding/self_attentive_sentence_embedding.html
+      :link: self_attentive_sentence_embedding.html
 
       See how to use GluonNLP to build more advanced model structure for extracting sentence
       embeddings to predict Yelp review rating.
@@ -23,5 +23,5 @@ Sentiment Analysis
    :maxdepth: 2
 
    sentiment_analysis.ipynb
-   ../sentence_embedding/self_attentive_sentence_embedding.ipynb
+   self_attentive_sentence_embedding.ipynb
 

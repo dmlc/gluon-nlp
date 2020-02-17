@@ -4,7 +4,7 @@ Text Generation
 .. container:: cards
 
    .. card::
-      :title: Inference with Beam Search Sampler and Sequence Sampler
+      :title: Sequence Generation with Beam Search Sampler and Sequence Sampler
       :link: sequence_sampling.html
 
       Learn how to generate sentence from pre-trained language model through sampling and beam

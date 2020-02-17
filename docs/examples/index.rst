@@ -27,11 +27,10 @@ Representation Learning
       :title: Extracting Sentence Features with Pre-trained ELMo
       :link: sentence_embedding/elmo_sentence_representation.html
 
-      See how to use GluonNLP's model API to automatically download the pre-trained ELMo
-      model from NAACL2018 best paper, and extract features with it.
+      See how to use GluonNLP's API to automatically download the pre-trained ELMo model, and extract features from it.
 
    .. card::
-      :title: Fine-tuning Pre-trained BERT Model
+      :title: Fine-tuning Pre-trained BERT Models
       :link: sentence_embedding/bert.html
 
       See how to use GluonNLP to fine-tune a sentence pair classification model with
@@ -103,7 +102,7 @@ Sentiment Analysis
 
    .. card::
       :title: Training Structured Self-attentive Sentence Embedding
-      :link: sentence_embedding/self_attentive_sentence_embedding.html
+      :link: sentiment_analysis/self_attentive_sentence_embedding.html
 
       See how to use GluonNLP to build more advanced model structure for extracting sentence
       embeddings to predict Yelp review rating.
@@ -122,7 +121,7 @@ Text Generation
 .. container:: cards
 
    .. card::
-      :title: Inference with Beam Search Sampler and Sequence Sampler
+      :title: Sequence Generation with Beam Search Sampler and Sequence Sampler
       :link: sequence_sampling/sequence_sampling.html
 
       Learn how to generate sentence from pre-trained language model through sampling and beam

@@ -25,7 +25,7 @@ Representation Learning
       model from NAACL2018 best paper, and extract features with it.
 
    .. card::
-      :title: Fine-tuning Pre-trained BERT Model
+      :title: Fine-tuning Pre-trained BERT Models
       :link: ../sentence_embedding/bert.html
 
       See how to use GluonNLP to fine-tune a sentence pair classification model with
