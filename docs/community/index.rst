@@ -53,4 +53,5 @@ Interested in contributing to GluonNLP? Check our contribution guide:
    :maxdepth: 3
 
    contribute
+   git
    release

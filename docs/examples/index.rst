@@ -3,6 +3,30 @@ Tutorials
 
 Interested in getting started in a new NLP area? Here are some tutorials to help get started.
 
+Dataset and Vocabularies
+-------------------------
+
+.. container:: cards
+
+   .. card::
+      :title: Data Loading APIs
+      :link: notes/data_api.html
+
+      Basics on how to load and process the sentiment dataset to form batches that can be processed efficiently.
+
+   .. card::
+      :title: Vocabulary APIs
+      :link: notes/vocab_emb.html
+
+      Learn how to write simple code to create index for tokens.
+
+
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+
+   notes/index
+
 
 Representation Learning
 -----------------------
