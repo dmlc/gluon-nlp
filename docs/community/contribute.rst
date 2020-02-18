@@ -26,15 +26,6 @@ For a list of open starter tasks, check `good first issues <https://github.com/d
 
 - `Contribute new API <#contribute-new-api>`__
 
-- `Git Workflow Howtos <#git-workflow-howtos>`__
-
-   -  `How to submit pull request <#how-to-submit-pull-request>`__
-   -  `How to resolve conflict with
-      master <#how-to-resolve-conflict-with-master>`__
-   -  `How to combine multiple commits into
-      one <#how-to-combine-multiple-commits-into-one>`__
-   -  `What is the consequence of force
-      push <#what-is-the-consequence-of-force-push>`__
 
 Clone the master branch for development
 ---------------------------------------
