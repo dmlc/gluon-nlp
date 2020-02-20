@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -19,8 +17,6 @@
 
 # pylint: disable=
 """Highway layer initializer."""
-from __future__ import absolute_import, print_function
-
 __all__ = ['HighwayBias', 'TruncNorm']
 
 import mxnet
@@ -84,7 +80,7 @@ class TruncNorm(Initializer):
     def __init__(self, mean=0, stdev=0.01, **kwargs):
         super(TruncNorm, self).__init__(**kwargs)
         try:
-            from scipy.stats import truncnorm
+            from scipy.stats import truncnorm  # pylint: disable=import-outside-toplevel
         except ImportError:
             raise ImportError('SciPy is not installed. '
                               'You must install SciPy >= 1.0.0 in order to use the '

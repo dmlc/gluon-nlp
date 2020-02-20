@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -87,8 +85,7 @@ class Net(mx.gluon.HybridBlock):
                 dtype=dtype)
 
             self.negatives_sampler = nlp.data.UnigramCandidateSampler(
-                weights=negatives_weights**smoothing, shape=(batch_size, ),
-                dtype='int64')
+                weights=negatives_weights**smoothing, dtype='int64')
 
     def __getitem__(self, tokens):
         return self.embedding[tokens]

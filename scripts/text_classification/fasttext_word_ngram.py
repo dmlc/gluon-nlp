@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -42,6 +40,7 @@ import mxnet.gluon as gluon
 
 import gluonnlp
 
+gluonnlp.utils.check_version('0.7.1')
 
 class MeanPoolingLayer(gluon.HybridBlock):
     """A block for mean pooling of encoder features"""
@@ -286,7 +285,7 @@ def get_dataloader(train_dataset, train_data_lengths,
     """ Construct the DataLoader. Pad data, stack label and lengths"""
     bucket_num, bucket_ratio = 20, 0.2
     batchify_fn = gluonnlp.data.batchify.Tuple(
-        gluonnlp.data.batchify.Pad(axis=0, ret_length=True),
+        gluonnlp.data.batchify.Pad(axis=0, pad_val=0, ret_length=True),
         gluonnlp.data.batchify.Stack(dtype='float32'))
     batch_sampler = gluonnlp.data.sampler.FixedBucketSampler(
         train_data_lengths,

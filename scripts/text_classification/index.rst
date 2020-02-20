@@ -3,6 +3,7 @@ Text Classification
 
 :download:`Download scripts </model_zoo/text_classification.zip>`
 
+
 Fast-text Word N-gram
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -22,7 +23,7 @@ The datasets used in this script can be obtained with
 
    $ python fasttext_word_ngram.py --input yelp_review_polarity.train \
                                    --output yelp_review_polarity.gluon \
-                                   --validation dbpedia.test \
+                                   --validation yelp_review_polarity.test \
                                    --ngrams 1 --epochs 10 --lr 0.1 --emsize 100 --gpu 0
 
 
@@ -37,7 +38,7 @@ Use the following commands to train a Classification model on the dbpedia datase
 .. code-block:: console
 
    $ python fasttext_word_ngram.py --input dbpedia.train \
-                                   --output yelp_review_polarity.gluon \
+                                   --output dbpedia.gluon \
                                    --validation dbpedia.test \
                                    --ngrams 2 --epochs 25 --lr 0.1 --emsize 100 --gpu 0
 

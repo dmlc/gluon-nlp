@@ -178,7 +178,10 @@ def main_wrapper(args) {
   err = null
   try {
     update_github_commit_status('PENDING', 'Job has been enqueued')
-    args['core_logic']()
+
+    timestamps {
+      args['core_logic']()
+    }
 
     // set build status to success at the end
     currentBuild.result = "SUCCESS"
@@ -191,16 +194,18 @@ def main_wrapper(args) {
       update_github_commit_status('FAILURE', 'Job failed')
     }
   } finally {
-    node {
-      // Call failure handler
-      args['failure_handler']()
+    timestamps {
+      node {
+        // Call failure handler
+        args['failure_handler']()
 
-      // Clean workspace to reduce space requirements
-      cleanWs()
+        // Clean workspace to reduce space requirements
+        cleanWs()
 
-      // Remember to rethrow so the build is marked as failing
-      if (err) {
-        throw err
+        // Remember to rethrow so the build is marked as failing
+        if (err) {
+          throw err
+        }
       }
     }
   }

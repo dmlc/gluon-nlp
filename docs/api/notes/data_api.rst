@@ -158,7 +158,7 @@ lengths in the minibatch, which allows the fast tensor manipulation in GPU.
 
 .. code:: python
 
-   >>> batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0),
+   >>> batchify_fn = nlp.data.batchify.Tuple(nlp.data.batchify.Pad(axis=0, pad_val=0),
    >>>                                       nlp.data.batchify.Stack())
 
 :class:`~gluonnlp.data.batchify.Tuple` wraps multiple batchify functions and applies each input function on each input field,
@@ -283,4 +283,4 @@ based on sort_key and then batched.
     >>>                                                     shuffle=True)
 
 More details about the training using pre-trained language model and bucketing can be found in the
-`sentiment analysis tutorial </examples/sentiment_analysis/sentiment_analysis.ipynb>`_.
+`sentiment analysis tutorial </examples/sentiment_analysis/sentiment_analysis.html>`_.

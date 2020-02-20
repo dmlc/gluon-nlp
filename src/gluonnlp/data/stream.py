@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -22,12 +20,12 @@
 corpora and dataset files. Files can be streamed into formats that are
 ready for training and evaluation."""
 
-from __future__ import print_function
 
 import glob
 import multiprocessing
 import multiprocessing.pool
 import os
+import queue
 import random
 import sys
 import threading
@@ -36,12 +34,7 @@ import traceback
 import numpy as np
 
 import mxnet as mx
-from mxnet.gluon.data import RandomSampler, SequentialSampler, Sampler
-
-try:
-    import Queue as queue
-except ImportError:
-    import queue
+from mxnet.gluon.data import RandomSampler, Sampler, SequentialSampler
 
 __all__ = [
     'DataStream', 'SimpleDataStream', 'DatasetStream', 'SimpleDatasetStream',
@@ -273,8 +266,7 @@ class _Prefetcher:
                 c = self._controlq.get(False)
                 if c is None:
                     break
-                else:
-                    raise RuntimeError('Got unexpected control code {}'.format(repr(c)))
+                raise RuntimeError('Got unexpected control code {}'.format(repr(c)))
             except queue.Empty:
                 pass
             except RuntimeError as e:
@@ -380,8 +372,9 @@ class PrefetchingStream(DataStream):
 
     def __iter__(self):
         seed = random.getrandbits(32)
-        np_seed = np.random.randint(0, 2**32)
-        mx_seed = int(mx.nd.random.uniform(0, 2**32).asscalar())
+        # TODO should be possible to change to 64 bit in MXNet 1.6 (uses int64 by default?)
+        np_seed = np.random.randint(0, np.iinfo(np.int32).max)
+        mx_seed = int(mx.nd.random.uniform(0, np.iinfo(np.int32).max).asscalar())
         if self._multiprocessing:
             return _ProcessPrefetcher(self._stream, self._num_prefetch,
                                       seed=seed, np_seed=np_seed,

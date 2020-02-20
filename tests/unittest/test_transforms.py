@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -16,7 +14,6 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-from __future__ import print_function
 
 import os
 import sys
@@ -29,10 +26,11 @@ from mxnet.gluon.data import SimpleDataset
 from mxnet.gluon.utils import download
 from numpy.testing import assert_allclose
 
-from gluonnlp.data import count_tokens
+from gluonnlp.data import count_tokens, get_tokenizer
 from gluonnlp.data import transforms as t
 from gluonnlp.model.utils import _load_vocab
 from gluonnlp.vocab import BERTVocab, Vocab
+from gluonnlp.model import get_model
 
 
 def test_clip_sequence():
@@ -77,16 +75,10 @@ def test_pad_sequence():
                             assert_allclose(ret_l, gt_npy)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0),
-                    reason="requires python3 or higher")
 def test_moses_tokenizer():
     tokenizer = t.SacreMosesTokenizer()
     text = u"Introducing Gluon: An Easy-to-Use Programming Interface for Flexible Deep Learning."
-    try:
-        ret = tokenizer(text)
-    except ImportError:
-        warnings.warn("NLTK not installed, skip test_moses_tokenizer().")
-        return
+    ret = tokenizer(text)
     assert isinstance(ret, list)
     assert len(ret) > 0
 
@@ -103,17 +95,11 @@ def test_spacy_tokenizer():
     assert len(ret) > 0
 
 
-@pytest.mark.skipif(sys.version_info < (3, 0),
-                    reason="requires python3 or higher")
 def test_moses_detokenizer():
     detokenizer = t.SacreMosesDetokenizer(return_str=False)
     text = ['Introducing', 'Gluon', ':', 'An', 'Easy-to-Use', 'Programming',
             'Interface', 'for', 'Flexible', 'Deep', 'Learning', '.']
-    try:
-        ret = detokenizer(text)
-    except ImportError:
-        warnings.warn("NLTK not installed, skip test_moses_detokenizer().")
-        return
+    ret = detokenizer(text)
     assert isinstance(ret, list)
     assert len(ret) > 0
 
@@ -268,7 +254,10 @@ def test_bert_sentences_transform():
 @pytest.mark.remote_required
 def test_bert_sentencepiece_sentences_transform():
     url = 'http://repo.mxnet.io/gluon/dataset/vocab/test-682b5d15.bpe'
-    f = download(url, overwrite=True)
+    with warnings.catch_warnings():
+        # UserWarning: File test-682b5d15.bpe exists in file system so the downloaded file is deleted
+        warnings.simplefilter("ignore")
+        f = download(url, overwrite=True)
     bert_vocab = BERTVocab.from_sentencepiece(f)
     bert_tokenizer = t.BERTSPTokenizer(f, bert_vocab, lower=True)
     assert bert_tokenizer.is_first_subword(u'▁this')
@@ -303,7 +292,7 @@ def test_bert_sentencepiece_sentences_transform():
     # token ids
     assert all(processed[0] == np.array(token_ids, dtype='int32'))
     # sequence length
-    assert np.asscalar(processed[1]) == len(tokens) + 2
+    assert processed[1].item() == len(tokens) + 2
     # segment id
     assert all(processed[2] == np.array([0] * max_len, dtype='int32'))
 
@@ -327,3 +316,87 @@ def test_gpt2_transforms():
 
     recovered_sentence = detokenizer([vocab.idx_to_token[i] for i in indices])
     assert recovered_sentence == s
+
+
+@pytest.mark.remote_required
+def test_get_tokenizer():
+    test_sent = 'Apple, 사과, 沙果'
+    models = [
+        (
+            'roberta_12_768_12', 'openwebtext_ccnews_stories_books_cased', [
+                'Apple', ',', 'Ġì', 'Ĥ¬', 'ê', '³', '¼', ',', 'Ġæ', '²', 'Ļ',
+                'æ', 'ŀ', 'ľ'
+            ]
+        ), (
+            'roberta_24_1024_16', 'openwebtext_ccnews_stories_books_cased', [
+                'Apple', ',', 'Ġì', 'Ĥ¬', 'ê', '³', '¼', ',', 'Ġæ', '²', 'Ļ',
+                'æ', 'ŀ', 'ľ'
+            ]
+        ), (
+            'bert_12_768_12', 'book_corpus_wiki_en_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'book_corpus_wiki_en_uncased',
+            ['apple', ',', 'ᄉ', '##ᅡ', '##ᄀ', '##ᅪ', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'openwebtext_book_corpus_wiki_en_uncased',
+            ['apple', ',', 'ᄉ', '##ᅡ', '##ᄀ', '##ᅪ', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'wiki_multilingual_cased',
+            ['app', '##le', ',', '[UNK]', ',', '沙', '果']
+        ), (
+            'bert_12_768_12', 'wiki_multilingual_uncased',
+            ['[UNK]', ',', 'ᄉ', '##ᅡ', u'##\u1100\u116a', ',', '沙', '果']
+        ), (
+            'bert_12_768_12', 'wiki_cn_cased',
+            ['[UNK]', ',', 'ᄉ', '##ᅡ', '##ᄀ', '##ᅪ', ',', '沙', '果']
+        ), (
+            'bert_24_1024_16', 'book_corpus_wiki_en_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_24_1024_16', 'book_corpus_wiki_en_uncased',
+            ['apple', ',', 'ᄉ', '##ᅡ', '##ᄀ', '##ᅪ', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'scibert_scivocab_uncased',
+            ['apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'scibert_scivocab_cased',
+            ['Appl', '##e', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'scibert_basevocab_uncased',
+            ['apple', ',', 'ᄉ', '##ᅡ', '##ᄀ', '##ᅪ', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'scibert_basevocab_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'biobert_v1.0_pmc_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'biobert_v1.0_pubmed_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'biobert_v1.0_pubmed_pmc_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'biobert_v1.1_pubmed_cased',
+            ['Apple', ',', '[UNK]', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'clinicalbert_uncased',
+            ['apple', ',', 'ᄉ', '##ᅡ', '##ᄀ', '##ᅪ', ',', '[UNK]', '[UNK]']
+        ), (
+            'bert_12_768_12', 'kobert_news_wiki_ko_cased',
+            ['▁A', 'p', 'p', 'le', ',', '▁사과', ',', '▁', '沙果']
+        ), (
+            'ernie_12_768_12', 'baidu_ernie_uncased',
+            ['apple', ',', '[UNK]', ',', '沙', '果']
+        )
+    ]
+    for model_nm, dataset_nm, expected in models:
+        _, vocab = get_model(
+            model_nm, dataset_name=dataset_nm, pretrained=False
+        )
+        tok = get_tokenizer(
+            model_name=model_nm, dataset_name=dataset_nm, vocab=vocab
+        )
+        predicted = tok(test_sent)
+        assert predicted == expected

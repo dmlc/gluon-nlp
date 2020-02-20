@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -17,11 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 """Utility functions for parallel processing."""
+import queue
 import threading
-try:
-    import Queue as queue
-except ImportError:
-    import queue
 
 __all__ = ['Parallelizable', 'Parallel']
 

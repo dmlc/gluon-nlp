@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -20,12 +18,14 @@
 __all__ = ['AWDRNN', 'StandardRNN', 'BigRNN']
 
 from mxnet import init, nd, autograd
-from mxnet.gluon import nn, Block, contrib, rnn
+from mxnet.gluon import nn, Block, HybridBlock, contrib, rnn, ParameterDict
+from mxnet import sym
 
 from ..utils import _get_rnn_layer, apply_weight_drop
 from ..sampled_block import ISDense, SparseISDense
+from ...utils import Parallelizable
 
-class AWDRNN(Block):
+class AWDRNN(HybridBlock):
     """AWD language model by salesforce.
 
     Reference: https://github.com/salesforce/awd-lstm-lm
@@ -72,6 +72,9 @@ class AWDRNN(Block):
         self._drop_e = drop_e
         self._weight_drop = weight_drop
         self._tie_weights = tie_weights
+        self._shared_params = None
+        if 'params' in kwargs:
+            self._shared_params = kwargs['params']
 
         with self.name_scope():
             self.embedding = self._get_embedding()
@@ -91,7 +94,7 @@ class AWDRNN(Block):
         return embedding
 
     def _get_encoder(self):
-        encoder = nn.Sequential()
+        encoder = nn.HybridSequential()
         with encoder.name_scope():
             for l in range(self._num_layers):
                 encoder.add(_get_rnn_layer(self._mode, 1, self._embed_size if l == 0 else
@@ -104,8 +107,19 @@ class AWDRNN(Block):
         output = nn.HybridSequential()
         with output.name_scope():
             if self._tie_weights:
-                output.add(nn.Dense(self._vocab_size, flatten=False,
-                                    params=self.embedding[0].params))
+                if self._shared_params is not None:
+                    # self.embedding[0].params do not contain the bias, it
+                    # may leave the decoder bias uninitialized. We resolve this
+                    # issue by creating a new ParameterDict and stuffing
+                    # every shared params into the ParameterDict.
+                    shared_params = self.embedding[0].params
+                    shared_params = ParameterDict(shared_params.prefix)
+                    shared_params.update(self._shared_params)
+                    output.add(nn.Dense(self._vocab_size, flatten=False,
+                                        params=shared_params))
+                else:
+                    output.add(nn.Dense(self._vocab_size, flatten=False,
+                                        params=self.embedding[0].params))
             else:
                 output.add(nn.Dense(self._vocab_size, flatten=False))
         return output
@@ -116,12 +130,13 @@ class AWDRNN(Block):
     def state_info(self, *args, **kwargs):
         return [c.state_info(*args, **kwargs) for c in self.encoder]
 
-    def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
-        """Implement the forward computation that the awd language model and cache model use.
+    def __call__(self, inputs, begin_state=None):
+        #pylint: disable=arguments-differ, dangerous-default-value
+        """Encode the inputs given the states and valid sequence length.
 
         Parameters
         -----------
-        inputs : NDArray
+        inputs : NDArray or Symbol
             input tensor with shape `(sequence_length, batch_size)`
             when `layout` is "TNC".
         begin_state : list
@@ -144,9 +159,42 @@ class AWDRNN(Block):
             to num_layers. The shape of every encoder's dropped output
             `(sequence_length, batch_size, num_hidden)`
         """
+        return super(AWDRNN, self).__call__(inputs, begin_state)
+
+    def hybrid_forward(self, F, inputs, begin_state=None): # pylint: disable=arguments-differ
+        """Implement the forward computation that the awd language model and cache model use.
+
+        Parameters
+        -----------
+        inputs : NDArray or Symbol
+            input tensor with shape `(sequence_length, batch_size)`
+            when `layout` is "TNC".
+        begin_state : list
+            initial recurrent state tensor with length equals to num_layers.
+            the initial state with shape `(1, batch_size, num_hidden)`
+
+        Returns
+        --------
+        out: NDArray or Symbol
+            output tensor with shape `(sequence_length, batch_size, input_size)`
+            when `layout` is "TNC".
+        out_states: list
+            output recurrent state tensor with length equals to num_layers.
+            the state with shape `(1, batch_size, num_hidden)`
+        encoded_raw: list
+            The list of outputs of the model's encoder with length equals to num_layers.
+            the shape of every encoder's output `(sequence_length, batch_size, num_hidden)`
+        encoded_dropped: list
+            The list of outputs with dropout of the model's encoder with length equals
+            to num_layers. The shape of every encoder's dropped output
+            `(sequence_length, batch_size, num_hidden)`
+        """
         encoded = self.embedding(inputs)
         if not begin_state:
-            begin_state = self.begin_state(batch_size=inputs.shape[1])
+            if F == nd:
+                begin_state = self.begin_state(batch_size=inputs.shape[1])
+            else:
+                begin_state = self.begin_state(batch_size=0, func=sym.zeros)
         out_states = []
         encoded_raw = []
         encoded_dropped = []
@@ -155,17 +203,17 @@ class AWDRNN(Block):
             encoded_raw.append(encoded)
             out_states.append(state)
             if self._drop_h and i != len(self.encoder) - 1:
-                encoded = nd.Dropout(encoded, p=self._drop_h, axes=(0,))
+                encoded = F.Dropout(encoded, p=self._drop_h, axes=(0,))
                 encoded_dropped.append(encoded)
         if self._dropout:
-            encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
+            encoded = F.Dropout(encoded, p=self._dropout, axes=(0,))
         encoded_dropped.append(encoded)
         with autograd.predict_mode():
             out = self.decoder(encoded)
         return out, out_states, encoded_raw, encoded_dropped
 
 
-class StandardRNN(Block):
+class StandardRNN(HybridBlock):
     """Standard RNN language model.
 
     Parameters
@@ -200,6 +248,9 @@ class StandardRNN(Block):
         self._dropout = dropout
         self._tie_weights = tie_weights
         self._vocab_size = vocab_size
+        self._shared_params = None
+        if 'params' in kwargs:
+            self._shared_params = kwargs['params']
 
         with self.name_scope():
             self.embedding = self._get_embedding()
@@ -223,8 +274,19 @@ class StandardRNN(Block):
         output = nn.HybridSequential()
         with output.name_scope():
             if self._tie_weights:
-                output.add(nn.Dense(self._vocab_size, flatten=False,
-                                    params=self.embedding[0].params))
+                if self._shared_params is not None:
+                    # self.embedding[0].params do not contain the bias, it
+                    # may leave the decoder bias uninitialized. We resolve this
+                    # issue by creating a new ParameterDict and stuffing
+                    # every shared params into the ParameterDict.
+                    shared_params = self.embedding[0].params
+                    shared_params = ParameterDict(shared_params.prefix)
+                    shared_params.update(self._shared_params)
+                    output.add(nn.Dense(self._vocab_size, flatten=False,
+                                        params=shared_params))
+                else:
+                    output.add(nn.Dense(self._vocab_size, flatten=False,
+                                        params=self.embedding[0].params))
             else:
                 output.add(nn.Dense(self._vocab_size, flatten=False))
         return output
@@ -235,13 +297,13 @@ class StandardRNN(Block):
     def state_info(self, *args, **kwargs):
         return self.encoder.state_info(*args, **kwargs)
 
-    def forward(self, inputs, begin_state=None): # pylint: disable=arguments-differ
+    def __call__(self, inputs, begin_state=None): # pylint: disable=arguments-differ
         """Defines the forward computation. Arguments can be either
         :py:class:`NDArray` or :py:class:`Symbol`.
 
         Parameters
         -----------
-        inputs : NDArray
+        inputs : NDArray or Symbol
             input tensor with shape `(sequence_length, batch_size)`
             when `layout` is "TNC".
         begin_state : list
@@ -250,7 +312,37 @@ class StandardRNN(Block):
 
         Returns
         --------
-        out: NDArray
+        out: NDArray or Symbol
+            output tensor with shape `(sequence_length, batch_size, input_size)`
+            when `layout` is "TNC".
+        out_states: list
+            output recurrent state tensor with length equals to num_layers-1.
+            the state with shape `(num_layers, batch_size, num_hidden)`
+        encoded_raw: list
+            The list of last output of the model's encoder.
+            the shape of last encoder's output `(sequence_length, batch_size, num_hidden)`
+        encoded_dropped: list
+            The list of last output with dropout of the model's encoder.
+            the shape of last encoder's dropped output `(sequence_length, batch_size, num_hidden)`
+        """
+        return super(StandardRNN, self).__call__(inputs, begin_state)
+
+    def hybrid_forward(self, F, inputs, begin_state=None): # pylint: disable=arguments-differ
+        """Defines the forward computation. Arguments can be either
+        :py:class:`NDArray` or :py:class:`Symbol`.
+
+        Parameters
+        -----------
+        inputs : NDArray or Symbol
+            input tensor with shape `(sequence_length, batch_size)`
+            when `layout` is "TNC".
+        begin_state : list
+            initial recurrent state tensor with length equals to num_layers-1.
+            the initial state with shape `(num_layers, batch_size, num_hidden)`
+
+        Returns
+        --------
+        out: NDArray or Symbol
             output tensor with shape `(sequence_length, batch_size, input_size)`
             when `layout` is "TNC".
         out_states: list
@@ -265,13 +357,17 @@ class StandardRNN(Block):
         """
         encoded = self.embedding(inputs)
         if not begin_state:
-            begin_state = self.begin_state(batch_size=inputs.shape[1])
+            if F == nd:
+                begin_state = self.begin_state(batch_size=inputs.shape[1])
+            else:
+                begin_state = self.begin_state(batch_size=0, func=sym.zeros)
+
         encoded_raw = []
         encoded_dropped = []
         encoded, state = self.encoder(encoded, begin_state)
         encoded_raw.append(encoded)
         if self._dropout:
-            encoded = nd.Dropout(encoded, p=self._dropout, axes=(0,))
+            encoded = F.Dropout(encoded, p=self._dropout, axes=(0,))
         out = self.decoder(encoded)
         return out, state, encoded_raw, encoded_dropped
 
@@ -425,3 +521,46 @@ class BigRNN(Block):
         out = out.reshape((length, batch_size, -1))
         new_target = new_target.reshape((length, batch_size))
         return out, out_states, new_target
+
+class ParallelBigRNN(Parallelizable):
+    """Data parallel BigRNN model for training.
+
+    Parameters
+    ----------
+    model : HybridBlock
+        The RNN model to be parallelized
+    loss_fn : function
+        A function computes the loss of given predictions.
+    batch_size : int
+        Defines the batch size at each iteration
+    ----------
+    """
+    def __init__(self, model, loss_fn, batch_size):
+        self._model = model
+        self._loss = loss_fn
+        self._batch_size = batch_size
+
+    def forward_backward(self, x):
+        """Defines the forward computation.
+
+        Parameters
+        ----------
+        x : tuple
+        It contains the input, target, masked, sampled and hidden states
+
+        Returns
+        ----------
+        hidden : NDArray
+        Next hidden states computed by the parallel model
+        ls : NDArray
+        Loss computed with provided loss function
+        """
+        X, y, m, s, h = x
+        with autograd.record():
+            output, hidden, new_target = self._model(X, y, h, s)
+            output = output.reshape((-3, -1))
+            new_target = new_target.reshape((-1,))
+            ls = self._loss(output, new_target) * m.reshape((-1,))
+            ls = ls / self._batch_size
+            ls.backward()
+        return hidden, ls

@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -81,7 +79,8 @@ class _CoNLLSequenceTagging(SimpleDataset):
         results = []
         for path in paths:
             with gzip.open(path, 'r') if path.endswith('gz') else io.open(path, 'rb') as f:
-                line_iter = codecs.getreader(self.codec)(io.BufferedReader(f))
+                line_iter = codecs.getreader(self.codec)\
+                    (io.BufferedReader(f))  # pytype: disable=wrong-arg-types
                 results.append(self._process_iter(line_iter))
         return list([x for field in item for x in field] for item in zip(*results))
 

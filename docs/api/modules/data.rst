@@ -172,6 +172,26 @@ The `General Language Understanding Evaluation (GLUE) benchmark <https://glueben
     GlueMRPC
 
 
+SuperGLUE Benchmark
+~~~~~~~~~~~~~~~~~~~~
+
+The `SuperGLUE Benchmark <https://super.gluebenchmark.com>`_ a new benchmark styled after GLUE with a new set of more difficult language understanding tasks.
+
+.. autosummary::
+    :nosignatures:
+
+    SuperGlueRTE
+    SuperGlueCB
+    SuperGlueWSC
+    SuperGlueWiC
+    SuperGlueCOPA
+    SuperGlueMultiRC
+    SuperGlueBoolQ
+    SuperGlueReCoRD
+    SuperGlueAXb
+    SuperGlueAXg
+
+
 Datasets
 --------
 
@@ -184,6 +204,7 @@ load custom datasets.
     TextLineDataset
     CorpusDataset
     TSVDataset
+
 
 DataStreams
 -----------
@@ -211,11 +232,9 @@ with `Dataset.transform` method.
 
     ClipSequence
     PadSequence
-    NLTKMosesTokenizer
     SacreMosesTokenizer
     SpacyTokenizer
     SacreMosesDetokenizer
-    NLTKMosesDetokenizer
     BERTTokenizer
     BERTSentenceTransform
 
@@ -231,6 +250,7 @@ iterate through sequence data.
     SortedSampler
     FixedBucketSampler
     SortedBucketSampler
+    SplitSampler
 
 The `FixedBucketSampler` uses following bucket scheme classes to generate bucket keys.
 
@@ -250,6 +270,7 @@ DataLoaders loads data from a dataset and returns mini-batches of data
     :nosignatures:
 
     ShardedDataLoader
+    DatasetLoader
 
 Utilities
 ---------

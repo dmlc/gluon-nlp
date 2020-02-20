@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -22,15 +20,19 @@
 Files can be loaded into formats that are immediately ready for training and evaluation."""
 __all__ = ['TextLineDataset', 'CorpusDataset', 'ConcatDataset', 'TSVDataset', 'NumpyDataset']
 
+import bisect
+import collections
 import io
+import json
 import os
 import warnings
-import bisect
+
 import numpy as np
 
-from mxnet.gluon.data import SimpleDataset, Dataset, ArrayDataset
+from mxnet.gluon.data import ArrayDataset, Dataset, SimpleDataset
 
-from .utils import concat_sequence, line_splitter, whitespace_splitter, Splitter
+from .utils import (Splitter, concat_sequence, line_splitter,
+                    whitespace_splitter)
 
 
 class ConcatDataset(Dataset):
@@ -95,8 +97,8 @@ class TSVDataset(SimpleDataset):
         # b\tLaoban\tZha
         # discard the first line and select the 0th and 2nd fields
         dataset = data.TSVDataset('test.tsv', num_discard_samples=1, field_indices=[0, 2])
-        assert dataset[0] == [u'a', u'Jiang']
-        assert dataset[1] == [u'b', u'Zha']
+        assert dataset[0] == ['a', 'Jiang']
+        assert dataset[1] == ['b', 'Zha']
 
     Parameters
     ----------
@@ -298,3 +300,38 @@ class NumpyDataset(ArrayDataset):
         """
         idx = self._keys.index(field)
         return self._data[idx]
+
+
+class _JsonlDataset(SimpleDataset):
+    """A dataset wrapping over a jsonlines (.jsonl) file, each line is a json object.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the .jsonl file.
+    encoding : str, default 'utf8'
+        File encoding format.
+    """
+    def __init__(self, filename, encoding='utf8'):
+
+        if not isinstance(filename, (tuple, list)):
+            filename = (filename, )
+
+        self._filenames = [os.path.expanduser(f) for f in filename]
+        self._encoding = encoding
+
+        super(_JsonlDataset, self).__init__(self._read())
+
+    def _read(self):
+        all_samples = []
+        for filename in self._filenames:
+            samples = []
+            with open(filename, 'r', encoding=self._encoding) as fin:
+                for line in fin.readlines():
+                    samples.append(json.loads(line, object_pairs_hook=collections.OrderedDict))
+            samples = self._read_samples(samples)
+            all_samples += samples
+        return all_samples
+
+    def _read_samples(self, samples):
+        raise NotImplementedError

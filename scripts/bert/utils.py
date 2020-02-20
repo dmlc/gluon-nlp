@@ -1,5 +1,3 @@
-# coding: utf-8
-
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -18,6 +16,7 @@
 # under the License.
 """Utility functions for BERT."""
 
+import sys
 import logging
 import collections
 import hashlib
@@ -50,7 +49,7 @@ def get_hash(filename):
 
 def read_tf_checkpoint(path):
     """read tensorflow checkpoint"""
-    from tensorflow.python import pywrap_tensorflow
+    from tensorflow.python import pywrap_tensorflow  # pylint: disable=import-outside-toplevel
     tensors = {}
     reader = pywrap_tensorflow.NewCheckpointReader(path)
     var_to_shape_map = reader.get_variable_to_shape_map()
@@ -74,7 +73,7 @@ def profile(curr_step, start_step, end_step, profile_name='profile.json',
         logging.info(mx.profiler.dumps())
         mx.profiler.dump()
         if early_exit:
-            exit()
+            sys.exit(0)
 
 def load_text_vocab(vocab_file):
     """Loads a vocabulary file into a dictionary."""
