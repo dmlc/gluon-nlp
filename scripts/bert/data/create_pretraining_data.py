@@ -28,7 +28,7 @@ from multiprocessing import Pool
 import numpy as np
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer, JiebaTokenizer
-from gluonnlp.data.transforms import is_chinese_char
+from gluonnlp.data.fast_bert_tokenizer import is_chinese_char
 
 
 class TrainingInstance:
