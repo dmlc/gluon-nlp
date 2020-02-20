@@ -28,6 +28,7 @@ from multiprocessing import Pool
 import numpy as np
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer, JiebaTokenizer
+from gluonnlp.data.transforms import is_chinese_char
 
 
 class TrainingInstance:
@@ -383,18 +384,18 @@ def create_instances_from_document(x):
 
                 tokens = []
                 segment_ids = []
-                tokens.append(_CLS_TOKEN)
+                tokens.append(vocab.cls_token)
                 segment_ids.append(0)
                 for token in tokens_a:
                     tokens.append(token)
                     segment_ids.append(0)
-                tokens.append(_SEP_TOKEN)
+                tokens.append(vocab.sep_token)
                 segment_ids.append(0)
 
                 for token in tokens_b:
                     tokens.append(token)
                     segment_ids.append(1)
-                tokens.append(_SEP_TOKEN)
+                tokens.append(vocab.sep_token)
                 segment_ids.append(1)
 
                 (tokens, masked_lm_positions,
@@ -440,7 +441,7 @@ def find_chinese_whole_word(universal_tokenizer, tokens, cn_tokenizer=None):
     cn_token_bio = ['O']*len(tokens)
     if isinstance(universal_tokenizer, BERTTokenizer) and cn_tokenizer is not None:
         is_chinese_list = ['1' if len(token) == 1 and
-                           universal_tokenizer.basic_tokenizer._is_chinese_char(ord(token))
+                           is_chinese_char(ord(token))
                            else '0'
                            for token in tokens]
         patten = ''.join(is_chinese_list)
