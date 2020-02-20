@@ -104,7 +104,7 @@ def prepare_pretrain_npz_dataset(filename, allow_pickle=False):
 
 
 def prepare_pretrain_text_dataset(filename, tokenizer, max_seq_length, short_seq_prob,
-                                  masked_lm_prob, max_predictions_per_seq, whole_word_mask,
+                                  masked_lm_prob, max_predictions_per_seq, whole_word_mask, cn_whole_word_mask,
                                   vocab, num_workers=1, worker_pool=None):
     """Create dataset based on the raw text files"""
     dupe_factor = 1
@@ -114,7 +114,7 @@ def prepare_pretrain_text_dataset(filename, tokenizer, max_seq_length, short_seq
     instances = create_training_instances((filename, tokenizer, max_seq_length,
                                            short_seq_prob, masked_lm_prob,
                                            max_predictions_per_seq,
-                                           whole_word_mask, vocab,
+                                           whole_word_mask, cn_whole_word_mask, vocab,
                                            dupe_factor, num_workers,
                                            worker_pool, None))
     return mx.gluon.data.ArrayDataset(*instances)
@@ -143,7 +143,7 @@ def prepare_pretrain_bucket_sampler(dataset, batch_size, shuffle=False,
 
 def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle,
                            num_buckets, vocab, tokenizer, max_seq_length, short_seq_prob,
-                           masked_lm_prob, max_predictions_per_seq, whole_word_mask,
+                           masked_lm_prob, max_predictions_per_seq, whole_word_mask, cn_whole_word_mask,
                            num_parts=1, part_idx=0, num_dataset_workers=1, num_batch_workers=1,
                            circle_length=1, repeat=1,
                            dataset_cached=False, num_max_dataset_cached=0):
@@ -173,6 +173,8 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle,
         The hard limit of the number of predictions for masked words
     whole_word_mask : bool
         Whether to use whole word masking.
+    cn_whole_word_mask : bool
+        Whether to use whole word masking for chinese.
     num_parts : int
         The number of partitions for the dataset.
     part_idx : int
@@ -202,7 +204,7 @@ def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle,
     dataset_params = {'tokenizer': tokenizer, 'max_seq_length': max_seq_length,
                       'short_seq_prob': short_seq_prob, 'masked_lm_prob': masked_lm_prob,
                       'max_predictions_per_seq': max_predictions_per_seq, 'vocab':vocab,
-                      'whole_word_mask': whole_word_mask}
+                      'whole_word_mask': whole_word_mask, 'cn_whole_word_mask': cn_whole_word_mask}
     sampler_params = {'batch_size': batch_size, 'shuffle': shuffle,
                       'num_ctxes': num_ctxes, 'num_buckets': num_buckets}
     dataset_fn = prepare_pretrain_text_dataset
@@ -503,7 +505,7 @@ def generate_dev_set(tokenizer, vocab, cache_file, args):
     create_training_instances((eval_files, tokenizer, args.max_seq_length,
                                args.short_seq_prob, args.masked_lm_prob,
                                args.max_predictions_per_seq,
-                               args.whole_word_mask, vocab,
+                               args.whole_word_mask, args.cn_whole_word_mask, vocab,
                                1, args.num_dataset_workers,
                                worker_pool, cache_file))
     logging.info('Done generating validation set on rank 0.')

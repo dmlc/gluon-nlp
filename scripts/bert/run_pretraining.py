@@ -127,6 +127,8 @@ parser.add_argument('--cased', action='store_true',
 parser.add_argument('--whole_word_mask', action='store_true',
                     help='Whether to use whole word masking rather than per-subword masking.'
                          'Effective only if --raw is set.')
+parser.add_argument('--cn_whole_word_mask', action='store_true',
+                    help='Whether to use whole word masking rather than per-subword masking for chinese words.')
 parser.add_argument('--sentencepiece', default=None, type=str,
                     help='Path to the sentencepiece .model file for both tokenization and vocab. '
                          'Effective only if --raw is set.')
@@ -449,6 +451,7 @@ if __name__ == '__main__':
                                                masked_lm_prob=args.masked_lm_prob,
                                                max_predictions_per_seq=args.max_predictions_per_seq,
                                                whole_word_mask=args.whole_word_mask,
+                                               cn_whole_word_mask=args.cn_whole_word_mask,
                                                tokenizer=tokenizer,
                                                circle_length=args.circle_length,
                                                repeat=args.repeat,
