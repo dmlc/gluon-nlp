@@ -46,7 +46,7 @@ import numpy as np
 from ..base import get_home_dir
 from ..vocab.vocab import Vocab
 from .utils import _extract_archive
-from .fast_bert_tokenizer import is_control, is_punctuation, is_whitespace, is_chinese_char
+from .fast_bert_tokenizer import is_control, is_punctuation, is_whitespace
 from .fast_bert_tokenizer import BasicTokenizer, WordpieceTokenizer
 
 
