@@ -128,7 +128,8 @@ parser.add_argument('--whole_word_mask', action='store_true',
                     help='Whether to use whole word masking rather than per-subword masking.'
                          'Effective only if --raw is set.')
 parser.add_argument('--cn_whole_word_mask', action='store_true',
-                    help='Whether to use whole word masking rather than per-subword masking for chinese words.')
+                    help='Whether to use whole word masking rather than per-subword masking for '
+                         'chinese words.')
 parser.add_argument('--sentencepiece', default=None, type=str,
                     help='Path to the sentencepiece .model file for both tokenization and vocab. '
                          'Effective only if --raw is set.')

@@ -104,8 +104,8 @@ def prepare_pretrain_npz_dataset(filename, allow_pickle=False):
 
 
 def prepare_pretrain_text_dataset(filename, tokenizer, max_seq_length, short_seq_prob,
-                                  masked_lm_prob, max_predictions_per_seq, whole_word_mask, cn_whole_word_mask,
-                                  vocab, num_workers=1, worker_pool=None):
+                                  masked_lm_prob, max_predictions_per_seq, whole_word_mask,
+                                  cn_whole_word_mask, vocab, num_workers=1, worker_pool=None):
     """Create dataset based on the raw text files"""
     dupe_factor = 1
     if not isinstance(filename, (list, tuple)):
@@ -143,9 +143,9 @@ def prepare_pretrain_bucket_sampler(dataset, batch_size, shuffle=False,
 
 def get_pretrain_data_text(data, batch_size, num_ctxes, shuffle,
                            num_buckets, vocab, tokenizer, max_seq_length, short_seq_prob,
-                           masked_lm_prob, max_predictions_per_seq, whole_word_mask, cn_whole_word_mask,
-                           num_parts=1, part_idx=0, num_dataset_workers=1, num_batch_workers=1,
-                           circle_length=1, repeat=1,
+                           masked_lm_prob, max_predictions_per_seq, whole_word_mask,
+                           cn_whole_word_mask, num_parts=1, part_idx=0, num_dataset_workers=1,
+                           num_batch_workers=1, circle_length=1, repeat=1,
                            dataset_cached=False, num_max_dataset_cached=0):
     """Get a data iterator from raw text documents.
 
