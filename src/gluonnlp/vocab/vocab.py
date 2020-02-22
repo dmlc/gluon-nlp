@@ -23,6 +23,7 @@ import collections
 import json
 import uuid
 import warnings
+import sys
 from typing import Dict, Hashable, List, Optional
 
 from mxnet import nd
@@ -36,6 +37,9 @@ _DEPR_PAD = object()
 _DEPR_BOS = object()
 _DEPR_EOS = object()
 
+
+def _is_py35():
+    return sys.version_info[0] == 3 and sys.version_info[1] == 5
 
 class Vocab:
     """Indexing and embedding attachment for text tokens.
@@ -222,7 +226,10 @@ class Vocab:
 
         # Handle special tokens
         special_tokens = []
-        for special_token_name, special_token in kwargs.items():
+        special_iter = kwargs.items()
+        if _is_py35():
+            special_iter = sorted(special_iter)
+        for special_token_name, special_token in special_iter:
             # Test if kwarg specifies a special token
             if not special_token_name.endswith('_token'):
                 raise ValueError('{} is invalid. Only keyword arguments '
