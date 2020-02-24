@@ -197,3 +197,16 @@ def test_train_valid_split():
 
     assert np.all(np.ceil(.05*num_class).astype(int) == valid_num_class) and \
            (len(train_dataset) + len(valid_dataset) == len(dataset))
+
+@pytest.mark.parametrize('seed', [42, 42])
+def test_set_seed(seed):
+    contexts = [mx.cpu(0), mx.cpu(1)]
+    for ctx in contexts: 
+        nlp.utils.seed.set_seed(seed)
+        x = mx.ndarray.random.randn(2, 2, loc=0, scale=1, ctx=ctx)
+        nlp.utils.seed.set_seed(seed)
+        y = mx.ndarray.random.randn(2, 2, loc=0, scale=1, ctx=ctx)
+        assert x[0][0]==y[0][0]
+        assert x[0][1]==y[0][1]
+        assert x[1][0]==y[1][0]
+        assert x[1][1]==y[1][1]
