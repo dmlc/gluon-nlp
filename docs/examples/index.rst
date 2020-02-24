@@ -3,8 +3,8 @@ Tutorials
 
 Interested in getting started in a new NLP area? Here are some tutorials to help get started.
 
-Dataset and Vocabularies
--------------------------
+Data Loading and Vocabularies
+-----------------------------
 
 .. container:: cards
 
@@ -75,7 +75,7 @@ Language Modeling
 
    .. card::
       :title: LSTM-based Language Models
-      :link: language_model/language_model.html
+      :link: language_model/use_pretrained_lm.html
 
       Learn what a language model is, what it can do, and how to train a word-level language model
       with truncated back-propagation-through-time (BPTT).

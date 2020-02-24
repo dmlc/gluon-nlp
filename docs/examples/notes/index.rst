@@ -1,5 +1,5 @@
-Notes
-=====
+Data Loading and Vocabularies
+=============================
 
 Here are some notes on the basic usage of our API.
 

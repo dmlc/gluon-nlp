@@ -4,4 +4,13 @@ API Documentation
 .. toctree::
    :maxdepth: 2
 
-   modules/index
+   vocab
+   embedding
+   data
+   data.batchify
+   model
+   model.train
+   loss
+   initializer
+   optimizer
+   utils
