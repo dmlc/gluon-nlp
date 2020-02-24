@@ -21,17 +21,13 @@ import numpy as np
 import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.data import SQuAD
+from gluonnlp.data.bert.glue import concat_sequences
+from gluonnlp.data.bert.squad import get_doc_spans, \
+    check_is_max_context, convert_squad_examples, align_position2doc_spans
+from gluonnlp.data.xlnet.squad import lcs_match, convert_index
 from model.qa import XLNetForQA
 from transformer import model
 from xlnet_qa_evaluate import predict_extended
-
-path = sys.path[0]
-sys.path.append(path + '/../bert/data')
-#pylint: disable=wrong-import-position
-from preprocessing_utils import concat_sequences, get_doc_spans, \
-    check_is_max_context, convert_squad_examples, _lcs_match, _convert_index, \
-    align_position2doc_spans
-
 parser = argparse.ArgumentParser(description='XLNet QA example.'
                                  'We fine-tune the XLNet model on SQuAD dataset.')
 
@@ -251,9 +247,9 @@ def convert_examples_to_features(example, tokenizer=None, cls_token=None, sep_to
     #tokenize paragraph and get start/end position of the answer in tokenized paragraph
     paragraph_tokenized = tokenizer(example.paragraph_text)
 
-    chartok_to_tok_index = []
-    tok_start_to_chartok_index = []
-    tok_end_to_chartok_index = []
+    chartok_to_tok_index = [] # char to its corresponding token's index
+    tok_start_to_chartok_index = [] # token index to its first character's index
+    tok_end_to_chartok_index = [] # token index to its last character's index
     char_cnt = 0
     for i, token in enumerate(paragraph_tokenized):
         chartok_to_tok_index.extend([i] * len(token))
@@ -265,14 +261,16 @@ def convert_examples_to_features(example, tokenizer=None, cls_token=None, sep_to
 
     # XLNet takes a more complicated strategy to match the origin text
     # and the tokenized tokens
+    # Get the LCS matching between origin text and token-concatenated text.
     n, m = len(example.paragraph_text), len(tok_cat_text)
     max_dist = abs(n - m) + 5
     for _ in range(2):
-        f, g = _lcs_match(max_dist, example.paragraph_text, tok_cat_text)
+        f, g = lcs_match(max_dist, example.paragraph_text, tok_cat_text)
         if f[n - 1, m - 1] > 0.8 * n:
             break
         max_dist *= 2
 
+    # Get the mapping from orgin text/tokenized text to tokenized text/origin text
     orig_to_chartok_index = [None] * n
     chartok_to_orig_index = [None] * m
     i, j = n - 1, m - 1
@@ -291,11 +289,11 @@ def convert_examples_to_features(example, tokenizer=None, cls_token=None, sep_to
     # get start/end mapping
     tok_start_to_orig_index = []
     tok_end_to_orig_index = []
-    for i in range(len(paragraph_tokenized)):
-        start_chartok_pos = tok_start_to_chartok_index[i]
-        end_chartok_pos = tok_end_to_chartok_index[i]
-        start_orig_pos = _convert_index(chartok_to_orig_index, start_chartok_pos, n, is_start=True)
-        end_orig_pos = _convert_index(chartok_to_orig_index, end_chartok_pos, m, is_start=False)
+    for i in range(len(paragraph_tokenized)): # for each token in the tokenized paragraph
+        start_chartok_pos = tok_start_to_chartok_index[i] # first character's index in origin text
+        end_chartok_pos = tok_end_to_chartok_index[i] # last character's index in origin text
+        start_orig_pos = convert_index(chartok_to_orig_index, start_chartok_pos, n, is_start=True)
+        end_orig_pos = convert_index(chartok_to_orig_index, end_chartok_pos, m, is_start=False)
 
         tok_start_to_orig_index.append(start_orig_pos)
         tok_end_to_orig_index.append(end_orig_pos)
@@ -304,11 +302,11 @@ def convert_examples_to_features(example, tokenizer=None, cls_token=None, sep_to
 
     # get mapped start/end position
     if is_training and not example.is_impossible:
-        start_chartok_pos = _convert_index(orig_to_chartok_index, example.start_offset,
-                                           is_start=True)
+        start_chartok_pos = convert_index(orig_to_chartok_index, example.start_offset,
+                                          is_start=True)
         tok_start_position = chartok_to_tok_index[start_chartok_pos]
 
-        end_chartok_pos = _convert_index(orig_to_chartok_index, example.end_offset, is_start=False)
+        end_chartok_pos = convert_index(orig_to_chartok_index, example.end_offset, is_start=False)
         tok_end_position = chartok_to_tok_index[end_chartok_pos]
         assert tok_start_position <= tok_end_position
 
