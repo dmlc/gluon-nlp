@@ -3,6 +3,30 @@ Tutorials
 
 Interested in getting started in a new NLP area? Here are some tutorials to help get started.
 
+Data Loading and Vocabularies
+-----------------------------
+
+.. container:: cards
+
+   .. card::
+      :title: Data Loading APIs
+      :link: notes/data_api.html
+
+      Basics on how to load and process the sentiment dataset to form batches that can be processed efficiently.
+
+   .. card::
+      :title: Vocabulary APIs
+      :link: notes/vocab_emb.html
+
+      Learn how to write simple code to create index for tokens.
+
+
+.. toctree::
+   :hidden:
+   :maxdepth: 2
+
+   notes/index
+
 
 Representation Learning
 -----------------------
@@ -51,7 +75,7 @@ Language Modeling
 
    .. card::
       :title: LSTM-based Language Models
-      :link: language_model/language_model.html
+      :link: language_model/use_pretrained_lm.html
 
       Learn what a language model is, what it can do, and how to train a word-level language model
       with truncated back-propagation-through-time (BPTT).
