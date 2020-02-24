@@ -14,15 +14,21 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""Utility function for setting seed."""
+import random
+import numpy as np
+import mxnet as mx
 
-# pylint: disable=wildcard-import, arguments-differ
-"""Module for utility functions."""
+__all__ = ['set_seed']
 
-from . import files, parallel, parameter, version, seed
-from .files import *
-from .parallel import *
-from .parameter import *
-from .version import *
-from .seed import *
+def set_seed(seed=0):
+    """Sets the seed for reproducibility
 
-__all__ = parallel.__all__ + parameter.__all__ + files.__all__ + version.__all__ + seed.__all__
+	Parameters
+	----------
+	seed : int
+	    Value of the seed to set
+	"""
+    random.seed(seed)
+    np.random.seed(seed)
+    mx.random.seed(seed)

@@ -1,4 +1,4 @@
-# A Structured Self-attentive Sentence Embedding
+# Training Structured Self-attentive Sentence Embedding
 
 After the novelty of word embeddings to create new numerical representations of words, natural language processing (NLP) has still been effectively improved in many ways. Along with the widespread use of embedding techniques, many other methods have been developed to further express the semantics and meanings of sentences with words:
 

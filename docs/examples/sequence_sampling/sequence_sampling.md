@@ -1,4 +1,4 @@
-# Sequence Generation with Sampling and Beam Search
+# Sequence Generation with Beam Search Sampler and Sequence Sampler
 
 This tutorial demonstrates how to sample sequences using a
 pre-trained language model in the following two ways: with a beam search sampler
