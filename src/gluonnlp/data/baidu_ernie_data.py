@@ -23,6 +23,7 @@ import tarfile
 from urllib.request import urlretrieve
 
 from ..base import get_home_dir
+from ..utils import mkdir
 from .dataset import TSVDataset
 from .registry import register
 
@@ -34,8 +35,7 @@ class _BaiduErnieDataset(TSVDataset):
         assert (filename or (root and dataset_name and segment))
         if not filename:
             root = os.path.expanduser(root)
-            if not os.path.isdir(root):
-                os.makedirs(root)
+            mkdir(root)
             self._root = root
             download_data_path = os.path.join(self._root, 'task_data.tgz')
             if not os.path.exists(download_data_path):
