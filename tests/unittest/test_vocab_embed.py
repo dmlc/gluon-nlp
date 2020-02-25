@@ -1457,3 +1457,12 @@ def test_vocab_remapped_unknown_token_idx(unknown_token, padding_token, eos_toke
 
     v = Vocab(token_to_idx={unknown_token: 1})
     assert v['UNKNOWNWORD'] == 1
+
+def test_vocab_consistency():
+    v0 = nlp.Vocab({'a': 1}, mask_token='[MASK]', sep_token='[SEP]',
+                   cls_token='[CLS]')
+    v1 = nlp.Vocab({'a': 1}, mask_token='[MASK]', sep_token='[SEP]',
+                   cls_token='[CLS]')
+    assert v0[v0.mask_token] == v1[v1.mask_token]
+    assert v0[v0.sep_token] == v1[v1.sep_token]
+    assert v0[v0.cls_token] == v1[v1.cls_token]
