@@ -19,6 +19,7 @@ Here are some notes on the basic usage of our API.
       See how to how to write simple code to create index for tokens.
 
 .. toctree::
+   :hidden:
    :maxdepth: 1
 
    data_api
