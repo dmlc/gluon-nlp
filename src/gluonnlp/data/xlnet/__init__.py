@@ -16,6 +16,9 @@
 # under the License.
 
 # pylint: disable=wildcard-import
-"""BERT data."""
+"""XLNet fineuning data preprocessing utils"""
 
-from . import embedding, transform
+from . import squad
+from .squad import *
+
+__all__ = squad.__all__
