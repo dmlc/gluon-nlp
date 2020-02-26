@@ -1,4 +1,4 @@
-Documentation: Compiling the GluonNLP docs website outside the CI
+Configuration for compiling GluonNLP website
 -----------------------------------------------------------------
 
  | The GluonNLP docs website is at https://gluon-nlp.mxnet.io (release branch), or https://gluon-nlp.mxnet.io/master/index.html (master branch). Its source code is at https://github.com/dmlc/gluon-nlp .
@@ -20,7 +20,7 @@ Next, I will give a step by step instruction on how to compile this website from
 1. Converting md files into ipynb files
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
- | `If you don’t modify the examples section, what you need to do here is not converting the md files manually(which is time-consuming), but to get the ipynb files that are already ready for use. They can be found by clicking on the “DOWNLOAD THIS TUTORIAL” button on each page of the examples, like this one: https://gluon-nlp.mxnet.io/master/examples/word_embedding/word_embedding.html . After downloading these files, please put them in the same folder along with each md file. And then *delete* the md files. After these steps, you can skip the remaining of this section and go to the next section.`
+ | If you don’t modify the examples section, what you need to do here is not converting the md files manually(which is time-consuming), but to get the ipynb files that are already ready for use. They can be found by clicking on the “DOWNLOAD THIS TUTORIAL” button on each page of the examples, like this one: https://gluon-nlp.mxnet.io/master/examples/word_embedding/word_embedding.html . After downloading these files, please put them in the same folder along with each md file. And then *delete* the md files. After these steps, you can skip the remaining of this section and go to the next section.
 
 If you need to modify the examples, then you will need a server to do all the calculation because converting a ``md`` file into a ``ipynb`` file means running all the scripts in it and then save all the outputs.
 
@@ -88,7 +88,7 @@ Use the command like the one below to do the conversion:
 
 And then you will be able to see the result file in the same path as the ``md`` file.
 
-#. Using make docs to convert static files into HTML
+2. Using make docs to convert static files into HTML
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This work can be done on any machine as it doesn't need running the python scripts.
