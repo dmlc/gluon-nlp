@@ -43,7 +43,7 @@ Model Zoo
       :title: Natural Language Inference
       :link: natural_language_inference/index.html
 
-      Determine if the premise semantically entails the hypothesis.
+      Determining if the premise semantically entails the hypothesis.
 
    .. card::
       :title: Text Generation
@@ -55,13 +55,25 @@ Model Zoo
       :title: BERT
       :link: bert/index.html
 
-      Transfer pre-trained language representations to language understanding tasks.
+      Transferring pre-trained language representations to language understanding tasks.
 
    .. card::
-      :title: Sequence Labeling
-      :link: sequence_labeling/index.html
+      :title: Named Entity Recognition
+      :link: ner/index.html
 
-      Assigning labels to each tokens in a text sequence.
+      Locating and classifying named entity mentioned in unstructured texts.
+
+   .. card::
+      :title: Intent Classification and Slot Labeling
+      :link: intent_cls_slot_labeling/index.html
+
+      Predicting the intent of the query and extracting semantic concepts in the query.
+
+   .. card::
+      :title: Model Conversion
+      :link: model_zoo/conversion_tools/index.html
+
+      Converting NLP models from other frameworks to GluonNLP.
 
 .. toctree::
    :hidden:
@@ -76,4 +88,6 @@ Model Zoo
    text_generation/index
    parsing/index
    bert/index
-   sequence_labeling/index
+   ner/index
+   intent_cls_slot_labeling/index
+   conversion_tools/index

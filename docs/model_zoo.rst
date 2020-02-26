@@ -55,10 +55,22 @@ Model Zoo
       :title: BERT
       :link: model_zoo/bert/index.html
 
-      Transfer pre-trained language representations to language understanding tasks.
+      Transferring pre-trained language representations to language understanding tasks.
 
    .. card::
-      :title: Sequence Labeling
-      :link: model_zoo/sequence_labeling/index.html
+      :title: Named Entity Recognition
+      :link: model_zoo/ner/index.html
 
-      Assigning labels to each tokens in a text sequence.
+      Locating and classifying named entity mentioned in unstructured texts.
+
+   .. card::
+      :title: Intent Classification and Slot Labeling
+      :link: model_zoo/intent_cls_slot_labeling/index.html
+
+      Predicting the intent of the query and extracting semantic concepts in the query.
+
+   .. card::
+      :title: Model Conversion
+      :link: model_zoo/conversion_tools/index.html
+
+      Converting NLP models from other frameworks to GluonNLP.
