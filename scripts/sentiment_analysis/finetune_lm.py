@@ -39,7 +39,7 @@ from mxnet.gluon.contrib.estimator.event_handler import EarlyStoppingHandler, \
 from mxnet.gluon.contrib.estimator.batch_processor import BatchProcessor
 import gluonnlp as nlp
 
-nlp.utils.check_version('0.7.0')
+nlp.utils.check_version('0.9.0')
 
 np.random.seed(100)
 random.seed(100)
