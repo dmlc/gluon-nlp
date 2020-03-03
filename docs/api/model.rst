@@ -138,6 +138,15 @@ Sequence Sampling
     BeamSearchSampler
     SequenceSampler
 
+Information about pretrained models and datasets
+------------------------------------------------
+
+.. autosummary::
+    :nosignatures:
+
+    list_models
+    list_datasets
+
 Other Modeling Utilities
 ------------------------
 
