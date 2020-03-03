@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""Building blocks and utility for models."""
+"""API to get models and datasets."""
 __all__ = ['list_models', 'list_datasets']
 
 
