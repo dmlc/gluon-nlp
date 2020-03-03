@@ -81,3 +81,4 @@ You may find the 60-min Gluon crash course linked from there especially helpful.
    api/index
    community/index
    genindex
+   demo
