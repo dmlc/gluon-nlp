@@ -14,7 +14,7 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
-"""API to get list of pretrained models"""
+"""API to get list of datasets"""
 __all__ = ['list_datasets']
 
 from . import (batchify, candidate_sampler, conll, corpora, dataloader,
