@@ -15,13 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-import mxnet as mx
-from gluonnlp import model
+import os
+import sys
+import warnings
 
-def test_list_models():
-	models = model.list_models()
-	assert len(models)==12
+import gluonnlp as nlp
 
-def test_list_datasets():
-	datasets = model.list_datasets()
-	assert len(datasets)==46
+def test_get_models():
+    models = nlp.model.list_models()
+    assert len(models)!=0
+
+def test_get_datasets():
+    datasets = nlp.data.list_datasets()
+    assert len(datasets)!=0
