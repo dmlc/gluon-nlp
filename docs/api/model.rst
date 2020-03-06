@@ -20,6 +20,14 @@ The `get_model` function returns a pre-defined model given the name of a
 registered model. The following sections of this page present a list of
 registered names for each model category.
 
+Information about pretrained models
+-----------------------------------
+
+.. autosummary::
+    :nosignatures:
+
+    list_models
+
 Language Modeling
 -----------------
 
@@ -138,14 +146,6 @@ Sequence Sampling
     BeamSearchSampler
     SequenceSampler
 
-Information about pretrained models and datasets
-------------------------------------------------
-
-.. autosummary::
-    :nosignatures:
-
-    list_models
-    list_datasets
 
 Other Modeling Utilities
 ------------------------
