@@ -24,7 +24,7 @@ from . import (batchify, candidate_sampler, conll, corpora, dataloader,
                dataset, question_answering, registry, sampler, sentiment,
                stream, super_glue, transforms, translation, utils,
                word_embedding_evaluation, intent_slot, glue, datasetloader,
-               classification, baidu_ernie_data, bert, xlnet)
+               classification, baidu_ernie_data, bert, xlnet, info)
 from .candidate_sampler import *
 from .conll import *
 from .glue import *
@@ -48,6 +48,7 @@ from .classification import *
 from .baidu_ernie_data import *
 from .bert import *
 from .xlnet import *
+from .info import *
 from ..base import get_home_dir
 
 __all__ = (['batchify', 'get_tokenizer'] + utils.__all__ + transforms.__all__
@@ -57,7 +58,7 @@ __all__ = (['batchify', 'get_tokenizer'] + utils.__all__ + transforms.__all__
            + dataloader.__all__ + candidate_sampler.__all__ + intent_slot.__all__
            + glue.__all__ + super_glue.__all__ + classification.__all__
            + baidu_ernie_data.__all__ + datasetloader.__all__
-           + bert.__all__ + xlnet.__all__)  # pytype: disable=attribute-error
+           + bert.__all__ + xlnet.__all__ + info.__all__)  # pytype: disable=attribute-error
 
 
 def get_tokenizer(model_name, dataset_name,
@@ -169,3 +170,4 @@ def get_tokenizer(model_name, dataset_name,
         return tokenizer_cls(dataset_name, root, **kwargs)
     else:
         raise ValueError('Could not get any matched tokenizer interface.')
+
