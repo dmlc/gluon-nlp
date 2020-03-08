@@ -172,8 +172,8 @@ html_theme_options = {
     'header_links' : [
         ('Install', 'install/install-more', False, ''),
         ('API', 'api/index', False, ''),
-        ('Community', 'community/index', False, ''),
-        ('Contribute', 'community/contribute', False, ''),
+        ('Community', 'website/index', False, ''),
+        ('Contribute', 'website/contribute', False, ''),
         ('GitHub', 'https://github.com/dmlc/gluon-nlp/', True, 'fab fa-github'),
     ],
 
