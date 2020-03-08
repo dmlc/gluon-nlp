@@ -80,5 +80,5 @@ You may find the 60-min Gluon crash course linked from there especially helpful.
    examples/index
    api/index
    community/index
+   demo/index
    genindex
-   demo
