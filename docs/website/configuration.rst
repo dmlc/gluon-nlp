@@ -1,7 +1,7 @@
 Preview GluonNLP Website Locally
 -----------------------------------------------------------------
 
-The GluonNLP docs website is at https://gluon-nlp.mxnet.io (release branch), or https://gluon-nlp.mxnet.io/master/index.html (master branch). Its source code is at https://github.com/dmlc/gluon-nlp .
+The GluonNLP docs website is at `release branch <https://gluon-nlp.mxnet.io>`__, or `master branch <https://gluon-nlp.mxnet.io/master/index.html>`__. Its source code is at `gluon-nlp <https://github.com/dmlc/gluon-nlp>`__.
 
 Currently the GluonNLP website is constructed from the source code via CI automatically. Here I will share:
 
@@ -11,7 +11,7 @@ Currently the GluonNLP website is constructed from the source code via CI automa
 Website Structure
 ~~~~~~~~~~~~~~~~~
 
-Currently the docs part contain four sections: Model Zoo, Examples, API and Community. It should be noted that the model zoo is a link redirecting to the ``scripts`` folder in the parent folder. The other three folders are used exclusively by the docs website. Also, three different sections use ``rmd``, ``py``, ``md`` files and their composition for compiling - they are inconsistent. So when you work on different sections of the docs website, you should  pay attention to handle the different sections with care.
+Currently the docs part contain four sections: Model Zoo, Examples, API and Community. It should be noted that the model zoo is a link redirecting to the ``scripts`` folder in the parent folder. The other three folders are used exclusively by the docs website. Also, three different sections use ``rst``, ``py``, ``md`` files and their composition for compiling - they are inconsistent. So when you work on different sections of the docs website, you should  pay attention to handle the different sections with care.
 
 The main structure, the index file of the entire website, is written in ``rst`` format. It calls the index file of each different section separately. Before compiling the website, you should be aware that:
 
@@ -31,7 +31,7 @@ Next, I will give a step by step instruction on how to compile this website from
 1.1 Using existing ipynb from the website
 :::::::::::::::::::::::::::::::::::::::::
 
-If you don’t modify the examples section, what you need to do here is not converting the md files manually(which is time-consuming), but to get the ipynb files that are already ready for use. They can be found by clicking on the “DOWNLOAD THIS TUTORIAL” button on each page of the examples, like this one: https://gluon-nlp.mxnet.io/master/examples/word_embedding/word_embedding.html . After downloading these files, please put them in the same folder along with each md file. And then *delete* the md files. After these steps, you can skip the remaining of this section and go to the next section.
+If you don’t modify the examples section, what you need to do here is not converting the md files manually(which is time-consuming), but to get the ipynb files that are already ready for use. They can be found by clicking on the “DOWNLOAD THIS TUTORIAL” button on each page of the examples, such as `the word embedding tutorial <https://gluon-nlp.mxnet.io/master/examples/word_embedding/word_embedding.html>`__. After downloading these files, please put them in the same folder along with each md file. And then *delete* the md files. After these steps, you can skip the remaining of this section and go to the next section.
 
 1.2 Generating new ipynb from md files
 :::::::::::::::::::::::::::::::::::::::::
@@ -112,5 +112,9 @@ This work can be done on any machine as it doesn't need running the python scrip
 It is also possible that you will need to install some necessary packages to help the ``make docs`` work. This include: python, pip and some other packages which will be installed through pip.
 
 Use the command from https://github.com/dmlc/gluon-nlp/blob/master/docs/README.txt to install the necessary packages.
+
+.. code:: bash
+
+    pip install sphinx>=1.5.5 sphinx-gallery sphinx_rtd_theme matplotlib Image recommonmark
 
 After successful installation and placing the ``ipynb`` files into correct places, plus deleting the ``md`` files, you should be able to successfully generate the output ``HTML`` files.
