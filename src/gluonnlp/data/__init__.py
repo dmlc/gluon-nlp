@@ -170,4 +170,3 @@ def get_tokenizer(model_name, dataset_name,
         return tokenizer_cls(dataset_name, root, **kwargs)
     else:
         raise ValueError('Could not get any matched tokenizer interface.')
-

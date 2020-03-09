@@ -17,22 +17,12 @@
 """API to get list of datasets"""
 __all__ = ['list_datasets']
 
-from . import (batchify, candidate_sampler, conll, corpora, dataloader,
-               dataset, question_answering, registry, sampler, sentiment,
-               stream, super_glue, transforms, translation, utils,
-               word_embedding_evaluation, intent_slot, glue, datasetloader,
-               classification, baidu_ernie_data, bert, xlnet, info)
+from . import (conll, question_answering, sentiment,
+               super_glue, translation, word_embedding_evaluation,
+               intent_slot, glue, baidu_ernie_data)
 from .corpora import google_billion_word
 from .corpora import large_text_compression_benchmark
 from .corpora import wikitext
-from .conll import *
-from .glue import *
-from .intent_slot import *
-from .question_answering import *
-from .sentiment import *
-from .super_glue import *
-from .translation import *
-from .word_embedding_evaluation import *
 
 
 def list_datasets():
@@ -42,6 +32,7 @@ def list_datasets():
                 google_billion_word.__all__ + intent_slot.__all__ +
                 large_text_compression_benchmark.__all__ +
                 question_answering.__all__ + super_glue.__all__ +
-                translation.__all__ + word_embedding_evaluation.__all__)
+                translation.__all__ + word_embedding_evaluation.__all__ +
+                wikitext.__all__ + baidu_ernie_data.__all__)
 
     return datasets
