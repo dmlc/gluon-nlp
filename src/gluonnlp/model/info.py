@@ -17,16 +17,9 @@
 """API to get list of pretrained models"""
 __all__ = ['list_models']
 
-from . import (attention_cell, bert, bilm_encoder, block,
-               convolutional_encoder, elmo, highway, language_model,
-               lstmpcellwithclip, parameter, sampled_block,
-               seq2seq_encoder_decoder, sequence_sampler, train, transformer,
-               utils, info)
-from .bert import *
-from .bilm_encoder import *
-from .elmo import *
-from .language_model import *
-from .transformer import *
+from . import (bert, bilm_encoder, elmo, language_model,
+               transformer)
+
 
 def list_models():
     """Returns the list of pretrained models
