@@ -24,7 +24,3 @@ import gluonnlp as nlp
 def test_get_models():
     models = nlp.model.list_models()
     assert len(models)!=0
-
-def test_get_datasets():
-    datasets = nlp.data.list_datasets()
-    assert len(datasets)!=0
