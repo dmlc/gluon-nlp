@@ -5,7 +5,6 @@ GluonNLP Toolkit provides tools for building efficient data pipelines for NLP ta
 
 .. currentmodule:: gluonnlp.data
 
-
 Public Datasets
 ---------------
 
