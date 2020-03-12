@@ -57,3 +57,10 @@ Please input the following into the text box:
     <div id="result">
       Result will appear here.
     </div>
+
+    <script type="text/javascript">
+        $("#select").change(function () {
+            let sentence = $(this).val();
+            $("#input").val(sentence)
+        });
+    </script>
