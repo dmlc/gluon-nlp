@@ -64,6 +64,7 @@ def get_tokenizer(model_name, dataset_name,
                   vocab=None, root=os.path.join(get_home_dir(), 'data'),
                   **kwargs):
     """Returns a pre-defined tokenizer by name.
+
     Parameters
     ----------
     model_name : str
@@ -91,10 +92,12 @@ def get_tokenizer(model_name, dataset_name,
         vocab.
     root : str, default '$MXNET_HOME/models' with MXNET_HOME defaults to '~/.mxnet'
         Location for keeping the model parameters.
+
     Returns
     -------
     gluonnlp.data.BERTTokenizer or gluonnlp.data.GPT2BPETokenizer or
     gluonnlp.data.SentencepieceTokenizer
+
     Examples
     --------
     >>> model_name = 'bert_12_768_12'
