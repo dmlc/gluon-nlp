@@ -80,7 +80,7 @@ Model Zoo
    :maxdepth: 1
 
    
-   catalog/index
+   catalog
    word_embeddings/index
    language_model/index
    machine_translation/index
