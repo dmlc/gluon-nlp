@@ -43,7 +43,7 @@ Please input the following into the text box:
       <option value="[&quot;Positive sentiment&quot;]">Positive sentiment</option>
       <option value="[&quot;Negative sentiment&quot;]">Negative sentiment</option>
     </select>
-    <form action="http://34.222.89.17:8888/bert_sst/predict" method="post">
+    <form action="http://34.222.89.17:8888/bert_sst/predict" method="get">
       <div class="mdl-textfield mdl-js-textfield" style="width: 89%">
         <input class="mdl-textfield__input" type="text" id="input" name="data"
                value="[&quot;Input a sentence...&quot;]" style="
