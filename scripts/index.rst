@@ -79,6 +79,8 @@ Model Zoo
    :hidden:
    :maxdepth: 1
 
+   
+   catalog/index
    word_embeddings/index
    language_model/index
    machine_translation/index
