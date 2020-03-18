@@ -42,7 +42,7 @@ Demo
       <option value="Negative sentiment">Negative sentiment</option>
     </select>
 
-    <div class="mdl-textfield mdl-js-textfield" style="width: 89%">
+    <div class="mdl-textfield mdl-js-textfield" style="width: 90%">
       <input class="mdl-textfield__input" type="text"
              id="input" name="data" value="Input a sentence..."
              style="border-bottom:1px solid rgba(23, 141, 201, 0.9);">
@@ -61,7 +61,7 @@ Demo
 
     $("select+div+input").click(function () {
         let request_url = 'http://34.222.89.17:8888/bert_sst/predict?data=["' +
-            $("input").val() + '"]';
+            $("#input").val() + '"]';
         $.ajax({
             url: request_url, success: function (result) {
                 if (result[4] === '0')
