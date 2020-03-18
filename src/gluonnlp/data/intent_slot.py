@@ -44,8 +44,7 @@ class _BaseICSLDataset(SimpleDataset):
     """
     def __init__(self, segment, root):
         root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
+        os.makedirs(root, exist_ok=True)
         self._segment = segment
         self._root = root
         self._intent_vocab = None
