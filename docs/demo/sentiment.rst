@@ -9,7 +9,7 @@ Sentiment Analysis predicts whether an input is positive or negative. The model 
 Demo
 ----
 
-    You can either input a sentence into the textbox or select one sample from the select control.
+You can either input a sentence into the textbox or select one sample from the select control.
 
 .. raw:: html
 
@@ -38,8 +38,8 @@ Demo
             background-position: right .7em top 50%, 0 0;
             background-size: .65em auto, 100%;">
       <option>Choose an example...</option>
-      <option value="Positive sentiment">Positive sentiment</option>
-      <option value="Negative sentiment">Negative sentiment</option>
+      <option value="A comedy is on show in the theater.">Positive sentiment</option>
+      <option value="That person seems to be in anger now.">Negative sentiment</option>
     </select>
 
     <div class="mdl-textfield mdl-js-textfield" style="width: 90%">
