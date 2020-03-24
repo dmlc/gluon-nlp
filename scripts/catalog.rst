@@ -6,7 +6,7 @@ Model Catalog
 
 Language Model
 --------------
-`Language Model Model Zoo Index <./model_zoo/language_model/index.html>`_
+`Language Model Model Zoo Index <./language_model/index.html>`_
 
 
 
