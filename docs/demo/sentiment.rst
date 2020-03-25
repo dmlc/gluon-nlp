@@ -38,8 +38,8 @@ You can either input a sentence into the textbox or select one sample from the s
             background-position: right .7em top 50%, 0 0;
             background-size: .65em auto, 100%;">
       <option>Choose an example...</option>
-      <option value="A comedy is on show in the theater.">Positive sentiment</option>
-      <option value="That person seems to be in anger now.">Negative sentiment</option>
+      <option value="Happy New Year!">Happy New Year!</option>
+      <option value="That person seems to be in anger now.">That person seems to be in anger now.</option>
     </select>
 
     <div class="mdl-textfield mdl-js-textfield" style="width: 90%">
