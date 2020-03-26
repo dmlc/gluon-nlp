@@ -4,7 +4,13 @@ import time
 import notedown
 import nbformat
 
-assert len(sys.argv) == 2, 'usage: input.md'
+help_message = 'Usage:' \
+               '  md2ipynb.py input.md [options]' \
+               '' \
+               'General Options:' \
+               '  -d                          Disable computing python scripts'
+assert len(sys.argv) > 1, help_message
+assert len(sys.argv) < 4, help_message
 
 # timeout for each notebook, in sec
 timeout = 40 * 60
@@ -13,6 +19,10 @@ timeout = 40 * 60
 ignore_execution = []
 
 input_path = sys.argv[1]
+enable_compute = True
+if len(sys.argv) == 3:
+    if sys.argv[2] == '-d':
+        enable_compute = False
 
 # Change working directory to directory of input file
 input_dir, input_fn = os.path.split(input_path)
@@ -28,7 +38,8 @@ with open(input_fn, encoding='utf-8', mode='r') as f:
 
 if not any([i in input_fn for i in ignore_execution]):
     tic = time.time()
-    notedown.run(notebook, timeout)
+    if enable_compute:
+        notedown.run(notebook, timeout)
     print('=== Finished evaluation in %f sec'%(time.time()-tic))
 
 # write
