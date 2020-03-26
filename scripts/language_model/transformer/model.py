@@ -18,7 +18,6 @@
 # pylint: disable=wildcard-import, arguments-differ
 """Module for pre-defined NLP models."""
 
-import errno
 import os
 import time
 import zipfile
@@ -265,14 +264,7 @@ def _get_xlnet_tokenizer(dataset_name, root, do_lower_case=False):
     else:
         print('Tokenizer file is not found. Downloading.')
 
-    if not os.path.exists(root):
-        try:
-            os.makedirs(root)
-        except OSError as e:
-            if e.errno == errno.EEXIST and os.path.isdir(root):
-                pass
-            else:
-                raise e
+    os.makedirs(root, exist_ok=True)
 
     repo_url = _get_repo_url()
     prefix = str(time.time())

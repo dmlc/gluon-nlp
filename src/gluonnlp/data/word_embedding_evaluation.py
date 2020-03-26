@@ -50,8 +50,7 @@ class _Dataset(SimpleDataset):
 
     def __init__(self, root):
         self.root = os.path.expanduser(root)
-        if not os.path.isdir(self.root):
-            os.makedirs(self.root)
+        os.makedirs(self.root, exist_ok=True)
         self._download_data()
         super(_Dataset, self).__init__(self._get_data())
 

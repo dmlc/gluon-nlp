@@ -39,8 +39,7 @@ from ..base import get_home_dir
 class _CoNLLSequenceTagging(SimpleDataset):
     def __init__(self, segment, root, has_comment=False):
         root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
+        os.makedirs(root, exist_ok=True)
         self._segment = segment
         self._root = root
         self._has_comment = has_comment

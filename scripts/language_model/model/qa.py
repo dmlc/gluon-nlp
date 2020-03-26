@@ -43,7 +43,7 @@ class PoolerEndLogits(HybridBlock):
         with self.name_scope():
             self.dense_0 = nn.Dense(units, activation='tanh', flatten=False)
             self.dense_1 = nn.Dense(1, flatten=False)
-            self.layernorm = nn.LayerNorm(epsilon=1e-12, in_channels=768)
+            self.layernorm = nn.LayerNorm(epsilon=1e-12, in_channels=units)
 
     def __call__(self,
                  hidden_states,

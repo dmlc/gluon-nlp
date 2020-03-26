@@ -35,7 +35,7 @@ class _BaiduErnieDataset(TSVDataset):
         assert (filename or (root and dataset_name and segment))
         if not filename:
             root = os.path.expanduser(root)
-            mkdir(root)
+            os.makedirs(root, exist_ok=True)
             self._root = root
             download_data_path = os.path.join(self._root, 'task_data.tgz')
             if not os.path.exists(download_data_path):

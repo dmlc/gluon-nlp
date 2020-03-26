@@ -43,8 +43,7 @@ class SentimentDataset(SimpleDataset):
     """
     def __init__(self, segment, root):
         root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
+        os.makedirs(root, exist_ok=True)
         self._root = root
         self._segment = segment
         self._get_data()
@@ -136,8 +135,7 @@ class IMDB(SimpleDataset):
                            'unsup': ('unsup.json',
                                      'f908a632b7e7d7ecf113f74c968ef03fadfc3c6c')}
         root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
+        os.makedirs(root, exist_ok=True)
         self._root = root
         self._segment = segment
         self._get_data()
