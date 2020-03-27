@@ -31,7 +31,7 @@ with open(input_fn, encoding='utf-8', mode='r') as f:
 
 if not any([i in input_fn for i in ignore_execution]):
     tic = time.time()
-    if not args.d:
+    if not args.disable_compute:
         notedown.run(notebook, timeout)
     print('=== Finished evaluation in %f sec' % (time.time() - tic))
 
