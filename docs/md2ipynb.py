@@ -1,10 +1,15 @@
+import argparse
 import os
-import sys
 import time
-import notedown
-import nbformat
 
-assert len(sys.argv) == 2, 'usage: input.md'
+import nbformat
+import notedown
+
+parser = argparse.ArgumentParser(description='Convert md file to ipynb files.')
+parser.add_argument('input', help='input.md', type=str)
+parser.add_argument('-d', '--disable_compute',
+                    help='Disable computing python scripts', action="store_true")
+args = parser.parse_args()
 
 # timeout for each notebook, in sec
 timeout = 40 * 60
@@ -12,10 +17,8 @@ timeout = 40 * 60
 # the files will be ignored for execution
 ignore_execution = []
 
-input_path = sys.argv[1]
-
 # Change working directory to directory of input file
-input_dir, input_fn = os.path.split(input_path)
+input_dir, input_fn = os.path.split(args.input)
 os.chdir(input_dir)
 
 output_fn = '.'.join(input_fn.split('.')[:-1] + ['ipynb'])
@@ -28,8 +31,9 @@ with open(input_fn, encoding='utf-8', mode='r') as f:
 
 if not any([i in input_fn for i in ignore_execution]):
     tic = time.time()
-    notedown.run(notebook, timeout)
-    print('=== Finished evaluation in %f sec'%(time.time()-tic))
+    if not args.disable_compute:
+        notedown.run(notebook, timeout)
+    print('=== Finished evaluation in %f sec' % (time.time() - tic))
 
 # write
 # need to add language info to for syntax highlight
