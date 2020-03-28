@@ -93,7 +93,7 @@ compile_notebooks:
 		if [ -f $$TARGETNAME ]; then \
 			echo $$TARGETNAME exists. Skipping compilation of $$BASENAME in Makefile. ; \
 		else \
-			python $(MD2IPYNB) $$BASENAME ; \
+			python $(MD2IPYNB) $(COMPUTE) $$BASENAME ; \
 		fi ; \
 		cd - ; \
 	done;
