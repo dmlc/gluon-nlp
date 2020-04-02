@@ -60,7 +60,7 @@ You can either input a sentence into the textbox or select one sample from the s
     });
 
     $("select+div+input").click(function () {
-        let request_url = 'http://34.222.89.17:8888/bert_sst/predict?data=["' +
+        let request_url = 'http://52.12.156.84:8888/bert_sst/predict?data=["' +
             $("#input").val() + '"]';
         $.ajax({
             url: request_url, success: function (result) {
