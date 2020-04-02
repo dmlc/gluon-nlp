@@ -19,7 +19,8 @@ ignore_execution = []
 
 # Change working directory to directory of input file
 input_dir, input_fn = os.path.split(args.input)
-os.chdir(input_dir)
+if input_dir:
+    os.chdir(input_dir)
 
 output_fn = '.'.join(input_fn.split('.')[:-1] + ['ipynb'])
 
