@@ -110,4 +110,4 @@ test:
 	py.test -v --capture=no --durations=0  tests/unittest scripts
 
 distribute: dist_scripts dist_notebooks
-	python setup.py sdist
+	python3 setup.py sdist
