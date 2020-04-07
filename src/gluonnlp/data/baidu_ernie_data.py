@@ -23,7 +23,6 @@ import tarfile
 from urllib.request import urlretrieve
 
 from ..base import get_home_dir
-from ..utils import mkdir
 from .dataset import TSVDataset
 from .registry import register
 
