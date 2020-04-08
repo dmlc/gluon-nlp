@@ -57,8 +57,7 @@ ratcheck: ci/rat/apache-rat.jar
         echo "SUCCESS: There are no files with an Unknown License."; \
     fi
 
-docs: compile_notebooks distribute
-	make -C docs html SPHINXOPTS=-W
+docs: docs_local
 	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
 		FILE=`echo $$f | sed 's/docs\///g'` ; \
 		DIR=`dirname $$FILE` ; \
@@ -79,6 +78,9 @@ docs: compile_notebooks distribute
 	done;
 	sed -i.bak 's/33\,150\,243/23\,141\,201/g' docs/_build/html/_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css;
 	sed -i.bak 's/2196f3/178dc9/g' docs/_build/html/_static/sphinx_materialdesign_theme.css;
+
+docs_local: compile_notebooks distribute
+	make -C docs html SPHINXOPTS=-W
 
 clean:
 	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda/" --exclude="$(ROOTDIR)/.idea/"
