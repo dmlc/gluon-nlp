@@ -34,7 +34,7 @@ Use the command from https://github.com/dmlc/gluon-nlp/blob/master/docs/README.t
 
     pip install sphinx>=1.5.5 sphinx-gallery sphinx_rtd_theme matplotlib Image recommonmark
 
-Then use the command below to build the website locally, all the ``python`` scripts are skipped and there is no output:
+Then use the command below to build the website locally, all the ``python`` scripts are skipped and there is no output for ``python`` code blocks:
 
 .. code:: bash
 
@@ -53,7 +53,7 @@ After you have got the machine and logged to the machine, you will need to confi
 
     git clone https://github.com/dmlc/gluon-nlp
     cd gluon-nlp
-    pip install --user -e '.[extras,dev]'
+    pip3 install --user -e '.[extras,dev]'
 
 If necessary, you might still need to configure the packages like below:
 
