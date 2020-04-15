@@ -25,64 +25,39 @@ Environment Configuration Instruction
 
 Next, I will give a step by step instruction on how to compile this website from scratch.
 
-1. Converting md files into ipynb files
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1. Preview website without displaying python output
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1.1 Using existing ipynb from the website
-:::::::::::::::::::::::::::::::::::::::::
+Use the command from https://github.com/dmlc/gluon-nlp/blob/master/docs/README.txt to install the necessary packages.
 
-If you don’t modify the examples section, what you need to do here is not converting the md files manually(which is time-consuming), but to get the ipynb files that are already ready for use. They can be found by clicking on the “DOWNLOAD THIS TUTORIAL” button on each page of the examples, such as `the word embedding tutorial <https://gluon-nlp.mxnet.io/master/examples/word_embedding/word_embedding.html>`__. After downloading these files, please put them in the same folder along with each md file. And then *delete* the md files. After these steps, you can skip the remaining of this section and go to the next section.
+.. code:: bash
 
-1.2 Generating new ipynb from md files
-:::::::::::::::::::::::::::::::::::::::::
+    pip install sphinx>=1.5.5 sphinx-gallery sphinx_rtd_theme matplotlib Image recommonmark
 
-If you need to modify the examples, then you will need a server to do all the calculation because converting a ``md`` file into a ``ipynb`` file means running all the scripts in it and then save all the outputs.
+Then use the command below to build the website locally, all the ``python`` scripts are skipped and there is no output:
+
+.. code:: bash
+
+    make docs_local MD2IPYNB_OPTION=-d
+
+You will get full HTML result for the website after successful execution.
+
+2. Preview website with python output
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 To accomplish this task, we recommend you to use the instance ``g4dn.xlarge`` on Amazon EC2. For convenience, you can search *deep learning* in the filter bar to select the deep learning-enabled machines, where you will have no need of installing addition drivers.
 
-After you have got the machine and logged to the machine, you will see that on the welcome screen, it shows the conda environments if you have selected a deep learning machine. Here we will choose the MXNet one, use the command below:
-
-.. code:: bash
-
-    source activate mxnet_p36
-
-We will use the commands below to update the packages on this machine
-
-.. code:: bash
-
-    sudo apt-get update
-    sudo apt-get upgrade
-
-Use the commands below to install or update necessaryy packages:
-
-.. code:: bash
-
-    pip install notedown
-    pip install --upgrade sphinx
-    pip install --user -U numpy
-    pip install "nltk==3.2.5"
-
-After installing the packages above, get the GluonNLP repository from GitHub via the command:
+After you have got the machine and logged to the machine, you will need to configure the packages using the command below:
 
 .. code:: bash
 
     git clone https://github.com/dmlc/gluon-nlp
-
-Then navigate to the gluon-nlp folder
-
-.. code:: bash
-
     cd gluon-nlp
-
-Use the command below to install the necessary packages in python:
-
-.. code:: bash
-
-    pip install --user -e '.[dev]'
+    pip install --user -e '.[extras,dev]'
 
 If necessary, you might still need to configure the packages like below:
 
-Use ``python`` command to get into the python execution screen, and then type the commands below to install the necessary packages inside python:
+Use ``python3`` command to get into the python execution screen, and then type the commands below to install the necessary packages inside python:
 
 .. code:: bash
 
@@ -91,30 +66,9 @@ Use ``python`` command to get into the python execution screen, and then type th
     nltk.download('nonbreaking_prefixes')
     nltk.download('punkt')
 
-After all these configuration, you will be able to make the conversion from ``md`` files to the ``ipynb`` files.
-
-Use the command like the one below to do the conversion:
-
+By now, you should have installed all the necessary packages for the website. You can use the command below for previewing the website locally with all the python output:
 
 .. code:: bash
 
-    python3 docs/md2ipynb.py docs/examples/language_model/language_model.md
+    make docs_local
 
-And then you will be able to see the result file in the same path as the ``md`` file.
-
-2. Using make docs to convert static files into HTML
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-This work can be done on any machine as it doesn't need running the python scripts.
-
-*Requirements*: You have the ``ipynb`` files ready. If you modified the ``md`` files, then you will need the first step to compile the new ``ipynb`` files.
-
-It is also possible that you will need to install some necessary packages to help the ``make docs`` work. This include: python, pip and some other packages which will be installed through pip.
-
-Use the command from https://github.com/dmlc/gluon-nlp/blob/master/docs/README.txt to install the necessary packages.
-
-.. code:: bash
-
-    pip install sphinx>=1.5.5 sphinx-gallery sphinx_rtd_theme matplotlib Image recommonmark
-
-After successful installation and placing the ``ipynb`` files into correct places, plus deleting the ``md`` files, you should be able to successfully generate the output ``HTML`` files.
