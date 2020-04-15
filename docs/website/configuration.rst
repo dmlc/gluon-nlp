@@ -59,7 +59,7 @@ If necessary, you might still need to configure the packages like below:
 
 Use ``python3`` command to get into the python execution screen, and then type the commands below to install the necessary packages inside python:
 
-.. code:: bash
+.. code:: python
 
     import nltk
     nltk.download('perluniprops')
