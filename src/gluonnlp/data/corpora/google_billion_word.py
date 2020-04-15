@@ -84,8 +84,7 @@ class GBWStream(SimpleDatasetStream):
     def __init__(self, segment='train', skip_empty=True, bos=None, eos=EOS_TOKEN,
                  root=os.path.join(get_home_dir(), 'datasets', 'gbw')):
         root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
+        os.makedirs(root, exist_ok=True)
         self._root = root
         self._dir = os.path.join(root, '1-billion-word-language-modeling-benchmark-r13output')
         self._namespace = 'gluon/dataset/gbw'

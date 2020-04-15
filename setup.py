@@ -2,15 +2,14 @@
 import io
 import os
 import re
-import shutil
-import sys
+
 from setuptools import setup, find_packages, Extension
 
 
 def read(*names, **kwargs):
     with io.open(
-        os.path.join(os.path.dirname(__file__), *names),
-        encoding=kwargs.get("encoding", "utf8")
+            os.path.join(os.path.dirname(__file__), *names),
+            encoding=kwargs.get("encoding", "utf8")
     ) as fp:
         return fp.read()
 
@@ -64,7 +63,7 @@ setup(
     extras_require={
         'extras': [
             'spacy',
-            'nltk',
+            'nltk>=3.2.5',
             'sacremoses',
             'scipy',
             'numba>=0.45',
@@ -89,6 +88,9 @@ setup(
             'sphinx-autodoc-typehints',
             'nbsphinx',
             'flaky',
+            'notedown',
+            'matplotlib',
+            'Image',
         ],
     },
     ext_modules=[

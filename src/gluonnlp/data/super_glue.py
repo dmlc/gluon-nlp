@@ -38,8 +38,7 @@ from ..base import get_home_dir
 class _SuperGlueDataset(_JsonlDataset):
     def __init__(self, root, data_file):
         root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
+        os.makedirs(root, exist_ok=True)
         segment, zip_hash, data_hash = data_file
         self._root = root
         filename = os.path.join(self._root, '%s.jsonl' % segment)

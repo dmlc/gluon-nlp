@@ -63,6 +63,7 @@ templates_path = ['_templates']
 nbsphinx_kernel_name = 'python3'
 nbsphinx_allow_errors = True
 nbsphinx_timeout = 1200
+nbsphinx_execute = 'never'
 html_sourcelink_suffix = ''
 
 html_context = {
