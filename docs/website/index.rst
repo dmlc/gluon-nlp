@@ -55,3 +55,4 @@ Interested in contributing to GluonNLP? Check our contribution guide:
    contribute
    git
    release
+   configuration
