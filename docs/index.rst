@@ -79,6 +79,6 @@ You may find the 60-min Gluon crash course linked from there especially helpful.
    model_zoo/index
    examples/index
    api/index
-   community/index
+   website/index
    demo/index
    genindex

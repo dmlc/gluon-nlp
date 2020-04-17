@@ -125,8 +125,7 @@ class SQuAD(ArrayDataset):
 
         root = os.path.expanduser(root)
 
-        if not os.path.isdir(root):
-            os.makedirs(root)
+        os.makedirs(root, exist_ok=True)
 
         self._root = root
         self._segment = segment

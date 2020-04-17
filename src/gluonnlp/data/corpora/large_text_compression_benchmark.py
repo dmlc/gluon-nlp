@@ -49,8 +49,7 @@ from ..dataset import CorpusDataset
 class _LargeTextCompressionBenchmark(CorpusDataset):
     def __init__(self, root, segment, **kwargs):
         root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
+        os.makedirs(root, exist_ok=True)
         self._root = root
         self._segment = segment
         self._namespace = 'gluon/dataset/large_text_compression_benchmark'

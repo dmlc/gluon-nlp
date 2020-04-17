@@ -63,6 +63,7 @@ templates_path = ['_templates']
 nbsphinx_kernel_name = 'python3'
 nbsphinx_allow_errors = True
 nbsphinx_timeout = 1200
+nbsphinx_execute = 'never'
 html_sourcelink_suffix = ''
 
 html_context = {
@@ -172,8 +173,8 @@ html_theme_options = {
     'header_links' : [
         ('Install', 'install/install-more', False, ''),
         ('API', 'api/index', False, ''),
-        ('Community', 'community/index', False, ''),
-        ('Contribute', 'community/contribute', False, ''),
+        ('Community', 'website/index', False, ''),
+        ('Contribute', 'website/contribute', False, ''),
         ('GitHub', 'https://github.com/dmlc/gluon-nlp/', True, 'fab fa-github'),
     ],
 
