@@ -1254,7 +1254,7 @@ def distilbert_6_768_12(dataset_name='distil_book_corpus_wiki_en_uncased', vocab
                         output_attention=False,
                         output_all_encodings=False,
                         root=os.path.join(get_home_dir(), 'models'),
-                        **kwargs):
+                        hparam_allow_override=False, **kwargs):
     """DistilBERT model: https://arxiv.org/abs/1910.01108
 
     The number of layers (L) is 6, number of units (H) is 768, and the
@@ -1277,17 +1277,21 @@ def distilbert_6_768_12(dataset_name='distil_book_corpus_wiki_en_uncased', vocab
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     DistilBERTModel, gluonnlp.vocab.Vocab
     """
     model_name = 'distilbert_6_768_12'
-    predefined_args = bert_hparams[model_name]
-    mutable_args = ['use_residual', 'dropout', 'word_embed']
-    mutable_args = frozenset(mutable_args)
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-        'Cannot override predefined model settings.'
+    predefined_args = bert_hparams[model_name].copy()
+    if not hparam_allow_override:
+        mutable_args = ['use_residual', 'dropout', 'word_embed']
+        mutable_args = frozenset(mutable_args)
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     # encoder
     encoder = BERTEncoder(num_layers=predefined_args['num_layers'],
