@@ -16,7 +16,7 @@ dependencies:
     - nbsphinx>=0.3.4,<0.4
     - ipython
     - ipykernel
-    - numba==0.49
+    - numba==0.49.0
     - https://github.com/szha/mx-theme/tarball/master
     - seaborn
     - jieba
