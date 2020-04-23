@@ -17,6 +17,7 @@ dependencies:
     - ipython
     - ipykernel
     - numba==0.47
+    - llvmlite==0.31.0
     - https://github.com/szha/mx-theme/tarball/master
     - seaborn
     - jieba
