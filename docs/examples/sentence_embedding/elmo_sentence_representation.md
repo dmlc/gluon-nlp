@@ -1,4 +1,4 @@
-# Extract Sentence Features with Pre-trained ELMo
+# Extracting Sentence Features with Pre-trained ELMo
 
 While word embeddings have been shown to capture syntactic and semantic information of words as well as have become a standard component in many state-of-the-art NLP architectures, their context-free nature limits their ability to represent context-dependent information.
 Peters et. al. proposed a deep contextualized word representation method, called Embeddings from Language Models, or ELMo for short [1].
@@ -43,7 +43,7 @@ In this section, we will proceed with the following steps:
 ### Loading the dataset
 
 The first step is to create a dataset from existing data.
-Here, we use a paragraph from [1] as our dataset, using the built-in [TextLineDataset](../../api/modules/data.rst#gluonnlp.data.TextLineDataset) class.
+Here, we use a paragraph from [1] as our dataset, using the built-in [TextLineDataset](../../api/data.rst#gluonnlp.data.TextLineDataset) class.
 It's a dataset of 7 samples, each of which is a sentence.
 
 ```{.python .input}
@@ -75,7 +75,7 @@ In our case, transforming the dataset consists of tokenization and numericalizat
 #### Tokenization
 
 The ELMo pre-trained models are trained on Google 1-Billion Words dataset, which was tokenized with the Moses Tokenizer.
-In GluonNLP, using [SacreMosesTokenizer](../../api/modules/data.rst#gluonnlp.data.SacreMosesTokenizer) should do the trick.
+In GluonNLP, using [SacreMosesTokenizer](../../api/data.rst#gluonnlp.data.SacreMosesTokenizer) should do the trick.
 Once tokenized, we can add markers, or tokens, for the beginning and end of sentences. BOS means beginning of sentence, and EOS means the end of a sentence.
 
 ```{.python .input}
@@ -90,7 +90,7 @@ print(dataset[2]) # print the same tokenized sentence as above
 
 Numericalizing the dataset is as straightforward as using the ELMo-specific character-level
 vocabulary as transformation. For details on ELMo's vocabulary, see
-[ELMoCharVocab](../../api/modules/vocab.rst#gluonnlp.vocab.ELMoCharVocab).
+[ELMoCharVocab](../../api/vocab.rst#gluonnlp.vocab.ELMoCharVocab).
 We also calculate the length of each sentence in preparation for batching.
 
 ```{.python .input}
@@ -138,7 +138,7 @@ print(elmo_bilm)
 
 ## Putting everything together
 
-Finally, now we feed the prepared data batch into the [ELMoBiLM](../../api/modules/model.rst#gluonnlp.model.ELMoBiLM) model.
+Finally, now we feed the prepared data batch into the [ELMoBiLM](../../api/model.rst#gluonnlp.model.ELMoBiLM) model.
 
 ```{.python .input}
 def get_features(data, valid_lengths):

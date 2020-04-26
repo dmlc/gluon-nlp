@@ -14,8 +14,17 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+"""API to get list of pretrained models"""
+__all__ = ['list_models']
 
-# pylint: disable=wildcard-import
-"""BERT data."""
+from . import (bert, bilm_encoder, elmo, language_model,
+               transformer)
 
-from . import embedding, transform
+
+def list_models():
+    """Returns the list of pretrained models
+    """
+    models = (bert.__all__ + bilm_encoder.__all__ + elmo.__all__ +
+              language_model.__all__ + transformer.__all__)
+
+    return models

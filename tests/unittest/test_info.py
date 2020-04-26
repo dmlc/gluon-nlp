@@ -15,7 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=wildcard-import
-"""BERT data."""
+import os
+import sys
+import warnings
 
-from . import embedding, transform
+import gluonnlp as nlp
+
+def test_get_models():
+    models = nlp.model.list_models()
+    assert len(models)!=0

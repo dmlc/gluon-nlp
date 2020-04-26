@@ -8,36 +8,15 @@ import argparse
 import random
 import logging
 import warnings
-import sys
 from functools import partial
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
 import gluonnlp as nlp
+from gluonnlp.data.classification import get_task
+from gluonnlp.data.bert.glue import truncate_seqs_equal, concat_sequences
 from model.XLNet_classifier import XLNetClassifier
 from transformer import model
-
-path = sys.path[0]
-sys.path.append(path + '/../bert/data')
-#pylint: disable=wrong-import-position
-from classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask, \
-     QNLITask, CoLATask, MNLITask, WNLITask, XNLITask, LCQMCTask, ChnSentiCorpTask
-from preprocessing_utils import truncate_seqs_equal, concat_sequences
-
-tasks = {
-    'MRPC': MRPCTask(),
-    'QQP': QQPTask(),
-    'QNLI': QNLITask(),
-    'RTE': RTETask(),
-    'STS-B': STSBTask(),
-    'CoLA': CoLATask(),
-    'MNLI': MNLITask(),
-    'WNLI': WNLITask(),
-    'SST': SSTTask(),
-    'XNLI': XNLITask(),
-    'LCQMC': LCQMCTask(),
-    'ChnSentiCorp': ChnSentiCorpTask()
-}
 
 parser = argparse.ArgumentParser(
     description='XLNet fine-tune examples for classification/regression tasks.',
@@ -111,6 +90,8 @@ parser.add_argument('--gpu',
                     help='Number of gpus for finetuning.')
 parser.add_argument('--task_name',
                     default='MRPC',
+                    choices=['MRPC', 'QNLI', 'RTE', 'STS-B', 'CoLA',
+                             'MNLI', 'WNLI', 'SST', 'XNLI', 'LCQMC', 'ChnSentiCorp'],
                     type=str,
                     help='The name of the task to fine-tune.')
 
@@ -351,7 +332,7 @@ mx.random.seed(args.seed)
 num_workers = 0
 ctxs = [mx.cpu(0)] if not args.gpu else [mx.gpu(i) for i in range(args.gpu)]
 
-task = tasks[args.task_name]
+task = get_task(args.task_name)
 
 # model and loss
 if args.only_inference and not args.model_parameters:

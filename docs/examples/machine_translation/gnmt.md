@@ -1,4 +1,4 @@
-# Google Neural Machine Translation (GNMT)
+# Training GNMT on IWSLT 2015 Dataset
 
 In this notebook, we are going to train Google NMT on IWSLT 2015 English-Vietnamese
 Dataset. The building process includes four key steps:

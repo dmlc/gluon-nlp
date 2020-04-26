@@ -46,29 +46,12 @@ from mxnet import gluon
 from mxnet.contrib.amp import amp
 import gluonnlp as nlp
 from gluonnlp.data import BERTTokenizer
+from gluonnlp.data.classification import get_task
+from gluonnlp.data.bert.glue import truncate_seqs_equal, concat_sequences
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
 from gluonnlp.calibration import BertLayerCollector
-from data.classification import MRPCTask, QQPTask, RTETask, STSBTask, SSTTask
-from data.classification import QNLITask, CoLATask, MNLITask, WNLITask, XNLITask
-from data.classification import LCQMCTask, ChnSentiCorpTask
-from data.preprocessing_utils import truncate_seqs_equal, concat_sequences
 
 nlp.utils.check_version('0.9', warning_only=True)
-
-tasks = {
-    'MRPC': MRPCTask(),
-    'QQP': QQPTask(),
-    'QNLI': QNLITask(),
-    'RTE': RTETask(),
-    'STS-B': STSBTask(),
-    'CoLA': CoLATask(),
-    'MNLI': MNLITask(),
-    'WNLI': WNLITask(),
-    'SST': SSTTask(),
-    'XNLI': XNLITask(),
-    'LCQMC': LCQMCTask(),
-    'ChnSentiCorp': ChnSentiCorpTask()
-}
 
 parser = argparse.ArgumentParser(
     description='BERT fine-tune examples for classification/regression tasks.',
@@ -134,7 +117,8 @@ parser.add_argument(
 parser.add_argument(
     '--task_name',
     type=str,
-    choices=tasks.keys(),
+    choices=['MRPC', 'QNLI', 'RTE', 'STS-B', 'CoLA',
+             'MNLI', 'WNLI', 'SST', 'XNLI', 'LCQMC', 'ChnSentiCorp'],
     help='The name of the task to fine-tune. Choices include MRPC, QQP, '
          'QNLI, RTE, STS-B, CoLA, MNLI, WNLI, SST.')
 parser.add_argument(
@@ -238,7 +222,7 @@ mx.random.seed(args.seed)
 
 ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 
-task = tasks[task_name]
+task = get_task(task_name)
 
 # data type with mixed precision training
 if args.dtype == 'float16':

@@ -62,8 +62,7 @@ class _TranslationDataset(ArrayDataset):
         self._tgt_vocab = None
         self._pair_key = _get_pair_key(src_lang, tgt_lang)
         root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
+        os.makedirs(root, exist_ok=True)
         self._root = root
         if isinstance(segment, str):
             segment = [segment]

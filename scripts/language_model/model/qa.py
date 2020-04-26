@@ -43,7 +43,7 @@ class PoolerEndLogits(HybridBlock):
         with self.name_scope():
             self.dense_0 = nn.Dense(units, activation='tanh', flatten=False)
             self.dense_1 = nn.Dense(1, flatten=False)
-            self.layernorm = nn.LayerNorm(epsilon=1e-12, in_channels=768)
+            self.layernorm = nn.LayerNorm(epsilon=1e-12, in_channels=units)
 
     def __call__(self,
                  hidden_states,
@@ -95,7 +95,7 @@ class PoolerEndLogits(HybridBlock):
         return x
 
 
-class XLNetPoolerAnswerClass(Block):
+class XLNetPoolerAnswerClass(HybridBlock):
     """ Compute SQuAD 2.0 answer class from classification and start tokens hidden states. """
     def __init__(self, units=768, dropout=0.1, prefix=None, params=None):
         super(XLNetPoolerAnswerClass, self).__init__(prefix=prefix,
@@ -118,7 +118,7 @@ class XLNetPoolerAnswerClass(Block):
         return super(XLNetPoolerAnswerClass,
                      self).__call__(hidden_states, start_states, cls_index)
 
-    def forward(self, hidden_states, start_states, cls_index):
+    def hybrid_forward(self, F, hidden_states, start_states, cls_index):
         # pylint: disable=arguments-differ
         """Get answerability logits from the model output and start states.
 
@@ -135,12 +135,10 @@ class XLNetPoolerAnswerClass(Block):
         x : NDarray, shape(batch_size,)
             CLS logits.
         """
-        F = mx.ndarray
         index = F.contrib.arange_like(hidden_states,
-                                      axis=0,
-                                      ctx=hidden_states.context).expand_dims(1)
+                                      axis=0).expand_dims(1)
         valid_length_rs = cls_index.reshape((-1, 1)) - 1
-        gather_index = F.concat(index, valid_length_rs).T
+        gather_index = F.transpose(F.concat(index, valid_length_rs), axes=(1, 0))
         cls_token_state = F.gather_nd(hidden_states, gather_index)
 
         x = self.dense_0(F.concat(start_states, cls_token_state, dim=-1))

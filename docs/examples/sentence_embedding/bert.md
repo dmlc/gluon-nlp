@@ -1,4 +1,4 @@
-# Fine-tuning Sentence Pair Classification with BERT
+# Fine-tuning Pre-trained BERT Models
 
 Pre-trained language representations have been shown to improve many downstream NLP tasks such as
 question answering, and natural language inference. To apply pre-trained
