@@ -4,9 +4,9 @@ dependencies:
   - python=3.5
   - pip
   - perl
-  - pandoc=1.19.2
+  - pandoc=2.9.2.1
   - tornado=5.1.1
-  - sphinx=2.2.1
+  - sphinx=3.0.3
   - pip:
     - numpy==1.17.4
     - notedown==1.5.1
