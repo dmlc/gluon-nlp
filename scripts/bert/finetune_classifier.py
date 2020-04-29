@@ -53,267 +53,268 @@ from gluonnlp.calibration import BertLayerCollector
 
 nlp.utils.check_version('0.9', warning_only=True)
 
-parser = argparse.ArgumentParser(
-    description='BERT fine-tune examples for classification/regression tasks.',
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='BERT fine-tune examples for classification/regression tasks.',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-parser.add_argument('--optimizer', type=str, default='bertadam',
-                    help='The optimizer to be used for training')
-parser.add_argument('--epochs', type=int, default=3, help='number of epochs.')
-parser.add_argument(
-    '--training_steps', type=int, help='The total training steps. '
-    'Note that if specified, epochs will be ignored.')
-parser.add_argument(
-    '--batch_size',
-    type=int,
-    default=32,
-    help='Batch size. Number of examples per gpu in a minibatch.')
-parser.add_argument(
-    '--dev_batch_size',
-    type=int,
-    default=8,
-    help='Batch size for dev set and test set')
-parser.add_argument(
-    '--lr',
-    type=float,
-    default=3e-5,
-    help='Initial learning rate')
-parser.add_argument(
-    '--epsilon',
-    type=float,
-    default=1e-6,
-    help='Small value to avoid division by 0'
-)
-parser.add_argument(
-    '--warmup_ratio',
-    type=float,
-    default=0.1,
-    help='ratio of warmup steps used in NOAM\'s stepsize schedule')
-parser.add_argument(
-    '--log_interval',
-    type=int,
-    default=10,
-    help='report interval')
-parser.add_argument(
-    '--max_len',
-    type=int,
-    default=128,
-    help='Maximum length of the sentence pairs')
-parser.add_argument(
-    '--round_to', type=int, default=None,
-    help='The length of padded sequences will be rounded up to be multiple of this argument.'
-         'When round to is set to 8, training throughput may increase for mixed precision'
-         'training on GPUs with tensorcores.')
-parser.add_argument(
-    '--seed', type=int, default=2, help='Random seed')
-parser.add_argument(
-    '--accumulate',
-    type=int,
-    default=None,
-    help='The number of batches for gradients accumulation to simulate large batch size. '
-         'Default is None')
-parser.add_argument(
-    '--gpu', type=int, default=None, help='Which gpu for finetuning.')
-parser.add_argument(
-    '--task_name',
-    type=str,
-    choices=['MRPC', 'QNLI', 'RTE', 'STS-B', 'CoLA',
-             'MNLI', 'WNLI', 'SST', 'XNLI', 'LCQMC', 'ChnSentiCorp'],
-    help='The name of the task to fine-tune. Choices include MRPC, QQP, '
-         'QNLI, RTE, STS-B, CoLA, MNLI, WNLI, SST.')
-parser.add_argument(
-    '--bert_model',
-    type=str,
-    default='bert_12_768_12',
-    choices=['bert_12_768_12', 'bert_24_1024_16', 'roberta_12_768_12', 'roberta_24_1024_16'],
-    help='The name of pre-trained BERT model to fine-tune')
-parser.add_argument(
-    '--bert_dataset',
-    type=str,
-    default='book_corpus_wiki_en_uncased',
-    choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
-             'openwebtext_book_corpus_wiki_en_uncased', 'wiki_multilingual_uncased',
-             'wiki_multilingual_cased', 'wiki_cn_cased',
-             'openwebtext_ccnews_stories_books_cased'],
-    help='The dataset BERT pre-trained with.')
-parser.add_argument(
-    '--pretrained_bert_parameters',
-    type=str,
-    default=None,
-    help='Pre-trained bert model parameter file.')
-parser.add_argument(
-    '--model_parameters',
-    type=str,
-    default=None,
-    help='A parameter file for the model that is loaded into the model'
-    ' before training/inference. It is different from the parameter'
-    ' file written after the model is trained.')
-parser.add_argument(
-    '--output_dir',
-    type=str,
-    default='./output_dir',
-    help='The output directory where the model params will be written.')
-parser.add_argument(
-    '--only_inference',
-    action='store_true',
-    help='If set, we skip training and only perform inference on dev and test data.')
-parser.add_argument(
-    '--dtype',
-    type=str,
-    default='float32',
-    choices=['float32', 'float16'],
-    help='The data type for training.')
-parser.add_argument(
-    '--early_stop',
-    type=int,
-    default=None,
-    help='Whether to perform early stopping based on the metric on dev set. '
-         'The provided value is the patience. ')
-parser.add_argument('--deploy', action='store_true',
-                    help='whether load static model for deployment')
-parser.add_argument('--model_prefix', type=str, required=False,
-                    help='load static model as hybridblock.')
-parser.add_argument('--only_calibration', action='store_true',
-                    help='quantize model')
-parser.add_argument('--num_calib_batches', type=int, default=5,
-                    help='number of batches for calibration')
-parser.add_argument('--quantized_dtype', type=str, default='auto',
-                    choices=['auto', 'int8', 'uint8'],
-                    help='quantization destination data type for input data')
-parser.add_argument('--calib_mode', type=str, default='customize',
-                    choices=['none', 'naive', 'entropy', 'customize'],
-                    help='calibration mode used for generating calibration table '
-                         'for the quantized symbol.')
+    parser.add_argument('--optimizer', type=str, default='bertadam',
+                        help='The optimizer to be used for training')
+    parser.add_argument('--epochs', type=int, default=3, help='number of epochs.')
+    parser.add_argument(
+        '--training_steps', type=int, help='The total training steps. '
+        'Note that if specified, epochs will be ignored.')
+    parser.add_argument(
+        '--batch_size',
+        type=int,
+        default=32,
+        help='Batch size. Number of examples per gpu in a minibatch.')
+    parser.add_argument(
+        '--dev_batch_size',
+        type=int,
+        default=8,
+        help='Batch size for dev set and test set')
+    parser.add_argument(
+        '--lr',
+        type=float,
+        default=3e-5,
+        help='Initial learning rate')
+    parser.add_argument(
+        '--epsilon',
+        type=float,
+        default=1e-6,
+        help='Small value to avoid division by 0'
+    )
+    parser.add_argument(
+        '--warmup_ratio',
+        type=float,
+        default=0.1,
+        help='ratio of warmup steps used in NOAM\'s stepsize schedule')
+    parser.add_argument(
+        '--log_interval',
+        type=int,
+        default=10,
+        help='report interval')
+    parser.add_argument(
+        '--max_len',
+        type=int,
+        default=128,
+        help='Maximum length of the sentence pairs')
+    parser.add_argument(
+        '--round_to', type=int, default=None,
+        help='The length of padded sequences will be rounded up to be multiple of this argument.'
+             'When round to is set to 8, training throughput may increase for mixed precision'
+             'training on GPUs with tensorcores.')
+    parser.add_argument(
+        '--seed', type=int, default=2, help='Random seed')
+    parser.add_argument(
+        '--accumulate',
+        type=int,
+        default=None,
+        help='The number of batches for gradients accumulation to simulate large batch size. '
+             'Default is None')
+    parser.add_argument(
+        '--gpu', type=int, default=None, help='Which gpu for finetuning.')
+    parser.add_argument(
+        '--task_name',
+        type=str,
+        choices=['MRPC', 'QNLI', 'RTE', 'STS-B', 'CoLA',
+                 'MNLI', 'WNLI', 'SST', 'XNLI', 'LCQMC', 'ChnSentiCorp'],
+        help='The name of the task to fine-tune. Choices include MRPC, QQP, '
+             'QNLI, RTE, STS-B, CoLA, MNLI, WNLI, SST.')
+    parser.add_argument(
+        '--bert_model',
+        type=str,
+        default='bert_12_768_12',
+        choices=['bert_12_768_12', 'bert_24_1024_16', 'roberta_12_768_12', 'roberta_24_1024_16'],
+        help='The name of pre-trained BERT model to fine-tune')
+    parser.add_argument(
+        '--bert_dataset',
+        type=str,
+        default='book_corpus_wiki_en_uncased',
+        choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
+                 'openwebtext_book_corpus_wiki_en_uncased', 'wiki_multilingual_uncased',
+                 'wiki_multilingual_cased', 'wiki_cn_cased',
+                 'openwebtext_ccnews_stories_books_cased'],
+        help='The dataset BERT pre-trained with.')
+    parser.add_argument(
+        '--pretrained_bert_parameters',
+        type=str,
+        default=None,
+        help='Pre-trained bert model parameter file.')
+    parser.add_argument(
+        '--model_parameters',
+        type=str,
+        default=None,
+        help='A parameter file for the model that is loaded into the model'
+        ' before training/inference. It is different from the parameter'
+        ' file written after the model is trained.')
+    parser.add_argument(
+        '--output_dir',
+        type=str,
+        default='./output_dir',
+        help='The output directory where the model params will be written.')
+    parser.add_argument(
+        '--only_inference',
+        action='store_true',
+        help='If set, we skip training and only perform inference on dev and test data.')
+    parser.add_argument(
+        '--dtype',
+        type=str,
+        default='float32',
+        choices=['float32', 'float16'],
+        help='The data type for training.')
+    parser.add_argument(
+        '--early_stop',
+        type=int,
+        default=None,
+        help='Whether to perform early stopping based on the metric on dev set. '
+             'The provided value is the patience. ')
+    parser.add_argument('--deploy', action='store_true',
+                        help='whether load static model for deployment')
+    parser.add_argument('--model_prefix', type=str, required=False,
+                        help='load static model as hybridblock.')
+    parser.add_argument('--only_calibration', action='store_true',
+                        help='quantize model')
+    parser.add_argument('--num_calib_batches', type=int, default=5,
+                        help='number of batches for calibration')
+    parser.add_argument('--quantized_dtype', type=str, default='auto',
+                        choices=['auto', 'int8', 'uint8'],
+                        help='quantization destination data type for input data')
+    parser.add_argument('--calib_mode', type=str, default='customize',
+                        choices=['none', 'naive', 'entropy', 'customize'],
+                        help='calibration mode used for generating calibration table '
+                             'for the quantized symbol.')
 
-args = parser.parse_args()
+    args = parser.parse_args()
 
 
-log = logging.getLogger()
-log.setLevel(logging.INFO)
+    log = logging.getLogger()
+    log.setLevel(logging.INFO)
 
-logging.captureWarnings(True)
-fh = logging.FileHandler('log_{0}.txt'.format(args.task_name))
-formatter = logging.Formatter(fmt='%(levelname)s:%(name)s:%(asctime)s %(message)s',
-                              datefmt='%H:%M:%S')
-fh.setLevel(logging.INFO)
-fh.setFormatter(formatter)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-console.setFormatter(formatter)
-log.addHandler(console)
-log.addHandler(fh)
-logging.info(args)
+    logging.captureWarnings(True)
+    fh = logging.FileHandler('log_{0}.txt'.format(args.task_name))
+    formatter = logging.Formatter(fmt='%(levelname)s:%(name)s:%(asctime)s %(message)s',
+                                  datefmt='%H:%M:%S')
+    fh.setLevel(logging.INFO)
+    fh.setFormatter(formatter)
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    console.setFormatter(formatter)
+    log.addHandler(console)
+    log.addHandler(fh)
+    logging.info(args)
 
-batch_size = args.batch_size
-dev_batch_size = args.dev_batch_size
-task_name = args.task_name
-lr = args.lr
-epsilon = args.epsilon
-accumulate = args.accumulate
-log_interval = args.log_interval * accumulate if accumulate else args.log_interval
-if accumulate:
-    logging.info('Using gradient accumulation. Effective batch size = ' \
-                 'batch_size * accumulate = %d', accumulate * batch_size)
+    batch_size = args.batch_size
+    dev_batch_size = args.dev_batch_size
+    task_name = args.task_name
+    lr = args.lr
+    epsilon = args.epsilon
+    accumulate = args.accumulate
+    log_interval = args.log_interval * accumulate if accumulate else args.log_interval
+    if accumulate:
+        logging.info('Using gradient accumulation. Effective batch size = ' \
+                     'batch_size * accumulate = %d', accumulate * batch_size)
 
-# random seed
-np.random.seed(args.seed)
-random.seed(args.seed)
-mx.random.seed(args.seed)
+    # random seed
+    np.random.seed(args.seed)
+    random.seed(args.seed)
+    mx.random.seed(args.seed)
 
-ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
+    ctx = mx.cpu() if args.gpu is None else mx.gpu(args.gpu)
 
-task = get_task(task_name)
+    task = get_task(task_name)
 
-# data type with mixed precision training
-if args.dtype == 'float16':
-    amp.init()
+    # data type with mixed precision training
+    if args.dtype == 'float16':
+        amp.init()
 
-# model and loss
-only_inference = args.only_inference
-model_name = args.bert_model
-dataset = args.bert_dataset
-pretrained_bert_parameters = args.pretrained_bert_parameters
-model_parameters = args.model_parameters
+    # model and loss
+    only_inference = args.only_inference
+    model_name = args.bert_model
+    dataset = args.bert_dataset
+    pretrained_bert_parameters = args.pretrained_bert_parameters
+    model_parameters = args.model_parameters
 
-# load symbolic model
-deploy = args.deploy
-model_prefix = args.model_prefix
+    # load symbolic model
+    deploy = args.deploy
+    model_prefix = args.model_prefix
 
-if only_inference and not model_parameters:
-    warnings.warn('model_parameters is not set. '
-                  'Randomly initialized model will be used for inference.')
+    if only_inference and not model_parameters:
+        warnings.warn('model_parameters is not set. '
+                      'Randomly initialized model will be used for inference.')
 
-get_pretrained = not (pretrained_bert_parameters is not None or model_parameters is not None)
+    get_pretrained = not (pretrained_bert_parameters is not None or model_parameters is not None)
 
-use_roberta = 'roberta' in model_name
-get_model_params = {
-    'name': model_name,
-    'dataset_name': dataset,
-    'pretrained': get_pretrained,
-    'ctx': ctx,
-    'use_decoder': False,
-    'use_classifier': False,
-}
-# RoBERTa does not contain parameters for sentence pair classification
-if not use_roberta:
-    get_model_params['use_pooler'] = True
+    use_roberta = 'roberta' in model_name
+    get_model_params = {
+        'name': model_name,
+        'dataset_name': dataset,
+        'pretrained': get_pretrained,
+        'ctx': ctx,
+        'use_decoder': False,
+        'use_classifier': False,
+    }
+    # RoBERTa does not contain parameters for sentence pair classification
+    if not use_roberta:
+        get_model_params['use_pooler'] = True
 
-bert, vocabulary = nlp.model.get_model(**get_model_params)
+    bert, vocabulary = nlp.model.get_model(**get_model_params)
 
-# initialize the rest of the parameters
-initializer = mx.init.Normal(0.02)
-# STS-B is a regression task.
-# STSBTask().class_labels returns None
-do_regression = not task.class_labels
-if do_regression:
-    num_classes = 1
-    loss_function = gluon.loss.L2Loss()
-else:
-    num_classes = len(task.class_labels)
-    loss_function = gluon.loss.SoftmaxCELoss()
-# reuse the BERTClassifier class with num_classes=1 for regression
-if use_roberta:
-    model = RoBERTaClassifier(bert, dropout=0.0, num_classes=num_classes)
-else:
-    model = BERTClassifier(bert, dropout=0.1, num_classes=num_classes)
-# initialize classifier
-if not model_parameters:
-    model.classifier.initialize(init=initializer, ctx=ctx)
+    # initialize the rest of the parameters
+    initializer = mx.init.Normal(0.02)
+    # STS-B is a regression task.
+    # STSBTask().class_labels returns None
+    do_regression = not task.class_labels
+    if do_regression:
+        num_classes = 1
+        loss_function = gluon.loss.L2Loss()
+    else:
+        num_classes = len(task.class_labels)
+        loss_function = gluon.loss.SoftmaxCELoss()
+    # reuse the BERTClassifier class with num_classes=1 for regression
+    if use_roberta:
+        model = RoBERTaClassifier(bert, dropout=0.0, num_classes=num_classes)
+    else:
+        model = BERTClassifier(bert, dropout=0.1, num_classes=num_classes)
+    # initialize classifier
+    if not model_parameters:
+        model.classifier.initialize(init=initializer, ctx=ctx)
 
-# load checkpointing
-output_dir = args.output_dir
-if pretrained_bert_parameters:
-    logging.info('loading bert params from %s', pretrained_bert_parameters)
-    nlp.utils.load_parameters(model.bert, pretrained_bert_parameters, ctx=ctx, ignore_extra=True,
-                              cast_dtype=True)
-if model_parameters:
-    logging.info('loading model params from %s', model_parameters)
-    nlp.utils.load_parameters(model, model_parameters, ctx=ctx, cast_dtype=True)
-nlp.utils.mkdir(output_dir)
+    # load checkpointing
+    output_dir = args.output_dir
+    if pretrained_bert_parameters:
+        logging.info('loading bert params from %s', pretrained_bert_parameters)
+        nlp.utils.load_parameters(model.bert, pretrained_bert_parameters, ctx=ctx, ignore_extra=True,
+                                  cast_dtype=True)
+    if model_parameters:
+        logging.info('loading model params from %s', model_parameters)
+        nlp.utils.load_parameters(model, model_parameters, ctx=ctx, cast_dtype=True)
+    nlp.utils.mkdir(output_dir)
 
-logging.debug(model)
-model.hybridize(static_alloc=True)
-loss_function.hybridize(static_alloc=True)
+    logging.debug(model)
+    model.hybridize(static_alloc=True)
+    loss_function.hybridize(static_alloc=True)
 
-if deploy:
-    logging.info('load symbol file directly as SymbolBlock for model deployment')
-    model = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(args.model_prefix),
-                                         ['data0', 'data1', 'data2'],
-                                         '{}-0000.params'.format(args.model_prefix))
-    model.hybridize(static_alloc=True, static_shape=True)
+    if deploy:
+        logging.info('load symbol file directly as SymbolBlock for model deployment')
+        model = mx.gluon.SymbolBlock.imports('{}-symbol.json'.format(args.model_prefix),
+                                             ['data0', 'data1', 'data2'],
+                                             '{}-0000.params'.format(args.model_prefix))
+        model.hybridize(static_alloc=True, static_shape=True)
 
-# data processing
-do_lower_case = 'uncased' in dataset
-if use_roberta:
-    bert_tokenizer = nlp.data.GPT2BPETokenizer()
-else:
-    bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
+    # data processing
+    do_lower_case = 'uncased' in dataset
+    if use_roberta:
+        bert_tokenizer = nlp.data.GPT2BPETokenizer()
+    else:
+        bert_tokenizer = BERTTokenizer(vocabulary, lower=do_lower_case)
 
-# calibration config
-only_calibration = args.only_calibration
-num_calib_batches = args.num_calib_batches
-quantized_dtype = args.quantized_dtype
-calib_mode = args.calib_mode
+    # calibration config
+    only_calibration = args.only_calibration
+    num_calib_batches = args.num_calib_batches
+    quantized_dtype = args.quantized_dtype
+    calib_mode = args.calib_mode
 
 def convert_examples_to_features(example, tokenizer=None, truncate_length=512, cls_token=None,
                                  sep_token=None, class_labels=None, label_alias=None, vocab=None,
@@ -412,11 +413,11 @@ def preprocess_data(tokenizer, task, batch_size, dev_batch_size, max_len, vocab)
         loader_test_list.append((segment, loader_test))
     return loader_train, loader_dev_list, loader_test_list, len(data_train)
 
-
-# Get the loader.
-logging.info('processing dataset...')
-train_data, dev_data_list, test_data_list, num_train_examples = preprocess_data(
-    bert_tokenizer, task, batch_size, dev_batch_size, args.max_len, vocabulary)
+if __name__ == '__main__':
+    # Get the loader.
+    logging.info('processing dataset...')
+    train_data, dev_data_list, test_data_list, num_train_examples = preprocess_data(
+        bert_tokenizer, task, batch_size, dev_batch_size, args.max_len, vocabulary)
 
 def calibration(net, dev_data_list, num_calib_batches, quantized_dtype, calib_mode):
     """calibration function on the dev dataset."""
