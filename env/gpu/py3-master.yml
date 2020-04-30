@@ -6,7 +6,7 @@ dependencies:
   - perl
   - pandoc=2.9.2.1
   - tornado=5.1.1
-  - sphinx=2.2.1
+  - sphinx=2.4.4
   # In the -master pipeline, we test without numba. Numba is an optional
   # dependency and GluonNLP needs to work both with and without numba installed.
   - pip:

@@ -6,7 +6,7 @@ dependencies:
   - perl
   - pandoc=2.9.2.1
   - tornado=5.1.1
-  - sphinx=2.2.1
+  - sphinx=2.4.4
   - pip:
     - numpy==1.17.4
     - notedown==1.5.1
