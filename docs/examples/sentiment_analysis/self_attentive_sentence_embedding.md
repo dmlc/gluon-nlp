@@ -22,8 +22,7 @@ In this tutorial, we will use [GluonNLP](https://gluon-nlp.mxnet.io/index.html) 
 
 The first step, as in every one of these tutorials, is to import the necessary packages.
 
-
-```python
+```{.python .input}
 import os
 import json
 import zipfile
@@ -67,8 +66,7 @@ The [Yelp users' review dataset](https://www.kaggle.com/yelp-dataset/yelp-datase
 
 Each sample in the data consists of a user's comment, in English, with each comment marked one through five, each number representing one of five different emotions the user expressed. Here we download, unzip, and reformat the dataset for ease of use further on.
 
-
-```python
+```{.python .input}
 # Download the data from the server
 data_url = 'http://apache-mxnet.s3-accelerate.dualstack.amazonaws.com/gluon/dataset/yelp_review_subset-167bb781.zip'
 zip_path = mx.gluon.utils.download(data_url)
@@ -95,7 +93,7 @@ The purpose of the following code is to process the raw data so that the pre-pro
 Finally, we get the standardized training data set and verification data set. Here we also define a few helper functions for later. We take advantage of the `mp.Pool()` function to spread the pre-processing over multiple cores or machines.
 
 
-```python
+```{.python .input}
 # The tokenizer takes as input a string and outputs a list of tokens.
 tokenizer = nlp.data.SpacyTokenizer('en')
 
@@ -133,8 +131,7 @@ valid_dataset, valid_data_lengths = preprocess_dataset(valid_dataset)
 
 This section creates the `vocab` object and converts the dataset's words to the Glove embeddings.
 
-
-```python
+```{.python .input}
 # Create the vocab
 train_seqs = [sample[0] for sample in train_dataset]
 counter = nlp.data.count_tokens(list(itertools.chain.from_iterable(train_seqs)))
@@ -165,8 +162,7 @@ Finally, we use `DataLoader` to build a data loader for the training and validat
 
 Here we define the helper functions to do all of the above as well as define the hyperparameters for this section:
 
-
-```python
+```{.python .input}
 batch_size = 64
 bucket_num = 10
 bucket_ratio = 0.5
@@ -232,7 +228,7 @@ When the attention matrix `A` and the output `H` of the LSTM are obtained, the f
 We can first customize a layer of attention, specify the number of hidden nodes (`att_unit`) and the number of attention channels (`att_hops`).
 
 
-```python
+```{.python .input}
 # A custom attention layer
 class SelfAttention(nn.HybridBlock):
     def __init__(self, att_unit, att_hops, **kwargs):
@@ -258,8 +254,7 @@ class SelfAttention(nn.HybridBlock):
 
 When the number of samples for labels are very unbalanced, applying different weights on different labels may improve the performance of the model significantly.
 
-
-```python
+```{.python .input}
 
 class WeightedSoftmaxCE(nn.Block):
     def __init__(self, sparse_label=True, from_logits=False,  **kwargs):
@@ -285,8 +280,7 @@ class WeightedSoftmaxCE(nn.Block):
 
 We now define the basic model characteristics in a self-attentive bi-LSTM model, and configure the layers and dropout, as well as how the model feeds forward.
 
-
-```python
+```{.python .input}
 class SelfAttentiveBiLSTM(nn.HybridBlock):
     def __init__(self, vocab_len, embsize, nhidden, nlayers, natt_unit, natt_hops, nfc, nclass,
                  drop_prob, pool_way, prune_p=None, prune_q=None, **kwargs):
@@ -336,7 +330,7 @@ class SelfAttentiveBiLSTM(nn.HybridBlock):
 The resulting `M` is a matrix, and the way to classify this matrix is `flatten`-ing, `mean`-ing or `prune`-ing. Pruning is an effective way of trimming parameters that was proposed in the original paper, and has been implemented for our example.
 
 
-```python
+```{.python .input}
 vocab_len = len(vocab)
 emsize = 300         # word embedding size
 nhidden = 300        # lstm hidden_dim
@@ -377,7 +371,7 @@ It can be seen from the above formula that if the value of each row of `A` is mo
 We incorporate these findings in the code below adding in the penalty coefficient along with the standard loss function.
 
 
-```python
+```{.python .input}
 def calculate_loss(x, y, model, loss, class_weight, penal_coeff):
     pred, att = model(x)
     if loss_name == 'sce':
@@ -395,8 +389,7 @@ def calculate_loss(x, y, model, loss, class_weight, penal_coeff):
 
 We then define what one epoch of training would be for the model for easier use later. In addition, we calculate loss, the F1 score, and accuracy for each epoch and print them for easier understanding. Additionally, we dynamically adjust the learning rate as the number of epochs increase. We also include an `is_train` boolean to allow us to know whether or not we should be altering the original model or just reporting the loss.
 
-
-```python
+```{.python .input}
 def one_epoch(data_iter, model, loss, trainer, ctx, is_train, epoch,
               penal_coeff=0.0, clip=None, class_weight=None, loss_name='wsce'):
 
@@ -458,7 +451,7 @@ def one_epoch(data_iter, model, loss, trainer, ctx, is_train, epoch,
 
 
     # metric
-    F1 = f1_score(np.asarray(total_pred), np.asarray(total_true), average='weighted')
+    F1 = f1_score(np.array(total_true), np.array(total_pred), average='weighted')
     epoch_acc.update(nd.array(total_true), nd.array(total_pred))
     loss_val /= n_batch
 
@@ -475,8 +468,7 @@ def one_epoch(data_iter, model, loss, trainer, ctx, is_train, epoch,
 
 In addition, we include a helper method `train_valid` which combines the one epoch for the training data as well as the validation data, using the `is_train` boolean to swap between the two modes we discussed above.
 
-
-```python
+```{.python .input}
 def train_valid(data_iter_train, data_iter_valid, model, loss, trainer, ctx, nepochs,
                 penal_coeff=0.0, clip=None, class_weight=None, loss_name='wsce'):
 
@@ -501,8 +493,7 @@ def train_valid(data_iter_train, data_iter_valid, model, loss, trainer, ctx, nep
 
 Now that we are actually training the model, we use `WeightedSoftmaxCE` to alleviate the problem of data categorical imbalance. We perform statistical analysis on the data in advance to retrieve a set of `class_weight`s.
 
-
-```python
+```{.python .input}
 class_weight = None
 loss_name = 'wsce'
 optim = 'adam'
@@ -523,8 +514,7 @@ elif loss_name == 'wsce':
 
 We've simplified our lives earlier by creating the necessary helper methods so our training is as simple as the below line of code.
 
-
-```python
+```{.python .input}
 # train and valid
 train_valid(train_dataloader, valid_dataloader, model, loss, trainer, ctx, nepochs,
             penal_coeff=penal_coeff, clip=clip, class_weight=class_weight, loss_name=loss_name)
@@ -534,8 +524,7 @@ train_valid(train_dataloader, valid_dataloader, model, loss, trainer, ctx, nepoc
 
 Now that the model has been trained, we can randomly input a sentence into the model and predict its emotional value tag. The range of emotional markers (or the labels) is one through five, each corresponding to the degree of negativity to positivity.
 
-
-```python
+```{.python .input}
 input_ar = nd.array(vocab[['This', 'movie', 'is', 'amazing']], ctx=ctx).reshape((1, -1))
 pred, att = model(input_ar)
 
@@ -546,8 +535,7 @@ print(att)
 
 In order to intuitively understand the role of the attention mechanism, we visualize the output of the model's attention on the predicted samples using the `matplotlib` and `seaborn` modules.
 
-
-```python
+```{.python .input}
 # Visualizing the attention layer
 
 import matplotlib.pyplot as plt
