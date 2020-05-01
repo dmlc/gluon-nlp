@@ -93,6 +93,12 @@ if __name__ == '__main__':
                         help='The directory where the exported model symbol will be created. '
                              'The default is ./output_dir')
     
+    parser.add_argument('--exported_model',
+                        type=str,
+                        default=None,
+                        help='Prefix path of exported model:'
+                        'Should be prefix for -symbol.json / -0000.params files')
+
     parser.add_argument('--test_batch_size',
                         type=int,
                         default=128,
@@ -657,7 +663,10 @@ def infer(prefix, task):
                 compute_accuracy_save_results(task, all_results, segment=segment, metric=metric)
 
 if __name__ == '__main__':
-    prefix = os.path.join(args.output_dir, args.task)
+    if args.exported_model:
+        prefix = args.exported_model
+    else:
+        prefix = os.path.join(args.output_dir, args.task)
     if not args.only_infer:
         export(prefix)
     infer(prefix, args.task)
