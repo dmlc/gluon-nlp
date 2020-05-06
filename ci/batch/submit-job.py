@@ -92,7 +92,7 @@ def main():
     spin = ['-', '/', '|', '\\', '-', '/', '|', '\\']
     logGroupName = '/aws/batch/job'
 
-    jobName = re.sub('[^A-Za-z0-9_\-]', '', args.name)[:128]  # Enforce AWS Batch jobName rules
+    jobName = re.sub(r'[^A-Za-z0-9_\-]', '', args.name)[:128]  # Enforce AWS Batch jobName rules
     jobQueue = args.job_queue
     jobDefinition = args.job_definition
     command = args.command.split()
