@@ -10,7 +10,7 @@ dependencies:
   # In the -master pipeline, we test without numba. Numba is an optional
   # dependency and GluonNLP needs to work both with and without numba installed.
   - pip:
-    - numpy==1.17.4
+    - numpy==1.18.4
     - notedown==1.5.1
     - sphinx-gallery==0.4.0
     - recommonmark==0.6.0
