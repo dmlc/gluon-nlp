@@ -1,0 +1,7 @@
+http://hog.ee.columbia.edu/craffel/lmd/lmd_full.tar.gz 330b3c67f24f9280f81e1f7ab12749087dd83f08 1768163879
+http://hog.ee.columbia.edu/craffel/lmd/lmd_matched.tar.gz 218b7c82ecb230a6679053e48e87714f0bd4836f 1407072670
+http://hog.ee.columbia.edu/craffel/lmd/lmd_aligned.tar.gz 9873e84dd5a531ba3623e0a24ce33a81681cba80 272169548
+http://hog.ee.columbia.edu/craffel/lmd/clean_midi.tar.gz ae47e29dfc18d7779d95697a6461d759504c7a1c 234283029
+https://storage.googleapis.com/magentadata/datasets/maestro/v1.0.0/maestro-v1.0.0-midi.zip e189d8a0b6769f3be576a036da840adafe489327 46579421
+https://storage.googleapis.com/magentadata/datasets/maestro/v2.0.0/maestro-v2.0.0-midi.zip 13808bf9503c72371d38e9705e93ce8623b21c01 59243107
+https://archive.org/download/archiveteam-geocities-midi-collection-2009/2009.GeoCities.MIDI.ArchiveTeam.zip 493880759c648dd96167a2f4d394421e6fa33874 437506993
