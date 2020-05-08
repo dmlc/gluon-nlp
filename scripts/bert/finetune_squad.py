@@ -421,7 +421,7 @@ def train():
 
     log.info('Start Training')
 
-    optimizer_params = {'learning_rate': lr, 'wd': 0.01}
+    optimizer_params = {'learning_rate': lr}
     param_dict = net.collect_params()
     if args.comm_backend == 'horovod':
         trainer = hvd.DistributedTrainer(param_dict, optimizer, optimizer_params)
