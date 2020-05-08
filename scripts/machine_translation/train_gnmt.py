@@ -246,16 +246,9 @@ def train():
         valid_bleu_score, _, _, _, _ = compute_bleu([val_tgt_sentences], valid_translation_out)
         logging.info('[Epoch {}] valid Loss={:.4f}, valid ppl={:.4f}, valid bleu={:.2f}'
                      .format(epoch_id, valid_loss, np.exp(valid_loss), valid_bleu_score * 100))
-        test_loss, test_translation_out = evaluate(test_data_loader)
-        test_bleu_score, _, _, _, _ = compute_bleu([test_tgt_sentences], test_translation_out)
-        logging.info('[Epoch {}] test Loss={:.4f}, test ppl={:.4f}, test bleu={:.2f}'
-                     .format(epoch_id, test_loss, np.exp(test_loss), test_bleu_score * 100))
         dataprocessor.write_sentences(valid_translation_out,
                                       os.path.join(args.save_dir,
                                                    'epoch{:d}_valid_out.txt').format(epoch_id))
-        dataprocessor.write_sentences(test_translation_out,
-                                      os.path.join(args.save_dir,
-                                                   'epoch{:d}_test_out.txt').format(epoch_id))
         if valid_bleu_score > best_valid_bleu:
             best_valid_bleu = valid_bleu_score
             save_path = os.path.join(args.save_dir, 'valid_best.params')
