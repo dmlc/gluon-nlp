@@ -135,6 +135,12 @@ if __name__ == '__main__':
                         default='float32',
                         help='Data type used for training. Either float32 or float16')
 
+    parser.add_argument('--custom_pass',
+                        type=str,
+                        default=None,
+                        help='Specify a custom graph pass for the network (library),'
+                        'allowing to customize the graph')
+
     parser.add_argument('--max_iters',
                         type=int,
                         default=None,
@@ -283,7 +289,13 @@ if __name__ == '__main__':
         warnings.warn('--model_parameters is not provided. The parameter checkpoint (.params) '
                       'file will be created based on default parameter initialization.')
 
-    net.hybridize(static_alloc=True, static_shape=True)
+    if args.custom_pass is not None:
+       # load library
+       libpath = os.path.abspath(args.custom_pass)
+       mx.library.load(libpath)
+       net.hybridize(static_alloc=True, static_shape=True, backend='custom_pass')
+    else:
+        net.hybridize(static_alloc=True, static_shape=True)
 
     test_batch_size = args.test_batch_size
 
