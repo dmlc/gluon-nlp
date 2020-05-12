@@ -9,11 +9,17 @@ Sentiment Analysis
 
       See how to fine-tune a pre-trained language model to perform sentiment analysis on movie reviews.
 
+   .. card::
+      :title: Sentiment Analysis with KoBERT (Korean BERT) using Movie Review Data
+      :link: kobert_naver_movie.html
+
+      See how to use KoBERT to implement a sentiment analysis of a Korean popular movie review dataset.
 
 .. toctree::
    :hidden:
    :maxdepth: 2
 
    sentiment_analysis.ipynb
+   kobert_naver_movie.ipynb
 
 
