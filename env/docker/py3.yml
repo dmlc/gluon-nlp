@@ -23,7 +23,7 @@ dependencies:
     - jieba
     - scikit-learn==0.21.3
     - cython
-    - pytype==2019.10.17
+    - pytype==2020.5.7
     - pytest==5.2.3
     - pytest-env==0.6.2
     - pytest-cov==2.8.1
