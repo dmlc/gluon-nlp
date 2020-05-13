@@ -32,11 +32,12 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --user --upgrade pip
-          python -m pip install --user setuptools pytest
+          python -m pip install --user setuptools pytest pytest-cov
           python -m pip install --upgrade cython
           python -m pip install --pre --user mxnet -f https://dist.mxnet.io/python/cpu
-          python -m pip install --user -e .
           python -m pip install --user -e .[extras]
       - name: Test project
         run: |
-          python -m pytest --durations=50 tests/
+          python -m pytest --cov=./ --cov-report=xml --durations=50 tests/
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
