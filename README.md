@@ -8,7 +8,7 @@ This is a work-in-progress.
 # Features
 
 - Data Pipeline for NLP
-- AutoML support
+- AutoML support (TODO)
 - Pretrained Model Zoo
 - Fast Deployment
     - [TVM](https://tvm.apache.org/) (TODO)
@@ -23,11 +23,12 @@ First of all, install the latest MXNet. You may use the following commands:
 # Install the version with CUDA 10.1
 pip install -U --pre mxnet-cu101 -f https://dist.mxnet.io/python
 
-# Install the cpu-only version
-pip install -U --pre mxnet -f https://dist.mxnet.io/python
-
 # In case you do not have the permission, try the following
 pip install -U --pre mxnet-cu101 -f https://dist.mxnet.io/python --user
+
+
+# Install the cpu-only version
+pip install -U --pre mxnet -f https://dist.mxnet.io/python/cpu
 ```
 
 
@@ -36,8 +37,11 @@ To install, use
 ```bash
 pip install -U -e .
 
-# Also, it's highly recommended to install all the extra requirements via
+# Also, you may install all the extra requirements via
 pip install -U -e .[extras]
+
+# In case you are using zsh, try to use the following command for installing
+pip install -U -e ."[extras]" 
 ```
 
 If you find that you do not have the permission, you can also install to the user folder:
@@ -67,5 +71,6 @@ python -m gluonnlp.cli.data help
 python -m gluonnlp.cli.preprocess help
 
 ```
+
 # Run Unittests
 You may go to [tests](tests) to see all the unittests.
