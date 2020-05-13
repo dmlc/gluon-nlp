@@ -28,7 +28,7 @@ VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
 requirements = [
     'numpy',
-    'spacy',
+    'spacy>=2.0.0',
     'sacremoses>=0.0.38',
     'yacs>=0.1.6',
     'sacrebleu',
@@ -36,7 +36,9 @@ requirements = [
     'flake8',
     'regex',
     'scipy',
-    'h5py>=2.10'
+    'h5py>=2.10',
+    'tokenizers>=0.7.0',
+    'sentencepiece',
 ]
 
 setup(
@@ -45,7 +47,7 @@ setup(
     version=VERSION,
     python_requires='>=3.6',
     author='GluonNLP Toolkit Contributors',
-    author_email='mxnet-gluon@amazon.com',
+    author_email='gluonnlp-dev@amazon.com',
     description='MXNet GluonNLP Toolkit (DeepNumpy Version)',
     long_description_content_type='text/markdown',
     license='Apache-2.0',
@@ -64,11 +66,8 @@ setup(
             'boto3',
             'tqdm',
             'protobuf',
-            'tokenizers>=0.7.0',
-            'sentencepiece',
             'subword_nmt',
             'youtokentome>=1.0.6',
-            'spacy>=2.0.0',
             'nltk',
         ],
         'dev': [
