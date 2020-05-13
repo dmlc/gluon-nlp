@@ -8,17 +8,21 @@ from gluonnlp.models.bert import BertModel, BertForMLM, BertForPretrain,\
 mx.npx.set_np()
 
 
+def test_list_pretrained_bert():
+    assert len(list_pretrained_bert()) > 0
+
+
 @pytest.mark.remote_required
-def test_bert_get_pretrained():
+@pytest.mark.parametrize('model_name', list_pretrained_bert())
+def test_bert_get_pretrained(model_name):
     assert len(list_pretrained_bert()) > 0
     with tempfile.TemporaryDirectory() as root:
-        for model_name in list_pretrained_bert():
-            cfg, tokenizer, backbone_params_path, mlm_params_path =\
-                get_pretrained_bert(model_name, root=root)
-            bert_model = BertModel.from_cfg(cfg)
-            bert_model.load_parameters(backbone_params_path)
-            bert_mlm_model = BertForMLM(cfg)
-            if mlm_params_path is not None:
-                bert_mlm_model.load_parameters(mlm_params_path)
-            bert_mlm_model = BertForMLM(cfg)
-            bert_mlm_model.backbone_model.load_parameters(backbone_params_path)
+        cfg, tokenizer, backbone_params_path, mlm_params_path =\
+            get_pretrained_bert(model_name, root=root)
+        bert_model = BertModel.from_cfg(cfg)
+        bert_model.load_parameters(backbone_params_path)
+        bert_mlm_model = BertForMLM(cfg)
+        if mlm_params_path is not None:
+            bert_mlm_model.load_parameters(mlm_params_path)
+        bert_mlm_model = BertForMLM(cfg)
+        bert_mlm_model.backbone_model.load_parameters(backbone_params_path)
