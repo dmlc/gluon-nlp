@@ -44,9 +44,9 @@ def test_gluon_nonzero_hybridize():
 
     foo = Foo()
     foo.hybridize()
-    out = foo(mx.np.array([1, 0, 2, 0, 3, 0], ctx=mx.gpu()))
+    out = foo(mx.np.array([1, 0, 2, 0, 3, 0]))
     out.wait_to_read()
-    out = foo(mx.np.array([0, 0, 0, 0, 0, 0], ctx=mx.gpu()))
+    out = foo(mx.np.array([0, 0, 0, 0, 0, 0]))
     out.wait_to_read()
 
 
