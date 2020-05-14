@@ -78,13 +78,7 @@ def mkdir(dirname):
                       %(dirname, C.S3_PREFIX))
         return
     dirname = os.path.expanduser(dirname)
-    if not os.path.exists(dirname):
-        try:
-            os.makedirs(dirname)
-        except OSError as e:
-            # errno 17 means the file already exists
-            if e.errno != 17:
-                raise e
+    os.makedirs(dirname, exist_ok=True)
 
 class _TempFilePath:
     """A TempFilePath that provides a path to a temporarily file, and automatically
@@ -92,8 +86,7 @@ class _TempFilePath:
     """
     def __init__(self):
         self.temp_dir = os.path.join(tempfile.gettempdir(), str(hash(os.times())))
-        if not os.path.exists(self.temp_dir):
-            os.makedirs(self.temp_dir)
+        os.makedirs(self.temp_dir, exist_ok=True)
 
     def __enter__(self):
         self.temp_path = os.path.join(self.temp_dir, str(hash(os.times())))

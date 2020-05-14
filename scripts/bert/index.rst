@@ -44,6 +44,8 @@ The following pre-trained BERT models are available from the **gluonnlp.model.ge
 +-----------------------------------------+----------------+-----------------+
 | clinicalbert_uncased                    | ✓              | x               |
 +-----------------------------------------+----------------+-----------------+
+| kobert_news_wiki_ko_cased               | ✓              | x               |
++-----------------------------------------+----------------+-----------------+
 
 where **bert_12_768_12** refers to the BERT BASE model, and **bert_24_1024_16** refers to the BERT LARGE model.
 
@@ -97,7 +99,7 @@ Additionally, GluonNLP supports the "`RoBERTa <https://arxiv.org/abs/1907.11692>
     text = [vocab.bos_token] + tokenizer('Hello world!') + [vocab.eos_token];
     seq_encoding = model(mx.nd.array([vocab[text]]))
 
-Finally, GluonNLP also supports the "`DistilBERT <https://arxiv.org/abs/1910.01108>`_" model:
+GluonNLP also supports the "`DistilBERT <https://arxiv.org/abs/1910.01108>`_" model:
 
 +-----------------------------------------+----------------------+
 |                                         | distilbert_6_768_12  |
@@ -115,9 +117,18 @@ Finally, GluonNLP also supports the "`DistilBERT <https://arxiv.org/abs/1910.011
     words, valid_len = mx.nd.array([sample[0]]), mx.nd.array([sample[1]])
     seq_encoding, cls_encoding = model(words, valid_len);
 
+Finally, GluonNLP also suports Korean BERT pre-trained model, "`KoBERT <https://github.com/SKTBrain/KoBERT>`_", using Korean wiki dataset (`kobert_news_wiki_ko_cased`).
+
+.. code-block:: python
+
+    import gluonnlp as nlp; import mxnet as mx;
+    model, vocab = nlp.model.get_model('bert_12_768_12', dataset_name='kobert_news_wiki_ko_cased',use_decoder=False, use_classifier=False)
+    tok = nlp.data.get_tokenizer('bert_12_768_12', 'kobert_news_wiki_ko_cased')
+    tok('안녕하세요.')
+
 .. hint::
 
-   The pre-training, fine-tunining and export scripts are available `here. </_downloads/bert.zip>`__
+   The pre-training, fine-tuning and export scripts are available `here. </_downloads/bert.zip>`__
 
 
 Sentence Classification
@@ -178,7 +189,7 @@ Question Answering on SQuAD
 +===========+=========================================================================================================================================+==========================================================================================================================================+==========================================================================================================================================+
 | Model     | bert_12_768_12                                                                                                                          | bert_24_1024_16                                                                                                                          | bert_24_1024_16                                                                                                                          |
 +-----------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
-| F1 / EM   | 88.58 / 81.26                                                                                                                           | 90.97 / 84.22                                                                                                                            | 77.96 / 81.02                                                                                                                            |
+| F1 / EM   | 88.58 / 81.26                                                                                                                           | 90.97 / 84.22                                                                                                                            | 81.27 / 78.14                                                                                                                            |
 +-----------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+
 | Log       | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_squad1.1_base_mx1.6.0rc1.log>`__                         | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_squad1.1_large_mx1.6.0rc1.log>`__                         | `log <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/finetune_squad2.0_large_mx1.6.0rc1.log>`__                         |
 +-----------+-----------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------------------------------------------------+

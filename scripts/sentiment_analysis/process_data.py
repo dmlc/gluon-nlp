@@ -80,7 +80,7 @@ def _clean_str(string, data_name):
         return string.strip() if data_name == 'TREC' else string.strip().lower()
 
 
-def _build_vocab(data_name, train_dataset, test_dataset, dev_dataset):
+def _build_vocab(data_name, train_dataset, test_dataset, dev_dataset, model_name):
     all_token = []
     max_len = 0
     for dataset in (train_dataset, dev_dataset, test_dataset):
@@ -89,7 +89,13 @@ def _build_vocab(data_name, train_dataset, test_dataset, dev_dataset):
             max_len = max_len if max_len > len(line) else len(line)
             all_token.extend(line)
     vocab = nlp.Vocab(nlp.data.count_tokens(all_token))
-    vocab.set_embedding(nlp.embedding.create('Word2Vec', source='GoogleNews-vectors-negative300'))
+    if(model_name == 'rand'):
+        emb = nlp.embedding.TokenEmbedding()
+        emb[emb.unknown_token] = nd.zeros(300)
+        vocab.set_embedding(emb)
+    else:
+        vocab.set_embedding(nlp.embedding.create('Word2Vec',
+                                                 source='GoogleNews-vectors-negative300'))
     for word in vocab.embedding._idx_to_token:
         if (vocab.embedding[word] == nd.zeros(300)).sum() == 300:
             vocab.embedding[word] = nd.random.uniform(0, 0.05, 300)
@@ -118,23 +124,24 @@ def _preprocess_dataset(dataset, vocab, max_len):
     return dataset, lengths
 
 
-def load_dataset(data_name):
+def load_dataset(data_name, model_name):
     """Load sentiment dataset."""
     if data_name in ('MR', 'Subj', 'CR', 'MPQA'):
         train_dataset, output_size = _load_file(data_name)
-        vocab, max_len = _build_vocab(data_name, train_dataset, [], [])
+        vocab, max_len = _build_vocab(data_name, train_dataset, [], [], model_name)
         train_dataset, train_data_lengths = _preprocess_dataset(train_dataset, vocab, max_len)
         return vocab, max_len, output_size, train_dataset, train_data_lengths
     elif data_name == 'TREC':
         train_dataset, test_dataset, output_size = _load_file(data_name)
-        vocab, max_len = _build_vocab(data_name, train_dataset, test_dataset, [])
+        vocab, max_len = _build_vocab(data_name, train_dataset, test_dataset, [], model_name)
         train_dataset, train_data_lengths = _preprocess_dataset(train_dataset, vocab, max_len)
         test_dataset, test_data_lengths = _preprocess_dataset(test_dataset, vocab, max_len)
         return vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, \
                test_data_lengths
     else:
         train_dataset, test_dataset, dev_dataset, output_size = _load_file(data_name)
-        vocab, max_len = _build_vocab(data_name, train_dataset, test_dataset, dev_dataset)
+        vocab, max_len = _build_vocab(data_name, train_dataset, test_dataset, dev_dataset,
+                                      model_name)
         train_dataset, train_data_lengths = _preprocess_dataset(train_dataset, vocab, max_len)
         test_dataset, test_data_lengths = _preprocess_dataset(test_dataset, vocab, max_len)
         dev_dataset, dev_data_lengths = _preprocess_dataset(dev_dataset, vocab, max_len)

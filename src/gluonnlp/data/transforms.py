@@ -29,7 +29,6 @@ __all__ = [
     'GPT2BPETokenizer', 'GPT2BPEDetokenizer'
 ]
 
-import errno
 import functools
 import io
 import os
@@ -1128,14 +1127,7 @@ class GPT2BPETokenizer(_GPT2BPE):
                 print('Detected mismatch in the content of BPE rank file. Downloading again.')
             else:
                 print('BPE rank file is not found. Downloading.')
-            if not os.path.exists(root):
-                try:
-                    os.makedirs(root)
-                except OSError as e:
-                    if e.errno == errno.EEXIST and os.path.isdir(root):
-                        pass
-                    else:
-                        raise e
+            os.makedirs(root, exist_ok=True)
 
             prefix = str(time.time())
             zip_file_path = os.path.join(root, prefix + file_name)

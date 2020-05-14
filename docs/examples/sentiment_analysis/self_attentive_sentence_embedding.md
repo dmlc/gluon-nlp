@@ -1,4 +1,4 @@
-# A Structured Self-attentive Sentence Embedding
+# Training Structured Self-attentive Sentence Embedding
 
 After the novelty of word embeddings to create new numerical representations of words, natural language processing (NLP) has still been effectively improved in many ways. Along with the widespread use of embedding techniques, many other methods have been developed to further express the semantics and meanings of sentences with words:
 
@@ -38,8 +38,9 @@ from mxnet import gluon, nd, init
 from mxnet.gluon import nn, rnn
 from mxnet import autograd, gluon, nd
 
-# iUse sklearn's metric function to evaluate the results of the experiment
-from sklearn.metrics import accuracy_score, f1_score
+# iUse Mxnet and sklearn's metric functions to evaluate the results of the experiment
+from mxnet.metric import Accuracy
+from sklearn.metrics import f1_score
 
 # fixed random number seed
 np.random.seed(2018)
@@ -64,7 +65,6 @@ The next step is to load and format the data according to the requirements of ou
 The [Yelp users' review dataset](https://www.kaggle.com/yelp-dataset/yelp-dataset) is formatted as a JSON. The original paper selected 500,000 documents as the training set, 2,000 as the validation set, and 2,000 as the test set. For easier reproducibility of the experiment, we subsampled 198,000 documents from this dataset as the training set and 2,000 documents as validation set.
 
 Each sample in the data consists of a user's comment, in English, with each comment marked one through five, each number representing one of five different emotions the user expressed. Here we download, unzip, and reformat the dataset for ease of use further on.
-
 
 ```{.python .input}
 # Download the data from the server
@@ -398,10 +398,14 @@ def one_epoch(data_iter, model, loss, trainer, ctx, is_train, epoch,
     total_true = []
     n_batch = 0
 
+    batch_acc = Accuracy()  # Batch Accuracy
+    epoch_acc = Accuracy()  # Epoch Accuracy
+
     for batch_x, batch_y in data_iter:
         batch_x = batch_x.as_in_context(ctx)
         batch_y = batch_y.as_in_context(ctx)
 
+        batch_acc.reset()   # Reset Batch Accuracy
         if is_train:
             with autograd.record():
                 batch_pred, l = calculate_loss(batch_x, batch_y, model, loss, class_weight, penal_coeff)
@@ -429,10 +433,10 @@ def one_epoch(data_iter, model, loss, trainer, ctx, is_train, epoch,
             batch_pred, l = calculate_loss(batch_x, batch_y, model, loss, class_weight, penal_coeff)
 
         # keep result for metric
-        batch_pred = nd.argmax(nd.softmax(batch_pred, axis=1), axis=1).asnumpy()
-        batch_true = np.reshape(batch_y.asnumpy(), (-1, ))
-        total_pred.extend(batch_pred.tolist())
-        total_true.extend(batch_true.tolist())
+        batch_pred = nd.argmax(nd.softmax(batch_pred, axis=1), axis=1)
+        batch_true = batch_y.reshape(-1, )
+        total_pred.extend(batch_pred.asnumpy().tolist())
+        total_true.extend(batch_true.asnumpy().tolist())
 
         batch_loss = l.mean().asscalar()
 
@@ -441,22 +445,24 @@ def one_epoch(data_iter, model, loss, trainer, ctx, is_train, epoch,
 
         # check the result of traing phase
         if is_train and n_batch % 400 == 0:
+            batch_acc.update(batch_true, batch_pred)
             print('epoch %d, batch %d, batch_train_loss %.4f, batch_train_acc %.3f' %
-                  (epoch, n_batch, batch_loss, accuracy_score(batch_true, batch_pred)))
+                  (epoch, n_batch, batch_loss, batch_acc.get()[1]))
+
 
     # metric
     F1 = f1_score(np.array(total_true), np.array(total_pred), average='weighted')
-    acc = accuracy_score(np.array(total_true), np.array(total_pred))
+    epoch_acc.update(nd.array(total_true), nd.array(total_pred))
     loss_val /= n_batch
 
     if is_train:
         print('epoch %d, learning_rate %.5f \n\t train_loss %.4f, acc_train %.3f, F1_train %.3f, ' %
-              (epoch, trainer.learning_rate, loss_val, acc, F1))
+              (epoch, trainer.learning_rate, loss_val, epoch_acc.get()[1], F1))
         # declay lr
         if epoch % 2 == 0:
             trainer.set_learning_rate(trainer.learning_rate * 0.9)
     else:
-        print('\t valid_loss %.4f, acc_valid %.3f, F1_valid %.3f, ' % (loss_val, acc, F1))
+        print('\t valid_loss %.4f, acc_valid %.3f, F1_valid %.3f, ' % (loss_val, epoch_acc.get()[1], F1))
 
 ```
 
@@ -486,7 +492,6 @@ def train_valid(data_iter_train, data_iter_valid, model, loss, trainer, ctx, nep
 ## Training the model
 
 Now that we are actually training the model, we use `WeightedSoftmaxCE` to alleviate the problem of data categorical imbalance. We perform statistical analysis on the data in advance to retrieve a set of `class_weight`s.
-
 
 ```{.python .input}
 class_weight = None

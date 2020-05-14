@@ -36,8 +36,7 @@ class _WikiText(CorpusDataset):
     def __init__(self, namespace, segment, bos, eos, flatten, skip_empty, root,
                  **kwargs):
         root = os.path.expanduser(root)
-        if not os.path.isdir(root):
-            os.makedirs(root)
+        os.makedirs(root, exist_ok=True)
         self._root = root
         self._namespace = 'gluon/dataset/{}'.format(namespace)
         self._segment = segment

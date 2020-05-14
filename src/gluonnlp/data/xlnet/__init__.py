@@ -15,14 +15,10 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=wildcard-import, arguments-differ
-"""Module for utility functions."""
+# pylint: disable=wildcard-import
+"""XLNet fineuning data preprocessing utils"""
 
-from . import files, parallel, parameter, version, seed
-from .files import *
-from .parallel import *
-from .parameter import *
-from .version import *
-from .seed import *
+from . import squad
+from .squad import *
 
-__all__ = parallel.__all__ + parameter.__all__ + files.__all__ + version.__all__ + seed.__all__
+__all__ = squad.__all__

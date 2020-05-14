@@ -15,14 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=wildcard-import, arguments-differ
-"""Module for utility functions."""
+import os
+import sys
+import warnings
 
-from . import files, parallel, parameter, version, seed
-from .files import *
-from .parallel import *
-from .parameter import *
-from .version import *
-from .seed import *
+import gluonnlp as nlp
 
-__all__ = parallel.__all__ + parameter.__all__ + files.__all__ + version.__all__ + seed.__all__
+def test_get_models():
+    models = nlp.model.list_models()
+    assert len(models)!=0
