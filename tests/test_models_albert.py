@@ -2,6 +2,7 @@ import pytest
 import numpy as np
 from numpy.testing import assert_allclose
 import mxnet as mx
+import tempfile
 from gluonnlp.models.albert import AlbertModel, AlbertForMLM, AlbertForPretrain,\
     list_pretrained_albert, get_pretrained_albert
 mx.npx.set_np()
@@ -97,19 +98,21 @@ def test_albert_for_pretrain_model():
     assert sop_score.shape == (batch_size, 2)
 
 
-def test_list_pretrained():
+def test_list_pretrained_albert():
     assert len(list_pretrained_albert()) > 0
 
 
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_albert())
-def test_albert_get_pretrained(model_name, tmp_path):
-    cfg, tokenizer, backbone_params_path, mlm_params_path =\
-        get_pretrained_albert(model_name, root=str(tmp_path))
-    albert_model = AlbertModel.from_cfg(cfg)
-    albert_model.load_parameters(backbone_params_path)
-    albert_mlm_model = AlbertForMLM(cfg)
-    albert_mlm_model.load_parameters(mlm_params_path)
-    # Just load the backbone
-    albert_mlm_model = AlbertForMLM(cfg)
-    albert_mlm_model.backbone_model.load_parameters(backbone_params_path)
+def test_albert_get_pretrained(model_name):
+    assert len(list_pretrained_albert()) > 0
+    with tempfile.TemporaryDirectory() as root:
+        cfg, tokenizer, backbone_params_path, mlm_params_path =\
+            get_pretrained_albert(model_name, root=root)
+        albert_model = AlbertModel.from_cfg(cfg)
+        albert_model.load_parameters(backbone_params_path)
+        albert_mlm_model = AlbertForMLM(cfg)
+        albert_mlm_model.load_parameters(mlm_params_path)
+        # Just load the backbone
+        albert_mlm_model = AlbertForMLM(cfg)
+        albert_mlm_model.backbone_model.load_parameters(backbone_params_path)

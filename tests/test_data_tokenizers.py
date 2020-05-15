@@ -5,6 +5,7 @@ import pickle
 from uuid import uuid4
 import os
 import unicodedata
+import tempfile
 from gluonnlp.data.tokenizers import WhitespaceTokenizer, MosesTokenizer, JiebaTokenizer,\
     SpacyTokenizer, SubwordNMTTokenizer, YTTMTokenizer, SentencepieceTokenizer, \
     HuggingFaceBPETokenizer, HuggingFaceByteBPETokenizer, HuggingFaceWordPieceTokenizer
@@ -293,321 +294,327 @@ def test_spacy_tokenizer():
     verify_encode_token_with_offsets(de_tokenizer, DE_SAMPLES)
 
 
-def test_yttm_tokenizer(tmp_path):
-    model_path = str(tmp_path / 'yttm.model')
-    download(url=get_repo_url() + 'tokenizer_test_models/yttm/test_ende_yttm-6f2c39.model',
-             path=model_path)
-    tokenizer = YTTMTokenizer(model_path=model_path)
-    gt_tokenized = [['▁He', 'll', 'o', ',', '▁y', "'", 'all', '!', '▁How', '▁are', '▁you', '▁',
-                     'Ⅷ', '▁', '😁', '▁', '😁', '▁', '😁', '▁?'],
-                    ['▁Gl', 'u', 'on', 'N', 'L', 'P', '▁is', '▁great', '！', '！', '！', '!',
-                     '!', '!'],
-                    ['▁Gl', 'u', 'on', 'N', 'L', 'P', '-A', 'm', 'az', 'on', '-H', 'a', 'ib',
-                     'in', '-L', 'e', 'on', 'ard', '-S', 'hen', 'g', '-S', 'h', 'u', 'ai',
-                     '-', 'X', 'ing', 'j', 'ian', '.', '.', '.', '.', '.', '/', ':', '!',
-                     '@', '#', '▁', "'", 'ab', 'c', "'"]]
-    gt_offsets = [[(0, 2), (2, 4), (4, 5), (5, 6), (6, 8), (8, 9), (9, 12), (12, 13), (13, 17),
-                   (17, 21), (21, 25), (25, 26), (26, 27), (27, 28), (28, 29), (29, 30), (30, 31),
-                   (31, 32), (32, 33), (33, 35)],
-                  [(0, 2), (2, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 11), (11, 17), (17, 18),
-                   (18, 19), (19, 20), (20, 21), (21, 22), (22, 23)],
-                  [(0, 2), (2, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 10), (10, 11), (11, 13),
-                   (13, 15), (15, 17), (17, 18), (18, 20), (20, 22), (22, 24), (24, 25), (25, 27),
-                   (27, 30), (30, 32), (32, 35), (35, 36), (36, 38), (38, 39), (39, 40), (40, 42),
-                   (42, 43), (43, 44), (44, 47), (47, 48), (48, 51), (51, 52), (52, 53), (53, 54),
-                   (54, 55), (55, 56), (56, 57), (57, 58), (58, 59), (59, 60), (60, 61), (61, 62),
-                   (62, 63), (63, 65), (65, 66), (66, 67)]]
-    gt_int_decode = ['Hello, y<UNK>all! How are you <UNK> <UNK> <UNK> <UNK> ?',
-                     'GluonNLP is great！！！!!!',
-                     'GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# <UNK>abc<UNK>']
-    gt_str_decode = ["Hello, y'all! How are you Ⅷ 😁 😁 😁 ?",
-                     'GluonNLP is great！！！!!!',
-                     "GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# 'abc'"]
-    verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
-    verify_pickleble(tokenizer, YTTMTokenizer)
-    verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
-    # Begin to verify decode
-    for sample_sentences, ele_gt_int_decode, ele_gt_str_decode in [(SUBWORD_TEST_SAMPLES[0], gt_int_decode[0], gt_str_decode[0]),
-                                                                   (SUBWORD_TEST_SAMPLES, gt_int_decode, gt_str_decode)]:
-        int_decode = tokenizer.decode(tokenizer.encode(sample_sentences, int))
-        str_decode = tokenizer.decode(tokenizer.encode(sample_sentences, str))
-        assert int_decode == ele_gt_int_decode
-        assert str_decode == ele_gt_str_decode
-    os.remove(model_path)
+def test_yttm_tokenizer():
+    with tempfile.TemporaryDirectory() as dir_path:
+        model_path = os.path.join(dir_path, 'yttm.model')
+        download(url=get_repo_url() + 'tokenizer_test_models/yttm/test_ende_yttm-6f2c39.model',
+                 path=model_path)
+        tokenizer = YTTMTokenizer(model_path=model_path)
+        gt_tokenized = [['▁He', 'll', 'o', ',', '▁y', "'", 'all', '!', '▁How', '▁are', '▁you', '▁',
+                         'Ⅷ', '▁', '😁', '▁', '😁', '▁', '😁', '▁?'],
+                        ['▁Gl', 'u', 'on', 'N', 'L', 'P', '▁is', '▁great', '！', '！', '！', '!',
+                         '!', '!'],
+                        ['▁Gl', 'u', 'on', 'N', 'L', 'P', '-A', 'm', 'az', 'on', '-H', 'a', 'ib',
+                         'in', '-L', 'e', 'on', 'ard', '-S', 'hen', 'g', '-S', 'h', 'u', 'ai',
+                         '-', 'X', 'ing', 'j', 'ian', '.', '.', '.', '.', '.', '/', ':', '!',
+                         '@', '#', '▁', "'", 'ab', 'c', "'"]]
+        gt_offsets = [[(0, 2), (2, 4), (4, 5), (5, 6), (6, 8), (8, 9), (9, 12), (12, 13), (13, 17),
+                       (17, 21), (21, 25), (25, 26), (26, 27), (27, 28), (28, 29), (29, 30), (30, 31),
+                       (31, 32), (32, 33), (33, 35)],
+                      [(0, 2), (2, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 11), (11, 17), (17, 18),
+                       (18, 19), (19, 20), (20, 21), (21, 22), (22, 23)],
+                      [(0, 2), (2, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 10), (10, 11), (11, 13),
+                       (13, 15), (15, 17), (17, 18), (18, 20), (20, 22), (22, 24), (24, 25), (25, 27),
+                       (27, 30), (30, 32), (32, 35), (35, 36), (36, 38), (38, 39), (39, 40), (40, 42),
+                       (42, 43), (43, 44), (44, 47), (47, 48), (48, 51), (51, 52), (52, 53), (53, 54),
+                       (54, 55), (55, 56), (56, 57), (57, 58), (58, 59), (59, 60), (60, 61), (61, 62),
+                       (62, 63), (63, 65), (65, 66), (66, 67)]]
+        gt_int_decode = ['Hello, y<UNK>all! How are you <UNK> <UNK> <UNK> <UNK> ?',
+                         'GluonNLP is great！！！!!!',
+                         'GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# <UNK>abc<UNK>']
+        gt_str_decode = ["Hello, y'all! How are you Ⅷ 😁 😁 😁 ?",
+                         'GluonNLP is great！！！!!!',
+                         "GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# 'abc'"]
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, YTTMTokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        # Begin to verify decode
+        for sample_sentences, ele_gt_int_decode, ele_gt_str_decode in [(SUBWORD_TEST_SAMPLES[0], gt_int_decode[0], gt_str_decode[0]),
+                                                                       (SUBWORD_TEST_SAMPLES, gt_int_decode, gt_str_decode)]:
+            int_decode = tokenizer.decode(tokenizer.encode(sample_sentences, int))
+            str_decode = tokenizer.decode(tokenizer.encode(sample_sentences, str))
+            assert int_decode == ele_gt_int_decode
+            assert str_decode == ele_gt_str_decode
+        os.remove(model_path)
 
 
 @pytest.mark.seed(123)
-def test_sentencepiece_tokenizer(tmp_path):
-    model_path = str(tmp_path / 'spm.model')
-    download(url=get_repo_url()
-                 + 'tokenizer_test_models/sentencepiece/case1/test_ende-a9bee4.model',
-             path=model_path)
-    # Case1
-    tokenizer = SentencepieceTokenizer(model_path)
-    gt_tokenized = [['▁Hel', 'lo', ',', '▁y', "'", 'all', '!', '▁How', '▁are', '▁you',
-                     '▁', 'VI', 'II', '▁', '😁', '▁', '😁', '▁', '😁', '▁?'],
-                    ['▁G', 'lu', 'on', 'N', 'L', 'P', '▁is', '▁great', '!', '!', '!', '!',
-                     '!', '!'],
-                    ['▁G', 'lu', 'on', 'N', 'L', 'P', '-', 'A', 'ma', 'zo', 'n', '-', 'H', 'ai',
-                     'bin', '-', 'L', 'e', 'on', 'ard', '-', 'S', 'hen', 'g', '-', 'S', 'hu', 'ai',
-                     '-', 'X', 'ing', 'j', 'ian', '.', '.', '.', '.', '.', '/', ':', '!', '@',
-                     '#', '▁', "'", 'ab', 'c', "'"]]
-    gt_offsets = [[(0, 3), (3, 5), (5, 6), (6, 8), (8, 9), (9, 12), (12, 13), (13, 17), (17, 21),
-                   (21, 25), (25, 26), (26, 26), (26, 27), (27, 28), (28, 29), (29, 30), (30, 31),
-                   (31, 32), (32, 33), (33, 35)],
-                  [(0, 1), (1, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 11), (11, 17), (17, 18),
-                   (18, 19), (19, 20), (20, 21), (21, 22), (22, 23)],
-                  [(0, 1), (1, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10), (10, 12),
-                   (12, 14), (14, 15), (15, 16), (16, 17), (17, 19), (19, 22), (22, 23), (23, 24),
-                   (24, 25), (25, 27), (27, 30), (30, 31), (31, 32), (32, 35), (35, 36), (36, 37),
-                   (37, 38), (38, 40), (40, 42), (42, 43), (43, 44), (44, 47), (47, 48), (48, 51),
-                   (51, 52), (52, 53), (53, 54), (54, 55), (55, 56), (56, 57), (57, 58), (58, 59),
-                   (59, 60), (60, 61), (61, 62), (62, 63), (63, 65), (65, 66), (66, 67)]]
-    gt_int_decode = ['Hello, y ⁇ all! How are you VIII  ⁇   ⁇   ⁇  ?',
-                     'GluonNLP is great!!!!!!',
-                     'GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:! ⁇ #  ⁇ abc ⁇ ']
-    verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
-    verify_pickleble(tokenizer, SentencepieceTokenizer)
-    verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
-    verify_decode_spm(tokenizer, SUBWORD_TEST_SAMPLES, gt_int_decode)
+def test_sentencepiece_tokenizer():
+    with tempfile.TemporaryDirectory() as dir_path:
+        model_path = os.path.join(dir_path, 'spm.model')
+        download(url=get_repo_url()
+                     + 'tokenizer_test_models/sentencepiece/case1/test_ende-a9bee4.model',
+                 path=model_path)
+        # Case1
+        tokenizer = SentencepieceTokenizer(model_path)
+        gt_tokenized = [['▁Hel', 'lo', ',', '▁y', "'", 'all', '!', '▁How', '▁are', '▁you',
+                         '▁', 'VI', 'II', '▁', '😁', '▁', '😁', '▁', '😁', '▁?'],
+                        ['▁G', 'lu', 'on', 'N', 'L', 'P', '▁is', '▁great', '!', '!', '!', '!',
+                         '!', '!'],
+                        ['▁G', 'lu', 'on', 'N', 'L', 'P', '-', 'A', 'ma', 'zo', 'n', '-', 'H', 'ai',
+                         'bin', '-', 'L', 'e', 'on', 'ard', '-', 'S', 'hen', 'g', '-', 'S', 'hu', 'ai',
+                         '-', 'X', 'ing', 'j', 'ian', '.', '.', '.', '.', '.', '/', ':', '!', '@',
+                         '#', '▁', "'", 'ab', 'c', "'"]]
+        gt_offsets = [[(0, 3), (3, 5), (5, 6), (6, 8), (8, 9), (9, 12), (12, 13), (13, 17), (17, 21),
+                       (21, 25), (25, 26), (26, 26), (26, 27), (27, 28), (28, 29), (29, 30), (30, 31),
+                       (31, 32), (32, 33), (33, 35)],
+                      [(0, 1), (1, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 11), (11, 17), (17, 18),
+                       (18, 19), (19, 20), (20, 21), (21, 22), (22, 23)],
+                      [(0, 1), (1, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 10), (10, 12),
+                       (12, 14), (14, 15), (15, 16), (16, 17), (17, 19), (19, 22), (22, 23), (23, 24),
+                       (24, 25), (25, 27), (27, 30), (30, 31), (31, 32), (32, 35), (35, 36), (36, 37),
+                       (37, 38), (38, 40), (40, 42), (42, 43), (43, 44), (44, 47), (47, 48), (48, 51),
+                       (51, 52), (52, 53), (53, 54), (54, 55), (55, 56), (56, 57), (57, 58), (58, 59),
+                       (59, 60), (60, 61), (61, 62), (62, 63), (63, 65), (65, 66), (66, 67)]]
+        gt_int_decode = ['Hello, y ⁇ all! How are you VIII  ⁇   ⁇   ⁇  ?',
+                         'GluonNLP is great!!!!!!',
+                         'GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:! ⁇ #  ⁇ abc ⁇ ']
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, SentencepieceTokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        verify_decode_spm(tokenizer, SUBWORD_TEST_SAMPLES, gt_int_decode)
 
-    # Case2, lower_case
-    gt_lower_case_int_decode = ['hello, y ⁇ all! how are you viii  ⁇   ⁇   ⁇  ?',
-                                'gluonnlp is great!!!!!!',
-                                'gluonnlp-amazon-haibin-leonard-sheng-shuai-xingjian...../:! ⁇ #  ⁇ abc ⁇ ']
-    tokenizer = SentencepieceTokenizer(model_path, do_lower=True)
-    verify_decode_spm(tokenizer, SUBWORD_TEST_SAMPLES, gt_lower_case_int_decode)
+        # Case2, lower_case
+        gt_lower_case_int_decode = ['hello, y ⁇ all! how are you viii  ⁇   ⁇   ⁇  ?',
+                                    'gluonnlp is great!!!!!!',
+                                    'gluonnlp-amazon-haibin-leonard-sheng-shuai-xingjian...../:! ⁇ #  ⁇ abc ⁇ ']
+        tokenizer = SentencepieceTokenizer(model_path, do_lower=True)
+        verify_decode_spm(tokenizer, SUBWORD_TEST_SAMPLES, gt_lower_case_int_decode)
 
-    # Case3, Use the sentencepiece regularization commands, we test whether we can obtain different encoding results
-    tokenizer = SentencepieceTokenizer(model_path, do_lower=True, nbest=-1, alpha=1.0)
-    has_different_encode_out = False
-    encode_out = None
-    for _ in range(10):
-        if encode_out is None:
-            encode_out = tokenizer.encode(SUBWORD_TEST_SAMPLES[0])
-        else:
-            ele_out = tokenizer.encode(SUBWORD_TEST_SAMPLES[0])
-            if ele_out != encode_out:
-                has_different_encode_out = True
-                break
-    assert has_different_encode_out
-    os.remove(model_path)
-
-
-def test_subword_nmt_tokenizer(tmp_path):
-    model_path = str(tmp_path / 'subword_nmt.model')
-    download(url=get_repo_url() + 'tokenizer_test_models/subword-nmt/test_ende-d189ff.model',
-             path=model_path)
-    vocab_path = str(tmp_path / 'subword_nmt.vocab')
-    download(url=get_repo_url() + 'tokenizer_test_models/subword-nmt/test_ende_vocab-900f81.json',
-             path=vocab_path)
-
-    # Case 1
-    tokenizer = SubwordNMTTokenizer(model_path, vocab_path)
-    gt_tokenized = [["Hel", "lo", ",</w>", "y", "\'", "all", "!</w>", "How</w>", "are</w>", "you</w>",
-                     "Ⅷ</w>", "😁</w>", "😁</w>", "😁</w>", "?</w>"],
-                    ["Gl", "u", "on", "N", "L", "P</w>", "is</w>", "great", "！", "！", "！", "!!",
-                     "!</w>"],
-                    ["Gl", "u", "on", "N", "L", "P", "-", "Amaz", "on-", "H", "ai", "b", "in-", "Le",
-                     "on", "ard", "-", "Sh", "eng", "-", "Sh", "u", "ai", "-", "X", "ing", "ji",
-                     "an", "..", "...", "/", ":", "!", "@", "#</w>", "\'", "ab", "c", "\'</w>"]]
-    gt_offsets = [[(0, 3), (3, 5), (5, 6), (7, 8), (8, 9), (9, 12), (12, 13), (14, 17), (18, 21),
-                   (22, 25), (26, 27), (28, 29), (30, 31), (32, 33), (34, 35)],
-                  [(0, 2), (2, 3), (3, 5), (5, 6), (6, 7), (7, 8), (9, 11), (12, 17), (17, 18),
-                   (18, 19), (19, 20), (20, 22), (22, 23)],
-                  [(0, 2), (2, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 13), (13, 16),
-                   (16, 17), (17, 19), (19, 20), (20, 23), (23, 25), (25, 27), (27, 30), (30, 31),
-                   (31, 33), (33, 36), (36, 37), (37, 39), (39, 40), (40, 42), (42, 43), (43, 44),
-                   (44, 47), (47, 49), (49, 51), (51, 53), (53, 56), (56, 57), (57, 58), (58, 59),
-                   (59, 60), (60, 61), (62, 63), (63, 65), (65, 66), (66, 67)]]
-    gt_int_decode = ["Hello, y\'all! How are you Ⅷ 😁 😁 😁 ?",
-                     "GluonNLP is great！！！!!!",
-                     "GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# \'abc\'"]
-    gt_str_decode = SUBWORD_TEST_SAMPLES
-    verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
-    verify_pickleble(tokenizer, SubwordNMTTokenizer)
-    verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
-    verify_decode_subword_nmt(tokenizer, SUBWORD_TEST_SAMPLES, gt_int_decode, gt_str_decode)
-
-    # Case 2, bpe_dropout
-    # We use str decode here because we may not perfectly recover the original sentence with int decode.
-    tokenizer = SubwordNMTTokenizer(model_path, vocab_path, bpe_dropout=0.5)
-    verify_decode(tokenizer, SUBWORD_TEST_SAMPLES, out_type=str)
-
-    os.remove(model_path)
-    os.remove(vocab_path)
+        # Case3, Use the sentencepiece regularization commands, we test whether we can obtain different encoding results
+        tokenizer = SentencepieceTokenizer(model_path, do_lower=True, nbest=-1, alpha=1.0)
+        has_different_encode_out = False
+        encode_out = None
+        for _ in range(10):
+            if encode_out is None:
+                encode_out = tokenizer.encode(SUBWORD_TEST_SAMPLES[0])
+            else:
+                ele_out = tokenizer.encode(SUBWORD_TEST_SAMPLES[0])
+                if ele_out != encode_out:
+                    has_different_encode_out = True
+                    break
+        assert has_different_encode_out
+        os.remove(model_path)
 
 
-def test_huggingface_bpe_tokenizer(tmp_path):
-    model_path = str(tmp_path / 'test_hf_bpe.model')
-    download(url=get_repo_url() + 'tokenizer_test_models/hf_bpe/test_hf_bpe.model',
-             path=model_path)
-    vocab_path = str(tmp_path / 'test_hf_bpe.vocab')
-    download(url=get_repo_url() + 'tokenizer_test_models/hf_bpe/test_hf_bpe.vocab',
-             path=vocab_path)
-    hf_vocab_path = str(tmp_path / 'test_hf_bpe.hf_vocab')
-    download(url=get_repo_url() + 'tokenizer_test_models/hf_bpe/test_hf_bpe.hf_vocab',
-             path=hf_vocab_path)
+def test_subword_nmt_tokenizer():
+    with tempfile.TemporaryDirectory() as dir_path:
+        model_path = os.path.join(dir_path, 'subword_nmt.model')
+        download(url=get_repo_url() + 'tokenizer_test_models/subword-nmt/test_ende-d189ff.model',
+                 path=model_path)
+        vocab_path = os.path.join(dir_path, 'subword_nmt.vocab')
+        download(url=get_repo_url() + 'tokenizer_test_models/subword-nmt/test_ende_vocab-900f81.json',
+                 path=vocab_path)
 
-    # Case 1, default lowercase=False
-    tokenizer = HuggingFaceBPETokenizer(model_path, vocab_path)
-    gt_tokenized = [['Hello</w>', ',</w>', 'y</w>', "'</w>", 'all</w>', '!</w>', 'How</w>',
-                     'are</w>', 'you</w>', '<unk>', '<unk>', '<unk>', '<unk>', '?</w>'],
-                    ['Gl', 'u', 'on', 'N', 'LP</w>', 'is</w>', 'great</w>', '！</w>', '！</w>',
-                     '！</w>', '!</w>', '!</w>', '!</w>'],
-                    ['Gl', 'u', 'on', 'N', 'LP</w>', '-</w>', 'Amazon</w>', '-</w>', 'H', 'ai',
-                     'bin</w>', '-</w>', 'Leonard</w>', '-</w>', 'Sh', 'en', 'g</w>', '-</w>',
-                     'Sh', 'u', 'ai</w>', '-</w>', 'X', 'ing', 'j', 'ian</w>', '.</w>', '.</w>',
-                     '.</w>', '.</w>', '.</w>', '/</w>', ':</w>', '!</w>', '@</w>', '#</w>',
-                     "'</w>", 'ab', 'c</w>', "'</w>"]]
-    gt_offsets = [[(0, 5), (5, 6), (7, 8), (8, 9), (9, 12), (12, 13), (14, 17), (18, 21), (22, 25),
-                   (26, 27), (28, 29), (30, 31), (32, 33), (34, 35)],
-                  [(0, 2), (2, 3), (3, 5), (5, 6), (6, 8), (9, 11), (12, 17), (17, 18), (18, 19),
-                   (19, 20), (20, 21), (21, 22), (22, 23)],
-                  [(0, 2), (2, 3), (3, 5), (5, 6), (6, 8), (8, 9), (9, 15), (15, 16), (16, 17),
-                   (17, 19), (19, 22), (22, 23), (23, 30), (30, 31), (31, 33), (33, 35), (35, 36),
-                   (36, 37), (37, 39), (39, 40), (40, 42), (42, 43), (43, 44), (44, 47), (47, 48),
-                   (48, 51), (51, 52), (52, 53), (53, 54), (54, 55), (55, 56), (56, 57), (57, 58),
-                   (58, 59), (59, 60), (60, 61), (62, 63), (63, 65), (65, 66), (66, 67)]]
-    # gt_int_decode = gt_str_decode for hf
-    # hf removed the unk tokens in decode result
-    gt_decode = ["Hello , y ' all ! How are you ?",
-                 'GluonNLP is great ！ ！ ！ ! ! !',
-                 "GluonNLP - Amazon - Haibin - Leonard - Sheng - Shuai - Xingjian . . . . . / : ! @ # ' abc '"]
-    verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
-    verify_pickleble(tokenizer, HuggingFaceBPETokenizer)
-    verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
-    verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
+        # Case 1
+        tokenizer = SubwordNMTTokenizer(model_path, vocab_path)
+        gt_tokenized = [["Hel", "lo", ",</w>", "y", "\'", "all", "!</w>", "How</w>", "are</w>", "you</w>",
+                         "Ⅷ</w>", "😁</w>", "😁</w>", "😁</w>", "?</w>"],
+                        ["Gl", "u", "on", "N", "L", "P</w>", "is</w>", "great", "！", "！", "！", "!!",
+                         "!</w>"],
+                        ["Gl", "u", "on", "N", "L", "P", "-", "Amaz", "on-", "H", "ai", "b", "in-", "Le",
+                         "on", "ard", "-", "Sh", "eng", "-", "Sh", "u", "ai", "-", "X", "ing", "ji",
+                         "an", "..", "...", "/", ":", "!", "@", "#</w>", "\'", "ab", "c", "\'</w>"]]
+        gt_offsets = [[(0, 3), (3, 5), (5, 6), (7, 8), (8, 9), (9, 12), (12, 13), (14, 17), (18, 21),
+                       (22, 25), (26, 27), (28, 29), (30, 31), (32, 33), (34, 35)],
+                      [(0, 2), (2, 3), (3, 5), (5, 6), (6, 7), (7, 8), (9, 11), (12, 17), (17, 18),
+                       (18, 19), (19, 20), (20, 22), (22, 23)],
+                      [(0, 2), (2, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 13), (13, 16),
+                       (16, 17), (17, 19), (19, 20), (20, 23), (23, 25), (25, 27), (27, 30), (30, 31),
+                       (31, 33), (33, 36), (36, 37), (37, 39), (39, 40), (40, 42), (42, 43), (43, 44),
+                       (44, 47), (47, 49), (49, 51), (51, 53), (53, 56), (56, 57), (57, 58), (58, 59),
+                       (59, 60), (60, 61), (62, 63), (63, 65), (65, 66), (66, 67)]]
+        gt_int_decode = ["Hello, y\'all! How are you Ⅷ 😁 😁 😁 ?",
+                         "GluonNLP is great！！！!!!",
+                         "GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# \'abc\'"]
+        gt_str_decode = SUBWORD_TEST_SAMPLES
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, SubwordNMTTokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        verify_decode_subword_nmt(tokenizer, SUBWORD_TEST_SAMPLES, gt_int_decode, gt_str_decode)
 
-    # Case 2, lowercase=True
-    gt_lowercase_decode = ["hello , y ' all ! how are you ?",
-                           'gluonnlp is great ！ ！ ！ ! ! !',
-                           "gluonnlp - amazon - haibin - leonard - sheng - shuai - xingjian . . . . . / : ! @ # ' abc '"]
-    tokenizer = HuggingFaceBPETokenizer(model_path, vocab_path, lowercase=True)
-    verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_lowercase_decode)
+        # Case 2, bpe_dropout
+        # We use str decode here because we may not perfectly recover the original sentence with int decode.
+        tokenizer = SubwordNMTTokenizer(model_path, vocab_path, bpe_dropout=0.5)
+        verify_decode(tokenizer, SUBWORD_TEST_SAMPLES, out_type=str)
 
-    # Case 3, using original hf vocab
-    tokenizer = HuggingFaceBPETokenizer(model_path, hf_vocab_path)
-    verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
-    verify_pickleble(tokenizer, HuggingFaceBPETokenizer)
-    verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
-    verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
-
-    os.remove(model_path)
-    os.remove(vocab_path)
-    os.remove(hf_vocab_path)
+        os.remove(model_path)
+        os.remove(vocab_path)
 
 
-def test_huggingface_bytebpe_tokenizer(tmp_path):
-    model_path = str(tmp_path / 'hf_bytebpe.model')
-    download(url=get_repo_url() + 'tokenizer_test_models/hf_bytebpe/test_hf_bytebpe.model',
-             path=model_path)
-    vocab_path = str(tmp_path / 'hf_bytebpe.vocab')
-    download(url=get_repo_url() + 'tokenizer_test_models/hf_bytebpe/test_hf_bytebpe.vocab',
-             path=vocab_path)
-    hf_vocab_path = str(tmp_path / 'hf_bytebpe.hf_vocab')
-    download(url=get_repo_url() + 'tokenizer_test_models/hf_bytebpe/test_hf_bytebpe.hf_vocab',
-             path=hf_vocab_path)
+def test_huggingface_bpe_tokenizer():
+    with tempfile.TemporaryDirectory() as dir_path:
+        model_path = os.path.join(dir_path, 'test_hf_bpe.model')
+        download(url=get_repo_url() + 'tokenizer_test_models/hf_bpe/test_hf_bpe.model',
+                 path=model_path)
+        vocab_path = os.path.join(dir_path, 'test_hf_bpe.vocab')
+        download(url=get_repo_url() + 'tokenizer_test_models/hf_bpe/test_hf_bpe.vocab',
+                 path=vocab_path)
+        hf_vocab_path = os.path.join(dir_path, 'test_hf_bpe.hf_vocab')
+        download(url=get_repo_url() + 'tokenizer_test_models/hf_bpe/test_hf_bpe.hf_vocab',
+                 path=hf_vocab_path)
 
-    # Case 1, default lowercase=False
-    tokenizer = HuggingFaceByteBPETokenizer(model_path, vocab_path)
-    gt_tokenized = [['Hello', ',', 'Ġy', "'", 'all', '!', 'ĠHow', 'Ġare', 'Ġyou',
-                     'Ġâ', 'ħ', '§', 'ĠðŁĺ', 'ģ', 'ĠðŁĺ', 'ģ', 'ĠðŁĺ', 'ģ', 'Ġ?'],
-                    ['Gl', 'u', 'on', 'N', 'LP', 'Ġis', 'Ġgreat', 'ï¼', 'ģ', 'ï¼',
-                     'ģ', 'ï¼', 'ģ', '!!!'],
-                    ['Gl', 'u', 'on', 'N', 'LP', '-', 'Amazon', '-', 'Ha', 'ib', 'in',
-                     '-', 'Le', 'on', 'ard', '-', 'She', 'ng', '-', 'Sh', 'u',
-                     'ai', '-', 'X', 'ing', 'j', 'ian', '.....', '/', ':', '!', '@',
-                     '#', "Ġ'", 'ab', 'c', "'"]]
-    # the defination of the offsets of bytelevel seems not clear
-    gt_offsets = [[(0, 5), (5, 6), (6, 8), (8, 9), (9, 12), (12, 13), (13, 17), (17, 21),
-                   (21, 25), (25, 27), (26, 27), (26, 27), (27, 29), (28, 29), (29, 31),
-                   (30, 31), (31, 33), (32, 33), (33, 35)],
-                  [(0, 2), (2, 3), (3, 5), (5, 6), (6, 8), (8, 11), (11, 17), (17, 18),
-                   (17, 18), (18, 19), (18, 19), (19, 20), (19, 20), (20, 23)],
-                  [(0, 2), (2, 3), (3, 5), (5, 6), (6, 8), (8, 9), (9, 15), (15, 16),
-                   (16, 18), (18, 20), (20, 22), (22, 23), (23, 25), (25, 27), (27, 30),
-                   (30, 31), (31, 34), (34, 36), (36, 37), (37, 39), (39, 40), (40, 42),
-                   (42, 43), (43, 44), (44, 47), (47, 48), (48, 51), (51, 56),
-                   (56, 57), (57, 58), (58, 59), (59, 60), (60, 61), (61, 63),
-                   (63, 65), (65, 66), (66, 67)]]
-    gt_decode = ["Hello, y'all! How are you Ⅷ 😁 😁 😁 ?",
-                 'GluonNLP is great！！！!!!',
-                 "GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# 'abc'"]
-    verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
-    verify_pickleble(tokenizer, HuggingFaceByteBPETokenizer)
-    verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
-    verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
+        # Case 1, default lowercase=False
+        tokenizer = HuggingFaceBPETokenizer(model_path, vocab_path)
+        gt_tokenized = [['Hello</w>', ',</w>', 'y</w>', "'</w>", 'all</w>', '!</w>', 'How</w>',
+                         'are</w>', 'you</w>', '<unk>', '<unk>', '<unk>', '<unk>', '?</w>'],
+                        ['Gl', 'u', 'on', 'N', 'LP</w>', 'is</w>', 'great</w>', '！</w>', '！</w>',
+                         '！</w>', '!</w>', '!</w>', '!</w>'],
+                        ['Gl', 'u', 'on', 'N', 'LP</w>', '-</w>', 'Amazon</w>', '-</w>', 'H', 'ai',
+                         'bin</w>', '-</w>', 'Leonard</w>', '-</w>', 'Sh', 'en', 'g</w>', '-</w>',
+                         'Sh', 'u', 'ai</w>', '-</w>', 'X', 'ing', 'j', 'ian</w>', '.</w>', '.</w>',
+                         '.</w>', '.</w>', '.</w>', '/</w>', ':</w>', '!</w>', '@</w>', '#</w>',
+                         "'</w>", 'ab', 'c</w>', "'</w>"]]
+        gt_offsets = [[(0, 5), (5, 6), (7, 8), (8, 9), (9, 12), (12, 13), (14, 17), (18, 21), (22, 25),
+                       (26, 27), (28, 29), (30, 31), (32, 33), (34, 35)],
+                      [(0, 2), (2, 3), (3, 5), (5, 6), (6, 8), (9, 11), (12, 17), (17, 18), (18, 19),
+                       (19, 20), (20, 21), (21, 22), (22, 23)],
+                      [(0, 2), (2, 3), (3, 5), (5, 6), (6, 8), (8, 9), (9, 15), (15, 16), (16, 17),
+                       (17, 19), (19, 22), (22, 23), (23, 30), (30, 31), (31, 33), (33, 35), (35, 36),
+                       (36, 37), (37, 39), (39, 40), (40, 42), (42, 43), (43, 44), (44, 47), (47, 48),
+                       (48, 51), (51, 52), (52, 53), (53, 54), (54, 55), (55, 56), (56, 57), (57, 58),
+                       (58, 59), (59, 60), (60, 61), (62, 63), (63, 65), (65, 66), (66, 67)]]
+        # gt_int_decode = gt_str_decode for hf
+        # hf removed the unk tokens in decode result
+        gt_decode = ["Hello , y ' all ! How are you ?",
+                     'GluonNLP is great ！ ！ ！ ! ! !',
+                     "GluonNLP - Amazon - Haibin - Leonard - Sheng - Shuai - Xingjian . . . . . / : ! @ # ' abc '"]
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, HuggingFaceBPETokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
 
-    # Case 2, lowercase=True
-    gt_lowercase_int_decode = ["hello, y'all! how are you ⅷ 😁 😁 😁 ?",
-                               'gluonnlp is great！！！!!!',
-                               "gluonnlp-amazon-haibin-leonard-sheng-shuai-xingjian...../:!@# 'abc'"]
-    tokenizer = HuggingFaceByteBPETokenizer(model_path, vocab_path, lowercase=True)
-    verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_lowercase_int_decode)
+        # Case 2, lowercase=True
+        gt_lowercase_decode = ["hello , y ' all ! how are you ?",
+                               'gluonnlp is great ！ ！ ！ ! ! !',
+                               "gluonnlp - amazon - haibin - leonard - sheng - shuai - xingjian . . . . . / : ! @ # ' abc '"]
+        tokenizer = HuggingFaceBPETokenizer(model_path, vocab_path, lowercase=True)
+        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_lowercase_decode)
 
-    # Case 3, using original hf vocab
-    tokenizer = HuggingFaceByteBPETokenizer(model_path, hf_vocab_path)
-    verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
-    verify_pickleble(tokenizer, HuggingFaceByteBPETokenizer)
-    verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
-    verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
+        # Case 3, using original hf vocab
+        tokenizer = HuggingFaceBPETokenizer(model_path, hf_vocab_path)
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, HuggingFaceBPETokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
 
-    os.remove(model_path)
-    os.remove(vocab_path)
-    os.remove(hf_vocab_path)
+        os.remove(model_path)
+        os.remove(vocab_path)
+        os.remove(hf_vocab_path)
 
 
-def test_huggingface_wordpiece_tokenizer(tmp_path):
-    vocab_path = str(tmp_path / 'hf_wordpiece.vocab')
-    download(url=get_repo_url()
-                 + 'tokenizer_test_models/hf_wordpiece/test_hf_wordpiece.vocab',
-             path=vocab_path)
-    hf_vocab_path = str(tmp_path / 'hf_wordpiece.hf_vocab')
-    download(url=get_repo_url()
-                 + 'tokenizer_test_models/hf_wordpiece/test_hf_wordpiece.hf_vocab',
-             path=hf_vocab_path)
+def test_huggingface_bytebpe_tokenizer():
+    with tempfile.TemporaryDirectory() as dir_path:
+        model_path = os.path.join(dir_path, 'hf_bytebpe.model')
+        download(url=get_repo_url() + 'tokenizer_test_models/hf_bytebpe/test_hf_bytebpe.model',
+                 path=model_path)
+        vocab_path = os.path.join(dir_path, 'hf_bytebpe.vocab')
+        download(url=get_repo_url() + 'tokenizer_test_models/hf_bytebpe/test_hf_bytebpe.vocab',
+                 path=vocab_path)
+        hf_vocab_path = os.path.join(dir_path, 'hf_bytebpe.hf_vocab')
+        download(url=get_repo_url() + 'tokenizer_test_models/hf_bytebpe/test_hf_bytebpe.hf_vocab',
+                 path=hf_vocab_path)
 
-    # Case 1, lowercase=True
-    tokenizer = HuggingFaceWordPieceTokenizer(vocab_path, lowercase=True)
-    gt_tokenized = [["hello", ",", "y", "'", "all", "!", "how", "are", "you",
-                     "<unk>", "<unk>", "<unk>", "<unk>", "?"],
-                    ["gl", "##uo", "##nn", "##l", "##p", "is", "great", "\uff01",
-                     "\uff01", "\uff01", "!", "!", "!"],
-                    ["gl", "##uo", "##nn", "##l", "##p", "-", "amazon", "-", "hai",
-                     "##bin", "-", "leonard", "-", "shen", "##g", "-", "shu", "##ai", "-",
-                     "xin", "##g", "##ji", "##an", ".", ".", ".", ".", ".", "/", ":", "!",
-                     "@", "#", "'", "abc", "'"]]
-    gt_offsets = [[(0, 5), (5, 6), (7, 8), (8, 9), (9, 12), (12, 13), (14, 17), (18, 21),
-                   (22, 25), (26, 27), (28, 29), (30, 31), (32, 33), (34, 35)],
-                  [(0, 2), (2, 4), (4, 6), (6, 7), (7, 8), (9, 11), (12, 17), (17, 18),
-                   (18, 19), (19, 20), (20, 21), (21, 22), (22, 23)],
-                  [(0, 2), (2, 4), (4, 6), (6, 7), (7, 8), (8, 9), (9, 15), (15, 16), (16, 19),
-                   (19, 22), (22, 23), (23, 30), (30, 31), (31, 35), (35, 36), (36, 37), (37, 40),
-                   (40, 42), (42, 43), (43, 46), (46, 47), (47, 49), (49, 51), (51, 52), (52, 53),
-                   (53, 54), (54, 55), (55, 56), (56, 57), (57, 58), (58, 59), (59, 60), (60, 61),
-                   (62, 63), (63, 66), (66, 67)]]
-    gt_decode = ["hello, y'all! how are you?",
-                 "gluonnlp is great ！ ！ ！!!!",
-                 "gluonnlp - amazon - haibin - leonard - sheng - shuai - xingjian..... / :! @ #'abc '"]
-    verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
-    verify_pickleble(tokenizer, HuggingFaceWordPieceTokenizer)
-    verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
-    verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
+        # Case 1, default lowercase=False
+        tokenizer = HuggingFaceByteBPETokenizer(model_path, vocab_path)
+        gt_tokenized = [['Hello', ',', 'Ġy', "'", 'all', '!', 'ĠHow', 'Ġare', 'Ġyou',
+                         'Ġâ', 'ħ', '§', 'ĠðŁĺ', 'ģ', 'ĠðŁĺ', 'ģ', 'ĠðŁĺ', 'ģ', 'Ġ?'],
+                        ['Gl', 'u', 'on', 'N', 'LP', 'Ġis', 'Ġgreat', 'ï¼', 'ģ', 'ï¼',
+                         'ģ', 'ï¼', 'ģ', '!!!'],
+                        ['Gl', 'u', 'on', 'N', 'LP', '-', 'Amazon', '-', 'Ha', 'ib', 'in',
+                         '-', 'Le', 'on', 'ard', '-', 'She', 'ng', '-', 'Sh', 'u',
+                         'ai', '-', 'X', 'ing', 'j', 'ian', '.....', '/', ':', '!', '@',
+                         '#', "Ġ'", 'ab', 'c', "'"]]
+        # the defination of the offsets of bytelevel seems not clear
+        gt_offsets = [[(0, 5), (5, 6), (6, 8), (8, 9), (9, 12), (12, 13), (13, 17), (17, 21),
+                       (21, 25), (25, 27), (26, 27), (26, 27), (27, 29), (28, 29), (29, 31),
+                       (30, 31), (31, 33), (32, 33), (33, 35)],
+                      [(0, 2), (2, 3), (3, 5), (5, 6), (6, 8), (8, 11), (11, 17), (17, 18),
+                       (17, 18), (18, 19), (18, 19), (19, 20), (19, 20), (20, 23)],
+                      [(0, 2), (2, 3), (3, 5), (5, 6), (6, 8), (8, 9), (9, 15), (15, 16),
+                       (16, 18), (18, 20), (20, 22), (22, 23), (23, 25), (25, 27), (27, 30),
+                       (30, 31), (31, 34), (34, 36), (36, 37), (37, 39), (39, 40), (40, 42),
+                       (42, 43), (43, 44), (44, 47), (47, 48), (48, 51), (51, 56),
+                       (56, 57), (57, 58), (58, 59), (59, 60), (60, 61), (61, 63),
+                       (63, 65), (65, 66), (66, 67)]]
+        gt_decode = ["Hello, y'all! How are you Ⅷ 😁 😁 😁 ?",
+                     'GluonNLP is great！！！!!!',
+                     "GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# 'abc'"]
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, HuggingFaceByteBPETokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
 
-    # Case 2, lowercase=False
-    gt_lowercase_decode = [", y'all! are you?",
-                           "is great ！ ！ ！!!!",
-                           "- - - - - -..... / :! @ #'abc '"]
-    tokenizer = HuggingFaceWordPieceTokenizer(vocab_path, lowercase=False)
-    verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_lowercase_decode)
+        # Case 2, lowercase=True
+        gt_lowercase_int_decode = ["hello, y'all! how are you ⅷ 😁 😁 😁 ?",
+                                   'gluonnlp is great！！！!!!',
+                                   "gluonnlp-amazon-haibin-leonard-sheng-shuai-xingjian...../:!@# 'abc'"]
+        tokenizer = HuggingFaceByteBPETokenizer(model_path, vocab_path, lowercase=True)
+        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_lowercase_int_decode)
 
-    # Case 3, using original hf vocab
-    tokenizer = HuggingFaceWordPieceTokenizer(hf_vocab_path, lowercase=True)
-    verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
-    verify_pickleble(tokenizer, HuggingFaceWordPieceTokenizer)
-    verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
-    verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
+        # Case 3, using original hf vocab
+        tokenizer = HuggingFaceByteBPETokenizer(model_path, hf_vocab_path)
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, HuggingFaceByteBPETokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
 
-    os.remove(vocab_path)
-    os.remove(hf_vocab_path)
+        os.remove(model_path)
+        os.remove(vocab_path)
+        os.remove(hf_vocab_path)
+
+
+def test_huggingface_wordpiece_tokenizer():
+    with tempfile.TemporaryDirectory() as dir_path:
+        vocab_path = os.path.join(dir_path, 'hf_wordpiece.vocab')
+        download(url=get_repo_url()
+                     + 'tokenizer_test_models/hf_wordpiece/test_hf_wordpiece.vocab',
+                 path=vocab_path)
+        hf_vocab_path = os.path.join(dir_path, 'hf_wordpiece.hf_vocab')
+        download(url=get_repo_url()
+                     + 'tokenizer_test_models/hf_wordpiece/test_hf_wordpiece.hf_vocab',
+                 path=hf_vocab_path)
+
+        # Case 1, lowercase=True
+        tokenizer = HuggingFaceWordPieceTokenizer(vocab_path, lowercase=True)
+        gt_tokenized = [["hello", ",", "y", "'", "all", "!", "how", "are", "you",
+                         "<unk>", "<unk>", "<unk>", "<unk>", "?"],
+                        ["gl", "##uo", "##nn", "##l", "##p", "is", "great", "\uff01",
+                         "\uff01", "\uff01", "!", "!", "!"],
+                        ["gl", "##uo", "##nn", "##l", "##p", "-", "amazon", "-", "hai",
+                         "##bin", "-", "leonard", "-", "shen", "##g", "-", "shu", "##ai", "-",
+                         "xin", "##g", "##ji", "##an", ".", ".", ".", ".", ".", "/", ":", "!",
+                         "@", "#", "'", "abc", "'"]]
+        gt_offsets = [[(0, 5), (5, 6), (7, 8), (8, 9), (9, 12), (12, 13), (14, 17), (18, 21),
+                       (22, 25), (26, 27), (28, 29), (30, 31), (32, 33), (34, 35)],
+                      [(0, 2), (2, 4), (4, 6), (6, 7), (7, 8), (9, 11), (12, 17), (17, 18),
+                       (18, 19), (19, 20), (20, 21), (21, 22), (22, 23)],
+                      [(0, 2), (2, 4), (4, 6), (6, 7), (7, 8), (8, 9), (9, 15), (15, 16), (16, 19),
+                       (19, 22), (22, 23), (23, 30), (30, 31), (31, 35), (35, 36), (36, 37), (37, 40),
+                       (40, 42), (42, 43), (43, 46), (46, 47), (47, 49), (49, 51), (51, 52), (52, 53),
+                       (53, 54), (54, 55), (55, 56), (56, 57), (57, 58), (58, 59), (59, 60), (60, 61),
+                       (62, 63), (63, 66), (66, 67)]]
+        gt_decode = ["hello, y'all! how are you?",
+                     "gluonnlp is great ！ ！ ！!!!",
+                     "gluonnlp - amazon - haibin - leonard - sheng - shuai - xingjian..... / :! @ #'abc '"]
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, HuggingFaceWordPieceTokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
+
+        # Case 2, lowercase=False
+        gt_lowercase_decode = [", y'all! are you?",
+                               "is great ！ ！ ！!!!",
+                               "- - - - - -..... / :! @ #'abc '"]
+        tokenizer = HuggingFaceWordPieceTokenizer(vocab_path, lowercase=False)
+        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_lowercase_decode)
+
+        # Case 3, using original hf vocab
+        tokenizer = HuggingFaceWordPieceTokenizer(hf_vocab_path, lowercase=True)
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, HuggingFaceWordPieceTokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
+
+        os.remove(vocab_path)
+        os.remove(hf_vocab_path)
