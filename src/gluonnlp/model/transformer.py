@@ -947,9 +947,23 @@ def _get_transformer_model(model_cls, model_name, dataset_name, src_vocab, tgt_v
         _load_pretrained_params(net, model_name, dataset_name, root, ctx)
     return net, src_vocab, tgt_vocab
 
+transformer_en_de_hparams = {
+        'num_units': 512,
+        'hidden_size': 2048,
+        'dropout': 0.1,
+        'epsilon': 0.1,
+        'num_layers': 6,
+        'num_heads': 8,
+        'scaled': True,
+        'share_embed': True,
+        'embed_size': 512,
+        'tie_weights': True,
+        'embed_initializer': None
+}
 
 def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pretrained=False,
-                          ctx=cpu(), root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                          ctx=cpu(), root=os.path.join(get_home_dir(), 'models'),
+                          hparam_allow_override=False, **kwargs):
     r"""Transformer pretrained model.
 
     Embedding size is 400, and hidden layer size is 1150.
@@ -966,26 +980,20 @@ def transformer_en_de_512(dataset_name=None, src_vocab=None, tgt_vocab=None, pre
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     gluon.Block, gluonnlp.Vocab, gluonnlp.Vocab
     """
-    predefined_args = {'num_units': 512,
-                       'hidden_size': 2048,
-                       'dropout': 0.1,
-                       'epsilon': 0.1,
-                       'num_layers': 6,
-                       'num_heads': 8,
-                       'scaled': True,
-                       'share_embed': True,
-                       'embed_size': 512,
-                       'tie_weights': True,
-                       'embed_initializer': None}
-    mutable_args = frozenset(['num_units', 'hidden_size', 'dropout', 'epsilon', 'num_layers',
-                              'num_heads', 'scaled'])
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           'Cannot override predefined model settings.'
+    predefined_args = transformer_en_de_hparams.copy()
+    if not hparam_allow_override:
+        mutable_args = frozenset(['num_units', 'hidden_size', 'dropout', 'epsilon', 'num_layers',
+                                  'num_heads', 'scaled'])
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     encoder, decoder, one_step_ahead_decoder = get_transformer_encoder_decoder(
         units=predefined_args['num_units'], hidden_size=predefined_args['hidden_size'],
