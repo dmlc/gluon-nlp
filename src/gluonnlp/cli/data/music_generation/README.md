@@ -1,8 +1,0 @@
-# Music Generation
-
-
-## Maestro
-
-
-## LakhMIDI
-
