@@ -321,8 +321,8 @@ def export(prefix):
         sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, 0)
 
         arg_array = arg_params
-        arg_array['data0'] = mx.nd.ones((seq_length, test_batch_size),dtype='float32')
-        arg_array['data1'] = mx.nd.ones((seq_length, test_batch_size),dtype='float32')
+        arg_array['data0'] = mx.nd.ones((test_batch_size, seq_length),dtype='float32')
+        arg_array['data1'] = mx.nd.ones((test_batch_size, seq_length),dtype='float32')
         arg_array['data2'] = mx.nd.ones((test_batch_size, ),dtype='float32')
         custom_sym = sym.optimize_for('custom_pass', arg_array, aux_params)
 
