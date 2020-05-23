@@ -289,14 +289,7 @@ if __name__ == '__main__':
         warnings.warn('--model_parameters is not provided. The parameter checkpoint (.params) '
                       'file will be created based on default parameter initialization.')
 
-    if args.custom_pass is not None:
-       # load library
-       libpath = os.path.abspath(args.custom_pass)
-       mx.library.load(libpath)
-       net.hybridize(static_alloc=True, static_shape=True, backend='custom_pass')
-    else:
-        net.hybridize(static_alloc=True, static_shape=True)
-
+    net.hybridize(static_alloc=True, static_shape=True)
     test_batch_size = args.test_batch_size
 
 ###############################################################################
@@ -320,6 +313,36 @@ def export(prefix):
     net.export(prefix, epoch=0)
     assert os.path.isfile(prefix + '-symbol.json')
     assert os.path.isfile(prefix + '-0000.params')
+
+    if args.custom_pass is not None:
+        # load library
+        libpath = os.path.abspath(args.custom_pass)
+        mx.library.load(libpath)
+        sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, 0)
+
+        arg_array = arg_params
+        arg_array['data0'] = mx.nd.ones((seq_length, test_batch_size),dtype='float32')
+        arg_array['data1'] = mx.nd.ones((seq_length, test_batch_size),dtype='float32')
+        arg_array['data2'] = mx.nd.ones((test_batch_size, ),dtype='float32')
+        custom_sym = sym.optimize_for('custom_pass', arg_array, aux_params)
+
+        nheads = 12
+        if args.bert_model == 'bert_24_1024_16':
+            nheads =24
+        for i in range(nheads):
+            basename = 'bertencoder0_transformer' + str(i) + '_dotproductselfattentioncell0'
+            arg_array.pop(basename + '_query_weight')
+            arg_array.pop(basename + '_key_weight')
+            arg_array.pop(basename + '_value_weight')
+            arg_array.pop(basename + '_query_bias')
+            arg_array.pop(basename + '_key_bias')
+            arg_array.pop(basename + '_value_bias')
+        arg_array.pop('data0')
+        arg_array.pop('data1')
+        arg_array.pop('data2')
+
+        mx.model.save_checkpoint(prefix, 0, custom_sym, arg_params, aux_params)
+
 
 def preprocess_data(tokenizer, task):
     log.info('Loading dev data...')
