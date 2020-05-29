@@ -140,7 +140,7 @@ class CoNLL2000(_CoNLLSequenceTagging):
                                     'dc57527f1f60eeafad03da51235185141152f849')}
         super(CoNLL2000, self).__init__(segment, root)
 
-    base_url = 'http://www.clips.uantwerpen.be/conll2000/chunking/'
+    base_url = 'https://www.clips.uantwerpen.be/conll2000/chunking/'
     codec = 'utf-8'
 
 
