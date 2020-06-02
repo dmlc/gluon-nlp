@@ -588,7 +588,7 @@ def infer(prefix, task):
         toc = time.time()
         log.info('BatchSize={}, NumberIterations={}:  '.format(
             test_batch_size, total_iters))
-        log.info('Thoughput={:.2f} samples/s, Average Latency={:.4f} ms'
+        log.info('Throughput={:.2f} samples/s, Average Latency={:.4f} ms'
             .format(total_samples / (toc - tic),
                     (total_latency_time / total_iters) * 1000))
         if args.check_accuracy:
@@ -636,7 +636,7 @@ def infer(prefix, task):
         toc = time.time()
         log.info('BatchSize={}, NumberIterations={}:  '.format(
             test_batch_size, total_iters))
-        log.info('Thoughput={:.2f} samples/s, Average Latency={:.4f} ms'
+        log.info('Throughput={:.2f} samples/s, Average Latency={:.4f} ms'
             .format(total_samples / (toc - tic),
                 (total_latency_time / total_iters) * 1000))
         if args.check_accuracy:
