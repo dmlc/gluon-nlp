@@ -186,9 +186,9 @@ if __name__ == '__main__':
     parser.add_argument('--max_answer_length',
                         type=int,
                         default=30,
-                        help='The maximum length of an answer that can be generated. This is needed '
-                        'because the start and end predictions are not conditioned on one another.'
-                        ' default is 30')
+                        help='The maximum length of an answer that can be generated. '
+                        'This is needed because the start and end predictions are not '
+                        'conditioned on one another. default is 30')
 
     parser.add_argument('--version_2',
                         action='store_true',
@@ -197,8 +197,8 @@ if __name__ == '__main__':
     parser.add_argument('--null_score_diff_threshold',
                         type=float,
                         default=0.0,
-                        help='If null_score - best_non_null is greater than the threshold predict null.'
-                        'Typical values are between -1.0 and -5.0. default is 0.0')
+                        help='If null_score - best_non_null is greater than the threshold '
+                        'predict null. Typical values are between -1.0 and -5.0. default is 0.0')
 
     parser.add_argument('--gpu',
                         action='store_true',
@@ -207,7 +207,8 @@ if __name__ == '__main__':
     parser.add_argument('--sentencepiece',
                         type=str,
                         default=None,
-                        help='Path to the sentencepiece .model file for both tokenization and vocab.')
+                        help='Path to the sentencepiece .model file for both tokenization and '
+                        'vocab.')
 
     parser.add_argument('--debug',
                         action='store_true',

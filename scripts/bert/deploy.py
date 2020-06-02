@@ -44,11 +44,11 @@ import time
 import mxnet as mx
 import gluonnlp as nlp
 from gluonnlp.model import get_model, BERTClassifier
-from model.qa import BertForQA
 from gluonnlp.data import SQuAD
+from gluonnlp.data.classification import get_task
+from model.qa import BertForQA
 from finetune_squad import preprocess_dataset as qa_preprocess_data
 from finetune_classifier import convert_examples_to_features as classifier_examples2features
-from gluonnlp.data.classification import get_task
 from bert_qa_evaluate import get_F1_EM, predict, PredResult
 
 nlp.utils.check_version('0.9')
@@ -92,7 +92,7 @@ if __name__ == '__main__':
                         default='./output_dir',
                         help='The directory where the exported model symbol will be created. '
                              'The default is ./output_dir')
-    
+
     parser.add_argument('--exported_model',
                         type=str,
                         default=None,
@@ -108,13 +108,8 @@ if __name__ == '__main__':
                         type=int,
                         default=128,
                         help='The maximum total input sequence length after WordPiece tokenization.'
-                             'Sequences longer than this needs to be truncated, and sequences shorter '
-                             'than this needs to be padded. Default is 128')
-    
-    #parser.add_argument('--round_to', 
-    #                    type=int, default=128,
-    #                    help='The length of padded sequences will be rounded up to be multiple of this argument.'
-    #                     'Recomendation is set close to seq_length and multiple of 8.')
+                             'Sequences longer than this needs to be truncated, and sequences '
+                             'shorter than this needs to be padded. Default is 128')
 
     parser.add_argument('--dropout',
                         type=float,
@@ -306,7 +301,7 @@ def export(prefix):
     valid_length = mx.nd.arange(test_batch_size)
     batch = inputs, token_types, valid_length
     inputs, token_types, valid_length = batch
-    
+
     net(inputs.as_in_context(export_ctx),
         token_types.as_in_context(export_ctx),
         valid_length.as_in_context(export_ctx))
@@ -321,14 +316,14 @@ def export(prefix):
         sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, 0)
 
         arg_array = arg_params
-        arg_array['data0'] = mx.nd.ones((test_batch_size, seq_length),dtype='float32')
-        arg_array['data1'] = mx.nd.ones((test_batch_size, seq_length),dtype='float32')
-        arg_array['data2'] = mx.nd.ones((test_batch_size, ),dtype='float32')
+        arg_array['data0'] = mx.nd.ones((test_batch_size, seq_length), dtype='float32')
+        arg_array['data1'] = mx.nd.ones((test_batch_size, seq_length), dtype='float32')
+        arg_array['data2'] = mx.nd.ones((test_batch_size, ), dtype='float32')
         custom_sym = sym.optimize_for('custom_pass', arg_array, aux_params)
 
         nheads = 12
         if args.bert_model == 'bert_24_1024_16':
-            nheads =24
+            nheads = 24
         for i in range(nheads):
             basename = 'bertencoder0_transformer' + str(i) + '_dotproductselfattentioncell0'
             arg_array.pop(basename + '_query_weight')
@@ -350,8 +345,8 @@ def preprocess_data(tokenizer, task):
         # question_answering
         batchify_fn = nlp.data.batchify.Tuple(
             nlp.data.batchify.Stack(),
-            nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token],round_to=seq_length),
-            nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token],round_to=seq_length),
+            nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], round_to=seq_length),
+            nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], round_to=seq_length),
             nlp.data.batchify.Stack('float32'),
             nlp.data.batchify.Stack('float32'),
             nlp.data.batchify.Stack('float32'))
@@ -382,7 +377,7 @@ def preprocess_data(tokenizer, task):
     else:
         # classification / regression
         classification_task = get_task(task)
-        
+
         label_dtype = 'int32' if classification_task.class_labels else 'float32'
         truncate_length = seq_length - 3 if classification_task.is_pair else seq_length - 2
         trans = partial(classifier_examples2features, tokenizer=tokenizer,
@@ -393,7 +388,8 @@ def preprocess_data(tokenizer, task):
                         label_alias=classification_task.label_alias, vocab=vocab)
 
         batchify_fn = nlp.data.batchify.Tuple(
-            nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], round_to=seq_length),  # input
+            nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], 
+                                  round_to=seq_length), # input
             nlp.data.batchify.Pad(axis=0, pad_val=0, round_to=seq_length),  # segment
             nlp.data.batchify.Stack(),  # length
             nlp.data.batchify.Stack(label_dtype))  # label
@@ -402,7 +398,7 @@ def preprocess_data(tokenizer, task):
         dev_tsv = classification_task.dataset_dev()
         dev_tsv_list = dev_tsv if isinstance(dev_tsv, list) else [dev_tsv]
         loader_dev_list = []
-        nsamples=0
+        nsamples = 0
         for segment, data in dev_tsv_list:
             data_dev = mx.gluon.data.SimpleDataset(list(map(trans, data)))
             nsamples = nsamples + len(data_dev)
@@ -422,7 +418,7 @@ def compute_accuracy_save_results(task, all_results, SQuAD_dataset=None, segment
         if args.QA_version_2:
             dev_data = SQuAD('dev', version='2.0')
         else:
-            dev_data = SQuAD('dev', version='1.1')   
+            dev_data = SQuAD('dev', version='1.1')
         for features in SQuAD_dataset:
             results = all_results[features[0].example_id]
             example_qas_id = features[0].qas_id
@@ -470,7 +466,7 @@ def compute_accuracy_save_results(task, all_results, SQuAD_dataset=None, segment
                 if sep_idx and token_id == sep_idx:
                     continue
                 token = vocab.idx_to_token[token_id]
-                tokenizer=nlp.data.BERTTokenizer(vocab, lower=do_lower_case)
+                tokenizer = nlp.data.BERTTokenizer(vocab, lower=do_lower_case)
                 if not tokenizer.is_first_subword(token):
                     tokens.append(token)
                     if args.oov_way == 'last':
@@ -527,7 +523,7 @@ def compute_accuracy_save_results(task, all_results, SQuAD_dataset=None, segment
 
 ###############################################################################
 #                             Perform inference                               #
-###############################################################################      
+###############################################################################
 def infer(prefix, task):
     assert os.path.isfile(prefix + '-symbol.json')
     assert os.path.isfile(prefix + '-0000.params')
@@ -541,11 +537,11 @@ def infer(prefix, task):
     if dtype == 'float16':
         imported_net.cast('float16')
     tokenizer = nlp.data.BERTTokenizer(vocab=vocab, lower=do_lower_case)
-    
+
     num_warmup = 2
-    
+
     if task == 'QA':
-        dataloader, nsamples, SQuAD_dataset = preprocess_data(tokenizer, task)
+        dataloader, _, SQuAD_dataset = preprocess_data(tokenizer, task)
         # run warmup iterations
         for data in dataloader:
             example_ids, token_ids, token_types, valid_length, _, _ = data
@@ -586,17 +582,16 @@ def infer(prefix, task):
                 break
         mx.nd.waitall()
         toc = time.time()
-        log.info('BatchSize={}, NumberIterations={}:  '.format(
-            test_batch_size, total_iters))
+        log.info('BatchSize={}, NumberIterations={}:  '.format(test_batch_size, total_iters))
         log.info('Throughput={:.2f} samples/s, Average Latency={:.4f} ms'
             .format(total_samples / (toc - tic),
                     (total_latency_time / total_iters) * 1000))
         if args.check_accuracy:
             compute_accuracy_save_results(task, all_results, SQuAD_dataset=SQuAD_dataset)
-    
+
     elif task == 'embedding':
         # Uses SST dataset as example
-        dataloader_list, nsamples, _ = preprocess_data(tokenizer, 'SST')
+        dataloader_list, _, _ = preprocess_data(tokenizer, 'SST')
         _, dataloader = dataloader_list[0]
         # run warmup iterations
         for data in dataloader:
@@ -604,7 +599,7 @@ def infer(prefix, task):
             sequence_outputs = imported_net(token_ids.as_in_context(ctx),
                                             token_types.as_in_context(ctx),
                                             valid_length.as_in_context(ctx).astype(dtype))
-            out_host = sequence_outputs.asnumpy()
+            sequence_outputs.asnumpy()
             num_warmup -= 1
             if not num_warmup:
                 break
@@ -621,7 +616,7 @@ def infer(prefix, task):
             sequence_outputs = imported_net(token_ids.as_in_context(ctx),
                                             token_types.as_in_context(ctx),
                                             valid_length.as_in_context(ctx).astype(dtype))
-            out_host = sequence_outputs.asnumpy()
+            sequence_outputs.asnumpy()
             toc_latency = time.time()
             total_latency_time += (toc_latency - tic_latency)
             total_iters += 1
@@ -634,17 +629,16 @@ def infer(prefix, task):
                 break
         mx.nd.waitall()
         toc = time.time()
-        log.info('BatchSize={}, NumberIterations={}:  '.format(
-            test_batch_size, total_iters))
+        log.info('BatchSize={}, NumberIterations={}:  '.format(test_batch_size, total_iters))
         log.info('Throughput={:.2f} samples/s, Average Latency={:.4f} ms'
             .format(total_samples / (toc - tic),
                 (total_latency_time / total_iters) * 1000))
         if args.check_accuracy:
             compute_accuracy_save_results(task, all_results)
-        
+
     else:
         # classification / regression task
-        dataloader_list, nsamples, _ = preprocess_data(tokenizer, task)
+        dataloader_list, _, _ = preprocess_data(tokenizer, task)
         specific_task = get_task(task)
         metric = specific_task.metrics
         # run warmup iterations
@@ -654,10 +648,10 @@ def infer(prefix, task):
             out = imported_net(token_ids.as_in_context(ctx),
                                token_types.as_in_context(ctx),
                                valid_length.as_in_context(ctx).astype(dtype))
-            out_host = out.asnumpy()
+            out.asnumpy()
             num_warmup -= 1
             if not num_warmup:
-                break     
+                break
         # run forward inference
         for segment, dataloader in dataloader_list:
             log.info('Start inference ... ')
@@ -674,7 +668,7 @@ def infer(prefix, task):
                 out = imported_net(token_ids.as_in_context(ctx),
                                    token_types.as_in_context(ctx),
                                    valid_length.as_in_context(ctx).astype(dtype))
-                out_host = out.asnumpy()
+                out.asnumpy()
                 toc_latency = time.time()
                 total_latency_time += (toc_latency - tic_latency)
                 total_iters += 1
@@ -689,11 +683,10 @@ def infer(prefix, task):
             mx.nd.waitall()
             toc = time.time()
             log.info('Segment {}'.format(segment))
-            log.info('BatchSize={}, NumberIterations={}:  '.format(
-                test_batch_size, total_iters))
+            log.info('BatchSize={}, NumberIterations={}:  '.format(test_batch_size, total_iters))
             log.info('Throughput={:.2f} samples/s, Average Latency={:.4f} ms'
                 .format(total_samples / (toc - tic),
-                        (total_latency_time / total_iters) * 1000))
+                    (total_latency_time / total_iters) * 1000))
             if args.check_accuracy:
                 compute_accuracy_save_results(task, all_results, segment=segment, metric=metric)
 
