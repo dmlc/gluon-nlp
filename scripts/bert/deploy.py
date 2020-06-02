@@ -388,7 +388,7 @@ def preprocess_data(tokenizer, task):
                         label_alias=classification_task.label_alias, vocab=vocab)
 
         batchify_fn = nlp.data.batchify.Tuple(
-            nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token], 
+            nlp.data.batchify.Pad(axis=0, pad_val=vocab[vocab.padding_token],
                                   round_to=seq_length), # input
             nlp.data.batchify.Pad(axis=0, pad_val=0, round_to=seq_length),  # segment
             nlp.data.batchify.Stack(),  # length
@@ -584,8 +584,7 @@ def infer(prefix, task):
         toc = time.time()
         log.info('BatchSize={}, NumberIterations={}:  '.format(test_batch_size, total_iters))
         log.info('Throughput={:.2f} samples/s, Average Latency={:.4f} ms'
-            .format(total_samples / (toc - tic),
-                    (total_latency_time / total_iters) * 1000))
+                 .format(total_samples / (toc - tic), (total_latency_time / total_iters) * 1000))
         if args.check_accuracy:
             compute_accuracy_save_results(task, all_results, SQuAD_dataset=SQuAD_dataset)
 
@@ -631,8 +630,7 @@ def infer(prefix, task):
         toc = time.time()
         log.info('BatchSize={}, NumberIterations={}:  '.format(test_batch_size, total_iters))
         log.info('Throughput={:.2f} samples/s, Average Latency={:.4f} ms'
-            .format(total_samples / (toc - tic),
-                (total_latency_time / total_iters) * 1000))
+                 .format(total_samples / (toc - tic), (total_latency_time / total_iters) * 1000))
         if args.check_accuracy:
             compute_accuracy_save_results(task, all_results)
 
@@ -685,8 +683,8 @@ def infer(prefix, task):
             log.info('Segment {}'.format(segment))
             log.info('BatchSize={}, NumberIterations={}:  '.format(test_batch_size, total_iters))
             log.info('Throughput={:.2f} samples/s, Average Latency={:.4f} ms'
-                .format(total_samples / (toc - tic),
-                    (total_latency_time / total_iters) * 1000))
+                     .format(total_samples / (toc - tic),
+                             (total_latency_time / total_iters) * 1000))
             if args.check_accuracy:
                 compute_accuracy_save_results(task, all_results, segment=segment, metric=metric)
 
