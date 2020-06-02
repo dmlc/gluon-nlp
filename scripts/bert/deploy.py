@@ -338,8 +338,9 @@ def export(prefix):
 
         mx.model.save_checkpoint(prefix, 0, custom_sym, arg_params, aux_params)
 
-
+# Function to preprocess dataset to test, which depends on the task
 def preprocess_data(tokenizer, task):
+    """Preprocess dataset to test."""
     log.info('Loading dev data...')
     if task == 'QA':
         # question_answering
@@ -411,7 +412,9 @@ def preprocess_data(tokenizer, task):
             loader_dev_list.append((segment, loader_dev))
         return loader_dev_list, nsamples, None
 
+# Function to calculate final accuracy and print it out. It also save predictions within a file
 def compute_accuracy_save_results(task, all_results, SQuAD_dataset=None, segment=None, metric=None):
+    """Compute accuracy and save predictions."""
     all_predictions = collections.OrderedDict()
     if task == 'QA':
         assert SQuAD_dataset is not None
@@ -525,6 +528,7 @@ def compute_accuracy_save_results(task, all_results, SQuAD_dataset=None, segment
 #                             Perform inference                               #
 ###############################################################################
 def infer(prefix, task):
+    """Perform inference."""
     assert os.path.isfile(prefix + '-symbol.json')
     assert os.path.isfile(prefix + '-0000.params')
 
