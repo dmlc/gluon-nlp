@@ -335,14 +335,17 @@ To use sentencepiece vocab for pre-training, please set --sentencepiece=my_vocab
 Export BERT for Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Current export.py support exporting BERT models. Supported values for --task argument include classification, regression and question answering.
+The script deploy.py allows exporting/importing BERT models. Supported values for --task argument include QA (question-answering), embedding (see below section), and classification and regression tasks specifying one of the following datases: MRPC, QQP, QNLI, RTE, STS-B, CoLA, MNLI, WNLI, SST, XNLI, LCQMC, ChnSentiCorp. It uses available validation datasets to perform and test inference.
 
 .. code-block:: console
 
-    $ python export.py --task classification --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 128
+    $ MXNET_SAFE_ACCUMULATION=1 MXNET_FC_TRUE_FP16=1 python deploy.py --task SST --model_parameters /path/to/saved/ckpt.params --output_dir /path/to/output/dir/ --seq_length 128 --gpu 0 --dtype float16
 
-This will export the BERT model for classification to a symbol.json file, saved to the directory specified by --output_dir.
-The --model_parameters argument is optional. If not set, the .params file saved in the output directory will be randomly initialized parameters.
+This will export the BERT model and its parameters for a classification (sentiment analysis) task to symbol.json/param files, saved into the directory specified by --output_dir.
+Once the model is exported, you can import the model by setting --only_infer, and specifying the path to your model with --exported_model followed by the prefix name of the symbol.json/param files.
+The batch size can be specified via --test_batch_size option, and accuracy can be checked setting --check_accuracy.
+When using GPU and data type FP16 (--dtype float16), we recommend to use MXNET_FC_TRUE_FP16=1 for boosting performance.
+
 
 BERT for Sentence or Tokens Embedding
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
