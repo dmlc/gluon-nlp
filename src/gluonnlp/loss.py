@@ -57,4 +57,3 @@ class LabelSmoothCrossEntropyLoss(HybridBlock):
         loss = - (1 - self._alpha) * log_likelihood\
                - self._alpha / float(self._num_labels) * all_scores
         return loss
-

@@ -160,9 +160,10 @@ def verify_decode_no_vocab_raise(tokenizer):
 
 
 def verify_pickleble(tokenizer, cls):
-    # Verify if the tokenizer is pickleable
-    assert isinstance(pickle.loads(pickle.dumps(tokenizer)), cls)
-
+    # Verify if the tokenizer is pickleable and has the same behavior after dumping/loading
+    tokenizer_p = pickle.loads(pickle.dumps(tokenizer))
+    assert isinstance(tokenizer_p, cls)
+    assert tokenizer.encode(SUBWORD_TEST_SAMPLES, str) == tokenizer_p.encode(SUBWORD_TEST_SAMPLES, str)
 
 def test_whitespace_tokenizer():
     tokenizer = WhitespaceTokenizer()

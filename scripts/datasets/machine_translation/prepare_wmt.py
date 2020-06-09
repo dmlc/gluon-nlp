@@ -9,8 +9,9 @@ import tarfile
 import gzip
 from xml.etree import ElementTree
 from gluonnlp.data.filtering import ProfanityFilter
-from gluonnlp.utils.misc import file_line_number, download
+from gluonnlp.utils.misc import file_line_number, download, load_checksum_stats
 from gluonnlp.base import get_data_home_dir
+from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 
 # The datasets are provided by WMT2014-WMT2019 and can be freely used for research purposes.
 # You will need to cite the WMT14-WMT19 shared task overview paper and additional citation
@@ -39,11 +40,7 @@ _CITATIONS = """
 
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 _BASE_DATASET_PATH = os.path.join(get_data_home_dir(), 'wmt')
-_URL_FILE_STATS_PATH = os.path.join(_CURR_DIR, '..', 'url_checksums', 'wmt.txt')
-_URL_FILE_STATS = dict()
-for line in open(_URL_FILE_STATS_PATH, 'r', encoding='utf-8'):
-    url, hex_hash, file_size = line.strip().split()
-    _URL_FILE_STATS[url] = hex_hash
+_URL_FILE_STATS = load_checksum_stats(os.path.join(_CURR_DIR, '..', 'url_checksums', 'wmt.txt'))
 
 
 # Here, we will make sure that the languages follow the standard ISO 639-1 language tag.
@@ -539,20 +536,20 @@ def concatenate_files(fname_l: List[str],
     return out_fname
 
 
-def extract_mono_corpus(compressed_data_path, src_lang, src_name, out_src_path):
+def extract_mono_corpus(compressed_data_path, lang, name, out_src_path):
     tmp_dir = os.path.join(os.path.dirname(compressed_data_path), 'raw_data')
     if not os.path.exists(tmp_dir):
         os.makedirs(tmp_dir)
     # Uncompress data
     if compressed_data_path.endswith('.gz'):
         with gzip.open(compressed_data_path) as f_in:
-            with open(os.path.join(tmp_dir, src_name), 'wb') as f_out:
+            with open(os.path.join(tmp_dir, name), 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
     else:
         raise NotImplementedError('Cannot process {}'.format(compressed_data_path))
-    # Parse data and move to the required src/tgt path
+    # Parse data and move to the required src paths
     
-    shutil.copyfile(os.path.join(tmp_dir, src_name), out_src_path)
+    shutil.copyfile(os.path.join(tmp_dir, name), out_src_path)
         
     # Clean-up
     shutil.rmtree(tmp_dir)
@@ -567,9 +564,13 @@ def fetch_mono_dataset(selection: Union[str, List[str], List[List[str]]],
     Parameters
     ----------
     selection
+        The selected datasets
     lang
+        Language of the monolingual corpus
     path
+
     overwrite
+        Whether to overwrite the downloaded dataset
 
     Returns
     -------
@@ -605,7 +606,6 @@ def fetch_mono_dataset(selection: Union[str, List[str], List[List[str]]],
         os.makedirs(save_dir_path)
     out_path = os.path.join(save_dir_path, lang + '.txt')
     # Check for whether we can load the cached version
-    # TODO we can do something smarter here
     if os.path.exists(out_path) and not overwrite:
         print('Found data in {}, skip:\n'
               '\tSource: {}\n'.format(selection + [lang], out_path))
@@ -637,11 +637,11 @@ def fetch_mono_dataset(selection: Union[str, List[str], List[List[str]]],
     print('Prepare data for {}\n'
           '\tCompressed File: {}\n'
           '\t{}: {}\n'.format(selection + [lang],
-                            data_path,
-                            lang, out_path))
+                              data_path,
+                              lang, out_path))
     extract_mono_corpus(data_path,
-                        src_lang=lang,
-                        src_name=src_name,
+                        lang=lang,
+                        name=src_name,
                         out_src_path=out_path)
     return [out_path]
 
@@ -822,7 +822,7 @@ def fetch_wmt_parallel_dataset(selection: Union[str, List[str], List[List[str]]]
     return [out_src_path], [out_tgt_path]
 
 
-def download_mono_train(lang: str = 'de', path: str = _BASE_DATASET_PATH)\
+def download_mono_newscrawl(lang: str = 'de', path: str = _BASE_DATASET_PATH)\
         -> List[str]:
     """Download the train dataset used for WMT2014
 
@@ -926,6 +926,7 @@ def download_wmt17_train(lang_pair: str = 'en-de', path: str = _BASE_DATASET_PAT
     return train_src_paths, train_tgt_paths
 
 
+@DATA_PARSER_REGISTRY.register('prepare_wmt')
 def get_parser():
     parser = argparse.ArgumentParser(description='Downloading and Preprocessing WMT Datasets.')
     parser.add_argument('--dataset', type=str, required=True,
@@ -939,17 +940,12 @@ def get_parser():
                         help='The pair of source language and target language separated by "-", '
                              'e.g. "en-de", "en-zh".')
     parser.add_argument('--mode', choices=['path_only',
-                                           'raw',
-                                           'prebuild'],
+                                           'raw'],
                         default='raw',
                         help='If the mode is "path_only",'
                              '    the script will only output the path of the raw corpus.'
                              'If mode is "raw", the script will concatenate all the related'
-                             '    corpus and save to the folder.'
-                             'If mode is "prebuild", the script will directly download the'
-                             '    prebuild dataset, which is ready for training')
-    parser.add_argument('--prebuild_name', default=None, type=str,
-                        help='Name of the prebuild dataset.')
+                             '    corpus and save to the folder.')
     parser.add_argument('--save-path', type=str, default='wmt_data',
                         help='The path to save the dataset.')
     parser.add_argument('--prefix', type=str, default='train.raw',
@@ -965,7 +961,7 @@ def mono_main(args):
     if args.dataset.lower() == 'newscrawl':
         if lang == 'de':
             train_src_paths =\
-                download_mono_train('de', args.cache_path)
+                download_mono_newscrawl('de', args.cache_path)
         else:
             raise NotImplementedError
     else:
@@ -986,14 +982,11 @@ def mono_main(args):
                 for ele_path in train_src_paths:
                     with open(ele_path, 'rb') as in_f:
                         shutil.copyfileobj(in_f, out_f)
-    elif args.mode == 'prebuild':
-        #TODO Download and extract the prebuild dataset
-        assert args.prebuild_name is not None, 'Must specify the prebuild_name if you are ' \
-                                               'going to download the prebuild data'
     else:
         raise NotImplementedError
 
 
+@DATA_MAIN_REGISTRY.register('prepare_wmt')
 def main(args):
     if args.mono:
         mono_main(args)
@@ -1045,10 +1038,6 @@ def main(args):
                         with open(ele_path, 'rb') as in_f:
                             shutil.copyfileobj(in_f, out_f)
             assert file_line_number(raw_src_path) == file_line_number(raw_tgt_path)
-        elif args.mode == 'prebuild':
-            #TODO Download and extract the prebuild dataset
-            assert args.prebuild_name is not None, 'Must specify the prebuild_name if you are ' \
-                                                'going to download the prebuild data'
         else:
             raise NotImplementedError
 

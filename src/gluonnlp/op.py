@@ -5,16 +5,6 @@ from mxnet import use_np
 
 
 @use_np
-def scatter_nd(F, data, indices, shape):
-    # TODO(?) This is a temporary work-around, wait for
-    #  https://github.com/apache/incubator-mxnet/issues/17823
-    return F.scatter_nd(
-            data.as_nd_ndarray(),
-            indices.as_nd_ndarray(),
-            shape=shape
-        ).as_np_ndarray()
-
-@use_np
 def select_vectors_by_position(F, data, positions):
     """Select each batch with the given positions.
 
@@ -56,51 +46,102 @@ def select_vectors_by_position(F, data, positions):
     out = F.npx.gather_nd(data, indices)
     return out
 
+
 @use_np
-def disperse_vectors_by_position(F, data, positions, shape):
-    """Scatter each batch with the given positions. A reversed process of select_vectors_by_position.
+def add_vectors_by_position(F, base, data, positions):
+    """Scatter each batch with the given positions.
 
     Once advanced indexing can be hybridized, we can revise the implementation.
 
-    out[i, positions[i, j], :] = data[i, j, :]
+    out[i, positions[i, j], :] = base[i, positions[i, j], :] + data[i, j, :]
 
     Parameters
     ----------
     F
+    base:
+        Input tensor of the array to be updated.
+        Shape (batch_size, seq_length)
     data
-        Input tensor of contextualized token embeddings
+        Input tensor of token ids
         Shape (batch_size, num_disp_position)
     positions
         Input tensor of the positions.
         Shape (batch_size, num_disp_position).
         For each sample in the batch, the values in this tensor must not exceed
         the length of the sequence.
-    shape
-        Shape of the out, usually (batch_size, seq_length).
 
     Returns
     -------
     out
-        The scattered result.
+        The dispersed result.
         Shape (batch_size, seq_length)
     """
-    # Here, we use scatter_nd to disperse the output from data:
+    # Here, we use index_add to disperse the output from data:
     # Need to compute
     #   out[i, masked_position[i, j], :] = in[i, j, :]
-    # Thus, construct a indices with shape [2, batch_size, num_masked_position], where
-    #     indices[0, i, j] = i
-    #     indices[1, i, j] = masked_position[i, j]
-    # Then, out = scatter_nd(in, indices)
+    # Thus, construct a indices with shape [2, batch_size * num_masked_position], where
+    #     indices[0, i * num_masked_position + j] = i
+    #     indices[1, i * num_masked_position + j] = masked_position[i, j]
+    # And convert data to the shape of the (batch_size * num_masked_position, )
+    # Then, out = npx.index_add(base, indices, data)
     positions = positions.astype(np.int32)
     # batch_idx.shape = (batch_size, 1) as [[0], [1], [2], ...]
     batch_idx = F.np.expand_dims(F.npx.arange_like(positions, axis=0),
                                  axis=1).astype(np.int32)
     batch_idx = batch_idx + F.np.zeros_like(positions)
-    indices = F.np.stack([batch_idx, positions])
+    indices = F.np.stack([batch_idx.reshape(-1), positions.reshape(-1)])
 
-    # TODO(zheyuye), using npx.scatter_nd when its implemented
-    out = scatter_nd(F, data, indices, shape)
+    out = F.npx.index_add(base, indices, data.reshape(-1))
     return out
+
+
+@use_np
+def updated_vectors_by_position(F, base, data, positions):
+    """
+    Update each batch with the given positions. Considered as a reversed process of
+    "select_vectors_by_position", this is an advanced operator of add_vectors_by_position
+    that updates the results instead of add and avoids duplicate positions.
+    Once advanced indexing can be hybridized, we can revise the implementation.
+
+    updates[i, positions[i, j], :] = data[i, j, :]
+
+    out = F.np.where(updates, updates, base)
+
+    Parameters
+    ----------
+    F
+    base:
+        Input tensor of the array to be updated.
+        Shape (batch_size, seq_length)
+    data
+        Input tensor of token ids
+        Shape (batch_size, num_disp_position)
+    positions
+        Input tensor of the positions.
+        Shape (batch_size, num_disp_position).
+        For each sample in the batch, the values in this tensor must not exceed
+        the length of the sequence.
+
+    Returns
+    -------
+    out
+        The updated result.
+        Shape (batch_size, seq_length)
+    updates_mask
+        The state of the updated  for the whole sequence
+        1 -> updated, 0 -> not updated.
+        Shape (batch_size, seq_length)
+    """
+    # TODO(zheyuye), update when npx.index_update implemented
+    updates = add_vectors_by_position(F, F.np.zeros_like(base), data, positions)
+    updates_mask = add_vectors_by_position(F, F.np.zeros_like(base),
+            F.np.ones_like(positions), positions)
+    updates = (updates / F.np.maximum(1, updates_mask)).astype(np.int32)
+
+    out = F.np.where(updates, updates, base)
+    updates_mask = F.np.minimum(updates_mask, 1)
+
+    return out, updates_mask
 
 
 @use_np
@@ -153,7 +194,7 @@ def gumbel_softmax(F, logits, temperature: float = 1.0, eps: float = 1E-10,
     y = F.npx.softmax((gumbels + logits) / temperature, axis=-1)
     if hard:
         y_hard = F.np.max(y, axis=-1, keepdims=True) == y
-        y_hard = F.npx.stop_gradient(F, y_hard - y) + y
+        y_hard = F.npx.stop_gradient(y_hard - y) + y
         return y_hard
     else:
         return y
@@ -249,4 +290,3 @@ def relative_position_bucket(F, relative_position,
     val_if_large = F.np.minimum(val_if_large, num_buckets - 1)
     ret = ret + F.np.where(is_small, relative_position, val_if_large)
     return ret
-

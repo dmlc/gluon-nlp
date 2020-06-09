@@ -1,7 +1,9 @@
 # Question Answering Examples
 
 # SQuAD
-The finetuning scripts for [Stanford Question Answering Dataset (SQuAD)](https://rajpurkar.github.io/SQuAD-explorer/) are available, supporting a variety of pre-training models including [BERT](https://github.com/google-research/electra), [ALBERT]((https://github.com/google-research/albert), and [ELECTRA](https://github.com/google-research/bert). Free to choose one of them as `model_name`, listing below.
+The finetuning scripts for [Stanford Question Answering Dataset (SQuAD)](https://rajpurkar.github.io/SQuAD-explorer/) are available,
+supporting a variety of pre-training models including [BERT](https://github.com/google-research/electra), [ALBERT](https://github.com/google-research/albert),
+and [ELECTRA](https://github.com/google-research/bert). Free to choose one of them as `model_name`, listing below.
 
 |               BERT               |          ALBERT          |        ELECTRA       |
 |:--------------------------------:|:------------------------:|:--------------------:|
@@ -63,7 +65,7 @@ python run_squad.py \
     --param_checkpoint=${CKPT_PATH} \
     --version 2.0 \
     --do_eval \
-    --gpus 0,1,2,3,4,5,6,7 \
+    --gpus 0,1,2,3 \
     --eval_batch_size 16 \
     --overwrite_cache \
 ```
@@ -75,12 +77,12 @@ Fine-tuning the listed models with hyper-parameter learning rate 2e-5, epochs 3,
 
 Performance are shown in the table below, in which the SQuAD1.1 are evaluated with SQuAD2.0 checkpoints.
 
-|Reproduced ALBERT Models  | SQuAD 1.1 dev  | SQuAD 2.0 dev |
-|--------------------------|---------------|--------------|
-|ALBERT base               | 90.55/83.83   | 82.13/79.19  |
-|ALBERT large              | 92.66/86.43   | 84.93/82.02  |
-|ALBERT xlarge             | 93.85/87.71   | 87.61/84.59  |
-|ALBERT xxlarge            | 95.00/89.01   | 90.0/86.9    |
+|Reproduced ALBERT Models (F1/EM)  | SQuAD 1.1 dev | SQuAD 2.0 dev |
+|----------------------------------|---------------|---------------|
+|ALBERT base                       | 90.55/83.83   | 82.13/79.19   |
+|ALBERT large                      | 92.66/86.43   | 84.93/82.02   |
+|ALBERT xlarge                     | 93.85/87.71   | 87.61/84.59   |
+|ALBERT xxlarge                    | 95.00/89.01   | 90.0/86.9     |
 
 For reference, we've included the results from Google's Original Experiments
 
@@ -110,4 +112,4 @@ For reference, we have also included the results of Google's original version
 |Google ELECTRA base       |     - /86.8    |     - /80.5   |
 |Google ELECTRA large      |     - /89.7    |     - /88.1   |
 
-All experiments done on AWS P3.16xlarge (8 x NVIDIA Tesla V100 16 GB)
+All experiments done on AWS P3.8xlarge (4 x NVIDIA Tesla V100 16 GB)

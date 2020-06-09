@@ -673,7 +673,7 @@ def evaluate(args):
         param_checkpoint = args.param_checkpoint
     else:
         filenames = [f for f in os.listdir(args.output_dir) if '.params' in f]
-        filenames.sort(key=lambda ele:(len(ele), ele))
+        filenames.sort(key=lambda ele: (len(ele), ele))
         param_checkpoint = os.path.join(args.output_dir, filenames[-1])
         logging.info('Only evaluate the fine-tuned parameters from the final step')
     cfg, tokenizer, backbone_params_path, qa_net = get_network(
@@ -702,9 +702,9 @@ def evaluate(args):
                 f.write(feature.to_json() + '\n')
 
     dataset_processor = SquadDatasetProcessor(tokenizer=tokenizer,
-                                                    doc_stride=args.doc_stride,
-                                                    max_seq_length=args.max_seq_length,
-                                                    max_query_length=args.max_query_length)
+                                              doc_stride=args.doc_stride,
+                                              max_seq_length=args.max_seq_length,
+                                              max_query_length=args.max_query_length)
     # We process all the chunk features and also
     dev_all_chunk_features = []
     dev_chunk_feature_ptr = [0]

@@ -2,7 +2,8 @@ import argparse
 import os
 import tarfile
 from gluonnlp.base import get_data_home_dir
-from gluonnlp.utils.misc import download
+from gluonnlp.utils.misc import download, load_checksum_stats
+from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 import zipfile
 
 _CITATIONS = """
@@ -27,10 +28,7 @@ _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 _BASE_DATASET_PATH = os.path.join(get_data_home_dir(), 'music_midi_data')
 
 _URL_FILE_STATS_PATH = os.path.join(_CURR_DIR, '..', 'url_checksums', 'music_midi.txt')
-_URL_FILE_STATS = dict()
-for line in open(_URL_FILE_STATS_PATH, 'r', encoding='utf-8'):
-    url, hex_hash, file_size = line.strip().split()
-    _URL_FILE_STATS[url] = hex_hash
+_URL_FILE_STATS = load_checksum_stats(_URL_FILE_STATS_PATH)
 
 
 _URLS = {
@@ -44,6 +42,7 @@ _URLS = {
 }
 
 
+@DATA_PARSER_REGISTRY.register('prepare_music_midi')
 def get_parser():
     parser = argparse.ArgumentParser(description='Download the Music Midi Datasets.')
     parser.add_argument('--dataset', type=str, required=True,
@@ -61,6 +60,7 @@ def get_parser():
     return parser
 
 
+@DATA_MAIN_REGISTRY.register('prepare_music_midi')
 def main(args):
     # Download the data
     url = _URLS[args.dataset]
@@ -73,6 +73,8 @@ def main(args):
         save_dir = args.save_dir
     if not args.overwrite and os.path.exists(save_dir):
         print('{} found, skip! Turn on --overwrite to force overwrite'.format(save_dir))
+    print('Extract the data from {} into {}'.format(target_download_location,
+                                                    save_dir))
     if args.dataset == 'lmd_full':
         with tarfile.open(target_download_location) as f:
             f.extractall(save_dir)

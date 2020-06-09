@@ -21,7 +21,9 @@ __all__ = ['try_import_sentencepiece',
            'try_import_huggingface_tokenizers',
            'try_import_spacy',
            'try_import_scipy',
-           'try_import_mwparserfromhell']
+           'try_import_mwparserfromhell',
+           'try_import_fasttext',
+           'try_import_langid']
 
 
 def try_import_sentencepiece():
@@ -108,6 +110,25 @@ def try_import_autogluon():
         import autogluon
     except ImportError:
         raise ImportError('AutoGluon is not installed. You must install autogluon in order to use '
-                          'the HPO functionality. You can follow the guide in '
-                          'https://github.com/awslabs/autogluon to install.')
+                          'the functionality. You can follow the guide in '
+                          'https://github.com/awslabs/autogluon for installation.')
     return autogluon
+
+
+def try_import_fasttext():
+    try:
+        import fasttext
+    except ImportError:
+        raise ImportError('FastText is not installed. You must install fasttext in order to use the'
+                          ' functionality. See https://github.com/facebookresearch/fastText for '
+                          'more information.')
+    return fasttext
+
+
+def try_import_langid():
+    try:
+        import langid
+    except ImportError:
+        raise ImportError('"langid" is not installed. You must install langid in order to use the'
+                          ' functionality. You may try to use `pip install langid`.')
+    return langid

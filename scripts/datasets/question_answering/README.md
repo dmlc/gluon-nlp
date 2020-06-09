@@ -15,9 +15,3 @@ squad
 ├── train-v{version}.json
 ├── dev-v{version}.json
 ```
-
-
-## Natural Questions
-```bash
-gsutil -m cp -R gs://natural_questions/v1.0-simplified/simplified-nq-train.jsonl.gz .
-```

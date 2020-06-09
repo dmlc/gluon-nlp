@@ -21,14 +21,10 @@ First of all, install the latest MXNet. You may use the following commands:
 ```bash
 
 # Install the version with CUDA 10.1
-pip install -U --pre mxnet-cu101 -f https://dist.mxnet.io/python
-
-# In case you do not have the permission, try the following
-pip install -U --pre mxnet-cu101 -f https://dist.mxnet.io/python --user
-
+pip install -U --pre mxnet-cu101==2.0.0b20200604 -f https://dist.mxnet.io/python
 
 # Install the cpu-only version
-pip install -U --pre mxnet -f https://dist.mxnet.io/python/cpu
+pip install -U --pre mxnet==2.0.0b20200604 -f https://dist.mxnet.io/python
 ```
 
 
@@ -67,10 +63,10 @@ nlp_data help
 nlp_preprocess help
 
 # Also, you can use `python -m` to access the toolkits
-python -m gluonnlp.cli.data help
-python -m gluonnlp.cli.preprocess help
+python -m numpy_nlp.cli.data help
+python -m numpy_nlp.cli.preprocess help
 
 ```
 
 # Run Unittests
-You may go to [tests](tests) to see all the unittests.
+You may go to [tests](tests) to see all how to run the unittests.

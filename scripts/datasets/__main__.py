@@ -1,53 +1,39 @@
 import argparse
-
 from .machine_translation import prepare_wmt
 from .question_answering import prepare_squad
 from .language_modeling import prepare_lm
 from .music_generation import prepare_music_midi
-from .pretrain_corpus import prepare_bookcorpus, prepare_wikipedia
+from .pretrain_corpus import prepare_bookcorpus, prepare_wikipedia, prepare_openwebtext
+from .general_nlp_benchmark import prepare_glue
+from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 
-SUBCOMMANDS = ['prepare_wmt', 'prepare_squad', 'prepare_lm',
-               'prepare_music_midi', 'prepare_bookcorpus', 'prepare_wikipedia',
-               'help']
+
+def list_all_subcommands():
+    out = []
+    for key in DATA_PARSER_REGISTRY.list_keys():
+        if key not in DATA_MAIN_REGISTRY._obj_map:
+            raise KeyError('The data cli "{}" is registered in parser but is missing'
+                           ' in main'.format(key))
+        out.append(key)
+    return out
+
 
 def cli_main():
     parser = argparse.ArgumentParser(
         description='Build-in scripts for downloading and preparing the data in GluonNLP.',
         prog='nlp_data', add_help=False)
     parser.add_argument('command', type=str,
-                        choices=SUBCOMMANDS,
+                        choices=list_all_subcommands() + ['help'],
                         metavar='[subcommand]',
                         help='The subcommand to use. '
-                             'Choices are {}.'.format(SUBCOMMANDS))
+                             'Choices are {}.'.format(list_all_subcommands() + ['help']))
     args, other_args = parser.parse_known_args()
-    if args.command == 'prepare_wmt':
-        parser = prepare_wmt.get_parser()
-        sub_args = parser.parse_args(other_args)
-        prepare_wmt.main(sub_args)
-    elif args.command == 'prepare_squad':
-        parser = prepare_squad.get_parser()
-        sub_args = parser.parse_args(other_args)
-        prepare_squad.main(sub_args)
-    elif args.command == 'prepare_lm':
-        parser = prepare_lm.get_parser()
-        sub_args = parser.parse_args(other_args)
-        prepare_lm.main(sub_args)
-    elif args.command == 'prepare_music_midi':
-        parser = prepare_music_midi.get_parser()
-        sub_args = parser.parse_args(other_args)
-        prepare_music_midi.main(sub_args)
-    elif args.command == 'prepare_bookcorpus':
-        parser = prepare_bookcorpus.get_parser()
-        sub_args = parser.parse_args(other_args)
-        prepare_bookcorpus.main(sub_args)
-    elif args.command == 'prepare_wikipedia':
-        parser = prepare_wikipedia.get_parser()
-        sub_args = parser.parse_args(other_args)
-        prepare_wikipedia.main(sub_args)
-    elif args.command == 'help':
+    if args.command == 'help':
         parser.print_help()
     else:
-        parser.print_help()
+        parser = DATA_PARSER_REGISTRY.create(args.command)
+        sub_args = parser.parse_args(other_args)
+        DATA_MAIN_REGISTRY.create(args.command, sub_args)
 
 
 if __name__ == '__main__':

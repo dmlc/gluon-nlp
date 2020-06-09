@@ -31,7 +31,6 @@ def test_vocab():
                 assert vocab[random_tokens + ['213412hadhfk']]\
                        == random_idx + [vocab.unk_id]
             for k, v in vocab.special_tokens_kv.items():
-                print(k)
                 idx_property = k[:-6] + '_id'
                 assert getattr(vocab, idx_property) == vocab[v]
 

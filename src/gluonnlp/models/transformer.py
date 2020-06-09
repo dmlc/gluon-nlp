@@ -1,13 +1,13 @@
 import numpy as np
 import mxnet as mx
 from mxnet import use_np
-from mxnet.gluon import nn, Block, HybridBlock
+from mxnet.gluon import nn, HybridBlock
 from typing import Optional, Tuple, List
 from ..utils.registry import Registry
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask, gen_mem_attn_mask
 from ..layers import PositionalEmbedding, PositionwiseFFN, InitializerType
 from ..utils.config import CfgNode as CN
-from ..sequence_sampler import SequenceDecoder
+from ..sequence_sampler import BaseStepDecoder
 __all__ = ['TransformerEncoderLayer', 'TransformerDecoderLayer',
            'TransformerEncoder', 'TransformerDecoder',
            'TransformerNMTModel', 'TransformerNMTInference']
@@ -16,7 +16,7 @@ transformer_nmt_cfg_reg = Registry('transformer_nmt_cfg')
 
 
 @transformer_nmt_cfg_reg.register()
-def transformer_wmt_en_de():
+def transformer_nmt_base():
     """Configuration of Transformer WMT EN-DE Base"""
     cfg = CN()
     cfg.MODEL = CN()
@@ -52,12 +52,26 @@ def transformer_wmt_en_de():
     cfg.MODEL.DECODER.activation = 'relu'
     cfg.MODEL.DECODER.pre_norm = False
 
+    # Parameters for mixture of models
+    cfg.MODEL.method = 'hMoElp'
+    cfg.MODEL.num_experts = 3
+
     # Parameters for the initializer
     cfg.INITIALIZER = CN()
     cfg.INITIALIZER.embed = ['xavier', 'gaussian', 'in', 1.0]
     cfg.INITIALIZER.weight = ['xavier', 'uniform', 'avg', 3.0]
     cfg.INITIALIZER.bias = ['zeros']
     cfg.VERSION = 1
+    cfg.freeze()
+    return cfg
+
+
+@transformer_nmt_cfg_reg.register()
+def transformer_nmt_base_prenorm():
+    cfg = transformer_nmt_base()
+    cfg.defrost()
+    cfg.MODEL.ENCODER.pre_norm = True
+    cfg.MODEL.DECODER.pre_norm = True
     cfg.freeze()
     return cfg
 
@@ -806,7 +820,6 @@ class TransformerDecoder(HybridBlock):
         return out, new_states
 
 
-# TODO(sxjscience) Think about whether to use the cfg as the argument of the class
 @use_np
 class TransformerNMTModel(HybridBlock):
     def __init__(self, src_vocab_size: int,
@@ -913,7 +926,6 @@ class TransformerNMTModel(HybridBlock):
         params
         """
         super(TransformerNMTModel, self).__init__(prefix=prefix, params=params)
-        #TODO(sxjscience) Improve the error message further to give the user an example
         assert src_vocab_size > 0 and tgt_vocab_size > 0,\
             'Cannot set "src_vocab_size" and "tgt_vocab_size" to negative numbers. ' \
             'Are you creating ' \
@@ -1048,7 +1060,7 @@ class TransformerNMTModel(HybridBlock):
         return enc_out
 
     def decode_seq(self, F, tgt_data, tgt_valid_length, mem_data, mem_valid_length):
-        """
+        """Decode a sequence of inputs
 
         Parameters
         ----------
@@ -1105,7 +1117,7 @@ class TransformerNMTModel(HybridBlock):
     def get_cfg(cls, key=None):
         if key is None:
             # Use Transformer WMT EN-DE Base
-            return transformer_wmt_en_de()
+            return transformer_nmt_base()
         else:
             return transformer_nmt_cfg_reg.create(key)
 
@@ -1148,7 +1160,7 @@ class TransformerNMTModel(HybridBlock):
 
 
 @use_np
-class TransformerNMTInference(HybridBlock, SequenceDecoder):
+class TransformerNMTInference(HybridBlock, BaseStepDecoder):
     def __init__(self, model, prefix=None, params=None):
         """
 

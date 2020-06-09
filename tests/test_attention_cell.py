@@ -6,7 +6,8 @@ from mxnet.gluon import HybridBlock
 from gluonnlp.attention_cell import\
     multi_head_dot_attn, gen_self_attn_mask, gen_mem_attn_mask,\
     MultiHeadAttentionCell,\
-    MultiHeadRelAttentionCell
+    RelAttentionScoreCell
+from gluonnlp.utils.parameter import grad_global_norm
 mx.npx.set_np()
 
 
@@ -14,8 +15,9 @@ mx.npx.set_np()
 @pytest.mark.parametrize('scaled', [True, False])
 @pytest.mark.parametrize('normalized', [True, False])
 @pytest.mark.parametrize('hybridize', [True, False])
+@pytest.mark.parametrize('rel_score_type', ['share_head', 'no_share_head', 'no'])
 @pytest.mark.seed(123)
-def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize):
+def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize, rel_score_type):
     batch_size = 5
     query_length, mem_length = 16, 32
     query_head_units = 8
@@ -25,9 +27,7 @@ def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize)
     seed = 100
     attn_cells = dict()
     for layout in ['NKT', 'NTK', 'TNK']:
-        # TODO(sxjscience) Currently, the einsum test is disabled due to the wrong gradient issue
-        #  See https://github.com/apache/incubator-mxnet/issues/18102
-        for use_einsum in [False]:
+        for use_einsum in [False, True]:
             attn_cells[(layout, use_einsum)] = MultiHeadAttentionCell(
                 query_units=query_units,
                 num_heads=num_heads,
@@ -43,6 +43,12 @@ def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize)
     key_np = np.random.normal(0, 1, (batch_size, num_heads, mem_length, query_head_units))
     value_np = np.random.normal(0, 1, (batch_size, num_heads, mem_length, mem_head_units))
     mask_np = np.random.randint(0, 2, (batch_size, query_length, mem_length))
+    if rel_score_type == 'share_head':
+        rel_scores_np = np.random.normal(0, 1, (query_length, mem_length))
+    elif rel_score_type == 'no_share_head':
+        rel_scores_np = np.random.normal(0, 1, (num_heads, query_length, mem_length))
+    else:
+        rel_scores_np = None
     out_np = None
     score_np = None
     attn_weights_np = None
@@ -50,8 +56,13 @@ def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize)
     query_grad_np = None
     key_grad_np = None
     value_grad_np = None
+    rel_scores_grad_np = None
     for (layout, use_einsum), attn_cell in attn_cells.items():
         mx.npx.random.seed(seed)
+        if rel_score_type != 'no':
+            rel_scores = mx.np.array(rel_scores_np, dtype=np.float32)
+        else:
+            rel_scores = None
         if layout == 'NKT':
             query = mx.np.array(query_np, dtype=np.float32)
             key = mx.np.array(key_np, dtype=np.float32)
@@ -70,8 +81,10 @@ def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize)
         query.attach_grad()
         key.attach_grad()
         value.attach_grad()
+        if rel_scores is not None:
+            rel_scores.attach_grad()
         with mx.autograd.record():
-            out, [score, attn_weights] = attn_cell(query, key, value, mask)
+            out, [score, attn_weights] = attn_cell(query, key, value, mask, rel_scores)
             out.backward()
         if layout == 'NKT':
             assert out.shape == (batch_size, query_length, num_heads * mem_head_units)
@@ -93,6 +106,8 @@ def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize)
             query_grad_np = query.grad.asnumpy()
             key_grad_np = key.grad.asnumpy()
             value_grad_np = value.grad.asnumpy()
+            if rel_score_type != 'no':
+                rel_scores_grad_np = rel_scores.grad.asnumpy()
         else:
             assert stored_layout == 'NKT'
             # Begin to match the output
@@ -103,6 +118,8 @@ def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize)
                 m_query_grad_np = query.grad.asnumpy()
                 m_key_grad_np = key.grad.asnumpy()
                 m_value_grad_np = value.grad.asnumpy()
+                if rel_score_type != 'no':
+                    m_rel_scores_grad_np = rel_scores.grad.asnumpy()
             elif layout == 'NTK':
                 m_out_np = out.asnumpy()
                 m_score_np = score.asnumpy()
@@ -110,6 +127,8 @@ def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize)
                 m_query_grad_np = query.grad.asnumpy().transpose((0, 2, 1, 3))
                 m_key_grad_np = key.grad.asnumpy().transpose((0, 2, 1, 3))
                 m_value_grad_np = value.grad.asnumpy().transpose((0, 2, 1, 3))
+                if rel_score_type != 'no':
+                    m_rel_scores_grad_np = rel_scores.grad.asnumpy()
             elif layout == 'TNK':
                 m_out_np = out.asnumpy().transpose((1, 0, 2))
                 m_score_np = score.asnumpy()
@@ -117,6 +136,8 @@ def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize)
                 m_query_grad_np = query.grad.asnumpy().transpose((1, 2, 0, 3))
                 m_key_grad_np = key.grad.asnumpy().transpose((1, 2, 0, 3))
                 m_value_grad_np = value.grad.asnumpy().transpose((1, 2, 0, 3))
+                if rel_score_type != 'no':
+                    m_rel_scores_grad_np = rel_scores.grad.asnumpy()
             else:
                 raise NotImplementedError
             assert_allclose(m_out_np, out_np, 1E-5, 1E-5)
@@ -125,6 +146,8 @@ def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize)
             assert_allclose(m_query_grad_np, query_grad_np, 1E-5, 1E-5)
             assert_allclose(m_key_grad_np, key_grad_np, 1E-5, 1E-5)
             assert_allclose(m_value_grad_np, value_grad_np, 1E-5, 1E-5)
+            if rel_score_type != 'no':
+                assert_allclose(m_rel_scores_grad_np, rel_scores_grad_np, 1E-5, 1E-5)
 
 
 @pytest.mark.parametrize('scaled', [True, False])
@@ -225,16 +248,14 @@ def test_gen_attn_mask():
 
 @pytest.mark.parametrize('num_heads', [1, 2, 3])
 @pytest.mark.parametrize('method', ['transformer_xl', 'shaw', 't5'])
-@pytest.mark.parametrize('query_add_bias', [False, True, None])
 @pytest.mark.parametrize('bidirectional', [False, True])
 @pytest.mark.parametrize('hybridize', [False, True])
 @pytest.mark.seed(123)
-def test_multi_head_rel_dot_attn(num_heads, method, query_add_bias, bidirectional, hybridize):
+def test_multi_head_rel_attn_score(num_heads, method, bidirectional, hybridize):
     batch_size = 6
     query_length = 25
     mem_length = 20
     query_head_units = 7
-    mem_head_units = 5
 
     # Initialize the attention cell with relative positional embedding
     base_layout = 'NKT'
@@ -250,124 +271,100 @@ def test_multi_head_rel_dot_attn(num_heads, method, query_add_bias, bidirectiona
         max_distance = None
     else:
         raise NotImplementedError
-    base_attn_cell = MultiHeadRelAttentionCell(query_units=num_heads * query_head_units,
-                                               num_heads=num_heads,
-                                               dropout=0.0,
-                                               attention_dropout=0.0,
-                                               query_add_bias=query_add_bias,
-                                               method=method,
-                                               num_buckets=num_buckets,
-                                               max_distance=max_distance,
-                                               layout=base_layout,
-                                               use_einsum=base_use_einsum)
-    base_attn_cell.initialize()
+    base_score_cell = RelAttentionScoreCell(query_units=num_heads * query_head_units,
+                                            num_heads=num_heads,
+                                            dropout=0.0,
+                                            method=method,
+                                            num_buckets=num_buckets,
+                                            max_distance=max_distance,
+                                            layout=base_layout,
+                                            use_einsum=base_use_einsum)
+    base_score_cell.initialize()
     if hybridize:
-        base_attn_cell.hybridize()
+        base_score_cell.hybridize()
     # Generate the data
     query = mx.np.random.normal(0, 1,
                                 (batch_size, num_heads, query_length, query_head_units),
                                 dtype=np.float32)
-    value = mx.np.random.normal(0, 1,
-                                (batch_size, num_heads, mem_length, mem_head_units),
-                                dtype=np.float32)
-    key = mx.np.random.normal(0, 1,
-                              (batch_size, num_heads, mem_length, query_head_units),
-                              dtype=np.float32)
-    out_grad = mx.np.random.normal(0, 1, (batch_size, query_length, num_heads * mem_head_units),
-                                   dtype=np.float32)
+    if method != 't5':
+        rel_score_grad = mx.np.random.normal(0, 1, (batch_size, num_heads, query_length, mem_length),
+                                             dtype=np.float32)
+    else:
+        rel_score_grad = mx.np.random.normal(0, 1,
+                                             (num_heads, query_length, mem_length),
+                                             dtype=np.float32)
     query_positions = mx.np.arange(query_length, dtype=np.int32)
     mem_positions = mx.np.arange(mem_length, dtype=np.int32)
-    rel_positions = mx.np.expand_dims(query_positions, axis=-1) - mx.np.expand_dims(mem_positions,
-                                                                                    axis=0)
+    rel_positions = mx.np.expand_dims(query_positions, axis=-1)\
+                    - mx.np.expand_dims(mem_positions, axis=0)
     mask = mx.np.random.randint(0, 2, (batch_size, query_length, mem_length), dtype=np.int32)
     query.attach_grad()
-    key.attach_grad()
-    value.attach_grad()
     with mx.autograd.record():
-        out = base_attn_cell(query, key, value, rel_positions, mask)
-        out[0].backward(out_grad)
-    original_out = out[0].asnumpy()
-    original_query_grad = query.grad.asnumpy()
-    original_key_grad = key.grad.asnumpy()
-    original_value_grad = value.grad.asnumpy()
-    assert np.linalg.norm(original_query_grad) > 0
-    assert np.linalg.norm(original_key_grad) > 0
-    assert np.linalg.norm(original_value_grad) > 0
+        rel_score = base_score_cell(rel_positions, query)
+        rel_score.backward(rel_score_grad)
+    original_rel_score = rel_score.asnumpy()
+    original_grad_norm = grad_global_norm(base_score_cell.collect_params().values())
+    original_query_grad_norm = np.linalg.norm(query.grad.asnumpy())
+    assert original_grad_norm > 0
     # 1. Test for permutation equivariant
-    # We can permutate the query, key, value, rel_positions and the result should
+    # We can permutate the query, rel_positions and the rel_score_grad and the result should
     # always be the same.
     query_perm = mx.np.array(np.random.permutation(query_length), dtype=np.int32)
     mem_perm = mx.np.array(np.random.permutation(mem_length, ), dtype=np.int32)
 
     query.grad[:] = 0
-    key.grad[:] = 0
-    value.grad[:] = 0
     with mx.autograd.record():
-        out = base_attn_cell(query[:, :, query_perm, :],
-                             key[:, :, mem_perm, :],
-                             value[:, :, mem_perm, :],
-                             rel_positions[query_perm, :][:, mem_perm],
-                             mask[:, query_perm, :][:, :, mem_perm])
-        out[0].backward(out_grad[:, query_perm, :])
-    permutated_out = out[0].asnumpy()
-    query_grad_after_perm = query.grad.asnumpy()
-    key_grad_after_perm = key.grad.asnumpy()
-    value_grad_after_perm = value.grad.asnumpy()
-    assert_allclose(permutated_out, original_out[:, query_perm.asnumpy(), :], 1E-4, 1E-4)
-    assert_allclose(query_grad_after_perm, original_query_grad, 1E-4, 1E-4)
-    assert_allclose(key_grad_after_perm, original_key_grad, 1E-4, 1E-4)
-    assert_allclose(value_grad_after_perm, original_value_grad, 1E-4, 1E-4)
-
+        rel_score = base_score_cell(rel_positions[query_perm, :][:, mem_perm],
+                                    query[:, :, query_perm, :])
+        if method != 't5':
+            rel_score.backward(rel_score_grad[:, :, query_perm, :][:, :, :, mem_perm])
+        else:
+            rel_score.backward(rel_score_grad[:, query_perm, :][:, :, mem_perm])
+    permutated_out = rel_score.asnumpy()
+    permutated_grad_norm = grad_global_norm(base_score_cell.collect_params().values())
+    permutated_query_grad_norm = np.linalg.norm(query.grad.asnumpy())
+    if method != 't5':
+        assert_allclose(
+            original_rel_score[:, :, query_perm.asnumpy(), :][:, :, :, mem_perm.asnumpy()],
+            permutated_out, 1E-4, 1E-4)
+    else:
+        assert_allclose(original_rel_score[:, query_perm.asnumpy(), :][:, :, mem_perm.asnumpy()],
+                        permutated_out, 1E-4, 1E-4)
+    assert_allclose(permutated_grad_norm, original_grad_norm, 1E-4, 1E-4)
+    assert_allclose(permutated_query_grad_norm, original_query_grad_norm, 1E-4, 1E-4)
     # 2. Test for different layout + use/not use einsum
     for layout in ['NKT', 'NTK', 'TNK']:
-        # TODO(sxjscience) Currently, the einsum test is disabled due to the wrong gradient issue
-        #  See https://github.com/apache/incubator-mxnet/issues/18102
-        for use_einsum in [False]:
+        for use_einsum in [False, True]:
             if layout == base_layout and use_einsum == base_use_einsum:
                 continue
-            attn_cell = MultiHeadRelAttentionCell(query_units=num_heads * query_head_units,
-                                                  num_heads=num_heads,
-                                                  dropout=0.0,
-                                                  attention_dropout=0.0,
-                                                  query_add_bias=query_add_bias,
-                                                  method=method,
-                                                  num_buckets=num_buckets,
-                                                  max_distance=max_distance,
-                                                  layout=layout,
-                                                  use_einsum=use_einsum,
-                                                  params=base_attn_cell.collect_params())
-
+            score_cell = RelAttentionScoreCell(query_units=num_heads * query_head_units,
+                                               num_heads=num_heads,
+                                               dropout=0.0,
+                                               method=method,
+                                               num_buckets=num_buckets,
+                                               max_distance=max_distance,
+                                               layout=layout,
+                                               use_einsum=use_einsum)
+            score_cell.initialize()
             if hybridize:
-                attn_cell.hybridize()
+                score_cell.hybridize()
+            for k, param in score_cell.collect_params().items():
+                param_k = k[len(score_cell.prefix):]
+                param.set_data(base_score_cell.collect_params().get(param_k).data())
             query.attach_grad()
-            key.attach_grad()
-            value.attach_grad()
             query.grad[:] = 0
-            key.grad[:] = 0
-            value.grad[:] = 0
             with mx.autograd.record():
                 if layout == 'NKT':
-                    out = attn_cell(query, key, value, rel_positions, mask)
-                    out[0].backward(out_grad)
-                    test_out_np = out[0].asnumpy()
+                    rel_score = score_cell(rel_positions, query)
+                    rel_score.backward(rel_score_grad)
                 elif layout == 'NTK':
-                    out = attn_cell(query.transpose((0, 2, 1, 3)),
-                                    key.transpose((0, 2, 1, 3)),
-                                    value.transpose((0, 2, 1, 3)), rel_positions, mask)
-                    out[0].backward(out_grad)
-                    test_out_np = out[0].asnumpy()
+                    rel_score = score_cell(rel_positions, query.transpose((0, 2, 1, 3)))
+                    rel_score.backward(rel_score_grad)
                 elif layout == 'TNK':
-                    out = attn_cell(query.transpose((2, 0, 1, 3)),
-                                    key.transpose((2, 0, 1, 3)),
-                                    value.transpose((2, 0, 1, 3)), rel_positions, mask)
-                    out[0].backward(out_grad.transpose((1, 0, 2)))
-                    test_out_np = out[0].asnumpy().transpose((1, 0, 2))
+                    rel_score = score_cell(rel_positions, query.transpose((2, 0, 1, 3)))
+                    rel_score.backward(rel_score_grad)
                 else:
                     raise NotImplementedError
-            test_query_grad_np = query.grad.asnumpy()
-            test_key_grad_np = key.grad.asnumpy()
-            test_value_grad_np = value.grad.asnumpy()
-            assert_allclose(test_out_np, original_out, 1E-5, 1E-5)
-            assert_allclose(test_query_grad_np, original_query_grad, 1E-5, 1E-5)
-            assert_allclose(test_key_grad_np, original_key_grad, 1E-5, 1E-5)
-            assert_allclose(test_value_grad_np, original_value_grad, 1E-5, 1E-5)
+            assert_allclose(rel_score.asnumpy(), original_rel_score, 1E-5, 1E-5)
+            layout_query_grad_norm = np.linalg.norm(query.grad.asnumpy())
+            assert_allclose(layout_query_grad_norm, original_query_grad_norm, 1E-5, 1E-5)

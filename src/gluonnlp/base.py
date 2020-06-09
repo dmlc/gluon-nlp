@@ -19,8 +19,12 @@
 """Helper functions."""
 
 import os
+import numpy as np
 
 __all__ = ['get_home_dir', 'get_data_home_dir']
+
+INT_TYPES = (int, np.int32, np.int64)
+FLOAT_TYPES = (float, np.float16, np.float32, np.float64)
 
 
 def get_home_dir():
@@ -52,7 +56,7 @@ def get_model_zoo_checksum_dir():
 
 def get_repo_url():
     """Return the base URL for Gluon dataset and model repository """
-    #TODO(sxjscience) Revise later by calling gluon.utils._get_repo_url
+    # TODO(sxjscience) Revise later by calling gluon.utils._get_repo_url
     default_repo = 'https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/'
     repo_url = os.environ.get('MXNET_GLUON_REPO', default_repo)
     if repo_url[-1] != '/':

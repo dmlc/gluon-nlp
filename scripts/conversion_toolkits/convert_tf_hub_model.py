@@ -1,23 +1,24 @@
-import argparse
-import json
+import tensorflow_hub as hub
+import tensorflow.compat.v1 as tf
 import os
 import re
+import json
 import shutil
-import collections
-import io
 import logging
-from numpy.testing import assert_allclose
+import argparse
+
 import mxnet as mx
 import numpy as np
-from gluonnlp.utils.misc import sha1sum, logging_config
+from numpy.testing import assert_allclose
+
+from gluonnlp.data.vocab import Vocab
+from gluonnlp.utils.misc import sha1sum, naming_convention, logging_config
 from gluonnlp.models.bert import BertModel, BertForMLM
 from gluonnlp.models.albert import AlbertModel, AlbertForMLM
-from gluonnlp.data.tokenizers import SentencepieceTokenizer
-from gluonnlp.data.vocab import Vocab
+from gluonnlp.data.tokenizers import SentencepieceTokenizer, HuggingFaceWordPieceTokenizer
+
 import tensorflow
 USE_TF_V1 = tensorflow.version.VERSION.split('.')[0] < '2'
-import tensorflow.compat.v1 as tf
-import tensorflow_hub as hub
 tf.disable_eager_execution()
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
@@ -30,8 +31,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Convert the TF pretrained model to Gluon')
     parser.add_argument('--tf_hub_model_path', type=str,
                         help='Directory of the model downloaded from TF hub.')
-    parser.add_argument('--model_type', type=str, choices=['bert','albert'],
-                        help='The name of the model to be converted. Only Bert and Albert are currently supported.')
+    parser.add_argument('--model_type', type=str, choices=['bert', 'albert'],
+                        help='The name of the model to be converted. '
+                             'Only Bert and Albert are currently supported.')
     parser.add_argument('--save_dir', type=str, default=None,
                         help='directory path to save the converted pretrained model.')
     parser.add_argument('--gpu', type=int, default=None,
@@ -59,6 +61,9 @@ def convert_tf_config(json_cfg_path, vocab_size, model_type):
     with open(json_cfg_path, encoding='utf-8') as f:
         json_cfg = json.load(f)
     if model_type == 'bert':
+        # For bert model, the config file are copied from local configuration file
+        # leaving the vocab_size indistinguishable. Actually, the verification of
+        # vocab_size would be done in the process of embedding weights conversion.
         cfg = BertModel.get_cfg().clone()
     elif model_type == 'albert':
         assert vocab_size == json_cfg['vocab_size']
@@ -107,7 +112,7 @@ def convert_tf_assets(tf_assets_dir, model_type):
         elif ele.endswith('.json'):
             assert json_cfg_path is None
             json_cfg_path = ele
-        if ele.endswith('.txt'):
+        elif ele.endswith('.txt'):
             assert vocab_path is None
             vocab_path = ele
     assert json_cfg_path is not None and \
@@ -124,6 +129,7 @@ def convert_tf_assets(tf_assets_dir, model_type):
         vocab_size = len(open(vocab_path, 'rU').readlines())
     cfg = convert_tf_config(json_cfg_path, vocab_size, model_type)
     return cfg, vocab_path, spm_model_path
+
 
 CONVERT_MAP_TF1 = [
     ('bert/', ''),
@@ -142,16 +148,16 @@ CONVERT_MAP_TF1 = [
     ('group', 'groups'),
     ('layer', 'layers'),
     ('embeddings', 'embed'),
-    ('attention/output/LayerNorm', 'ln'), #bert
-    ('output/LayerNorm', 'ffn_ln'), #bert
-    ('LayerNorm_1', 'ffn_ln'), #albert
-    ('LayerNorm', 'ln'),  #albert
+    ('attention/output/LayerNorm', 'ln'),  # bert
+    ('output/LayerNorm', 'ffn_ln'),  # bert
+    ('LayerNorm_1', 'ffn_ln'),  # albert
+    ('LayerNorm', 'ln'),  # albert
     ('ffn_1/', ''),
-    ('attention_1', 'attention'), #albert
+    ('attention_1', 'attention'),  # albert
     ('attention/output/dense', 'proj'),
     ('intermediate/dense', 'ffn_ffn1'),
-    ('intermediate/output/dense', 'ffn_ffn2'), #albert
-    ('output/dense', 'ffn_ffn2'), #bert
+    ('intermediate/output/dense', 'ffn_ffn2'),  # albert
+    ('output/dense', 'ffn_ffn2'),  # bert
     ('output/', ''),
     ('pooler/dense', 'pooler'),
     ('kernel', 'weight'),
@@ -166,12 +172,12 @@ CONVERT_MAP_TF2 = [
     ('predictions/output_bias', 'word_embed_bias'),
     ('predictions', 'mlm'),
     ('word_embeddings/embeddings', 'word_embed_weight'),
-    ('embedding_postprocessor/type_embeddings', 'token_type_embed_weight'), #bert
-    ('embedding_postprocessor/position_embeddings', 'token_pos_embed_embed_weight'), #bert
-    ('embedding_postprocessor/layer_norm', 'embed_ln'), #bert
-    ('position_embedding/embeddings', 'token_pos_embed_embed_weight'), #albert
-    ('type_embeddings/embeddings', 'token_type_embed_weight'), #albert
-    ('embeddings/layer_norm', 'embed_ln'), #albert
+    ('embedding_postprocessor/type_embeddings', 'token_type_embed_weight'),  # bert
+    ('embedding_postprocessor/position_embeddings', 'token_pos_embed_embed_weight'),  # bert
+    ('embedding_postprocessor/layer_norm', 'embed_ln'),  # bert
+    ('position_embedding/embeddings', 'token_pos_embed_embed_weight'),  # albert
+    ('type_embeddings/embeddings', 'token_type_embed_weight'),  # albert
+    ('embeddings/layer_norm', 'embed_ln'),  # albert
     ('embedding_projection', 'embed_factorized_proj'),
     ('transformer', 'enc_groups_0'),
     ('self_attention_output', 'proj'),
@@ -240,16 +246,13 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    # a temporary folder to save converted files
-    tmp_dir = os.path.expanduser(os.path.join(save_dir, 'tmp'))
-    if not os.path.exists(tmp_dir):
-        os.makedirs(tmp_dir)
 
     cfg, vocab_path, spm_model_path = convert_tf_assets(os.path.join(hub_model_dir, 'assets'),
                                                         model_type)
-    with open(os.path.join(tmp_dir, 'model.yml'), 'w') as of:
+    with open(os.path.join(save_dir, 'model.yml'), 'w') as of:
         of.write(cfg.dump())
     if spm_model_path:
+        # Sentencepiece Tokenizer that used in albert model
         tokenizer = SentencepieceTokenizer(spm_model_path)
         new_vocab = Vocab(tokenizer.vocab.all_tokens,
                           unk_token='<unk>',
@@ -257,10 +260,22 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
                           cls_token='[CLS]',
                           sep_token='[SEP]',
                           mask_token='[MASK]')
-        new_vocab.save(os.path.join(tmp_dir, 'vocab.json'))
-        shutil.copy(spm_model_path, os.path.join(tmp_dir, 'spm.model'))
+        shutil.copy(spm_model_path, os.path.join(save_dir, 'spm.model'))
     elif vocab_path:
-        shutil.copy(vocab_path, os.path.join(tmp_dir, 'vocab.json'))
+        # Wordpiece Tokenizer that used in bert and electra model
+
+        # In this step, the vocabulary is converted with the help of the tokenizer,
+        # so whether tokenzier is case-dependent does not matter.
+        new_vocab = HuggingFaceWordPieceTokenizer(
+                        vocab_file=vocab_path,
+                        unk_token='[UNK]',
+                        pad_token='[PAD]',
+                        cls_token='[CLS]',
+                        sep_token='[SEP]',
+                        mask_token='[MASK]',
+                        lowercase=True).vocab
+
+    new_vocab.save(os.path.join(save_dir, 'vocab.json'))
 
     #test input data
     batch_size = 2
@@ -268,14 +283,14 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
     num_mask = 5
     input_ids = np.random.randint(0, cfg.MODEL.vocab_size, (batch_size, seq_length))
     valid_length = np.random.randint(seq_length // 2, seq_length, (batch_size,))
-    input_mask = np.broadcast_to(np.arange(seq_length).reshape(1, -1), (batch_size, seq_length))\
-                 < np.expand_dims(valid_length, 1)
+    input_mask = np.broadcast_to(np.arange(seq_length).reshape(1, -1), (batch_size, seq_length)) \
+        < np.expand_dims(valid_length, 1)
     segment_ids = np.random.randint(0, 2, (batch_size, seq_length))
     mlm_positions = np.random.randint(0, seq_length // 2, (batch_size, num_mask))
     TF1_Hub_Modules = True
     try:
         tf_model = hub.Module(hub_model_dir, trainable=True)
-        #see https://www.tensorflow.org/hub/tf1_hub_module for details
+        # see https://www.tensorflow.org/hub/tf1_hub_module for details
         logging.info('The model is loaded as the TF1 Hub Model')
         tf_input_ids = tf.constant(input_ids, dtype=np.int32)
         tf_input_mask = tf.constant(input_mask, dtype=np.int32)
@@ -299,7 +314,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
         logging.warning('The provided model directory is not valid for TF1 Hub Modules. '
                         'Now try to load as TF2 SavedModels')
         bert_layer = hub.KerasLayer(hub_model_dir, trainable=True)
-        #see https://www.tensorflow.org/hub/tf2_saved_model for details
+        # see https://www.tensorflow.org/hub/tf2_saved_model for details
         logging.info('The model is loaded as the TF2 SavedModel')
         TF1_Hub_Modules = False
         input_word_ids = tf.keras.layers.Input(shape=(seq_length), dtype=tf.int32,
@@ -311,9 +326,9 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
         pooled_output, sequence_output = bert_layer([input_word_ids, input_word_mask,
                                                      segment_type_ids])
         tf_model = tf.keras.Model(
-                inputs=[input_word_ids, input_word_mask, segment_type_ids],
-                outputs=[pooled_output, sequence_output]
-                )
+            inputs=[input_word_ids, input_word_mask, segment_type_ids],
+            outputs=[pooled_output, sequence_output]
+        )
         tf_params = {}
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
@@ -326,7 +341,8 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
             tf_params = sess.run(tf_params)
 
     if USE_TF_V1 and TF1_Hub_Modules:
-        tf_params_by_read = read_tf_checkpoint(os.path.join(hub_model_dir, 'variables', 'variables'))
+        tf_params_by_read = read_tf_checkpoint(
+            os.path.join(hub_model_dir, 'variables', 'variables'))
         for k in tf_params:
             assert_allclose(tf_params[k], tf_params_by_read[k])
 
@@ -370,7 +386,6 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
             model = gluon_model
             contextual_embedding, pooled_output = model(mx_input_ids, mx_token_types,
                                                         mx_valid_length)
-
 
         # replace tensorflow parameter names with gluon parameter names
         mx_params = model.collect_params()
@@ -416,9 +431,9 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
                 query_weight = query_weight.reshape((cfg.MODEL.units, -1))
                 key_weight = key_weight.reshape((cfg.MODEL.units, -1))
                 value_weight = value_weight.reshape((cfg.MODEL.units, -1))
-                query_bias = query_bias.reshape((-1, ))
-                key_bias = key_bias.reshape((-1, ))
-                value_bias = value_bias.reshape((-1, ))
+                query_bias = query_bias.reshape((-1,))
+                key_bias = key_bias.reshape((-1,))
+                value_bias = value_bias.reshape((-1,))
             # Merge query_weight, key_weight, value_weight to mx_params
             mx_params['enc_{}_attn_qkv_weight'.format(mx_prefix)].set_data(
                 np.concatenate([query_weight, key_weight, value_weight], axis=1).T)
@@ -428,7 +443,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
 
         tf_prefix = None
         if model_type == 'bert':
-            assert all([re.match(r'^enc_layers_[\d]+_attn_qkv_(weight|bias)$',key)
+            assert all([re.match(r'^enc_layers_[\d]+_attn_qkv_(weight|bias)$', key)
                         is not None for key in all_keys])
             for layer_id in range(cfg.MODEL.num_layers):
                 mx_prefix = 'layers_{}'.format(layer_id)
@@ -450,61 +465,53 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
             raise NotImplementedError
 
         if not is_mlm:
-            #test conversion results for backbone model
+            # test conversion results for backbone model
             if test_conversion:
                 tf_contextual_embedding = tf_token_outputs_np['sequence_output']
                 tf_pooled_output = tf_token_outputs_np['pooled_output']
-                contextual_embedding, pooled_output = model(mx_input_ids, mx_token_types, mx_valid_length)
+                contextual_embedding, pooled_output = \
+                    model(mx_input_ids, mx_token_types, mx_valid_length)
                 assert_allclose(pooled_output.asnumpy(), tf_pooled_output, 1E-3, 1E-3)
                 for i in range(batch_size):
                     ele_valid_length = valid_length[i]
                     assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
                                     tf_contextual_embedding[i, :ele_valid_length, :], 1E-3, 1E-3)
-            model.save_parameters(os.path.join(tmp_dir, 'model.params'), deduplicate=True)
+            model.save_parameters(os.path.join(save_dir, 'model.params'), deduplicate=True)
             logging.info('Convert the backbone model in {} to {}/{}'.format(hub_model_dir,
-                                                                            tmp_dir, 'model.params'))
+                                                                            save_dir, 'model.params'))
         elif is_mlm:
-            #test conversion results for mlm model
-            #TODO, figure out how to check the mlm model from TF2 SavedModel
+            # test conversion results for mlm model
+            # TODO(zheyuye), figure out how to check the mlm model from TF2 SavedModel
             if test_conversion and TF1_Hub_Modules:
                 tf_contextual_embedding = tf_mlm_outputs_np['sequence_output']
                 tf_pooled_output = tf_mlm_outputs_np['pooled_output']
                 tf_mlm_scores = tf_mlm_outputs_np['mlm_logits'].reshape((batch_size, num_mask, -1))
-                contextual_embedding, pooled_output, mlm_scores = model(mx_input_ids, mx_token_types, mx_valid_length, mx_masked_positions)
+                contextual_embedding, pooled_output, mlm_scores = \
+                    model(mx_input_ids, mx_token_types, mx_valid_length, mx_masked_positions)
                 assert_allclose(pooled_output.asnumpy(), tf_pooled_output, 1E-3, 1E-3)
                 assert_allclose(mlm_scores.asnumpy(), tf_mlm_scores, 1E-3, 1E-3)
                 for i in range(batch_size):
                     ele_valid_length = valid_length[i]
                     assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
                                     tf_contextual_embedding[i, :ele_valid_length, :], 1E-3, 1E-3)
-            model.save_parameters(os.path.join(tmp_dir, 'model_mlm.params'), deduplicate=True)
+            model.save_parameters(os.path.join(save_dir, 'model_mlm.params'), deduplicate=True)
             logging.info('Convert the MLM model in {} to {}/{}'.format(hub_model_dir,
-                                                                       tmp_dir, 'model_mlm.params'))
+                                                                       save_dir, 'model_mlm.params'))
         else:
             raise NotImplementedError
 
-        #TODO(zheyuye) the gradient checking could be explored in further development
-
-    # naming convention and
-    def get_new_name(origin_folder, file_name):
-        long_hash = sha1sum(os.path.join(origin_folder, file_name))
-        file_prefix, file_sufix = file_name.split('.')
-        new_name = '{file_prefix}-{short_hash}.{file_sufix}'.format(
-                file_prefix=file_prefix,
-                short_hash=long_hash[:8],
-                file_sufix=file_sufix)
-        return new_name, long_hash
+        # TODO(zheyuye) the gradient checking could be explored in further development
 
     logging.info('Conversion finished!')
     logging.info('Statistics:')
 
-    file_names = os.listdir(tmp_dir)
-    for file_name in file_names:
-        new_name, long_hash = get_new_name(tmp_dir, file_name)
-        tep_file = os.path.join(tmp_dir, file_name)
-        coverted_file = os.path.join(save_dir, new_name)
-        shutil.copy(tep_file, coverted_file)
-        file_size = os.path.getsize(coverted_file)
+    old_names = os.listdir(save_dir)
+    for old_name in old_names:
+        new_name, long_hash = naming_convention(save_dir, old_name)
+        old_path = os.path.join(save_dir, old_name)
+        new_path = os.path.join(save_dir, new_name)
+        shutil.move(old_path, new_path)
+        file_size = os.path.getsize(new_path)
         logging.info('\t{}/{} {} {}'.format(save_dir, new_name, long_hash, file_size))
 
 

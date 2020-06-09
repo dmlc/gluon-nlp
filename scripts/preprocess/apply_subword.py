@@ -5,6 +5,7 @@ import numpy as np
 import time
 from gluonnlp.data import tokenizers
 
+
 def get_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -52,6 +53,7 @@ def get_parser():
     
     return parser
 
+
 class ParallelCorpusApplyer:
     def __init__(self, corpus, tokenizer_model, output_type):
         self.chunk_size = 1024 * 1024
@@ -97,7 +99,12 @@ class ParallelCorpusApplyer:
                 if self.output_type == int:
                     ele_tokens = [str(token) for token in ele_tokens]
                 tokenized_sentences.append(' '.join(ele_tokens))
-            return tokenized_sentences
+            sentence_num = len(tokenized_sentences)
+            token_num = sum([len(sentence) for sentence in tokenized_sentences])
+            unk = self.tokenizer_model.vocab.unk_token
+            unk_num = sum(sentence.count(unk) for sentence in tokenized_sentences)
+            return tokenized_sentences, sentence_num, token_num, unk_num
+
 
 def main(args):
     start = time.time()
@@ -141,17 +148,29 @@ def main(args):
     applyer = ParallelCorpusApplyer(args.corpus, tokenizer_model, output_type)
     with open(args.save_path, 'w', encoding='utf-8', newline='\n') as fo:
         with Pool(args.num_process) as pool:
-            for i, tokenized_sentences in \
+            sentence_count = token_count = unk_count = 0
+            for i, (tokenized_sentences, sentence_num, token_num, unk_num) in \
                 enumerate(pool.imap(applyer.process_chunk, applyer.chunk_iter())):
                 fo.write('\n'.join(tokenized_sentences))
                 fo.write('\n')
+                sentence_count += sentence_num
+                token_count += token_num
+                unk_count += unk_num
+                if (i + 1) % 100 == 0:
+                    print('Chunk {} , #Lines processed: {}'
+                          .format(i + 1, sentence_count))
     end = time.time()
-    print('Done, Time spent {}\n'.format(end - start))
+    print('Done, #Lines processed {}, Avg tokens of sentences {:.1f},'
+          'Unknown rate {:.1f}%, Time spent {}'
+          .format(sentence_count, token_count / sentence_count,
+                  unk_count * 100 / token_count, end - start))    
+
 
 def cli_main():
     parser = get_parser()
     args = parser.parse_args()
     main(args)
+
 
 if __name__ == '__main__':
     cli_main()

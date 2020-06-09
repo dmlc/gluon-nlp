@@ -26,38 +26,102 @@ from .layers import SinusoidalPositionalEmbedding,\
 from typing import Optional
 
 
-# TODO(sxjscience) avoid the hacks
-def gen_self_attn_mask(F, data, valid_length=None, dtype=np.float32, attn_type='full'):
-    """Generate the mask used for the encoder, i.e, self-attention
+# TODO(sxjscience)
+#  We can optimize the whole function by writing a custom-op,
+#  or automatically fuse these operators.
+def gen_self_attn_mask(F, data,
+                       valid_length=None,
+                       dtype: type = np.float32,
+                       attn_type: str = 'full'):
+    """Generate the mask used for the encoder, i.e, self-attention.
+
+    In our implementation, 1 --> not masked, 0 --> masked
+
+    Let's consider the data with two samples:
+
+    data =
+        [['I',   'can', 'now',   'use', 'numpy', 'in',  'Gluon@@', 'NLP'  ],
+         ['May', 'the', 'force', 'be',  'with',  'you', '<PAD>',   '<PAD>']]
+    valid_length =
+        [8, 6]
+
+    - attn_type = 'causal'
+        Each token will attend to itself + the tokens before.
+        It will not attend to tokens in the future.
+
+        For our example, the mask of the first sample is
+                   ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
+        'I':         1,    0,     0,     0,      0,     0,      0,      0
+        'can':       1,    1,     0,     0,      0,     0,      0,      0
+        'now':       1,    1,     1,     0,      0,     0,      0,      0
+        'use':       1,    1,     1,     1,      0,     0,      0,      0
+        'numpy':     1,    1,     1,     1,      1,     0,      0,      0
+        'in':        1,    1,     1,     1,      1,     1,      0,      0
+        'Gluon@@':   1,    1,     1,     1,      1,     1,      1,      0
+        'NLP':       1,    1,     1,     1,      1,     1,      1,      1
+
+        The mask of the second sample is
+                   ['May', 'the', 'force', 'be', 'with', 'you', '<PAD>', '<PAD>']
+        'May':        1,    0,     0,     0,      0,     0,      0,      0
+        'the':        1,    1,     0,     0,      0,     0,      0,      0
+        'force':      1,    1,     1,     0,      0,     0,      0,      0
+        'be':         1,    1,     1,     1,      0,     0,      0,      0
+        'with':       1,    1,     1,     1,      1,     0,      0,      0
+        'you':        1,    1,     1,     1,      1,     1,      0,      0
+        '<PAD>':      0,    0,     0,     0,      0,     0,      0,      0
+        '<PAD>':      0,    0,     0,     0,      0,     0,      0,      0
+
+
+    - attn_type = 'full'
+        Each token will attend to both the tokens before and in the future
+
+        For our example, the mask of the first sample is
+                   ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
+        'I':         1,    1,     1,     1,      1,     1,      1,      1
+        'can':       1,    1,     1,     1,      1,     1,      1,      1
+        'now':       1,    1,     1,     1,      1,     1,      1,      1
+        'use':       1,    1,     1,     1,      1,     1,      1,      1
+        'numpy':     1,    1,     1,     1,      1,     1,      1,      1
+        'in':        1,    1,     1,     1,      1,     1,      1,      1
+        'Gluon@@':   1,    1,     1,     1,      1,     1,      1,      1
+        'NLP':       1,    1,     1,     1,      1,     1,      1,      1
+
+        The mask of the second sample is
+                   ['May', 'the', 'force', 'be', 'with', 'you', '<PAD>', '<PAD>']
+        'May':        1,    1,     1,     1,      1,     1,      0,      0
+        'the':        1,    1,     1,     1,      1,     1,      0,      0
+        'force':      1,    1,     1,     1,      1,     1,      0,      0
+        'be':         1,    1,     1,     1,      1,     1,      0,      0
+        'with':       1,    1,     1,     1,      1,     1,      0,      0
+        'you':        1,    1,     1,     1,      1,     1,      0,      0
+        '<PAD>':      0,    0,     0,     0,      0,     0,      0,      0
+        '<PAD>':      0,    0,     0,     0,      0,     0,      0,      0
 
     Parameters
     ----------
     F :
     data :
-        Shape (batch_size, seq_length, C)
+        The data. Shape (batch_size, seq_length, C)
     valid_length :
         Shape (batch_size,)
     dtype
-        Data type
+        Data type of the mask
     attn_type : str
         Can be 'full' or 'causal'
 
     Returns
     -------
-    mask :
+    mask
         Shape (batch_size, seq_length, seq_length)
     """
     if attn_type == 'full':
         if valid_length is not None:
             valid_length = valid_length.astype(dtype)
-            #TODO(sxjscience) Should add a dtype flag to arange_like
             steps = F.npx.arange_like(data, axis=1)  # (seq_length,)
-            # TODO(sxjscience) Fix this. Currently we need to cast to dtype first,
-            #  see https://github.com/apache/incubator-mxnet/issues/16650
             mask1 = (F.npx.reshape(steps, (1, 1, -1))
-                     < F.npx.reshape(valid_length, (-2, 1, 1))).astype(dtype)
+                     < F.npx.reshape(valid_length, (-2, 1, 1)))
             mask2 = (F.npx.reshape(steps, (1, -1, 1))
-                     < F.npx.reshape(valid_length, (-2, 1, 1))).astype(dtype)
+                     < F.npx.reshape(valid_length, (-2, 1, 1)))
             mask = mask1 * mask2
         else:
             # TODO(sxjscience) optimize
@@ -66,7 +130,6 @@ def gen_self_attn_mask(F, data, valid_length=None, dtype=np.float32, attn_type='
             mask = batch_ones.reshape((-1, 1, 1)) * seq_len_ones.reshape((1, -1, 1))\
                    * seq_len_ones.reshape((1, 1, -1))
     elif attn_type == 'causal':
-        #TODO(sxjscience) dtype flag to arange_like
         steps = F.npx.arange_like(data, axis=1)
         # mask: (seq_length, seq_length)
         # batch_mask: (batch_size, seq_length)
@@ -80,11 +143,41 @@ def gen_self_attn_mask(F, data, valid_length=None, dtype=np.float32, attn_type='
             mask = mask * batch_ones.reshape((-1, 1, 1))
     else:
         raise NotImplementedError
+    mask = mask.astype(dtype)
     return mask
 
 
 def gen_mem_attn_mask(F, mem, mem_valid_length, data, data_valid_length=None, dtype=np.float32):
-    """Generate the mask used for the decoder. It implements the causal attention mask.
+    """Generate the mask used for the decoder. All query slots are attended to the memory slots.
+
+    In our implementation, 1 --> not masked, 0 --> masked
+
+    Let's consider the data + mem with a batch of two samples:
+
+    mem = [['I',   'can', 'now',   'use'],
+           ['May', 'the', 'force', '<PAD>']]
+    mem_valid_length =
+        [4, 3]
+    data =
+        [['numpy', 'in',    'Gluon@@', 'NLP'  ],
+         ['be',    'with',  'you',     '<PAD>']]
+    data_valid_length =
+        [4, 3]
+
+    For our example, the mask of the first sample is
+                   ['I', 'can', 'now', 'use']
+        'numpy':     1,    1,     1,     1
+        'in':        1,    1,     1,     1
+        'Gluon@@':   1,    1,     1,     1
+        'NLP':       1,    1,     1,     1
+
+    The mask of the second sample is
+                   ['be', 'with', 'you', '<PAD>']
+        'May':        1,    1,     1,     0
+        'the':        1,    1,     1,     0
+        'force':      1,    1,     1,     0
+        '<PAD>':      0,    0,     0,     0
+
 
     Parameters
     ----------
@@ -122,13 +215,6 @@ def gen_mem_attn_mask(F, mem, mem_valid_length, data, data_valid_length=None, dt
 
 
 # TODO(sxjscience) Directly implement a kernel for masked softmax
-# TODO(sxjscience) Consider to change the definition of mask. Should we do this?
-#  Here, we have
-#       1 --> The element is not masked
-#       0 --> The element is masked
-#       Here, this is not very intuitive and we may revise the design. We did this because the
-#       masked positions are scarce and we could potentially benefit from having a sparse mask with
-#       just integers.
 def masked_softmax(F, att_score, mask, dtype=np.float32, axis: int = -1):
     """Ignore the masked elements when calculating the softmax. The mask can be broadcastable.
 
@@ -232,11 +318,8 @@ def l2_normalize(F, data, axis=-1, eps=1E-6):
     return ret
 
 
-# TODO(sxjscience) Add layout flag to attention
-# TODO(sxjscience) Add the flag of switching to einsum.
-#  However einsum is
-#   1) super-slow: https://github.com/apache/incubator-mxnet/issues/18043
-#   2) wrong gradient: https://github.com/apache/incubator-mxnet/issues/18102
+# TODO(sxjscience) Default to einsum. Current it is not the default because
+#   1) einsum is super-slow: https://github.com/apache/incubator-mxnet/issues/18043
 def dot_attn_score(F, query, key, scaled=True, normalized=False, eps=1E-6,
                    layout='NT'):
     """The inner function call to calculate the score used in dot-product attention.
@@ -298,7 +381,10 @@ def dot_attn_score(F, query, key, scaled=True, normalized=False, eps=1E-6,
     return scores
 
 
-def multi_head_dot_attn(F, query, key, value, mask=None, dropout: float = 0.0,
+def multi_head_dot_attn(F, query, key, value,
+                        mask=None,
+                        edge_scores=None,
+                        dropout: float = 0.0,
                         scaled: bool = True, normalized: bool = False,
                         eps: float = 1E-6, query_head_units: Optional[int] = None,
                         layout: str = 'NKT',
@@ -314,6 +400,8 @@ def multi_head_dot_attn(F, query, key, value, mask=None, dropout: float = 0.0,
     scaled is True, normalized is True:
         D(h_q, h_k) = <h_q / ||h_q||, h_k / ||h_k||> / sqrt(dim_q)
 
+    If edge_scores is provided, we will calcualte the attention as
+        scores = D(h_q, h_k) + EdgeScore_{q, k}
 
     Parameters
     ----------
@@ -344,6 +432,9 @@ def multi_head_dot_attn(F, query, key, value, mask=None, dropout: float = 0.0,
             Shape (mem_length, batch_size, num_heads, value_dim)
     mask
         Mask between query and memory. Shape (batch_size, query_length, mem_length)
+    edge_scores
+        The edge attention score. Shape can be any shape that is broadcastable to
+        (batch_size, num_heads, query_length, mem_length)
     dropout
         Dropout rate
     scaled
@@ -361,11 +452,11 @@ def multi_head_dot_attn(F, query, key, value, mask=None, dropout: float = 0.0,
         The epsilon value used in L2 normalization
     query_head_units
         The units of each query head. If it's empty, we will estimate it via the
-        shape_array of the
+        shape_array of the query.
     layout
         This stands for the layout of the attention cell. The shape of the input/output will depend
-        on the layout. Currently, we support 'NKT' and 'TNK' in which 'N' means the batch_size,
-        'K' means the head, and 'T' means the length dimension.
+        on the layout. Currently, we support 'NKT', 'NTK' and 'TNK' in which
+        'N' means the batch_size, 'K' means the head, and 'T' means the length dimension.
     use_einsum
         Whether to use einsum for the computation
 
@@ -389,12 +480,11 @@ def multi_head_dot_attn(F, query, key, value, mask=None, dropout: float = 0.0,
     if scaled:
         if query_head_units is None:
             query_shape = F.npx.shape_array(query)
-            # TODO(sxjscience) Remove .astype(np.float32).
-            #  Wait for https://github.com/apache/incubator-mxnet/issues/18084
-            scale = F.np.sqrt(query_shape[-1].astype(np.float32))
+            scale = F.np.sqrt(query_shape[-1])
         else:
             scale = math.sqrt(query_head_units)
-        query = query / scale
+    else:
+        scale = None
     if layout == 'NKT':
         # 1. Expand the dimension of the mask:
         #   (B, L_query, L_mem) --> (B, 1, L_query, L_mem)
@@ -403,6 +493,10 @@ def multi_head_dot_attn(F, query, key, value, mask=None, dropout: float = 0.0,
         # 2. Calculate the attention weights
         #   Score: (B, N, L_query, C_Q) X (B, N, L_mem, C_Q) --> (B, N, L_query, L_mem)
         scores = F.npx.batch_dot(query, key, transpose_b=True)
+        if edge_scores is not None:
+            scores = scores + edge_scores
+        if scaled:
+            scores = scores / scale
         attn_weights = masked_softmax(F, scores, mask, axis=-1)
         attn_weights = F.npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
@@ -424,6 +518,10 @@ def multi_head_dot_attn(F, query, key, value, mask=None, dropout: float = 0.0,
         else:
             scores = F.npx.batch_dot(F.np.swapaxes(query, 1, 2), F.np.swapaxes(key, 1, 2),
                                      transpose_b=True)
+        if edge_scores is not None:
+            scores = scores + edge_scores
+        if scaled:
+            scores = scores / scale
         attn_weights = masked_softmax(F, scores, mask)
         attn_weights = F.npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
@@ -451,6 +549,10 @@ def multi_head_dot_attn(F, query, key, value, mask=None, dropout: float = 0.0,
         else:
             scores = F.npx.batch_dot(query.transpose((1, 2, 0, 3)),
                                      key.transpose((1, 2, 3, 0)))
+        if edge_scores is not None:
+            scores = scores + edge_scores
+        if scaled:
+            scores = scores / scale
         attn_weights = masked_softmax(F, scores, mask)
         attn_weights = F.npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
@@ -474,7 +576,7 @@ def multi_head_dot_attn(F, query, key, value, mask=None, dropout: float = 0.0,
 class MultiHeadAttentionCell(HybridBlock):
     """The multi-head attention
 
-    out = softmax(<Q_i, K_j>) V
+    out = softmax(<Q_i, K_j> + R_{i, j}) V
 
     We support multiple layouts
 
@@ -499,7 +601,7 @@ class MultiHeadAttentionCell(HybridBlock):
     """
     def __init__(self, query_units=None, num_heads=None, attention_dropout=0.0,
                  scaled: bool = True, normalized: bool = False, eps: float = 1E-6,
-                 dtype='float32', layout='NKT', use_einsum=False,
+                 dtype='float32', layout='NTK', use_einsum=False,
                  prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         self._query_units = query_units
@@ -519,11 +621,13 @@ class MultiHeadAttentionCell(HybridBlock):
         else:
             self._query_head_units = None
 
-    def hybrid_forward(self, F, query, key, value, mask=None):
+    def hybrid_forward(self, F, query, key, value, mask=None, edge_scores=None):
         return multi_head_dot_attn(F, query=query, key=key, value=value,
-                                   mask=mask, dropout=self._attention_dropout,
+                                   mask=mask, edge_scores=edge_scores,
+                                   dropout=self._attention_dropout,
                                    scaled=self._scaled, normalized=self._normalized,
-                                   eps=self._eps, query_head_units=self._query_head_units,
+                                   eps=self._eps,
+                                   query_head_units=self._query_head_units,
                                    layout=self._layout, use_einsum=self._use_einsum)
 
     def __repr__(self):
@@ -548,67 +652,59 @@ class MultiHeadAttentionCell(HybridBlock):
                         dtype=self._dtype)
 
 
-class MultiHeadRelAttentionCell(HybridBlock):
-    """The multi-head attention with relative positional encoding
+class RelAttentionScoreCell(HybridBlock):
+    """Get the score based on the query and relative position index. This is used for implementing
+     relative attention.
 
-    out = softmax(\frac{Q K^T + R}{\sqrt(d)}) V
+    For the multi-head attention with relative positional encoding, we have the formula:
+
+    out = softmax(\frac(Q K^T + R}{\sqrt(d)}) V
 
     Here, R is the relative positional encoding matrix. Usually, R_{i, j} is calculate based on the
     relative positional difference $i - j$.
 
-    Currently, we support the following three ways of calculating R_{i, j}
+    This function aims at generating the R matrix given the query and the relative positions.
+    We support the following methods:
 
-    - method = "transformer_xl"
+    - method = 'transformer_xl'
         R_{i, j} = <Q, W S_{i - j}>, in which S_{i, j} is the sinusoidal embedding and
         W is a Dense layer that maps S_{i - j} to the same dimension as the query.
         This is proposed in paper:
 
         - [ACL2019] Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context
 
-    - method = "shaw"
-        R_{i, j} = E_{i - j}, in which E_{i - j} is the learned positional embedding
+    - method = 'shaw'
+        R_{i, j} = < Q, E_{i - j}>, in which E_{i - j} is the learned positional embedding
         This is proposed in paper:
 
         - [NAACL2018] Self-Attention with Relative Position Representations
-
-    - method = "t5"
+    - method = 't5'
         R_{i, j} = E_{i - j}, in which E_{i - j} is the bucket positional embedding.
         This is proposed in paper:
 
         - [Arxiv2019] Exploring the Limits of Transfer Learning with a Unified
         Text-to-Text Transformer
-        
-    Like in MultiHeadAttentionCell, we support different layouts:
+
+    Like in MultiHeadAttentionCell, we support different layouts to cope with the query matrix.
 
     - layout="NKT"
         query: (B, K, L_q, C_k)
-        key: (B, K, L_m, C_k)
-        value: (B, K, L_m, C_v)
-        out: (B, L_q, K * C_v)
     - layout="NTK"
         query: (B, L_q, K, C_k)
-        key: (B, L_m, K, C_k)
-        value: (B, L_m, K, C_v)
-        out: (B, L_q, K * C_v)
     - layout="TNK"
         query: (L_q, B, K, C_k)
-        key: (L_m, B, K, C_k)
-        value: (L_m, B, K, C_v)
-        out: (L_q, B, K * C_v)
 
     """
-    def __init__(self, query_units: int,
-                 num_heads: int,
+    def __init__(self, query_units,
+                 num_heads,
                  pos_embed_units: Optional[int] = None,
                  max_distance=None,
                  bidirectional=False,
                  num_buckets=None,
                  method='transformer_xl',
                  dropout: float = 0.0,
-                 attention_dropout=0.0,
-                 query_add_bias: bool = None,
-                 scaled: bool = True, dtype='float32',
-                 layout='NKT',
+                 dtype='float32',
+                 layout='NTK',
                  use_einsum=False,
                  prefix=None, params=None):
         """
@@ -634,9 +730,6 @@ class MultiHeadRelAttentionCell(HybridBlock):
         """
         super().__init__(prefix=prefix, params=params)
         self._dropout = dropout
-        self._attention_dropout = attention_dropout
-        self._scaled = scaled
-        self._layout = layout
         self._method = method
         self._query_units = query_units
         self._num_heads = num_heads
@@ -644,27 +737,14 @@ class MultiHeadRelAttentionCell(HybridBlock):
         self._num_buckets = num_buckets
         assert query_units % num_heads == 0, 'The units must be divisible by the number of heads.'
         self._head_query_units = query_units // num_heads
-        if query_add_bias is None:
-            query_add_bias = (method == 'transformer_xl')
-        self._query_add_bias = query_add_bias
         self._max_distance = max_distance
         self._pos_embed_units = pos_embed_units
         self._dtype = dtype
         self._use_einsum = use_einsum
+        self._layout = layout
         if self._layout not in ['NKT', 'NTK', 'TNK']:
             raise ValueError('layout="{}" is not supported'.format(self._layout))
         with self.name_scope():
-            self._attn_dropout_layer = nn.Dropout(dropout)
-            if self._query_add_bias:
-                self.q_k_bias = self.params.get('q_k_bias',
-                                                shape=(self._num_heads, self._head_query_units),
-                                                init='zeros', dtype=self._dtype,
-                                                allow_deferred_init=False)
-                if method == 'transformer_xl' or method == 'shaw':
-                    self.q_rel_bias = self.params.get('q_rel_bias',
-                                                      shape=(self._num_heads, self._head_query_units),
-                                                      init='zeros', dtype=self._dtype,
-                                                      allow_deferred_init=False)
             if method == 'transformer_xl':
                 if pos_embed_units is None:
                     pos_embed_units = self._num_heads * self._head_query_units
@@ -691,7 +771,7 @@ class MultiHeadRelAttentionCell(HybridBlock):
                                                       factor_type="in",
                                                       magnitude=1),
                     prefix='rel_pos_embed_',
-                    mode='raise',
+                    mode='wrap' if self._bidirectional else 'raise',
                     dtype=self._dtype)
             elif method == 't5':
                 if self._num_buckets is None:
@@ -708,84 +788,29 @@ class MultiHeadRelAttentionCell(HybridBlock):
             else:
                 raise NotImplementedError('method="{}" is currently not supported!'.format(method))
 
-    def hybrid_forward(self, F, query, key, value, rel_positions, mask=None, **params):
+    def hybrid_forward(self, F, rel_positions, query=None):
         """
 
         Parameters
         ----------
         F
-        query
-            The query.
-        key
-            The key.
-        value
-            The value of the memory slots
         rel_positions
-            Shape (query_length, mem_length)
+            The relative shifts. Shape (query_length, mem_length)
             Each element represents the shift between the i-th element of query and the j-th
-            element of memory
-        mask
-            The mask between the query and the memory
-            Shape (batch_size, query_length, mem_length)
+            element of memory.
+        query
+            The query for computing the relative scores. The shape depends on the layout.
+            If we use T5 attention, the query won't be used
 
         Returns
         -------
-        context_vec
-            - layout is 'NKT'
-                Shape (batch_size, query_length, num_heads * value_units)
-            - layout is 'TNK'
-                Shape (query_length, batch_size, num_heads * value_units)
-        additional_info
-            scores:
-                Shape (batch_size, num_head, query_length, mem_length)
-            attn_weight:
-                Shape (batch_size, num_head, query_length, mem_length)
+        rel_scores
+            The relative attention scores
+            Can have shape (batch_size, num_heads, query_length, mem_length)
+             or (num_heads, query_length, mem_length)
         """
-        if self._query_add_bias:
-            if self._layout == 'NKT':
-                query_for_key = query + F.np.expand_dims(params['q_k_bias'], axis=1)
-                if self._method == 'transformer_xl' or self._method == 'shaw':
-                    query_for_rel = query + F.np.expand_dims(params['q_rel_bias'], axis=1)
-                else:
-                    query_for_rel = query
-            elif self._layout == 'NTK' or self._layout == 'TNK':
-                query_for_key = query + params['q_k_bias']
-                if self._method == 'transformer_xl' or self._method == 'shaw':
-                    query_for_rel = query + params['q_rel_bias']
-                else:
-                    query_for_rel = query
-            else:
-                raise NotImplementedError
-        else:
-            query_for_key = query
-            query_for_rel = query
-        # 1. Calculate the score without relative positional encoding
-        # q_k_bias.shape = (K, C)
-        # We will need to generate
-        #   scores.shape = (N, K, T0, T1)
-        if self._layout == 'NKT':
-            if self._use_einsum:
-                scores = F.np.einsum('bkic,bkjc->bkij', query_for_key, key)
-            else:
-                scores = F.npx.batch_dot(query_for_key, key, transpose_b=True)
-        elif self._layout == 'NTK':
-            # (N, T0, K, C) X (N, T1, K, C) --> (N, K, T0, T1)
-            if self._use_einsum:
-                scores = F.np.einsum('bikc,bjkc->bkij', query_for_key, key)
-            else:
-                scores = F.npx.batch_dot(F.np.swapaxes(query_for_key, 1, 2),
-                                         F.np.swapaxes(key, 1, 2), transpose_b=True)
-        elif self._layout == 'TNK':
-            # (T0, N, K, C) X (T1, N, K, C) --> (N, K, T0, T1)
-            if self._use_einsum:
-                scores = F.np.einsum('ibkc,jbkc->bkij', query_for_key, key)
-            else:
-                scores = F.npx.batch_dot(F.np.transpose(query_for_key, (1, 2, 0, 3)),
-                                         F.np.transpose(key, (1, 2, 0, 3)), transpose_b=True)
-        else:
-            raise NotImplementedError
-        # 2. Calculate the scores from relative positional embedding
         if self._method == 'transformer_xl' or self._method == 'shaw':
+            assert query is not None, 'Must specify query if method={}'.format(self._method)
             if self._bidirectional:
                 if self._max_distance is not None:
                     rel_positions = F.np.clip(rel_positions,
@@ -808,36 +833,35 @@ class MultiHeadRelAttentionCell(HybridBlock):
             if self._layout == 'NKT':
                 # query_for_rel: (N, K, L_q, C_q)
                 if self._use_einsum:
-                    rel_score = F.np.einsum('bnid,jnd->ijbn', query_for_rel, uniq_rel_pos_embed)
+                    rel_score = F.np.einsum('bnid,jnd->ijbn', query, uniq_rel_pos_embed)
                 else:
                     rel_score = F.np.transpose(
-                        F.np.matmul(query_for_rel,
+                        F.np.matmul(query,
                                     F.np.transpose(uniq_rel_pos_embed, (1, 2, 0))),
                         (2, 3, 0, 1)
                     )
             elif self._layout == 'NTK':
                 # query_for_rel: (N, L_q, K, C_q)
                 if self._use_einsum:
-                    rel_score = F.np.einsum('bind,jnd->ijbn', query_for_rel, uniq_rel_pos_embed)
+                    rel_score = F.np.einsum('bind,jnd->ijbn', query, uniq_rel_pos_embed)
                 else:
                     rel_score = F.np.transpose(
-                        F.np.matmul(F.np.swapaxes(query_for_rel, 1, 2),
+                        F.np.matmul(F.np.swapaxes(query, 1, 2),
                                     F.np.transpose(uniq_rel_pos_embed, (1, 2, 0))),
                         (2, 3, 0, 1)
                     )
             elif self._layout == 'TNK':
                 # query_for_rel: (L_q, N, K, C_q)
                 if self._use_einsum:
-                    rel_score = F.np.einsum('ibnd,jnd->ijbn', query_for_rel, uniq_rel_pos_embed)
+                    rel_score = F.np.einsum('ibnd,jnd->ijbn', query, uniq_rel_pos_embed)
                 else:
                     rel_score = F.np.transpose(
-                        F.np.matmul(F.np.transpose(query_for_rel, (1, 2, 0, 3)),
+                        F.np.matmul(F.np.transpose(query, (1, 2, 0, 3)),
                                     F.np.transpose(uniq_rel_pos_embed, (1, 2, 0))),
                         (2, 3, 0, 1)
                     )
             else:
                 raise NotImplementedError
-
             # We use gather_nd to select the elements
             # TODO(sxjscience) Use advanced indexing once available
             rev_index = F.npx.reshape_like(rev_index, rel_positions).astype(np.int32)
@@ -850,36 +874,4 @@ class MultiHeadRelAttentionCell(HybridBlock):
             rel_score = self._rel_pos_embed(rel_positions).transpose((2, 0, 1))
         else:
             raise NotImplementedError
-        scores = scores + rel_score
-        if self._scaled:
-            scores = scores / math.sqrt(self._head_query_units)
-        if mask is not None:
-            mask = F.np.expand_dims(mask, axis=1)
-        attn_weights = masked_softmax(F, scores, mask)
-        attn_weights = self._attn_dropout_layer(attn_weights)
-        # 3. Calculate the context vector
-        if self._layout == 'NKT':
-            # (B, N, L_query, L_mem) X (B, N, L_mem, C_V) --> (B, L_query, N * C_V)
-            if self._use_einsum:
-                context_vec = F.np.einsum('bnij,bnjc->binc', attn_weights, value)
-            else:
-                context_vec = F.npx.batch_dot(attn_weights, value).transpose((0, 2, 1, 3))
-        elif self._layout == 'NTK':
-            # (B, N, L_query, L_mem) X (B, L_mem, N, C_V) --> (B, L_query, N * C_V)
-            if self._use_einsum:
-                context_vec = F.np.einsum('bnij,bjnc->binc', attn_weights, value)
-            else:
-                context_vec = F.npx.batch_dot(attn_weights,
-                                              F.np.swapaxes(value, 1, 2)).transpose((0, 2, 1, 3))
-        elif self._layout == 'TNK':
-            # (B, N, L_query, L_mem) X (L_mem, B, N, C_V) --> (L_query, B, N * C_V)
-            if self._use_einsum:
-                context_vec = F.np.einsum('bnij,jbnc->ibnc', attn_weights, value)
-            else:
-                context_vec = F.npx.batch_dot(attn_weights,
-                                              F.np.transpose(value, (1, 2, 0, 3)))\
-                    .transpose((2, 0, 1, 3))
-        else:
-            raise NotImplementedError
-        context_vec = F.npx.reshape(context_vec, (-2, -2, -1))
-        return context_vec, [scores, attn_weights]
+        return rel_score

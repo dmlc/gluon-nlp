@@ -1,4 +1,6 @@
-from gluonnlp.data.filtering import ProfanityFilter, MosesNormalizer
+import pytest
+from gluonnlp.data.filtering import ProfanityFilter, MosesNormalizer, LanguageIdentifier
+import multiprocessing
 
 
 def test_profanity_filter():
@@ -22,3 +24,14 @@ def test_sentence_normalizer():
     assert normalizer('    hello  world!!".\t\t\r') == ' hello world!!."\t\t'
     normalizer = MosesNormalizer('en', remove_non_printable_char=False, unicode_norm_form='NFKC')
     assert normalizer('    hello  world!!"⁵.\t\t\r') == ' hello world!!"5.\t\t'
+
+
+@pytest.mark.parametrize('algo', ['fasttext', 'fasttext_compressed', 'langid'])
+def test_language_identifier(algo):
+    lang_id_model = LanguageIdentifier(algo=algo)
+    lang_label, score = lang_id_model('你好，世界')
+    assert lang_label == 'zh'
+    with multiprocessing.Pool(2) as pool:
+        out = pool.map(lang_id_model, ['你好，世界', 'Hello World'])
+    assert out[0][0] == 'zh'
+    assert out[1][0] == 'en'

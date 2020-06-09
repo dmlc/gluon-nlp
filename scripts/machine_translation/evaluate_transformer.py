@@ -15,6 +15,7 @@ from gluonnlp.data.filtering import MosesNormalizer
 from gluonnlp.data import tokenizers
 from gluonnlp.sequence_sampler import BeamSearchSampler, BeamSearchScorer
 import sacrebleu
+from tqdm import tqdm
 mx.npx.set_np()
 
 
@@ -71,6 +72,10 @@ def parse_args():
                              '(using single gpu is suggested)')
     parser.add_argument('--save_dir', type=str, default=None,
                         help='The path to save the log files and predictions.')
+    parser.add_argument('--stochastic', action='store_true',
+                        help='Whether to use the stochastic beam search')
+    parser.add_argument('--inference', action='store_true',
+                        help='Whether to inference with your own data')
     args = parser.parse_args()
     if args.save_dir is None:
         args.save_dir = os.path.splitext(args.param_path)[0] + '_evaluation'
@@ -80,7 +85,8 @@ def parse_args():
 
 
 def process_corpus(corpus_path, sentence_normalizer, bpe_tokenizer,
-                   base_tokenizer=None, add_bos=True, add_eos=True):
+                   base_tokenizer=None, add_bos=True,
+                   add_eos=True):
     processed_token_ids = []
     raw_lines = []
     with open(corpus_path, 'r', encoding='utf-8') as f:
@@ -132,7 +138,10 @@ def evaluate(args):
                                      args.tgt_vocab_path)
     src_vocab = src_tokenizer.vocab
     tgt_vocab = tgt_tokenizer.vocab
-    cfg = TransformerNMTModel.get_cfg().clone_merge(args.cfg)
+    if args.cfg.endswith('.yml'):
+        cfg = TransformerNMTModel.get_cfg().clone_merge(args.cfg)
+    else:
+        cfg = TransformerNMTModel.get_cfg(args.cfg)
     cfg.defrost()
     cfg.MODEL.src_vocab_size = len(src_vocab)
     cfg.MODEL.tgt_vocab_size = len(tgt_vocab)
@@ -143,20 +152,30 @@ def evaluate(args):
     inference_model = TransformerNMTInference(model=model)
     inference_model.hybridize()
     # Construct the BeamSearchSampler
+    if args.stochastic:
+        scorer = BeamSearchScorer(alpha=0.0,
+                                  K=0.0,
+                                  temperature=1.0,
+                                  from_logits=False)
+    else:
+        scorer = BeamSearchScorer(alpha=args.lp_alpha,
+                                  K=args.lp_k,
+                                  from_logits=False)
     beam_search_sampler = BeamSearchSampler(beam_size=args.beam_size,
                                             decoder=inference_model,
                                             vocab_size=len(tgt_vocab),
                                             eos_id=tgt_vocab.eos_id,
-                                            scorer=BeamSearchScorer(alpha=args.lp_alpha,
-                                                                    K=args.lp_k,
-                                                                    from_logits=False),
+                                            scorer=scorer,
+                                            stochastic=args.stochastic,
                                             max_length_a=args.max_length_a,
-                                            max_length_b=args.max_length_b)
+                                            max_length_b=args.max_length_b)   
+
     logging.info(beam_search_sampler)
     ctx = ctx_l[0]
     avg_nll_loss = 0
     ntokens = 0
     pred_sentences = []
+    processed_sent = 0
     start_eval_time = time.time()
     all_src_token_ids, all_src_lines = process_corpus(args.src_corpus,
                                                       sentence_normalizer=src_normalizer,
@@ -178,44 +197,66 @@ def evaluate(args):
         batch_size=32,
         batchify_fn=Tuple(Pad(), Stack(), Pad(), Stack()),
         shuffle=False)
-    for i, (src_token_ids, src_valid_length, tgt_token_ids, tgt_valid_length)\
-            in enumerate(test_dataloader):
-        src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
-        src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
-        tgt_token_ids = mx.np.array(tgt_token_ids, ctx=ctx, dtype=np.int32)
-        tgt_valid_length = mx.np.array(tgt_valid_length, ctx=ctx, dtype=np.int32)
-        tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
-                         tgt_valid_length - 1)
-        pred_logits = mx.npx.log_softmax(tgt_pred, axis=-1)
-        nll = - mx.npx.pick(pred_logits, tgt_token_ids[:, 1:])
-        avg_nll_loss += mx.npx.sequence_mask(nll,
-                                             sequence_length=tgt_valid_length - 1,
-                                             use_sequence_length=True, axis=1).sum().asnumpy()
-        ntokens += int((tgt_valid_length - 1).sum().asnumpy())
-        init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
-        states = inference_model.init_states(src_token_ids, src_valid_length)
-        samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
-        for j in range(samples.shape[0]):
-            pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
-            bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
-            pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
-            pred_sentences.append(pred_sentence)
-            print(pred_sentence)
-        print('Processed {}/{}'.format(len(pred_sentences), len(all_tgt_lines)))
-    end_eval_time = time.time()
-    avg_nll_loss = avg_nll_loss / ntokens
+    
+    if not args.inference:
+        for i, (src_token_ids, src_valid_length, tgt_token_ids, tgt_valid_length)\
+                in enumerate(test_dataloader):
+            src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
+            src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
+            tgt_token_ids = mx.np.array(tgt_token_ids, ctx=ctx, dtype=np.int32)
+            tgt_valid_length = mx.np.array(tgt_valid_length, ctx=ctx, dtype=np.int32)
+            tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
+                            tgt_valid_length - 1)
+            pred_logits = mx.npx.log_softmax(tgt_pred, axis=-1)
+            nll = - mx.npx.pick(pred_logits, tgt_token_ids[:, 1:])
+            avg_nll_loss += mx.npx.sequence_mask(nll,
+                                                sequence_length=tgt_valid_length - 1,
+                                                use_sequence_length=True, axis=1).sum().asnumpy()
+            ntokens += int((tgt_valid_length - 1).sum().asnumpy())
+            init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
+            states = inference_model.init_states(src_token_ids, src_valid_length)
+            samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
+            for j in range(samples.shape[0]):
+                pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
+                bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
+                pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
+                pred_sentences.append(pred_sentence)
+                print(pred_sentence)
+            print('Processed {}/{}'.format(len(pred_sentences), len(all_tgt_lines)))
+        end_eval_time = time.time()
+        avg_nll_loss = avg_nll_loss / ntokens
 
-    with io.open(os.path.join(args.save_dir, 'gt_sentences.txt'), 'w', encoding='utf-8') as of:
-        for line in all_tgt_lines:
-            of.write(line + '\n')
-    with io.open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
-        for line in pred_sentences:
-            of.write(line + '\n')
+        with io.open(os.path.join(args.save_dir, 'gt_sentences.txt'), 'w', encoding='utf-8') as of:
+            for line in all_tgt_lines:
+                of.write(line + '\n')
+        with io.open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
+            for line in pred_sentences:
+                of.write(line + '\n')
 
-    sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences, ref_streams=[all_tgt_lines])
-    logging.info('Time Spent: {}, #Sent={}, SacreBlEU={} Avg NLL={}, Perplexity={}'
-                 .format(end_eval_time - start_eval_time, len(all_tgt_lines),
-                         sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
+        sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences, ref_streams=[all_tgt_lines])
+        logging.info('Time Spent: {}, #Sent={}, SacreBlEU={} Avg NLL={}, Perplexity={}'
+                     .format(end_eval_time - start_eval_time, len(all_tgt_lines),
+                             sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
+
+    else:
+        for i, (src_token_ids, src_valid_length, _, _) in tqdm(enumerate(test_dataloader)):
+            src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
+            src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
+            init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
+            states = inference_model.init_states(src_token_ids, src_valid_length)
+            samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
+            for j in range(samples.shape[0]):
+                pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
+                bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
+                pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
+                pred_sentences.append(pred_sentence)
+            
+            with io.open('pred_sentences.txt', 'a', encoding='utf-8') as of:
+                for line in pred_sentences:
+                    of.write(line + '\n')
+            
+            processed_sent = processed_sent + len(pred_sentences)
+            pred_sentences = []
 
 
 if __name__ == '__main__':

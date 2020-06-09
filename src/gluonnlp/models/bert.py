@@ -28,17 +28,18 @@ Bert Model
 __all__ = ['BertModel', 'BertForMLM', 'BertForPretrain',
            'list_pretrained_bert', 'get_pretrained_bert']
 
-import copy
-import numpy as np
-from typing import Tuple
 import os
+from typing import Tuple
+
 import mxnet as mx
 from mxnet import use_np
-from mxnet.gluon import nn, HybridBlock
+from mxnet.gluon import HybridBlock, nn
 from mxnet.gluon.utils import download
+from ..registry import BACKBONE_REGISTRY
 from .transformer import TransformerEncoderLayer
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
+from ..utils.misc import load_checksum_stats
 from ..initializer import TruncNorm
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask
 from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN, InitializerType
@@ -48,63 +49,61 @@ from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 
 PRETRAINED_URL = {
     'google_en_cased_bert_base': {
-        'cfg': 'google_en_cased_bert_base/model-c81d19f4.yml',
-        'vocab': 'google_en_cased_bert_base/vocab-5d1e88f1.json',
+        'cfg': 'google_en_cased_bert_base/model-197ff9f8.yml',
+        'vocab': 'google_en_cased_bert_base/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_base/model-c566c289.params',
         'mlm_params': 'google_en_cased_bert_base/model_mlm-c3ff36a3.params',
     },
+
     'google_en_uncased_bert_base': {
-        'cfg': 'google_en_uncased_bert_base/model-a0df3337.yml',
-        'vocab': 'google_en_uncased_bert_base/vocab-c3b41053.json',
+        'cfg': 'google_en_uncased_bert_base/model-82eeec35.yml',
+        'vocab': 'google_en_uncased_bert_base/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_base/model-3712e50a.params',
         'mlm_params': 'google_en_uncased_bert_base/model_mlm-2a23a633.params',
         'lowercase': True,
     },
     'google_en_cased_bert_large': {
-        'cfg': 'google_en_cased_bert_large/model-9ea307d1.yml',
-        'vocab': 'google_en_cased_bert_large/vocab-5d1e88f1.json',
+        'cfg': 'google_en_cased_bert_large/model-8805e1fa.yml',
+        'vocab': 'google_en_cased_bert_large/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_large/model-7aa93704.params',
         'mlm_params': 'google_en_cased_bert_large/model_mlm-d6443fe9.params',
     },
     'google_en_uncased_bert_large': {
-        'cfg': 'google_en_uncased_bert_large/model-82552023.yml',
-        'vocab': 'google_en_uncased_bert_large/vocab-c3b41053.json',
+        'cfg': 'google_en_uncased_bert_large/model-5e473e03.yml',
+        'vocab': 'google_en_uncased_bert_large/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_large/model-e53bbc57.params',
         'mlm_params': 'google_en_uncased_bert_large/model_mlm-f5cb8678.params',
         'lowercase': True,
     },
     'google_zh_bert_base': {
-        'cfg': 'google_zh_bert_base/model-e6357dc6.yml',
-        'vocab': 'google_zh_bert_base/vocab-b104ff0e.json',
+        'cfg': 'google_zh_bert_base/model-14d688e3.yml',
+        'vocab': 'google_zh_bert_base/vocab-711c13e4.json',
         'params': 'google_zh_bert_base/model-2efbff63.params',
         'mlm_params': 'google_zh_bert_base/model_mlm-75339658.params',
     },
     'google_multi_cased_bert_base': {
-        'cfg': 'google_multi_cased_bert_base/model-a5f77a54.yml',
-        'vocab': 'google_multi_cased_bert_base/vocab-efbe1163.json',
+        'cfg': 'google_multi_cased_bert_base/model-ae175b4f.yml',
+        'vocab': 'google_multi_cased_bert_base/vocab-016e1169.json',
         'params': 'google_multi_cased_bert_base/model-c2110078.params',
         'mlm_params': 'google_multi_cased_bert_base/model_mlm-4611e7a3.params',
     },
     'google_en_cased_bert_wwm_large': {
-        'cfg': 'google_en_cased_bert_wwm_large/model-9ea307d1.yml',
-        'vocab': 'google_en_cased_bert_wwm_large/vocab-5d1e88f1.json',
+        'cfg': 'google_en_cased_bert_wwm_large/model-8805e1fa.yml',
+        'vocab': 'google_en_cased_bert_wwm_large/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_wwm_large/model-0fe841cf.params',
         'mlm_params': None,
     },
     'google_en_uncased_bert_wwm_large': {
-        'cfg': 'google_en_uncased_bert_wwm_large/model-82552023.yml',
-        'vocab': 'google_en_uncased_bert_wwm_large/vocab-c3b41053.json',
+        'cfg': 'google_en_uncased_bert_wwm_large/model-5e473e03.yml',
+        'vocab': 'google_en_uncased_bert_wwm_large/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_wwm_large/model-cb3ad3c2.params',
         'mlm_params': None,
-        'lower_case': True,
+        'lowercase': True,
     }
 }
 
 
-FILE_STATS = dict()
-for line in open(os.path.join(get_model_zoo_checksum_dir(), 'bert.txt'), 'r', encoding='utf-8'):
-    name, hex_hash, file_size = line.strip().split()
-    FILE_STATS[name] = hex_hash
+FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'bert.txt'))
 
 
 @use_np
@@ -174,8 +173,8 @@ class BertTransformer(HybridBlock):
         out = data
         all_encodings_outputs = []
         additional_outputs = []
-        for layer_ids in range(self._num_layers):
-            layer = self.all_layers[layer_ids]
+        for layer_idx in range(self._num_layers):
+            layer = self.all_encoder_layers[layer_idx]
             out, attention_weights = layer(out, attn_mask)
             # out : [batch_size, seq_len, units]
             # attention_weights : [batch_size, num_heads, seq_len, seq_len]
@@ -280,7 +279,7 @@ class BertModel(HybridBlock):
                                        bias_initializer=bias_initializer,
                                        prefix='pooler_')
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length=None):
+    def hybrid_forward(self, F, inputs, token_types, valid_length):
         # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
@@ -308,7 +307,6 @@ class BertModel(HybridBlock):
             This is optional. Shape (batch_size, units)
         """
         initial_embedding = self.get_initial_embedding(F, inputs, token_types)
-        # Projecting the embedding into units
         prev_out = initial_embedding
         outputs = []
 
@@ -458,7 +456,8 @@ class BertForMLM(HybridBlock):
                                               bias_initializer=bias_initializer,
                                               prefix='proj_'))
                 self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps, prefix='ln_'))
+                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                                  prefix='ln_'))
                 # only load the dense weights with a re-initialized bias
                 # parameters are stored in 'word_embed_bias' which is
                 # not used in original embedding
@@ -542,7 +541,8 @@ class BertForPretrain(HybridBlock):
                                               bias_initializer=bias_initializer,
                                               prefix='proj_'))
                 self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps, prefix='ln_'))
+                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                                  prefix='ln_'))
                 # only load the dense weights with a re-initialized bias
                 # parameters are stored in 'word_embed_bias' which is
                 # not used in original embedding
@@ -600,7 +600,7 @@ def list_pretrained_bert():
 
 def get_pretrained_bert(model_name: str = 'google_en_cased_bert_base',
                         root: str = get_model_zoo_home_dir(),
-                        load_backbone=True, load_mlm=True)\
+                        load_backbone=True, load_mlm=False)\
         -> Tuple[CN, HuggingFaceWordPieceTokenizer, str, str]:
     """Get the pretrained bert weights
 
@@ -662,3 +662,8 @@ def get_pretrained_bert(model_name: str = 'google_en_cased_bert_base',
                     lowercase=do_lower)
     cfg = BertModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_mlm_params_path
+
+
+BACKBONE_REGISTRY.register('bert', [BertModel,
+                                    get_pretrained_bert,
+                                    list_pretrained_bert])

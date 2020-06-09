@@ -16,6 +16,7 @@ def test_bert_get_pretrained(model_name):
         cfg, tokenizer, backbone_params_path, (disc_params_path, gen_params_path) =\
             get_pretrained_electra(model_name, root=root,
                                    load_backbone=True, load_disc=True, load_gen=True)
+        assert cfg.MODEL.vocab_size == len(tokenizer.vocab)
         electra_model = ElectraModel.from_cfg(cfg)
         electra_model.load_parameters(backbone_params_path)
 

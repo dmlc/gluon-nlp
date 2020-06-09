@@ -2,9 +2,13 @@ import re
 import regex
 import requests
 import unicodedata
+import os
+import warnings
 from typing import List, Pattern, Union, Tuple, Optional
 from sacremoses.normalize import MosesPunctNormalizer
-
+from ..utils.lazy_imports import try_import_fasttext, try_import_langid
+from ..utils.misc import download
+from ..base import get_model_zoo_home_dir
 
 non_printing_char_regex = regex.compile(r'\p{C}')
 
@@ -131,3 +135,127 @@ class ProfanityFilter:
             Whether the input corpus contains profanity words.
         """
         return self._regex.match(corpus) is not None
+
+
+class LanguageIdentifier:
+    """Detect the language of the input corpus.
+
+    We currently support three pretrained models:
+
+        - model='langid'
+            Use the langid implementation from
+             https://github.com/saffsd/langid.py
+        - model='fasttext'
+            Use the fasttext model "lid.176.bin" from
+             https://fasttext.cc/docs/en/language-identification.html
+        - model='fasttext_compressed'
+            Use the compressed fasttext model "lid.176.ftz"
+            from  https://fasttext.cc/docs/en/language-identification.html
+
+    References:
+
+        @article{joulin2016bag,
+          title={Bag of Tricks for Efficient Text Classification},
+          author={Joulin, Armand and Grave, Edouard and Bojanowski, Piotr and Mikolov, Tomas},
+          journal={arXiv preprint arXiv:1607.01759},
+          year={2016}
+        }
+
+        @article{joulin2016fasttext,
+          title={FastText.zip: Compressing text classification models},
+          author={Joulin, Armand and Grave, Edouard and Bojanowski, Piotr and Douze, Matthijs and J{\'e}gou, H{\'e}rve and Mikolov, Tomas},
+          journal={arXiv preprint arXiv:1612.03651},
+          year={2016}
+        }
+
+        @inproceedings{lui2012langid,
+          title={langid. py: An off-the-shelf language identification tool},
+          author={Lui, Marco and Baldwin, Timothy},
+          booktitle={Proceedings of the ACL 2012 system demonstrations},
+          pages={25--30},
+          year={2012},
+          organization={Association for Computational Linguistics}
+        }
+
+    """
+    def __init__(self, algo='fasttext_compressed', model_path=None):
+        assert algo in ['langid', 'fasttext', 'fasttext_compressed']
+        self._algo = algo
+        self._use_fasttext = algo.startswith('fasttext')
+        if algo in ['fasttext', 'fasttext_compressed']:
+            fasttext = try_import_fasttext()
+            if model_path is None:
+                if algo == 'fasttext':
+                    model_path = download('https://dl.fbaipublicfiles.com/fasttext/'
+                                          'supervised-models/lid.176.bin',
+                                          os.path.join(get_model_zoo_home_dir(),
+                                                       'fasttext_langid', 'lid.176.bin'),
+                                          sha1_hash='e613bda316ecb4f5e1924140eedf81b81c087d9a')
+                elif algo == 'fasttext_compressed':
+                    model_path = download('https://dl.fbaipublicfiles.com/fasttext/'
+                                          'supervised-models/lid.176.ftz',
+                                          os.path.join(get_model_zoo_home_dir(),
+                                                       'fasttext_langid', 'lid.176.ftz'),
+                                          sha1_hash='86d1b630ba55a5040231eda9fe24a7befdc411f2')
+                else:
+                    raise NotImplementedError
+            self._model_path = model_path
+            with warnings.catch_warnings():
+                # Ignore the DeprecationWarning. For more details,
+                # See issue: https://github.com/facebookresearch/fastText/issues/1056
+                warnings.filterwarnings("ignore", category=Warning)
+                model = fasttext.load_model(model_path)
+            self._model = model
+        elif algo == 'langid':
+            langid = try_import_langid()
+            self._model_str = langid.langid.model
+            self._model_path = model_path
+            self._model = langid.langid.LanguageIdentifier.from_modelstring(self._model_str)
+        else:
+            raise NotImplementedError
+
+    def __repr__(self):
+        s = '{}(algo={}, model_path={})'.format(self.__class__.__name__,
+                                                self._algo,
+                                                self._model_path)
+        return s
+
+    def __call__(self, corpus: str):
+        """
+
+        Parameters
+        ----------
+        corpus
+            Input corpus
+
+        Returns
+        -------
+        lang_label
+            The ISO-639 1 code of the predicted language
+        score
+            The score of the prediction
+        """
+        if self._use_fasttext:
+            labels, scores = self._model.predict(corpus)
+            label = labels[0].replace("__label__", "")
+            return label, scores[0]
+        else:
+            return self._model.classify(corpus.lower())
+
+    def __getstate__(self):
+        d = {k: v for k, v in self.__dict__.items() if k != '_model'}
+        return d
+
+    def __setstate__(self, state):
+        for k, v in state.items():
+            setattr(self, k, v)
+        if self._use_fasttext:
+            fasttext = try_import_fasttext()
+            with warnings.catch_warnings():
+                # Ignore the DeprecationWarning. For more details,
+                # See issue: https://github.com/facebookresearch/fastText/issues/1056
+                warnings.filterwarnings("ignore", category=Warning)
+                self._model = fasttext.load_model(self._model_path)
+        else:
+            langid = try_import_langid()
+            self._model = langid.langid.LanguageIdentifier.from_modelstring(self._model_str)

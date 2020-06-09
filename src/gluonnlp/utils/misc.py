@@ -5,15 +5,39 @@ import logging
 import warnings
 import functools
 import uuid
+from types import ModuleType
 from typing import Optional, Tuple
 import numpy as np
 import hashlib
 import requests
 import itertools
 import random
+try:
+    import tqdm
+except ImportError:
+    tqdm = None
 from mxnet.gluon.utils import shape_is_known, replace_file
 from collections import OrderedDict
+import glob as _glob
 
+def glob(url, separator=','):
+    """Return a list of paths matching a pathname pattern.
+
+    The pattern may contain simple shell-style wildcards.
+    Input may also include multiple patterns, separated by separator.
+
+    Parameters
+    ----------
+    url : str
+        The name of the files
+    separator : str, default is ','
+        The separator in url to allow multiple patterns in the input
+    """
+    patterns = [url] if separator is None else url.split(separator)
+    result = []
+    for pattern in patterns:
+        result.extend(_glob.glob(os.path.expanduser(pattern.strip())))
+    return result
 
 class AverageSGDTracker(object):
     def __init__(self, params=None):
@@ -132,6 +156,15 @@ def sha1sum(filename):
             d.update(buf)
     return d.hexdigest()
 
+def naming_convention(file_dir, file_name):
+    """Rename files with 8-character hash"""
+    long_hash = sha1sum(os.path.join(file_dir, file_name))
+    file_prefix, file_sufix = file_name.split('.')
+    new_name = '{file_prefix}-{short_hash}.{file_sufix}'.format(
+        file_prefix=file_prefix,
+        short_hash=long_hash[:8],
+        file_sufix=file_sufix)
+    return new_name, long_hash
 
 def logging_config(folder: Optional[str] = None,
                    name: Optional[str] = None,
@@ -232,6 +265,26 @@ def parse_ctx(data_str):
     else:
         ctx_l = [mx.gpu(int(x)) for x in data_str.split(',')]
     return ctx_l
+
+
+def load_checksum_stats(path: str) -> dict:
+    """
+
+    Parameters
+    ----------
+    path
+        Path to the stored checksum
+
+    Returns
+    -------
+    file_stats
+    """
+    file_stats = dict()
+    with open(path, 'r', encoding='utf-8') as f:
+        for line in f:
+            name, hex_hash, file_size = line.strip().split()
+            file_stats[name] = hex_hash
+    return file_stats
 
 
 class GoogleDriveDownloader:
@@ -376,10 +429,18 @@ def download(url: str,
                     raise RuntimeError('Failed downloading url {}'.format(url))
                 # create uuid for temporary files
                 random_uuid = str(uuid.uuid4())
+                total_size = int(r.headers.get('content-length', 0))
+                chunk_size = 1024
+                if tqdm is not None:
+                    t = tqdm.tqdm(total=total_size, unit='iB', unit_scale=True)
                 with open('{}.{}'.format(fname, random_uuid), 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=1024):
-                        if chunk: # filter out keep-alive new chunks
+                    for chunk in r.iter_content(chunk_size=chunk_size):
+                        if chunk:  # filter out keep-alive new chunks
+                            if tqdm is not None:
+                                t.update(len(chunk))
                             f.write(chunk)
+                if tqdm is not None:
+                    t.close()
                 # if the target file exists(created by other processes)
                 # and have the same hash with target file
                 # delete the temporary file
@@ -410,3 +471,37 @@ def download(url: str,
                       .format(repr(e), retries, 's' if retries > 1 else ''))
 
     return fname
+
+
+def check_version(min_version: str,
+                  warning_only: bool = False,
+                  library: Optional[ModuleType] = None):
+    """Check the version of gluonnlp satisfies the provided minimum version.
+    An exception is thrown if the check does not pass.
+
+    Parameters
+    ----------
+    min_version
+        Minimum version
+    warning_only
+        Printing a warning instead of throwing an exception.
+    library
+        The target library for version check. Checks gluonnlp by default
+    """
+    # pylint: disable=import-outside-toplevel
+    from .. import __version__
+    if library is None:
+        version = __version__
+        name = 'GluonNLP'
+    else:
+        version = library.__version__
+        name = library.__name__
+    from packaging.version import parse
+    bad_version = parse(version.replace('.dev', '')) < parse(min_version)
+    if bad_version:
+        msg = 'Installed {} version {} does not satisfy the ' \
+              'minimum required version {}'.format(name, version, min_version)
+        if warning_only:
+            warnings.warn(msg)
+        else:
+            raise AssertionError(msg)

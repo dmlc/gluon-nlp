@@ -5,13 +5,11 @@ import time
 import numpy as np
 import warnings
 import re
-re._MAXCACHE = 1024
-
-
 from gluonnlp.data.filtering import MosesNormalizer
 from gluonnlp.data.tokenizers import MosesTokenizer, BaseTokenizer,\
                                      WhitespaceTokenizer, JiebaTokenizer
 from typing import List, Union, Optional
+re._MAXCACHE = 1024
 
 
 def get_tokenizer(tokenizer, lang=None):

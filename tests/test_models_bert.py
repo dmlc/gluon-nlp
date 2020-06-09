@@ -19,6 +19,7 @@ def test_bert_get_pretrained(model_name):
     with tempfile.TemporaryDirectory() as root:
         cfg, tokenizer, backbone_params_path, mlm_params_path =\
             get_pretrained_bert(model_name, root=root)
+        assert cfg.MODEL.vocab_size == len(tokenizer.vocab)
         bert_model = BertModel.from_cfg(cfg)
         bert_model.load_parameters(backbone_params_path)
         bert_mlm_model = BertForMLM(cfg)

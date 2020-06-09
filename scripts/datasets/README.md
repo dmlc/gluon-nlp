@@ -16,35 +16,26 @@ In case you will need to preprocess the dataset, there are toolkits in [preproce
 ## Available Datasets
 - [Machine Translation](./machine_translation)
     - [WMT](./machine_translation/README.md#wmt)
-    - [IWSLT](./machine_translation/README.md#iwslt)
 - [Question Answering](./question_answering)
     - [SQuAD](./question_answering/README.md#squad)
-    - [Natural Questions](TBA)
 - [Language Modeling](./language_modeling)
     - [WikiText-2](./language_modeling)
     - [WikiText-103](./language_modeling)
     - [Text8](./language_modeling)
     - [Enwiki8](./language_modeling)
     - [Google Billion Words](./language_modeling)
-- [Conversational AI](./conversations)
-    - [Intent Classification and Slot Labeling](TBA)
-- [Sentiment Analysis](TBA)
-    - [IMDB](TBA)
 - [Music Generation](TBA)
     - [LakhMIDI](./music_generation/README.md#lakh-midi)
     - [MAESTRO](./music_generation/README.md#maestro)
 - [Pretraining Corpus](./pretrain_corpus)
-    - [Wikipedia](TBA)
-    - [BookCorpus](TBA)
-    - [OpenWebText](TBA)
+    - [Wikipedia](./pretrain_corpus/README.md#wikipedia)
+    - [BookCorpus](./pretrain_corpus/README.md#bookcorpus)
+    - [OpenWebText](./pretrain_corpus/README.md#openwebtext)
 - [General NLP Benchmarks](./general_benchmarks)
     - [GLUE](./general_benchmarks/README.md#glue-benchmark)
     - [SuperGLUE](./general_benchmarks/README.md#superglue-benchmark)
-    - [SentEval](./general_benchmarks/README.md#senteval-benchmark)
 
 ## Contribution Guide
-
-**TODO(sxjscience) Move to another contribution page + Add template for contribution**
 
 We are very happy to receive and merge your contributions about new datasets :smiley:.
 

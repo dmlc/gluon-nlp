@@ -27,20 +27,21 @@
 __all__ = ['AlbertModel', 'AlbertForMLM', 'AlbertForPretrain',
            'list_pretrained_albert', 'get_pretrained_albert']
 
-import copy
-import numpy as np
-from typing import Tuple
 import os
+from typing import Tuple
+
 import mxnet as mx
 from mxnet import use_np
-from mxnet.gluon import nn, HybridBlock
+from mxnet.gluon import HybridBlock, nn
 from mxnet.gluon.utils import download
 from .transformer import TransformerEncoderLayer
+from ..registry import BACKBONE_REGISTRY
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
+from ..utils.misc import load_checksum_stats
 from ..initializer import TruncNorm
-from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask
-from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN
+from ..attention_cell import gen_self_attn_mask
+from ..layers import get_activation, PositionalEmbedding
 from ..op import select_vectors_by_position
 from ..data.tokenizers import SentencepieceTokenizer
 
@@ -76,10 +77,7 @@ PRETRAINED_URL = {
     },
 }
 
-FILE_STATS = dict()
-for line in open(os.path.join(get_model_zoo_checksum_dir(), 'albert.txt'), 'r', encoding='utf-8'):
-    name, hex_hash, file_size = line.strip().split()
-    FILE_STATS[name] = hex_hash
+FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'albert.txt'))
 
 
 @use_np
@@ -153,8 +151,8 @@ class AlbertEncoder(HybridBlock):
         out = data
         all_encodings_outputs = []
         additional_outputs = []
-        for layer_ids in range(self._num_layers):
-            groups_id = layer_ids // self._num_layers_each_group
+        for layer_idx in range(self._num_layers):
+            groups_id = layer_idx // self._num_layers_each_group
             layer = self.all_encoder_groups[groups_id]
             out, attention_weights = layer(out, attn_mask)
             # out : [batch_size, seq_len, units]
@@ -467,7 +465,8 @@ class AlbertForMLM(HybridBlock):
                                               bias_initializer=bias_initializer,
                                               prefix='proj_'))
                 self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps, prefix='ln_'))
+                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                                  prefix='ln_'))
                 # only load the dense weights with a re-initialized bias
                 # parameters are stored in 'word_embed_bias' which is
                 # not used in original embedding
@@ -550,7 +549,8 @@ class AlbertForPretrain(HybridBlock):
                                               bias_initializer=bias_initializer,
                                               prefix='proj_'))
                 self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps, prefix='ln_'))
+                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                                  prefix='ln_'))
                 # only load the dense weights with a re-initialized bias
                 # parameters are stored in 'word_embed_bias' which is
                 # not used in original embedding
@@ -608,7 +608,7 @@ def list_pretrained_albert():
 
 def get_pretrained_albert(model_name: str = 'google_albert_base_v2',
                           root: str = get_model_zoo_home_dir(),
-                          load_backbone=True, load_mlm=True)\
+                          load_backbone=True, load_mlm=False)\
         -> Tuple[CN, SentencepieceTokenizer, str, str]:
     """Get the pretrained Albert weights
 
@@ -664,3 +664,8 @@ def get_pretrained_albert(model_name: str = 'google_albert_base_v2',
                                        do_lower=True)
     cfg = AlbertModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_mlm_params_path
+
+
+BACKBONE_REGISTRY.register('albert', [AlbertModel,
+                                      get_pretrained_albert,
+                                      list_pretrained_albert])

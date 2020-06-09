@@ -33,7 +33,7 @@ import sacremoses
 import jieba
 from uuid import uuid4
 from .vocab import Vocab
-from ..utils.registry import Registry
+from ..registry import TOKENIZER_REGISTRY
 from ..utils.lazy_imports import try_import_subword_nmt,\
                                  try_import_sentencepiece,\
                                  try_import_huggingface_tokenizers,\
@@ -46,11 +46,6 @@ TokensType = NewType('TokensType', Union[List[str], List[List[str]]])
 TokenIDsType = NewType('TokenIDsType', Union[List[int], List[List[int]]])
 TokenOffsetsType = NewType('TokenOffsetsType', Union[List[Tuple[int, int]],
                                                      List[List[Tuple[int, int]]]])
-
-
-TOKENIZER_REGISTRY = Registry('Tokenizer')
-
-
 
 
 def _encode_no_vocab_err_msg():

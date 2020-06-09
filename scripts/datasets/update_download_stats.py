@@ -10,6 +10,8 @@ from gluonnlp.cli.data.question_answering.prepare_squad import _URLS as squad_ur
 from gluonnlp.cli.data.language_modeling.prepare_lm import _URLS as lm_urls
 from gluonnlp.cli.data.music_generation.prepare_music_midi import _URLS as midi_urls
 from gluonnlp.cli.data.pretrain_corpus.prepare_bookcorpus import _URLS as book_urls
+from gluonnlp.cli.data.general_nlp_benchmark.prepare_glue import SUPERGLUE_TASK2PATH as superglue_urls
+from gluonnlp.cli.data.general_nlp_benchmark.prepare_glue import GLUE_TASK2PATH as glue_urls
 
 
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
@@ -105,3 +107,7 @@ if __name__ == '__main__':
                       save_path=os.path.join(_CHECK_SUM_BASE, 'music_midi.txt'))
     get_hash_and_size(book_urls,
                       save_path=os.path.join(_CHECK_SUM_BASE, 'book_corpus.txt'))
+    get_hash_and_size(glue_urls,
+                      save_path=os.path.join(_CHECK_SUM_BASE, 'glue.txt'))
+    get_hash_and_size(superglue_urls,
+                      save_path=os.path.join(_CHECK_SUM_BASE, 'superglue.txt'))

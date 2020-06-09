@@ -33,6 +33,114 @@ from .op import relative_position_bucket
 InitializerType = Optional[Union[mx.init.Initializer, str]]
 
 
+@use_np
+def get_layer_norm(normalization: str = 'layer_norm',
+                   axis: int = -1,
+                   epsilon: float = 1e-5,
+                   in_channels: int = 0, **kwargs):
+    """
+    Get the layer normalization based on the type
+
+    Parameters
+    ----------
+    normalization: str, default: 'layer_norm'
+        The type of the layer normalization from ['layer_norm', 'no_norm']
+    axis
+        The axis to normalize the
+    epsilon
+    in_channels
+
+    Returns
+    -------
+    ln
+        The layer normalization layer
+    """
+    if isinstance(normalization, str):
+        if normalization == 'layer_norm':
+            ln = nn.LayerNorm(axis=axis, epsilon=epsilon, in_channels=in_channels,
+                              **kwargs)
+        elif normalization == 'no_norm':
+            ln = NoNorm(in_channels=in_channels, **kwargs)
+        else:
+            raise NotImplementedError('normalization={} is not supported'.format(normalization))
+        return ln
+    else:
+        raise NotImplementedError('The type of normalization must be str')
+
+
+@use_np
+class NoNorm(HybridBlock):
+    r"""
+    Apply an element-wise linear transformation to the n-dimensional input array.
+    replacing the layer normalization.
+
+    .. math::
+        out = \gmmma \circ data + \beta
+
+    Parameters
+    ----------
+    in_channels : int
+        Number of channels (feature maps) in input data. If not specified,
+        initialization will be deferred to the first time `forward` is called
+
+    center: bool, default True
+        If True, add offset of `beta` to normalized tensor.
+        If False, `beta` is ignored.
+    scale: bool, default True
+        If True, multiply by `gamma`. If False, `gamma` is not used.
+    beta_initializer: str or `Initializer`, default 'zeros'
+        Initializer for the beta weight.
+    gamma_initializer: str or `Initializer`, default 'ones'
+        Initializer for the gamma weight.
+
+    Inputs:
+        - **data**: input tensor with arbitrary shape.
+
+    Outputs:
+        - **out**: output tensor with the same shape as `data`.
+
+    References
+    ----------
+        `MobileBERT: a Compact Task-Agnostic BERT for Resource-Limited Devices
+        <https://arxiv.org/pdf/2004.02984.pdf>`_
+
+    Examples
+    --------
+    >>> # Input of shape (2, 5)
+    >>> x = mx.np.array([[1, 2, 3, 4, 5], [1, 1, 2, 2, 2]])
+    >>> # Layer normalization is calculated with the above formula
+    >>> layer = NoNorm(in_channels=5)
+    >>> layer.initialize(ctx=mx.cpu(0))
+    >>> layer(x)
+    array([[1., 2., 3., 4., 5.],
+       [1., 1., 2., 2., 2.]])
+    """
+    def __init__(self, in_channels, center=True, scale=True,
+                 beta_initializer='zeros', gamma_initializer='ones',
+                 **kwargs):
+        super(NoNorm, self).__init__(**kwargs)
+        self._kwargs = {'center': center, 'scale': scale}
+        self._in_channels = in_channels
+        self.gamma = self.params.get('gamma', grad_req='write' if scale else 'null',
+                                     shape=(in_channels,), init=gamma_initializer,
+                                     allow_deferred_init=True)
+        self.beta = self.params.get('beta', grad_req='write' if center else 'null',
+                                    shape=(in_channels,), init=beta_initializer,
+                                    allow_deferred_init=True)
+
+    def hybrid_forward(self, F, data, gamma, beta):
+        return data * gamma + beta
+
+    def __repr__(self):
+        s = '{name}({content}'
+        in_channels = self.gamma.shape[0]
+        s += ', in_channels={0}'.format(in_channels)
+        s += ')'
+        return s.format(name=self.__class__.__name__,
+                        content=', '.join(['='.join([k, v.__repr__()])
+                                           for k, v in self._kwargs.items()]))
+
+
 def _fmt_and_check_cutoffs(cutoffs, vocab_size):
     """Parse and get the cutoffs used in adaptive embedding + adaptive softmax
 
@@ -315,11 +423,6 @@ class PositionalEmbedding(HybridBlock):
                                                          max_length=max_length,
                                                          dtype=dtype,
                                                          prefix='embed_')
-            elif method == 'original_sinusoidal':
-                self._embed = OriginalSinusoidalPositionalEmbedding(units=units,
-                                                                    max_length=max_length,
-                                                                    dtype=dtype,
-                                                                    prefix='embed_')
             else:
                 raise NotImplementedError
 
@@ -338,33 +441,6 @@ class PositionalEmbedding(HybridBlock):
             Shape (..., units)
         """
         return self._embed(positions)
-
-
-@use_np
-class OriginalSinusoidalPositionalEmbedding(HybridBlock):
-    """The Sinusoidal Embedding in the original "Attention is all you need" paper.
-
-    """
-    def __init__(self, units: int, max_length=None, dtype: str = 'float32', prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
-
-        def _position_encoding_init(max_length, dim):
-            """Init the sinusoid position encoding table """
-            position_enc = np.arange(max_length).reshape((-1, 1)) \
-                           / (np.power(10000, (2. / dim) * np.arange(dim).reshape((1, -1))))
-            # Apply the cosine to even columns and sin to odds.
-            position_enc[:, 0::2] = np.sin(position_enc[:, 0::2])  # dim 2i
-            position_enc[:, 1::2] = np.cos(position_enc[:, 1::2])  # dim 2i+1
-            return position_enc
-        self._dtype = dtype
-        self._max_length = 1024 if max_length is None else max_length
-        self.position_weight =\
-            self.params.get_constant('const',
-                                     _position_encoding_init(self._max_length,
-                                                             units).astype(self._dtype))
-
-    def hybrid_forward(self, F, positions, position_weight):
-        return F.np.take(position_weight, positions, axis=0)
 
 
 @use_np
@@ -435,7 +511,7 @@ class LearnedPositionalEmbedding(HybridBlock):
         with self.name_scope():
             self.weight = self.params.get('weight', shape=(max_length, units),
                                           init=weight_initializer, dtype=dtype,
-                                          allow_deferred_init=False)
+                                          allow_deferred_init=True)
 
     def __repr__(self):
         s = '{name}(units={units}, max_length={max_length}, mode={mode}, dtype={dtype})'
@@ -472,7 +548,7 @@ class BucketPositionalEmbedding(HybridBlock):
         with self.name_scope():
             self.weight = self.params.get('weight', shape=(num_buckets, units),
                                           init=embed_initializer, dtype=dtype,
-                                          allow_deferred_init=False)
+                                          allow_deferred_init=True)
 
     def __repr__(self):
         s = '{name}(units={units}, bidirectional={bidirectional}, num_buckets={num_buckets},' \
@@ -509,6 +585,7 @@ class PositionwiseFFN(HybridBlock):
                  weight_initializer=None,
                  bias_initializer='zeros',
                  activation='relu',
+                 normalization: str = 'layer_norm',
                  layer_norm_eps: float = 1E-5,
                  pre_norm: bool = False,
                  dtype='float32',
@@ -524,6 +601,8 @@ class PositionwiseFFN(HybridBlock):
         weight_initializer
         bias_initializer
         activation
+        normalization
+            layer_norm or no_norm
         layer_norm_eps
         pre_norm
             Pre-layer normalization as proposed in the paper:
@@ -544,8 +623,9 @@ class PositionwiseFFN(HybridBlock):
             ('activation_dropout', activation_dropout),
             ('activation', activation),
             ('dropout', dropout),
-            ('pre_norm', pre_norm),
+            ('normalization', normalization),
             ('layer_norm_eps', layer_norm_eps),
+            ('pre_norm', pre_norm),
             ('dtype', self._dtype)
         ])
         with self.name_scope():
@@ -567,9 +647,10 @@ class PositionwiseFFN(HybridBlock):
                                   dtype=dtype,
                                   prefix='ffn2_')
             # TODO(sxjscience) We may need to set the dtype flag in LayerNorm, need to double check
-            self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps,
-                                           prefix='ln_',
-                                           in_channels=units)
+            self.layer_norm = get_layer_norm(normalization=normalization,
+                                             in_channels=units,
+                                             epsilon=layer_norm_eps,
+                                             prefix='ln_')
 
     def hybrid_forward(self, F, data):
         """
@@ -680,14 +761,14 @@ class AdaptiveEmbedding(HybridBlock):
                         self.params.get('embed0_weight',
                                         shape=(vocab_size, embed_size),
                                         init=embedding_initializer,
-                                        allow_deferred_init=False))
+                                        allow_deferred_init=True))
 
                 if units != embed_size:
                     setattr(self, 'inter_proj0_weight',
                             self.params.get('inter_proj0_weight',
                                             shape=(embed_size, units),
                                             init=weight_initializer,
-                                            allow_deferred_init=False))
+                                            allow_deferred_init=True))
                 else:
                     self.proj_layers = None
             else:
@@ -705,12 +786,12 @@ class AdaptiveEmbedding(HybridBlock):
                         self.params.get('embed{}_weight'.format(i),
                                         shape=(r_idx - l_idx, inner_embed_size),
                                         init=embedding_initializer,
-                                        allow_deferred_init=False))
+                                        allow_deferred_init=True))
                     setattr(self, 'inter_proj{}_weight'.format(i),
                             self.params.get('inter_proj{}_weight'.format(i),
                                             shape=(inner_embed_size, units),
                                             init=weight_initializer,
-                                            allow_deferred_init=False))
+                                            allow_deferred_init=True))
 
     def hybrid_forward(self, F, inp, **params):  # pylint: disable=arguments-differ
         """
@@ -788,8 +869,8 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
     lprob1 = log-softmax([V_0, V_1, ..., V_{c0}, T2, T3])
     lprob2 = lprob1[T2] + log-softmax([V_{c0 + 1}, V_{c0 + 2}, ... V_{c1}])
     lprob3 = lprob2[T3] + log-softmax([V_{c1 + 1}, V_{c1 + 2}, ... V_{N - 1}])
-    
-    
+
+
     @inproceedings{grave2017efficient,
       title={Efficient softmax approximation for GPUs},
       author={Grave, Edouard and Joulin, Armand and Ciss{\'e}, Moustapha and J{\'e}gou, Herv{\'e} and others},

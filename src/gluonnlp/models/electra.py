@@ -28,21 +28,23 @@
 __all__ = ['ElectraModel', 'ElectraDiscriminator', 'ElectraGenerator',
            'ElectraForPretrain', 'list_pretrained_electra', 'get_pretrained_electra']
 
-import copy
-import numpy as np
-from typing import Tuple, Optional
 import os
+from typing import Tuple, Optional
+
 import mxnet as mx
+import numpy as np
 from mxnet import use_np
-from mxnet.gluon import nn, HybridBlock
+from mxnet.gluon import HybridBlock, nn
 from mxnet.gluon.utils import download
-from .transformer import TransformerEncoderLayer
+from ..registry import BACKBONE_REGISTRY
+from ..op import gumbel_softmax, select_vectors_by_position, updated_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
-from ..utils.config import CfgNode as CN
+from ..layers import PositionalEmbedding, get_activation
+from .transformer import TransformerEncoderLayer
 from ..initializer import TruncNorm
-from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask
-from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN
-from ..op import select_vectors_by_position, disperse_vectors_by_position, gumbel_softmax
+from ..utils.config import CfgNode as CN
+from ..utils.misc import load_checksum_stats
+from ..attention_cell import gen_self_attn_mask
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 
 
@@ -56,7 +58,7 @@ def get_generator_cfg(model_config):
     generator_layers_scale = model_config.MODEL.generator_layers_scale
     generator_units_scale = model_config.MODEL.generator_units_scale
     generator_cfg.defrost()
-    # TODO(?), the round function used to slove int(0.3333*768)!=256 for electra base
+    # the round function is used to slove int(0.3333*768)!=256 for electra base
     generator_cfg.MODEL.units = round(generator_units_scale * model_config.MODEL.units)
     generator_cfg.MODEL.hidden_size = round(generator_units_scale * model_config.MODEL.hidden_size)
     generator_cfg.MODEL.num_heads = round(generator_units_scale * model_config.MODEL.num_heads)
@@ -64,34 +66,32 @@ def get_generator_cfg(model_config):
     generator_cfg.freeze()
     return generator_cfg
 
+
 PRETRAINED_URL = {
     'google_electra_small': {
         'cfg': 'google_electra_small/model-9ffb21c8.yml',
-        'vocab': 'google_electra_small/vocab-c3b41053.json',
+        'vocab': 'google_electra_small/vocab-e6d2b21d.json',
         'params': 'google_electra_small/model-2654c8b4.params',
         'disc_model': 'google_electra_small/disc_model-137714b6.params',
         'gen_model': 'google_electra_small/gen_model-d11fd0b1.params',
     },
     'google_electra_base': {
         'cfg': 'google_electra_base/model-5b35ca0b.yml',
-        'vocab': 'google_electra_base/vocab-c3b41053.json',
+        'vocab': 'google_electra_base/vocab-e6d2b21d.json',
         'params': 'google_electra_base/model-31c235cc.params',
         'disc_model': 'google_electra_base/disc_model-514bd353.params',
         'gen_model': 'google_electra_base/gen_model-665ce594.params',
     },
     'google_electra_large': {
         'cfg': 'google_electra_large/model-31b7dfdd.yml',
-        'vocab': 'google_electra_large/vocab-c3b41053.json',
+        'vocab': 'google_electra_large/vocab-e6d2b21d.json',
         'params': 'google_electra_large/model-9baf9ff5.params',
         'disc_model': 'google_electra_large/disc_model-5b820c02.params',
         'gen_model': 'google_electra_large/gen_model-667121df.params',
     },
 }
 
-FILE_STATS = dict()
-for line in open(os.path.join(get_model_zoo_checksum_dir(), 'electra.txt'), 'r', encoding='utf-8'):
-    name, hex_hash, file_size = line.strip().split()
-    FILE_STATS[name] = hex_hash
+FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'electra.txt'))
 
 
 @use_np
@@ -110,7 +110,7 @@ class ElectraEncoder(HybridBlock):
                  bias_initializer='zeros',
                  activation='gelu', prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
-        assert units % num_heads == 0,\
+        assert units % num_heads == 0, \
             'In ElectraEncoder, The units should be divisible ' \
             'by the number of heads. Received units={}, num_heads={}' \
             .format(units, num_heads)
@@ -161,8 +161,8 @@ class ElectraEncoder(HybridBlock):
         out = data
         all_encodings_outputs = []
         additional_outputs = []
-        for layer_ids in range(self._num_layers):
-            layer = self.all_encoder_layers[layer_ids]
+        for layer_idx in range(self._num_layers):
+            layer = self.all_encoder_layers[layer_idx]
             out, attention_weights = layer(out, attn_mask)
             # out : [batch_size, seq_len, units]
             # attention_weights : [batch_size, num_heads, seq_len, seq_len]
@@ -190,6 +190,7 @@ class ElectraModel(HybridBlock):
 
     This is almost the same as bert model with embedding_size adjustable (factorized embedding).
     """
+
     def __init__(self,
                  vocab_size=30000,
                  units=768,
@@ -449,9 +450,9 @@ class ElectraModel(HybridBlock):
 class ElectraDiscriminator(HybridBlock):
     """
     It is slightly different from the traditional mask language model which recover the
-    masked word (find the matched word in dictionary). The Object of Discriminator in Electra is 'replaced token
-    detection' that is a binary classification task to predicts every token whether it is an original
-    or a replacement.
+    masked word (find the matched word in dictionary). The Object of Discriminator in
+    Electra is 'replaced token detection' that is a binary classification task to
+    predicts every token whether it is an original or a replacement.
     """
 
     def __init__(self, backbone_cfg,
@@ -492,8 +493,7 @@ class ElectraDiscriminator(HybridBlock):
                                               prefix='predctions_'))
             self.rtd_encoder.hybridize()
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length,
-                       masked_positions):
+    def hybrid_forward(self, F, inputs, token_types, valid_length):
         """Getting the scores of the replaced token detection of the whole sentence
         based on the corrupted tokens produced from a generator.
 
@@ -510,9 +510,6 @@ class ElectraDiscriminator(HybridBlock):
         valid_length :
             The valid length of each sequence
             Shape (batch_size,)
-        masked_positions :
-            The masked position of the sequence
-            Shape (batch_size, num_masked_positions).
 
         Returns
         -------
@@ -521,11 +518,10 @@ class ElectraDiscriminator(HybridBlock):
         pooled_out
             Shape (batch_size, units)
         rtd_scores
-            Shape (batch_size, num_masked_positions)
+            Shape (batch_size, seq_length)
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
-        mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
-        rtd_scores = self.rtd_encoder(mlm_features).squeeze(-1)
+        rtd_scores = self.rtd_encoder(contextual_embeddings).squeeze(-1)
         return contextual_embeddings, pooled_out, rtd_scores
 
 
@@ -534,6 +530,7 @@ class ElectraGenerator(HybridBlock):
     """
     This is a typical mlm model whose size is usually the 1/4 - 1/2 of the discriminator.
     """
+
     def __init__(self, backbone_cfg,
                  tied_embeddings=True,
                  word_embed_params=None,
@@ -568,13 +565,13 @@ class ElectraGenerator(HybridBlock):
         super().__init__(prefix=prefix, params=params)
         with self.name_scope():
             self.backbone_model = ElectraModel.from_cfg(
-                                    backbone_cfg,
-                                    tied_embeddings=tied_embeddings,
-                                    word_embed_params=word_embed_params,
-                                    token_type_embed_params=token_type_embed_params,
-                                    token_pos_embed_params=token_pos_embed_params,
-                                    embed_layer_norm_params=embed_layer_norm_params,
-                                    prefix='')
+                backbone_cfg,
+                tied_embeddings=tied_embeddings,
+                word_embed_params=word_embed_params,
+                token_type_embed_params=token_type_embed_params,
+                token_pos_embed_params=token_pos_embed_params,
+                embed_layer_norm_params=embed_layer_norm_params,
+                prefix='')
             if weight_initializer is None:
                 weight_initializer = self.backbone_model.weight_initializer
             if bias_initializer is None:
@@ -588,15 +585,18 @@ class ElectraGenerator(HybridBlock):
                                               bias_initializer=bias_initializer,
                                               prefix='proj_'))
                 self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps, prefix='ln_'))
+                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                                  prefix='ln_'))
                 # only load the dense weights with a re-initialized bias
                 # parameters are stored in 'word_embed_bias' which is
                 # not used in original embedding
-                self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
-                                              flatten=False,
-                                              params=self.backbone_model.word_embed.collect_params('.*weight'),
-                                              bias_initializer=bias_initializer,
-                                              prefix='score_'))
+                self.mlm_decoder.add(
+                    nn.Dense(
+                        units=self.backbone_model.vocab_size,
+                        flatten=False,
+                        params=self.backbone_model.word_embed.collect_params('.*weight'),
+                        bias_initializer=bias_initializer,
+                        prefix='score_'))
             self.mlm_decoder.hybridize()
 
     def hybrid_forward(self, F, inputs, token_types, valid_length, masked_positions):
@@ -643,13 +643,14 @@ class ElectraForPretrain(HybridBlock):
     is the same as the original. It is a classification task instead of prediction
     task as other pretrained models such as bert.
     """
+
     def __init__(self,
                  disc_cfg,
                  uniform_generator=False,
                  tied_generator=False,
                  tied_embeddings=True,
                  disallow_correct=False,
-                 temperature=1,
+                 temperature=1.0,
                  dtype='float32',
                  weight_initializer=None,
                  bias_initializer=None,
@@ -659,19 +660,21 @@ class ElectraForPretrain(HybridBlock):
 
         Parameters
         ----------
-        disc_cfg
+        disc_cfg :
             Config for discriminator model including scaled size for generator
-        uniform_generator
-            Wether to get a generator with uniform weights, the mlm_scores from which are totally random.
-            In this case , a discriminator learns from a random 15% of the input tokens distinct from the subset.
-        tied_generator
-            Whether to tie backbone model weights of generator and discriminator. The size of G and D are
-            required to be same if set to True.
-        tied_embeddings
+        uniform_generator :
+            Wether to get a generator with uniform weights, the mlm_scores from
+            which are totally random. In this case , a discriminator learns from
+            a random 15% of the input tokens distinct from the subset.
+        tied_generator :
+            Whether to tie backbone model weights of generator and discriminator.
+            The size of G and D are required to be same if set to True.
+        tied_embeddings :
             Whether to tie the embeddings of generator and discriminator
-        disallow_correct
-            Whether the correct smaples of generator are allowed, that is 15% of tokens are always fake.
-        temperature
+        disallow_correct :
+            Whether the correct smaples of generator are allowed,
+            that is 15% of tokens are always fake.
+        temperature :
             Temperature of gumbel distribution for sampling from generator
         weight_initializer
         bias_initializer
@@ -689,7 +692,7 @@ class ElectraForPretrain(HybridBlock):
         self.disc_cfg = disc_cfg
         self.vocab_size = disc_cfg.MODEL.vocab_size
         self.gen_cfg = get_generator_cfg(disc_cfg)
-        self.discriminator = ElectraDiscriminator(disc_cfg)
+        self.discriminator = ElectraDiscriminator(disc_cfg, prefix='electra_')
         self.disc_backbone = self.discriminator.backbone_model
         if tied_embeddings:
             word_embed_params = self.disc_backbone.word_embed.collect_params()
@@ -704,25 +707,29 @@ class ElectraForPretrain(HybridBlock):
 
         if not uniform_generator and not tied_generator:
             self.generator = ElectraGenerator(
-                                self.gen_cfg,
-                                tied_embeddings=tied_embeddings,
-                                word_embed_params=word_embed_params,
-                                token_type_embed_params=token_type_embed_params,
-                                token_pos_embed_params=token_pos_embed_params,
-                                embed_layer_norm_params=embed_layer_norm_params)
-        elif uniform_generator:
-            #TODO(zheyuye), get the mlm_scores randomly over vocab
-            self.generator = None
+                self.gen_cfg,
+                tied_embeddings=tied_embeddings,
+                word_embed_params=word_embed_params,
+                token_type_embed_params=token_type_embed_params,
+                token_pos_embed_params=token_pos_embed_params,
+                embed_layer_norm_params=embed_layer_norm_params,
+                prefix='generator_')
+            self.generator.hybridize()
+
         elif tied_generator:
-            #Reuse the weight of the discriminator backbone model
-            self.generator = ElectraGenerator(self.gen_cfg, tied_embeddings=False)
+            # Reuse the weight of the discriminator backbone model
+            self.generator = ElectraGenerator(
+                self.gen_cfg, tied_embeddings=False, prefix='generator_')
             self.generator.backbone_model = self.disc_backbone
+            self.generator.hybridize()
+        elif uniform_generator:
+            # get the mlm_scores randomly over vocab
+            self.generator = None
 
         self.discriminator.hybridize()
-        self.generator.hybridize()
 
     def hybrid_forward(self, F, inputs, token_types, valid_length,
-                       masked_positions):
+                       unmasked_tokens, masked_positions):
         """Getting the mlm scores of each masked positions from a generator,
         then produces the corrupted tokens sampling from a gumbel distribution.
         We also get the ground-truth and scores of the replaced token detection
@@ -737,6 +744,7 @@ class ElectraForPretrain(HybridBlock):
         ----------
         F
         inputs :
+            The masked input
             Shape (batch_size, seq_length)
         token_types :
             Shape (batch_size, seq_length)
@@ -746,17 +754,20 @@ class ElectraForPretrain(HybridBlock):
         valid_length :
             The valid length of each sequence
             Shape (batch_size,)
+        unmasked_tokens :
+            The original tokens that appear in the unmasked input sequence
+            Shape (batch_size, num_masked_positions).
         masked_positions :
             The masked position of the sequence
             Shape (batch_size, num_masked_positions).
-        seq_shape :
-            A tuple, shape of the sequence
 
         Returns
         -------
         mlm_scores :
             Shape (batch_size, num_masked_positions, vocab_size)
         rtd_scores :
+            Shape (batch_size, seq_length)
+        replaced_inputs :
             Shape (batch_size, num_masked_positions)
         labels :
             Shape (batch_size, seq_length)
@@ -764,51 +775,67 @@ class ElectraForPretrain(HybridBlock):
         if self._uniform_generator:
             # generate the corrupt tokens randomly with a mlm_scores vector whose value is all 0
             zero_logits = F.np.zeros(self.vocab_size)
-            zero_logits = F.np.expand_dims(F.np.expand_dims(logits, axis=0), axis=0)
+            zero_logits = F.np.expand_dims(F.np.expand_dims(zero_logits, axis=0), axis=0)
             mlm_scores = F.np.expand_dims(F.np.zeros_like(masked_positions), axis=-1)
             mlm_scores = mlm_scores + zero_logits
         else:
             _, _, mlm_scores = self.generator(inputs, token_types, valid_length, masked_positions)
 
-        fake_data, labels = self.get_corrupted_tokens(F, inputs, masked_positions, mlm_scores)
-        # the discriminator take same input as the generator but the token_ids are replaced with fake data
-        _, _, rtd_scores = self.discriminator(fake_data, token_types, valid_length, masked_positions)
-        return mlm_scores, rtd_scores, labels
+        corrupted_tokens, fake_data, labels = self.get_corrupted_tokens(
+            F, inputs, unmasked_tokens, masked_positions, mlm_scores)
+        # the discriminator take same input as the generator but the token_ids are
+        # replaced with fake data
+        _, _, rtd_scores = self.discriminator(fake_data, token_types, valid_length)
+        return mlm_scores, rtd_scores, corrupted_tokens, labels
 
-    def update_seq_shape(self, batch_size, seq_len):
-        self.batch_size = batch_size
-        self.seq_len = seq_len
+    def get_corrupted_tokens(self, F, inputs, unmasked_tokens, masked_positions, logits):
+        """
+        Sample from the generator to create corrupted input.
+        Parameters
+        ----------
+        F
+        inputs
+            The masked input
+            Shape (batch_size, seq_length)
+        unmasked_tokens
+            The original tokens that appear in the unmasked input sequence
+            Shape (batch_size, num_masked_positions).
+        masked_positions
+            The masked position of the sequence
+            Shape (batch_size, num_masked_positions).
+        logits
+            Shape (batch_size, num_masked_positions, vocab_size)
 
-    def get_corrupted_tokens(self, F, inputs, masked_positions, logits):
+        Returns
+        -------
+        fake_data
+            Shape (batch_size, seq_length)
+        labels
+            Shape (batch_size, seq_length)
+        """
+
         if self._disallow_correct:
             disallow = F.npx.one_hot(masked_positions, depth=self.vocab_size, dtype=self._dtype)
-            logits -= 1000.0 * disallow
+            # TODO(zheyuye), Update when operation -= supported
+            logits = logits - 1000.0 * disallow
         # gumbel_softmax() samples from the logits with a noise of Gumbel distribution
-        prob = gumbel_softmax(F, logits, temperature=self._temperature, eps=1e-9)
+        prob = gumbel_softmax(
+            F,
+            logits,
+            temperature=self._temperature,
+            eps=1e-9,
+            use_np_gumbel=False)
         corrupted_tokens = F.np.argmax(prob, axis=-1).astype(np.int32)
-        replaced_inputs = select_vectors_by_position(F, inputs, masked_positions)
-        # TODO(zheyuye), How to deal with the issues of duplicated positions, which causes
-        # the inaccurate gradients in mx.nd.scatter_nd. The official tensorflow implementation
-        # that take average value of corrupted token ids of duplicated positions might be
-        # alternative as https://github.com/google-research/electra/issues/41.
 
-        # Updates to index 0 are ignored.
-        updated_tokens = F.np.where(corrupted_tokens != 0, corrupted_tokens, replaced_inputs)
+        # Following the Official electra to deal with duplicate positions as
+        # https://github.com/google-research/electra/issues/41
+        original_data, updates_mask = updated_vectors_by_position(F,
+            inputs, unmasked_tokens, masked_positions)
+        fake_data, _ = updated_vectors_by_position(F,
+            inputs, corrupted_tokens, masked_positions)
 
-        #TODO(zheyuye), currently the scatter_nd operation is not supported in deep numpy as
-        # https://github.com/apache/incubator-mxnet/issues/17823 showcased.
-        # Temperature sulution is using update_seq_shape() to set up the inner hyperparameters
-        # due to the hybrid_forward could only take Symbol or NDArray as input when hybridized.
-        seq_shape = (self.batch_size, self.seq_len)
-        updates_sequence = disperse_vectors_by_position(F, updated_tokens,
-                                                        masked_positions, seq_shape)
-
-        updates_mask = disperse_vectors_by_position(F,
-                F.np.ones_like(masked_positions), masked_positions, seq_shape)
-
-        fake_data = F.np.where(updates_sequence!=0, updates_sequence, inputs)
-        labels = updates_mask * F.np.not_equal(fake_data, inputs)
-        return fake_data, labels
+        labels = updates_mask * F.np.not_equal(fake_data, original_data)
+        return corrupted_tokens, fake_data, labels
 
 
 def list_pretrained_electra():
@@ -819,7 +846,7 @@ def get_pretrained_electra(model_name: str = 'google_electra_small',
                            root: str = get_model_zoo_home_dir(),
                            load_backbone: bool = True,
                            load_disc: bool = False,
-                           load_gen: bool = False)\
+                           load_gen: bool = False) \
         -> Tuple[CN, HuggingFaceWordPieceTokenizer,
                  Optional[str],
                  Tuple[Optional[str], Optional[str]]]:
@@ -884,12 +911,17 @@ def get_pretrained_electra(model_name: str = 'google_electra_small',
         local_gen_params_path = None
     # TODO(sxjscience) Move do_lower to assets.
     tokenizer = HuggingFaceWordPieceTokenizer(
-                    vocab_file=local_paths['vocab'],
-                    unk_token='[UNK]',
-                    pad_token='[PAD]',
-                    cls_token='[CLS]',
-                    sep_token='[SEP]',
-                    mask_token='[MASK]',
-                    lowercase=True)
+        vocab_file=local_paths['vocab'],
+        unk_token='[UNK]',
+        pad_token='[PAD]',
+        cls_token='[CLS]',
+        sep_token='[SEP]',
+        mask_token='[MASK]',
+        lowercase=True)
     cfg = ElectraModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, (local_disc_params_path, local_gen_params_path)
+
+
+BACKBONE_REGISTRY.register('electra', [ElectraModel,
+                                       get_pretrained_electra,
+                                       list_pretrained_electra])

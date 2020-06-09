@@ -16,10 +16,12 @@
 # under the License.
 """Implements the beam search sampler."""
 import numpy as np
+import warnings
 import mxnet as mx
 import abc
 from mxnet.gluon import HybridBlock
-from typing import Callable
+from typing import Callable, Optional
+from .layers import get_activation
 
 
 LARGE_POSITIVE_FLOAT = 1e18
@@ -27,10 +29,10 @@ LARGE_POSITIVE_FLOAT = 1e18
 LARGE_NEGATIVE_FLOAT = -LARGE_POSITIVE_FLOAT
 
 
-class SequenceDecoder(abc.ABC):
-    """Base class for the decoder used in sequence sampler.
+class BaseStepDecoder(abc.ABC):
+    """Base class of a step decoder
 
-    You may inherit `BaseSequenceDecoder` and implement the required
+    You may inherit `BaseStepDecoder` and implement the required methods.
 
     """
     @property
@@ -66,10 +68,9 @@ class SequenceDecoder(abc.ABC):
 
 # TODO(sxjscience)
 #  1. Add Multinomial Sampler with Temperature
-#  2. Add Stochastic BeamSearch
-#  3. Add Nucleus Sampling "[ICLR2020] The Curious Case of Neural Text Degeneration"
+#  2. Add Nucleus Sampling "[ICLR2020] The Curious Case of Neural Text Degeneration"
 #       (https://openreview.net/pdf?id=rygGQyrFvH)
-#  4. Add ParticleFilter Sampler
+#  3. Add ParticleFilter Sampler
 class BeamSearchScorer(HybridBlock):
     r"""Score function used in beam search.
 
@@ -93,12 +94,18 @@ class BeamSearchScorer(HybridBlock):
     from_logits
         Whether input is a log probability (usually from log_softmax) instead
         of unnormalized numbers.
+    temperature
+        The temperature of the scoring function
     """
-    def __init__(self, alpha: float = 1.0, K: float = 5.0,
-                 from_logits: bool = False, **kwargs):
-        super(BeamSearchScorer, self).__init__(**kwargs)
+    def __init__(self, alpha: float = 1.0,
+                 K: float = 5.0,
+                 from_logits: bool = False,
+                 temperature: float = 1.0,
+                 prefix=None, params=None):
+        super().__init__(prefix=prefix, params=params)
         self._alpha = float(alpha)
         self._K = K
+        self._temperature = temperature
         self._from_logits = from_logits
 
     def __call__(self, outputs, scores, step):  # pylint: disable=arguments-differ
@@ -126,13 +133,17 @@ class BeamSearchScorer(HybridBlock):
 
     def hybrid_forward(self, F, outputs, scores, step):  # pylint: disable=arguments-differ
         if not self._from_logits:
-            outputs = F.npx.log_softmax(outputs)
-        step = step.astype(np.float32)
-        prev_lp = (self._K + step - 1) ** self._alpha / ((self._K + 1) ** self._alpha)
-        prev_lp = prev_lp * (step != 1).astype(np.float32) + (step == 1).astype(np.float32)
-        lp = (self._K + step) ** self._alpha / ((self._K + 1) ** self._alpha)
-        scores = scores * prev_lp
-        candidate_scores = (outputs + F.np.expand_dims(scores, axis=-1)) / lp
+            outputs = F.npx.log_softmax(outputs / self._temperature)
+
+        if self._alpha != 0.0:
+            step = step.astype(np.float32)
+            prev_lp = (self._K + step - 1) ** self._alpha / ((self._K + 1) ** self._alpha)
+            prev_lp = prev_lp * (step != 1).astype(np.float32) + (step == 1).astype(np.float32)
+            lp = (self._K + step) ** self._alpha / ((self._K + 1) ** self._alpha)
+            scores = scores * prev_lp
+            candidate_scores = (outputs + F.np.expand_dims(scores, axis=-1)) / lp
+        else:
+            candidate_scores = outputs + F.np.expand_dims(scores, axis=-1)
         return candidate_scores
 
     def __repr__(self):
@@ -240,7 +251,7 @@ def _choose_states(F, states, indices, state_batch_axis=None):
 
 class _BeamSearchStepUpdate(HybridBlock):
     def __init__(self, beam_size, vocab_size, eos_id, scorer, state_batch_axis,
-                 prefix=None, params=None):
+                 stochastic=False, prefix=None, params=None):
         """
 
         Parameters
@@ -250,6 +261,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         eos_id : int
         scorer : BeamSearchScorer
         state_batch_axis :
+        stochastic: bool
         prefix : None
         params : None
         """
@@ -259,7 +271,41 @@ class _BeamSearchStepUpdate(HybridBlock):
         self._eos_id = eos_id
         self._scorer = scorer
         self._state_batch_axis = state_batch_axis
+        self.stochastic = stochastic
+        self.activation = get_activation('relu')
         assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
+
+    def gumbel_with_maximum(self, F, phi, T, dim=-1):
+        """
+        Parameters
+        ----------
+        F
+        phi : mx.np.ndarray or Symbol
+            Shape (batch_size, beam_size, L).
+        T : mx.np.ndarray or Symbol
+            The previous scores. Shape (batch_size, beam_size)
+        """
+        g_phi = phi + F.np.random.gumbel(F.np.zeros_like(phi))
+        Z = g_phi.max(dim)
+        g = self.shift_gumbel_maximum(F, g_phi, T, dim, Z=Z)
+        return g
+    
+    def shift_gumbel_maximum(self, F, g_phi, T, dim=-1, Z=None):
+        """
+        Parameters
+        ----------
+        F
+        g_phi : mx.np.ndarray or Symbol
+            Shape (batch_size, beam_size, L).
+        T : mx.np.ndarray or Symbol
+            The previous scores. Shape (batch_size, beam_size)
+        """
+        if Z is None:
+            Z = g_phi.max(dim)
+        T_ = F.npx.reshape(T, (-4, 1))
+        Z_ = F.npx.reshape(Z, (-4, 1))
+        u = T_ - g_phi + F.np.log1p(-F.np.exp(g_phi - Z_)+1e-5)
+        return T_ - self.activation(u) - F.np.log1p(F.np.exp(-F.np.abs(u)))
 
     def hybrid_forward(self, F, samples, valid_length, outputs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
                        states, batch_shift):
@@ -307,12 +353,24 @@ class _BeamSearchStepUpdate(HybridBlock):
             Shape (batch_size, beam_size)
         new_states : nested structure of NDArrays/Symbols
             Inner NDArrays have shape (batch_size * beam_size, ...)
+        step : NDArray or Symbol
+            The current step for doing beam search. Begins from 1. Shape ()
         """
         beam_size = self._beam_size
         vocab_size = self._vocab_size
         beam_alive_mask_bcast = F.np.expand_dims(beam_alive_mask, axis=2)
         candidate_scores = self._scorer(F.npx.reshape(outputs, (-6, -1, beam_size, -2)),
                                         scores, step)
+        if self.stochastic:
+            if step == 1:
+                candidate_scores_gumbel\
+                    = candidate_scores[:1]\
+                      + F.np.random.gumbel(F.np.zeros_like(candidate_scores[:1]))
+                candidate_scores_residual = candidate_scores[1:]
+                candidate_scores = F.np.concatenate((candidate_scores_gumbel,
+                                                     candidate_scores_residual), axis=0)
+            else:
+                candidate_scores = self.gumbel_with_maximum(F, candidate_scores, scores, -1)
         # Concat the candidate scores and the scores of the finished beams
         # The resulting candidate score will have shape (batch_size, beam_size * |V| + beam_size)
         candidate_scores = F.np.where(beam_alive_mask_bcast,
@@ -393,18 +451,16 @@ class BeamSearchSampler:
         The minimum length of the generated sequences.
     """
     def __init__(self, beam_size: int,
-                 decoder: SequenceDecoder,
+                 decoder: BaseStepDecoder,
                  eos_id: int,
                  vocab_size: int,
-                 scorer: Callable = BeamSearchScorer(alpha=1.0, K=5),
+                 scorer: Optional[Callable] = None,
                  max_length_a: int = 0,
                  max_length_b: int = 200,
                  min_length: int = 1,
-                 layout: str = 'NT'):
+                 stochastic: bool = False):
         self._beam_size = beam_size
         self._vocab_size = vocab_size
-        self._layout = layout
-        assert layout in ['NT', 'TN'], 'Unrecognized layout, you must choose among "NT" and "TN".'
         assert beam_size > 0,\
             'beam_size must be larger than 0. Received beam_size={}'.format(beam_size)
         self._decoder = decoder
@@ -413,14 +469,28 @@ class BeamSearchSampler:
         self._max_length_a = max_length_a
         self._max_length_b = max_length_b
         self._min_length = min_length
+        if scorer is None:
+            if stochastic:
+                scorer = BeamSearchScorer(alpha=0.0, temperature=1.0)
+            else:
+                scorer = BeamSearchScorer(alpha=1.0, K=5)
+
         self._scorer = scorer
         self._state_batch_axis = decoder.state_batch_axis
         self._updater = _BeamSearchStepUpdate(beam_size=beam_size,
                                               vocab_size=vocab_size,
                                               eos_id=eos_id,
                                               scorer=scorer,
-                                              state_batch_axis=decoder.state_batch_axis)
-        self._updater.hybridize()
+                                              state_batch_axis=decoder.state_batch_axis,
+                                              stochastic=stochastic)
+
+        if not stochastic:
+            self._updater.hybridize()
+        else:
+            if isinstance(scorer, BeamSearchScorer):
+                if scorer._alpha != 0.0:
+                    warnings.warn(
+                        'To use stochastic beam search, we need to set the alpha as 0.0')
 
     def __call__(self, inputs, states, src_seq_lengths=None, early_return=True):
         """Sample by beam search.
@@ -450,6 +520,7 @@ class BeamSearchSampler:
             The valid length of the samples. Shape (batch_size, beam_size).
             DType is int32.
         """
+        ctx = inputs.ctx
         batch_size = inputs.shape[0]
         beam_size = self._beam_size
         if src_seq_lengths is not None:
@@ -462,7 +533,6 @@ class BeamSearchSampler:
                                  ' Received {}'
                                  .format(self._max_length_a))
             max_length = max(self._min_length, self._max_length_b)
-        ctx = inputs.ctx
         # Tile the states and inputs to have shape (batch_size * beam_size, ...)
         states = _expand_to_beam_size(states, beam_size=beam_size, batch_size=batch_size,
                                       state_batch_axis=self._state_batch_axis)

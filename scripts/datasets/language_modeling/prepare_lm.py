@@ -1,10 +1,13 @@
 import argparse
 import os
 import zipfile
+import tarfile
+import shutil
 from typing import List, Optional
 from collections import Counter
 from gluonnlp.base import get_data_home_dir
-from gluonnlp.utils.misc import download
+from gluonnlp.registry import DATA_MAIN_REGISTRY, DATA_PARSER_REGISTRY
+from gluonnlp.utils.misc import download, load_checksum_stats
 from gluonnlp.data.vocab import Vocab
 
 
@@ -12,7 +15,7 @@ _CITATIONS = """
 @ONLINE {mahoney2011large,
   title={Large text compression benchmark},
   author={Mahoney, Matt},
-  url={http://www.mattmahoney.net/text/text.html},
+  url={http://www.mattmahoney.net/dc/text.html},
   year={2011}
 }
 
@@ -36,20 +39,24 @@ _CITATIONS = """
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 _URL_FILE_STATS_PATH = os.path.join(_CURR_DIR, '..', 'url_checksums',
                                     'language_model.txt')
-_URL_FILE_STATS = dict()
-for line in open(_URL_FILE_STATS_PATH, 'r', encoding='utf-8'):
-    url, hex_hash, file_size = line.strip().split()
-    _URL_FILE_STATS[url] = hex_hash
+_URL_FILE_STATS = load_checksum_stats(_URL_FILE_STATS_PATH)
+
 
 _URLS = {
     'wikitext2': 'https://s3.amazonaws.com/research.metamind.io/wikitext/wikitext-2-v1.zip',
     'wikitext103': 'https://s3.amazonaws.com/research.metamind.io/wikitext/wikitext-103-v1.zip',
     'enwik8': 'http://mattmahoney.net/dc/enwik8.zip',
     'text8': 'http://mattmahoney.net/dc/text8.zip',
-    'gbw': 'http://www.statmt.org/lm-benchmark/1-billion-word-language-modeling-benchmark-r13output.tar.gz'
+    # The original address of Google One Billion Word dataset is
+    # http://www.statmt.org/lm-benchmark/1-billion-word-language-modeling-benchmark-r13output.tar.gz
+    # We uploaded the file to S3 to accelerate the speed
+    'gbw': 'https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/datasets/language_modeling/1-billion-word-language-modeling-benchmark-r13output.tar.gz',
+    # The data is obtained from https://raw.githubusercontent.com/rafaljozefowicz/lm/master/1b_word_vocab.txt
+    'gbw_vocab': 'https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/datasets/language_modeling/1b_word_vocab.txt'
 }
 
 
+@DATA_PARSER_REGISTRY.register('prepare_lm')
 def get_parser():
     parser = argparse.ArgumentParser(description='Downloading and Preprocessing'
                                                  ' Language Modeling Datasets.')
@@ -120,6 +127,7 @@ def build_vocab(corpus_path_l: List, eos_token: Optional[str] = '<eos>') -> Voca
     return vocab
 
 
+@DATA_MAIN_REGISTRY.register('prepare_lm')
 def main(args):
     # Download the data
     url = _URLS[args.dataset]
@@ -215,7 +223,34 @@ def main(args):
             vocab.save(os.path.join(save_dir, 'vocab.json'))
 
     elif args.dataset == 'gbw':
-        pass
+        vocab_path = download(_URLS['gbw_vocab'],
+                              os.path.join(args.cache_path, '1b_word_vocab.txt'),
+                              sha1_hash=_URL_FILE_STATS[_URLS['gbw_vocab']])
+        with tarfile.open(target_download_location) as f:
+            os.makedirs(os.path.join(save_dir, 'train'), exist_ok=True)
+            os.makedirs(os.path.join(save_dir, 'test'), exist_ok=True)
+            for member in f.getmembers():
+                if 'training-monolingual.tokenized.shuffled' in member.name \
+                        and 'news.en' in member.name:
+                    basename = os.path.basename(member.name)
+                    with f.extractfile(member) as f_in:
+                        with open(os.path.join(save_dir, 'train', basename), 'wb') as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+                elif 'heldout-monolingual.tokenized.shuffled' in member.name and \
+                        '.heldout-' in member.name:
+                    basename = os.path.basename(member.name)
+                    with f.extractfile(member) as f_in:
+                        with open(os.path.join(save_dir, 'test', basename), 'wb') as f_out:
+                            shutil.copyfileobj(f_in, f_out)
+        all_tokens = []
+        with open(vocab_path, 'r') as f:
+            for token in f:
+                token = token.strip().split()[0]
+                all_tokens.append(token)
+        vocab = Vocab(all_tokens, bos_token='<S>', unk_token='<UNK>')
+        vocab.save(os.path.join(save_dir, 'vocab.json'))
+        print('Saved Google-One-Billion-Word in {}'.format(save_dir))
+        print('Vocab={}'.format(vocab))
     else:
         raise NotImplementedError
 

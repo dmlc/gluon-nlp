@@ -4,6 +4,7 @@ import sys
 import argparse
 import glob
 from gluonnlp.utils.misc import download
+from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 
 _CITATION = """\
 @ONLINE {wikidump,
@@ -43,7 +44,8 @@ __LANGUAGES_BANK = [
     "war", "wo", "wuu", "xal", "xh", "xmf", "yi", "yo", "za", "zea", "zh",
     "zh-classical", "zh-min-nan", "zh-yue", "zu"]
 
-_BASE_URL_TMPL = "https://dumps.wikimedia.org/{lang}wiki/{date}/{lang}wiki-{date}-pages-articles.xml.bz2"
+_BASE_URL_TMPL\
+    = "https://dumps.wikimedia.org/{lang}wiki/{date}/{lang}wiki-{date}-pages-articles.xml.bz2"
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 
 
@@ -100,6 +102,7 @@ class WikicorpusTextFormatting:
                                     article_lines.append(line)
 
 
+@DATA_PARSER_REGISTRY.register('prepare_wikipedia')
 def get_parser():
     parser = argparse.ArgumentParser(description='Download and Prepare the Wikipedia')
     parser.add_argument('--mode', type=str,
@@ -159,6 +162,7 @@ def format_wikicorpus(input, output, bytes):
     wiki_formatter.merge()
 
 
+@DATA_MAIN_REGISTRY.register('prepare_wikipedia')
 def main(args):
     if args.mode == 'download':
         download_wikicorpus(args.lang, args.date, args.output)

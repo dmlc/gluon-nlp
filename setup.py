@@ -28,17 +28,11 @@ VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
 requirements = [
     'numpy',
-    'spacy>=2.0.0',
     'sacremoses>=0.0.38',
     'yacs>=0.1.6',
     'sacrebleu',
-    'jieba',
     'flake8',
-    'regex',
-    'scipy',
-    'h5py>=2.10',
-    'tokenizers>=0.7.0',
-    'sentencepiece',
+    'regex'
 ]
 
 setup(
@@ -66,9 +60,18 @@ setup(
             'boto3',
             'tqdm',
             'protobuf',
+            'tokenizers>=0.7.0',
+            'sentencepiece',
+            'jieba',
             'subword_nmt',
             'youtokentome>=1.0.6',
+            'spacy>=2.0.0',
+            'fasttext>=0.9.2',
+            'langid',
             'nltk',
+            'h5py>=2.10',
+            'scipy',
+            'tqdm'
         ],
         'dev': [
             'pytest',

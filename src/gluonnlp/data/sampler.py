@@ -21,12 +21,13 @@ __all__ = ['ConstWidthBucket', 'LinearWidthBucket', 'ExpWidthBucket',
            'SortedSampler', 'FixedBucketSampler', 'SortedBucketSampler']
 
 import math
+import random
 import warnings
+import random
 import numpy as np
 import abc
 from typing import Union, Sequence, Optional, List
-
-INT_TYPES = (int, np.int32, np.int64)
+from ..base import INT_TYPES
 
 
 def _match_bucket_keys(bucket_keys, seq_lengths):
@@ -505,3 +506,75 @@ class SortedBucketSampler(BaseSampler):
 
     def __len__(self):
         return (len(self._sort_keys) + self._batch_size - 1) // self._batch_size
+
+
+class SplitSampler(BaseSampler):
+    """Split the dataset into `num_parts` parts and randomly sample from the part
+    with index `part_index`.
+    The data is randomly shuffled at each iteration within each partition.
+
+    Parameters
+    ----------
+    length
+        Number of examples in the dataset
+    num_parts
+        Number of partitions which the data is split into
+    part_index
+        The index of the part to read from
+    even_size
+        If the number of samples is not even across all partitions, sample a few extra samples
+        for the ones with fewer samples.
+    repeat
+        The number of times that items are repeated.
+    shuffle
+        Whether or not to shuffle the items.
+    """
+    def __init__(self, length: int,
+                 num_parts: int = 1,
+                 part_index: int = 0,
+                 even_size: bool = False,
+                 repeat: int = 1,
+                 shuffle: bool = True):
+        assert length >= num_parts, \
+            'Length (%d) must be greater than or equal to the number of partitions (%d).' %\
+            (length, num_parts)
+        self.even_size = even_size
+        self.num_parts = num_parts
+        self._total_length = length
+        if not even_size:
+            # Compute the length of each partition
+            part_len = length // num_parts
+            remaining = length % num_parts
+            # Compute the start and end index for this partition
+            self._start = part_len * part_index + min(part_index, remaining)
+            self._end = self._start + part_len + (part_index < remaining)
+            self._len = self._end - self._start
+        else:
+            # round up partition length
+            part_len = int(length + num_parts - 1) // num_parts
+            # Compute the start and end index for this partition
+            self._start = part_len * part_index
+            self._end = self._start + part_len
+            self._start = self._start if self._start < length else length
+            self._end = self._end if self._end <= length else length
+            self._len = part_len
+        self._repeat = repeat
+        self._shuffle = shuffle
+
+    def __iter__(self):
+        # Extract examples between `start` and `end`, shuffle and return them.
+        file_iter = []
+        for _ in range(self._repeat):
+            indices = list(range(self._start, self._end))
+            if self.even_size and len(indices) < self._len:
+                # guaranteed to have part_len number of samples
+                candidates = list(range(self._total_length))
+                extras = random.sample(candidates, k=self._len-len(indices))
+                indices.extend(extras)
+            if self._shuffle:
+                random.shuffle(indices)
+            file_iter.extend(indices)
+        return iter(file_iter)
+
+    def __len__(self):
+        return self._len * self._repeat

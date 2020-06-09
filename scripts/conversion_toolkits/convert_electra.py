@@ -1,28 +1,27 @@
 import os
-import sys
-import json
-# The path of Electra package which could be cloned from https://github.com/ZheyuYe/electra.git
-
-import argparse
-import json
 import re
+import sys
 import shutil
-import collections
-import io
 import logging
-from numpy.testing import assert_allclose
+import argparse
+
 import mxnet as mx
 import numpy as np
-from gluonnlp.utils.misc import sha1sum, logging_config
+from numpy.testing import assert_allclose
+
+from gluonnlp.utils.misc import sha1sum, naming_convention, logging_config
+from gluonnlp.data.tokenizers import HuggingFaceWordPieceTokenizer
 from gluonnlp.models.electra import ElectraModel, \
     ElectraGenerator, ElectraDiscriminator, ElectraForPretrain, get_generator_cfg
 import tensorflow.compat.v1 as tf
+
 tf.disable_eager_execution()
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 mx.npx.set_np()
 np.random.seed(1234)
 mx.npx.random.seed(1234)
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert the TF Electra Model to Gluon')
@@ -41,6 +40,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
 def read_tf_checkpoint(path):
     """read tensorflow checkpoint"""
     from tensorflow.python import pywrap_tensorflow
@@ -52,8 +52,9 @@ def read_tf_checkpoint(path):
         tensors[key] = tensor
     return tensors
 
-def get_dict_config(model_size, electra_path):
-    sys.path.append(electra_path)
+
+def get_dict_config(model_size, electra_dir):
+    sys.path.append(electra_dir)
     from electra.util.training_utils import get_bert_config
     from electra.configure_pretraining import PretrainingConfig
 
@@ -62,11 +63,12 @@ def get_dict_config(model_size, electra_path):
     # we are not store all configuration of electra generators but only the scale size.
     config_dict = bert_config.to_dict()
     config_dict.update(
-                {'embedding_size': config.embedding_size,
-                 'generator_hidden_size': config.generator_hidden_size,
-                 'generator_layers': config.generator_layers,
-                })
+        {'embedding_size': config.embedding_size,
+         'generator_hidden_size': config.generator_hidden_size,
+         'generator_layers': config.generator_layers,
+         })
     return config_dict
+
 
 def convert_tf_config(config_dict, vocab_size):
     """Convert the config file"""
@@ -97,7 +99,7 @@ def convert_tf_config(config_dict, vocab_size):
     return cfg
 
 
-def convert_tf_assets(tf_assets_dir, model_size, electra_path):
+def convert_tf_assets(tf_assets_dir, model_size, electra_dir):
     """Convert the assets file including config, vocab and tokenizer model"""
     file_names = os.listdir(tf_assets_dir)
     vocab_path = None
@@ -109,8 +111,8 @@ def convert_tf_assets(tf_assets_dir, model_size, electra_path):
 
     if vocab_path:
         vocab_path = os.path.join(tf_assets_dir, vocab_path)
-        vocab_size = len(open(vocab_path,'rU').readlines())
-    config_dict = get_dict_config(model_size, electra_path)
+        vocab_size = len(open(vocab_path, 'rU').readlines())
+    config_dict = get_dict_config(model_size, electra_dir)
     cfg = convert_tf_config(config_dict, vocab_size)
     return cfg, vocab_path
 
@@ -120,7 +122,7 @@ CONVERT_MAP = [
     ('discriminator_predictions/dense', 'electra_disc_proj'),
     ('generator_predictions/dense', 'generator_gen_proj'),
     ('generator_predictions/LayerNorm', 'generator_gen_ln'),
-    ('generator_predictions/output_bias', 'electra_word_embed_bias'), #reuse the embeeding from disc
+    ('generator_predictions/output_bias', 'electra_word_embed_bias'),  # reuse the embeeding from disc
     ('embeddings_project', 'embed_factorized_proj'),
     ('embeddings/word_embeddings', 'word_embed_weight'),
     ('embeddings/token_type_embeddings', 'token_type_embed_weight'),
@@ -185,19 +187,23 @@ def get_name_map(tf_names, convert_type='backbone'):
     return name_map
 
 
-def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, electra_path):
+def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, electra_dir):
     ctx = mx.gpu(gpu) if gpu is not None else mx.cpu()
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-    # a temporary folder to save converted files
-    tmp_dir = os.path.expanduser(os.path.join(save_dir, 'tmp'))
-    if not os.path.exists(tmp_dir):
-        os.makedirs(tmp_dir)
 
-    cfg, vocab_path = convert_tf_assets(model_dir, model_size, electra_path)
-    with open(os.path.join(tmp_dir, 'model.yml'), 'w') as of:
+    cfg, vocab_path = convert_tf_assets(model_dir, model_size, electra_dir)
+    with open(os.path.join(save_dir, 'model.yml'), 'w') as of:
         of.write(cfg.dump())
-    shutil.copy(vocab_path, os.path.join(tmp_dir, 'vocab.json'))
+    new_vocab = HuggingFaceWordPieceTokenizer(
+                        vocab_file=vocab_path,
+                        unk_token='[UNK]',
+                        pad_token='[PAD]',
+                        cls_token='[CLS]',
+                        sep_token='[SEP]',
+                        mask_token='[MASK]',
+                        lowercase=True).vocab
+    new_vocab.save(os.path.join(save_dir, 'vocab.json'))
 
     #test input data
     batch_size = 3
@@ -205,7 +211,7 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
     num_mask = 5
     input_ids = np.random.randint(0, cfg.MODEL.vocab_size, (batch_size, seq_length))
     valid_length = np.random.randint(seq_length // 2, seq_length, (batch_size,))
-    input_mask = np.broadcast_to(np.arange(seq_length).reshape(1, -1), (batch_size, seq_length))\
+    input_mask = np.broadcast_to(np.arange(seq_length).reshape(1, -1), (batch_size, seq_length)) \
                  < np.expand_dims(valid_length, 1)
     segment_ids = np.random.randint(0, 2, (batch_size, seq_length))
     mlm_positions = np.random.randint(0, seq_length // 2, (batch_size, num_mask))
@@ -213,11 +219,10 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
     tf_input_ids = tf.constant(input_ids, dtype=np.int32)
     tf_input_mask = tf.constant(input_mask, dtype=np.int32)
     tf_segment_ids = tf.constant(segment_ids, dtype=np.int32)
-    tf_mlm_positions = tf.constant(mlm_positions, dtype=np.int32)
 
     init_checkpoint = os.path.join(model_dir, 'electra_{}'.format(model_size))
     tf_params = read_tf_checkpoint(init_checkpoint)
-    #get parameter names for tensorflow with unused parameters filtered out.
+    # get parameter names for tensorflow with unused parameters filtered out.
     tf_names = sorted(tf_params.keys())
     tf_names = filter(lambda name: not name.endswith('adam_m'), tf_names)
     tf_names = filter(lambda name: not name.endswith('adam_v'), tf_names)
@@ -225,8 +230,8 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
     tf_names = filter(lambda name: name != 'generator_predictions/temperature', tf_names)
     tf_names = list(tf_names)
 
-    #reload the electra module for this local scope
-    sys.path.append(electra_path)
+    # reload the electra module for this local scope
+    sys.path.append(electra_dir)
     from electra.util.training_utils import get_bert_config
     from electra.configure_pretraining import PretrainingConfig
     from electra.model import modeling
@@ -247,12 +252,12 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        #the name of the parameters are ending with ':0' like 'electra/embeddings/word_embeddings:0'
+        # the name of the parameters are ending with ':0' like 'electra/embeddings/word_embeddings:0'
         backbone_params = {v.name.split(":")[0]: v.read_value() for v in tvars}
         backbone_params = sess.run(backbone_params)
         tf_token_outputs_np = {
-            'pooled_output':sess.run(bert_model.get_pooled_output()),
-            'sequence_output':sess.run(bert_model.get_sequence_output()),
+            'pooled_output': sess.run(bert_model.get_pooled_output()),
+            'sequence_output': sess.run(bert_model.get_sequence_output()),
         }
 
     # The following part only ensure the parameters in backbone model are valid
@@ -274,16 +279,16 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
     token_pos_embed_params = gluon_disc_model.backbone_model.token_pos_embed.collect_params()
     embed_layer_norm_params = gluon_disc_model.backbone_model.embed_layer_norm.collect_params()
     gluon_gen_model = ElectraGenerator(gen_cfg,
-                        tied_embeddings=True,
-                        word_embed_params=word_embed_params,
-                        token_type_embed_params=token_type_embed_params,
-                        token_pos_embed_params=token_pos_embed_params,
-                        embed_layer_norm_params=embed_layer_norm_params,
-                        prefix='generator_')
+                                       tied_embeddings=True,
+                                       word_embed_params=word_embed_params,
+                                       token_type_embed_params=token_type_embed_params,
+                                       token_pos_embed_params=token_pos_embed_params,
+                                       embed_layer_norm_params=embed_layer_norm_params,
+                                       prefix='generator_')
     gluon_gen_model.initialize(ctx=ctx)
     gluon_gen_model.hybridize()
 
-    #pepare test data
+    # pepare test data
     mx_input_ids = mx.np.array(input_ids, dtype=np.int32, ctx=ctx)
     mx_valid_length = mx.np.array(valid_length, dtype=np.int32, ctx=ctx)
     mx_token_types = mx.np.array(segment_ids, dtype=np.int32, ctx=ctx)
@@ -299,7 +304,7 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
         elif convert_type == 'disc':
             model = gluon_disc_model
             contextual_embedding, pooled_output, rtd_scores = \
-                model(mx_input_ids, mx_token_types, mx_valid_length, mx_masked_positions)
+                model(mx_input_ids, mx_token_types, mx_valid_length)
         elif convert_type == 'gen':
             model = gluon_gen_model
             contextual_embedding, pooled_output, mlm_scores = \
@@ -351,10 +356,10 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
 
         # The below parameters of the generator are already initialized in the discriminator, no need to reload.
         disc_embed_params = set(['electra_embed_ln_beta',
-                                'electra_embed_ln_gamma',
-                                'electra_token_pos_embed_embed_weight',
-                                'electra_token_pos_embed_weight',
-                                'electra_word_embed_weight'])
+                                 'electra_embed_ln_gamma',
+                                 'electra_token_pos_embed_embed_weight',
+                                 'electra_token_pos_embed_weight',
+                                 'electra_word_embed_weight'])
         for key in all_keys:
             if key in disc_embed_params and convert_type == 'gen':
                 continue
@@ -363,15 +368,15 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
         tf_prefix = None
         for layer_id in range(cfg.MODEL.num_layers):
             if convert_type == 'gen':
-                mx_prefix  = 'generator_enc_layers_{}'.format(layer_id)
+                mx_prefix = 'generator_enc_layers_{}'.format(layer_id)
                 tf_prefix = 'generator/encoder/layer_{}/attention/self'.format(layer_id)
             else:
-                mx_prefix  = 'electra_enc_layers_{}'.format(layer_id)
+                mx_prefix = 'electra_enc_layers_{}'.format(layer_id)
                 tf_prefix = 'electra/encoder/layer_{}/attention/self'.format(layer_id)
             convert_qkv_weights(tf_prefix, mx_prefix)
 
         if convert_type == 'backbone':
-            #test conversion results for backbone model
+            # test conversion results for backbone model
             if test_conversion:
                 tf_contextual_embedding = tf_token_outputs_np['sequence_output']
                 tf_pooled_output = tf_token_outputs_np['pooled_output']
@@ -381,35 +386,25 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
                     ele_valid_length = valid_length[i]
                     assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
                                     tf_contextual_embedding[i, :ele_valid_length, :], 1E-3, 1E-3)
-            model.save_parameters(os.path.join(tmp_dir, 'model.params'), deduplicate=True)
-            logging.info('Convert the backbone model in {} to {}/{}'.format(model_dir, tmp_dir, 'model.params'))
+            model.save_parameters(os.path.join(save_dir, 'model.params'), deduplicate=True)
+            logging.info('Convert the backbone model in {} to {}/{}'.format(model_dir, save_dir, 'model.params'))
         elif convert_type == 'disc':
-            model.save_parameters(os.path.join(tmp_dir, 'disc_model.params'), deduplicate=True)
-            logging.info('Convert the discriminator model in {} to {}/{}'.format(model_dir, tmp_dir, 'disc_model.params'))
+            model.save_parameters(os.path.join(save_dir, 'disc_model.params'), deduplicate=True)
+            logging.info('Convert the discriminator model in {} to {}/{}'.format(model_dir, save_dir, 'disc_model.params'))
         elif convert_type == 'gen':
-            model.save_parameters(os.path.join(tmp_dir, 'gen_model.params'), deduplicate=True)
-            logging.info('Convert the generator model in {} to {}/{}'.format(model_dir, tmp_dir, 'gen_model.params'))
-
-    # naming convention and
-    def get_new_name(origin_folder, file_name):
-        long_hash = sha1sum(os.path.join(origin_folder, file_name))
-        file_prefix, file_sufix = file_name.split('.')
-        new_name = '{file_prefix}-{short_hash}.{file_sufix}'.format(
-                file_prefix=file_prefix,
-                short_hash=long_hash[:8],
-                file_sufix=file_sufix)
-        return new_name, long_hash
+            model.save_parameters(os.path.join(save_dir, 'gen_model.params'), deduplicate=True)
+            logging.info('Convert the generator model in {} to {}/{}'.format(model_dir, save_dir, 'gen_model.params'))
 
     logging.info('Conversion finished!')
     logging.info('Statistics:')
 
-    file_names = os.listdir(tmp_dir)
-    for file_name in file_names:
-        new_name, long_hash = get_new_name(tmp_dir, file_name)
-        tep_file = os.path.join(tmp_dir, file_name)
-        coverted_file = os.path.join(save_dir, new_name)
-        shutil.copy(tep_file, coverted_file)
-        file_size = os.path.getsize(coverted_file)
+    old_names = os.listdir(save_dir)
+    for old_name in old_names:
+        new_name, long_hash = naming_convention(save_dir, old_name)
+        old_path = os.path.join(save_dir, old_name)
+        new_path = os.path.join(save_dir, new_name)
+        shutil.move(old_path, new_path)
+        file_size = os.path.getsize(new_path)
         logging.info('\t{}/{} {} {}'.format(save_dir, new_name, long_hash, file_size))
 
 
@@ -417,4 +412,5 @@ if __name__ == '__main__':
     args = parse_args()
     logging_config()
     save_dir = args.save_dir if args.save_dir is not None else os.path.basename(args.tf_model_path) + '_gluon'
-    convert_tf_model(args.tf_model_path, save_dir, args.test, args.model_size, args.gpu, args.electra_path)
+    electra_dir = os.path.abspath(os.path.join(os.path.dirname(args.electra_path), os.path.pardir))
+    convert_tf_model(args.tf_model_path, save_dir, args.test, args.model_size, args.gpu, electra_dir)

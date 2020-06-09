@@ -36,9 +36,30 @@ do
     python convert_tf_hub_model.py --tf_hub_model_path albert_${model}_v2 --model_type albert --test
 done
 ```
+
 ## RoBERTa
 
-TBA
+```bash
+for model in base large
+do
+    mkdir roberta_${model}
+    wget "https://dl.fbaipublicfiles.com/fairseq/models/roberta.${model}.tar.gz"
+    tar zxf roberta.${model}.tar.gz --directory roberta_${model}
+    python convert_fairseq_roberta.py --fairseq_model_dir roberta_${model}/roberta.${model} --model_size ${model} --test
+done
+```
+
+## XLM-R
+
+```bash
+for model in base large
+do
+    mkdir xlmr_${model}
+    wget "https://dl.fbaipublicfiles.com/fairseq/models/xlmr.${model}.tar.gz"
+    tar zxf xlmr.${model}.tar.gz --directory xlmr_${model}
+    python convert_fairseq_xlmr.py --fairseq_model_dir xlmr_${model}/xlmr.${model} --model_size ${model} --test
+done
+```
 
 ## ELECTRA
 The TF Hub is not available for ELECTRA model currently.
@@ -57,6 +78,7 @@ pip install tensorflow==1.13.2
 bash convert_electra.sh
 ```
 
-## T5
-
-TBA
+## Mobile Bert
+```bash
+bash convert_mobilebert.sh
+```

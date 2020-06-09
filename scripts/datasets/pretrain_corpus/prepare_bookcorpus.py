@@ -3,7 +3,8 @@ import os
 import argparse
 import zipfile
 from gluonnlp.base import get_data_home_dir
-from gluonnlp.utils.misc import download
+from gluonnlp.utils.misc import download, load_checksum_stats
+from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 
 
 _CITATIONS = r"""
@@ -22,11 +23,7 @@ _CITATIONS = r"""
 
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 _URL_FILE_STATS_PATH = os.path.join(_CURR_DIR, '..', 'url_checksums', 'book_corpus.txt')
-
-_URL_FILE_STATS = dict()
-for line in open(_URL_FILE_STATS_PATH, 'r', encoding='utf-8'):
-    url, hex_hash, file_size = line.strip().split()
-    _URL_FILE_STATS[url] = hex_hash
+_URL_FILE_STATS = load_checksum_stats(_URL_FILE_STATS_PATH)
 
 
 # The Gutenberg dataset is downloaded from:
@@ -41,6 +38,7 @@ _URLS = {
 }
 
 
+@DATA_PARSER_REGISTRY.register('prepare_bookcorpus')
 def get_parser():
     parser = argparse.ArgumentParser(description='Download and Prepare the BookCorpus dataset.')
     parser.add_argument('--dataset', type=str, choices=['gutenberg'], default='gutenberg')
@@ -59,6 +57,7 @@ def get_parser():
     return parser
 
 
+@DATA_MAIN_REGISTRY.register('prepare_bookcorpus')
 def main(args):
     url = _URLS[args.dataset]
     file_hash = _URL_FILE_STATS[url]

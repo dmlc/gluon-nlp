@@ -15,6 +15,7 @@ pytest test_models_transformer
 Refer to the [official guide of pytest](https://docs.pytest.org/en/latest/) for more details.
 
 # Naming Convention
-The naming convention of the tests are `test_{directory_name}_{module_name}.py`. 
+The naming convention of the tests are `test_{module_name}.py`. 
 For example, the test of [models/transformer.py](../src/gluonnlp/models/transformer.py) will be in 
-`test_models_transformer.py`.
+`test_models_transformer.py`. The test of [models/__init__.py](../src/gluonnlp/models/__init__.py) 
+is `test_models.py`. 
