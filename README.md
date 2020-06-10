@@ -63,8 +63,8 @@ nlp_data help
 nlp_preprocess help
 
 # Also, you can use `python -m` to access the toolkits
-python -m numpy_nlp.cli.data help
-python -m numpy_nlp.cli.preprocess help
+python -m gluonnlp.cli.data help
+python -m gluonnlp.cli.preprocess help
 
 ```
 
