@@ -1,5 +1,12 @@
 from typing import Tuple, List
-from . import bert, albert, electra, transformer_xl
+from . import albert
+from . import bert
+from . import electra
+from . import mobilebert
+from . import roberta
+from . import transformer
+from . import transformer_xl
+from . import xlmr
 from ..base import get_model_zoo_home_dir
 from ..registry import BACKBONE_REGISTRY
 from ..data.tokenizers import BaseTokenizer
