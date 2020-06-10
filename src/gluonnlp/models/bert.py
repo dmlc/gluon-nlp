@@ -98,7 +98,7 @@ PRETRAINED_URL = {
         'vocab': 'google_en_uncased_bert_wwm_large/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_wwm_large/model-cb3ad3c2.params',
         'mlm_params': None,
-        'lower_case': True,
+        'lowercase': True,
     }
 }
 
