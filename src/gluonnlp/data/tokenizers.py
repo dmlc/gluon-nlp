@@ -1273,7 +1273,7 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
     """
     def __init__(self, model_path: Optional[str] = None,
                  vocab: Optional[Union[str, Vocab]] = None,
-                 nbest: int = 0, alpha: float = 1.0, do_lower=False,
+                 nbest: int = 0, alpha: float = 0.0, do_lower=False,
                  **kwargs):
         self._model_path = model_path
         sentencepiece = try_import_sentencepiece()
