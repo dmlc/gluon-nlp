@@ -1,0 +1,46 @@
+name: continuous build
+
+on: [push, pull_request]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  unittest:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # TODO Add ubuntu test by "ubuntu-latest", Add windows test by using "windows-latest"
+        os: [macos-latest]
+        python-version: [ '3.6', '3.7', '3.8' ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Install OS specific dependencies
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-latest'
+        # TODO https://github.com/apache/incubator-mxnet/issues/18293
+        run: sudo apt-get install libopenblas-dev
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+      - name: Install Other Dependencies
+        run: |
+          python -m pip install --user --upgrade pip
+          python -m pip install --user setuptools pytest pytest-cov
+          python -m pip install --upgrade cython
+          python -m pip install --pre --user mxnet==2.0.0b20200604 -f https://dist.mxnet.io/python
+          python -m pip install --user -e .[extras]
+      - name: Test project
+        run: |
+          python -m pytest --cov=./ --cov-report=xml --durations=50 tests/
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          env_vars: OS,PYTHON
