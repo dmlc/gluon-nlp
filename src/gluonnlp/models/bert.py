@@ -174,7 +174,7 @@ class BertTransformer(HybridBlock):
         all_encodings_outputs = []
         additional_outputs = []
         for layer_idx in range(self._num_layers):
-            layer = self.all_encoder_layers[layer_idx]
+            layer = self.all_layers[layer_idx]
             out, attention_weights = layer(out, attn_mask)
             # out : [batch_size, seq_len, units]
             # attention_weights : [batch_size, num_heads, seq_len, seq_len]
