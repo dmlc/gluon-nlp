@@ -93,7 +93,7 @@ For reference, we've included the results from Google's Original Experiments
 |ALBERT xlarge (googleresearch/albert)  | 92.9/86.4     | 87.9/84.1    |
 |ALBERT xxlarge (googleresearch/albert) | 94.6/89.1     | 89.8/86.9    |
 
-For BERT and ELECTRA model, the SQuAD 1.1 is evaluated with SQuAD 2.0 checkpoints, as the following results showcased.
+For BERT and ELECTRA model, the results on SQuAD1.1 and SQuAD2.0 are given as follows.
 
 | Model Name    | SQuAD1.1 dev  | SQuAD2.0 dev |
 |--------------------------|---------------|--------------|
