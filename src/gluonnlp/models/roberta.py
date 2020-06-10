@@ -411,15 +411,12 @@ class RobertaLMHead(HybridBlock):
         x = self.activation_fn(x)
         x = self.ln(x)
         x = self.dense2(x)
-        return x            
+        return x
 
-@use_np
-class RobertaClassificationHead(HybridBlock):
-    # TODO
-    pass
 
 def list_pretrained_roberta():
     return sorted(list(PRETRAINED_URL.keys()))
+
 
 def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
                            root: str = get_model_zoo_home_dir()) \

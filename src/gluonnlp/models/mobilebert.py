@@ -16,7 +16,7 @@
 # under the License.
 
 """
-Mobile mobile bert Model
+Mobile BERT Model
 
 @article{sun2020mobilebert,
   title={Mobilebert: a compact task-agnostic mobile bert for resource-limited devices},
