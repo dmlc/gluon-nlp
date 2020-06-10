@@ -14,7 +14,8 @@ jobs:
       matrix:
         # TODO Add ubuntu test by "ubuntu-latest", Add windows test by using "windows-latest"
         os: [macos-latest]
-        python-version: [ '3.6', '3.7', '3.8' ]
+        # TODO Test on python 3.8
+        python-version: [ '3.6', '3.7']
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
