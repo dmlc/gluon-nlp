@@ -196,7 +196,37 @@ class ModelForQAConditionalV1(HybridBlock):
         answerable_logits = F.npx.log_softmax(answerable_scores, axis=-1)
         return answerable_logits
 
-    def hybrid_forward(self, F, tokens, token_types, valid_length, p_mask, start_position):
+    def pos_cls_verification(self, F, start_logits, contextual_embedding, p_mask):
+        """
+        Verify the answerability
+
+        Parameters
+        ----------
+        F
+        start_logits
+            Shape (batch_size, sequence_length)
+        contextual_embedding
+            Shape (batch_size, sequence_length, C)
+        p_mask
+            Shape (batch_size, sequence_length)
+            Mask the sequence.
+            0 --> Denote that the element is masked,
+            1 --> Denote that the element is not masked
+        Returns
+        -------
+        pos_cls_logits
+            Shape (batch_size, )
+        """
+        # As for the verifier,
+        # get the probability of the first token of end_logits when srart index is 0
+        start_cls_logits = start_logits[:,0]
+        zero_index = F.np.zeros_like(start_logits[:,0:1])
+        end_cls_logits = self.get_end_logits(F, contextual_embedding, zero_index, p_mask)
+        end_cls_logits = F.np.squeeze(end_cls_logits, axis=1)[:,0] # Shape (batch_size, )
+        pos_cls_logits = start_cls_logits + end_cls_logits
+        return pos_cls_logits
+
+    def hybrid_forward(self, F, tokens, token_types, valid_length, p_mask, start_position, plau_start_pos=None):
         """
 
         Parameters
@@ -280,4 +310,7 @@ class ModelForQAConditionalV1(HybridBlock):
         end_top_logits, end_top_index = mx.npx.topk(end_logits, k=end_top_n, axis=-1,
                                                     ret_typ='both')
         answerable_logits = self.get_answerable_logits(mx.nd, contextual_embeddings, p_mask)
-        return start_top_logits, start_top_index, end_top_logits, end_top_index, answerable_logits
+
+        pos_cls_logits = self.pos_cls_verification(mx.nd, start_logits, contextual_embeddings, p_mask)
+        return start_top_logits, start_top_index, end_top_logits, end_top_index, \
+                    answerable_logits, pos_cls_logits

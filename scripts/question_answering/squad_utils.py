@@ -1,46 +1,27 @@
 """Utility classes and functions for data processing"""
-from typing import Optional, List
-from collections import namedtuple
-import itertools
-import bisect
-import re
-import numpy as np
-import numpy.ma as ma
-import warnings
 import os
-from tqdm import tqdm
+import re
 import json
-import string
-from gluonnlp.data.tokenizers import BaseTokenizerWithVocab
-from typing import Tuple
-from mxnet.gluon.utils import download
-
-int_float_regex = re.compile('^\d+\.{0,1}\d*$')  # matches if a number is either integer or float
+import time
+import bisect
+import logging
+import warnings
+import collections
+from typing import List, Optional
+from collections import namedtuple
 
 import mxnet as mx
+import numpy as np
+from tqdm import tqdm
+from mxnet.gluon import HybridBlock, nn
+from mxnet.gluon.utils import download
+
+from eval_utils import normalize_answer, make_qid_to_has_ans
+from gluonnlp.data.tokenizers import BaseTokenizerWithVocab
+
+int_float_regex = re.compile(r'^\d+\.{0,1}\d*$')  # matches if a number is either integer or float
+
 mx.npx.set_np()
-
-
-def normalize_answer(s):
-    """Lower text and remove punctuation, articles and extra whitespace.
-    This is from the official evaluate-v2.0.py in SQuAD.
-    """
-
-    def remove_articles(text):
-        regex = re.compile(r'\b(a|an|the)\b', re.UNICODE)
-        return re.sub(regex, ' ', text)
-
-    def white_space_fix(text):
-        return ' '.join(text.split())
-
-    def remove_punc(text):
-        exclude = set(string.punctuation)
-        return ''.join(ch for ch in text if ch not in exclude)
-
-    def lower(text):
-        return text.lower()
-
-    return white_space_fix(remove_articles(remove_punc(lower(s))))
 
 
 def get_official_squad_eval_script(version='2.0', download_dir=None):
@@ -59,6 +40,7 @@ def get_official_squad_eval_script(version='2.0', download_dir=None):
 
 class SquadExample:
     """A single training/test example for the Squad dataset, as loaded from disk."""
+
     def __init__(self, qas_id: int,
                  query_text: str,
                  context_text: str,
@@ -67,7 +49,11 @@ class SquadExample:
                  end_position: int,
                  title: str,
                  answers: Optional[List[str]] = None,
-                 is_impossible: bool = False):
+                 is_impossible: bool = False,
+                 plau_start_pos: int = None,
+                 plau_end_pos: int = None,
+                 plau_answer_text: str = None,
+                 ):
         """
 
         Parameters
@@ -101,6 +87,10 @@ class SquadExample:
         self.answers = answers
         self.start_position = start_position
         self.end_position = end_position
+        # attributes for plausible answer
+        self.plau_start_pos = plau_start_pos
+        self.plau_end_pos = plau_end_pos
+        self.plau_answer_text = plau_answer_text
 
     def to_json(self):
         return json.dumps(self.__dict__)
@@ -169,6 +159,10 @@ class SquadFeature:
         gt_end_pos
             The end position of the ground-truth span. None indicates that there is no valid
             ground-truth span.
+        plau_start_pos
+            The start position of the plausible answer span.
+        plau_end_pos
+            The end position of the plausible answer span.
         """
         self.qas_id = qas_id
         self.query_token_ids = query_token_ids
@@ -257,6 +251,18 @@ class SquadFeature:
         return ret
 
 
+def get_answers_from_qa(answer, context_text, qas_id):
+    answer_text = answer["text"]
+    start_position = answer["answer_start"]
+    end_position = start_position + len(answer_text)
+    if context_text[start_position:end_position] != answer_text:
+        warnings.warn(
+            'Mismatch start/end and answer_text, start/end={}/{},'
+            ' answer text={}. qas={}'
+            .format(start_position, end_position, answer_text, qas_id))
+    return answer_text, start_position, end_position
+
+
 def get_squad_examples_from_json(json_file: str, is_training: bool) -> List[SquadExample]:
     """
     Read the whole entry of raw json file and convert it to examples.
@@ -294,17 +300,22 @@ def get_squad_examples_from_json(json_file: str, is_training: bool) -> List[Squa
 
                 if not is_impossible:
                     if is_training:
-                        answer = qa["answers"][0]
-                        answer_text = answer["text"]
-                        start_position = answer["answer_start"]
-                        end_position = start_position + len(answer_text)
-                        if context_text[start_position:end_position] != answer_text:
-                            warnings.warn(
-                                'Mismatch start/end and answer_text, start/end={}/{},'
-                                ' answer text={}. qas={}'
-                                .format(start_position, end_position, answer_text, qas_id))
+                        answers = qa["answers"][0]
+                        answer_text, start_position, end_position = \
+                            get_answers_from_qa(answers, context_text, qas_id)
                     else:
                         answers = qa["answers"]
+
+                if "plausible_answers" in qa:
+                    # To prepare answer use_plausibled
+                    plausible_answers = qa["plausible_answers"][0]
+                    plau_answer_text, plau_start_pos, plau_end_pos = \
+                        get_answers_from_qa(plausible_answers, context_text, qas_id)
+                else:
+                    plau_answer_text = None
+                    plau_start_pos = None
+                    plau_end_pos = None
+
                 example = SquadExample(
                     qas_id=qas_id,
                     query_text=query_text,
@@ -312,9 +323,12 @@ def get_squad_examples_from_json(json_file: str, is_training: bool) -> List[Squa
                     answer_text=answer_text,
                     start_position=start_position,
                     end_position=end_position,
+                    answers=answers,
                     title=title,
                     is_impossible=is_impossible,
-                    answers=answers,
+                    plau_answer_text=plau_answer_text,
+                    plau_start_pos=plau_start_pos,
+                    plau_end_pos=plau_end_pos,
                 )
                 examples.append(example)
     return examples
@@ -462,3 +476,96 @@ def convert_squad_example_to_feature(example: SquadExample,
                            gt_start_pos=gt_span_start_pos,
                            gt_end_pos=gt_span_end_pos)
     return feature
+
+
+class MLP(HybridBlock):
+    def __init__(self, **kwargs):
+        super(MLP, self).__init__(**kwargs)
+        self.output = nn.Dense(1, use_bias=False)
+
+    def hybrid_forward(self, F, x):
+        return self.output(x)
+
+
+def ml_voter(
+        all_scores,
+        saved_path=None,
+        data_file=None,
+        is_training=False,
+        num_epochs=5,
+        batch_size=4096):
+
+    X = mx.np.array(list(all_scores.values()), dtype=np.float32)
+
+    net = MLP()
+    if is_training:
+        # prepare dataset
+        assert data_file is not None, 'data_file must be provided for training'
+        if isinstance(data_file, str):
+            with open(data_file) as f:
+                dataset_json = json.load(f)
+                dataset = dataset_json['data']
+        elif isinstance(data_file, list):
+            dataset = data_file
+
+        qid_to_has_ans = make_qid_to_has_ans(dataset)  # maps qid to True/False
+        assert list(all_scores.keys()) == list(qid_to_has_ans.keys())
+        y = mx.np.array(list(qid_to_has_ans.values()), dtype=np.int32)
+
+        # training
+        net.initialize()
+        train_count = int(len(X) * 0.8)
+        X_train = X[:train_count]
+        X_val = X[train_count:]
+        y_train = y[:train_count]
+        y_val = y[train_count:]
+        train_dataset = mx.gluon.data.dataset.ArrayDataset(X_train, y_train)
+        val_dataset = mx.gluon.data.dataset.ArrayDataset(X_val, y_val)
+        train_data_loader = mx.gluon.data.DataLoader(train_dataset, batch_size=batch_size)
+        val_data_loader = mx.gluon.data.DataLoader(val_dataset, batch_size=batch_size)
+
+        BCELoss = mx.gluon.loss.SigmoidBinaryCrossEntropyLoss()
+        trainer = mx.gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': 0.1})
+
+        def acc(output, labels):
+            # output: (batch, num_output) float32 ndarray
+            # label: (batch, ) int32 ndarray
+            probs = output.squeeze(-1)
+            preds = mx.np.round((mx.np.sign(probs) + 1) / 2).astype(np.int32)
+
+            weights = mx.np.ones_like(labels)
+            is_correct = mx.np.equal(labels, preds)
+            acc = (is_correct * weights).sum() / (weights.sum() + 1e-6)
+            return acc
+        logging.info('String training a simple MLP-based voter')
+        for epoch in range(num_epochs):
+            train_loss, train_acc, valid_acc = 0., 0., 0.
+            tic = time.time()
+            for data, label in train_data_loader:
+                # forward + backward
+                with mx.autograd.record():
+                    output = net(data)
+                    loss = BCELoss(output, label)
+                loss.backward()
+                # update parameters
+                trainer.step(batch_size)
+                # calculate training metrics
+                train_loss += loss.mean().asnumpy()
+                train_acc += acc(output, label)
+            # calculate validation accuracy
+            for data, label in val_data_loader:
+                valid_acc += acc(net(data), label)
+            logging.info("Epoch %d: loss %.3f, train acc %.3f, test acc %.3f, in %.1f sec" % (
+                epoch, train_loss / len(train_data_loader), train_acc / len(train_data_loader),
+                valid_acc / len(val_data_loader), time.time() - tic))
+        logging.info('Save voter parameters at {}'.format(saved_path))
+        net.save_parameters(saved_path)
+    else:
+        # Inference
+        logging.info('Load voter parameters from {}'.format(saved_path))
+        net.load_parameters(saved_path)
+        results = net(X)
+        no_answer_score_json = collections.OrderedDict()
+        for i, qid in enumerate(all_scores.keys()):
+            no_answer_score_json[qid] = - results[i].item()
+        return no_answer_score_json
