@@ -226,7 +226,7 @@ class ModelForQAConditionalV1(HybridBlock):
         pos_cls_logits = start_cls_logits + end_cls_logits
         return pos_cls_logits
 
-    def hybrid_forward(self, F, tokens, token_types, valid_length, p_mask, start_position, plau_start_pos=None):
+    def hybrid_forward(self, F, tokens, token_types, valid_length, p_mask, start_position):
         """
 
         Parameters

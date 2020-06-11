@@ -50,9 +50,6 @@ class SquadExample:
                  title: str,
                  answers: Optional[List[str]] = None,
                  is_impossible: bool = False,
-                 plau_start_pos: int = None,
-                 plau_end_pos: int = None,
-                 plau_answer_text: str = None,
                  ):
         """
 
@@ -87,10 +84,6 @@ class SquadExample:
         self.answers = answers
         self.start_position = start_position
         self.end_position = end_position
-        # attributes for plausible answer
-        self.plau_start_pos = plau_start_pos
-        self.plau_end_pos = plau_end_pos
-        self.plau_answer_text = plau_answer_text
 
     def to_json(self):
         return json.dumps(self.__dict__)
@@ -159,10 +152,6 @@ class SquadFeature:
         gt_end_pos
             The end position of the ground-truth span. None indicates that there is no valid
             ground-truth span.
-        plau_start_pos
-            The start position of the plausible answer span.
-        plau_end_pos
-            The end position of the plausible answer span.
         """
         self.qas_id = qas_id
         self.query_token_ids = query_token_ids
@@ -306,16 +295,6 @@ def get_squad_examples_from_json(json_file: str, is_training: bool) -> List[Squa
                     else:
                         answers = qa["answers"]
 
-                if "plausible_answers" in qa and qa["plausible_answers"]:
-                    # To prepare answer use_plausibled
-                    plausible_answers = qa["plausible_answers"][0]
-                    plau_answer_text, plau_start_pos, plau_end_pos = \
-                        get_answers_from_qa(plausible_answers, context_text, qas_id)
-                else:
-                    plau_answer_text = None
-                    plau_start_pos = None
-                    plau_end_pos = None
-
                 example = SquadExample(
                     qas_id=qas_id,
                     query_text=query_text,
@@ -326,9 +305,6 @@ def get_squad_examples_from_json(json_file: str, is_training: bool) -> List[Squa
                     answers=answers,
                     title=title,
                     is_impossible=is_impossible,
-                    plau_answer_text=plau_answer_text,
-                    plau_start_pos=plau_start_pos,
-                    plau_end_pos=plau_end_pos,
                 )
                 examples.append(example)
     return examples
