@@ -346,7 +346,9 @@ This will export the BERT model and its parameters for a classification (sentime
 Once the model is exported, you can import the model by setting --only_infer, and specifying the path to your model with --exported_model followed by the prefix name of the symbol.json/param files.
 
 The batch size can be specified via --test_batch_size option, and accuracy can be checked setting --check_accuracy.
+
 When using GPU and data type FP16 (--dtype float16), we recommend to use MXNET_FC_TRUE_FP16=1 for boosting performance.
+Moreover, you can use a custom graph pass for BERT, via --custom_pass [custom_pass_file], to improve the performance on GPU. To generate the pass you can run setup.py within the BERT scripts directory. These GPU optimizations require MXNet version 1.7 or higher.
 
 
 BERT for Sentence or Tokens Embedding
