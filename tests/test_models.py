@@ -32,4 +32,4 @@ def test_get_backbone(name):
         else:
             out = net(inputs, token_types, valid_length)
         mx.npx.waitall()
-        net.export(os.path.join(root, '{}.json'.format(net)))
+        net.export(os.path.join(root, 'model'))
