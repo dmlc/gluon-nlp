@@ -834,6 +834,7 @@ def evaluate(args, last=True):
         tic = time.time()
         epoch_size = len(dev_features)
         total_num = 0
+        log_num = 0
         for batch_idx, dev_batch in enumerate(grouper(dev_dataloader, len(ctx_l))):
             # Predict for each chunk
             for sample, ctx in zip(dev_batch, ctx_l):
@@ -842,6 +843,7 @@ def evaluate(args, last=True):
                 # Copy the data to device
                 tokens = sample.data.as_in_ctx(ctx)
                 total_num += len(tokens)
+                log_num += len(tokens)
                 segment_ids = sample.segment_ids.as_in_ctx(ctx)
                 valid_length = sample.valid_length.as_in_ctx(ctx)
                 p_mask = sample.masks.as_in_ctx(ctx)
@@ -867,9 +869,10 @@ def evaluate(args, last=True):
                 logging.info(
                     '[batch {}], Time cost={:.2f},'
                     ' Throughput={:.2f} samples/s, ETA={:.2f}h'.format(
-                        batch_idx + 1, toc - tic, total_num / (toc - tic),
+                        batch_idx + 1, toc - tic, log_num / (toc - tic),
                         (epoch_size - total_num) / (total_num / (toc - epoch_tic)) / 3600))
                 tic = time.time()
+                log_num = 0
 
         epoch_toc = time.time()
         logging.info('Time cost=%2f s, Thoughput=%.2f samples/s', epoch_toc - epoch_tic,
