@@ -49,52 +49,52 @@ from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 
 PRETRAINED_URL = {
     'google_en_cased_bert_base': {
-        'cfg': 'google_en_cased_bert_base/model-197ff9f8.yml',
+        'cfg': 'google_en_cased_bert_base/model-5620839a.yml',
         'vocab': 'google_en_cased_bert_base/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_base/model-c566c289.params',
         'mlm_params': 'google_en_cased_bert_base/model_mlm-c3ff36a3.params',
     },
 
     'google_en_uncased_bert_base': {
-        'cfg': 'google_en_uncased_bert_base/model-82eeec35.yml',
+        'cfg': 'google_en_uncased_bert_base/model-4d8422ad.yml',
         'vocab': 'google_en_uncased_bert_base/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_base/model-3712e50a.params',
         'mlm_params': 'google_en_uncased_bert_base/model_mlm-2a23a633.params',
         'lowercase': True,
     },
     'google_en_cased_bert_large': {
-        'cfg': 'google_en_cased_bert_large/model-8805e1fa.yml',
+        'cfg': 'google_en_cased_bert_large/model-9e127fee.yml',
         'vocab': 'google_en_cased_bert_large/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_large/model-7aa93704.params',
         'mlm_params': 'google_en_cased_bert_large/model_mlm-d6443fe9.params',
     },
     'google_en_uncased_bert_large': {
-        'cfg': 'google_en_uncased_bert_large/model-5e473e03.yml',
+        'cfg': 'google_en_uncased_bert_large/model-d0c37dcc.yml',
         'vocab': 'google_en_uncased_bert_large/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_large/model-e53bbc57.params',
         'mlm_params': 'google_en_uncased_bert_large/model_mlm-f5cb8678.params',
         'lowercase': True,
     },
     'google_zh_bert_base': {
-        'cfg': 'google_zh_bert_base/model-14d688e3.yml',
+        'cfg': 'google_zh_bert_base/model-9b16bda6.yml',
         'vocab': 'google_zh_bert_base/vocab-711c13e4.json',
         'params': 'google_zh_bert_base/model-2efbff63.params',
         'mlm_params': 'google_zh_bert_base/model_mlm-75339658.params',
     },
     'google_multi_cased_bert_base': {
-        'cfg': 'google_multi_cased_bert_base/model-ae175b4f.yml',
+        'cfg': 'google_multi_cased_bert_base/model-881ad607.yml',
         'vocab': 'google_multi_cased_bert_base/vocab-016e1169.json',
         'params': 'google_multi_cased_bert_base/model-c2110078.params',
         'mlm_params': 'google_multi_cased_bert_base/model_mlm-4611e7a3.params',
     },
     'google_en_cased_bert_wwm_large': {
-        'cfg': 'google_en_cased_bert_wwm_large/model-8805e1fa.yml',
+        'cfg': 'google_en_cased_bert_wwm_large/model-9e127fee.yml',
         'vocab': 'google_en_cased_bert_wwm_large/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_wwm_large/model-0fe841cf.params',
         'mlm_params': None,
     },
     'google_en_uncased_bert_wwm_large': {
-        'cfg': 'google_en_uncased_bert_wwm_large/model-5e473e03.yml',
+        'cfg': 'google_en_uncased_bert_wwm_large/model-d0c37dcc.yml',
         'vocab': 'google_en_uncased_bert_wwm_large/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_wwm_large/model-cb3ad3c2.params',
         'mlm_params': None,
@@ -381,7 +381,6 @@ class BertModel(HybridBlock):
             cfg.MODEL.hidden_dropout_prob = 0.1
             cfg.MODEL.attention_dropout_prob = 0.1
             cfg.MODEL.dtype = 'float32'
-            cfg.GENERATOR = CN()
             # Hyper-parameters of the Initializers
             cfg.INITIALIZER = CN()
             cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]

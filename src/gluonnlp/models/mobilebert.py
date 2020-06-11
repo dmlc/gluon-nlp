@@ -51,7 +51,7 @@ __all__ = ['MobileBertModel', 'MobileBertForMLM', 'MobileBertForPretrain',
 
 PRETRAINED_URL = {
     'google_uncased_mobilebert': {
-        'cfg': 'google_uncased_mobilebert/model-f0e857b2.yml',
+        'cfg': 'google_uncased_mobilebert/model-1c33216b.yml',
         'vocab': 'google_uncased_mobilebert/vocab-e6d2b21d.json',
         'params': 'google_uncased_mobilebert/model-c8346cf2.params',
         'mlm_params': 'google_uncased_mobilebert/model_mlm-53948e82.params',
@@ -631,7 +631,6 @@ class MobileBertModel(HybridBlock):
             cfg.MODEL.hidden_dropout_prob = 0.0
             cfg.MODEL.attention_dropout_prob = 0.1
             cfg.MODEL.dtype = 'float32'
-            cfg.GENERATOR = CN()
             # Hyper-parameters of the Initializers
             cfg.INITIALIZER = CN()
             cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
