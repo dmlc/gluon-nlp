@@ -308,7 +308,7 @@ def get_squad_examples_from_json(json_file: str, is_training: bool) -> List[Squa
 
                 if "plausible_answers" in qa:
                     # To prepare answer use_plausibled
-                    plausible_answers = qa["plausible_answers"][0]
+                    plausible_answers = qa["plausible_answers"]
                     plau_answer_text, plau_start_pos, plau_end_pos = \
                         get_answers_from_qa(plausible_answers, context_text, qas_id)
                 else:

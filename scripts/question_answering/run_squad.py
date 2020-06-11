@@ -913,7 +913,7 @@ def evaluate(args, last=True):
         cur_eval, revised_predictions = squad_eval(
             dev_data_path, all_predictions, na_prob, revise=na_prob is not None)
         logging.info('The evaluated results are {}'.format(json.dumps(cur_eval)))
-        
+
         cur_metrics = 0.5 * (cur_eval[exact] + cur_eval[f1])
         if best_eval:
             best_metrics = 0.5 * (best_eval[exact] + best_eval[f1])
