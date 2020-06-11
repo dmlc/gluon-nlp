@@ -1,15 +1,17 @@
+"""
+setup.py: prepares required libraries for BERT scripts
+"""
 #!/usr/bin/env python
-import mxnet
 import pathlib
 import sys
 import os
 import logging
-
 from setuptools import setup
+import mxnet
 
 requirements = [
     'numpy>=1.16.0',
-],
+]
 
 setup(
     # Metadata
@@ -25,10 +27,9 @@ setup(
 # compile custom graph pass for bert
 logging.basicConfig(stream=sys.stderr, level=logging.INFO)
 log = logging.getLogger()
-log.info(' ... compiling BERT custom graph pass library')
 out_lib_file = 'bertpass_lib.so'
+log.info(' ... compiling BERT custom graph pass library into %s', out_lib_file)
 mxnet_path = pathlib.Path(mxnet.__file__).parent.absolute()
 mxnet_include_path = pathlib.Path.joinpath(mxnet_path, 'include/mxnet')
-os.system('g++ -shared -fPIC -std=c++11 bertpass_gpu.cc -o bertpass_lib.so -I ' + mxnet_include_path)
-log.info(' Done: library was created in: %s', out_lib_file)
-
+os.system('g++ -shared -fPIC -std=c++11 bertpass_gpu.cc -o bertpass_lib.so -I ' +
+          str(mxnet_include_path))
