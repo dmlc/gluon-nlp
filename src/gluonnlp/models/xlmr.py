@@ -30,12 +30,11 @@ __all__ = ['XLMRModel', 'list_pretrained_xlmr', 'get_pretrained_xlmr']
 from typing import Tuple
 import os
 from mxnet import use_np
-from mxnet.gluon.utils import download
 from .roberta import RobertaModel, roberta_base, roberta_large
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
 from ..utils.registry import Registry
-from ..utils.misc import load_checksum_stats
+from ..utils.misc import load_checksum_stats, download
 from ..registry import BACKBONE_REGISTRY
 from ..data.tokenizers import SentencepieceTokenizer
 
