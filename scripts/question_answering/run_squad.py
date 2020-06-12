@@ -20,7 +20,8 @@ import gluonnlp.data.batchify as bf
 from models import ModelForQABasic, ModelForQAConditionalV1
 from eval_utils import squad_eval
 from squad_utils import SquadFeature, get_squad_examples, convert_squad_example_to_feature
-from gluonnlp.utils.misc import grouper, set_seed, parse_ctx, logging_config
+from gluonnlp.models import get_backbone
+from gluonnlp.utils.misc import grouper, set_seed, parse_ctx, logging_config, count_parameters
 from gluonnlp.initializer import TruncNorm
 from gluonnlp.utils.parameter import clip_grad_global_norm
 
@@ -306,25 +307,13 @@ def get_network(model_name,
     tokenizer
     qa_net
     """
-    if 'albert' in model_name:
-        from gluonnlp.models.albert import AlbertModel, get_pretrained_albert
-        Model, get_pretrained_model = AlbertModel, get_pretrained_albert
-    elif 'bert' in model_name:
-        from gluonnlp.models.bert import BertModel, get_pretrained_bert
-        Model, get_pretrained_model = BertModel, get_pretrained_bert
-    elif 'electra' in model_name:
-        from gluonnlp.models.electra import ElectraModel, get_pretrained_electra
-        Model, get_pretrained_model = ElectraModel, get_pretrained_electra
-    else:
-        raise NotImplementedError()
     # Create the network
-    cfg, tokenizer, download_params_path, _ = \
-        get_pretrained_model(model_name, load_backbone=not backbone_path)
-    cfg = Model.get_cfg().clone_merge(cfg)
+    Model, cfg, tokenizer, download_params_path, _ = \
+        get_backbone(model_name, load_backbone=not backbone_path)
     backbone = Model.from_cfg(cfg, use_pooler=False)
-
     # Load local backbone parameters if backbone_path provided.
     # Otherwise, download backbone parameters from gluon zoo.
+
     backbone_params_path = backbone_path if backbone_path else download_params_path
     if checkpoint_path is None:
         backbone.load_parameters(backbone_params_path, ignore_extra=True, ctx=ctx_l)
@@ -339,6 +328,10 @@ def get_network(model_name,
     else:
         qa_net.load_parameters(checkpoint_path, ctx=ctx_l, cast_dtype=True)
     qa_net.hybridize()
+
+    num_params, num_fixed_params = count_parameters(qa_net.collect_params())
+    logging.info('Total/fix parameters of QA model: {}/{}'.format(num_params, num_fixed_params))
+
     return cfg, tokenizer, qa_net
 
 

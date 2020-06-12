@@ -19,6 +19,7 @@ from models import ModelForQAConditionalV1
 from run_squad import RawResultExtended, SquadDatasetProcessor
 from eval_utils import squad_eval
 from squad_utils import SquadFeature, get_squad_examples, convert_squad_example_to_feature, ml_voter
+from gluonnlp.models import get_backbone
 from gluonnlp.utils.misc import grouper, set_seed, parse_ctx, logging_config
 from gluonnlp.initializer import TruncNorm
 
@@ -88,20 +89,8 @@ def parse_args():
 
 
 def get_network(model_name, dropout=0.1):
-    if 'albert' in model_name:
-        from gluonnlp.models.albert import AlbertModel, get_pretrained_albert
-        Model, get_pretrained_model = AlbertModel, get_pretrained_albert
-    elif 'bert' in model_name:
-        from gluonnlp.models.bert import BertModel, get_pretrained_bert
-        Model, get_pretrained_model = BertModel, get_pretrained_bert
-    elif 'electra' in model_name:
-        from gluonnlp.models.electra import ElectraModel, get_pretrained_electra
-        Model, get_pretrained_model = ElectraModel, get_pretrained_electra
-    else:
-        raise NotImplementedError()
     # Create the network
-    cfg, tokenizer, _, _ = get_pretrained_model(model_name, load_backbone=False)
-    cfg = Model.get_cfg().clone_merge(cfg)
+    Model, cfg, tokenizer, _, _ = get_backbone(model_name, load_backbone=False)
     backbone = Model.from_cfg(cfg, use_pooler=False)
 
     qa_net = ModelForQAConditionalV1(backbone=backbone,
