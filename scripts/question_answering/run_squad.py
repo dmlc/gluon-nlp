@@ -284,7 +284,7 @@ def get_network(model_name,
                 ctx_l,
                 dropout=0.1,
                 checkpoint_path=None,
-                backbone_path=False):
+                backbone_path=None):
     """
     Get the network that fine-tune the Question Answering Task
 
@@ -317,6 +317,10 @@ def get_network(model_name,
     backbone_params_path = backbone_path if backbone_path else download_params_path
     if checkpoint_path is None:
         backbone.load_parameters(backbone_params_path, ignore_extra=True, ctx=ctx_l)
+        num_params, num_fixed_params = count_parameters(backbone.collect_params())
+        logging.info(
+            'Loading Backbone Model from {}, with total/fixd parameters={}/{}'.format(
+                backbone_params_path, num_params, num_fixed_params))
     qa_net = ModelForQAConditionalV1(backbone=backbone,
                                      dropout_prob=dropout,
                                      weight_initializer=TruncNorm(stdev=0.02),
@@ -328,9 +332,6 @@ def get_network(model_name,
     else:
         qa_net.load_parameters(checkpoint_path, ctx=ctx_l, cast_dtype=True)
     qa_net.hybridize()
-
-    num_params, num_fixed_params = count_parameters(qa_net.collect_params())
-    logging.info('Total/fix parameters of QA model: {}/{}'.format(num_params, num_fixed_params))
 
     return cfg, tokenizer, qa_net
 
@@ -523,6 +524,7 @@ def train(args):
     if args.num_accumulated != 1:
         # set grad to zero for gradient accumulation
         qa_net.collect_params().zero_grad()
+    global_tic = time.time()
     while not finish_flag:
         epoch_tic = time.time()
         tic = time.time()
@@ -599,7 +601,9 @@ def train(args):
                                                          step_num)
                     params_saved = os.path.join(args.output_dir, ckpt_name)
                     qa_net.save_parameters(params_saved)
-                    ckpt_candidates = [f for f in os.listdir(args.output_dir) if f.endswith('.params')]
+                    ckpt_candidates = [
+                        f for f in os.listdir(
+                            args.output_dir) if f.endswith('.params')]
                     # keep last 10 checkpoints
                     if len(ckpt_candidates) > 10:
                         ckpt_candidates.sort(key=lambda ele: (len(ele), ele))
@@ -614,11 +618,11 @@ def train(args):
                     toc = time.time()
                     logging.info(
                         'Epoch: {}, Batch: {}/{}, Loss span/answer/total={:.4f}/{:.4f}/{:.4f},'
-                        ' LR={:.8f}, grad_norm={:.4f}. '
-                        'Time cost={:.2f}, Throughput={:.2f} samples/s'.format(
-                            epoch_id + 1, batch_id + 1, epoch_size, log_span_loss,
-                            log_answerable_loss, log_total_loss, trainer.learning_rate, total_norm,
-                            toc - tic, log_sample_num / (toc - tic)))
+                        ' LR={:.8f}, grad_norm={:.4f}. Time cost={:.2f}, Throughput={:.2f} samples/s'
+                        ' Epoch ETA={:.2f}h'.format(epoch_id + 1, batch_id + 1, epoch_size, log_span_loss,
+                                                    log_answerable_loss, log_total_loss, trainer.learning_rate, total_norm,
+                                                    toc - tic, log_sample_num / (toc - tic),
+                                                    (num_train_steps - step_num) / (step_num / (toc - global_tic)) / 3600))
                     tic = time.time()
                     log_span_loss = 0
                     log_answerable_loss = 0
