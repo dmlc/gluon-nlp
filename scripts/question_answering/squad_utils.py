@@ -50,7 +50,6 @@ class SquadExample:
                  title: str,
                  answers: Optional[List[str]] = None,
                  is_impossible: bool = False,
-                 is_plausible: bool = False,
                  ):
         """
 
@@ -75,8 +74,6 @@ class SquadExample:
             Holds answers as well as their start positions.
         is_impossible
             False by default, set to True if the example has no possible answer.
-        is_plausible
-            False by default, set to True if the answer of this example is plausible.
         """
         self.qas_id = qas_id
         self.query_text = query_text
@@ -84,7 +81,6 @@ class SquadExample:
         self.answer_text = answer_text
         self.title = title
         self.is_impossible = is_impossible
-        self.is_plausible = is_plausible
         self.answers = answers
         self.start_position = start_position
         self.end_position = end_position
@@ -309,7 +305,6 @@ def get_squad_examples_from_json(json_file: str, is_training: bool) -> List[Squa
                     answers=answers,
                     title=title,
                     is_impossible=is_impossible,
-                    is_plausible=False,
                 )
                 examples.append(example)
     return examples
