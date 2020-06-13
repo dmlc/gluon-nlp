@@ -33,12 +33,11 @@ from typing import Tuple
 import mxnet as mx
 from mxnet import use_np
 from mxnet.gluon import HybridBlock, nn
-from mxnet.gluon.utils import download
 from .transformer import TransformerEncoderLayer
 from ..registry import BACKBONE_REGISTRY
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
-from ..utils.misc import load_checksum_stats
+from ..utils.misc import load_checksum_stats, download
 from ..initializer import TruncNorm
 from ..attention_cell import gen_self_attn_mask
 from ..layers import get_activation, PositionalEmbedding

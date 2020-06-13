@@ -1,9 +1,11 @@
 import os
+import sys
 import tempfile
+import pytest
 
 import mxnet as mx
 import numpy as np
-from mxnet.test_utils import almost_equal
+from numpy.testing import assert_almost_equal
 
 from gluonnlp.data.loading import NumpyDataset, DatasetLoader
 from gluonnlp.data.sampler import SplitSampler, FixedBucketSampler
@@ -25,6 +27,11 @@ def prepare_bucket_sampler(dataset, batch_size, shuffle=False, num_buckets=1):
     return sampler
 
 
+@pytest.mark.skipif(sys.version_info >= (3, 8),
+                    reason='The test fails everytime in python3.8 due to the issues'
+                           ' in MXNet: '
+                           'https://github.com/apache/incubator-mxnet/issues/17782, '
+                           'https://github.com/apache/incubator-mxnet/issues/17774')
 def test_dataset_loader():
     with tempfile.TemporaryDirectory() as root:
         num_files = 5
@@ -36,9 +43,10 @@ def test_dataset_loader():
 
         dataset_params = {'allow_pickle': True}
         sampler_params = {'batch_size': 2}
-        X = np.load(os.path.join(data, 'part_{}.npy'.format(0)))
+        all_data = np.load(os.path.join(data, 'part_{}.npy'.format(0)))
         for i in range(1, num_files):
-            X = np.concatenate((X, np.load(os.path.join(data, 'part_{}.npy'.format(i)))))
+            all_data = np.concatenate((all_data,
+                                       np.load(os.path.join(data, 'part_{}.npy'.format(i)))))
         for num_dataset_workers in [1, 2]:
             for num_batch_workers in [1, 2]:
                 dataloader = DatasetLoader(os.path.join(data, '*.npy'),
@@ -52,7 +60,7 @@ def test_dataset_loader():
                                            pin_memory=True,
                                            circle_length=1)
                 for i, x in enumerate(dataloader):
-                    assert almost_equal(x.asnumpy(), X[i * 2:(i + 1) * 2])
+                    assert_almost_equal(x.asnumpy(), all_data[i * 2:(i + 1) * 2])
 
         # test cache
         split_sampler = SplitSampler(1, num_parts=1, part_index=0,
@@ -74,4 +82,4 @@ def test_dataset_loader():
                                            dataset_cached=True,
                                            num_max_dataset_cached=1)
                 for i, x in enumerate(dataloader):
-                    assert almost_equal(x.asnumpy(), X[i * 2:(i + 1) * 2])
+                    assert_almost_equal(x.asnumpy(), X[i * 2:(i + 1) * 2])
