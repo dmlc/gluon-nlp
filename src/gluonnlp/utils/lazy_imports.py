@@ -141,7 +141,7 @@ def try_import_boto3():
     except ImportError:
         raise ImportError('"boto3" is not installed. To enable fast downloading in EC2. You should '
                           'install boto3 and correctly configure the S3. '
-                          'See https://github.com/facebookresearch/fastText for more information. '
+                          'See https://boto3.readthedocs.io/ for more information. '
                           'If you are using EC2, downloading from s3:// will '
                           'be multiple times faster than using the traditional http/https URL.')
     return boto3
