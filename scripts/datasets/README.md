@@ -10,7 +10,7 @@ Thus, the typical workflow for running experiments:
 
 - Download and prepare data with scripts in [datasets](.).
 In case you will need to preprocess the dataset, there are toolkits in [preprocess](../preprocess).
-- Run the experiments in [scripts](../scripts)
+- Run the experiments in [scripts](..)
 
 
 ## Available Datasets
@@ -24,16 +24,16 @@ In case you will need to preprocess the dataset, there are toolkits in [preproce
     - [Text8](./language_modeling)
     - [Enwiki8](./language_modeling)
     - [Google Billion Words](./language_modeling)
-- [Music Generation](TBA)
+- [Music Generation](./music_generation)
     - [LakhMIDI](./music_generation/README.md#lakh-midi)
     - [MAESTRO](./music_generation/README.md#maestro)
 - [Pretraining Corpus](./pretrain_corpus)
     - [Wikipedia](./pretrain_corpus/README.md#wikipedia)
     - [BookCorpus](./pretrain_corpus/README.md#bookcorpus)
     - [OpenWebText](./pretrain_corpus/README.md#openwebtext)
-- [General NLP Benchmarks](./general_benchmarks)
-    - [GLUE](./general_benchmarks/README.md#glue-benchmark)
-    - [SuperGLUE](./general_benchmarks/README.md#superglue-benchmark)
+- [General NLP Benchmarks](./general_nlp_benchmark)
+    - [GLUE](./general_nlp_benchmark/README.md#glue-benchmark)
+    - [SuperGLUE](./general_nlp_benchmark/README.md#superglue-benchmark)
 
 ## Contribution Guide
 
