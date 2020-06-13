@@ -2,7 +2,6 @@
 from typing import Optional, List
 from collections import namedtuple
 import itertools
-import bisect
 import re
 import numpy as np
 import numpy.ma as ma
@@ -12,6 +11,7 @@ from tqdm import tqdm
 import json
 import string
 from gluonnlp.data.tokenizers import BaseTokenizerWithVocab
+from gluonnlp.utils.preprocessing import match_tokens_with_char_spans
 from typing import Tuple
 from mxnet.gluon.utils import download
 
@@ -389,16 +389,12 @@ def convert_squad_example_to_feature(example: SquadExample,
     gt_span_start_pos, gt_span_end_pos = None, None
     token_answer_mismatch = False
     unreliable_span = False
+    np_offsets = np.array(offsets)
     if is_training and not example.is_impossible:
         assert example.start_position >= 0 and example.end_position >= 0
-        # From the offsets, we locate the first offset that contains start_pos and the last offset
-        # that contains end_pos, i.e.
-        # offsets[lower_idx][0] <= start_pos < offsets[lower_idx][1]
-        # offsets[upper_idx][0] < end_pos <= offsets[upper_idx[1]
+        # We convert the character-level offsets to token-level offsets
         # Also, if the answer after tokenization + detokenization is not the same as the original
-        # answer,
-        offsets_lower = [offset[0] for offset in offsets]
-        offsets_upper = [offset[1] for offset in offsets]
+        # answer, we try to localize the answer text and do a rematch
         candidates = [(example.start_position, example.end_position)]
         all_possible_start_pos = {example.start_position}
         find_all_candidates = False
@@ -406,17 +402,12 @@ def convert_squad_example_to_feature(example: SquadExample,
         first_lower_idx, first_upper_idx = None, None
         while len(candidates) > 0:
             start_position, end_position = candidates.pop()
-            if end_position > offsets_upper[-1] or start_position < offsets_lower[0]:
-                # Detect the out-of-boundary case
-                warnings.warn('The selected answer is not covered by the tokens! '
-                              'Use the end_position. '
-                              'qas_id={}, context_text={}, start_pos={}, end_pos={}, '
-                              'offsets={}'.format(example.qas_id, context_text,
-                                                  start_position, end_position, offsets))
-                end_position = min(offsets_upper[-1], end_position)
-                start_position = max(offsets_upper[0], start_position)
-            lower_idx = bisect.bisect(offsets_lower, start_position) - 1
-            upper_idx = bisect.bisect_left(offsets_upper, end_position)
+            # Match the token offsets
+            token_start_ends = match_tokens_with_char_spans(np_offsets,
+                                                            np.array([[start_position,
+                                                                       end_position]]))
+            lower_idx = int(token_start_ends[0][0])
+            upper_idx = int(token_start_ends[0][1])
             if not find_all_candidates:
                 first_lower_idx = lower_idx
                 first_upper_idx = upper_idx
