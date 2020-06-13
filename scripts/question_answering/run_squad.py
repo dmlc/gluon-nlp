@@ -117,7 +117,8 @@ def parse_args():
                         help='The parameter checkpoint of backbone model')
     parser.add_argument('--all_evaluate', action='store_true',
                         help='Whether to evaluate all intermediate checkpoints instead of only last one')
-
+    parser.add_argument('--max_saved_ckpt', type=int, default=10,
+                        help='The maximum number of saved checkpoints')
     args = parser.parse_args()
     return args
 
@@ -462,8 +463,13 @@ def train(args):
         num_workers=0,
         shuffle=True)
     # Froze parameters
-    if 'electra' in args.model_name and args.untunable_depth > 0:
-        untune_params(qa_net, args.untunable_depth)
+    if 'electra' in args.model_name:
+        # does not work for albert model since parameters in all layers are shared
+        if args.untunable_depth > 0:
+            untune_params(qa_net, args.untunable_depth)
+        if args.layerwise_decay > 0:
+            apply_layerwise_decay(qa_net, args.layerwise_decay)
+
     # Do not apply weight decay to all the LayerNorm and bias
     for _, v in qa_net.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
@@ -583,10 +589,7 @@ def train(args):
                 total_norm, ratio, is_finite = clip_grad_global_norm(
                     params, args.max_grad_norm * num_samples_per_update / loss_denom)
                 total_norm = total_norm / (num_samples_per_update / loss_denom)
-
-                if 'electra' not in args.model_name and args.layerwise_decay > 0:
-                    # wont work for albert model since parameters in all layers are shared
-                    apply_layerwise_decay(qa_net, args.layerwise_decay)
+                
                 trainer.update(num_samples_per_update / loss_denom, ignore_stale_grad=True)
                 step_num += 1
                 if args.num_accumulated != 1:
@@ -605,7 +608,7 @@ def train(args):
                         f for f in os.listdir(
                             args.output_dir) if f.endswith('.params')]
                     # keep last 10 checkpoints
-                    if len(ckpt_candidates) > 10:
+                    if len(ckpt_candidates) > args.max_saved_ckpt:
                         ckpt_candidates.sort(key=lambda ele: (len(ele), ele))
                         os.remove(os.path.join(args.output_dir, ckpt_candidates[0]))
                     logging.info('Params saved in: {}'.format(params_saved))
@@ -648,8 +651,7 @@ RawResultExtended = collections.namedtuple(
      'start_top_index',
      'end_top_logits',
      'end_top_index',
-     'answerable_logits',
-     'pos_cls_logits'])
+     'answerable_logits'])
 
 
 def predict_extended(original_feature,
@@ -714,6 +716,7 @@ def predict_extended(original_feature,
         # We use the log-likelihood as the not answerable score.
         # Thus, a high score indicates that the answer is not answerable
         cur_not_answerable_score = float(result.answerable_logits[1])
+        not_answerable_score = min(not_answerable_score, cur_not_answerable_score)
         # Calculate the start_logits + end_logits as the overall score
         context_offset = chunk_feature.context_offset
         chunk_start = chunk_feature.chunk_start
@@ -740,8 +743,6 @@ def predict_extended(original_feature,
                 all_start_idx.append(start_idx)
                 all_end_idx.append(end_idx)
                 all_pred_score.append(pred_score)
-                not_answerable_score -= float(pred_score)
-                not_answerable_score = min(not_answerable_score, cur_not_answerable_score)
     sorted_start_end_score = sorted(zip(all_start_idx, all_end_idx, all_pred_score),
                                     key=lambda args: args[-1], reverse=True)
     nbest = []
@@ -845,8 +846,8 @@ def evaluate(args, last=True):
                 valid_length = sample.valid_length.as_in_ctx(ctx)
                 p_mask = sample.masks.as_in_ctx(ctx)
                 p_mask = 1 - p_mask  # In the network, we use 1 --> no_mask, 0 --> mask
-                start_top_logits, start_top_index, end_top_logits, end_top_index, answerable_logits, \
-                    pos_cls_logits = qa_net.inference(tokens, segment_ids, valid_length, p_mask,
+                start_top_logits, start_top_index, end_top_logits, end_top_index, answerable_logits \
+                 = qa_net.inference(tokens, segment_ids, valid_length, p_mask,
                                                       args.start_top_n, args.end_top_n)
                 for i, qas_id in enumerate(sample.qas_id):
                     result = RawResultExtended(qas_id=qas_id,
@@ -854,8 +855,7 @@ def evaluate(args, last=True):
                                                start_top_index=start_top_index[i].asnumpy(),
                                                end_top_logits=end_top_logits[i].asnumpy(),
                                                end_top_index=end_top_index[i].asnumpy(),
-                                               answerable_logits=answerable_logits[i].asnumpy(),
-                                               pos_cls_logits=pos_cls_logits[i].asnumpy())
+                                               answerable_logits=answerable_logits[i].asnumpy())
 
                     all_results.append(result)
 
@@ -955,6 +955,7 @@ def evaluate(args, last=True):
         qa_net.load_parameters(ckpt_path, ctx=ctx_l, cast_dtype=True)
         best_eval = eval_validation(ckpt_name, best_eval)
 
+    logging.info('The best evaluated results are {}'.format(json.dumps(best_eval)))
     output_eval_results_file = os.path.join(args.output_dir, 'best_results.json')
     with open(output_eval_results_file, 'w') as of:
         of.write(json.dumps(best_eval, indent=4) + '\n')
