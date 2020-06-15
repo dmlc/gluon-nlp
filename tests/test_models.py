@@ -26,7 +26,7 @@ def test_get_backbone(name):
         sequence_length = 4
         inputs = mx.np.random.randint(0, 10, (batch_size, sequence_length))
         token_types = mx.np.random.randint(0, 2, (batch_size, sequence_length))
-        valid_length = mx.np.random.randint(1, 10, (batch_size,))
+        valid_length = mx.np.random.randint(1, sequence_length, (batch_size,))
         if 'roberta' in name or 'xlmr' in name:
             out = net(inputs, valid_length)
         else:
