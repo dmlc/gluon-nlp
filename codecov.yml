@@ -1,0 +1,39 @@
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    project:
+      main:
+        paths:
+          - src/gluonnlp
+          - !src/gluonnlp/cli
+      data_cli:
+        target: auto
+        paths:
+          - scripts/datasets
+      preprocess_cli:
+        target: auto
+        paths:
+          - scripts/preprocess
+    patch:
+      default:
+        target: 50%
+        base: auto
+    changes: no
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: "header, reach, diff, files"
+  behavior: default
+  require_changes: no
+  require_base: no
+  require_head: no
