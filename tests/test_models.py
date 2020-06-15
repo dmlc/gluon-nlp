@@ -31,5 +31,5 @@ def test_get_backbone(name):
             out = net(inputs, valid_length)
         else:
             out = net(inputs, token_types, valid_length)
-        np_out = out.asnumpy()
+        mx.npx.waitall()
         net.export(os.path.join(root, 'model'))
