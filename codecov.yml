@@ -1,3 +1,9 @@
+codecov:
+  notify:
+    require_ci_to_pass: yes
+  ci:
+    - ci.mxnet.io
+
 coverage:
   precision: 2
   round: down
