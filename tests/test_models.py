@@ -11,7 +11,6 @@ def test_list_backbone_names():
     assert len(list_backbone_names()) > 0
 
 
-#@pytest.mark.parametrize('name')
 def test_get_backbone():
     for name in list_backbone_names():
         with tempfile.TemporaryDirectory() as root:
