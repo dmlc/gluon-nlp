@@ -1,0 +1,33 @@
+INITIALIZER:
+  bias: ['zeros']
+  embed: ['xavier', 'gaussian', 'in', 1.0]
+  weight: ['xavier', 'uniform', 'avg', 3.0]
+MODEL:
+  DECODER:
+    activation: relu
+    hidden_size: 2048
+    num_heads: 8
+    num_layers: 6
+    pre_norm: False
+    recurrent: False
+    units: 512
+  ENCODER:
+    activation: relu
+    hidden_size: 2048
+    num_heads: 8
+    num_layers: 6
+    pre_norm: False
+    recurrent: False
+    units: 512
+  activation_dropout: 0.0
+  attention_dropout: 0.0
+  dropout: 0.1
+  max_src_length: -1
+  max_tgt_length: -1
+  pos_embed_type: sinusoidal
+  scale_embed: True
+  shared_embed: True
+  src_vocab_size: -1
+  tgt_vocab_size: -1
+  tie_weights: True
+VERSION: 1
