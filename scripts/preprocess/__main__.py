@@ -27,7 +27,7 @@ def cli_main():
         parser = clean_tok_para_corpus.get_parser()
         sub_args = parser.parse_args(other_args)
         clean_tok_para_corpus.main(sub_args)
-    if args.command == 'clean_tok_mono_corpus':
+    elif args.command == 'clean_tok_mono_corpus':
         parser = clean_tok_mono_corpus.get_parser()
         sub_args = parser.parse_args(other_args)
         clean_tok_mono_corpus.main(sub_args)
