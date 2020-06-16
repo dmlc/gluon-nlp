@@ -246,7 +246,8 @@ def get_parser():
         description='Clean parallel corpus used in machine translation.')
     parser.add_argument('--src-corpus', type=str, nargs='+', required=True)
     parser.add_argument('--tgt-corpus', type=str, nargs='+', required=True)
-    parser.add_argument('--lang-pair', type=str, required=True)
+    parser.add_argument('--src-lang', type=str, required=True)
+    parser.add_argument('--tgt-lang', type=str, required=True)
     parser.add_argument('--src-save-path', type=str, default=None,
                         help='Path to save the cleaned and tokenized source corpus. If not set, '
                              'the default is "corpus.tok.{src_lang}"')
@@ -267,7 +268,7 @@ def get_parser():
 
 
 def main(args):
-    src_lang, tgt_lang = args.lang_pair.split('-')
+    src_lang, tgt_lang = args.src_lang, args.tgt_lang
     corpus_processor = ParallelCorpusProcessor(src_lang=src_lang,
                                                tgt_lang=tgt_lang,
                                                src_tokenizer=args.src_tokenizer,
