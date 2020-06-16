@@ -18,7 +18,7 @@ nlp_preprocess clean_tok_mono_corpus \
                         --corpus train.raw.${TGT} \
                         --min-num-words 1 \
                         --max-num-words 100 \
-                        --save-path train.tok.${TGT}
+                        --save-path train.tok.${TGT} \
                         --num-process 16
 
 

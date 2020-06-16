@@ -238,7 +238,7 @@ def main(args):
                       'rerun the script with --overwrite.'.format(save_path))
     else:
         corpus_processor.process_mono_corpus(
-            corpus_paths=args.orpus,
+            corpus_paths=args.corpus,
             out_path=save_path,
             num_process=args.num_process)
 
