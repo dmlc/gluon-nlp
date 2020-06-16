@@ -18,8 +18,7 @@ sacrebleu -t wmt17 -l ${SRC}-${TGT} --echo ref > ${SAVE_PATH}/test.raw.${TGT}
 
 # Clean and tokenize the training + dev corpus
 cd ${SAVE_PATH}
-nlp_preprocess clean_tok_para_corpus \
-                      --src-lang ${SRC} \
+nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus train.raw.${SRC} \
                       --tgt-corpus train.raw.${TGT} \
@@ -31,8 +30,7 @@ nlp_preprocess clean_tok_para_corpus \
                       --src-save-path train.tok.${SRC} \
                       --tgt-save-path train.tok.${TGT}
 
-nlp_preprocess clean_tok_para_corpus \
-                      --src-lang ${SRC} \
+nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus dev.raw.${SRC} \
                       --tgt-corpus dev.raw.${TGT} \
@@ -45,8 +43,7 @@ nlp_preprocess clean_tok_para_corpus \
                       --tgt-save-path dev.tok.${TGT}
 
 # For test corpus, we will just tokenize the data
-nlp_preprocess clean_tok_para_corpus \
-                      --src-lang ${SRC} \
+nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus test.raw.${SRC} \
                       --tgt-corpus test.raw.${TGT} \
