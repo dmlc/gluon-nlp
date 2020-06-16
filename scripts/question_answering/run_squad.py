@@ -432,7 +432,7 @@ def train(args):
                     tokenizer=tokenizer,
                     is_training=True),
                 train_examples)
-        logging.info('Done! Time spent:{}'.format(time.time() - start))
+        logging.info('Done! Time spent:{:.2f} seconds'.format(time.time() - start))
         with open(train_cache_path, 'w') as f:
             for feature in train_features:
                 f.write(feature.to_json() + '\n')
@@ -589,7 +589,7 @@ def train(args):
                 total_norm, ratio, is_finite = clip_grad_global_norm(
                     params, args.max_grad_norm * num_samples_per_update / loss_denom)
                 total_norm = total_norm / (num_samples_per_update / loss_denom)
-                
+
                 trainer.update(num_samples_per_update / loss_denom, ignore_stale_grad=True)
                 step_num += 1
                 if args.num_accumulated != 1:
@@ -797,7 +797,7 @@ def evaluate(args, last=True):
             dev_features = pool.map(functools.partial(convert_squad_example_to_feature,
                                                       tokenizer=tokenizer,
                                                       is_training=False), dev_examples)
-        logging.info('Done! Time spent:{}'.format(time.time() - start))
+        logging.info('Done! Time spent:{:.2f} seconds'.format(time.time() - start))
         with open(dev_cache_path, 'w') as f:
             for feature in dev_features:
                 f.write(feature.to_json() + '\n')
