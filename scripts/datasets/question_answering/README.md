@@ -15,3 +15,36 @@ squad
 ├── train-v{version}.json
 ├── dev-v{version}.json
 ```
+
+## SearchQA
+
+```bash
+python prepare_searchqa.py
+```
+
+Directory structure of the squad dataset will be as follows
+```
+squad
+├── train-v{version}.json
+├── dev-v{version}.json
+```
+
+## Natural Questions
+
+## TriviaQA
+
+## HotpotQA
+
+```bash
+python prepare_hotpotqa.py
+```
+
+Directory structure of the hotpotqa dataset will be as follows
+```
+hotpotqa
+├── hotpot_train_v1.1.json
+├── hotpot_dev_fullwiki_v1.json
+├── hotpot_dev_distractor_v1.json
+├── hotpot_test_fullwiki_v1.json
+```
+## NewsQA

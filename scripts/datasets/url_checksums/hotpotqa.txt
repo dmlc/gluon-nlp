@@ -1,0 +1,4 @@
+http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_train_v1.1.json 08c42431c22984f362e94de0e635c7b858c3cff0 566426227
+http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_dev_distractor_v1.json 825b6cfc34a61db41e82bbb14d978d5a834925f8 46320117
+http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_dev_fullwiki_v1.json 96a41025612e8cb15989251102dc05efe9647eda 47454698
+http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_test_fullwiki_v1.json b30e4ff0d8b7bd808240e5609410f9c36279ef36 46213747
