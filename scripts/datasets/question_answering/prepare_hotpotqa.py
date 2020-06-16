@@ -23,7 +23,7 @@ _CITATIONS = """
 _URLS = {
     'train': 'http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_train_v1.1.json',
     'dev_fullwiki': 'http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_dev_fullwiki_v1.json',
-    'dev_distractor': 'http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_dev_distractor_v1.json'
+    'dev_distractor': 'http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_dev_distractor_v1.json',
     'test_fullwiki': 'http://curtis.ml.cmu.edu/datasets/hotpot/hotpot_test_fullwiki_v1.json',
 }
 

@@ -1,6 +1,7 @@
 # Question Answering
 
 ## SQuAD
+SQuAD datasets is distributed under the [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/legalcode) license.
 
 Run the following command to download squad
 
@@ -22,18 +23,14 @@ squad
 python prepare_searchqa.py
 ```
 
-Directory structure of the squad dataset will be as follows
-```
-squad
-├── train-v{version}.json
-├── dev-v{version}.json
-```
-
 ## Natural Questions
 
 ## TriviaQA
 
 ## HotpotQA
+HotpotQA is distributed under a [CC BY-SA 4.0 License](https://creativecommons.org/licenses/by-sa/4.0/). We only provide download scripts, and please check out the [GitHub repository](https://github.com/hotpotqa/hotpot) for the details of preprocessing and evaluation.
+
+Run the following command to download hotpotqa
 
 ```bash
 python prepare_hotpotqa.py
