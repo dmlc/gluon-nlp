@@ -16,9 +16,14 @@ try:
     import tqdm
 except ImportError:
     tqdm = None
+from .lazy_imports import try_import_boto3
 from mxnet.gluon.utils import shape_is_known, replace_file
 from collections import OrderedDict
 import glob as _glob
+
+
+S3_PREFIX = 's3://'
+
 
 def glob(url, separator=','):
     """Return a list of paths matching a pathname pattern.
@@ -396,6 +401,15 @@ def download(url: str,
     fname
         The file path of the downloaded file.
     """
+    is_s3 = url.startswith(S3_PREFIX)
+    if is_s3:
+        boto3 = try_import_boto3()
+        s3 = boto3.resource('s3')
+        components = url[len(S3_PREFIX):].split('/')
+        if len(components) < 2:
+            raise ValueError('Invalid S3 url. Received url={}'.format(url))
+        s3_bucket_name = components[0]
+        s3_key = '/'.join(components[1:])
     if path is None:
         fname = url.split('/')[-1]
         # Empty filenames are invalid
@@ -424,23 +438,40 @@ def download(url: str,
             # pylint: disable=W0703
             try:
                 print('Downloading {} from {}...'.format(fname, url))
-                r = requests.get(url, stream=True, verify=verify_ssl)
-                if r.status_code != 200:
-                    raise RuntimeError('Failed downloading url {}'.format(url))
-                # create uuid for temporary files
-                random_uuid = str(uuid.uuid4())
-                total_size = int(r.headers.get('content-length', 0))
-                chunk_size = 1024
-                if tqdm is not None:
-                    t = tqdm.tqdm(total=total_size, unit='iB', unit_scale=True)
-                with open('{}.{}'.format(fname, random_uuid), 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=chunk_size):
-                        if chunk:  # filter out keep-alive new chunks
-                            if tqdm is not None:
-                                t.update(len(chunk))
-                            f.write(chunk)
-                if tqdm is not None:
-                    t.close()
+                if is_s3:
+                    response = s3.meta.client.head_object(Bucket=s3_bucket_name,
+                                                          Key=s3_key)
+                    total_size = int(response.get('ContentLength', 0))
+                    random_uuid = str(uuid.uuid4())
+                    tmp_path = '{}.{}'.format(fname, random_uuid)
+                    if tqdm is not None:
+                        def hook(t_obj):
+                            def inner(bytes_amount):
+                                t_obj.update(bytes_amount)
+                            return inner
+                        with tqdm.tqdm(total=total_size, unit='iB', unit_scale=True) as t:
+                            s3.meta.client.download_file(s3_bucket_name, s3_key, tmp_path,
+                                                         Callback=hook(t))
+                    else:
+                        s3.meta.client.download_file(s3_bucket_name, s3_key, tmp_path)
+                else:
+                    r = requests.get(url, stream=True, verify=verify_ssl)
+                    if r.status_code != 200:
+                        raise RuntimeError('Failed downloading url {}'.format(url))
+                    # create uuid for temporary files
+                    random_uuid = str(uuid.uuid4())
+                    total_size = int(r.headers.get('content-length', 0))
+                    chunk_size = 1024
+                    if tqdm is not None:
+                        t = tqdm.tqdm(total=total_size, unit='iB', unit_scale=True)
+                    with open('{}.{}'.format(fname, random_uuid), 'wb') as f:
+                        for chunk in r.iter_content(chunk_size=chunk_size):
+                            if chunk:  # filter out keep-alive new chunks
+                                if tqdm is not None:
+                                    t.update(len(chunk))
+                                f.write(chunk)
+                    if tqdm is not None:
+                        t.close()
                 # if the target file exists(created by other processes)
                 # and have the same hash with target file
                 # delete the temporary file

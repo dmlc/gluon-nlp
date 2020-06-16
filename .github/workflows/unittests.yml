@@ -12,8 +12,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # TODO Add ubuntu test by "ubuntu-latest", Add windows test by using "windows-latest"
-        os: [macos-latest]
+        # TODO Add windows test by using "windows-latest"
+        os: [macos-latest, ubuntu-latest]
         python-version: [ '3.6', '3.7', '3.8']
     steps:
       - name: Checkout repository
@@ -35,7 +35,7 @@ jobs:
           python -m pip install --user --upgrade pip
           python -m pip install --user setuptools pytest pytest-cov
           python -m pip install --upgrade cython
-          python -m pip install --pre --user mxnet==2.0.0b20200604 -f https://dist.mxnet.io/python
+          python -m pip install --pre --user mxnet>=2.0.0b20200604 -f https://dist.mxnet.io/python
           python -m pip install --user -e .[extras]
       - name: Test project
         run: |
