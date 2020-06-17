@@ -34,7 +34,7 @@ VERSION=2.0  # Either 2.0 or 1.1
 MODEL_NAME=google_albert_base_v2
 
 # Prepare the Data
-nlp_data prepare_squad --version ${VERSION} 
+nlp_data prepare_squad --version ${VERSION}
 
 # Run the script
 python run_squad.py \
@@ -93,23 +93,24 @@ For reference, we've included the results from Google's Original Experiments
 |ALBERT xlarge (googleresearch/albert)  | 92.9/86.4     | 87.9/84.1    |
 |ALBERT xxlarge (googleresearch/albert) | 94.6/89.1     | 89.8/86.9    |
 
-For BERT and ELECTRA model, the results on SQuAD1.1 and SQuAD2.0 are given as follows.
+For BERT and ELECTRA model, the results on SQuAD1.1 and SQuAD2.0 are given as follows. For ELECTRA model, same hyper-parameter as original paper are used, and layer-wise learning rate decay is applied (`layerwise_decay`) with the value of 0.8 for small/base and 0.9 for large.
 
 | Model Name    | SQuAD1.1 dev  | SQuAD2.0 dev |
 |--------------------------|---------------|--------------|
 |BERT base                 | 88.40/81.24   | 76.89/74.01  |
 |BERT large                | 90.45/83.55   | 81.89/78.77  |
-|ELECTRA small             | 84.40/74.41   | 71.73/68.78  |        
-|ELECTRA base              | 92.19/86.07   | 83.89/81.16  |
-|ELECTRA large             | 94.35/88.50   | 89.68/87.05  |
+|ELECTRA small             | 85.42/78.95   | 74.44/71.86  |        
+|ELECTRA base              | 92.63/87.34   | 86.34/83.62  |
+|ELECTRA large             | 94.95/89.94   | 90.59/88.13  |
 
 For reference, we have also included the results of Google's original version
 
 | Model Name               | SQuAD1.1 dev   | SQuAD2.0 dev  |
+|--------------------------|----------------|---------------|
 |Google BERT base          |   88.5/80.8    |     - / -     |
 |Google BERT large         |   90.9/84.1    |     - / -     |
 |Google ELECTRA base       |     - /75.8    |     - /70.1   |
-|Google ELECTRA base       |     - /86.8    |     - /80.5   |
+|Google ELECTRA base       |     - /86.8    |     - /83.7   |
 |Google ELECTRA large      |     - /89.7    |     - /88.1   |
 
 All experiments done on AWS P3.8xlarge (4 x NVIDIA Tesla V100 16 GB)
