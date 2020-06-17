@@ -2,8 +2,6 @@
 [run]
 omit =
     tests/*
-    conda/*
-    scripts/tests/*
     scripts/*
 concurrency =
     multiprocessing

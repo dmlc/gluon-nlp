@@ -11,25 +11,25 @@ def test_list_backbone_names():
     assert len(list_backbone_names()) > 0
 
 
-@pytest.mark.parametrize('name', list_backbone_names())
-def test_get_backbone(name):
-    with tempfile.TemporaryDirectory() as root:
-        model_cls, cfg, tokenizer, local_params_path, _ = get_backbone(name, root=root)
-        net = model_cls.from_cfg(cfg)
-        net.load_parameters(local_params_path)
-        net.hybridize()
-        num_params, num_fixed_params = count_parameters(net.collect_params())
-        assert num_params > 0
+def test_get_backbone():
+    for name in list_backbone_names():
+        with tempfile.TemporaryDirectory() as root:
+            model_cls, cfg, tokenizer, local_params_path, _ = get_backbone(name, root=root)
+            net = model_cls.from_cfg(cfg)
+            net.load_parameters(local_params_path)
+            net.hybridize()
+            num_params, num_fixed_params = count_parameters(net.collect_params())
+            assert num_params > 0
 
-        # Test for model export + save
-        batch_size = 1
-        sequence_length = 16
-        inputs = mx.np.random.randint(0, 10, (batch_size, sequence_length))
-        token_types = mx.np.random.randint(0, 2, (batch_size, sequence_length))
-        valid_length = mx.np.random.randint(1, 10, (batch_size,))
-        if 'roberta' in name or 'xlmr' in name:
-            out = net(inputs, valid_length)
-        else:
-            out = net(inputs, token_types, valid_length)
-        mx.npx.waitall()
-        net.export(os.path.join(root, 'model'))
+            # Test for model export + save
+            batch_size = 1
+            sequence_length = 4
+            inputs = mx.np.random.randint(0, 10, (batch_size, sequence_length))
+            token_types = mx.np.random.randint(0, 2, (batch_size, sequence_length))
+            valid_length = mx.np.random.randint(1, sequence_length, (batch_size,))
+            if 'roberta' in name or 'xlmr' in name:
+                out = net(inputs, valid_length)
+            else:
+                out = net(inputs, token_types, valid_length)
+            mx.npx.waitall()
+            net.export(os.path.join(root, 'model'))

@@ -17,7 +17,7 @@ squad
 ├── dev-v{version}.json
 ```
 ## SearchQA
-We uploaded the SearchQA to our S3 bucket and provide the link to download the processed txt files. Please check out the [Google drive link](https://drive.google.com/drive/u/0/folders/1kBkQGooNyG0h8waaOJpgdGtOnlb1S649) to download to raw and split files collected through web search using the scraper from [GitHub repository](https://github.com/nyu-dl/dl4ir-searchQA).
+Following BSD-3-Clause License, we uploaded the SearchQA to our S3 bucket and provide the link to download the processed txt files. Please check out the [Google drive link](https://drive.google.com/drive/u/0/folders/1kBkQGooNyG0h8waaOJpgdGtOnlb1S649) to download to raw and split files collected through web search using the scraper from [GitHub repository](https://github.com/nyu-dl/dl4ir-searchQA).
 
 Directory structure of the searchqa dataset will be as follows
 ```
