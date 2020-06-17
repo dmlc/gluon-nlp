@@ -44,7 +44,7 @@ python train_transformer.py \
     --tgt_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
     --tgt_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
     --save_dir transformer_wmt2014_de_en_yttm \
-    --cfg wmt_de_en_base.yml \
+    --cfg transformer_base \
     --lr 0.002 \
     --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
@@ -67,7 +67,7 @@ for NUM in $(seq -w 0 96); do \
         --param_path transformer_wmt2014_de_en_yttm/average.params \
         --src_lang ${TGT} \
         --tgt_lang ${SRC} \
-        --cfg wmt_en_de_base.yml \
+        --cfg transformer_base \
         --src_tokenizer ${SUBWORD_MODEL} \
         --tgt_tokenizer ${SUBWORD_MODEL} \
         --src_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
@@ -78,6 +78,7 @@ for NUM in $(seq -w 0 96); do \
         --gpus 0,1,2,3
 done
 
+#
 
 # Combine the synthetic data with original data
 # Tokenize and clean the combined data
@@ -92,8 +93,8 @@ python train_transformer.py \
     --src_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
     --tgt_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
     --tgt_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-    --save_dir backtranslation_wmt2014_ende_yttm \
-    --cfg wmt_en_de_base.yml \
+    --save_dir backtranslation_wmt2014_ende_${SUBWORD_MODEL} \
+    --cfg transformer_base \
     --lr 0.002 \
     --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
@@ -103,7 +104,7 @@ python train_transformer.py \
 
 # Finally, we can evaluate the model
 python evaluate_transformer.py \
-    --param_path backtranslation_wmt2014_ende_yttm/average.params \
+    --param_path backtranslation_wmt2014_ende_${SUBWORD_MODEL}/average.params \
     --src_lang ${SRC} \
     --tgt_lang ${TGT} \
     --cfg wmt_en_de_base.yml \
