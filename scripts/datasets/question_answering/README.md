@@ -16,21 +16,43 @@ squad
 ├── train-v{version}.json
 ├── dev-v{version}.json
 ```
-
 ## SearchQA
 
+## TriviaQA
+[TriviaQA](https://nlp.cs.washington.edu/triviaqa/) is an open domain QA dataset. See more useful scripts in [Offical Github](https://github.com/mandarjoshi90/triviaqa)
+
+Run the following command to download triviaqa
+
 ```bash
-python prepare_searchqa.py
+python prepare_triviaqa.py --version rc         # Download TriviaQA version 1.0 for RC (2.5G)
+python prepare_triviaqa.py --version unfiltered # Download unfiltered TriviaQA version 1.0 (604M)
 ```
 
-## Natural Questions
+Directory structure of the triviaqa (rc and unfiltered) dataset will be as follows:
+```
+triviaqa
+├── triviaqa-rc
+    ├── qa
+        ├── verified-web-dev.json        
+        ├── web-dev.json                   
+        ├── web-train.json     
+        ├── web-test-without-answers.json
+        ├── verified-wikipedia-dev.json
+        ├── wikipedia-test-without-answers.json
+        ├── wikipedia-dev.json  
+        ├── wikipedia-train.json
+    ├── evidence
+        ├── web
+        ├── wikipedia
 
-## TriviaQA
+├── triviaqa-unfiltered
+    ├── unfiltered-web-train.json
+    ├── unfiltered-web-dev.json
+    ├── unfiltered-web-test-without-answers.json
+```
 
 ## HotpotQA
-HotpotQA is distributed under a [CC BY-SA 4.0 License](https://creativecommons.org/licenses/by-sa/4.0/). We only provide download scripts, and please check out the [GitHub repository](https://github.com/hotpotqa/hotpot) for the details of preprocessing and evaluation.
-
-Run the following command to download hotpotqa
+HotpotQA is distributed under a [CC BY-SA 4.0 License](https://creativecommons.org/licenses/by-sa/4.0/). We only provide download scripts (run by the following command), and please check out the [GitHub repository](https://github.com/hotpotqa/hotpot) for the details of preprocessing and evaluation.
 
 ```bash
 python prepare_hotpotqa.py

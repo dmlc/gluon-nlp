@@ -7,7 +7,10 @@ from collections import OrderedDict
 from gluonnlp.cli.data.machine_translation.prepare_wmt\
     import _PARA_URLS as wmt_para_urls, _MONOLINGUAL_URLS as wmt_mono_urls
 from gluonnlp.cli.data.question_answering.prepare_squad import _URLS as squad_urls
+from gluonnlp.cli.data.question_answering.prepare_newsqa import _URLS as newsqa_urls
+from gluonnlp.cli.data.question_answering.prepare_triviaqa import _URLS as triviaqa_url
 from gluonnlp.cli.data.question_answering.prepare_hotpotqa import _URLS as hotpotqa_urls
+from gluonnlp.cli.data.question_answering.prepare_searchqa import _URLS as searchqa_urls
 from gluonnlp.cli.data.language_modeling.prepare_lm import _URLS as lm_urls
 from gluonnlp.cli.data.music_generation.prepare_music_midi import _URLS as midi_urls
 from gluonnlp.cli.data.pretrain_corpus.prepare_bookcorpus import _URLS as book_urls
@@ -104,6 +107,12 @@ if __name__ == '__main__':
                       save_path=os.path.join(_CHECK_SUM_BASE, 'squad.txt'))
     get_hash_and_size(hotpotqa_urls,
                       save_path=os.path.join(_CHECK_SUM_BASE, 'hotpotqa.txt'))
+    get_hash_and_size(triviaqa_url,
+                      save_path=os.path.join(_CHECK_SUM_BASE, 'triviaqa.txt'))
+    get_hash_and_size(newsqa_url,
+                      save_path=os.path.join(_CHECK_SUM_BASE, 'newsqa.txt'))
+    get_hash_and_size(searchqa_url,
+                      save_path=os.path.join(_CHECK_SUM_BASE, 'searchqa.txt'))
     get_hash_and_size(lm_urls,
                       save_path=os.path.join(_CHECK_SUM_BASE, 'language_model.txt'))
     get_hash_and_size(midi_urls,
