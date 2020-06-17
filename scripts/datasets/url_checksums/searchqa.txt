@@ -1,0 +1,3 @@
+s3://gluonnlp-numpy-data/datasets/question_answering/searchqa/train.txt c7e1eb8c34d0525547b91e18b3f8f4d855e35c16 1226681217
+s3://gluonnlp-numpy-data/datasets/question_answering/searchqa/test.txt 08a928e0f8c129d5b3ca43bf46df117e38be0c27 332064988
+s3://gluonnlp-numpy-data/datasets/question_answering/searchqa/val.txt c2f65d6b83c26188d5998ab96bc6a38c1a127fcc 170835902

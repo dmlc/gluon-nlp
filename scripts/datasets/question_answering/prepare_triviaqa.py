@@ -57,14 +57,15 @@ def main(args):
 
     tar_url = _URLS[args.type]
     file_name = tar_url[tar_url.rfind('/') + 1:]
-    download(tar_url, path=os.path.join(args.cache_path, file_name))
+    file_hash = _URL_FILE_STATS[tar_url]
+    download(tar_url, path=os.path.join(args.cache_path, file_name), sha1_hash=file_hash)
     if not os.path.exists(args.save_path):
         os.makedirs(args.save_path)
     if not os.path.exists(os.path.join(args.save_path, file_name))\
             or (args.overwrite and args.save_path != args.cache_path):
         os.symlink(os.path.join(args.cache_path, file_name),
                    os.path.join(args.save_path, file_name))
-    extract(file_name, args.save_path)
+    extract(os.path.join(args.save_path, file_name), args.save_path)
 
 def cli_main():
     parser = get_parser()
