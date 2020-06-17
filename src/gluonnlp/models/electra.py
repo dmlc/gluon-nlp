@@ -87,13 +87,6 @@ PRETRAINED_URL = {
         'params': 'google_electra_large/model-9baf9ff5.params',
         'disc_model': 'google_electra_large/disc_model-5b820c02.params',
         'gen_model': 'google_electra_large/gen_model-667121df.params',
-    },
-    'gluon_electra_small_owt': {
-        'cfg': 'gluon_electra_small_owt/model-430b77d1.yml',
-        'vocab': 'gluon_electra_small_owt/vocab-e6d2b21d.json',
-        'params': 'gluon_electra_small_owt/model-e42dca35.params',
-        'disc_model': 'gluon_electra_small_owt/disc_model-8d5c8d8c.params',
-        'gen_model': 'gluon_electra_small_owt/gen_model-584855bb.params',
     }
 }
 
