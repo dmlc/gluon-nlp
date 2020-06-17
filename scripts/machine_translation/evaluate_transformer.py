@@ -5,7 +5,6 @@ import mxnet as mx
 from mxnet import gluon
 import argparse
 import logging
-import io
 import time
 from gluonnlp.utils.misc import logging_config
 from gluonnlp.models.transformer import TransformerNMTModel,\
@@ -175,7 +174,6 @@ def evaluate(args):
     avg_nll_loss = 0
     ntokens = 0
     pred_sentences = []
-    processed_sent = 0
     start_eval_time = time.time()
     all_src_token_ids, all_src_lines = process_corpus(args.src_corpus,
                                                       sentence_normalizer=src_normalizer,
@@ -198,6 +196,7 @@ def evaluate(args):
         batchify_fn=Tuple(Pad(), Stack(), Pad(), Stack()),
         shuffle=False)
     
+    # evaluate
     if not args.inference:
         for i, (src_token_ids, src_valid_length, tgt_token_ids, tgt_valid_length)\
                 in enumerate(test_dataloader):
@@ -226,18 +225,18 @@ def evaluate(args):
         end_eval_time = time.time()
         avg_nll_loss = avg_nll_loss / ntokens
 
-        with io.open(os.path.join(args.save_dir, 'gt_sentences.txt'), 'w', encoding='utf-8') as of:
-            for line in all_tgt_lines:
-                of.write(line + '\n')
-        with io.open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
-            for line in pred_sentences:
-                of.write(line + '\n')
+        with open(os.path.join(args.save_dir, 'gt_sentences.txt'), 'w', encoding='utf-8') as of:
+            of.write('\n'.join(all_tgt_lines))
+            of.write('\n')
+        with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
+            of.write('\n'.join(pred_sentences))
+            of.write('\n')
 
         sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences, ref_streams=[all_tgt_lines])
         logging.info('Time Spent: {}, #Sent={}, SacreBlEU={} Avg NLL={}, Perplexity={}'
                      .format(end_eval_time - start_eval_time, len(all_tgt_lines),
                              sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
-
+    # inference only (without ground truth)
     else:
         for i, (src_token_ids, src_valid_length, _, _) in tqdm(enumerate(test_dataloader)):
             src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
@@ -250,14 +249,12 @@ def evaluate(args):
                 bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
                 pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
                 pred_sentences.append(pred_sentence)
-            
-            with io.open('pred_sentences.txt', 'a', encoding='utf-8') as of:
-                for line in pred_sentences:
-                    of.write(line + '\n')
-            
-            processed_sent = processed_sent + len(pred_sentences)
-            pred_sentences = []
-
+        end_eval_time = time.time()
+        with open('pred_sentences.txt', 'w', encoding='utf-8') as of:
+            of.write('\n'.join(pred_sentences))
+            of.write('\n')
+        logging.info('Time Spent: {}, predicted sentences: {}'
+                     .format(end_eval_time - start_eval_time, len(pred_sentences)))
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
