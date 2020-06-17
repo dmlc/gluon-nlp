@@ -75,4 +75,3 @@ hotpotqa
 ├── hotpot_dev_distractor_v1.json
 ├── hotpot_test_fullwiki_v1.json
 ```
-## NewsQA

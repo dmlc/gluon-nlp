@@ -21,7 +21,6 @@ In case you will need to preprocess the dataset, there are toolkits in [preproce
     - [SearchQA](./question_answering/README.md#searchqa)
     - [TriviaQA](./question_answering/README.md#triviaqa)
     - [HotpotQA](./question_answering/README.md#hotpotqa)
-    - [NewsQA](./question_answering/README.md#newsqa)
 - [Language Modeling](./language_modeling)
     - [WikiText-2](./language_modeling)
     - [WikiText-103](./language_modeling)
