@@ -10,12 +10,20 @@ python prepare_squad.py --version 1.1 # Squad 1.1
 python prepare_squad.py --version 2.0 # Squad 2.0
 ```
 
+For all datasets we support, we provide command-line-toolkits for downloading them as
+
+```bash
+nlp_data prepare_squad --version 1.1
+nlp_data prepare_squad --version 2.0
+```
+
 Directory structure of the squad dataset will be as follows, where `version` can be 1.1 or 2.0:
 ```
 squad
 ├── train-v{version}.json
 ├── dev-v{version}.json
 ```
+
 ## SearchQA
 Following BSD-3-Clause License, we uploaded the SearchQA to our S3 bucket and provide the link to download the processed txt files. Please check out the [Google drive link](https://drive.google.com/drive/u/0/folders/1kBkQGooNyG0h8waaOJpgdGtOnlb1S649) to download to raw and split files collected through web search using the scraper from [GitHub repository](https://github.com/nyu-dl/dl4ir-searchQA).
 
@@ -27,6 +35,15 @@ searchqa
 ├── test.txt
 ```
 
+Download SearchQA Dataset with python command or Command-line Toolkits
+
+```bash
+python prepare_searchqa.py
+
+# Or download with command-line toolkits
+nlp_data prepare_searchqa
+```
+
 ## TriviaQA
 [TriviaQA](https://nlp.cs.washington.edu/triviaqa/) is an open domain QA dataset. See more useful scripts in [Offical Github](https://github.com/mandarjoshi90/triviaqa)
 
@@ -35,6 +52,10 @@ Run the following command to download triviaqa
 ```bash
 python prepare_triviaqa.py --version rc         # Download TriviaQA version 1.0 for RC (2.5G)
 python prepare_triviaqa.py --version unfiltered # Download unfiltered TriviaQA version 1.0 (604M)
+
+# Or download with command-line toolkits
+nlp_data prepare_triviaqa --version rc
+nlp_data prepare_triviaqa --version unfiltered
 ```
 
 Directory structure of the triviaqa (rc and unfiltered) dataset will be as follows:
@@ -65,6 +86,9 @@ HotpotQA is distributed under a [CC BY-SA 4.0 License](https://creativecommons.o
 
 ```bash
 python prepare_hotpotqa.py
+
+# Or download with command-line toolkits
+nlp_data prepare_hotpotqa
 ```
 
 Directory structure of the hotpotqa dataset will be as follows

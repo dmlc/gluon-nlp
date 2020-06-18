@@ -93,7 +93,30 @@ For reference, we've included the results from Google's Original Experiments
 |ALBERT xlarge (googleresearch/albert)  | 92.9/86.4     | 87.9/84.1    |
 |ALBERT xxlarge (googleresearch/albert) | 94.6/89.1     | 89.8/86.9    |
 
-For BERT and ELECTRA model, the results on SQuAD1.1 and SQuAD2.0 are given as follows. For ELECTRA model, same hyper-parameter as original paper are used, and layer-wise learning rate decay is applied (`layerwise_decay`) with the value of 0.8 for small/base and 0.9 for large.
+As for ELECTRA model, we fine-tune it with layer-wise learning rate decay as
+```bash
+export MODEL_NAME=google_electra_small
+
+python run_squad.py \
+    --model_name ${MODEL_NAME} \
+    --data_dir squad \
+    --output_dir fintune_${MODEL_NAME}_squad_${VERSION} \
+    --version ${VERSION} \
+    --do_eval \
+    --do_train \
+    --batch_size 32 \
+    --num_accumulated 1 \
+    --gpus 0 \
+    --epochs 2 \
+    --lr 3e-4 \
+    --layerwise_decay 0.8 \
+    --warmup_ratio 0.1 \
+    --wd=0 \
+    --max_seq_length 512 \
+    --max_grad_norm 0.1 \
+```
+
+For BERT and ELECTRA model, the results on SQuAD1.1 and SQuAD2.0 are given as follows.
 
 | Model Name    | SQuAD1.1 dev  | SQuAD2.0 dev |
 |--------------------------|---------------|--------------|
