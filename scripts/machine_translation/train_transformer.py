@@ -99,7 +99,12 @@ def parse_args():
     parser.add_argument('--tgt_vocab_path', type=str,
                         help='Path to the target vocab.')
     parser.add_argument('--seed', type=int, default=100, help='The random seed.')
-    parser.add_argument('--epochs', type=int, default=30, help='upper epoch limit')
+    parser.add_argument('--epochs', type=int, default=30, help='Upper epoch limit, '
+                        'the model will keep training when epochs < 0 and max_update < 0.')
+    parser.add_argument('--max_update', type=int, default=-1,
+                        help='Max update steps, when max_update > 0, epochs will be set to -1')
+    parser.add_arguament('--save_interval_update', type=int, default=2000,
+                         help='Update interval of saving checkpoints when using max_update')
     parser.add_argument('--cfg', type=str, default='transformer_nmt_base',
                         help='Configuration of the transformer model. '
                              'You may select a yml file or use the prebuild configurations.')
@@ -145,10 +150,12 @@ def parse_args():
     parser.add_argument('--gpus', type=str,
                         help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
     args = parser.parse_args()
+    if args.max_update > 0:
+        args.epochs = -1
     logging_config(args.save_dir, console=True)
     logging.info(args)
     return args
-
+# TODO max update, max_update * accumulate = epoch * batch num?
 
 def validation(model, data_loader, ctx_l):
     """Validate the model on the dataset
@@ -355,13 +362,15 @@ def train(args):
     log_start_time = time.time()
     num_params, num_fixed_params = None, None
     # TODO(sxjscience) Add a log metric class
+    
     accum_count = 0
     loss_denom = 0
     n_train_iters = 0
     log_wc = 0
     log_avg_loss = 0.0
     log_loss_denom = 0
-    for epoch_id in range(args.epochs):
+    epoch_id = 0
+    while (args.epochs < 0 or epoch_id < args.epochs): # when args.epochs < 0, the model will keep training
         n_epoch_train_iters = 0
         processed_batch_num = 0
         train_multi_data_loader = grouper(train_data_loader, len(ctx_l))
@@ -414,7 +423,8 @@ def train(args):
                 accum_count = 0
                 loss_denom = 0
                 model.collect_params().zero_grad()
-                if epoch_id >= (args.epochs - args.num_averages):
+                if (args.epcohs > 0 and epoch_id >= args.epochs - args.num_averages) or \
+                   (args.max_update > 0 and n_train_iters >= args.max_update - args.num_averages * args.save_interval_update):
                     model_averager.step()
                 if n_epoch_train_iters % args.log_interval == 0:
                     log_end_time = time.time()
@@ -430,12 +440,26 @@ def train(args):
                     log_avg_loss = 0
                     log_loss_denom = 0
                     log_wc = 0
-        model.save_parameters(os.path.join(args.save_dir,
-                                           'epoch{:d}.params'.format(epoch_id)),
-                              deduplicate=True)
+                if args.max_update > 0 and n_train_iters % args.save_interval_update == 0:
+                    model.save_parameters(os.path.join(args.save_dir,
+                                                       '{:d}.params'.format(n_train_iters / args.save_interval_update)),
+                                          deduplicate=True)
+                if args.max_update > 0 and n_train_iters >= args.max_update:
+                    break
+                    
+        if args.epochs > 0:
+            model.save_parameters(os.path.join(args.save_dir,
+                                               'epoch{:d}.params'.format(epoch_id)),
+                                  deduplicate=True)
+            
         avg_valid_loss = validation(model, val_data_loader, ctx_l)
         logging.info('[Epoch {}] validation loss/ppl={:.4f}/{:.4f}'
                      .format(epoch_id, avg_valid_loss, np.exp(avg_valid_loss)))
+
+        if args.max_update > 0 and n_train_iters >= args.max_update:
+            break
+        epoch_id += 1
+
     if args.num_averages > 0:
         model_averager.copy_back(model.collect_params())  # TODO(sxjscience) Rewrite using update
         model.save_parameters(os.path.join(args.save_dir, 'average.params'),
