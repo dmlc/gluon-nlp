@@ -238,7 +238,7 @@ def evaluate(args):
                              sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
     # inference only (without ground truth)
     else:
-        with open('pred_sentences.txt', 'w', encoding='utf-8') as of:
+        with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
             processed_sentences = 0
             for test_data_l in tqdm(grouper(test_dataloader, len(ctx_l))):
                 for test_data, ctx in zip(test_data_l, ctx_l):
