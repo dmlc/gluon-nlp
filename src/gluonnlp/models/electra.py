@@ -87,7 +87,7 @@ PRETRAINED_URL = {
         'params': 'google_electra_large/model-9baf9ff5.params',
         'disc_model': 'google_electra_large/disc_model-5b820c02.params',
         'gen_model': 'google_electra_large/gen_model-667121df.params',
-    },
+    }
 }
 
 FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'electra.txt'))

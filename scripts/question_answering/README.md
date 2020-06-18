@@ -34,7 +34,7 @@ VERSION=2.0  # Either 2.0 or 1.1
 MODEL_NAME=google_albert_base_v2
 
 # Prepare the Data
-nlp_data prepare_squad --version ${VERSION} 
+nlp_data prepare_squad --version ${VERSION}
 
 # Run the script
 python run_squad.py \
@@ -70,6 +70,32 @@ python run_squad.py \
     --overwrite_cache \
 ```
 
+As for ELECTRA model, we fine-tune it with layer-wise learning rate decay as
+
+```bash
+VERSION=2.0  # Either 2.0 or 1.1
+MODEL_NAME=google_electra_small
+
+python run_squad.py \
+    --model_name ${MODEL_NAME} \
+    --data_dir squad \
+    --output_dir fintune_${MODEL_NAME}_squad_${VERSION} \
+    --version ${VERSION} \
+    --do_eval \
+    --do_train \
+    --batch_size 32 \
+    --num_accumulated 1 \
+    --gpus 0 \
+    --epochs 2 \
+    --lr 3e-4 \
+    --layerwise_decay 0.8 \
+    --warmup_ratio 0.1 \
+    --wd=0 \
+    --max_seq_length 512 \
+    --max_grad_norm 0.1 \
+```
+
+
 ### Results
 We reproduced the ALBERT model which is released by Google, and fine-tune the the SQuAD with single models. ALBERT Version 2 are pre-trained without the dropout mechanism but with extra training steps compared to the version 1 (see the [original paper](https://arxiv.org/abs/1909.11942) for details).
 
@@ -99,17 +125,18 @@ For BERT and ELECTRA model, the results on SQuAD1.1 and SQuAD2.0 are given as fo
 |--------------------------|---------------|--------------|
 |BERT base                 | 88.40/81.24   | 76.89/74.01  |
 |BERT large                | 90.45/83.55   | 81.89/78.77  |
-|ELECTRA small             | 84.40/74.41   | 71.73/68.78  |        
-|ELECTRA base              | 92.19/86.07   | 83.89/81.16  |
-|ELECTRA large             | 94.35/88.50   | 89.68/87.05  |
+|ELECTRA small             | 85.42/78.95   | 74.44/71.86  |        
+|ELECTRA base              | 92.63/87.34   | 86.34/83.62  |
+|ELECTRA large             | 94.95/89.94   | 90.59/88.13  |
 
 For reference, we have also included the results of Google's original version
 
 | Model Name               | SQuAD1.1 dev   | SQuAD2.0 dev  |
+|--------------------------|----------------|---------------|
 |Google BERT base          |   88.5/80.8    |     - / -     |
 |Google BERT large         |   90.9/84.1    |     - / -     |
 |Google ELECTRA base       |     - /75.8    |     - /70.1   |
-|Google ELECTRA base       |     - /86.8    |     - /80.5   |
+|Google ELECTRA base       |     - /86.8    |     - /83.7   |
 |Google ELECTRA large      |     - /89.7    |     - /88.1   |
 
 All experiments done on AWS P3.8xlarge (4 x NVIDIA Tesla V100 16 GB)

@@ -4,35 +4,28 @@ Question Answering with Pretrained Language Model
 # pylint:disable=redefined-outer-name,logging-format-interpolation
 
 import os
-import time
-import argparse
-import random
-import logging
-import warnings
 import json
-import collections
-import pickle
-import sys
-import itertools
-import subprocess
-import multiprocessing as mp
+import time
+import logging
+import argparse
 import functools
+import collections
 from multiprocessing import Pool, cpu_count
-from collections import namedtuple
-import numpy as np
-import mxnet as mx
-from mxnet.lr_scheduler import PolyScheduler
-import gluonnlp.data.batchify as bf
-import pickle
-from gluonnlp.attention_cell import masked_logsoftmax
-from gluonnlp.utils.misc import logging_config, set_seed, grouper, parse_ctx
-from gluonnlp.utils.parameter import clip_grad_global_norm
-from gluonnlp.initializer import TruncNorm
-from models import ModelForQABasic, ModelForQAConditionalV1
-from squad_utils import get_squad_examples, convert_squad_example_to_feature,\
-    SquadFeature, get_official_squad_eval_script
-mx.npx.set_np()
 
+import mxnet as mx
+import numpy as np
+from mxnet.lr_scheduler import PolyScheduler
+
+import gluonnlp.data.batchify as bf
+from models import ModelForQABasic, ModelForQAConditionalV1
+from eval_utils import squad_eval
+from squad_utils import SquadFeature, get_squad_examples, convert_squad_example_to_feature
+from gluonnlp.models import get_backbone
+from gluonnlp.utils.misc import grouper, set_seed, parse_ctx, logging_config, count_parameters
+from gluonnlp.initializer import TruncNorm
+from gluonnlp.utils.parameter import clip_grad_global_norm
+
+mx.npx.set_np()
 
 CACHE_PATH = os.path.realpath(os.path.join(os.path.realpath(__file__), '..', 'cached'))
 if not os.path.exists(CACHE_PATH):
@@ -61,7 +54,7 @@ def parse_args():
     parser.add_argument('--log_interval', type=int, default=100, help='The logging interval.')
     parser.add_argument('--save_interval', type=int, default=None,
                         help='the number of steps to save model parameters.'
-                        'default is every epoch')
+                             'default is every epoch')
     parser.add_argument('--epochs', type=float, default=3.0,
                         help='Number of epochs, default is 3')
     parser.add_argument('--num_train_steps', type=int, default=None,
@@ -86,6 +79,8 @@ def parse_args():
     parser.add_argument('--warmup_steps', type=int, default=None,
                         help='warmup steps. Note that either warmup_steps or warmup_ratio is set.')
     parser.add_argument('--wd', type=float, default=0.01, help='weight decay')
+    parser.add_argument('--layerwise_decay', type=float, default=-1, help='Layer-wise lr decay')
+    parser.add_argument('--untunable_depth', type=float, default=-1, help='Depth of untunable parameters')
     parser.add_argument('--classifier_dropout', type=float, default=0.1,
                         help='dropout of classifier')
     # Data pre/post processing
@@ -106,41 +101,42 @@ def parse_args():
     parser.add_argument('--overwrite_cache', action='store_true',
                         help='Whether to overwrite the feature cache.')
     # Evaluation hyperparameters
-    parser.add_argument('--test_batch_size', type=int, default=24,
-                        help='Test batch size. default is 24')
     parser.add_argument('--start_top_n', type=int, default=5,
                         help='Number of start-position candidates')
     parser.add_argument('--end_top_n', type=int, default=5,
                         help='Number of end-position candidates corresponding '
-                        'to a start position')
+                             'to a start position')
     parser.add_argument('--n_best_size', type=int, default=20, help='Top N results written to file')
     parser.add_argument('--max_answer_length', type=int, default=30,
                         help='The maximum length of an answer that can be generated. This is needed '
-                        'because the start and end predictions are not conditioned on one another.'
-                        ' default is 30')
-    parser.add_argument('--predict_lower_bound', type=int, default=None,
-                        help='the lower bound of the parameters to be predicted'
-                        'default is the final step')
+                             'because the start and end predictions are not conditioned on one another.'
+                             ' default is 30')
     parser.add_argument('--param_checkpoint', type=str, default=None,
                         help='The parameter checkpoint for evaluating the model')
+    parser.add_argument('--backbone_path', type=str, default=None,
+                        help='The parameter checkpoint of backbone model')
+    parser.add_argument('--all_evaluate', action='store_true',
+                        help='Whether to evaluate all intermediate checkpoints instead of only last one')
+    parser.add_argument('--max_saved_ckpt', type=int, default=10,
+                        help='The maximum number of saved checkpoints')
     args = parser.parse_args()
     return args
 
 
 class SquadDatasetProcessor:
     # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
-    ChunkFeature = namedtuple('ChunkFeature',
-                              ['qas_id',
-                               'data',
-                               'valid_length',
-                               'segment_ids',
-                               'masks',
-                               'is_impossible',
-                               'gt_start',
-                               'gt_end',
-                               'context_offset',
-                               'chunk_start',
-                               'chunk_length'])
+    ChunkFeature = collections.namedtuple('ChunkFeature',
+                                          ['qas_id',
+                                           'data',
+                                           'valid_length',
+                                           'segment_ids',
+                                           'masks',
+                                           'is_impossible',
+                                           'gt_start',
+                                           'gt_end',
+                                           'context_offset',
+                                           'chunk_start',
+                                           'chunk_length'])
     BatchifyFunction = bf.NamedTuple(ChunkFeature,
                                      {'qas_id': bf.List(),
                                       'data': bf.Pad(),
@@ -285,49 +281,140 @@ class SquadDatasetProcessor:
         return train_dataset, num_token_answer_mismatch, num_unreliable
 
 
-def get_network(model_name, ctx_l, dropout=0.1, load_checkpoint=False, checkpoint_path=None):
-    if 'albert' in model_name:
-        from gluonnlp.models.albert import AlbertModel, get_pretrained_albert
-        Model, get_pretrained_model = AlbertModel, get_pretrained_albert
-    elif 'bert' in model_name:
-        from gluonnlp.models.bert import BertModel, get_pretrained_bert
-        Model, get_pretrained_model = BertModel, get_pretrained_bert
-    elif 'electra' in model_name:
-        from gluonnlp.models.electra import ElectraModel, get_pretrained_electra
-        Model, get_pretrained_model = ElectraModel, get_pretrained_electra
-    else:
-        raise NotImplementedError()
-    # Create the network
-    cfg, tokenizer, backbone_params_path, _ = get_pretrained_model(model_name)
-    cfg = Model.get_cfg().clone_merge(cfg)
-    backbone = Model.from_cfg(cfg, use_pooler=False)
+def get_network(model_name,
+                ctx_l,
+                dropout=0.1,
+                checkpoint_path=None,
+                backbone_path=None):
+    """
+    Get the network that fine-tune the Question Answering Task
 
-    if not load_checkpoint:
+    Parameters
+    ----------
+    model_name : str
+        The model name of the backbone model
+    ctx_l :
+        Context list of training device like [mx.gpu(0), mx.gpu(1)]
+    dropout : float
+        Dropout probability of the task specified layer
+    checkpoint_path: str
+        Path to a Fine-tuned checkpoint
+    backbone_path: str
+        Path to the backbone model to be loaded in qa_net
+
+    Returns
+    -------
+    cfg
+    tokenizer
+    qa_net
+    """
+    # Create the network
+    Model, cfg, tokenizer, download_params_path, _ = \
+        get_backbone(model_name, load_backbone=not backbone_path)
+    backbone = Model.from_cfg(cfg, use_pooler=False)
+    # Load local backbone parameters if backbone_path provided.
+    # Otherwise, download backbone parameters from gluon zoo.
+
+    backbone_params_path = backbone_path if backbone_path else download_params_path
+    if checkpoint_path is None:
         backbone.load_parameters(backbone_params_path, ignore_extra=True, ctx=ctx_l)
+        num_params, num_fixed_params = count_parameters(backbone.collect_params())
+        logging.info(
+            'Loading Backbone Model from {}, with total/fixd parameters={}/{}'.format(
+                backbone_params_path, num_params, num_fixed_params))
     qa_net = ModelForQAConditionalV1(backbone=backbone,
                                      dropout_prob=dropout,
-                                     weight_initializer=TruncNorm(0.02),
+                                     weight_initializer=TruncNorm(stdev=0.02),
                                      prefix='qa_net_')
-    if not load_checkpoint:
+    if checkpoint_path is None:
         # Ignore the UserWarning during initialization,
         # There is no need to re-initialize the parameters of backbone
         qa_net.initialize(ctx=ctx_l)
     else:
         qa_net.load_parameters(checkpoint_path, ctx=ctx_l, cast_dtype=True)
     qa_net.hybridize()
-    return cfg, tokenizer, backbone_params_path, qa_net
+
+    return cfg, tokenizer, qa_net
+
+
+def untune_params(model, untunable_depth, not_included=[]):
+    """Froze part of parameters according to layer depth.
+
+    That is, make all layer that shallower than `untunable_depth` untunable
+    to stop the gradient backward computation and accelerate the training.
+
+    Parameters:
+    ----------
+    model
+        qa_net
+    untunable_depth: int
+        the depth of the neural network starting from 1 to number of layers
+    not_included: list of str
+        A list or parameter names that not included in the untunable parameters
+    """
+    all_layers = model.backbone.encoder.all_encoder_layers
+    for _, v in model.collect_params('.*embed*').items():
+        model.grad_req = 'null'
+
+    for layer in all_layers[:untunable_depth]:
+        for key, value in layer.collect_params().items():
+            for pn in not_included:
+                if pn in key:
+                    continue
+            value.grad_req = 'null'
+
+
+def apply_layerwise_decay(model, layerwise_decay, not_included=[]):
+    """Apply the layer-wise gradient decay
+
+    .. math::
+        lr = lr * layerwise_decay^(max_depth - layer_depth)
+
+    Parameters:
+    ----------
+    model
+        qa_net
+    layerwise_decay: int
+        layer-wise decay power
+    not_included: list of str
+        A list or parameter names that not included in the layer-wise decay
+    """
+    # consider the task specific finetuning layer as the last layer, following with pooler
+    # In addition, the embedding parameters have the smaller learning rate based on this setting.
+    all_layers = model.backbone.encoder.all_encoder_layers
+    max_depth = len(all_layers)
+    if 'pool' in model.collect_params().keys():
+        max_depth += 1
+    for key, value in model.collect_params().items():
+        if 'scores' in key:
+            value.lr_mult = layerwise_decay**(0)
+        if 'pool' in key:
+            value.lr_mult = layerwise_decay**(1)
+        if 'embed' in key:
+            value.lr_mult = layerwise_decay**(max_depth + 1)
+
+    for (layer_depth, layer) in enumerate(all_layers):
+        layer_params = layer.collect_params()
+        for key, value in layer_params.items():
+            for pn in not_included:
+                if pn in key:
+                    continue
+            value.lr_mult = layerwise_decay**(max_depth - layer_depth)
 
 
 def train(args):
     ctx_l = parse_ctx(args.gpus)
-    cfg, tokenizer, backbone_params_path, qa_net = get_network(
-                            args.model_name, ctx_l, args.classifier_dropout)
+    cfg, tokenizer, qa_net = get_network(args.model_name, ctx_l,
+                                         args.classifier_dropout,
+                                         args.param_checkpoint,
+                                         args.backbone_path)
     # Load the data
     train_examples = get_squad_examples(args.data_dir, segment='train', version=args.version)
     logging.info('Load data from {}, Version={}'.format(args.data_dir, args.version))
     num_process = min(cpu_count(), 8)
-    train_cache_path = os.path.join(CACHE_PATH,
-                                    'train_{}_squad_{}.ndjson'.format(args.model_name, args.version))
+    train_cache_path = os.path.join(
+        CACHE_PATH, 'train_{}_squad_{}.ndjson'.format(
+            args.model_name, args.version))
     if os.path.exists(train_cache_path) and not args.overwrite_cache:
         train_features = []
         with open(train_cache_path, 'r') as f:
@@ -339,10 +426,13 @@ def train(args):
         start = time.time()
         logging.info('Tokenize Training Data:')
         with Pool(num_process) as pool:
-            train_features = pool.map(functools.partial(convert_squad_example_to_feature,
-                                                        tokenizer=tokenizer,
-                                                        is_training=True), train_examples)
-        logging.info('Done! Time spent:{}'.format(time.time() - start))
+            train_features = pool.map(
+                functools.partial(
+                    convert_squad_example_to_feature,
+                    tokenizer=tokenizer,
+                    is_training=True),
+                train_examples)
+        logging.info('Done! Time spent:{:.2f} seconds'.format(time.time() - start))
         with open(train_cache_path, 'w') as f:
             for feature in train_features:
                 f.write(feature.to_json() + '\n')
@@ -372,6 +462,13 @@ def train(args):
         batch_size=args.batch_size,
         num_workers=0,
         shuffle=True)
+    # Froze parameters
+    if 'electra' in args.model_name:
+        # does not work for albert model since parameters in all layers are shared
+        if args.untunable_depth > 0:
+            untune_params(qa_net, args.untunable_depth)
+        if args.layerwise_decay > 0:
+            apply_layerwise_decay(qa_net, args.layerwise_decay)
 
     # Do not apply weight decay to all the LayerNorm and bias
     for _, v in qa_net.collect_params('.*beta|.*gamma|.*bias').items():
@@ -417,7 +514,6 @@ def train(args):
                                  'epsilon': 1e-6,
                                  'correct_bias': False,
                                  })
-
     trainer = mx.gluon.Trainer(qa_net.collect_params(),
                                args.optimizer, optimizer_params,
                                update_on_kvstore=False)
@@ -434,6 +530,7 @@ def train(args):
     if args.num_accumulated != 1:
         # set grad to zero for gradient accumulation
         qa_net.collect_params().zero_grad()
+    global_tic = time.time()
     while not finish_flag:
         epoch_tic = time.time()
         tic = time.time()
@@ -460,7 +557,7 @@ def train(args):
                 batch_idx = mx.np.arange(tokens.shape[0], dtype=np.int32, ctx=ctx)
                 p_mask = 1 - p_mask  # In the network, we use 1 --> no_mask, 0 --> mask
                 with mx.autograd.record():
-                    start_logits, end_logits, answerable_logits\
+                    start_logits, end_logits, answerable_logits \
                         = qa_net(tokens, segment_ids, valid_length, p_mask, gt_start)
                     sel_start_logits = start_logits[batch_idx, gt_start]
                     sel_end_logits = end_logits[batch_idx, gt_end]
@@ -489,24 +586,34 @@ def train(args):
                 #   \frac{1}{N} \sum_{n=1}^N      -->  clip to args.max_grad_norm
                 # We need to change the ratio to be
                 #  \sum_{n=1}^N g_n / loss_denom  -->  clip to args.max_grad_norm  * N / loss_denom
-                total_norm, ratio, is_finite = clip_grad_global_norm(params,
-                                      args.max_grad_norm * num_samples_per_update / loss_denom)
+                total_norm, ratio, is_finite = clip_grad_global_norm(
+                    params, args.max_grad_norm * num_samples_per_update / loss_denom)
                 total_norm = total_norm / (num_samples_per_update / loss_denom)
+
                 trainer.update(num_samples_per_update / loss_denom, ignore_stale_grad=True)
                 step_num += 1
                 if args.num_accumulated != 1:
                     # set grad to zero for gradient accumulation
                     qa_net.collect_params().zero_grad()
 
+                # saving
                 if step_num % save_interval == 0 or step_num >= num_train_steps:
                     version_prefix = 'squad' + args.version
                     ckpt_name = '{}_{}_{}.params'.format(args.model_name,
-                                                        version_prefix,
-                                                        step_num)
+                                                         version_prefix,
+                                                         step_num)
                     params_saved = os.path.join(args.output_dir, ckpt_name)
                     qa_net.save_parameters(params_saved)
+                    ckpt_candidates = [
+                        f for f in os.listdir(
+                            args.output_dir) if f.endswith('.params')]
+                    # keep last 10 checkpoints
+                    if len(ckpt_candidates) > args.max_saved_ckpt:
+                        ckpt_candidates.sort(key=lambda ele: (len(ele), ele))
+                        os.remove(os.path.join(args.output_dir, ckpt_candidates[0]))
                     logging.info('Params saved in: {}'.format(params_saved))
 
+                # logging
                 if step_num % log_interval == 0:
                     log_span_loss /= log_sample_num
                     log_answerable_loss /= log_sample_num
@@ -514,11 +621,11 @@ def train(args):
                     toc = time.time()
                     logging.info(
                         'Epoch: {}, Batch: {}/{}, Loss span/answer/total={:.4f}/{:.4f}/{:.4f},'
-                        ' LR={:.8f}, grad_norm={:.4f}. '
-                        'Time cost={:.2f}, Throughput={:.2f} samples/s'.format(
-                            epoch_id + 1, batch_id + 1, epoch_size, log_span_loss,
-                            log_answerable_loss, log_total_loss, trainer.learning_rate, total_norm,
-                            toc - tic, log_sample_num / (toc - tic)))
+                        ' LR={:.8f}, grad_norm={:.4f}. Time cost={:.2f}, Throughput={:.2f} samples/s'
+                        ' ETA={:.2f}h'.format(epoch_id + 1, batch_id + 1, epoch_size, log_span_loss,
+                                              log_answerable_loss, log_total_loss, trainer.learning_rate, total_norm,
+                                              toc - tic, log_sample_num / (toc - tic),
+                                              (num_train_steps - step_num) / (step_num / (toc - global_tic)) / 3600))
                     tic = time.time()
                     log_span_loss = 0
                     log_answerable_loss = 0
@@ -534,6 +641,7 @@ def train(args):
                      .format(epoch_id + 1, epoch_sample_num,
                              epoch_sample_num / (time.time() - epoch_tic)))
         epoch_id += 1
+    return params_saved
 
 
 RawResultExtended = collections.namedtuple(
@@ -586,7 +694,6 @@ def predict_extended(original_feature,
     not_answerable_score = 1000000  # Score for not-answerable. We set it to be a large and positive
     # If one chunk votes for answerable, we will treat the context as answerable,
     # Thus, the overall not_answerable_score = min(chunk_not_answerable_score)
-    prelim_predictions = []
     all_start_idx = []
     all_end_idx = []
     all_pred_score = []
@@ -601,7 +708,7 @@ def predict_extended(original_feature,
             # This is a heuristic score
             # TODO investigate the impact
             token_max_context_score[i, j] = min(j - chunk_start,
-                                                chunk_start + chunk_length - 1 - j)\
+                                                chunk_start + chunk_length - 1 - j) \
                                             + 0.01 * chunk_length
     token_max_chunk_id = token_max_context_score.argmax(axis=0)
 
@@ -667,17 +774,11 @@ def predict_extended(original_feature,
     return not_answerable_score, nbest[0][0], nbest_json
 
 
-def evaluate(args):
+def evaluate(args, last=True):
     ctx_l = parse_ctx(args.gpus)
-    if args.param_checkpoint:
-        param_checkpoint = args.param_checkpoint
-    else:
-        filenames = [f for f in os.listdir(args.output_dir) if '.params' in f]
-        filenames.sort(key=lambda ele: (len(ele), ele))
-        param_checkpoint = os.path.join(args.output_dir, filenames[-1])
-        logging.info('Only evaluate the fine-tuned parameters from the final step')
-    cfg, tokenizer, backbone_params_path, qa_net = get_network(
-        args.model_name, ctx_l, args.classifier_dropout, True, param_checkpoint)
+    cfg, tokenizer, qa_net = get_network(
+        args.model_name, ctx_l, args.classifier_dropout)
+    # Prepare dev set
     dev_cache_path = os.path.join(CACHE_PATH,
                                   'dev_{}_squad_{}.ndjson'.format(args.model_name,
                                                                   args.version))
@@ -696,108 +797,169 @@ def evaluate(args):
             dev_features = pool.map(functools.partial(convert_squad_example_to_feature,
                                                       tokenizer=tokenizer,
                                                       is_training=False), dev_examples)
-        logging.info('Done! Time spent:{}'.format(time.time() - start))
+        logging.info('Done! Time spent:{:.2f} seconds'.format(time.time() - start))
         with open(dev_cache_path, 'w') as f:
             for feature in dev_features:
                 f.write(feature.to_json() + '\n')
-
+    dev_data_path = os.path.join(args.data_dir, 'dev-v{}.json'.format(args.version))
     dataset_processor = SquadDatasetProcessor(tokenizer=tokenizer,
                                               doc_stride=args.doc_stride,
                                               max_seq_length=args.max_seq_length,
                                               max_query_length=args.max_query_length)
-    # We process all the chunk features and also
     dev_all_chunk_features = []
     dev_chunk_feature_ptr = [0]
     for feature in dev_features:
         chunk_features = dataset_processor.process_sample(feature)
         dev_all_chunk_features.extend(chunk_features)
         dev_chunk_feature_ptr.append(dev_chunk_feature_ptr[-1] + len(chunk_features))
-    dev_dataloader = mx.gluon.data.DataLoader(
-        dev_all_chunk_features,
-        batchify_fn=dataset_processor.BatchifyFunction,
-        batch_size=args.eval_batch_size,
-        num_workers=0,
-        shuffle=False)
-    # Do the inference
-    all_results = []
-    epoch_tic = time.time()
-    total_num = 0
-    for dev_batch in grouper(dev_dataloader, len(ctx_l)):
-        # Predict for each chunk
-        for sample, ctx in zip(dev_batch, ctx_l):
-            if sample is None:
-                continue
-            # Copy the data to device
-            tokens = sample.data.as_in_ctx(ctx)
-            total_num += len(tokens)
-            segment_ids = sample.segment_ids.as_in_ctx(ctx)
-            valid_length = sample.valid_length.as_in_ctx(ctx)
-            p_mask = sample.masks.as_in_ctx(ctx)
-            p_mask = 1 - p_mask  # In the network, we use 1 --> no_mask, 0 --> mask
-            start_top_logits, start_top_index, end_top_logits, end_top_index, answerable_logits =\
-                qa_net.inference(tokens, segment_ids, valid_length, p_mask,
-                                 args.start_top_n, args.end_top_n)
-            for i, qas_id in enumerate(sample.qas_id):
-                result = RawResultExtended(qas_id=qas_id,
-                                           start_top_logits=start_top_logits[i].asnumpy(),
-                                           start_top_index=start_top_index[i].asnumpy(),
-                                           end_top_logits=end_top_logits[i].asnumpy(),
-                                           end_top_index=end_top_index[i].asnumpy(),
-                                           answerable_logits=answerable_logits[i].asnumpy())
-                all_results.append(result)
 
-    epoch_toc = time.time()
-    logging.info('Time cost=%2f s, Thoughput=%.2f samples/s', epoch_toc - epoch_tic,
-             total_num / (epoch_toc - epoch_tic))
+    def eval_validation(ckpt_name, best_eval):
+        """
+        Model inference during validation or final evaluation.
+        """
+        ctx_l = parse_ctx(args.gpus)
+        # We process all the chunk features and also
+        dev_dataloader = mx.gluon.data.DataLoader(
+            dev_all_chunk_features,
+            batchify_fn=dataset_processor.BatchifyFunction,
+            batch_size=args.eval_batch_size,
+            num_workers=0,
+            shuffle=False)
 
-    all_predictions = collections.OrderedDict()
-    all_nbest_json = collections.OrderedDict()
-    no_answer_score_json = collections.OrderedDict()
-    for index, (left_index, right_index) in enumerate(zip(dev_chunk_feature_ptr[:-1],
-                                                          dev_chunk_feature_ptr[1:])):
-        chunked_features = dev_all_chunk_features[left_index:right_index]
-        results = all_results[left_index:right_index]
-        original_feature = dev_features[index]
-        qas_ids = set([result.qas_id for result in results] +
-                      [feature.qas_id for feature in chunked_features])
-        assert len(qas_ids) == 1, 'Mismatch Occured between features and results'
-        example_qas_id = list(qas_ids)[0]
-        assert example_qas_id == original_feature.qas_id, \
-            'Mismatch Occured between original feature and chunked features'
-        not_answerable_score, best_pred, nbest_json = predict_extended(
-            original_feature=original_feature,
-            chunked_features=chunked_features,
-            results=results,
-            n_best_size=args.n_best_size,
-            max_answer_length=args.max_answer_length,
-            start_top_n=args.start_top_n,
-            end_top_n=args.end_top_n)
-        no_answer_score_json[example_qas_id] = not_answerable_score
-        all_predictions[example_qas_id] = best_pred
-        all_nbest_json[example_qas_id] = nbest_json
+        log_interval = args.log_interval
+        all_results = []
+        epoch_tic = time.time()
+        tic = time.time()
+        epoch_size = len(dev_features)
+        total_num = 0
+        log_num = 0
+        for batch_idx, dev_batch in enumerate(grouper(dev_dataloader, len(ctx_l))):
+            # Predict for each chunk
+            for sample, ctx in zip(dev_batch, ctx_l):
+                if sample is None:
+                    continue
+                # Copy the data to device
+                tokens = sample.data.as_in_ctx(ctx)
+                total_num += len(tokens)
+                log_num += len(tokens)
+                segment_ids = sample.segment_ids.as_in_ctx(ctx)
+                valid_length = sample.valid_length.as_in_ctx(ctx)
+                p_mask = sample.masks.as_in_ctx(ctx)
+                p_mask = 1 - p_mask  # In the network, we use 1 --> no_mask, 0 --> mask
+                start_top_logits, start_top_index, end_top_logits, end_top_index, answerable_logits \
+                 = qa_net.inference(tokens, segment_ids, valid_length, p_mask,
+                                                      args.start_top_n, args.end_top_n)
+                for i, qas_id in enumerate(sample.qas_id):
+                    result = RawResultExtended(qas_id=qas_id,
+                                               start_top_logits=start_top_logits[i].asnumpy(),
+                                               start_top_index=start_top_index[i].asnumpy(),
+                                               end_top_logits=end_top_logits[i].asnumpy(),
+                                               end_top_index=end_top_index[i].asnumpy(),
+                                               answerable_logits=answerable_logits[i].asnumpy())
 
-    output_prediction_file = os.path.join(args.output_dir, 'predictions.json')
-    output_nbest_file = os.path.join(args.output_dir, 'nbest_predictions.json')
-    na_prob_file = os.path.join(args.output_dir, 'na_prob.json')
+                    all_results.append(result)
 
-    with open(output_prediction_file, 'w') as of:
-        of.write(json.dumps(all_predictions, indent=4) + '\n')
-    with open(output_nbest_file, 'w') as of:
-        of.write(json.dumps(all_nbest_json, indent=4) + '\n')
-    with open(na_prob_file, 'w') as of:
-        of.write(json.dumps(no_answer_score_json, indent=4) + '\n')
+            # logging
+            if (batch_idx + 1) % log_interval == 0:
+                # Output the loss of per step
+                toc = time.time()
+                logging.info(
+                    '[batch {}], Time cost={:.2f},'
+                    ' Throughput={:.2f} samples/s, ETA={:.2f}h'.format(
+                        batch_idx + 1, toc - tic, log_num / (toc - tic),
+                        (epoch_size - total_num) / (total_num / (toc - epoch_tic)) / 3600))
+                tic = time.time()
+                log_num = 0
 
-    evaluate_path = get_official_squad_eval_script()
-    dev_data_path = os.path.join(args.data_dir, 'dev-v{}.json'.format(args.version))
-    assert os.path.exists(evaluate_path), \
-        'Please download evaluate-v2.0.py to get evaluation results for SQuAD. ' \
-        'You may fetch it by referring to the official guide in  ' \
-        '"https://rajpurkar.github.io/SQuAD-explorer/".'
-    arguments = [dev_data_path, output_prediction_file]
-    if args.version == '2.0':
-        arguments += ['--na-prob-file', na_prob_file]
-    pred_results = json.loads(subprocess.check_output([sys.executable, evaluate_path] + arguments))
-    logging.info('The evaluated results are {}'.format(pred_results))
+        epoch_toc = time.time()
+        logging.info('Time cost=%2f s, Thoughput=%.2f samples/s', epoch_toc - epoch_tic,
+                     total_num / (epoch_toc - epoch_tic))
+
+        all_predictions = collections.OrderedDict()
+        all_nbest_json = collections.OrderedDict()
+        no_answer_score_json = collections.OrderedDict()
+        for index, (left_index, right_index) in enumerate(zip(dev_chunk_feature_ptr[:-1],
+                                                              dev_chunk_feature_ptr[1:])):
+            chunked_features = dev_all_chunk_features[left_index:right_index]
+            results = all_results[left_index:right_index]
+            original_feature = dev_features[index]
+            qas_ids = set([result.qas_id for result in results] +
+                          [feature.qas_id for feature in chunked_features])
+            assert len(qas_ids) == 1, 'Mismatch Occured between features and results'
+            example_qas_id = list(qas_ids)[0]
+            assert example_qas_id == original_feature.qas_id, \
+                'Mismatch Occured between original feature and chunked features'
+            not_answerable_score, best_pred, nbest_json = predict_extended(
+                original_feature=original_feature,
+                chunked_features=chunked_features,
+                results=results,
+                n_best_size=args.n_best_size,
+                max_answer_length=args.max_answer_length,
+                start_top_n=args.start_top_n,
+                end_top_n=args.end_top_n)
+            no_answer_score_json[example_qas_id] = not_answerable_score
+            all_predictions[example_qas_id] = best_pred
+            all_nbest_json[example_qas_id] = nbest_json
+
+        if args.version == '2.0':
+            exact = 'best_exact'
+            f1 = 'best_f1'
+            na_prob = no_answer_score_json
+        else:
+            exact = 'exact'
+            f1 = 'f1'
+            na_prob = None
+
+        cur_eval, revised_predictions = squad_eval(
+            dev_data_path, all_predictions, na_prob, revise=na_prob is not None)
+        logging.info('The evaluated results are {}'.format(json.dumps(cur_eval)))
+
+        cur_metrics = 0.5 * (cur_eval[exact] + cur_eval[f1])
+        if best_eval:
+            best_metrics = 0.5 * (best_eval[exact] + best_eval[f1])
+        else:
+            best_metrics = 0.
+
+        if cur_metrics > best_metrics:
+            logging.info('The evaluated files are saved in {}'.format(args.output_dir))
+            output_prediction_file = os.path.join(args.output_dir, 'predictions.json')
+            output_nbest_file = os.path.join(args.output_dir, 'nbest_predictions.json')
+            na_prob_file = os.path.join(args.output_dir, 'na_prob.json')
+            revised_prediction_file = os.path.join(args.output_dir, 'revised_predictions.json')
+
+            with open(output_prediction_file, 'w') as of:
+                of.write(json.dumps(all_predictions, indent=4) + '\n')
+            with open(output_nbest_file, 'w') as of:
+                of.write(json.dumps(all_nbest_json, indent=4) + '\n')
+            with open(na_prob_file, 'w') as of:
+                of.write(json.dumps(no_answer_score_json, indent=4) + '\n')
+            with open(revised_prediction_file, 'w') as of:
+                of.write(json.dumps(revised_predictions, indent=4) + '\n')
+
+            best_eval = cur_eval
+            best_eval.update({'best_ckpt': ckpt_name})
+        return best_eval
+
+    if args.param_checkpoint and args.param_checkpoint.endswith('.params'):
+        ckpt_candidates = [args.param_checkpoint]
+    else:
+        ckpt_candidates = [f for f in os.listdir(args.output_dir) if f.endswith('.params')]
+        ckpt_candidates.sort(key=lambda ele: (len(ele), ele))
+    if last:
+        ckpt_candidates = ckpt_candidates[-1:]
+
+    best_eval = {}
+    for ckpt_name in ckpt_candidates:
+        logging.info('Starting evaluate the checkpoint {}'.format(ckpt_name))
+        ckpt_path = os.path.join(args.output_dir, ckpt_name)
+        qa_net.load_parameters(ckpt_path, ctx=ctx_l, cast_dtype=True)
+        best_eval = eval_validation(ckpt_name, best_eval)
+
+    logging.info('The best evaluated results are {}'.format(json.dumps(best_eval)))
+    output_eval_results_file = os.path.join(args.output_dir, 'best_results.json')
+    with open(output_eval_results_file, 'w') as of:
+        of.write(json.dumps(best_eval, indent=4) + '\n')
+    return best_eval
 
 
 if __name__ == '__main__':
@@ -809,4 +971,4 @@ if __name__ == '__main__':
     if args.do_train:
         train(args)
     if args.do_eval:
-        evaluate(args)
+        evaluate(args, last=not args.all_evaluate)

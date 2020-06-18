@@ -25,8 +25,8 @@ def test_xlmr():
             xlmr_model = XLMRModel.from_cfg(cfg)
             xlmr_model.load_parameters(params_path)
         # test forward
-        batch_size = 2
-        seq_length = 16
+        batch_size = 1
+        seq_length = 8
         vocab_size = len(tokenizer.vocab)
         input_ids = mx.np.array(
             np.random.randint(
