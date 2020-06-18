@@ -70,6 +70,32 @@ python run_squad.py \
     --overwrite_cache \
 ```
 
+As for ELECTRA model, we fine-tune it with layer-wise learning rate decay as
+
+```bash
+VERSION=2.0  # Either 2.0 or 1.1
+MODEL_NAME=google_electra_small
+
+python run_squad.py \
+    --model_name ${MODEL_NAME} \
+    --data_dir squad \
+    --output_dir fintune_${MODEL_NAME}_squad_${VERSION} \
+    --version ${VERSION} \
+    --do_eval \
+    --do_train \
+    --batch_size 32 \
+    --num_accumulated 1 \
+    --gpus 0 \
+    --epochs 2 \
+    --lr 3e-4 \
+    --layerwise_decay 0.8 \
+    --warmup_ratio 0.1 \
+    --wd=0 \
+    --max_seq_length 512 \
+    --max_grad_norm 0.1 \
+```
+
+
 ### Results
 We reproduced the ALBERT model which is released by Google, and fine-tune the the SQuAD with single models. ALBERT Version 2 are pre-trained without the dropout mechanism but with extra training steps compared to the version 1 (see the [original paper](https://arxiv.org/abs/1909.11942) for details).
 
@@ -92,29 +118,6 @@ For reference, we've included the results from Google's Original Experiments
 |ALBERT large (googleresearch/albert)   | 91.8/85.2     | 84.9/81.8    |
 |ALBERT xlarge (googleresearch/albert)  | 92.9/86.4     | 87.9/84.1    |
 |ALBERT xxlarge (googleresearch/albert) | 94.6/89.1     | 89.8/86.9    |
-
-As for ELECTRA model, we fine-tune it with layer-wise learning rate decay as
-```bash
-export MODEL_NAME=google_electra_small
-
-python run_squad.py \
-    --model_name ${MODEL_NAME} \
-    --data_dir squad \
-    --output_dir fintune_${MODEL_NAME}_squad_${VERSION} \
-    --version ${VERSION} \
-    --do_eval \
-    --do_train \
-    --batch_size 32 \
-    --num_accumulated 1 \
-    --gpus 0 \
-    --epochs 2 \
-    --lr 3e-4 \
-    --layerwise_decay 0.8 \
-    --warmup_ratio 0.1 \
-    --wd=0 \
-    --max_seq_length 512 \
-    --max_grad_norm 0.1 \
-```
 
 For BERT and ELECTRA model, the results on SQuAD1.1 and SQuAD2.0 are given as follows.
 
