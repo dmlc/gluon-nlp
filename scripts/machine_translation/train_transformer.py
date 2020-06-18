@@ -103,7 +103,7 @@ def parse_args():
                         'the model will keep training when epochs < 0 and max_update < 0.')
     parser.add_argument('--max_update', type=int, default=-1,
                         help='Max update steps, when max_update > 0, epochs will be set to -1')
-    parser.add_arguament('--save_interval_update', type=int, default=2000,
+    parser.add_argument('--save_interval_update', type=int, default=2000,
                          help='Update interval of saving checkpoints when using max_update')
     parser.add_argument('--cfg', type=str, default='transformer_nmt_base',
                         help='Configuration of the transformer model. '
