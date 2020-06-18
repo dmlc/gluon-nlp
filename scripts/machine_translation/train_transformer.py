@@ -423,7 +423,7 @@ def train(args):
                 accum_count = 0
                 loss_denom = 0
                 model.collect_params().zero_grad()
-                if (args.epcohs > 0 and epoch_id >= args.epochs - args.num_averages) or \
+                if (args.epochs > 0 and epoch_id >= args.epochs - args.num_averages) or \
                    (args.max_update > 0 and n_train_iters >= args.max_update - args.num_averages * args.save_interval_update):
                     model_averager.step()
                 if n_epoch_train_iters % args.log_interval == 0:
@@ -442,7 +442,7 @@ def train(args):
                     log_wc = 0
                 if args.max_update > 0 and n_train_iters % args.save_interval_update == 0:
                     model.save_parameters(os.path.join(args.save_dir,
-                                                       '{:d}.params'.format(n_train_iters / args.save_interval_update)),
+                                                       '{:d}.params'.format(n_train_iters // args.save_interval_update)),
                                           deduplicate=True)
                 if args.max_update > 0 and n_train_iters >= args.max_update:
                     break
