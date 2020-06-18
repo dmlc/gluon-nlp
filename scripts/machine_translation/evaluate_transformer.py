@@ -6,7 +6,7 @@ from mxnet import gluon
 import argparse
 import logging
 import time
-from gluonnlp.utils.misc import logging_config
+from gluonnlp.utils.misc import logging_config, grouper
 from gluonnlp.models.transformer import TransformerNMTModel,\
     TransformerNMTInference
 from gluonnlp.data.batchify import Tuple, Pad, Stack
@@ -170,11 +170,6 @@ def evaluate(args):
                                             max_length_b=args.max_length_b)   
 
     logging.info(beam_search_sampler)
-    ctx = ctx_l[0]
-    avg_nll_loss = 0
-    ntokens = 0
-    pred_sentences = []
-    start_eval_time = time.time()
     all_src_token_ids, all_src_lines = process_corpus(args.src_corpus,
                                                       sentence_normalizer=src_normalizer,
                                                       base_tokenizer=base_src_tokenizer,
@@ -195,9 +190,14 @@ def evaluate(args):
         batch_size=32,
         batchify_fn=Tuple(Pad(), Stack(), Pad(), Stack()),
         shuffle=False)
-    
+
+    ctx = ctx_l[0]
+    pred_sentences = []
+    start_eval_time = time.time()
     # evaluate
     if not args.inference:
+        avg_nll_loss = 0
+        ntokens = 0
         for i, (src_token_ids, src_valid_length, tgt_token_ids, tgt_valid_length)\
                 in enumerate(test_dataloader):
             src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
@@ -238,23 +238,30 @@ def evaluate(args):
                              sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
     # inference only (without ground truth)
     else:
-        for i, (src_token_ids, src_valid_length, _, _) in tqdm(enumerate(test_dataloader)):
-            src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
-            src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
-            init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
-            states = inference_model.init_states(src_token_ids, src_valid_length)
-            samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
-            for j in range(samples.shape[0]):
-                pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
-                bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
-                pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
-                pred_sentences.append(pred_sentence)
-        end_eval_time = time.time()
         with open('pred_sentences.txt', 'w', encoding='utf-8') as of:
-            of.write('\n'.join(pred_sentences))
-            of.write('\n')
+            processed_sentences = 0
+            for test_data_l in tqdm(grouper(test_dataloader, len(ctx_l))):
+                for test_data, ctx in zip(test_data_l, ctx_l):
+                    if test_data is None:
+                        continue
+                    src_token_ids, src_valid_length, _, _ = test_data
+                    src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
+                    src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
+                    init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
+                    states = inference_model.init_states(src_token_ids, src_valid_length)
+                    samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
+                    for j in range(samples.shape[0]):
+                        pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
+                        bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
+                        pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
+                        pred_sentences.append(pred_sentence)
+                of.write('\n'.join(pred_sentences))
+                of.write('\n')
+                processed_sentences += len(pred_sentences)
+                pred_sentences = []
+        end_eval_time = time.time()
         logging.info('Time Spent: {}, predicted sentences: {}'
-                     .format(end_eval_time - start_eval_time, len(pred_sentences)))
+                     .format(end_eval_time - start_eval_time, processed_sentences))
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
