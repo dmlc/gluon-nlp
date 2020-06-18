@@ -24,9 +24,9 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=100, help='The random seed.')
     parser.add_argument('--src_lang', type=str, default='en', help='Source language')
     parser.add_argument('--tgt_lang', type=str, default='de', help='Target language')
-    parser.add_argument('--src_corpus', type=str,
+    parser.add_argument('--src_corpus', type=str, required=True,
                         help='The source corpus for evaluation.')
-    parser.add_argument('--tgt_corpus', type=str,
+    parser.add_argument('--tgt_corpus', type=str, default=None,
                         help='The target corpus for evaluation.')
     parser.add_argument('--src_tokenizer', choices=['spm',
                                                     'subword_nmt',
@@ -78,6 +78,9 @@ def parse_args():
     args = parser.parse_args()
     if args.save_dir is None:
         args.save_dir = os.path.splitext(args.param_path)[0] + '_evaluation'
+    assert args.inference or args.tgt_corpus, 'requring --tgt_corpus when not using --inference'
+    if args.inference:
+        args.tgt_corpus = None
     logging_config(args.save_dir, console=True)
     logging.info(args)
     return args
@@ -170,18 +173,25 @@ def evaluate(args):
                                             max_length_b=args.max_length_b)   
 
     logging.info(beam_search_sampler)
-    all_src_token_ids, all_src_lines = process_corpus(args.src_corpus,
-                                                      sentence_normalizer=src_normalizer,
-                                                      base_tokenizer=base_src_tokenizer,
-                                                      bpe_tokenizer=src_tokenizer,
-                                                      add_bos=False,
-                                                      add_eos=True)
-    all_tgt_token_ids, all_tgt_lines = process_corpus(args.tgt_corpus,
-                                                      sentence_normalizer=tgt_normalizer,
-                                                      base_tokenizer=base_tgt_tokenizer,
-                                                      bpe_tokenizer=tgt_tokenizer,
-                                                      add_bos=True,
-                                                      add_eos=True)
+    all_src_token_ids, all_src_lines = process_corpus(
+        args.src_corpus,
+        sentence_normalizer=src_normalizer,
+        base_tokenizer=base_src_tokenizer,
+        bpe_tokenizer=src_tokenizer,
+        add_bos=False,
+        add_eos=True
+    )
+    if args.tgt_corpus is not None:
+        all_tgt_token_ids, all_tgt_lines = process_corpus(
+            args.tgt_corpus,
+            sentence_normalizer=tgt_normalizer,
+            base_tokenizer=base_tgt_tokenizer,
+            bpe_tokenizer=tgt_tokenizer,
+            add_bos=True,
+            add_eos=True
+        )
+    else: # when applying inference, populate the fake tgt tokens
+        all_tgt_token_ids = all_tgt_lines = [None for i in range(len(all_src_token_ids))]
     test_dataloader = gluon.data.DataLoader(
         list(zip(all_src_token_ids,
                  [len(ele) for ele in all_src_token_ids],
