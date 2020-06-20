@@ -268,6 +268,7 @@ def evaluate(args):
                 of.write('\n'.join(pred_sentences))
                 of.write('\n')
                 processed_sentences += len(pred_sentences)
+                pred_sentences = []
         end_eval_time = time.time()
         logging.info('Time Spent: {}, Inferred sentences: {}'
                      .format(end_eval_time - start_eval_time, processed_sentences))
