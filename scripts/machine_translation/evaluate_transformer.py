@@ -249,37 +249,32 @@ def evaluate(args):
         logging.info('Time Spent: {}, #Sent={}, SacreBlEU={} Avg NLL={}, Perplexity={}'
                      .format(end_eval_time - start_eval_time, len(all_tgt_lines),
                              sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
+    
     # inference only (without ground truth)
-    # TODO need multiprocess because of beam search
     else:
-        
-        
-        inferencer = ParallelInferencer(tqdm(test_dataloader), ctx_l,
-                                        tgt_vocab.bos_id, inference_model, beam_search_sampler,
-                                        tgt_tokenizer, base_tgt_tokenizer)
-        
-        def batch_iter(self):
-            iters = 0
-            for test_data in test_dataloader:
-                ctx = ctx_l[iters % len(ctx_l)]
-                yield test_data, ctx
-                iters += 1
-            
         with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
-            with Pool(len(ctx_l)) as pool:
-                processed_sentences = 0
-                for i, pred_batch_sentences in \
-                    enumerate(pool.imap(inferencer.process_batch, batch_iter())):
-#                    enumerate(pool.imap(inferencer.process_batch, inferencer.batch_iter())):
-                    of.write('\n'.join(pred_batch_sentences))
-                    of.write('\n')
-                    processed_sentences += len(pred_batch_sentences)
-                    if (i + 1) % 100 == 0:
-                        print('Batch {} , #Sentences inferred: {}'
-                              .format(i + 1, processed_sentences))
+            processed_sentences = 0
+            for src_token_ids, src_valid_length, _, _ in tqdm(test_dataloader):
+                src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
+                src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
+                init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
+                states = inference_model.init_states(src_token_ids, src_valid_length)
+                samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
+                for j in range(samples.shape[0]):
+                    pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
+                    bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
+                    pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
+                    pred_sentences.append(pred_sentence)
+                of.write('\n'.join(pred_sentences))
+                of.write('\n')
+                processed_sentences += len(pred_sentences)
         end_eval_time = time.time()
         logging.info('Time Spent: {}, Inferred sentences: {}'
                      .format(end_eval_time - start_eval_time, processed_sentences))
+
+
+def parallel_inference(args):
+    pass
 
 class ParallelInferencer:
     def __init__(self, test_dataloader, ctx_l,
@@ -292,12 +287,12 @@ class ParallelInferencer:
         self.beam_search_sampler = beam_search_sampler
         self.tgt_tokenizer = tgt_tokenizer
         self.base_tgt_tokenizer = base_tgt_tokenizer
-#    def batch_iter(self):
-#        iters = 0
-#        for test_data in self.test_dataloader:
-#            ctx = self.ctx_l[iters % len(self.ctx_l)]
-#            yield test_data, ctx
-#            iters += 1
+    def batch_iter(self):
+        iters = 0
+        for test_data in self.test_dataloader:
+            ctx = self.ctx_l[iters % len(self.ctx_l)]
+            yield test_data, ctx
+            iters += 1
     def process_batch(self, args):
         pred_batch_sentences = []
         (src_token_ids, src_valid_length, _, _), ctx = args
@@ -321,4 +316,7 @@ if __name__ == '__main__':
     np.random.seed(args.seed)
     mx.random.seed(args.seed)
     random.seed(args.seed)
-    evaluate(args)
+    if args.inference and len(args.gpus.split(',')) > 1:
+        parallel_inference(args)
+    else:
+        evaluate(args)
