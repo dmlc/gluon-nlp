@@ -250,33 +250,13 @@ def evaluate(args):
                      .format(end_eval_time - start_eval_time, len(all_tgt_lines),
                              sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
     # inference only (without ground truth)
+    # TODO need multiprocess because of beam search
     else:
-        class ParallelInferencer:
-            def __init__(self, test_dataloader, ctx_l):
-                self.test_dataloader = test_dataloader
-                self.ctx_l = ctx_l
-            def batch_iter(self):
-                iters = 0
-                for test_data in self.test_dataloader:
-                    ctx = self.ctx_l[iters % len(self.ctx_l)]
-                    yield test_data, ctx
-                    iters += 1
-            def process_batch(self, args):
-                pred_batch_sentences = []
-                (src_token_ids, src_valid_length, _, _), ctx = args
-                src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
-                src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
-                init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
-                states = inference_model.init_states(src_token_ids, src_valid_length)
-                samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
-                for j in range(samples.shape[0]):
-                    pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
-                    bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
-                    pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
-                    pred_batch_sentences.append(pred_sentence)        
-                return pred_batch_sentences        
         
-        inferencer = ParallelInferencer(tqdm(test_dataloader), ctx_l)
+        
+        inferencer = ParallelInferencer(tqdm(test_dataloader), ctx_l,
+                                        tgt_vocab.bos_id, inference_model, beam_search_sampler,
+                                        tgt_tokenizer, base_tgt_tokenizer)
         with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
             with Pool(len(ctx_l)) as pool:
                 processed_sentences = 0
@@ -292,7 +272,37 @@ def evaluate(args):
         logging.info('Time Spent: {}, Inferred sentences: {}'
                      .format(end_eval_time - start_eval_time, processed_sentences))
 
-
+class ParallelInferencer:
+    def __init__(self, test_dataloader, ctx_l,
+                 bos_id, inference_model, beam_search_sampler,
+                 tgt_tokenizer, base_tgt_tokenizer):
+        self.test_dataloader = test_dataloader
+        self.ctx_l = ctx_l
+        self.bos_id = bos_id
+        self.inference_model = inference_model
+        self.beam_search_sampler = beam_search_sampler
+        self.tgt_tokenizer = tgt_tokenizer
+        self.base_tgt_tokenizer = base_tgt_tokenizer
+    def batch_iter(self):
+        iters = 0
+        for test_data in self.test_dataloader:
+            ctx = self.ctx_l[iters % len(self.ctx_l)]
+            yield test_data, ctx
+            iters += 1
+    def process_batch(self, args):
+        pred_batch_sentences = []
+        (src_token_ids, src_valid_length, _, _), ctx = args
+        src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
+        src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
+        init_input = mx.np.array([self.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
+        states = self.inference_model.init_states(src_token_ids, src_valid_length)
+        samples, scores, valid_length = self.beam_search_sampler(init_input, states, src_valid_length)
+        for j in range(samples.shape[0]):
+            pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
+            bpe_decode_line = self.tgt_tokenizer.decode(pred_tok_ids[1:-1])
+            pred_sentence = self.base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
+            pred_batch_sentences.append(pred_sentence)        
+        return pred_batch_sentences
 
 
 if __name__ == '__main__':
