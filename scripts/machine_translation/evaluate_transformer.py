@@ -15,7 +15,6 @@ from gluonnlp.data import tokenizers
 from gluonnlp.sequence_sampler import BeamSearchSampler, BeamSearchScorer
 import sacrebleu
 from tqdm import tqdm
-from multiprocessing import Pool
 
 mx.npx.set_np()
 
@@ -250,8 +249,8 @@ def evaluate(args):
                      .format(end_eval_time - start_eval_time, len(all_tgt_lines),
                              sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
     
-    # inference only (with single gpu)
-    elif len(ctx_l) == 1:
+    # inference only
+    else:
         with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
             processed_sentences = 0
             for src_token_ids, src_valid_length, _, _ in tqdm(test_dataloader):
@@ -273,135 +272,6 @@ def evaluate(args):
         logging.info('Time Spent: {}, Inferred sentences: {}'
                      .format(end_eval_time - start_eval_time, processed_sentences))
 
-    else:
-        inferencer = ParallelInferencer(args)
-        with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
-            with Pool(len(ctx_l)) as pool:
-                processed_sentences = 0
-                for i, pred_batch_sentences in \
-                    enumerate(pool.imap(inferencer.process_batch, inferencer.batch_iter())):
-                    of.write('\n'.join(pred_batch_sentences))
-                    of.write('\n')
-                    processed_sentences += len(pred_batch_sentences)
-        end_eval_time = time.time()
-        logging.info('Time Spent: {}, Inferred sentences: {}'
-                     .format(end_eval_time - start_eval_time, processed_sentences))
-
-class ParallelInferencer:
-    def __init__(self, args):
-        self.args = args
-        self._build()
-
-    def _build(self):
-        args = self.args
-        self.ctx_l = ctx_l = [mx.cpu()] if args.gpus is None or args.gpus == '' else [mx.gpu(int(x)) for x in
-                                                                         args.gpus.split(',')]
-        src_normalizer = MosesNormalizer(args.src_lang)
-        tgt_normalizer = MosesNormalizer(args.tgt_lang)
-        base_src_tokenizer = tokenizers.create('moses', args.src_lang)
-        self.base_tgt_tokenizer = \
-        base_tgt_tokenizer = tokenizers.create('moses', args.tgt_lang)
-    
-        src_tokenizer = create_tokenizer(args.src_tokenizer,
-                                         args.src_subword_model_path,
-                                         args.src_vocab_path)
-        self.tgt_tokenizer = \
-        tgt_tokenizer = create_tokenizer(args.tgt_tokenizer,
-                                         args.tgt_subword_model_path,
-                                         args.tgt_vocab_path)
-        src_vocab = src_tokenizer.vocab
-        tgt_vocab = tgt_tokenizer.vocab
-        if args.cfg.endswith('.yml'):
-            cfg = TransformerNMTModel.get_cfg().clone_merge(args.cfg)
-        else:
-            cfg = TransformerNMTModel.get_cfg(args.cfg)
-        cfg.defrost()
-        cfg.MODEL.src_vocab_size = len(src_vocab)
-        cfg.MODEL.tgt_vocab_size = len(tgt_vocab)
-        cfg.freeze()
-        model = TransformerNMTModel.from_cfg(cfg)
-        model.hybridize()
-        model.load_parameters(args.param_path, ctx=ctx_l)
-        self.inference_model = inference_model = TransformerNMTInference(model=model)
-        inference_model.hybridize()
-        # Construct the BeamSearchSampler
-        if args.stochastic:
-            scorer = BeamSearchScorer(alpha=0.0,
-                                      K=0.0,
-                                      temperature=1.0,
-                                      from_logits=False)
-        else:
-            scorer = BeamSearchScorer(alpha=args.lp_alpha,
-                                      K=args.lp_k,
-                                      from_logits=False)
-        self.beam_search_sampler = \
-        beam_search_sampler = BeamSearchSampler(beam_size=args.beam_size,
-                                                decoder=inference_model,
-                                                vocab_size=len(tgt_vocab),
-                                                eos_id=tgt_vocab.eos_id,
-                                                scorer=scorer,
-                                                stochastic=args.stochastic,
-                                                max_length_a=args.max_length_a,
-                                                max_length_b=args.max_length_b)   
-    
-        logging.info(beam_search_sampler)
-        all_src_token_ids, all_src_lines = process_corpus(
-            args.src_corpus,
-            sentence_normalizer=src_normalizer,
-            base_tokenizer=base_src_tokenizer,
-            bpe_tokenizer=src_tokenizer,
-            add_bos=False,
-            add_eos=True
-        )
-        if args.tgt_corpus is not None:
-            all_tgt_token_ids, all_tgt_lines = process_corpus(
-                args.tgt_corpus,
-                sentence_normalizer=tgt_normalizer,
-                base_tokenizer=base_tgt_tokenizer,
-                bpe_tokenizer=tgt_tokenizer,
-                add_bos=True,
-                add_eos=True
-            )
-        else: # when applying inference, populate the fake tgt tokens
-            all_tgt_token_ids = all_tgt_lines = [[] for i in range(len(all_src_token_ids))]
-        self.test_dataloader = gluon.data.DataLoader(
-            list(zip(all_src_token_ids,
-                     [len(ele) for ele in all_src_token_ids],
-                     all_tgt_token_ids,
-                     [len(ele) for ele in all_tgt_token_ids])),
-            batch_size=32,
-            batchify_fn=Tuple(Pad(), Stack(), Pad(), Stack()),
-            shuffle=False)
-        
-        
-    def batch_iter(self):
-        iters = 0
-        for test_data in self.test_dataloader:
-            ctx = self.ctx_l[iters % len(self.ctx_l)]
-            yield test_data, ctx
-            iters += 1
-    def process_batch(self, args):
-        pred_batch_sentences = []
-        (src_token_ids, src_valid_length, _, _), ctx = args
-        src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
-        src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
-        init_input = mx.np.array([self.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
-        states = self.inference_model.init_states(src_token_ids, src_valid_length)
-        samples, scores, valid_length = self.beam_search_sampler(init_input, states, src_valid_length)
-        for j in range(samples.shape[0]):
-            pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
-            bpe_decode_line = self.tgt_tokenizer.decode(pred_tok_ids[1:-1])
-            pred_sentence = self.base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
-            pred_batch_sentences.append(pred_sentence)
-        return pred_batch_sentences
-
-    def __getstate__(self):
-        state = {'args' : self.args.copy()}
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__ = state
-        self._build()
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
