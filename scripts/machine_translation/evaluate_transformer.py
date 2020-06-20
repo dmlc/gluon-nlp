@@ -257,11 +257,20 @@ def evaluate(args):
         inferencer = ParallelInferencer(tqdm(test_dataloader), ctx_l,
                                         tgt_vocab.bos_id, inference_model, beam_search_sampler,
                                         tgt_tokenizer, base_tgt_tokenizer)
+        
+        def batch_iter(self):
+            iters = 0
+            for test_data in test_dataloader:
+                ctx = ctx_l[iters % len(ctx_l)]
+                yield test_data, ctx
+                iters += 1
+            
         with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
             with Pool(len(ctx_l)) as pool:
                 processed_sentences = 0
                 for i, pred_batch_sentences in \
-                    enumerate(pool.imap(inferencer.process_batch, inferencer.batch_iter())):
+                    enumerate(pool.imap(inferencer.process_batch, batch_iter())):
+#                    enumerate(pool.imap(inferencer.process_batch, inferencer.batch_iter())):
                     of.write('\n'.join(pred_batch_sentences))
                     of.write('\n')
                     processed_sentences += len(pred_batch_sentences)
@@ -283,12 +292,12 @@ class ParallelInferencer:
         self.beam_search_sampler = beam_search_sampler
         self.tgt_tokenizer = tgt_tokenizer
         self.base_tgt_tokenizer = base_tgt_tokenizer
-    def batch_iter(self):
-        iters = 0
-        for test_data in self.test_dataloader:
-            ctx = self.ctx_l[iters % len(self.ctx_l)]
-            yield test_data, ctx
-            iters += 1
+#    def batch_iter(self):
+#        iters = 0
+#        for test_data in self.test_dataloader:
+#            ctx = self.ctx_l[iters % len(self.ctx_l)]
+#            yield test_data, ctx
+#            iters += 1
     def process_batch(self, args):
         pred_batch_sentences = []
         (src_token_ids, src_valid_length, _, _), ctx = args
