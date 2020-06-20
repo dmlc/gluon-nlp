@@ -15,6 +15,8 @@ from gluonnlp.data import tokenizers
 from gluonnlp.sequence_sampler import BeamSearchSampler, BeamSearchScorer
 import sacrebleu
 from tqdm import tqdm
+from multiprocessing import Pool
+
 mx.npx.set_np()
 
 
@@ -68,13 +70,14 @@ def parse_args():
     parser.add_argument('--param_path', type=str, help='The path to the model parameters.')
     parser.add_argument('--gpus', type=str, default='0',
                         help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.'
-                             '(using single gpu is suggested)')
+                             '(multi gpus is only avaiable when applying inference)')
     parser.add_argument('--save_dir', type=str, default=None,
                         help='The path to save the log files and predictions.')
     parser.add_argument('--stochastic', action='store_true',
                         help='Whether to use the stochastic beam search')
     parser.add_argument('--inference', action='store_true',
-                        help='Whether to inference with your own data')
+                        help='Whether to inference with your own data, '
+                        'when applying inference, tgt_corpus is not needed and will be set to None.')
     args = parser.parse_args()
     if args.save_dir is None:
         args.save_dir = os.path.splitext(args.param_path)[0] + '_evaluation'
@@ -191,7 +194,7 @@ def evaluate(args):
             add_eos=True
         )
     else: # when applying inference, populate the fake tgt tokens
-        all_tgt_token_ids = all_tgt_lines = [None for i in range(len(all_src_token_ids))]
+        all_tgt_token_ids = all_tgt_lines = [[] for i in range(len(all_src_token_ids))]
     test_dataloader = gluon.data.DataLoader(
         list(zip(all_src_token_ids,
                  [len(ele) for ele in all_src_token_ids],
@@ -248,30 +251,49 @@ def evaluate(args):
                              sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
     # inference only (without ground truth)
     else:
+        class ParallelInferencer:
+            def __init__(self, test_dataloader, ctx_l):
+                self.test_dataloader = test_dataloader
+                self.ctx_l = ctx_l
+            def batch_iter(self):
+                iters = 0
+                for test_data in self.test_dataloader:
+                    ctx = self.ctx_l[iters % len(self.ctx_l)]
+                    yield test_data, ctx
+                    iters += 1
+            def process_batch(self, args):
+                pred_batch_sentences = []
+                (src_token_ids, src_valid_length, _, _), ctx = args
+                src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
+                src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
+                init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
+                states = inference_model.init_states(src_token_ids, src_valid_length)
+                samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
+                for j in range(samples.shape[0]):
+                    pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
+                    bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
+                    pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
+                    pred_batch_sentences.append(pred_sentence)        
+                return pred_batch_sentences        
+        
+        inferencer = ParallelInferencer(tqdm(test_dataloader), ctx_l)
         with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
-            processed_sentences = 0
-            for test_data_l in tqdm(grouper(test_dataloader, len(ctx_l))):
-                for test_data, ctx in zip(test_data_l, ctx_l):
-                    if test_data is None:
-                        continue
-                    src_token_ids, src_valid_length, _, _ = test_data
-                    src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
-                    src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
-                    init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
-                    states = inference_model.init_states(src_token_ids, src_valid_length)
-                    samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
-                    for j in range(samples.shape[0]):
-                        pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
-                        bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
-                        pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
-                        pred_sentences.append(pred_sentence)
-                of.write('\n'.join(pred_sentences))
-                of.write('\n')
-                processed_sentences += len(pred_sentences)
-                pred_sentences = []
+            with Pool(len(ctx_l)) as pool:
+                processed_sentences = 0
+                for i, pred_batch_sentences in \
+                    enumerate(pool.imap(inferencer.process_batch, inferencer.batch_iter())):
+                    of.write('\n'.join(pred_batch_sentences))
+                    of.write('\n')
+                    processed_sentences += len(pred_batch_sentences)
+                    if (i + 1) % 100 == 0:
+                        print('Batch {} , #Sentences inferred: {}'
+                              .format(i + 1, processed_sentences))
         end_eval_time = time.time()
-        logging.info('Time Spent: {}, predicted sentences: {}'
+        logging.info('Time Spent: {}, Inferred sentences: {}'
                      .format(end_eval_time - start_eval_time, processed_sentences))
+
+
+
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
