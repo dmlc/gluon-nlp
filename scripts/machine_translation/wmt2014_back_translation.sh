@@ -2,8 +2,11 @@ SUBWORD_ALGO=$1
 SRC=en
 TGT=de
 
+# prepare en_de data for the reverse model
+cd ../datasets/machine_translation
+bash wmt2014_ende.sh ${SUBWORD_ALGO}
 
-# Fetch the raw text
+# Fetch the raw mono text
 nlp_data prepare_wmt \
         --mono \
         --mono_lang ${TGT} \
@@ -21,81 +24,112 @@ nlp_preprocess clean_tok_mono_corpus \
                         --save-path train.tok.${TGT} \
                         --num-process 16
 
-
-# Apply the learned codes to the monolingual dataset
-nlp_preprocess apply_subword --model ${SUBWORD_ALGO}\
-                             --output-type subword \
-                             --model-path ../wmt2014_ende/${SUBWORD_ALGO}.model \
-                             --vocab-path ../wmt2014_ende/${SUBWORD_ALGO}.vocab \
-                             --corpus train.tok.${TGT} \
-                             --save-path train.tok.${SUBWORD_ALGO}.${TGT}
-
 cd ../../../machine_translation
+datapath=../datasets/machine_translation
 
 # train the reverse model to translate German to English
-SUBWORD_MODEL=yttm
 python train_transformer.py \
-    --train_src_corpus ../datasets/machine_translation/wmt2014_ende/train.tok.${SUBWORD_MODEL}.${TGT} \
-    --train_tgt_corpus ../datasets/machine_translation/wmt2014_ende/train.tok.${SUBWORD_MODEL}.${SRC} \
-    --dev_src_corpus ../datasets/machine_translation/wmt2014_ende/dev.tok.${SUBWORD_MODEL}.${TGT} \
-    --dev_tgt_corpus ../datasets/machine_translation/wmt2014_ende/dev.tok.${SUBWORD_MODEL}.${SRC} \
-    --src_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
-    --src_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-    --tgt_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
-    --tgt_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-    --save_dir transformer_wmt2014_de_en_yttm \
-    --cfg transformer_base \
+    --train_src_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
+    --train_tgt_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
+    --dev_src_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${TGT} \
+    --dev_tgt_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
+    --src_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --src_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --tgt_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --tgt_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --save_dir transformer_wmt2014_de_en_${SUBWORD_ALGO} \
+    --cfg transformer_nmt_base \
     --lr 0.002 \
     --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
     --seed 100 \
     --gpus 0,1,2,3
 
-
-cd ../datasets/machine_translation/
-cp ./wmt2014_ende ./mono_dir
-
 # Due to the limited memory, we need to split the data and process the data divided respectively 
-cd mono_dir
-split -l 400000 train.raw.${TGT} raw_split -d -a 2
+split -l 400000 ${datapath}/wmt2014_mono/train.tok.${TGT} ${datapath}/wmt2014_mono/train.tok.${TGT}.split -d -a 3
 
-# Get the synthetic data
-cd ../../../machine_translation
-for NUM in $(seq -w 0 96); do \
-    printf "%s %d\n" "NUM:" $NUM | \
-    python evaluate_transformer.py \
-        --param_path transformer_wmt2014_de_en_yttm/average.params \
-        --src_lang ${TGT} \
-        --tgt_lang ${SRC} \
-        --cfg transformer_base \
-        --src_tokenizer ${SUBWORD_MODEL} \
-        --tgt_tokenizer ${SUBWORD_MODEL} \
-        --src_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
-        --tgt_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
-        --src_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-        --tgt_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-        --src_corpus ../datasets/machine_translation/mono_dir/raw_split$NUM \
-        --gpus 0,1,2,3
+# Infer the synthetic data
+GPUS=(0 1 2 3)
+IDX=0
+for NUM in ` seq -f %03g 0 23 `; do # select 24 split from the mono data
+    split_corpus=${datapath}/wmt2014_mono/train.tok.${TGT}.split${NUM}
+    if [ ${IDX} -eq ${#GPUS[@]} ]; then
+        let "IDX=0"
+        wait
+    fi
+    {
+        echo processing ${split_corpus}
+        python evaluate_transformer.py \
+            --param_path transformer_wmt2014_de_en_${SUBWORD_ALGO}/average.params \
+            --src_lang ${TGT} \
+            --tgt_lang ${SRC} \
+            --cfg transformer_nmt_base \
+            --src_tokenizer ${SUBWORD_ALGO} \
+            --tgt_tokenizer ${SUBWORD_ALGO} \
+            --src_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+            --tgt_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+            --src_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+            --tgt_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+            --src_corpus ${split_corpus} \
+            --save_dir ${split_corpus/.${TGT}./.${SRC}.} \
+            --beam-size 1 \
+            --inference \
+            --gpus ${GPUS[IDX]}
+    } &
+    let "IDX++"
+done
+wait
+
+cat ` seq -f "${datapath}/wmt2014_mono/train.tok.${SRC}.split%03g/pred_sentences.txt" 0 23 ` \
+    > ${datapath}/wmt2014_mono/syn.train.raw.${SRC}
+cat ` seq -f "${datapath}/wmt2014_mono/train.tok.${TGT}.split%03g" 0 23 ` \
+    > ${datapath}/wmt2014_mono/syn.train.raw.${TGT}
+
+# Clean the synthetic data
+nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
+    --tgt-lang ${TGT} \
+    --src-corpus ${datapath}/wmt2014_mono/syn.train.raw.${SRC} \
+    --tgt-corpus ${datapath}/wmt2014_mono/syn.train.raw.${TGT} \
+    --min-num-words 1 \
+    --max-num-words 250 \
+    --max-ratio 1.5 \
+    --src-save-path ${datapath}/wmt2014_mono/syn.train.tok.${SRC} \
+    --tgt-save-path ${datapath}/wmt2014_mono/syn.train.tok.${TGT}
+
+# Combine the synthetic data with upsampled original data
+# TODO upsample (nearly 1 : 1 at present)
+rm -rf ${datapath}/wmt2014_backtranslation
+mkdir ${datapath}/wmt2014_backtranslation
+for LANG in ${SRC} ${TGT} ; do
+    cat ${datapath}/wmt2014_ende/train.tok.${LANG} ${datapath}/wmt2014_mono/syn.train.tok.${LANG} \
+        > ${datapath}/wmt2014_backtranslation/bt.train.tok.${LANG}
+done 
+
+# Tokenize
+for LANG in ${SRC} ${TGT} ; do
+    nlp_preprocess apply_subword --model ${SUBWORD_ALGO} \
+        --output-type subword \
+        --model-path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+        --vocab-path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+        --corpus ${datapath}/wmt2014_backtranslation/bt.train.tok.${LANG} \
+        --save-path ${datapath}/wmt2014_backtranslation/bt.train.tok.${SUBWORD_ALGO}.${LANG}
 done
 
-#
-
-# Combine the synthetic data with original data
-# Tokenize and clean the combined data
 # Use the combine data to train the new model
-SUBWORD_MODEL=yttm
 python train_transformer.py \
-    --train_src_corpus ../datasets/machine_translation/backtranslation/train.tok.${SUBWORD_MODEL}.${SRC} \
-    --train_tgt_corpus ../datasets/machine_translation/backtranslation/train.tok.${SUBWORD_MODEL}.${TGT} \
-    --dev_src_corpus ../datasets/machine_translation/wmt2014_ende/dev.tok.${SUBWORD_MODEL}.${SRC} \
-    --dev_tgt_corpus ../datasets/machine_translation/wmt2014_ende/dev.tok.${SUBWORD_MODEL}.${TGT} \
-    --src_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
-    --src_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-    --tgt_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
-    --tgt_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-    --save_dir backtranslation_wmt2014_ende_${SUBWORD_MODEL} \
-    --cfg transformer_base \
+    --train_src_corpus ${datapath}/wmt2014_backtranslation/bt.train.tok.${SUBWORD_ALGO}.${SRC} \
+    --train_tgt_corpus ${datapath}/wmt2014_backtranslation/bt.train.tok.${SUBWORD_ALGO}.${TGT} \
+    --dev_src_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
+    --dev_tgt_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${TGT} \
+    --src_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --src_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --tgt_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --tgt_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --save_dir backtranslation_transformer_wmt2014_ende_${SUBWORD_ALGO} \
+    --cfg transformer_nmt_base \
     --lr 0.002 \
+    --max_update 60000 \
+    --save_interval_update 2000 \
     --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
     --seed 100 \
@@ -104,17 +138,16 @@ python train_transformer.py \
 
 # Finally, we can evaluate the model
 python evaluate_transformer.py \
-    --param_path backtranslation_wmt2014_ende_${SUBWORD_MODEL}/average.params \
+    --param_path backtranslation_transformer_wmt2014_ende_${SUBWORD_ALGO}/average.params \
     --src_lang ${SRC} \
     --tgt_lang ${TGT} \
-    --cfg wmt_en_de_base.yml \
-    --src_tokenizer ${SUBWORD_MODEL} \
-    --tgt_tokenizer ${SUBWORD_MODEL} \
-    --src_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
-    --tgt_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
-    --src_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-    --tgt_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-    --src_corpus ../datasets/machine_translation/wmt2014_ende/test.raw.${SRC} \
-    --tgt_corpus ../datasets/machine_translation/wmt2014_ende/test.raw.${TGT} \
-    --inference \
-    --gpus 0,1,2,3
+    --cfg transformer_nmt_base \
+    --src_tokenizer ${SUBWORD_ALGO} \
+    --tgt_tokenizer ${SUBWORD_ALGO} \
+    --src_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --tgt_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --src_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --tgt_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --src_corpus ${datapath}/wmt2014_ende/test.raw.${SRC} \
+    --tgt_corpus ${datapath}/wmt2014_ende/test.raw.${TGT} \
+    --gpus 0

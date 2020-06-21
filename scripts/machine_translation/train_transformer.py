@@ -155,7 +155,6 @@ def parse_args():
     logging_config(args.save_dir, console=True)
     logging.info(args)
     return args
-# TODO max update, max_update * accumulate = epoch * batch num?
 
 def validation(model, data_loader, ctx_l):
     """Validate the model on the dataset

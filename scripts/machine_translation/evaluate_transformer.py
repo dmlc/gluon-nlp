@@ -15,7 +15,6 @@ from gluonnlp.data import tokenizers
 from gluonnlp.sequence_sampler import BeamSearchSampler, BeamSearchScorer
 import sacrebleu
 from tqdm import tqdm
-
 mx.npx.set_np()
 
 
@@ -68,8 +67,8 @@ def parse_args():
                         help='The b in the a * x + b formula of beam search')
     parser.add_argument('--param_path', type=str, help='The path to the model parameters.')
     parser.add_argument('--gpus', type=str, default='0',
-                        help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.'
-                             '(multi gpus is only avaiable when applying inference)')
+                        help='List of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.'
+                             '(using single gpu is suggested)')
     parser.add_argument('--save_dir', type=str, default=None,
                         help='The path to save the log files and predictions.')
     parser.add_argument('--stochastic', action='store_true',
@@ -80,7 +79,7 @@ def parse_args():
     args = parser.parse_args()
     if args.save_dir is None:
         args.save_dir = os.path.splitext(args.param_path)[0] + '_evaluation'
-    assert args.inference or args.tgt_corpus, 'requring --tgt_corpus when not using --inference'
+    assert args.inference or args.tgt_corpus, 'requring --tgt_corpus while not using --inference'
     if args.inference:
         args.tgt_corpus = None
     logging_config(args.save_dir, console=True)
@@ -248,7 +247,6 @@ def evaluate(args):
         logging.info('Time Spent: {}, #Sent={}, SacreBlEU={} Avg NLL={}, Perplexity={}'
                      .format(end_eval_time - start_eval_time, len(all_tgt_lines),
                              sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
-    
     # inference only
     else:
         with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
@@ -271,7 +269,6 @@ def evaluate(args):
         end_eval_time = time.time()
         logging.info('Time Spent: {}, Inferred sentences: {}'
                      .format(end_eval_time - start_eval_time, processed_sentences))
-
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
