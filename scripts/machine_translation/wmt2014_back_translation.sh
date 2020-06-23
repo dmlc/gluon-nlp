@@ -128,8 +128,8 @@ python train_transformer.py \
     --save_dir backtranslation_transformer_wmt2014_ende_${SUBWORD_ALGO} \
     --cfg transformer_nmt_base \
     --lr 0.002 \
-    --max_update 60000 \
-    --save_interval_update 2000 \
+    --max_update 15000 \
+    --save_interval_update 500 \
     --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
     --seed 100 \
