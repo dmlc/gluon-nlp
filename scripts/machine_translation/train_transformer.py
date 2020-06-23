@@ -102,19 +102,20 @@ def parse_args():
     parser.add_argument('--epochs', type=int, default=30, help='Upper epoch limit, '
                         'the model will keep training when epochs < 0 and max_update < 0.')
     parser.add_argument('--max_update', type=int, default=-1,
-                        help='Max update steps, when max_update > 0, epochs will be set to -1')
-    parser.add_argument('--save_interval_update', type=int, default=2000,
-                         help='Update interval of saving checkpoints when using max_update')
+                        help='Max update steps, when max_update > 0, epochs will be set to -1, '
+                             'each update step contains gpu_num * num_accumulated batches.')
+    parser.add_argument('--save_interval_update', type=int, default=500,
+                         help='Update interval of saving checkpoints while using max_update.')
     parser.add_argument('--cfg', type=str, default='transformer_nmt_base',
                         help='Configuration of the transformer model. '
                              'You may select a yml file or use the prebuild configurations.')
     parser.add_argument('--label_smooth_alpha', type=float, default=0.1,
                         help='Weight of label smoothing')
     parser.add_argument('--batch_size', type=int, default=2700,
-                        help='Batch size. Number of tokens per gpu in a minibatch')
+                        help='Batch size. Number of tokens per gpu in a minibatch.')
     parser.add_argument('--val_batch_size', type=int, default=16,
                         help='Batch size for evaluation.')
-    parser.add_argument('--num_buckets', type=int, default=20, help='Bucket number')
+    parser.add_argument('--num_buckets', type=int, default=20, help='Bucket number.')
     parser.add_argument('--bucket_scheme', type=str, default='exp',
                         help='Strategy for generating bucket keys. It supports: '
                              '"constant": all the buckets have the same width; '
