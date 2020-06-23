@@ -21,10 +21,6 @@ Download and install the files required for this example.
 ```
 
 ```{.python .input}
-!pip install git+https://git@github.com/SKTBrain/KoBERT.git@master
-```
-
-```{.python .input}
 import pandas as pd
 import numpy as np
 from mxnet.gluon import nn, rnn
@@ -190,7 +186,7 @@ trainer = gluon.Trainer(model.collect_params(), 'bertadam',
                         {'learning_rate': lr, 'epsilon': 1e-9, 'wd':0.01})
 
 log_interval = 4
-num_epochs = 5
+num_epochs = 1
 ```
 
 Weight decay does not apply to LayerNorm and Bias. That's because it has little effect of regularization, and to prevent the possibility that it would rather cause underfitting. For more information, please refer to [1].
@@ -291,10 +287,13 @@ for epoch_id in range(num_epochs):
     print('Test Acc : {}'.format(test_acc))
 ```
 
-So far, we've implemented a sentiment classifier of Naver movie review dataset using a pre-trained **KoBERT** model of GluonNLP Model Zoo. In general, the sentiment analysis models of this dataset are known to obtain accuracy of **83 to 85%**. Our implementation using **GluonNLP/KoBERT** was able to achieve a very high accuracy of about **90%**.
+So far, we've implemented a sentiment classifier of Naver movie review dataset using a pre-trained **KoBERT** model of GluonNLP Model Zoo.
+In general, the sentiment analysis models of this dataset are known to obtain accuracy of **83 to 85%**.
+Our implementation using **GluonNLP/KoBERT** was able to achieve a very high accuracy of about **89%** with just one epoch.
 
-지금까지 GluonNLP Model Zoo의 **KoBERT** 사전학습 모델을 사용해 네이버 영화리뷰의 감정 분석 분류기를 구현해봤습니다.
-일반적으로 네이버 영화리뷰의 감성 분석 모델은 **83~85%** 정도의 accuracy를 얻는다고 알려져 있는데, 위의 **GluonNLP/KoBERT** 구현에서는 약 **90%**의 대단히 높은 accuracy를 얻을 수 있었습니다.
+지금까지 GluonNLP Model Zoo의 **KoBERT** 사전학습 모델을 사용해 네이버 영화리뷰의 감정 분석 분류기를 구현해봤습니다. 
+일반적으로 네이버 영화리뷰의 감성 분석 모델은 **83~85%** 정도의 accuracy를 얻는다고 알려져 있는데,
+위의 **GluonNLP/KoBERT** 구현에서는 1번의 epoch 만으로도 약 **89%**의 대단히 높은 accuracy를 얻을 수 있었습니다. 
 
 ## References
 ## 참고 문헌
