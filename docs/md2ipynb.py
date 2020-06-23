@@ -12,7 +12,7 @@ parser.add_argument('-d', '--disable_compute',
 args = parser.parse_args()
 
 # timeout for each notebook, in sec
-timeout = 40 * 60
+timeout = 90 * 60
 
 # the files will be ignored for execution
 ignore_execution = []
