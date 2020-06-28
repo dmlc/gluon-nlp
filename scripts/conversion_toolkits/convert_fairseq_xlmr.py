@@ -18,7 +18,7 @@ from convert_fairseq_roberta import (
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert the fairseq XLM-R Model to Gluon.')
-    parser.add_argument('--fairseq_model_dir', type=str, required=True,
+    parser.add_argument('--fairseq_model_path', type=str, required=True,
                         help='Directory of the fairseq XLM-R model.')
     parser.add_argument('--model_size', type=str, choices=['base', 'large'], default='base',
                         help='Size of XLM-R model.')
@@ -32,15 +32,14 @@ def parse_args():
 
 def convert_vocab(args, fairseq_model):
     print('converting vocab')
-    origin_spm_path = os.path.join(args.fairseq_model_dir, 'sentencepiece.bpe.model')
+    origin_spm_path = os.path.join(args.fairseq_model_path, 'sentencepiece.bpe.model')
     assert os.path.exists(origin_spm_path)
     new_spm_path = os.path.join(args.save_dir, 'sentencepiece.model')
     fairseq_vocab = fairseq_model.task.dictionary
     # bos_word attr missing in fairseq_vocab
     fairseq_vocab.bos_word = fairseq_vocab[fairseq_vocab.bos_index]
-    
-    # TODO
-    # model.pieces: <unk> <s> </s> other_tokens -> 
+
+    # model.pieces: <unk> <s> </s> other_tokens ->
     # model.pieces: <s> <pad> </s> <unk> other_tokens <mask>
     model = sentencepiece_model_pb2.ModelProto()
     with open(origin_spm_path, 'rb') as f_m:
@@ -48,14 +47,14 @@ def convert_vocab(args, fairseq_model):
     p0 = model.pieces[0]
     p1 = model.pieces[1]
     p2 = model.pieces[2]
-    
+
     pad_piece = copy.deepcopy(p0)
     pad_piece.piece = fairseq_vocab.pad_word
     pad_piece.type = pad_piece.CONTROL
     mask_piece = copy.deepcopy(p0)
     mask_piece.piece = '<mask>'
     mask_piece.type = mask_piece.CONTROL
-    
+
     p0.type = p0.CONTROL
     p0.piece = fairseq_vocab.bos_word
     p1.type = p1.CONTROL
@@ -64,7 +63,7 @@ def convert_vocab(args, fairseq_model):
     p2.piece = fairseq_vocab.unk_word
     model.pieces.insert(fairseq_vocab.pad_index, pad_piece)
     model.pieces.append(mask_piece)
-    
+
     model.trainer_spec.vocab_size = len(fairseq_vocab)
     model.trainer_spec.unk_id = fairseq_vocab.unk_index
     model.trainer_spec.bos_id = fairseq_vocab.bos_index
@@ -84,13 +83,13 @@ def convert_vocab(args, fairseq_model):
 
 def convert_fairseq_model(args):
     if not args.save_dir:
-        args.save_dir = os.path.basename(args.fairseq_model_dir) + '_gluon'
+        args.save_dir = os.path.basename(args.fairseq_model_path) + '_gluon'
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
-    fairseq_xlmr = fairseq_XLMRModel.from_pretrained(args.fairseq_model_dir,
+    fairseq_xlmr = fairseq_XLMRModel.from_pretrained(args.fairseq_model_path,
                                                      checkpoint_file='model.pt')
     vocab_size = convert_vocab(args, fairseq_xlmr)
-    
+
     gluon_cfg = convert_config(fairseq_xlmr.args, vocab_size,
                                gluon_XLMRModel.get_cfg().clone())
     with open(os.path.join(args.save_dir, 'model.yml'), 'w') as of:
@@ -107,7 +106,7 @@ def convert_fairseq_model(args):
 
     gluon_xlmr.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
     logging.info('Convert the XLM-R model in {} to {}'.
-                 format(os.path.join(args.fairseq_model_dir, 'model.pt'), \
+                 format(os.path.join(args.fairseq_model_path, 'model.pt'), \
                         os.path.join(args.save_dir, 'model.params')))
     logging.info('Conversion finished!')
     logging.info('Statistics:')

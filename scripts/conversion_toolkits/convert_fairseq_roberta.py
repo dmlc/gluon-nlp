@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 import shutil
 import logging
@@ -17,7 +18,7 @@ mx.npx.set_np()
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert the fairseq RoBERTa Model to Gluon.')
-    parser.add_argument('--fairseq_model_dir', type=str, required=True,
+    parser.add_argument('--fairseq_model_path', type=str, required=True,
                         help='Directory of the fairseq RoBERTa model.')
     parser.add_argument('--model_size', type=str, choices=['base', 'large'], default='base',
                         help='Size of RoBERTa model.')
@@ -31,7 +32,7 @@ def parse_args():
 
 def convert_vocab(args, fairseq_model):
     print('converting vocab')
-    fairseq_dict_path = os.path.join(args.fairseq_model_dir, 'dict.txt')
+    fairseq_dict_path = os.path.join(args.fairseq_model_path, 'dict.txt')
     merges_save_path = os.path.join(args.save_dir, 'gpt2.merges')
     vocab_save_path =os.path.join(args.save_dir, 'gpt2.vocab')
     fairseq_vocab = fairseq_model.task.dictionary
@@ -326,10 +327,11 @@ def rename(save_dir):
 
 def convert_fairseq_model(args):
     if not args.save_dir:
-        args.save_dir = os.path.basename(args.fairseq_model_dir) + '_gluon'
+        args.save_dir = os.path.basename(args.fairseq_model_path) + '_gluon'
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
-    fairseq_roberta = fairseq_RobertaModel.from_pretrained(args.fairseq_model_dir,
+
+    fairseq_roberta = fairseq_RobertaModel.from_pretrained(args.fairseq_model_path,
                                                            checkpoint_file='model.pt')
     vocab_size = convert_vocab(args, fairseq_roberta)
 
@@ -350,7 +352,7 @@ def convert_fairseq_model(args):
 
     gluon_roberta.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
     logging.info('Convert the RoBERTa model in {} to {}'.
-                 format(os.path.join(args.fairseq_model_dir, 'model.pt'), \
+                 format(os.path.join(args.fairseq_model_path, 'model.pt'), \
                         os.path.join(args.save_dir, 'model.params')))
     logging.info('Conversion finished!')
     logging.info('Statistics:')

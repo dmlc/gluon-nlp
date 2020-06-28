@@ -242,17 +242,14 @@ class RobertaModel(HybridBlock):
         outputs = []
         embedding = self.get_initial_embedding(F, tokens)
 
-        inner_states = self.encoder(x, valid_length)
-        if self.output_all_encodings:
-            contextual_embeddings = inner_states[-1]
-        else:
-            contextual_embeddings = inner_states
-        outputs.append(contextual_embeddings)
+        inner_states = self.encoder(embedding, valid_length)
+        outputs.append(inner_states)
+        contextual_embeddings = inner_states[-1]
 
         if self.use_pooler:
             pooled_out = self.apply_pooling(contextual_embeddings)
             outputs.append(pooled_out)
-            
+
         if self.use_mlm:
             mlm_output = self.lm_head(contextual_embeddings)
             outputs.append(mlm_output)
@@ -281,11 +278,13 @@ class RobertaModel(HybridBlock):
             embedding = self.embed_ln(embedding)
         embedding = self.embed_dropout(embedding)
 
+        return embedding
+
     def apply_pooling(self, sequence):
         """Generate the representation given the inputs.
 
-        This is used for pre-training or fine-tuning a mobile bert model.
-        Get the first token of the whole sequence which is [CLS]
+        This is used for pre-training or fine-tuning a roberta model.
+        Get the first token of the whole sequence which is <s> that equals to [CLS]
 
         sequence:
             Shape (batch_size, sequence_length, units)
@@ -397,7 +396,7 @@ class RobertaEncoder(HybridBlock):
             x, _ = layer(x, atten_mask)
             inner_states.append(x)
         if not self.output_all_encodings:
-            inner_states = x
+            inner_states = [x]
         return inner_states
 
 @use_np
