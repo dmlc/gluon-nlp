@@ -38,7 +38,8 @@ def convert_vocab(args, fairseq_model):
     fairseq_vocab = fairseq_model.task.dictionary
     # bos_word attr missing in fairseq_vocab
     fairseq_vocab.bos_word = fairseq_vocab[fairseq_vocab.bos_index]
-    
+
+    # TODO    
     # model.pieces: <unk> <s> </s> other_tokens -> 
     # model.pieces: <s> <pad> </s> <unk> other_tokens <mask>
     model = sentencepiece_model_pb2.ModelProto()
