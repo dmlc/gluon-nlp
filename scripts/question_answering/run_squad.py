@@ -150,31 +150,31 @@ class SquadDatasetProcessor:
         self.cls_id = vocab.bos_id if 'cls_token' not in vocab.special_token_keys else vocab.cls_id
         self.sep_id = vocab.eos_id if 'sep_token' not in vocab.special_token_keys else vocab.sep_id
 
-    # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
-    ChunkFeature = collections.namedtuple('ChunkFeature',
-                                          ['qas_id',
-                                           'data',
-                                           'valid_length',
-                                           'segment_ids',
-                                           'masks',
-                                           'is_impossible',
-                                           'gt_start',
-                                           'gt_end',
-                                           'context_offset',
-                                           'chunk_start',
-                                           'chunk_length'])
-    BatchifyFunction = bf.NamedTuple(ChunkFeature,
-                                     {'qas_id': bf.List(),
-                                      'data': bf.Pad(val=self.pad_id),
-                                      'valid_length': bf.Stack(),
-                                      'segment_ids': bf.Pad(),
-                                      'masks': bf.Pad(val=1),
-                                      'is_impossible': bf.Stack(),
-                                      'gt_start': bf.Stack(),
-                                      'gt_end': bf.Stack(),
-                                      'context_offset': bf.Stack(),
-                                      'chunk_start': bf.Stack(),
-                                      'chunk_length': bf.Stack()})
+        # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
+        self.ChunkFeature = collections.namedtuple('ChunkFeature',
+                                              ['qas_id',
+                                               'data',
+                                               'valid_length',
+                                               'segment_ids',
+                                               'masks',
+                                               'is_impossible',
+                                               'gt_start',
+                                               'gt_end',
+                                               'context_offset',
+                                               'chunk_start',
+                                               'chunk_length'])
+        self.BatchifyFunction = bf.NamedTuple(ChunkFeature,
+                                         {'qas_id': bf.List(),
+                                          'data': bf.Pad(val=self.pad_id),
+                                          'valid_length': bf.Stack(),
+                                          'segment_ids': bf.Pad(),
+                                          'masks': bf.Pad(val=1),
+                                          'is_impossible': bf.Stack(),
+                                          'gt_start': bf.Stack(),
+                                          'gt_end': bf.Stack(),
+                                          'context_offset': bf.Stack(),
+                                          'chunk_start': bf.Stack(),
+                                          'chunk_length': bf.Stack()})
 
 
     def process_sample(self, feature: SquadFeature):
