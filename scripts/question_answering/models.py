@@ -15,10 +15,11 @@ class ModelForQABasic(HybridBlock):
 
     """
     def __init__(self, backbone, weight_initializer=None, bias_initializer=None,
-                 prefix=None, params=None):
+                 use_segmentation=True, prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         with self.name_scope():
             self.backbone = backbone
+            self.use_segmentation = use_segmentation
             self.qa_outputs = nn.Dense(units=2, flatten=False,
                                        weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer,
@@ -53,7 +54,10 @@ class ModelForQABasic(HybridBlock):
             The log-softmax scores that the position is the end position.
         """
         # Get contextual embedding with the shape (batch_size, sequence_length, C)
-        contextual_embedding = self.backbone(tokens, token_types, valid_length)
+        if self.use_segmentation:
+            contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+        else:
+            contextual_embeddings = self.backbone(tokens, valid_length)
         scores = self.qa_outputs(contextual_embedding)
         start_scores = scores[:, :, 0]
         end_scores = scores[:, :, 1]

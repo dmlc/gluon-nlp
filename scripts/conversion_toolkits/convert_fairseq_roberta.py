@@ -171,6 +171,7 @@ def convert_params(fairseq_model,
     fairseq_prefix = 'model.decoder.'
     gluon_model = gluon_model_cls.from_cfg(
         gluon_cfg,
+        use_mlm=True,
         use_pooler=False,
         output_all_encodings=True,
         prefix=gluon_prefix

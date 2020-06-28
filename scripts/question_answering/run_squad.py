@@ -226,8 +226,7 @@ class SquadDatasetProcessor:
             doc_stride=self._doc_stride,
             max_chunk_length=self._max_seq_length - len(truncated_query_ids) - 3)
         for chunk in chunks:
-            data = np.array([self.cls_id] + truncated_query_ids +
-                            [self.sep_id] +
+            data = np.array([self.cls_id] + truncated_query_ids + [self.sep_id] +
                             feature.context_token_ids[chunk.start:(chunk.start + chunk.length)] +
                             [self.sep_id], dtype=np.int32)
             valid_length = len(data)
@@ -315,6 +314,7 @@ def get_network(model_name,
     cfg
     tokenizer
     qa_net
+    use_segmentation
     """
     # Create the network
     use_segmentation = 'roberta' not in model_name and 'xlmr' not in model_name
@@ -326,7 +326,8 @@ def get_network(model_name,
 
     backbone_params_path = backbone_path if backbone_path else download_params_path
     if checkpoint_path is None:
-        backbone.load_parameters(backbone_params_path, ignore_extra=True, ctx=ctx_l)
+        # TODO(zheyuye), be careful of allow_missing that used to pass the mlm parameters in roberta
+        backbone.load_parameters(backbone_params_path, ignore_extra=True, allow_missing=True, ctx=ctx_l)
         num_params, num_fixed_params = count_parameters(backbone.collect_params())
         logging.info(
             'Loading Backbone Model from {}, with total/fixd parameters={}/{}'.format(
@@ -344,7 +345,7 @@ def get_network(model_name,
         qa_net.load_parameters(checkpoint_path, ctx=ctx_l, cast_dtype=True)
     qa_net.hybridize()
 
-    return cfg, tokenizer, qa_net
+    return cfg, tokenizer, qa_net, use_segmentation
 
 
 def untune_params(model, untunable_depth, not_included=[]):
@@ -414,10 +415,11 @@ def apply_layerwise_decay(model, layerwise_decay, not_included=[]):
 
 def train(args):
     ctx_l = parse_ctx(args.gpus)
-    cfg, tokenizer, qa_net = get_network(args.model_name, ctx_l,
-                                         args.classifier_dropout,
-                                         args.param_checkpoint,
-                                         args.backbone_path)
+    cfg, tokenizer, qa_net, use_segmentation = \
+        get_network(args.model_name, ctx_l,
+                    args.classifier_dropout,
+                    args.param_checkpoint,
+                    args.backbone_path)
     # Load the data
     train_examples = get_squad_examples(args.data_dir, segment='train', version=args.version)
     logging.info('Load data from {}, Version={}'.format(args.data_dir, args.version))
@@ -558,7 +560,7 @@ def train(args):
                 log_sample_num += len(tokens)
                 epoch_sample_num += len(tokens)
                 num_samples_per_update += len(tokens)
-                segment_ids = sample.segment_ids.as_in_ctx(ctx)
+                segment_ids = sample.segment_ids.as_in_ctx(ctx) if use_segmentation else None
                 valid_length = sample.valid_length.as_in_ctx(ctx)
                 p_mask = sample.masks.as_in_ctx(ctx)
                 gt_start = sample.gt_start.as_in_ctx(ctx)
@@ -786,7 +788,7 @@ def predict_extended(original_feature,
 
 def evaluate(args, last=True):
     ctx_l = parse_ctx(args.gpus)
-    cfg, tokenizer, qa_net = get_network(
+    cfg, tokenizer, qa_net, use_segmentation = get_network(
         args.model_name, ctx_l, args.classifier_dropout)
     # Prepare dev set
     dev_cache_path = os.path.join(CACHE_PATH,
@@ -852,7 +854,7 @@ def evaluate(args, last=True):
                 tokens = sample.data.as_in_ctx(ctx)
                 total_num += len(tokens)
                 log_num += len(tokens)
-                segment_ids = sample.segment_ids.as_in_ctx(ctx)
+                segment_ids = sample.segment_ids.as_in_ctx(ctx) if use_segmentation else None
                 valid_length = sample.valid_length.as_in_ctx(ctx)
                 p_mask = sample.masks.as_in_ctx(ctx)
                 p_mask = 1 - p_mask  # In the network, we use 1 --> no_mask, 0 --> mask

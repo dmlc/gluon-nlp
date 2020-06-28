@@ -127,7 +127,7 @@ class RobertaModel(HybridBlock):
                  bias_initializer='zeros',
                  dtype='float32',
                  use_pooler=False,
-                 use_mlm=True,
+                 use_mlm=False,
                  untie_weight=False,
                  encoder_normalize_before=True,
                  output_all_encodings=False,
@@ -242,9 +242,10 @@ class RobertaModel(HybridBlock):
         outputs = []
         embedding = self.get_initial_embedding(F, tokens)
 
-        inner_states = self.encoder(embedding, valid_length)
-        outputs.append(inner_states)
-        contextual_embeddings = inner_states[-1]
+        contextual_embeddings = self.encoder(embedding, valid_length)
+        outputs.append(contextual_embeddings)
+        if self.output_all_encodings:
+            contextual_embeddings = contextual_embeddings[-1]
 
         if self.use_pooler:
             pooled_out = self.apply_pooling(contextual_embeddings)
@@ -305,7 +306,7 @@ class RobertaModel(HybridBlock):
     def from_cfg(cls,
                  cfg,
                  use_pooler=False,
-                 use_mlm=True,
+                 use_mlm=False,
                  untie_weight=False,
                  encoder_normalize_before=True,
                  output_all_encodings=False,
@@ -396,7 +397,7 @@ class RobertaEncoder(HybridBlock):
             x, _ = layer(x, atten_mask)
             inner_states.append(x)
         if not self.output_all_encodings:
-            inner_states = [x]
+            inner_states = x
         return inner_states
 
 @use_np
@@ -456,8 +457,7 @@ def list_pretrained_roberta():
 
 def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
                            root: str = get_model_zoo_home_dir(),
-                           load_backbone: bool = True,
-                           load_mlm: bool = False) \
+                           load_backbone: bool = True) \
         -> Tuple[CN, HuggingFaceByteBPETokenizer, str]:
     """Get the pretrained RoBERTa weights
 
