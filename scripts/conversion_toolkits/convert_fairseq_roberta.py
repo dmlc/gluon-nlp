@@ -37,7 +37,7 @@ def convert_vocab(args, fairseq_model):
     fairseq_vocab = fairseq_model.task.dictionary
     # bos_word attr missing in fairseq_vocab
     fairseq_vocab.bos_word = fairseq_vocab[fairseq_vocab.bos_index]
-    
+
     assert os.path.exists(fairseq_dict_path), \
            '{} not found'.format(fairseq_dict_path)
     from mxnet.gluon.utils import download
@@ -63,7 +63,7 @@ def convert_vocab(args, fairseq_model):
     inter_vocab = list(inter_vocab.items())
     inter_vocab = sorted(inter_vocab, key=lambda x : x[1])
     tokens = [e[0] for e in inter_vocab]
-    
+
     tail = [fairseq_vocab[-4],
             fairseq_vocab[-3],
             fairseq_vocab[-2],
@@ -84,15 +84,15 @@ def convert_vocab(args, fairseq_model):
     gluon_vocab.save(vocab_save_path)
     os.remove(temp_vocab_file)
     os.remove(temp_merges_file)
-    
+
     gluon_tokenizer = HuggingFaceByteBPETokenizer(
         merges_save_path,
         vocab_save_path
     )
-    
+
     if args.test:
         test_vocab(fairseq_model, gluon_tokenizer)
-    
+
     vocab_size = len(fairseq_vocab)
     print('| converted dictionary: {} types'.format(vocab_size))
     return vocab_size
@@ -103,14 +103,14 @@ def test_vocab(fairseq_model, gluon_tokenizer, check_all_tokens=False):
     gluon_vocab = gluon_tokenizer.vocab
     assert len(fairseq_vocab) == \
            len(gluon_vocab)
-    
+
     # assert all_tokens
     # roberta with gpt2 bytebpe bpe does not provide all tokens directly
     if check_all_tokens:
         for i in range(len(fairseq_vocab)):
             assert fairseq_vocab[i] == gluon_vocab.all_tokens[i], \
                    '{}, {}, {}'.format(i, fairseq_vocab[i], gluon_vocab.all_tokens[i])
-    
+
     # assert special tokens
     for special_tokens in ['unk', 'pad', 'eos', 'bos']:
         assert getattr(fairseq_vocab, special_tokens + '_index') == \
@@ -121,7 +121,7 @@ def test_vocab(fairseq_model, gluon_tokenizer, check_all_tokens=False):
         assert fairseq_vocab[-1] == \
                gluon_vocab.all_tokens[-1] == \
                '<mask>'
-    
+
     sentence = "Hello, y'all! How are you Ⅷ 😁 😁 😁 ?" + \
                'GluonNLP is great！！！!!!' + \
                "GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# 'abc'"
@@ -131,7 +131,7 @@ def test_vocab(fairseq_model, gluon_tokenizer, check_all_tokens=False):
     # Notice: we may append bos and eos
     # manuually after tokenizing sentences
     assert fs_tokens.numpy().tolist()[1:-1] == gl_tokens
-    
+
     # assert decode
     fs_sentence = fairseq_model.decode(fs_tokens)
     gl_sentence = gluon_tokenizer.decode(gl_tokens)
@@ -170,7 +170,8 @@ def convert_params(fairseq_model,
     fairseq_prefix = 'model.decoder.'
     gluon_model = gluon_model_cls.from_cfg(
         gluon_cfg,
-        return_all_hiddens=True,
+        use_pooler=False,
+        output_all_encodings=True,
         prefix=gluon_prefix
     )
     gluon_model.initialize(ctx=ctx)
@@ -196,7 +197,7 @@ def convert_params(fairseq_model,
             np.concatenate([fs_q_weight, fs_k_weight, fs_v_weight], axis=0))
         gl_qkv_bias.set_data(
             np.concatenate([fs_q_bias, fs_k_bias, fs_v_bias], axis=0))
-        
+
         for k, v in [
             ('self_attn.out_proj.weight', 'proj_weight'),
             ('self_attn.out_proj.bias', 'proj_bias'),
@@ -230,20 +231,20 @@ def convert_params(fairseq_model,
         gl_name = gluon_prefix + v
         gluon_params[gl_name].set_data(
             fairseq_params[fs_name].cpu().numpy())
-    
+
     # position embed weight
     padding_idx = fairseq_model.task.dictionary.pad_index
     fs_pos_embed_name = fairseq_prefix + 'sentence_encoder.embed_positions.weight'
     gl_pos_embed_name = gluon_prefix + 'pos_embed_embed_weight'
     gluon_params[gl_pos_embed_name].set_data(
         fairseq_params[fs_pos_embed_name].cpu().numpy()[padding_idx + 1:,:])
-    
+
     # assert untie=False
     assert np.array_equal(
         fairseq_params[fairseq_prefix + 'sentence_encoder.embed_tokens.weight'].cpu().numpy(),
         fairseq_params[fairseq_prefix + 'lm_head.weight'].cpu().numpy()
     )
-    
+
     return gluon_model
 
 def test_model(fairseq_model, gluon_model, gpu):
@@ -272,16 +273,16 @@ def test_model(fairseq_model, gluon_model, gpu):
     fs_input_ids = torch.from_numpy(input_ids).cuda(gpu)
     if gpu is not None:
         fs_input_ids = fs_input_ids.cuda(gpu)
-    
+
     fairseq_model.model.eval()
-    
-    gl_x, gl_all_hiddens = \
+
+    gl_all_hiddens, gl_x = \
         gluon_model(gl_input_ids, gl_valid_length)
 
     fs_x, fs_extra = \
         fairseq_model.model.cuda(gpu)(fs_input_ids, return_all_hiddens=True)
     fs_all_hiddens = fs_extra['inner_states']
-    
+
     num_layers = fairseq_model.args.encoder_layers
     for i in range(num_layers + 1):
         gl_hidden = gl_all_hiddens[i].asnumpy()
@@ -317,7 +318,7 @@ def rename(save_dir):
         new_name = '{file_prefix}-{short_hash}.{file_sufix}'.format(
                 file_prefix=file_prefix,
                 short_hash=long_hash[:8],
-                file_sufix=file_sufix)   
+                file_sufix=file_sufix)
         new_path = os.path.join(save_dir, new_name)
         shutil.move(old_path, new_path)
         file_size = os.path.getsize(new_path)
