@@ -124,31 +124,6 @@ def parse_args():
 
 
 class SquadDatasetProcessor:
-    # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
-    ChunkFeature = collections.namedtuple('ChunkFeature',
-                                          ['qas_id',
-                                           'data',
-                                           'valid_length',
-                                           'segment_ids',
-                                           'masks',
-                                           'is_impossible',
-                                           'gt_start',
-                                           'gt_end',
-                                           'context_offset',
-                                           'chunk_start',
-                                           'chunk_length'])
-    BatchifyFunction = bf.NamedTuple(ChunkFeature,
-                                     {'qas_id': bf.List(),
-                                      'data': bf.Pad(),
-                                      'valid_length': bf.Stack(),
-                                      'segment_ids': bf.Pad(),
-                                      'masks': bf.Pad(val=1),
-                                      'is_impossible': bf.Stack(),
-                                      'gt_start': bf.Stack(),
-                                      'gt_end': bf.Stack(),
-                                      'context_offset': bf.Stack(),
-                                      'chunk_start': bf.Stack(),
-                                      'chunk_length': bf.Stack()})
 
     def __init__(self, tokenizer, doc_stride, max_seq_length, max_query_length):
         """
@@ -168,6 +143,39 @@ class SquadDatasetProcessor:
         self._doc_stride = doc_stride
         self._max_seq_length = max_seq_length
         self._max_query_length = max_query_length
+
+        vocab = tokenizer.vocab
+        self.pad_id = vocab.pad_id
+        # For roberta model, taking sepecial token <s> as [CLS] and </s> as [SEP]
+        self.cls_id = vocab.bos_id if 'cls_token' not in vocab.special_token_keys else vocab.cls_id
+        self.sep_id = vocab.eos_id if 'sep_token' not in vocab.special_token_keys else vocab.sep_id
+
+    # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
+    ChunkFeature = collections.namedtuple('ChunkFeature',
+                                          ['qas_id',
+                                           'data',
+                                           'valid_length',
+                                           'segment_ids',
+                                           'masks',
+                                           'is_impossible',
+                                           'gt_start',
+                                           'gt_end',
+                                           'context_offset',
+                                           'chunk_start',
+                                           'chunk_length'])
+    BatchifyFunction = bf.NamedTuple(ChunkFeature,
+                                     {'qas_id': bf.List(),
+                                      'data': bf.Pad(val=self.pad_id),
+                                      'valid_length': bf.Stack(),
+                                      'segment_ids': bf.Pad(),
+                                      'masks': bf.Pad(val=1),
+                                      'is_impossible': bf.Stack(),
+                                      'gt_start': bf.Stack(),
+                                      'gt_end': bf.Stack(),
+                                      'context_offset': bf.Stack(),
+                                      'chunk_start': bf.Stack(),
+                                      'chunk_length': bf.Stack()})
+
 
     def process_sample(self, feature: SquadFeature):
         """Process the data to the following format.
@@ -218,10 +226,10 @@ class SquadDatasetProcessor:
             doc_stride=self._doc_stride,
             max_chunk_length=self._max_seq_length - len(truncated_query_ids) - 3)
         for chunk in chunks:
-            data = np.array([self._tokenizer.vocab.cls_id] + truncated_query_ids +
-                            [self._tokenizer.vocab.sep_id] +
+            data = np.array([self.cls_id] + truncated_query_ids +
+                            [self.sep_id] +
                             feature.context_token_ids[chunk.start:(chunk.start + chunk.length)] +
-                            [self._tokenizer.vocab.sep_id], dtype=np.int32)
+                            [self.sep_id], dtype=np.int32)
             valid_length = len(data)
             segment_ids = np.array([0] + [0] * len(truncated_query_ids) +
                                    [0] + [1] * chunk.length + [1], dtype=np.int32)
