@@ -163,7 +163,7 @@ class SquadDatasetProcessor:
                                                'context_offset',
                                                'chunk_start',
                                                'chunk_length'])
-        self.BatchifyFunction = bf.NamedTuple(ChunkFeature,
+        self.BatchifyFunction = bf.NamedTuple(self.ChunkFeature,
                                          {'qas_id': bf.List(),
                                           'data': bf.Pad(val=self.pad_id),
                                           'valid_length': bf.Stack(),
@@ -317,6 +317,7 @@ def get_network(model_name,
     qa_net
     """
     # Create the network
+    use_segmentation = 'roberta' not in model_name and 'xlmr' not in model_name
     Model, cfg, tokenizer, download_params_path, _ = \
         get_backbone(model_name, load_backbone=not backbone_path)
     backbone = Model.from_cfg(cfg, use_pooler=False)
@@ -333,6 +334,7 @@ def get_network(model_name,
     qa_net = ModelForQAConditionalV1(backbone=backbone,
                                      dropout_prob=dropout,
                                      weight_initializer=TruncNorm(stdev=0.02),
+                                     use_segmentation=use_segmentation,
                                      prefix='qa_net_')
     if checkpoint_path is None:
         # Ignore the UserWarning during initialization,
