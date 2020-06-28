@@ -419,7 +419,7 @@ def list_pretrained_roberta():
 
 def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
                            root: str = get_model_zoo_home_dir(),
-                           load_backbone=True) \
+                           load_backbone: bool = True) \
         -> Tuple[CN, HuggingFaceByteBPETokenizer, str]:
     """Get the pretrained RoBERTa weights
 

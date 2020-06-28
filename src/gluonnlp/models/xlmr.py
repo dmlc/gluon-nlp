@@ -89,7 +89,8 @@ def list_pretrained_xlmr():
 
 
 def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
-                        root: str = get_model_zoo_home_dir()) \
+                        root: str = get_model_zoo_home_dir(),
+                        load_backbone: bool = True) \
         -> Tuple[CN, SentencepieceTokenizer, str]:
     """Get the pretrained XLM-R weights
 
@@ -99,6 +100,8 @@ def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
         The name of the xlmr model.
     root
         The downloading root
+    load_backbone
+        Whether to load the weights of the backbone network
 
     Returns
     -------
@@ -115,14 +118,20 @@ def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
     sp_model_path = PRETRAINED_URL[model_name]['sentencepiece.model']
     params_path = PRETRAINED_URL[model_name]['params']
     local_paths = dict()
-    for k, path in [('cfg', cfg_path), ('sentencepiece.model', sp_model_path), \
-                    ('params', params_path)]:
+    for k, path in [('cfg', cfg_path), ('sentencepiece.model', sp_model_path)]:
         local_paths[k] = download(url=get_repo_model_zoo_url() + path,
                                   path=os.path.join(root, path),
                                   sha1_hash=FILE_STATS[path])
+    if load_backbone:
+        local_params_path = download(url=get_repo_model_zoo_url() + params_path,
+                                     path=os.path.join(root, params_path),
+                                     sha1_hash=FILE_STATS[params_path])
+    else:
+        local_params_path = None
+
     tokenizer = SentencepieceTokenizer(local_paths['sentencepiece.model'])
     cfg = XLMRModel.get_cfg().clone_merge(local_paths['cfg'])
-    return cfg, tokenizer, local_paths['params']
+    return cfg, tokenizer, local_params_path
 
 
 BACKBONE_REGISTRY.register('xlmr', [XLMRModel,
