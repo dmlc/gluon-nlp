@@ -262,6 +262,15 @@ def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return itertools.zip_longest(*args, fillvalue=fillvalue)
 
+def repeat(iterable, count=None):
+    if count is None:
+        while True:
+            for sample in iterable:
+                yield sample
+    else:
+        for i in range(count):
+            for sample in iterable:
+                yield sample
 
 def parse_ctx(data_str):
     import mxnet as mx

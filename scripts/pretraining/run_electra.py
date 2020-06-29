@@ -382,13 +382,13 @@ def train(args):
     if args.num_accumulated != 1:
         # set grad to zero for gradient accumulation
         model.collect_params().zero_grad()
-    while not finish_flag:
+    for update_count, batch_data in enumerate(grouper(repeat(train_dataloader), len(ctx_l) * args.num_accumulated)):
         tic = time.time()
         batch_id = 0
-        is_last_batch = False
         train_dataloader = grouper(data_train, len(ctx_l))
         sample_l = next(train_dataloader)
-        while not is_last_batch:
+
+        for sample_l in grouper(batch_data, len(ctx_l))
             loss_l = []
             mlm_loss_l = []
             rtd_loss_l = []
@@ -438,14 +438,9 @@ def train(args):
                                  for ele in rtd_loss_l]).asnumpy()
             log_total_loss += sum([ele.as_in_ctx(ctx_l[0])
                                    for ele in loss_l]).asnumpy() * loss_denom
-            # pre fetch next batch
-            try:
-                sample_l = next(train_dataloader)
-            except StopIteration:
-                is_last_batch = True
 
             # update
-            if (batch_id + 1) % args.num_accumulated == 0 or is_last_batch:
+            if (batch_id + 1) % args.num_accumulated == 0:
                 trainer.allreduce_grads()
                 # Here, the accumulated gradients are
                 # \sum_{n=1}^N g_n / loss_denom
