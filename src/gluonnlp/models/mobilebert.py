@@ -343,6 +343,7 @@ class MobileBertTransformer(HybridBlock):
                                                num_heads=num_heads,
                                                attention_dropout_prob=attention_dropout_prob,
                                                hidden_dropout_prob=hidden_dropout_prob,
+                                               activation_dropout_prob=hidden_dropout_prob,
                                                num_stacked_ffn=num_stacked_ffn,
                                                bottleneck_strategy=bottleneck_strategy,
                                                layer_norm_eps=layer_norm_eps,
