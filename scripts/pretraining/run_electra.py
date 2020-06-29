@@ -72,9 +72,10 @@ def parse_args():
                         help='If set, both training and dev samples are generated on-the-fly '
                              'from raw texts instead of pre-processed npz files. ')
     parser.add_argument("--short_seq_prob", type=float, default=0.05,
-                        help="The probability of sampling sequences shorter than the max_seq_length.")
+                        help='The probability of sampling sequences '
+                             'shorter than the max_seq_length.')
     parser.add_argument("--cached_file_path", default=None,
-                        help="Directory for saving preprocessed features")
+                        help='Directory for saving preprocessed features')
     parser.add_argument('--circle_length', type=int, default=2,
                         help='Number of files to be read for a single GPU at the same time.')
     parser.add_argument('--repeat', type=int, default=8,
