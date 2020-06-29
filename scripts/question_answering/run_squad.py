@@ -152,30 +152,29 @@ class SquadDatasetProcessor:
 
         # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
         self.ChunkFeature = collections.namedtuple('ChunkFeature',
-                                              ['qas_id',
-                                               'data',
-                                               'valid_length',
-                                               'segment_ids',
-                                               'masks',
-                                               'is_impossible',
-                                               'gt_start',
-                                               'gt_end',
-                                               'context_offset',
-                                               'chunk_start',
-                                               'chunk_length'])
+                                                   ['qas_id',
+                                                    'data',
+                                                    'valid_length',
+                                                    'segment_ids',
+                                                    'masks',
+                                                    'is_impossible',
+                                                    'gt_start',
+                                                    'gt_end',
+                                                    'context_offset',
+                                                    'chunk_start',
+                                                    'chunk_length'])
         self.BatchifyFunction = bf.NamedTuple(self.ChunkFeature,
-                                         {'qas_id': bf.List(),
-                                          'data': bf.Pad(val=self.pad_id),
-                                          'valid_length': bf.Stack(),
-                                          'segment_ids': bf.Pad(),
-                                          'masks': bf.Pad(val=1),
-                                          'is_impossible': bf.Stack(),
-                                          'gt_start': bf.Stack(),
-                                          'gt_end': bf.Stack(),
-                                          'context_offset': bf.Stack(),
-                                          'chunk_start': bf.Stack(),
-                                          'chunk_length': bf.Stack()})
-
+                                              {'qas_id': bf.List(),
+                                               'data': bf.Pad(val=self.pad_id),
+                                               'valid_length': bf.Stack(),
+                                               'segment_ids': bf.Pad(),
+                                               'masks': bf.Pad(val=1),
+                                               'is_impossible': bf.Stack(),
+                                               'gt_start': bf.Stack(),
+                                               'gt_end': bf.Stack(),
+                                               'context_offset': bf.Stack(),
+                                               'chunk_start': bf.Stack(),
+                                               'chunk_length': bf.Stack()})
 
     def process_sample(self, feature: SquadFeature):
         """Process the data to the following format.
@@ -529,8 +528,6 @@ def train(args):
     trainer = mx.gluon.Trainer(qa_net.collect_params(),
                                args.optimizer, optimizer_params,
                                update_on_kvstore=False)
-    step_num = 0
-    finish_flag = False
     num_samples_per_update = 0
     loss_denom = float(len(ctx_l) * args.num_accumulated)
 
@@ -545,11 +542,12 @@ def train(args):
     # start training
     global_tic = time.time()
     tic = time.time()
-    for update_count, batch_data in enumerate(grouper(repeat(train_dataloader), len(ctx_l) * args.num_accumulated)):
-        loss_l = []
-        span_loss_l = []
-        answerable_loss_l = []
+    for step_num, batch_data in enumerate(
+            grouper(repeat(train_dataloader), len(ctx_l) * args.num_accumulated)):
         for sample_l in grouper(batch_data, len(ctx_l)):
+            loss_l = []
+            span_loss_l = []
+            answerable_loss_l = []
             for sample, ctx in zip(sample_l, ctx_l):
                 if sample is None:
                     continue
@@ -599,17 +597,16 @@ def train(args):
         total_norm = total_norm / (num_samples_per_update / loss_denom)
 
         trainer.update(num_samples_per_update / loss_denom, ignore_stale_grad=True)
-        step_num += 1
         if args.num_accumulated != 1:
             # set grad to zero for gradient accumulation
             qa_net.collect_params().zero_grad()
 
         # saving
-        if step_num % save_interval == 0 or step_num >= num_train_steps:
+        if (step_num + 1) % save_interval == 0 or (step_num + 1) >= num_train_steps:
             version_prefix = 'squad' + args.version
             ckpt_name = '{}_{}_{}.params'.format(args.model_name,
                                                  version_prefix,
-                                                 step_num)
+                                                 (step_num + 1))
             params_saved = os.path.join(args.output_dir, ckpt_name)
             qa_net.save_parameters(params_saved)
             ckpt_candidates = [
@@ -622,18 +619,18 @@ def train(args):
             logging.info('Params saved in: {}'.format(params_saved))
 
         # logging
-        if step_num % log_interval == 0:
+        if (step_num + 1) % log_interval == 0:
             log_span_loss /= log_sample_num
             log_answerable_loss /= log_sample_num
             log_total_loss /= log_sample_num
             toc = time.time()
             logging.info(
-                'Batch: {}/{}, Loss span/answer/total={:.4f}/{:.4f}/{:.4f},'
+                'Step: {}/{}, Loss span/answer/total={:.4f}/{:.4f}/{:.4f},'
                 ' LR={:.8f}, grad_norm={:.4f}. Time cost={:.2f}, Throughput={:.2f} samples/s'
-                ' ETA={:.2f}h'.format(update_count + 1, epoch_size, log_span_loss,
+                ' ETA={:.2f}h'.format((step_num + 1), epoch_size, log_span_loss,
                                       log_answerable_loss, log_total_loss, trainer.learning_rate, total_norm,
                                       toc - tic, log_sample_num / (toc - tic),
-                                      (num_train_steps - step_num) / (step_num / (toc - global_tic)) / 3600))
+                                      (num_train_steps - (step_num + 1)) / ((step_num + 1) / (toc - global_tic)) / 3600))
             tic = time.time()
             log_span_loss = 0
             log_answerable_loss = 0
@@ -641,8 +638,8 @@ def train(args):
             log_sample_num = 0
             num_samples_per_update = 0
 
-        if step_num >= num_train_steps:
-            logging.info('Finish training step: %d', step_num)
+        if (step_num + 1) >= num_train_steps:
+            logging.info('Finish training step: %d', (step_num + 1))
             break
 
     return params_saved
@@ -852,7 +849,7 @@ def evaluate(args, last=True):
                 p_mask = 1 - p_mask  # In the network, we use 1 --> no_mask, 0 --> mask
                 start_top_logits, start_top_index, end_top_logits, end_top_index, answerable_logits \
                     = qa_net.inference(tokens, segment_ids, valid_length, p_mask,
-                                                      args.start_top_n, args.end_top_n)
+                                       args.start_top_n, args.end_top_n)
                 for i, qas_id in enumerate(sample.qas_id):
                     result = RawResultExtended(qas_id=qas_id,
                                                start_top_logits=start_top_logits[i].asnumpy(),
