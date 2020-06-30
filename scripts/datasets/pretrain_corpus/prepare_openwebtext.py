@@ -51,7 +51,7 @@ def extract_files(full_name, output_dir, shuffle=False):
     """
     if not full_name.endswith(".xz"):
         return
-    file_prefix =  re.split('\.|/',full_name)[1]
+    file_prefix =  re.split('\.|/', full_name)[-2]
     with open("{}.txt".format(os.path.join(output_dir, file_prefix)),"w") as fp:
         with tarfile.open(full_name) as t:
             txt_names = t.getnames()
@@ -65,7 +65,7 @@ def extract_files(full_name, output_dir, shuffle=False):
                     if line:
                         fp.write(line.decode()+'\n')
                 # Two extra line break to mark the document separation
-                fp.write('\n\n')
+                fp.write('\n')
 
 
 @DATA_MAIN_REGISTRY.register('prepare_openwebtext')

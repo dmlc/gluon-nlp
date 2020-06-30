@@ -41,7 +41,6 @@ def tokenize_lines_to_ids(lines, tokenizer):
     """
     results = []
     # tag line delimiters or doc delimiters
-    line_delimiters = False
     for line in lines:
         if not line:
             break
@@ -49,9 +48,7 @@ def tokenize_lines_to_ids(lines, tokenizer):
         # Single empty lines are used as line delimiters
         # Double empty lines are used as document delimiters
         if not line:
-            if not line_delimiters:
-                results.append([])
-            line_delimiters = not line_delimiters
+            results.append([])
         else:
             token_ids = tokenizer.encode(line, int)
             if token_ids:
@@ -125,7 +122,7 @@ def process_a_text(text_file, tokenizer, max_seq_length, short_seq_prob=0.05):
         for tokenized_line in tokenized_lines:
             current_sentences.append(tokenized_line)
             current_length += len(tokenized_line)
-            # Create feature when meets the empty line or  reaches the target length
+            # Create feature when meets the empty line or reaches the target length
             if (not tokenized_line and current_length != 0) or (current_length >= target_seq_length):
                 first_segment, second_segment = \
                     sentenceize(current_sentences, max_seq_length, target_seq_length)

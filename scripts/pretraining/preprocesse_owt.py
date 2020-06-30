@@ -8,8 +8,11 @@ import argparse
 import multiprocessing
 
 from pretraining_utils import get_all_features
+from gluonnlp.base import get_repo_model_zoo_url
+from gluonnlp.utils.misc import download
 from gluonnlp.data.tokenizers import HuggingFaceWordPieceTokenizer
 
+VOCAB_PATH = 'google_electra_small/vocab-e6d2b21d.json'
 
 def get_parser():
     parser = argparse.ArgumentParser(description=__doc__)
@@ -19,9 +22,6 @@ def get_parser():
                         help="directory for preprocessed features")
     parser.add_argument("--num_process", type=int, default=8,
                         help="number of processes for multiprocessing")
-    parser.add_argument("--vocab_file", default="vocab-c3b41053.json",
-                        help="vocabulary file of HuggingFaceWordPieceTokenizer"
-                             " for electra small model")
     parser.add_argument("--max_seq_length", type=int, default=128,
                         help="the maximum length of the pretraining sequence")
     parser.add_argument("--num_out_files", type=int, default=1000,
@@ -40,10 +40,11 @@ def get_parser():
 
 def main(args):
     num_process = min(multiprocessing.cpu_count(), args.num_process)
-    assert os.path.isfile(args.vocab_file), 'Cannot find vocab file'
-    # TODO(zheyuye), download the vocab_file from zoos and check it with sha1 hash.
+    vocab_file = os.path.join(os.getcwd(), 'vocab-e6d2b21d.json')
+    download(get_repo_model_zoo_url() + VOCAB_PATH, vocab_file,
+             sha1_hash='e6d2b21d910ccb356aa18f27a1c7d70660edc058')
     tokenizer = HuggingFaceWordPieceTokenizer(
-        vocab_file=args.vocab_file,
+        vocab_file=vocab_file,
         unk_token='[UNK]',
         pad_token='[PAD]',
         cls_token='[CLS]',
