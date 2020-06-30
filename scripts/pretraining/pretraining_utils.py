@@ -262,11 +262,11 @@ def prepare_pretrain_text_dataset(
     """Create dataset based on the raw text files"""
     if not isinstance(filenames, (list, tuple)):
         filenames = [filenames]
-    # generate a filename based on the input filename ensuring no crash.
-    # filename example: urlsf_subset00-130_data.txt
-    suffix = re.findall(r'\d+-\d+', filenames[0])[0]
     if cached_file_path:
-        output_file = os.path.join(cached_file_path, "owt-pretrain-record-{}.npz".format(suffix))
+        # generate a filename based on the input filename ensuring no crash.
+        # filename example: urlsf_subset00-130_data.txt
+        suffix = re.split(r'\.|/', filenames[0])[-2]
+        output_file = os.path.join(cached_file_path, "{}-pretrain-record.npz".format(suffix))
     else:
         output_file = None
     np_features = get_all_features(

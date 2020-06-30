@@ -273,7 +273,7 @@ def train(args):
                  'num_workers: {}, rank: {}'.format(
                      args.num_buckets, num_workers, rank))
     if args.from_raw_text:
-        if not os.path.exists(args.cached_file_path):
+        if args.cached_file_path and not os.path.exists(args.cached_file_path):
             os.mkdir(args.cached_file_path)
         get_dataset_fn = functools.partial(get_pretrain_data_text,
                                            max_seq_length=args.max_seq_length,
