@@ -3,7 +3,7 @@ import os
 import sys
 import argparse
 import glob
-from gluonnlp.utils.misc import download
+from gluonnlp.utils.misc import download, load_checksum_stats
 from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 
 _CITATION = """\
@@ -47,7 +47,13 @@ __LANGUAGES_BANK = [
 _BASE_URL_TMPL\
     = "https://dumps.wikimedia.org/{lang}wiki/{date}/{lang}wiki-{date}-pages-articles.xml.bz2"
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
+_URL_FILE_STATS_PATH = os.path.join(_CURR_DIR, '..', 'url_checksums', 'wikipedia.txt')
+_URL_FILE_STATS = load_checksum_stats(_URL_FILE_STATS_PATH)
 
+_URLS = {
+    'wikipedia-en-20200620':
+        'https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/pretrain_corpus/wikicorpus_one_article_per_line_20200620.txt',
+}
 
 def get_url(lang, date):
     return _BASE_URL_TMPL.format(lang=lang, date=date)
@@ -55,14 +61,15 @@ def get_url(lang, date):
 
 def try_import_wikiextractor():
     try:
+        sys.path.append(_CURR_DIR)
         import WikiExtractor
     except ImportError:
         try:
             download(
-                'https://raw.githubusercontent.com/attardi/wikiextractor/'
-                '16186e290d9eb0eb3a3784c6c0635a9ed7e855c3/WikiExtractor.py',
+                'https://raw.githubusercontent.com/attardi/wikiextractor/master/WikiExtractor.py',
                 path=os.path.join(_CURR_DIR, 'WikiExtractor.py'),
                 sha1_hash='3c4896a837b75c476d23c037e8d6c7fdfd9a29eb')
+            sys.path.append(_CURR_DIR)
             import WikiExtractor
         except:
             raise ImportError('Cannot import WikiExtractor! You can download the "WikiExtractor.py"'
@@ -107,12 +114,13 @@ def get_parser():
     parser = argparse.ArgumentParser(description='Download and Prepare the Wikipedia')
     parser.add_argument('--mode', type=str,
                         default='download+format',
-                        choices=['download', 'format', 'download+format'],
+                        choices=['download', 'format', 'download+format', 'download_prepared'],
                         help='Specify the action you want the app to take. '
                              '"download" means to download the Wikipedia dump. '
                              '"format" means to extract the content and '
                              'format it for pretraining. "download+format" means to combine '
-                             'these two options')
+                             'these two options'
+                             '"download_prepared" downloads the prepared txt from S3 directly')
     parser.add_argument('--lang', type=str, default='en',
                         help='Language of the wikipedia dump file.'
                              'We only support English and Chinese for current version')
@@ -171,6 +179,12 @@ def main(args):
     elif args.mode == 'download+format':
         downloaded_file = download_wikicorpus(args.lang, args.date, args.output)
         format_wikicorpus(downloaded_file, args.output, args.bytes)
+    elif args.mode == 'download_prepared':
+        url = _URLS['wikipedia-en-20200620']
+        file_hash = _URL_FILE_STATS[url]
+        target_download_location = os.path.join(args.output,
+                                                os.path.basename(url))
+        download(url, target_download_location, sha1_hash=file_hash)
     else:
         raise NotImplementedError
 

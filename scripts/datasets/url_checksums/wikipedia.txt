@@ -1,0 +1,1 @@
+https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/pretrain_corpus/wikicorpus_one_article_per_line_20200620.txt 67825b9c721192acbf385816984ac8a250cf5216 13538212348

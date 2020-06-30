@@ -25,13 +25,18 @@ Also, you should follow the [license](https://www.gutenberg.org/wiki/Gutenberg:T
 
 Please install [attardi/wikiextractor](https://github.com/attardi/wikiextractor) for preparing the data.
 
-```
+```bash
 # Download
 python prepare_wikipedia.py --mode download --lang en --date latest -o ./
 
 # Properly format the text files
 python prepare_wikipedia.py --mode format -i [path-to-wiki.xml.bz2] -o ./
 
+```
+The process of downloading and formatting is time consuming, and we offer an alternative solution to download the prepared raw text file from S3 bucket. This raw text file is in English and was dumped at 2020-06-20 being formated by the above very process (` --lang en --date 20200620`).
+
+```bash
+python prepare_wikipedia.py --mode download_prepared -o ./
 ```
 ### References
 - [NVIDIA/DeepLearningExamples](https://github.com/NVIDIA/DeepLearningExamples/tree/master/PyTorch/LanguageModeling/BERT)
