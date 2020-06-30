@@ -94,8 +94,8 @@ def process_corpus(corpus_path, sentence_normalizer, bpe_tokenizer,
     raw_lines = []
     with open(corpus_path, 'r', encoding='utf-8') as f:
         for line in f:
-            raw_lines.append(line)
             line = line.strip()
+            raw_lines.append(line)
             line = sentence_normalizer(line)
             if base_tokenizer is not None:
                 line = ' '.join(base_tokenizer.encode(line))
