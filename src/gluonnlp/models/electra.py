@@ -36,7 +36,7 @@ import numpy as np
 from mxnet import use_np
 from mxnet.gluon import HybridBlock, nn
 from ..registry import BACKBONE_REGISTRY
-from ..op import gumbel_softmax, select_vectors_by_position, updated_vectors_by_position
+from ..op import gumbel_softmax, select_vectors_by_position, add_vectors_by_position, updated_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..layers import PositionalEmbedding, get_activation
 from .transformer import TransformerEncoderLayer
@@ -833,13 +833,14 @@ class ElectraForPretrain(HybridBlock):
             use_np_gumbel=False)
         corrupted_tokens = F.np.argmax(prob, axis=-1).astype(np.int32)
 
-        # Following the Official electra to deal with duplicate positions as
-        # https://github.com/google-research/electra/issues/41
-        original_data, updates_mask = updated_vectors_by_position(F,
+        original_data = updated_vectors_by_position(F,
             inputs, unmasked_tokens, masked_positions)
-        fake_data, _ = updated_vectors_by_position(F,
+        fake_data = updated_vectors_by_position(F,
             inputs, corrupted_tokens, masked_positions)
-
+        updates_mask = add_vectors_by_position(F, F.np.zeros_like(inputs),
+                F.np.ones_like(masked_positions), masked_positions)
+        # Dealing with duplicate positions
+        updates_mask = F.np.minimum(updates_mask, 1)
         labels = updates_mask * F.np.not_equal(fake_data, original_data)
         return corrupted_tokens, fake_data, labels
 

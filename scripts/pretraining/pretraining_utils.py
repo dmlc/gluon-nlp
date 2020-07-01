@@ -493,13 +493,14 @@ class ElectraMasker(HybridBlock):
         valid_candidates = valid_candidates.astype(np.float32)
         num_masked_position = F.np.maximum(
             1, F.np.minimum(N, round(valid_lengths * self._mask_prob)))
+
         # The categorical distribution takes normalized probabilities as input
         # softmax is used here instead of log_softmax
         sample_probs = F.npx.softmax(
-            self._proposal_distribution * valid_candidates, axis=-1)  # (B, L)
-        # Top-k Sampling is an alternative solution to avoid duplicates positions
+           self._proposal_distribution * valid_candidates, axis=-1)  # (B, L)
         masked_positions = F.npx.random.categorical(
             sample_probs, shape=N, dtype=np.int32)
+
         masked_weights = F.npx.sequence_mask(
             F.np.ones_like(masked_positions),
             sequence_length=num_masked_position,
@@ -508,7 +509,7 @@ class ElectraMasker(HybridBlock):
         length_masks = F.npx.sequence_mask(
             F.np.ones_like(input_ids, dtype=np.float32),
             sequence_length=valid_lengths,
-            use_sequence_length=True, axis=1, value=0).astype(np.float32)
+            use_sequence_length=True, axis=1, value=0)
         unmasked_tokens = select_vectors_by_position(
             F, input_ids, masked_positions) * masked_weights
         masked_weights = masked_weights.astype(np.float32)
@@ -518,11 +519,8 @@ class ElectraMasker(HybridBlock):
                 F.np.zeros_like(masked_positions),
                 F.np.ones_like(masked_positions)) > self._mask_prob) * masked_positions
         #  deal with multiple zeros
-        filled = F.np.where(
-            replaced_positions,
-            self.vocab.mask_id,
-            masked_positions).astype(np.int32)
-        masked_input_ids, _ = updated_vectors_by_position(F, input_ids, filled, replaced_positions)
+        filled = F.np.where(replaced_positions, self.vocab.mask_id, masked_positions)
+        masked_input_ids = updated_vectors_by_position(F, input_ids, filled, replaced_positions)
         masked_input = self.MaskedInput(input_ids=masked_input_ids,
                                         masks=length_masks,
                                         unmasked_tokens=unmasked_tokens,
