@@ -494,12 +494,15 @@ class ElectraMasker(HybridBlock):
         num_masked_position = F.np.maximum(
             1, F.np.minimum(N, round(valid_lengths * self._mask_prob)))
 
-        # The categorical distribution takes normalized probabilities as input
-        # softmax is used here instead of log_softmax
+        # Get the masking probability of each position
         sample_probs = F.npx.softmax(
            self._proposal_distribution * valid_candidates, axis=-1)  # (B, L)
-        masked_positions = F.npx.random.categorical(
-            sample_probs, shape=N, dtype=np.int32)
+        sample_probs = F.npx.stop_gradient(sample_probs)
+        gumbels = F.np.random.gumbel(F.np.zeros_like(sample_probs))
+        # Following the instruction of official repo to avoid deduplicate postions
+        # with Top_k Sampling as https://github.com/google-research/electra/issues/41
+        masked_positions = F.npx.topk(
+            sample_probs + gumbels, k=N, axis=-1, ret_typ='indices', dtype=np.int32)
 
         masked_weights = F.npx.sequence_mask(
             F.np.ones_like(masked_positions),
@@ -513,14 +516,18 @@ class ElectraMasker(HybridBlock):
         unmasked_tokens = select_vectors_by_position(
             F, input_ids, masked_positions) * masked_weights
         masked_weights = masked_weights.astype(np.float32)
-
         replaced_positions = (
             F.np.random.uniform(
                 F.np.zeros_like(masked_positions),
                 F.np.ones_like(masked_positions)) > self._mask_prob) * masked_positions
-        #  deal with multiple zeros
-        filled = F.np.where(replaced_positions, self.vocab.mask_id, masked_positions)
+        # dealling with multiple zero values in replaced_positions which causes the [CLS] being replaced
+        filled = F.np.where(replaced_positions, self.vocab.mask_id, self.vocab.cls_id).astype(np.int32)
+        # Masking token by replacing with [MASK]
         masked_input_ids = updated_vectors_by_position(F, input_ids, filled, replaced_positions)
+
+        # Note: It is likely have multiple zero values in masked_positions if number of masked of
+        # positions not reached the maximum. However, this example hardly exists since valid_length
+        # is almost always equal to max_seq_length
         masked_input = self.MaskedInput(input_ids=masked_input_ids,
                                         masks=length_masks,
                                         unmasked_tokens=unmasked_tokens,

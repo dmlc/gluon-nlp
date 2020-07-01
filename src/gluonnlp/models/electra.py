@@ -814,6 +814,8 @@ class ElectraForPretrain(HybridBlock):
 
         Returns
         -------
+        corrupted_tokens
+            Shape (batch_size, )
         fake_data
             Shape (batch_size, seq_length)
         labels
@@ -839,7 +841,8 @@ class ElectraForPretrain(HybridBlock):
             inputs, corrupted_tokens, masked_positions)
         updates_mask = add_vectors_by_position(F, F.np.zeros_like(inputs),
                 F.np.ones_like(masked_positions), masked_positions)
-        # Dealing with duplicate positions
+        # Dealing with multiple zeros in masked_positions which
+        # results in a non-zero value in the first index [CLS]
         updates_mask = F.np.minimum(updates_mask, 1)
         labels = updates_mask * F.np.not_equal(fake_data, original_data)
         return corrupted_tokens, fake_data, labels
