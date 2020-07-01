@@ -515,7 +515,7 @@ def train(args):
     final_save(model, save_dir, tokenizer)
     return param_path, state_path
 
-
+# TODO(zheyuye), Directly implement a metric for weighted accuracy
 def accuracy(labels, predictions, weights=None):
     if weights is None:
         weights = mx.np.ones_like(labels)
@@ -523,19 +523,19 @@ def accuracy(labels, predictions, weights=None):
     acc = (is_correct * weights).sum() / (weights.sum() + 1e-6)
     return acc
 
-
-def auc(labels, probs, wights=None):
+# TODO(zheyuye), Directly implement a metric for weighted AUC
+def auc(labels, probs, weights=None):
     if isinstance(labels, mx.np.ndarray):
         labels = labels.asnumpy()
     if isinstance(probs, mx.np.ndarray):
         probs = probs.asnumpy()
-    if isinstance(wights, mx.np.ndarray):
-        wights = wights.asnumpy()
+    if isinstance(weights, mx.np.ndarray):
+        weights = weights.asnumpy()
     labels = labels.reshape(-1)
     probs = probs.reshape(-1)
-    wights = wights.reshape(-1)
+    weights = weights.reshape(-1)
 
-    fpr, tpr, thresholds = metrics.roc_curve(labels, probs, sample_weight=wights)
+    fpr, tpr, thresholds = metrics.roc_curve(labels, probs, sample_weight=weights)
     return metrics.auc(fpr, tpr)
 
 
