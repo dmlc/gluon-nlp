@@ -380,45 +380,6 @@ def untune_params(model, untunable_depth, not_included=[]):
                     continue
             value.grad_req = 'null'
 
-
-def apply_layerwise_decay(model, layerwise_decay, not_included=[]):
-    """Apply the layer-wise gradient decay
-
-    .. math::
-        lr = lr * layerwise_decay^(max_depth - layer_depth)
-
-    Parameters:
-    ----------
-    model
-        qa_net
-    layerwise_decay: int
-        layer-wise decay power
-    not_included: list of str
-        A list or parameter names that not included in the layer-wise decay
-    """
-    # consider the task specific finetuning layer as the last layer, following with pooler
-    # In addition, the embedding parameters have the smaller learning rate based on this setting.
-    all_layers = model.backbone.encoder.all_encoder_layers
-    max_depth = len(all_layers)
-    if 'pool' in model.collect_params().keys():
-        max_depth += 1
-    for key, value in model.collect_params().items():
-        if 'scores' in key:
-            value.lr_mult = layerwise_decay**(0)
-        if 'pool' in key:
-            value.lr_mult = layerwise_decay**(1)
-        if 'embed' in key:
-            value.lr_mult = layerwise_decay**(max_depth + 1)
-
-    for (layer_depth, layer) in enumerate(all_layers):
-        layer_params = layer.collect_params()
-        for key, value in layer_params.items():
-            for pn in not_included:
-                if pn in key:
-                    continue
-            value.lr_mult = layerwise_decay**(max_depth - layer_depth)
-
-
 def train(args):
     ctx_l = parse_ctx(args.gpus)
     cfg, tokenizer, qa_net, use_segmentation = \
@@ -486,7 +447,7 @@ def train(args):
         if args.untunable_depth > 0:
             untune_params(qa_net, args.untunable_depth)
         if args.layerwise_decay > 0:
-            apply_layerwise_decay(qa_net, args.layerwise_decay)
+            qa_net.backbone.apply_layerwise_decay(args.layerwise_decay)
 
     # Do not apply weight decay to all the LayerNorm and bias
     for _, v in qa_net.collect_params('.*beta|.*gamma|.*bias').items():

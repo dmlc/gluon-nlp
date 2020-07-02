@@ -229,6 +229,8 @@ class ElectraModel(HybridBlock):
         self.pos_embed_type = pos_embed_type
         self.num_token_types = num_token_types
         self.vocab_size = vocab_size
+        self.num_layers = num_layers
+        self.num_heads = num_heads
         self.embed_size = embed_size
         self.units = units
         self.max_length = max_length
@@ -371,6 +373,37 @@ class ElectraModel(HybridBlock):
         embedding = self.embed_layer_norm(embedding)
         embedding = self.embed_dropout(embedding)
         return embedding
+
+
+    def apply_layerwise_decay(self, layerwise_decay, not_included=[]):
+        """Apply the layer-wise gradient decay
+
+        .. math::
+            lr = lr * layerwise_decay^(max_depth - layer_depth)
+
+        Parameters:
+        ----------
+        layerwise_decay: int
+            layer-wise decay power
+        not_included: list of str
+            A list or parameter names that not included in the layer-wise decay
+        """
+
+        # consider the task specific finetuning layer as the last layer, following with pooler
+        # In addition, the embedding parameters have the smaller learning rate based on this setting.
+        max_depth = self.num_layers
+        for key, value in self.collect_params().items():
+            if 'embed' in key:
+                value.lr_mult = layerwise_decay**(max_depth + 1)
+
+        for (layer_depth, layer) in enumerate(self.encoder.all_encoder_layers):
+            layer_params = layer.collect_params()
+            for key, value in layer_params.items():
+                for pn in not_included:
+                    if pn in key:
+                        continue
+                value.lr_mult = layerwise_decay**(max_depth - layer_depth)
+
 
     @staticmethod
     def get_cfg(key=None):
