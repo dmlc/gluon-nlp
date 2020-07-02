@@ -1,27 +1,29 @@
 # Sentiment Analysis with KoBERT using Movie Review Data
 # KoBERT를 이용한 네이버 영화 리뷰 감정 분석
 
+In this tutorial, we will implement a sentiment analysis of [Naver sentiment
+movie corpus](https://github.com/e9t/nsmc) with a pretrained Korean BERT
+(**KoBERT**) provided by GluonNLP's Model Zoo.
 
-In this tutorial, we will implement a sentiment analysis of [Naver sentiment movie corpus](https://github.com/e9t/nsmc) with a pretrained Korean BERT (**KoBERT**) provided by GluonNLP's Model Zoo.
-
-이번 예제에서는 GluonNLP의 Model Zoo에서 제공하는 한국어 BERT(**KoBERT**)의 pretrained 모델로 네이버 영화리뷰의 감정 분석(sentiment analysis)을 구현해 보겠습니다.
+이번 예제에서는 GluonNLP의 Model Zoo에서 제공하는 한국어 BERT(**KoBERT**)의 pretrained 모델로 네이버
+영화리뷰의 감정 분석(sentiment analysis)을 구현해 보겠습니다.
 
 ## Setup
 ## 사전 설치
 
-Download and install the files required for this example.
+If you have a package listed below but not installed yet, uncomment the line and
+install the file.
 
-이 예제를 위해 필요한 파일을 다운로드하고 설치합니다.
+아래 나열된 패키지 중에서 아직 설치되지 않은 것이 있다면, 커멘드 기호('#')를 제거하고 파일을 설치합니다.
 
 ```{.python .input}
-!pip install tqdm
-!pip install mxnet-cu101
-!pip install gluonnlp pandas
-!pip install sentencepiece
+#!pip install tqdm
+#!pip install mxnet-cu101
+#!pip install gluonnlp 
+#!pip install sentencepiece
 ```
 
 ```{.python .input}
-import pandas as pd
 import numpy as np
 from mxnet.gluon import nn, rnn
 from mxnet import gluon, autograd
@@ -56,9 +58,22 @@ tok = nlp.data.BERTSPTokenizer(tokenizer._path, vocab, lower=False)
 ## Define Classifier
 ## Classifier 정의
 
-Now define the `BERTClassifier` class to classify the positive or negative reviews. The last pooling layer (`pooler`) of the BERT model returns the embedding vector of the `[CLS]` token. You can simply configure `BERTClassifier` by linking this output to a fully connected layer (`nn.Dense`) and softmax layer. The Softmax output is the probability value of the positive/negative label, and you can compare the predicted label with the ground truth label to calculate the cross-entropy and update the model in a direction that minimizes the loss.
+Now define the `BERTClassifier` class to classify the positive or negative
+reviews.
+The last pooling layer (`pooler`) of the BERT model returns the embedding vector
+of the `[CLS]` token.
+You can simply configure `BERTClassifier` by linking this output to a fully
+connected layer (`nn.Dense`) and softmax layer.
+The Softmax output is the probability value of the positive/negative label, and
+you can compare the predicted label with the ground truth label to calculate the
+cross-entropy and update the model in a direction that minimizes the loss.
 
-이제 영화 리뷰의 긍정/부정을 분류할 `BERTClassifier` 클래스를 정의합니다. BERT 모델 마지막의 pooling layer (`pooler`)는 `[CLS]` 토큰의 임베딩 벡터를 리턴하는데, 이 출력을 fully connected layer (`nn.Dense`)와 softmax layer로 연결해 간단하게 `BERTClassifier`를 구성할 수 있습니다. Softmax 출력은 긍정/부정 레이블의 확률 값이 되며, 예측한 레이블을 ground truth 레이블과 비교해 크로스 엔트로피를 계산하고 손실을 최소화하는 방향으로 모델을 업데이트합니다.
+이제 영화 리뷰의 긍정/부정을 분류할 `BERTClassifier` 클래스를 정의합니다.
+BERT 모델 마지막의 pooling layer (`pooler`)는 `[CLS]` 토큰의 임베딩 벡터를 리턴하는데,
+이 출력을 fully connected layer (`nn.Dense`)와 softmax layer로 연결해 간단하게
+`BERTClassifier`를 구성할 수 있습니다.
+Softmax 출력은 긍정/부정 레이블의 확률 값이 되며, 예측한 레이블을 ground truth 레이블과 비교해 크로스 엔트로피를 계산하고
+손실을 최소화하는 방향으로 모델을 업데이트합니다.
 
 ![bert-sentence-pair](./bert-sentence-pair.png)
 
@@ -98,9 +113,11 @@ metric = mx.metric.Accuracy()
 ## Load the Movie Review Dataset
 ## 네이버 영화 리뷰 데이터 로드
 
-Download Lucy Park's [Naver Sentimental Movie Corpus](https://github.com/e9t/nsmc) dataset from Github.
+Download Lucy Park's [Naver Sentimental Movie
+Corpus](https://github.com/e9t/nsmc) dataset from Github.
 
-박은정님의 [Naver sentiment movie corpus](https://github.com/e9t/nsmc)를 Github에서 다운로드합니다.
+박은정님의 [Naver sentiment movie corpus](https://github.com/e9t/nsmc)를 Github에서
+다운로드합니다.
 
 ```{.python .input}
 !git clone https://github.com/e9t/nsmc.git
@@ -118,17 +135,20 @@ print(dataset_test[0:5])
 
 Next, define the class `BERTDataset` to load this data.
 GluonNLP's [BERTSentenceTransform](https://gluon-
-nlp.mxnet.io/api/modules/data.html#gluonnlp.data.BERTSentenceTransform) function makes it easy to do the following pre-processing processes that BERT needs:
+nlp.mxnet.io/api/modules/data.html#gluonnlp.data.BERTSentenceTransform) function
+makes it easy to do the following pre-processing processes that BERT needs:
 
 1. Tokenize the input sentence, and insert '[CLS]' and '[SEP]' where necessary.
-2. Because one or two sentences can be entered, create a type id that separates them.
-
+2. Because one or two sentences can be entered, create a type id that separates
+them.
 3. Calculate the effective length.
 
-다음으로, 이 데이터를 로드하는 `BERTDataset` 클래스를 정의합니다. GluonNLP의 [BERTSentenceTransform](https://gluon-
-nlp.mxnet.io/api/modules/data.html#gluonnlp.data.BERTSentenceTransform) 함수를 사용하면 BERT가 필요로 하는 아래와 같은 전처리 과정을 쉽게 할 수 있습니다.
+다음으로, 이 데이터를 로드하는 `BERTDataset` 클래스를 정의합니다.
+GluonNLP의 [BERTSentenceTransform](https://gluon-
+nlp.mxnet.io/api/modules/data.html#gluonnlp.data.BERTSentenceTransform) 함수를 사용하면
+BERT가 필요로 하는 아래와 같은 전처리 과정을 쉽게 할 수 있습니다.
 
-1. 입력 문장을 tokenize 하고, `[CLS]` ,`[SEP]`을 필요한 위치에 삽입합니다.
+1. 입력 문장을 tokenize 하고, `[CLS]`, `[SEP]`을 필요한 위치에 삽입합니다.
 2. 문장이 하나 또는 두 개가 입력될 수 있으므로, 이를 구분하는 type id를 생성합니다.
 3. 유효 길이를 계산합니다.
 
@@ -167,11 +187,18 @@ data_test = BERTDataset(dataset_test, 0, 1, tok, max_len, True, False)
 ## Fine-tune the Model
 ## 모델 파인튜닝
 
-Now that everything is ready, you can start fine-tuning. We used **BERTAdam** as the optimizer. BERTAdam is similar to Adam, but has a separate weight decay and gradient update. For more information, please refer to GluonNLP's [BERTAdam](https://gluon-
+Now that everything is ready, you can start fine-tuning.
+We used **BERTAdam** as the optimizer.
+BERTAdam is similar to Adam, but has a separate weight decay and gradient
+update.
+For more information, please refer to GluonNLP's [BERTAdam](https://gluon-
 nlp.mxnet.io/api/modules/optimizer.html#gluonnlp.optimizer.BERTAdam) document.
-이제 모든 준비가 되었으므로 파인튜닝을 시작할 수 있습니다. 옵티마이저로는 **BERTAdam**을 사용했습니다. BERTAdam은 Adam과 유사하지만 weight decay와 gradient update가 분리된 특징이 있습니다. 더 자세한 정보는 GluonNLP의
-[BERTAdam](https://gluon-
-nlp.mxnet.io/api/modules/optimizer.html#gluonnlp.optimizer.BERTAdam) 문서를 참고하시기 바랍니다.
+
+이제 모든 준비가 되었으므로 파인튜닝을 시작할 수 있습니다.
+옵티마이저로는 **BERTAdam**을 사용했습니다. BERTAdam은 Adam과 유사하지만 weight decay와 gradient
+update가 분리된 특징이 있습니다. 더 자세한 정보는 GluonNLP의 [BERTAdam](https://gluon-
+nlp.mxnet.io/api/modules/optimizer.html#gluonnlp.optimizer.BERTAdam) 문서를 참고하시기
+바랍니다.
 
 ```{.python .input}
 batch_size = 32
@@ -189,9 +216,14 @@ log_interval = 4
 num_epochs = 1
 ```
 
-Weight decay does not apply to LayerNorm and Bias. That's because it has little effect of regularization, and to prevent the possibility that it would rather cause underfitting. For more information, please refer to [1].
+Weight decay does not apply to LayerNorm and Bias.
+That's because it has little effect of regularization, and to prevent the
+possibility that it would rather cause underfitting.
+For more information, please refer to [1].
 
-LayerNorm과 Bias에는 weight decay를 적용하지 않습니다. Regularization의 효과가 거의 없고 오히려 underfitting을 초래할 가능성을 방지하기 위해서입니다. 자세한 내용에 대해서는 [1]을 참고하시기 바랍니다.
+LayerNorm과 Bias에는 weight decay를 적용하지 않습니다.
+Regularization의 효과가 거의 없고 오히려 underfitting을 초래할 가능성을 방지하기 위해서입니다.
+자세한 내용에 대해서는 [1]을 참고하시기 바랍니다.
 
 ```{.python .input}
 for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
@@ -219,9 +251,17 @@ def evaluate_accuracy(model, data_iter, ctx=ctx):
     return(acc.get()[1])
 ```
 
-At the beginning of the training, random weight can make it difficult to converge. To solve this problem, **learning rate warmup** method was proposed to start the learning rate at first with a very small value and quickly increase it and then slowly reduce it again[2]. The code below uses the same approach.
+At the beginning of the training, random weight can make it difficult to
+converge.
+To solve this problem, **learning rate warmup** method was proposed to start the
+learning rate at first with a very small value and quickly increase it and then
+slowly reduce it again[2].
+The code below uses the same approach.
 
-학습 초기에는 랜덤한 weight가 학습의 수렴을 방해할 수도 있습니다. 이에 대한 해결책으로, learning rate을 처음에 아주 작은 값으로 시작해서 빠르게 증가시키고 이후 다시 천천히 줄여나가는 **learning rate warmup** 방식이 제안되었습니다[2]. 아래 코드에서도 이와 같은 방식을 사용합니다.
+학습 초기에는 랜덤한 weight가 학습의 수렴을 방해할 수도 있습니다.
+이에 대한 해결책으로, learning rate을 처음에 아주 작은 값으로 시작해서 빠르게 증가시키고 이후 다시 천천히 줄여나가는
+**learning rate warmup** 방식이 제안되었습니다[2].
+아래 코드에서도 이와 같은 방식을 사용합니다.
 
 ```{.python .input}
 accumulate = 4
@@ -287,20 +327,29 @@ for epoch_id in range(num_epochs):
     print('Test Acc : {}'.format(test_acc))
 ```
 
-So far, we've implemented a sentiment classifier of Naver movie review dataset using a pre-trained **KoBERT** model of GluonNLP Model Zoo.
-In general, the sentiment analysis models of this dataset are known to obtain accuracy of **83 to 85%**.
-Our implementation using **GluonNLP/KoBERT** was able to achieve a very high accuracy of about **89%** with just one epoch.
+So far, we've implemented a sentiment classifier of Naver movie review dataset
+using a pre-trained **KoBERT** model of GluonNLP Model Zoo.
+In general, the sentiment analysis models of this dataset are known to obtain
+accuracy of **83 to 85%**.
+Our implementation using **GluonNLP/KoBERT** was able to achieve a very high
+accuracy of about **89%** with just one epoch.
 
-지금까지 GluonNLP Model Zoo의 **KoBERT** 사전학습 모델을 사용해 네이버 영화리뷰의 감정 분석 분류기를 구현해봤습니다. 
+지금까지 GluonNLP Model Zoo의 **KoBERT** 사전학습 모델을 사용해 네이버 영화리뷰의 감정 분석 분류기를 구현해봤습니다.
 일반적으로 네이버 영화리뷰의 감성 분석 모델은 **83~85%** 정도의 accuracy를 얻는다고 알려져 있는데,
-위의 **GluonNLP/KoBERT** 구현에서는 1번의 epoch 만으로도 약 **89%**의 대단히 높은 accuracy를 얻을 수 있었습니다. 
+위의 **GluonNLP/KoBERT** 구현에서는 1번의 epoch 만으로도 약 **89%**의 대단히 높은 accuracy를 얻을 수
+있었습니다.
 
 ## References
 ## 참고 문헌
 
-[1] Jia et.al., “[Highly Scalable Deep Learning Training System with Mixed-Precision: Training ImageNet in Four Minutes.](https://arxiv.org/abs/1807.11205)” arXiv preprint arXiv:1807.11205 (2018).
+[1] Jia et.al., “[Highly Scalable Deep Learning Training System with Mixed-
+Precision: Training ImageNet in Four
+Minutes.](https://arxiv.org/abs/1807.11205)” arXiv preprint arXiv:1807.11205
+(2018).
 
-[2] Goyal et.al., “[Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour.](https://arxiv.org/abs/1706.02677)” arXiv preprint arXiv:1706.02677 (2018).
+[2] Goyal et.al., “[Accurate, Large Minibatch SGD: Training ImageNet in 1
+Hour.](https://arxiv.org/abs/1706.02677)” arXiv preprint arXiv:1706.02677
+(2018).
 
 ```{.python .input}
 
