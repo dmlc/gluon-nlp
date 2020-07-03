@@ -224,6 +224,16 @@ class RobertaModel(HybridBlock):
             )
             self.encoder.hybridize()
 
+            if self.use_pooler:
+                # Construct pooler
+                self.pooler = nn.Dense(units=self.units,
+                                       in_units=self.units,
+                                       flatten=False,
+                                       activation=self.pooler_activation,
+                                       weight_initializer=weight_initializer,
+                                       bias_initializer=bias_initializer,
+                                       prefix='pooler_')
+
             if self.use_mlm:
                 embed_weight = None if untie_weight else \
                     self.tokens_embed.collect_params('.*weight')
@@ -293,7 +303,7 @@ class RobertaModel(HybridBlock):
             Shape (batch_size, units)
         """
         outputs = sequence[:, 0, :]
-        return outputs
+        return self.pooler(outputs)
 
     @staticmethod
     def get_cfg(key=None):
