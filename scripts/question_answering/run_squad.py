@@ -70,6 +70,10 @@ def parse_args():
                         help='Max gradient norm.')
     parser.add_argument('--optimizer', type=str, default='adamw',
                         help='optimization algorithm. default is adamw')
+    parser.add_argument('--adam_epsilon', type=float, default=1e-6,
+                        help='epsilon of AdamW optimizer')
+    parser.add_argument('--adam_betas', default='(0.9, 0.999)', metavar='B',
+                        help='betas for Adam optimizer')
     parser.add_argument('--num_accumulated', type=int, default=1,
                         help='The number of batches for gradients accumulation to '
                              'simulate large batch size.')
@@ -476,6 +480,7 @@ def train(args):
     logging.info('#Total Training Steps={}, Warmup={}, Save Interval={}'
                  .format(num_train_steps, warmup_steps, save_interval))
 
+    # set up optimization
     lr_scheduler = PolyScheduler(max_update=num_train_steps,
                                  base_lr=args.lr,
                                  warmup_begin_lr=0,
@@ -487,11 +492,17 @@ def train(args):
                         'wd': args.wd,
                         'lr_scheduler': lr_scheduler,
                         }
+    adam_betas = eval(args.adam_betas)
     if args.optimizer == 'adamw':
-        optimizer_params.update({'beta1': 0.9,
-                                 'beta2': 0.999,
-                                 'epsilon': 1e-6,
+        optimizer_params.update({'beta1': adam_betas[0],
+                                 'beta2': adam_betas[1],
+                                 'epsilon': args.adam_epsilon,
                                  'correct_bias': False,
+                                 })
+    elif args.optimizer == 'adam':
+        optimizer_params.update({'beta1': adam_betas[0],
+                                 'beta2': adam_betas[1],
+                                 'epsilon': args.adam_epsilon,
                                  })
     trainer = mx.gluon.Trainer(qa_net.collect_params(),
                                args.optimizer, optimizer_params,
