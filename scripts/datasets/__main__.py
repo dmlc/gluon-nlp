@@ -7,7 +7,8 @@ from .pretrain_corpus import prepare_bookcorpus, prepare_wikipedia, prepare_open
 from .general_nlp_benchmark import prepare_glue
 from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 
-
+# TODO(zheyuye), lazy_import theses data parser functions and data main function
+# and their dependencies by a dictionary mapping the datasets names to the functions.
 def list_all_subcommands():
     out = []
     for key in DATA_PARSER_REGISTRY.list_keys():
