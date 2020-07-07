@@ -23,7 +23,7 @@ from squad_utils import SquadFeature, get_squad_examples, convert_squad_example_
 from gluonnlp.models import get_backbone
 from gluonnlp.utils.misc import grouper, repeat, set_seed, parse_ctx, logging_config, count_parameters
 from gluonnlp.initializer import TruncNorm
-from gluonnlp.utils.parameter import clip_grad_global_norm
+from gluonnlp.utils.parameter import clip_grad_global_norm, multiply_grads
 
 mx.npx.set_np()
 
@@ -565,15 +565,19 @@ def train(args):
                                         for ele in answerable_loss_l]).asnumpy()
         # update
         trainer.allreduce_grads()
-        # Here, the accumulated gradients are
-        # \sum_{n=1}^N g_n / loss_denom
-        # Thus, in order to clip the average gradient
-        #   \frac{1}{N} \sum_{n=1}^N      -->  clip to args.max_grad_norm
-        # We need to change the ratio to be
-        #  \sum_{n=1}^N g_n / loss_denom  -->  clip to args.max_grad_norm  * N / loss_denom
-        total_norm, ratio, is_finite = clip_grad_global_norm(
-            params, args.max_grad_norm, loss_denom / num_samples_per_update)
-        total_norm = total_norm / (num_samples_per_update / loss_denom)
+
+        if args.max_grad_norm > 0:
+            # Here, the accumulated gradients are
+            # \sum_{n=1}^N g_n / loss_denom
+            # Thus, in order to clip the average gradient
+            #   \frac{1}{N} \sum_{n=1}^N      -->  clip to args.max_grad_norm
+            # We need to change the ratio to be
+            #  \sum_{n=1}^N g_n / loss_denom  -->  clip to args.max_grad_norm  * N / loss_denom
+            total_norm, ratio, is_finite = clip_grad_global_norm(
+                params, args.max_grad_norm * num_samples_per_update / loss_denom)
+            total_norm = total_norm / (num_samples_per_update / loss_denom)
+        else:
+            total_norm, is_finite = multiply_grads(params, loss_denom / num_samples_per_update)
 
         trainer.update(num_samples_per_update / loss_denom, ignore_stale_grad=True)
         if args.num_accumulated != 1:

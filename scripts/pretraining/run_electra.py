@@ -448,7 +448,7 @@ def train(args):
         # We need to change the ratio to be
         #  \sum_{n=1}^N g_n / loss_denom  -->  clip to args.max_grad_norm  * N / loss_denom
         total_norm, ratio, is_finite = clip_grad_global_norm(
-            params, args.max_grad_norm, loss_denom / num_samples_per_update)
+            params, args.max_grad_norm * num_samples_per_update / loss_denom) 
         total_norm = total_norm / (num_samples_per_update / loss_denom)
         trainer.update(num_samples_per_update / loss_denom, ignore_stale_grad=True)
         step_num += 1
