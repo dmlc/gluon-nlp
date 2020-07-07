@@ -35,7 +35,7 @@ jobs:
           python -m pip install --user --upgrade pip
           python -m pip install --user setuptools pytest pytest-cov
           python -m pip install --upgrade cython
-          python -m pip install --pre --user 'mxnet>=2.0.0b20200604,<2.0.0b20200621' -f https://dist.mxnet.io/python
+          python -m pip install --pre --user "mxnet>=2.0.0b20200604,<=2.0.0b20200619" -f https://dist.mxnet.io/python
           python -m pip install --user -e .[extras]
       - name: Test project
         run: |
