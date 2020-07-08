@@ -635,7 +635,6 @@ class _MultinomialStepUpdate(HybridBlock):
                        states, batch_shift):
         beam_size = self._beam_size
         vocab_size = self._vocab_size
-        batch_size = outputs.shape[0]
 #        beam_alive_mask_bcast = F.np.expand_dims(beam_alive_mask, axis=2) # batchs * beams * 1
         
 #######
@@ -643,7 +642,7 @@ class _MultinomialStepUpdate(HybridBlock):
         # bsz* beam_size * vocab_size
         if step == 1:
             outputs = F.np.repeat(outputs, repeats=beam_size, axis=0) \
-                      .reshape((batch_size, beam_size, vocab_size))
+                      .reshape((-1, beam_size, vocab_size))
         
         probs = F.npx.softmax(outputs / 1.0)
         
