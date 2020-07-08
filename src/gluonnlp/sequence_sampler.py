@@ -458,7 +458,10 @@ class BeamSearchSampler:
                  max_length_a: int = 0,
                  max_length_b: int = 200,
                  min_length: int = 1,
-                 stochastic: bool = False):
+                 stochastic: bool = False,
+                 sampling: bool = False,
+                 sampling_topp: float = -1.0,
+                 sampling_topk: int = -1):
         self._beam_size = beam_size
         self._vocab_size = vocab_size
         assert beam_size > 0,\
@@ -477,12 +480,28 @@ class BeamSearchSampler:
 
         self._scorer = scorer
         self._state_batch_axis = decoder.state_batch_axis
-        self._updater = _BeamSearchStepUpdate(beam_size=beam_size,
-                                              vocab_size=vocab_size,
-                                              eos_id=eos_id,
-                                              scorer=scorer,
-                                              state_batch_axis=decoder.state_batch_axis,
-                                              stochastic=stochastic)
+        self._sampling = sampling
+        self._sampling_topp = sampling_topp
+        self._sampling_topk = sampling_topk
+        if sampling:
+            self._updater = _MultinomialStepUpdate(
+                beam_size=beam_size,
+                vocab_size=vocab_size,
+                eos_id=eos_id,
+                state_batch_axis=decoder.state_batch_axis,
+                sampling_topp=sampling_topp,
+                sampling_topk=sampling_topk,
+                temperature=1.0
+            )
+        else:
+            self._updater = _BeamSearchStepUpdate(
+                beam_size=beam_size,
+                vocab_size=vocab_size,
+                eos_id=eos_id,
+                scorer=scorer,
+                state_batch_axis=decoder.state_batch_axis,
+                stochastic=stochastic
+            )
 
         if not stochastic:
             self._updater.hybridize()
@@ -581,6 +600,9 @@ class BeamSearchSampler:
               '  max_length_a={max_length_a}\n' \
               '  max_length_b={max_length_b}\n' \
               '  scorer={scorer}\n' \
+              '  sampling={sampling}\n' \
+              '  sampling_topp={sampling_topp}\n' \
+              '  sampling_topk={sampling_topk}\n' \
               ')' \
             .format(name=self.__class__.__name__,
                     beam_size=self._beam_size,
@@ -588,5 +610,138 @@ class BeamSearchSampler:
                     vocab_size=self._vocab_size,
                     max_length_a=self._max_length_a,
                     max_length_b=self._max_length_b,
-                    scorer=self._scorer)
+                    scorer=self._scorer,
+                    sampling=self._sampling,
+                    sampling_topp=self._sampling_topp,
+                    sampling_topk=self._sampling_topk)
         return ret
+
+class _MultinomialStepUpdate(HybridBlock):
+    def __init__(self, beam_size, vocab_size, eos_id, state_batch_axis,
+                 sampling_topp=-1.0, sampling_topk=-1, temperature=1.0,
+                 prefix=None, params=None):
+        super(_BeamSearchStepUpdate, self).__init__(prefix=prefix, params=params)
+        self._beam_size = beam_size
+        self._vocab_size = vocab_size
+        self._eos_id = eos_id
+        self._state_batch_axis = state_batch_axis
+        self._sampling_topp = sampling_topp
+        self._sampling_topk = sampling_topk
+        self.activation = get_activation('relu')
+        assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
+        assert sampling_topp <= 0 or sampling_topk <= 0, 'sampling_topp conflicts with sampling_topk'
+
+    def hybrid_forward(self, F, samples, valid_length, outputs, scores, step, beam_alive_mask,
+                       states, batch_shift):
+        beam_size = self._beam_size
+        vocab_size = self._vocab_size
+#        beam_alive_mask_bcast = F.np.expand_dims(beam_alive_mask, axis=2) # batchs * beams * 1
+        
+#######
+        # 注意EOS
+        # bsz* beam_size * vocab_size
+        if step == 1:
+            outputs = F.np.repeat(outputs, repeats=beam_size, axis=0) \
+                      .reshape((-1, beam_size, vocab_size))
+        
+        probs = F.npx.softmax(outputs / 1.0)
+        
+        if self._sampling_topp > 0:
+            probs = F.np.where(
+                probs > self._sampling_topp,
+                probs,
+                F.np.zeros_like(probs)
+            )
+        elif self._sampling_topk > 0:
+            # TODO
+#            ranks = F.np.argsort(probs)
+            probs = F.np.where(
+                ranks < self._sampling_topk,
+                probs,
+                F.np.zeros_like(probs)
+            )
+        
+        # bsz * beam_size
+        chosen_word_ids = F.sample_multinomial(probs, dtype=np.int32)
+        chosen_word_ids = F.np.where(
+            beam_alive_mask,
+            chosen_word_ids,
+            F.np.full_like(probs, -1)
+        )
+        lprobs = F.np.log(probs)
+        chosen_word_log_probs = 0 # TODO
+        new_scores = scores + F.np.where(
+            beam_alive_mask,
+            chosen_word_log_probs,
+            F.np.zeros_like(chosen_word_log_probs)
+        )
+        new_valid_length = valid_length + beam_alive_mask
+        new_samples = F.np.concatenate(
+            samples,
+            F.np.expand_dims(chosen_word_ids, axis=2),
+            axis=2
+        )
+        new_states = states
+        beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id)
+        
+        
+        return new_samples, new_valid_length, new_scores, chosen_word_ids,\
+               beam_alive_mask, new_states
+        
+            
+
+#######        
+        
+        # candidate_scores do not influnce
+        
+#        # size ? 2* bs ?
+#        candidate_scores = self._scorer(F.npx.reshape(outputs, (-6, -1, beam_size, -2)),
+#                                        scores, step)
+#        # Concat the candidate scores and the scores of the finished beams
+#        # The resulting candidate score will have shape (batch_size, beam_size * |V| + beam_size)
+#        candidate_scores = F.np.where(beam_alive_mask_bcast,
+#                                      candidate_scores,
+#                                      F.np.full_like(candidate_scores,
+#                                                     LARGE_NEGATIVE_FLOAT))
+#        finished_scores = F.np.where(beam_alive_mask,
+#                                     F.np.full_like(scores,
+#                                                    LARGE_NEGATIVE_FLOAT),
+#                                     scores)
+#        candidate_scores = F.np.concatenate([F.npx.reshape(candidate_scores, (-2, -1)),
+#                                             finished_scores],
+#                                            axis=1)
+#        
+##
+#        
+#        # Get the top K scores
+#        # new_scores and indices will have shape (batch_size, beam_size)
+#        new_scores, indices = F.npx.topk(candidate_scores, axis=1, k=beam_size, ret_typ='both')
+#        indices = indices.astype(np.int32)
+#        use_prev = (indices >= (beam_size * vocab_size)).astype(np.int32)
+#        chosen_word_ids = F.np.mod(indices, vocab_size)
+#        beam_ids = F.np.where(use_prev, indices - beam_size * vocab_size,
+#                              F.np.floor(indices / vocab_size).astype(np.int32))
+#        batch_beam_indices = beam_ids + F.np.expand_dims(batch_shift, axis=1)
+#        chosen_word_ids = F.np.where(use_prev, - F.np.ones_like(indices), chosen_word_ids)
+#        # Update the samples and vaild_length
+#        # TODO(sxjscience) The current implementation is quite tricky
+#        #  We should wait for hybridizable advanced indexing to avoid this
+#        selected_samples = F.np.take(F.npx.reshape(samples, (-5, -2)),
+#                                     batch_beam_indices.reshape((-1,)), axis=0)
+#        new_samples = F.npx.reshape(F.np.concatenate([selected_samples,
+#                                                      chosen_word_ids.reshape((-1, 1))],
+#                                                     axis=1),
+#                                    (-6, -1, beam_size, -2))
+#        new_valid_length = F.np.take(valid_length.reshape((-1,)),
+#                                     batch_beam_indices.reshape((-1,)),
+#                                     axis=0).reshape((-1, beam_size)) + 1 - use_prev
+#        # Update the states
+#        new_states = _choose_states(F, states, batch_beam_indices.reshape((-1,)),
+#                                    self._state_batch_axis)
+#        # Update the alive mask.
+#        beam_alive_mask = F.np.take(beam_alive_mask.reshape((-1,)),
+#                                    batch_beam_indices.reshape((-1,)), axis=0)\
+#                              .reshape((-1, beam_size))\
+#                          * (chosen_word_ids != self._eos_id).astype(np.float32)
+#        return new_samples, new_valid_length, new_scores, chosen_word_ids,\
+#               beam_alive_mask, new_states
