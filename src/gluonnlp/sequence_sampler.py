@@ -620,7 +620,7 @@ class _MultinomialStepUpdate(HybridBlock):
     def __init__(self, beam_size, vocab_size, eos_id, state_batch_axis,
                  sampling_topp=-1.0, sampling_topk=-1, temperature=1.0,
                  prefix=None, params=None):
-        super(_BeamSearchStepUpdate, self).__init__(prefix=prefix, params=params)
+        super(_MultinomialStepUpdate, self).__init__(prefix=prefix, params=params)
         self._beam_size = beam_size
         self._vocab_size = vocab_size
         self._eos_id = eos_id
