@@ -32,7 +32,8 @@ from typing import Optional
 def gen_self_attn_mask(F, data,
                        valid_length=None,
                        dtype: type = np.float32,
-                       attn_type: str = 'full'):
+                       attn_type: str = 'full',
+                       layout: str = 'NT'):
     """Generate the mask used for the encoder, i.e, self-attention.
 
     In our implementation, 1 --> not masked, 0 --> masked
@@ -99,25 +100,37 @@ def gen_self_attn_mask(F, data,
 
     Parameters
     ----------
-    F :
-    data :
-        The data. Shape (batch_size, seq_length, C)
-    valid_length :
+    F
+    data
+        The data.
+        - layout = 'NT'
+            Shape (batch_size, seq_length, C)
+        - layout = 'TN'
+            Shape (seq_length, batch_size, C)
+    valid_length
         Shape (batch_size,)
     dtype
         Data type of the mask
-    attn_type : str
+    attn_type
         Can be 'full' or 'causal'
+    layout
+        The layout of the data
 
     Returns
     -------
     mask
         Shape (batch_size, seq_length, seq_length)
     """
+    if layout == 'NT':
+        batch_axis, time_axis = 0, 1
+    elif layout == 'TN':
+        batch_axis, time_axis = 1, 0
+    else:
+        raise NotImplementedError('Unsupported layout={}'.format(layout))
     if attn_type == 'full':
         if valid_length is not None:
             valid_length = valid_length.astype(dtype)
-            steps = F.npx.arange_like(data, axis=1)  # (seq_length,)
+            steps = F.npx.arange_like(data, axis=time_axis)  # (seq_length,)
             mask1 = (F.npx.reshape(steps, (1, 1, -1))
                      < F.npx.reshape(valid_length, (-2, 1, 1)))
             mask2 = (F.npx.reshape(steps, (1, -1, 1))
@@ -125,12 +138,12 @@ def gen_self_attn_mask(F, data,
             mask = mask1 * mask2
         else:
             # TODO(sxjscience) optimize
-            seq_len_ones = F.np.ones_like(F.npx.arange_like(data, axis=1))  # (seq_length,)
-            batch_ones = F.np.ones_like(F.npx.arange_like(data, axis=0))    # (batch_size,)
+            seq_len_ones = F.np.ones_like(F.npx.arange_like(data, axis=time_axis))  # (seq_length,)
+            batch_ones = F.np.ones_like(F.npx.arange_like(data, axis=batch_axis))   # (batch_size,)
             mask = batch_ones.reshape((-1, 1, 1)) * seq_len_ones.reshape((1, -1, 1))\
                    * seq_len_ones.reshape((1, 1, -1))
     elif attn_type == 'causal':
-        steps = F.npx.arange_like(data, axis=1)
+        steps = F.npx.arange_like(data, axis=time_axis)
         # mask: (seq_length, seq_length)
         # batch_mask: (batch_size, seq_length)
         mask = (F.np.expand_dims(steps, axis=0) <= F.np.expand_dims(steps, axis=1)).astype(dtype)
@@ -139,7 +152,8 @@ def gen_self_attn_mask(F, data,
             batch_mask = (F.np.expand_dims(steps, axis=0) < F.np.expand_dims(valid_length, axis=-1)).astype(dtype)
             mask = mask * F.np.expand_dims(batch_mask, axis=-1)
         else:
-            batch_ones = F.np.ones_like(F.npx.arange_like(data, axis=0), dtype=np.float32)  # (batch_size,)
+            batch_ones = F.np.ones_like(F.npx.arange_like(data, axis=batch_axis),
+                                        dtype=np.float32)  # (batch_size,)
             mask = mask * batch_ones.reshape((-1, 1, 1))
     else:
         raise NotImplementedError
@@ -147,7 +161,8 @@ def gen_self_attn_mask(F, data,
     return mask
 
 
-def gen_mem_attn_mask(F, mem, mem_valid_length, data, data_valid_length=None, dtype=np.float32):
+def gen_mem_attn_mask(F, mem, mem_valid_length, data, data_valid_length=None,
+                      dtype=np.float32, layout: str = 'NT'):
     """Generate the mask used for the decoder. All query slots are attended to the memory slots.
 
     In our implementation, 1 --> not masked, 0 --> masked
@@ -182,34 +197,48 @@ def gen_mem_attn_mask(F, mem, mem_valid_length, data, data_valid_length=None, dt
     Parameters
     ----------
     F :
-    mem :
-        Shape (batch_size, mem_length, C_mem)
+    mem
+       - layout = 'NT'
+            Shape (batch_size, mem_length, C_mem)
+       - layout = 'TN'
+            Shape (mem_length, batch_size, C_mem)
     mem_valid_length :
         Shape (batch_size,)
-    data :
-        Shape (batch_size, query_length, C_data)
+    data
+        - layout = 'NT'
+            Shape (batch_size, query_length, C_data)
+        - layout = 'TN'
+            Shape (query_length, batch_size, C_data)
     data_valid_length :
         Shape (batch_size,)
-    dtype : type
+    dtype
         Data type of the mask
+    layout
+        Layout of the data + mem tensor
 
     Returns
     -------
     mask :
         Shape (batch_size, query_length, mem_length)
     """
+    if layout == 'NT':
+        batch_axis, time_axis = 0, 1
+    elif layout == 'TN':
+        batch_axis, time_axis = 1, 0
+    else:
+        raise NotImplementedError('Unsupported layout={}'.format(layout))
     mem_valid_length = mem_valid_length.astype(dtype)
-    mem_steps = F.npx.arange_like(mem, axis=1)  # (mem_length,)
+    mem_steps = F.npx.arange_like(mem, axis=time_axis)  # (mem_length,)
     mem_mask = (F.npx.reshape(mem_steps, (1, 1, -1))
                 < F.npx.reshape(mem_valid_length, (-2, 1, 1))).astype(dtype)  # (B, 1, mem_length)
     if data_valid_length is not None:
         data_valid_length = data_valid_length.astype(dtype)
-        data_steps = F.npx.arange_like(data, axis=1)  # (query_length,)
+        data_steps = F.npx.arange_like(data, axis=time_axis)  # (query_length,)
         data_mask = (F.npx.reshape(data_steps, (1, -1, 1))
                      < F.npx.reshape(data_valid_length, (-2, 1, 1))).astype(dtype)  # (B, query_length, 1)
         mask = mem_mask * data_mask
     else:
-        query_length_ones = F.np.ones_like(F.npx.arange_like(data, axis=1))  # (query_length,)
+        query_length_ones = F.np.ones_like(F.npx.arange_like(data, axis=time_axis))  # (query_length,)
         mask = query_length_ones.reshape((1, -1, 1)) * mem_mask
     return mask
 

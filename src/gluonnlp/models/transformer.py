@@ -141,6 +141,7 @@ class TransformerEncoderLayer(HybridBlock):
                  bias_initializer: Optional[InitializerType] = 'zeros',
                  activation: str = 'relu',
                  dtype='float32',
+                 layout='NT',
                  prefix=None, params=None):
         """
 
@@ -177,6 +178,9 @@ class TransformerEncoderLayer(HybridBlock):
         self._activation_dropout_prob = activation_dropout_prob
         self._pre_norm = pre_norm
         self._dtype = dtype
+        self._layout = layout
+        assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
+                                       'Only "TN" and "NT" are accepted!'.format(layout)
         assert self._units % self._num_heads == 0, 'units must be divisive by the number of heads'
         with self.name_scope():
             self.dropout_layer = nn.Dropout(hidden_dropout_prob)
@@ -196,6 +200,7 @@ class TransformerEncoderLayer(HybridBlock):
                                            bias_initializer=bias_initializer,
                                            dtype=self._dtype,
                                            prefix='proj_')
+            attention_layout = 'NTK' if self._layout == 'NT' else 'TNK'
             self.attention_cell =\
                 MultiHeadAttentionCell(
                     query_units=self._units,
@@ -204,7 +209,7 @@ class TransformerEncoderLayer(HybridBlock):
                     scaled=True,
                     prefix='attn_cell_',
                     dtype=self._dtype,
-                    layout='NTK'
+                    layout=attention_layout
                 )
             self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps,
                                            in_channels=units,
@@ -221,6 +226,10 @@ class TransformerEncoderLayer(HybridBlock):
                                        dtype=self._dtype,
                                        prefix='ffn_')
 
+    @property
+    def layout(self):
+        return self._layout
+
     def hybrid_forward(self, F, data, attn_mask):
         """
 
@@ -228,19 +237,23 @@ class TransformerEncoderLayer(HybridBlock):
         ----------
         F
         data :
-            Shape (batch_size, seq_length, C_in)
+            If layout == 'NT'
+                Shape (batch_size, seq_length, C_in)
+            Else
+                Shape (seq_length, batch_size, C_in)
         attn_mask :
             Shape (batch_size, seq_length, seq_length)
 
         Returns
         -------
         out :
-            Shape (batch_size, seq_length, C_out)
+            If layout == 'NT'
+                Shape (batch_size, seq_length, C_out)
+            Else
+                Shape (seq_length, batch_size, C_out)
         attn_weight :
             Shape (batch_size, seq_length, seq_length)
         """
-        # TODO(sxjscience) Cannot use negative axis due to
-        #  https://github.com/apache/incubator-mxnet/issues/18132
         if self._pre_norm:
             data = self.layer_norm(data)
         query, key, value = F.np.split(self.attn_qkv(data), 3, axis=-1)
@@ -264,7 +277,7 @@ class TransformerEncoder(HybridBlock):
                  activation_dropout=0.0, dropout=0.1,
                  attention_dropout=0.1, layer_norm_eps=1E-5, data_norm=False,
                  pre_norm=False, weight_initializer=None, bias_initializer='zeros',
-                 activation='relu', dtype='float32',
+                 activation='relu', dtype='float32', layout='NT',
                  prefix=None, params=None):
         """
 
@@ -286,12 +299,15 @@ class TransformerEncoder(HybridBlock):
         weight_initializer
         bias_initializer
         activation
+        dtype
+        layout
         prefix
         params
         """
         super(TransformerEncoder, self).__init__(prefix=prefix, params=params)
         self._dtype = dtype
         self.num_layers = num_layers
+        self._layout = layout
         self._recurrent = recurrent
         self._data_norm = data_norm
         self._pre_norm = pre_norm
@@ -323,7 +339,12 @@ class TransformerEncoder(HybridBlock):
                         pre_norm=pre_norm,
                         activation=activation,
                         dtype=dtype,
+                        layout=self._layout,
                         prefix='{}_'.format(i)))
+
+    @property
+    def layout(self):
+        return self._layout
 
     def hybrid_forward(self, F, data, valid_length):
         """
@@ -332,14 +353,20 @@ class TransformerEncoder(HybridBlock):
         ----------
         F
         data :
-            Shape (batch_size, seq_length, C)
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C)
         valid_length :
             Shape (batch_size,)
 
         Returns
         -------
         out :
-            Shape (batch_size, seq_length, C_out)
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_out)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_out)
         """
         # 1. Embed the data
         attn_mask = gen_self_attn_mask(F, data, valid_length,
