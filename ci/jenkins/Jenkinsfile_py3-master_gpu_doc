@@ -70,7 +70,7 @@ core_logic: {
                 conda activate ./conda/cpu/py3-master
 
                 python3 ci/batch/submit-job.py --region us-east-1 --wait \
-                  --timeout 1800 --saved-output ./docs/examples --conda-env docker/py3 \
+                  --timeout 3600 --saved-output ./docs/examples --conda-env docker/py3 \
                   --name GluonNLP-${env.BRANCH_NAME}-${env.BUILD_NUMBER} \
                   --save-path batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/docs/examples \
                   --work-dir . --source-ref refs/pull/${env.CHANGE_ID}/head \
@@ -103,7 +103,7 @@ core_logic: {
                 conda activate ./conda/cpu/py3-master
 
                 python3 ci/batch/submit-job.py --region us-east-1 --wait \
-                  --timeout 1800 --saved-output ./docs/examples --conda-env docker/py3 \
+                  --timeout 3600 --saved-output ./docs/examples --conda-env docker/py3 \
                   --name GluonNLP-${env.BRANCH_NAME}-${env.BUILD_NUMBER} \
                   --save-path batch/${env.BRANCH_NAME}/${env.BUILD_NUMBER}/docs/examples \
                   --work-dir . --source-ref ${env.BRANCH_NAME} \

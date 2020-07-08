@@ -210,7 +210,7 @@ htmlhelp_basename = project + 'doc'
 
 intersphinx_mapping = {
     'python': ('https://docs.python.org/{.major}'.format(sys.version_info), None),
-    'mxnet': ('https://beta.mxnet.io/', None),
+    'mxnet': ('https://mxnet.apache.org/api/python/docs/', None),
     'numpy': ('http://docs.scipy.org/doc/numpy/', None),
     'scipy': ('http://docs.scipy.org/doc/scipy/reference', None),
     'matplotlib': ('http://matplotlib.org/', None),
