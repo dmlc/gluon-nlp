@@ -215,8 +215,9 @@ def test_gen_attn_mask():
         mask_nt = mask_gen_nt(data, valid_length)
         mask_nt = mask_nt.asnumpy()
         mask_tn = mask_gen_tn(mx.np.swapaxes(data, 0, 1), valid_length)
+        mask_tn = mask_tn.asnumpy()
         mask = mask_nt
-        assert_allclose(mask_nt.asnumpy(), mask_tn.asnumpy())
+        assert_allclose(mask_nt, mask_tn)
         for b in range(batch_size):
             v_l = valid_length.asnumpy()[b]
             for i in range(v_l):
