@@ -15,37 +15,16 @@
 # specific language governing permissions and limitations
 # under the License.
 
-# pylint: disable=wildcard-import
-"""NLP toolkit."""
+# coding: utf-8
+# pylint: disable=wildcard-import, unused-variable
 
-import warnings
-import mxnet
+""" Gluon NLP Estimator Module """
+from . import language_model_estimator, language_model_event_handler
+from . import language_model_batch_processor
 
-from . import loss
-from . import data
-from . import embedding
-from . import model
-from . import metric
-from . import utils
-from . import vocab
-from . import optimizer
-from . import initializer
-from . import estimator
-from .vocab import Vocab
+from .language_model_estimator import *
+from .language_model_event_handler import *
+from .language_model_batch_processor import *
 
-__version__ = '0.10.0.dev'
-
-__all__ = ['data',
-           'model',
-           'embedding',
-           'Vocab',
-           'vocab',
-           'loss',
-           'initializer',
-           'optimizer',
-           'utils',
-           'metric',
-           'estimator']
-
-warnings.filterwarnings(module='gluonnlp', action='default', category=DeprecationWarning)
-utils.version.check_version('1.6.0', warning_only=True, library=mxnet)
+__all__ = (language_model_estimator.__all__ + language_model_event_handler.__all__ +
+           language_model_batch_processor.__all__)
