@@ -545,3 +545,36 @@ def check_version(min_version: str,
             warnings.warn(msg)
         else:
             raise AssertionError(msg)
+
+def init_comm(backend, gpus):
+    """Init communication backend"""
+    # backend specific implementation
+    import mxnet as mx
+    if backend == 'horovod':
+        try:
+            import horovod.mxnet as hvd  # pylint: disable=import-outside-toplevel
+        except ImportError:
+            logging.info('horovod must be installed.')
+            sys.exit(1)
+        hvd.init()
+        store = None
+        num_workers = hvd.size()
+        rank = hvd.rank()
+        local_rank = hvd.local_rank()
+        is_master_node = rank == local_rank
+        ctx_l = [mx.gpu(local_rank)]
+        logging.info('GPU communication supported by horovod')
+    else:
+        store = mx.kv.create(backend)
+        num_workers = store.num_workers
+        rank = store.rank
+        local_rank = 0
+        is_master_node = rank == local_rank
+        if gpus == '-1' or gpus == '':
+            ctx_l = [mx.cpu()]
+            logging.info('Runing on CPU')
+        else:
+            ctx_l = [mx.gpu(int(x)) for x in gpus.split(',')]
+            logging.info('GPU communication supported by KVStore')
+
+    return store, num_workers, rank, local_rank, is_master_node, ctx_l

@@ -15,7 +15,7 @@ from mxnet.lr_scheduler import PolyScheduler
 
 from sklearn import metrics
 from pretraining_utils import ElectraMasker, get_pretrain_data_npz, get_pretrain_data_text
-from gluonnlp.utils.misc import grouper, repeat, set_seed, naming_convention, logging_config
+from gluonnlp.utils.misc import grouper, repeat, set_seed, naming_convention, logging_config, init_comm
 from gluonnlp.initializer import TruncNorm
 from gluonnlp.models.electra import ElectraModel, ElectraForPretrain, get_pretrained_electra
 from gluonnlp.utils.parameter import clip_grad_global_norm
@@ -170,39 +170,6 @@ ElectraOutput = collections.namedtuple('ElectraOutput',
                                         'corrupted_tokens'])
 
 
-def init_comm(backend, gpus):
-    """Init communication backend"""
-    # backend specific implementation
-    if backend == 'horovod':
-        try:
-            import horovod.mxnet as hvd  # pylint: disable=import-outside-toplevel
-        except ImportError:
-            logging.info('horovod must be installed.')
-            sys.exit(1)
-        hvd.init()
-        store = None
-        num_workers = hvd.size()
-        rank = hvd.rank()
-        local_rank = hvd.local_rank()
-        is_master_node = rank == local_rank
-        ctx_l = [mx.gpu(local_rank)]
-        logging.info('GPU communication supported by horovod')
-    else:
-        store = mx.kv.create(backend)
-        num_workers = store.num_workers
-        rank = store.rank
-        local_rank = 0
-        is_master_node = rank == local_rank
-        if gpus == '-1' or gpus == '':
-            ctx_l = [mx.cpu()]
-            logging.info('Runing on CPU')
-        else:
-            ctx_l = [mx.gpu(int(x)) for x in gpus.split(',')]
-            logging.info('GPU communication supported by KVStore')
-
-    return store, num_workers, rank, local_rank, is_master_node, ctx_l
-
-
 def final_save(model, save_dir, tokenizer):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -261,6 +228,9 @@ def states_option(step_num, trainer, ckpt_dir, local_rank=0, option='Saving'):
 def train(args):
     store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
         args.comm_backend, args.gpus)
+    logging.info('Training info: num_buckets: {}, '
+                 'num_workers: {}, rank: {}'.format(
+                     args.num_buckets, num_workers, rank))
     cfg, tokenizer, model = get_pretraining_model(args.model_name, ctx_l,
                                                   args.max_seq_length,
                                                   args.hidden_dropout_prob,
@@ -269,9 +239,6 @@ def train(args):
                                                   args.generator_layers_scale)
     data_masker = ElectraMasker(
         tokenizer, args.max_seq_length, args.mask_prob)
-    logging.info('Training info: num_buckets: {}, '
-                 'num_workers: {}, rank: {}'.format(
-                     args.num_buckets, num_workers, rank))
     if args.from_raw_text:
         if args.cached_file_path and not os.path.exists(args.cached_file_path):
             os.mkdir(args.cached_file_path)
@@ -342,8 +309,6 @@ def train(args):
                                  'epsilon': 1e-6,
                                  'correct_bias': False,
                                  })
-    # TODO(zheyuye), absentance of layer-wise decay, although the decay power
-    # is 1.0 in electra model
     if args.comm_backend == 'horovod':
         trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optimizer_params)
     else:
@@ -448,9 +413,9 @@ def train(args):
         # We need to change the ratio to be
         #  \sum_{n=1}^N g_n / loss_denom  -->  clip to args.max_grad_norm  * N / loss_denom
         total_norm, ratio, is_finite = clip_grad_global_norm(
-            params, args.max_grad_norm * num_samples_per_update / loss_denom) 
+            params, args.max_grad_norm * num_samples_per_update / loss_denom)
         total_norm = total_norm / (num_samples_per_update / loss_denom)
-        trainer.update(num_samples_per_update / loss_denom, ignore_stale_grad=True)
+        trainer.update(num_samples_per_update / loss_denom)
         step_num += 1
         if args.num_accumulated != 1:
             # set grad to zero for gradient accumulation

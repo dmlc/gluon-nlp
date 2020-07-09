@@ -21,9 +21,16 @@ from models import ModelForQABasic, ModelForQAConditionalV1
 from eval_utils import squad_eval
 from squad_utils import SquadFeature, get_squad_examples, convert_squad_example_to_feature
 from gluonnlp.models import get_backbone
-from gluonnlp.utils.misc import grouper, repeat, set_seed, parse_ctx, logging_config, count_parameters
+from gluonnlp.utils.misc import repeat, grouper, set_seed, init_comm, \
+    parse_ctx, logging_config, count_parameters
 from gluonnlp.initializer import TruncNorm
-from gluonnlp.utils.parameter import clip_grad_global_norm, grad_global_norm
+from gluonnlp.data.sampler import SplitSampler
+from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm
+
+try:
+    import horovod.mxnet as hvd
+except ImportError:
+    pass
 
 mx.npx.set_np()
 
@@ -48,6 +55,10 @@ def parse_args():
     parser.add_argument('--output_dir', type=str, default='squad_out',
                         help='The output directory where the model params will be written.'
                              ' default is squad_out')
+    # Communication
+    parser.add_argument('--comm_backend', type=str, default='device',
+                        choices=['horovod', 'dist_sync_device', 'device'],
+                        help='Communication backend.')
     parser.add_argument('--gpus', type=str, default='0',
                         help='list of gpus to run, e.g. 0 or 0,2,5. -1 means using cpu.')
     # Training hyperparameters
@@ -384,8 +395,11 @@ def untune_params(model, untunable_depth, not_included=[]):
                     continue
             value.grad_req = 'null'
 
+
 def train(args):
-    ctx_l = parse_ctx(args.gpus)
+    store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
+        args.comm_backend, args.gpus)
+
     cfg, tokenizer, qa_net, use_segmentation = \
         get_network(args.model_name, ctx_l,
                     args.classifier_dropout,
@@ -439,12 +453,15 @@ def train(args):
                          sum([ele.is_impossible for ele in train_features])))
     logging.info('After Chunking, #Train Sample/Is Impossible = {}/{}'
                  .format(len(train_dataset), num_impossible))
+    sampler = SplitSampler(len(train_dataset), num_parts=num_workers,
+                                    part_index=rank, even_size=True)
     train_dataloader = mx.gluon.data.DataLoader(
         train_dataset,
         batchify_fn=dataset_processor.BatchifyFunction,
         batch_size=args.batch_size,
-        num_workers=0,
-        shuffle=True)
+        num_workers=4,
+        shuffle=True
+        sampler=sampler)
     # Froze parameters
     if 'electra' in args.model_name:
         # does not work for albert model since parameters in all layers are shared
@@ -453,17 +470,24 @@ def train(args):
         if args.layerwise_decay > 0:
             qa_net.backbone.apply_layerwise_decay(args.layerwise_decay)
 
+    logging.info('Creating distributed trainer...')
+    # Collect differentiable parameters
+    param_dict = qa_net.collect_params()
     # Do not apply weight decay to all the LayerNorm and bias
     for _, v in qa_net.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
-    # Collect differentiable parameters
-    params = [p for p in qa_net.collect_params().values() if p.grad_req != 'null']
+    params = [p for p in param_dict.values() if p.grad_req != 'null']
     # Set grad_req if gradient accumulation is required
     if args.num_accumulated > 1:
         logging.info('Using gradient accumulation. Effective global batch size = {}'
-                     .format(args.num_accumulated * args.batch_size * len(ctx_l)))
+                     .format(args.num_accumulated * args.batch_size * len(ctx_l) * num_workers))
         for p in params:
             p.grad_req = 'add'
+    # backend specific implementation
+    if args.comm_backend == 'horovod':
+        # Horovod: fetch and broadcast parameters
+        hvd.broadcast_parameters(param_dict, root_rank=0)
+
     epoch_size = (len(train_dataloader) + len(ctx_l) - 1) // len(ctx_l)
     if args.num_train_steps is not None:
         num_train_steps = args.num_train_steps
@@ -504,9 +528,12 @@ def train(args):
                                  'beta2': adam_betas[1],
                                  'epsilon': args.adam_epsilon,
                                  })
-    trainer = mx.gluon.Trainer(qa_net.collect_params(),
-                               args.optimizer, optimizer_params,
-                               update_on_kvstore=False)
+    if args.comm_backend == 'horovod':
+        trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optimizer_params)
+    else:
+        trainer = mx.gluon.Trainer(param_dict, args.optimizer, optimizer_params,
+                                   update_on_kvstore=False)
+
     num_samples_per_update = 0
     loss_denom = float(len(ctx_l) * args.num_accumulated)
 
@@ -516,7 +543,7 @@ def train(args):
     log_sample_num = 0
     if args.num_accumulated != 1:
         # set grad to zero for gradient accumulation
-        qa_net.collect_params().zero_grad()
+        param_dict.zero_grad()
 
     # start training
     global_tic = time.time()
@@ -575,17 +602,18 @@ def train(args):
             #  \sum_{n=1}^N g_n / loss_denom  -->  clip to args.max_grad_norm  * N / loss_denom
             total_norm, ratio, is_finite = clip_grad_global_norm(
                 params, args.max_grad_norm * num_samples_per_update / loss_denom)
-            total_norm = total_norm / (num_samples_per_update / loss_denom)
         else:
-            total_norm = grad_global_norm(parameters)
+            total_norm = grad_global_norm(params)
 
+        total_norm = total_norm / (num_samples_per_update / loss_denom)
         trainer.update(num_samples_per_update / loss_denom)
         if args.num_accumulated != 1:
             # set grad to zero for gradient accumulation
-            qa_net.collect_params().zero_grad()
+            param_dict.zero_grad()
 
         # saving
-        if (step_num + 1) % save_interval == 0 or (step_num + 1) >= num_train_steps:
+        if local_rank == 0 and is_master_node and (
+                step_num + 1) % save_interval == 0 or (step_num + 1) >= num_train_steps:
             version_prefix = 'squad' + args.version
             ckpt_name = '{}_{}_{}.params'.format(args.model_name,
                                                  version_prefix,
@@ -602,7 +630,7 @@ def train(args):
             logging.info('Params saved in: {}'.format(params_saved))
 
         # logging
-        if (step_num + 1) % log_interval == 0:
+        if local_rank == 0 and (step_num + 1) % log_interval == 0:
             log_span_loss /= log_sample_num
             log_answerable_loss /= log_sample_num
             log_total_loss /= log_sample_num
@@ -611,8 +639,8 @@ def train(args):
                 'Step: {}/{}, Loss span/answer/total={:.4f}/{:.4f}/{:.4f},'
                 ' LR={:.8f}, grad_norm={:.4f}. Time cost={:.2f}, Throughput={:.2f} samples/s'
                 ' ETA={:.2f}h'.format((step_num + 1), num_train_steps, log_span_loss,
-                                      log_answerable_loss, log_total_loss, trainer.learning_rate, total_norm,
-                                      toc - tic, log_sample_num / (toc - tic),
+                                      log_answerable_loss, log_total_loss, trainer.learning_rate,
+                                      total_norm, toc - tic, log_sample_num / (toc - tic),
                                       (num_train_steps - (step_num + 1)) / ((step_num + 1) / (toc - global_tic)) / 3600))
             tic = time.time()
             log_span_loss = 0
@@ -622,7 +650,9 @@ def train(args):
             num_samples_per_update = 0
 
         if (step_num + 1) >= num_train_steps:
-            logging.info('Finish training step: %d', (step_num + 1))
+            logging.info(
+                'Finish training step: {} within {} hours'.format(
+                    step_num + 1, toc - global_tic))
             break
 
     return params_saved
