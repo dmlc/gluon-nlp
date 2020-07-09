@@ -41,6 +41,7 @@ def transformer_nmt_base():
     cfg.MODEL.ENCODER.recurrent = False
     cfg.MODEL.ENCODER.activation = 'relu'
     cfg.MODEL.ENCODER.pre_norm = False
+    cfg.MODEL.ENCODER.layout = 'NT'
 
     # Parameters for the decoder
     cfg.MODEL.DECODER = CN()
@@ -51,10 +52,7 @@ def transformer_nmt_base():
     cfg.MODEL.DECODER.recurrent = False
     cfg.MODEL.DECODER.activation = 'relu'
     cfg.MODEL.DECODER.pre_norm = False
-
-    # Parameters for mixture of models
-    cfg.MODEL.method = 'hMoElp'
-    cfg.MODEL.num_experts = 3
+    cfg.MODEL.DECODER.layout = 'NT'
 
     # Parameters for the initializer
     cfg.INITIALIZER = CN()
@@ -400,6 +398,7 @@ class TransformerDecoderLayer(HybridBlock):
                  weight_initializer=None,
                  bias_initializer='zeros',
                  dtype='float32',
+                 layout='NT',
                  prefix=None,
                  params=None):
         """
@@ -422,11 +421,14 @@ class TransformerDecoderLayer(HybridBlock):
         weight_initializer
         bias_initializer
         dtype
+        layout
+            Layout of the input
         prefix
         params
         """
         super(TransformerDecoderLayer, self).__init__(prefix=prefix, params=params)
         self._dtype = dtype
+        self._layout = layout
         self._units = units
         if mem_units is None:
             mem_units = units
@@ -435,6 +437,9 @@ class TransformerDecoderLayer(HybridBlock):
         self._num_heads = num_heads
         self._attention_dropout = attention_dropout
         self._dtype = dtype
+        assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
+                                       'Only "TN" and "NT" are accepted!'.format(layout)
+        attention_layout = 'NTK' if layout == 'NT' else 'TNK'
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
             if units % num_heads:
@@ -451,7 +456,7 @@ class TransformerDecoderLayer(HybridBlock):
                                                          num_heads=num_heads,
                                                          attention_dropout=self._attention_dropout,
                                                          dtype=dtype,
-                                                         layout='NTK',
+                                                         layout=attention_layout,
                                                          prefix='self_attn_')
             self.proj_in = nn.Dense(units=units, in_units=units, flatten=False,  use_bias=False,
                                     weight_initializer=weight_initializer,
@@ -484,7 +489,7 @@ class TransformerDecoderLayer(HybridBlock):
                                                           num_heads=num_heads,
                                                           attention_dropout=self._attention_dropout,
                                                           dtype=dtype,
-                                                          layout='NTK',
+                                                          layout=attention_layout,
                                                           prefix='inter_attn_')
             self.proj_inter = nn.Dense(units=units, in_units=units,
                                        flatten=False, use_bias=False,
@@ -508,6 +513,10 @@ class TransformerDecoderLayer(HybridBlock):
                                        dtype=dtype,
                                        prefix='ffn_')
 
+    @property
+    def layout(self):
+        return self._layout
+
     def hybrid_forward(self, F, data, mem, self_causal_mask, mem_attn_mask):
         """
 
@@ -515,9 +524,15 @@ class TransformerDecoderLayer(HybridBlock):
         ----------
         F
         data :
-            Shape (batch_size, seq_length, C_in)
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_in)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_in)
         mem :
-            Shape (batch_size, mem_length, C_mem)
+            - layout = 'NT'
+                Shape (batch_size, mem_length, C_mem)
+            - layout = 'TN'
+                Shape (mem_length, batch_size, C_mem)
         self_causal_mask :
             Shape (batch_size, seq_length, seq_length)
             Mask for the causal self-attention.
@@ -544,11 +559,11 @@ class TransformerDecoderLayer(HybridBlock):
         Returns
         -------
         out :
-            Shape (batch_size, seq_length, C_out)
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_out)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_out)
         """
-        # TODO(szhengac)
-        #  Try the architecture in the "[ECCV2016] Identity Mappings in Deep Residual Networks".
-        #  Shuai proposed to switch the order of the activation layer.
         # 1. Get the causal self-attention value
         if self._pre_norm:
             data = self.ln_in(data)
@@ -584,7 +599,10 @@ class TransformerDecoderLayer(HybridBlock):
 
     @property
     def state_batch_axis(self):
-        return 0, 0
+        if self._layout == 'NT':
+            return 0, 0
+        else:
+            return 1, 1
 
     def init_states(self, batch_size, ctx, dtype='float32'):
         """Initialize the states required for incremental decoding
@@ -596,10 +614,16 @@ class TransformerDecoderLayer(HybridBlock):
         init_value :
             Shape (batch_size, 0, N, C_value)
         """
-        init_key = mx.np.zeros(shape=(batch_size, 0, self._num_heads,
-                                      self._units // self._num_heads), ctx=ctx, dtype=dtype)
-        init_value = mx.np.zeros(shape=(batch_size, 0, self._num_heads,
-                                        self._units // self._num_heads), ctx=ctx, dtype=dtype)
+        if self.layout == 'NT':
+            init_key = mx.np.zeros(shape=(batch_size, 0, self._num_heads,
+                                          self._units // self._num_heads), ctx=ctx, dtype=dtype)
+            init_value = mx.np.zeros(shape=(batch_size, 0, self._num_heads,
+                                            self._units // self._num_heads), ctx=ctx, dtype=dtype)
+        else:
+            init_key = mx.np.zeros(shape=(0, batch_size, self._num_heads,
+                                          self._units // self._num_heads), ctx=ctx, dtype=dtype)
+            init_value = mx.np.zeros(shape=(0, batch_size, self._num_heads,
+                                            self._units // self._num_heads), ctx=ctx, dtype=dtype)
         return init_key, init_value
 
     def incremental_decode(self, F, data, states, mem, mem_valid_length, mem_attn_mask=None):
@@ -609,16 +633,25 @@ class TransformerDecoderLayer(HybridBlock):
         ----------
         F
         data
-            Shape (batch_size, 1, C_in)
+            Shape (batch_size, C_in)
         states
             The previous states, contains
-            - prev_multi_key
-                Shape (batch_size, prev_seq_length, num_heads, C_key)
-            - prev_multi_value
-                Shape (batch_size, prev_seq_length, num_heads, C_value)
+            1. layout = 'NT':
+                - prev_multi_key
+                    Shape (batch_size, prev_seq_length, num_heads, C_key)
+                - prev_multi_value
+                    Shape (batch_size, prev_seq_length, num_heads, C_value)
+            2. layout = 'TN'
+                - prev_multi_key
+                    Shape (prev_seq_length, batch_size, num_heads, C_key)
+                - prev_multi_value
+                    Shape (prev_seq_length, batch_size, num_heads, C_value)
         mem
             The memory
-            Shape (batch_size, mem_length, C_mem)
+            1. layout = 'NT':
+                Shape (batch_size, mem_length, C_mem)
+            2. layout = 'TN'
+                Shape (mem_length, batch_size, C_mem)
         mem_valid_length
             Valid length of the memory
             Shape (batch_size,)
@@ -629,7 +662,7 @@ class TransformerDecoderLayer(HybridBlock):
         Returns
         -------
         out
-            Shape (batch_size, 1, C_out)
+            Shape (batch_size, C_out)
         updated_states
             - new_key
                 Shape (batch_size, prev_seq_length + 1, num_heads, C_key)
@@ -638,10 +671,16 @@ class TransformerDecoderLayer(HybridBlock):
         """
         if self._pre_norm:
             data = self.ln_in(data)
+        if self.layout == 'NT':
+            # Shape (B, 1, C)
+            data = F.np.expand_dims(data, axis=1)
+        else:
+            # Shape (1, B, C)
+            data = F.np.expand_dims(data, axis=0)
         prev_key, prev_value = states  # Shape (B, prev_L, #Head, C_K), (B, prev_L, #Head, C_V)
         if mem_attn_mask is None:
             mem_attn_mask = gen_mem_attn_mask(F, mem, mem_valid_length, data, None,
-                                              dtype=self._dtype)
+                                              dtype=self._dtype, layout=self.layout)
         # 1. Get the causal self-attention value, we need to attend to both the current data
         # and the previous stored key/values
         step_qkv = self.attn_in_qkv(data)  # Shape (B, 1, 3 * num_heads * C_key)
@@ -675,6 +714,7 @@ class TransformerDecoderLayer(HybridBlock):
             out = self.ln_inter(out)
         # 3. Encode the output via an FFN layer
         out = self.ffn(out)
+        out = F.np.reshape(out, (0, -1))
         return out, (new_key, new_value)
 
 
@@ -685,10 +725,13 @@ class TransformerDecoder(HybridBlock):
                  num_heads=8, max_shift=None, rel_pos_embed=False, activation_dropout=0.0,
                  dropout=0.1, attention_dropout=0.1, layer_norm_eps=1E-5, data_norm=False,
                  pre_norm=False, weight_initializer=None, bias_initializer=None,
-                 activation='relu', dtype='float32', prefix=None, params=None):
+                 activation='relu', dtype='float32',
+                 layout='NT',
+                 prefix=None, params=None):
         super(TransformerDecoder, self).__init__(prefix=prefix, params=params)
         self._dtype = dtype
         self._units = units
+        self._layout = layout
         self._mem_units = mem_units
         self.num_layers = num_layers
         self.recurrent = recurrent
@@ -724,6 +767,7 @@ class TransformerDecoder(HybridBlock):
                                                             activation=activation,
                                                             pre_norm=pre_norm,
                                                             dtype=dtype,
+                                                            layout=layout,
                                                             prefix='{}_'.format(i)))
 
     def hybrid_forward(self, F, data, valid_length, mem_data, mem_valid_length):
@@ -732,27 +776,40 @@ class TransformerDecoder(HybridBlock):
         Parameters
         ----------
         F
-        data :
-            Shape (batch_size, seq_length, C_in)
-        valid_length :
+        data
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_in)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_in)
+        valid_length
             Shape (batch_size,)
-        mem_data :
-            Shape (batch_size, mem_length, C_mem)
-        mem_valid_length :
+        mem_data
+            - layout = 'NT'
+                Shape (batch_size, mem_length, C_mem)
+            - layout = 'TN'
+                Shape (mem_length, batch_size, C_mem)
+        mem_valid_length
             Shape (batch_size,)
+
         Returns
         -------
-        out :
-            Shape (batch_size, seq_length, C_out)
+        out
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_out)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_out)
         """
         # 1. Embed the data
         out = self.dropout_layer(data)
         if self._data_norm:
             out = self.ln_data(out)
         self_causal_mask = gen_self_attn_mask(F, data, valid_length,
-                                              dtype=self._dtype, attn_type='causal')
+                                              dtype=self._dtype,
+                                              attn_type='causal',
+                                              layout=self._layout)
         mem_attn_mask = gen_mem_attn_mask(F, mem_data, mem_valid_length, data, valid_length,
-                                          dtype=self._dtype)
+                                          dtype=self._dtype,
+                                          layout=self._layout)
         for i in range(self.num_layers):
             if self.recurrent:
                 layer = self.layers[0]
@@ -802,16 +859,25 @@ class TransformerDecoder(HybridBlock):
         ----------
         F
         data
-            Shape (batch_size, 1, C_in)
+            Shape (batch_size, C_in)
         states
             The previous states, contain a list of
-            - prev_multi_key
-                Shape (batch_size, prev_seq_length, num_heads, C_key)
-            - prev_multi_value
-                Shape (batch_size, prev_seq_length, num_heads, C_value)
+            1. layout = 'NT'
+                - prev_multi_key
+                    Shape (batch_size, prev_seq_length, num_heads, C_key)
+                - prev_multi_value
+                    Shape (batch_size, prev_seq_length, num_heads, C_value)
+            2. layout = 'TN'
+                - prev_multi_key
+                    Shape (prev_seq_length, batch_size, num_heads, C_key)
+                - prev_multi_value
+                    Shape (prev_seq_length, batch_size, num_heads, C_value)
         mem
             The memory
-            Shape (batch_size, mem_length, C_mem)
+            1. layout = 'NT'
+                Shape (batch_size, mem_length, C_mem)
+            2. layout = 'TN'
+                Shape (mem_length, batch_size, C_mem)
         mem_valid_length
             Valid length of the memory
             Shape (batch_size,)
@@ -819,13 +885,15 @@ class TransformerDecoder(HybridBlock):
         Returns
         -------
         out
-            Shape (batch_size, 1, C_out)
+            Shape (batch_size, C_out)
         new_states
             The updated states, contain a list of
-            - new_key
-                Shape (batch_size, prev_seq_length + 1, num_heads, C_key)
-            - new_value
-                Shape (batch_size, prev_seq_length + 1, num_heads, C_value)
+            1. layout = 'NT'
+                - new_key
+                    Shape (batch_size, prev_seq_length + 1, num_heads, C_key)
+            2. layout = 'TN'
+                - new_value
+                    Shape (prev_seq_length + 1, batch_size, num_heads, C_value)
         """
         # 1. Embed the data
         out = self.dropout_layer(data)
@@ -880,6 +948,7 @@ class TransformerNMTModel(HybridBlock):
                  weight_initializer=mx.init.Xavier('uniform', 'avg', 3),
                  bias_initializer='zeros',
                  dtype='float32',
+                 layout='NT',
                  prefix=None, params=None):
         """
 
@@ -949,6 +1018,8 @@ class TransformerNMTModel(HybridBlock):
             Initializer of the bias
         dtype
             Data type of the weights
+        layout
+            The layout
         prefix
         params
         """
@@ -961,6 +1032,7 @@ class TransformerNMTModel(HybridBlock):
             'cfg.MODEL.tgt_vocab_size manually before passing to ' \
             'TransformerNMTModel.from_cfg().'
         self._dtype = dtype
+        self._layout = layout
         self._src_vocab_size = src_vocab_size
         self._tgt_vocab_size = tgt_vocab_size
         self.pos_embed_type = pos_embed_type
