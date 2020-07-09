@@ -374,8 +374,8 @@ def untune_params(model, untunable_depth, not_included=[]):
         A list or parameter names that not included in the untunable parameters
     """
     all_layers = model.backbone.encoder.all_encoder_layers
-    for _, v in model.collect_params('.*embed*').items():
-        model.grad_req = 'null'
+    for _, value in model.collect_params('.*embed*').items():
+        value.grad_req = 'null'
 
     for layer in all_layers[:untunable_depth]:
         for key, value in layer.collect_params().items():

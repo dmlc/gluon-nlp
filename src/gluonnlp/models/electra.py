@@ -392,9 +392,8 @@ class ElectraModel(HybridBlock):
         # consider the task specific finetuning layer as the last layer, following with pooler
         # In addition, the embedding parameters have the smaller learning rate based on this setting.
         max_depth = self.num_layers
-        for key, value in self.collect_params().items():
-            if 'embed' in key:
-                value.lr_mult = layerwise_decay**(max_depth + 1)
+        for _, value in self.collect_params('.*embed*').items():
+            value.lr_mult = layerwise_decay**(max_depth + 1)
 
         for (layer_depth, layer) in enumerate(self.encoder.all_encoder_layers):
             layer_params = layer.collect_params()
