@@ -23,7 +23,7 @@ from squad_utils import SquadFeature, get_squad_examples, convert_squad_example_
 from gluonnlp.models import get_backbone
 from gluonnlp.utils.misc import grouper, repeat, set_seed, parse_ctx, logging_config, count_parameters
 from gluonnlp.initializer import TruncNorm
-from gluonnlp.utils.parameter import clip_grad_global_norm, multiply_grads
+from gluonnlp.utils.parameter import clip_grad_global_norm, grad_global_norm
 
 mx.npx.set_np()
 
@@ -577,9 +577,9 @@ def train(args):
                 params, args.max_grad_norm * num_samples_per_update / loss_denom)
             total_norm = total_norm / (num_samples_per_update / loss_denom)
         else:
-            total_norm, is_finite = multiply_grads(params, loss_denom / num_samples_per_update)
+            total_norm = grad_global_norm(parameters)
 
-        trainer.update(num_samples_per_update / loss_denom, ignore_stale_grad=True)
+        trainer.update(num_samples_per_update / loss_denom)
         if args.num_accumulated != 1:
             # set grad to zero for gradient accumulation
             qa_net.collect_params().zero_grad()

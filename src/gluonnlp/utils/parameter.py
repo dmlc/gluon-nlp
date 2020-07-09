@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Utility functions for trainer and parameters."""
-__all__ = ['grad_global_norm', 'clip_grad_global_norm', 'multiply_grads']
+__all__ = ['grad_global_norm', 'clip_grad_global_norm']
 
 
 import warnings
@@ -152,37 +152,3 @@ def clip_grad_global_norm(parameters: Iterable[Parameter],
             for arr in p.list_grad():
                 arr *= scale
     return total_norm, ratio, is_finite
-
-
-def multiply_grads(parameters: Iterable[Parameter],
-                   scale: float,
-                   check_isfinite: bool = True) -> Tuple[float]:
-    """
-    Multiplies grads by a constant scale
-
-    Parameters
-    ----------
-    parameters
-        The list of parameters to calculate the norm
-    scale
-        The normalize multiplier to normalize the gradient
-    Returns
-    -------
-    total_norm
-        The total norm
-    is_finite
-        Whether the total norm is finite
-    """
-    total_norm = grad_global_norm(parameters)
-    is_finite = bool(np.isfinite(total_norm))
-    if check_isfinite and not is_finite:
-        warnings.warn(
-            UserWarning('nan or inf is detected. Clipping results will be undefined.'
-                        ' Thus, skip clipping'),
-            stacklevel=2)
-        return total_norm, is_finite
-    for p in parameters:
-        if p.grad_req != 'null':
-            for arr in p.list_grad():
-                arr *= scale
-    return total_norm, is_finite
