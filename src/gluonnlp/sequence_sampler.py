@@ -660,18 +660,10 @@ class _MultinomialStepUpdate(HybridBlock):
             
         # renormalize
         probs = F.npx.softmax(outputs / self._temperature)
-        lprobs = F.np.log(probs)
         
         # bsz * beam_size
-        chosen_word_ids = F.sample_multinomial(probs, dtype=np.int32)
-        
-        # -1 * vocab_size
-        lprobs = lprobs.reshape((-1, vocab_size))
-        # bsz * beam_size
-        chosen_word_log_probs = lprobs[
-            F.np.arange(lprobs.shape[0]),
-            chosen_word_ids.reshape(-1)
-        ].reshape((-1, beam_size))
+        chosen_word_ids, chosen_word_log_probs = \
+            F.npx.random.categorical(probs, get_prob=True)
         
         new_scores = scores + F.np.where(
             beam_alive_mask,
@@ -683,75 +675,16 @@ class _MultinomialStepUpdate(HybridBlock):
         chosen_word_ids = F.np.where(
             beam_alive_mask,
             chosen_word_ids,
-            F.np.full_like(beam_alive_mask, -1)
+            F.np.full_like(beam_alive_mask, -1, dtype=np.int32)
         )
 
-        new_valid_length = valid_length + beam_alive_mask
+        new_valid_length = valid_length + beam_alive_mask.astype(np.int32)
         new_samples = F.np.concatenate(
-            samples,
-            F.np.expand_dims(chosen_word_ids, axis=2),
+            [samples, F.np.expand_dims(chosen_word_ids, axis=2)],
             axis=2
         )
         new_states = states
-        beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id)
+        beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(np.int32)
         
         return new_samples, new_valid_length, new_scores, chosen_word_ids,\
                beam_alive_mask, new_states
-        
-            
-
-#######        
-        
-        # candidate_scores do not influnce
-        
-#        # size ? 2* bs ?
-#        candidate_scores = self._scorer(F.npx.reshape(outputs, (-6, -1, beam_size, -2)),
-#                                        scores, step)
-#        # Concat the candidate scores and the scores of the finished beams
-#        # The resulting candidate score will have shape (batch_size, beam_size * |V| + beam_size)
-#        candidate_scores = F.np.where(beam_alive_mask_bcast,
-#                                      candidate_scores,
-#                                      F.np.full_like(candidate_scores,
-#                                                     LARGE_NEGATIVE_FLOAT))
-#        finished_scores = F.np.where(beam_alive_mask,
-#                                     F.np.full_like(scores,
-#                                                    LARGE_NEGATIVE_FLOAT),
-#                                     scores)
-#        candidate_scores = F.np.concatenate([F.npx.reshape(candidate_scores, (-2, -1)),
-#                                             finished_scores],
-#                                            axis=1)
-#        
-##
-#        
-#        # Get the top K scores
-#        # new_scores and indices will have shape (batch_size, beam_size)
-#        new_scores, indices = F.npx.topk(candidate_scores, axis=1, k=beam_size, ret_typ='both')
-#        indices = indices.astype(np.int32)
-#        use_prev = (indices >= (beam_size * vocab_size)).astype(np.int32)
-#        chosen_word_ids = F.np.mod(indices, vocab_size)
-#        beam_ids = F.np.where(use_prev, indices - beam_size * vocab_size,
-#                              F.np.floor(indices / vocab_size).astype(np.int32))
-#        batch_beam_indices = beam_ids + F.np.expand_dims(batch_shift, axis=1)
-#        chosen_word_ids = F.np.where(use_prev, - F.np.ones_like(indices), chosen_word_ids)
-#        # Update the samples and vaild_length
-#        # TODO(sxjscience) The current implementation is quite tricky
-#        #  We should wait for hybridizable advanced indexing to avoid this
-#        selected_samples = F.np.take(F.npx.reshape(samples, (-5, -2)),
-#                                     batch_beam_indices.reshape((-1,)), axis=0)
-#        new_samples = F.npx.reshape(F.np.concatenate([selected_samples,
-#                                                      chosen_word_ids.reshape((-1, 1))],
-#                                                     axis=1),
-#                                    (-6, -1, beam_size, -2))
-#        new_valid_length = F.np.take(valid_length.reshape((-1,)),
-#                                     batch_beam_indices.reshape((-1,)),
-#                                     axis=0).reshape((-1, beam_size)) + 1 - use_prev
-#        # Update the states
-#        new_states = _choose_states(F, states, batch_beam_indices.reshape((-1,)),
-#                                    self._state_batch_axis)
-#        # Update the alive mask.
-#        beam_alive_mask = F.np.take(beam_alive_mask.reshape((-1,)),
-#                                    batch_beam_indices.reshape((-1,)), axis=0)\
-#                              .reshape((-1, beam_size))\
-#                          * (chosen_word_ids != self._eos_id).astype(np.float32)
-#        return new_samples, new_valid_length, new_scores, chosen_word_ids,\
-#               beam_alive_mask, new_states
