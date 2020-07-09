@@ -714,7 +714,7 @@ class TransformerDecoderLayer(HybridBlock):
             out = self.ln_inter(out)
         # 3. Encode the output via an FFN layer
         out = self.ffn(out)
-        out = F.np.reshape(out, (0, -1))
+        out = F.npx.reshape(out, (-2, -1))
         return out, (new_key, new_value)
 
 
