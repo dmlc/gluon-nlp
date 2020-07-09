@@ -24,8 +24,7 @@ import numpy as np
 from collections import OrderedDict
 import mxnet as mx
 from mxnet import use_np
-from mxnet.gluon import HybridBlock
-from mxnet.gluon import nn
+from mxnet.gluon import nn, HybridBlock, Parameter, Constant
 from typing import Union, Optional, List
 from .op import relative_position_bucket
 
@@ -118,15 +117,15 @@ class NoNorm(HybridBlock):
     def __init__(self, in_channels, center=True, scale=True,
                  beta_initializer='zeros', gamma_initializer='ones',
                  **kwargs):
-        super(NoNorm, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._kwargs = {'center': center, 'scale': scale}
         self._in_channels = in_channels
-        self.gamma = self.params.get('gamma', grad_req='write' if scale else 'null',
-                                     shape=(in_channels,), init=gamma_initializer,
-                                     allow_deferred_init=True)
-        self.beta = self.params.get('beta', grad_req='write' if center else 'null',
-                                    shape=(in_channels,), init=beta_initializer,
-                                    allow_deferred_init=True)
+        self.gamma = Parameter('gamma', grad_req='write' if scale else 'null',
+                               shape=(in_channels,), init=gamma_initializer,
+                               allow_deferred_init=True)
+        self.beta = Parameter('beta', grad_req='write' if center else 'null',
+                              shape=(in_channels,), init=beta_initializer,
+                              allow_deferred_init=True)
 
     def hybrid_forward(self, F, data, gamma, beta):
         return data * gamma + beta
@@ -234,8 +233,7 @@ def get_activation(act: Optional[Union[str, HybridBlock]]) -> HybridBlock:
 @use_np
 class MultiHeadDense(HybridBlock):
     def __init__(self, units, num_heads, use_bias=True, dtype='float32',
-                 weight_initializer=None, bias_initializer=None,
-                 prefix=None, params=None):
+                 weight_initializer=None, bias_initializer=None):
         """Multiple Dense with different parameters and the same number of units
         The inner shapes of the weight and bias are
             weight: (self._parallel_num[0] * ... * self._parallel_num[k] * units, in_units)
@@ -250,10 +248,8 @@ class MultiHeadDense(HybridBlock):
             The data type
         weight_initializer : None or initialzer, default None
         bias_initializer : None or initializer, default None
-        prefix : str or None
-        params : None
         """
-        super().__init__(prefix=prefix, params=params)
+        super().__init__()
         if not isinstance(num_heads, (list, tuple)):
             num_heads = (int(num_heads),)
         else:
@@ -266,16 +262,15 @@ class MultiHeadDense(HybridBlock):
                                  ' num_heads={}'.format(num_heads))
         self._units = units
         self._mult = np.prod(num_heads)
-        with self.name_scope():
-            self.weight = self.params.get('weight', shape=(self._mult * units, 0),
-                                          init=weight_initializer, dtype=dtype,
-                                          allow_deferred_init=True)
-            if use_bias:
-                self.bias = self.params.get('bias', shape=(self._mult * units,),
-                                            init=bias_initializer, dtype=dtype,
-                                            allow_deferred_init=True)
-            else:
-                self.bias = None
+        self.weight = Parameter('weight', shape=(self._mult * units, 0),
+                                init=weight_initializer, dtype=dtype,
+                                allow_deferred_init=True)
+        if use_bias:
+            self.bias = Parameter('bias', shape=(self._mult * units,),
+                                  init=bias_initializer, dtype=dtype,
+                                  allow_deferred_init=True)
+        else:
+            self.bias = None
 
     def hybrid_forward(self, F, data, weight, bias=None):
         """
@@ -346,16 +341,14 @@ class GELU(HybridBlock):
     Outputs:
         - **out**: output tensor with the same shape as `data`.
     """
-    def __init__(self, mode='erf', prefix=None, params=None):
+    def __init__(self, mode='erf'):
         """
 
         Parameters
         ----------
         mode
-        prefix
-        params
-        """
-        super().__init__(prefix=prefix, params=params)
+                """
+        super().__init__()
         if mode not in ['erf', 'tanh', 'sigmoid']:
             raise ValueError('Unsupported mode, only support "erf", "tanh", or "sigmoid". '
                              'Received mode={}'.format(mode))
@@ -407,24 +400,21 @@ class ELU(HybridBlock):
 @use_np
 class PositionalEmbedding(HybridBlock):
     def __init__(self, units, max_length=None, method='sinusoidal',
-                 dtype='float32', prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
+                 dtype='float32'):
+        super().__init__()
         self._units = units
         self._max_length = max_length
         self._method = method
         self._dtype = dtype
-        with self.name_scope():
-            if method == 'sinusoidal':
-                self._embed = SinusoidalPositionalEmbedding(units=units,
-                                                            dtype=dtype,
-                                                            prefix='embed_')
-            elif method == 'learned':
-                self._embed = LearnedPositionalEmbedding(units=units,
-                                                         max_length=max_length,
-                                                         dtype=dtype,
-                                                         prefix='embed_')
-            else:
-                raise NotImplementedError
+        if method == 'sinusoidal':
+            self._embed = SinusoidalPositionalEmbedding(units=units,
+                                                        dtype=dtype)
+        elif method == 'learned':
+            self._embed = LearnedPositionalEmbedding(units=units,
+                                                     max_length=max_length,
+                                                     dtype=dtype)
+        else:
+            raise NotImplementedError
 
     def hybrid_forward(self, F, positions):
         """
@@ -445,7 +435,7 @@ class PositionalEmbedding(HybridBlock):
 
 @use_np
 class SinusoidalPositionalEmbedding(HybridBlock):
-    def __init__(self, units: int, dtype: Union[str, type] = 'float32', prefix=None, params=None):
+    def __init__(self, units: int, dtype: Union[str, type] = 'float32'):
         """Use a geometric sequence of timescales.
 
         Parameters
@@ -455,7 +445,7 @@ class SinusoidalPositionalEmbedding(HybridBlock):
         dtype
             The dtype of the inner positional embeddings
         """
-        super().__init__(prefix=prefix, params=params)
+        super().__init__()
 
         def _init_sinusodial_base(units):
             half_units = units // 2
@@ -465,7 +455,7 @@ class SinusoidalPositionalEmbedding(HybridBlock):
 
         self._units = units
         self._dtype = dtype
-        self.base_mult = self.params.get_constant('base_mult', _init_sinusodial_base(units))
+        self.base_mult = Constant(_init_sinusodial_base(units))
 
     def hybrid_forward(self, F, positions, base_mult):
         """
@@ -501,17 +491,16 @@ class SinusoidalPositionalEmbedding(HybridBlock):
 @use_np
 class LearnedPositionalEmbedding(HybridBlock):
     def __init__(self, units, max_length, mode='clip',
-                 dtype='float32', weight_initializer=None, prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
+                 dtype='float32', weight_initializer=None):
+        super().__init__()
         self._units = units
         self._dtype = dtype
         self._max_length = max_length
         self._mode = mode
 
-        with self.name_scope():
-            self.weight = self.params.get('weight', shape=(max_length, units),
-                                          init=weight_initializer, dtype=dtype,
-                                          allow_deferred_init=True)
+        self.weight = Parameter('weight', shape=(max_length, units),
+                                init=weight_initializer, dtype=dtype,
+                                allow_deferred_init=True)
 
     def __repr__(self):
         s = '{name}(units={units}, max_length={max_length}, mode={mode}, dtype={dtype})'
@@ -538,17 +527,16 @@ class BucketPositionalEmbedding(HybridBlock):
     of the buckets handles the large shifts (mapping them in logarithmically separated bins).
     """
     def __init__(self, units, bidirectional=True, num_buckets=32, max_distance=128,
-                 dtype='float32', embed_initializer=None, prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
+                 dtype='float32', embed_initializer=None):
+        super().__init__()
         self._units = units
         self._bidirectional = bidirectional
         self._num_buckets = num_buckets
         self._max_distance = max_distance
         self._dtype = dtype
-        with self.name_scope():
-            self.weight = self.params.get('weight', shape=(num_buckets, units),
-                                          init=embed_initializer, dtype=dtype,
-                                          allow_deferred_init=True)
+        self.weight = Parameter('weight', shape=(num_buckets, units),
+                                init=embed_initializer, dtype=dtype,
+                                allow_deferred_init=True)
 
     def __repr__(self):
         s = '{name}(units={units}, bidirectional={bidirectional}, num_buckets={num_buckets},' \
@@ -588,8 +576,7 @@ class PositionwiseFFN(HybridBlock):
                  normalization: str = 'layer_norm',
                  layer_norm_eps: float = 1E-5,
                  pre_norm: bool = False,
-                 dtype='float32',
-                 prefix=None, params=None):
+                 dtype='float32'):
         """
 
         Parameters
@@ -611,10 +598,8 @@ class PositionwiseFFN(HybridBlock):
             This will stabilize the training of Transformers.
             You may also refer to
             "[Arxiv2020] Understanding the Difficulty of Training Transformers"
-        prefix
-        params
-        """
-        super().__init__(prefix=prefix, params=params)
+                """
+        super().__init__()
         self._dtype = dtype
         self._pre_norm = pre_norm
         self._kwargs = OrderedDict([
@@ -628,29 +613,25 @@ class PositionwiseFFN(HybridBlock):
             ('pre_norm', pre_norm),
             ('dtype', self._dtype)
         ])
-        with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
-            self.activation_dropout_layer = nn.Dropout(activation_dropout)
-            self.ffn_1 = nn.Dense(units=hidden_size,
-                                  in_units=units,
-                                  flatten=False,
-                                  weight_initializer=weight_initializer,
-                                  bias_initializer=bias_initializer,
-                                  dtype=dtype,
-                                  prefix='ffn1_')
-            self.activation = get_activation(activation)
-            self.ffn_2 = nn.Dense(units=units,
-                                  in_units=hidden_size,
-                                  flatten=False,
-                                  weight_initializer=weight_initializer,
-                                  bias_initializer=bias_initializer,
-                                  dtype=dtype,
-                                  prefix='ffn2_')
-            # TODO(sxjscience) We may need to set the dtype flag in LayerNorm, need to double check
-            self.layer_norm = get_layer_norm(normalization=normalization,
-                                             in_channels=units,
-                                             epsilon=layer_norm_eps,
-                                             prefix='ln_')
+        self.dropout_layer = nn.Dropout(dropout)
+        self.activation_dropout_layer = nn.Dropout(activation_dropout)
+        self.ffn_1 = nn.Dense(units=hidden_size,
+                              in_units=units,
+                              flatten=False,
+                              weight_initializer=weight_initializer,
+                              bias_initializer=bias_initializer,
+                              dtype=dtype)
+        self.activation = get_activation(activation)
+        self.ffn_2 = nn.Dense(units=units,
+                              in_units=hidden_size,
+                              flatten=False,
+                              weight_initializer=weight_initializer,
+                              bias_initializer=bias_initializer,
+                              dtype=dtype)
+        # TODO(sxjscience) We may need to set the dtype flag in LayerNorm, need to double check
+        self.layer_norm = get_layer_norm(normalization=normalization,
+                                         in_channels=units,
+                                         epsilon=layer_norm_eps)
 
     def hybrid_forward(self, F, data):
         """
@@ -701,9 +682,7 @@ class AdaptiveEmbedding(HybridBlock):
                  dtype='float32',
                  scaled=True,
                  embedding_initializer: InitializerType = None,
-                 weight_initializer: InitializerType = None,
-                 prefix=None,
-                 params=None):
+                 weight_initializer: InitializerType = None):
         """
 
         Parameters
@@ -730,10 +709,8 @@ class AdaptiveEmbedding(HybridBlock):
             Initializer of projection layers
         bias_initializer
             Initializer of the bias
-        prefix
-        params
-        """
-        super().__init__(prefix=prefix, params=params)
+                """
+        super().__init__()
         cutoffs = _fmt_and_check_cutoffs(cutoffs, vocab_size)
         if cutoffs is None:
             assert div_val == 1.0
@@ -755,43 +732,42 @@ class AdaptiveEmbedding(HybridBlock):
         self._scaled = scaled
         if self._scaled:
             self._emb_scale = units**0.5
-        with self.name_scope():
-            if div_val == 1.0:
-                setattr(self, 'embed0_weight',
-                        self.params.get('embed0_weight',
-                                        shape=(vocab_size, embed_size),
-                                        init=embedding_initializer,
-                                        allow_deferred_init=True))
+        if div_val == 1.0:
+            setattr(self, 'embed0_weight',
+                    Parameter('embed0_weight',
+                              shape=(vocab_size, embed_size),
+                              init=embedding_initializer,
+                              allow_deferred_init=True))
 
-                if units != embed_size:
-                    setattr(self, 'inter_proj0_weight',
-                            self.params.get('inter_proj0_weight',
-                                            shape=(embed_size, units),
-                                            init=weight_initializer,
-                                            allow_deferred_init=True))
-                else:
-                    self.proj_layers = None
+            if units != embed_size:
+                setattr(self, 'inter_proj0_weight',
+                        Parameter('inter_proj0_weight',
+                                  shape=(embed_size, units),
+                                  init=weight_initializer,
+                                  allow_deferred_init=True))
             else:
-                self.proj_layers = nn.HybridSequential(prefix='inter_proj')
-                for i, (l_idx, r_idx) in enumerate(zip([0] + cutoffs, cutoffs + [vocab_size])):
-                    inner_embed_size = int(embed_size / div_val**i)
-                    if inner_embed_size == 0:
-                        raise ValueError('div_val = {} is too large for the layer. Currently, the '
-                                         'cutoffs are {} and the embed_size is {}. Using the '
-                                         'div_val = {} will cause some clusters to have '
-                                         'embed_size=0.'.format(div_val, cutoffs, embed_size,
-                                                                div_val))
-                    setattr(
-                        self, 'embed{}_weight'.format(i),
-                        self.params.get('embed{}_weight'.format(i),
-                                        shape=(r_idx - l_idx, inner_embed_size),
-                                        init=embedding_initializer,
-                                        allow_deferred_init=True))
-                    setattr(self, 'inter_proj{}_weight'.format(i),
-                            self.params.get('inter_proj{}_weight'.format(i),
-                                            shape=(inner_embed_size, units),
-                                            init=weight_initializer,
-                                            allow_deferred_init=True))
+                self.proj_layers = None
+        else:
+            self.proj_layers = nn.HybridSequential()
+            for i, (l_idx, r_idx) in enumerate(zip([0] + cutoffs, cutoffs + [vocab_size])):
+                inner_embed_size = int(embed_size / div_val**i)
+                if inner_embed_size == 0:
+                    raise ValueError('div_val = {} is too large for the layer. Currently, the '
+                                     'cutoffs are {} and the embed_size is {}. Using the '
+                                     'div_val = {} will cause some clusters to have '
+                                     'embed_size=0.'.format(div_val, cutoffs, embed_size,
+                                                            div_val))
+                setattr(
+                    self, 'embed{}_weight'.format(i),
+                    Parameter('embed{}_weight'.format(i),
+                              shape=(r_idx - l_idx, inner_embed_size),
+                              init=embedding_initializer,
+                              allow_deferred_init=True))
+                setattr(self, 'inter_proj{}_weight'.format(i),
+                        Parameter('inter_proj{}_weight'.format(i),
+                                  shape=(inner_embed_size, units),
+                                  init=weight_initializer,
+                                  allow_deferred_init=True))
 
     def hybrid_forward(self, F, inp, **params):  # pylint: disable=arguments-differ
         """
@@ -886,9 +862,7 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
                  dtype='float32',
                  use_bias=True,
                  weight_initializer: InitializerType = None,
-                 bias_initializer: InitializerType = None,
-                 prefix=None,
-                 params=None):
+                 bias_initializer: InitializerType = None):
         """
 
         Parameters
@@ -910,10 +884,8 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
             Whether to use bias when computing the scores for the tokens
         weight_initializer
         bias_initializer
-        prefix
-        params
-        """
-        super().__init__(prefix=prefix, params=params)
+                """
+        super().__init__()
         cutoffs = _fmt_and_check_cutoffs(cutoffs, vocab_size)
         if cutoffs is None:
             assert div_val == 1.0
@@ -934,55 +906,45 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
             ('dtype', dtype),
             ('use_bias', use_bias)
         ])
-        with self.name_scope():
-            if cutoffs is not None:
-                self.tail_cluster_score_proj = nn.Dense(units=self._num_tail_clusters,
-                                                        in_units=embed_size,
-                                                        flatten=False,
-                                                        use_bias=use_bias,
-                                                        weight_initializer=weight_initializer,
-                                                        bias_initializer=bias_initializer,
-                                                        prefix='tail_cluster_score_proj_')
-            self.inter_proj_l = nn.HybridSequential(prefix='inter_proj')
-            self.out_proj_l = nn.HybridSequential(prefix='embed')
-            if div_val == 1.0:
-                if in_units != embed_size:
-                    with self.inter_proj_l.name_scope():
-                        self.inter_proj_l.add(nn.Dense(in_units=in_units,
-                                                       units=embed_size,
-                                                       flatten=False,
-                                                       use_bias=False,
-                                                       prefix='0_',
-                                                       weight_initializer=weight_initializer,
-                                                       bias_initializer=bias_initializer))
-                with self.out_proj_l.name_scope():
-                    self.out_proj_l.add(nn.Dense(in_units=embed_size,
-                                                 units=vocab_size,
-                                                 flatten=False,
-                                                 use_bias=use_bias,
-                                                 prefix='0_',
-                                                 weight_initializer=weight_initializer,
-                                                 bias_initializer=bias_initializer))
-            else:
-                for i, (l_idx, r_idx) in enumerate(zip([0] + self._cutoffs,
-                                                       self._cutoffs + [vocab_size])):
-                    ele_embed_size = int(embed_size / (div_val ** i))
-                    with self.inter_proj_l.name_scope():
-                        self.inter_proj_l.add(nn.Dense(in_units=in_units,
-                                                       units=ele_embed_size,
-                                                       flatten=False,
-                                                       use_bias=False,
-                                                       prefix='{}_'.format(i),
-                                                       weight_initializer=weight_initializer,
-                                                       bias_initializer=bias_initializer))
-                    with self.out_proj_l.name_scope():
-                        self.out_proj_l.add(nn.Dense(in_units=ele_embed_size,
-                                                     units=r_idx - l_idx,
-                                                     flatten=False,
-                                                     use_bias=use_bias,
-                                                     prefix='{}_'.format(i),
-                                                     weight_initializer=weight_initializer,
-                                                     bias_initializer=bias_initializer))
+        if cutoffs is not None:
+            self.tail_cluster_score_proj = nn.Dense(units=self._num_tail_clusters,
+                                                    in_units=embed_size,
+                                                    flatten=False,
+                                                    use_bias=use_bias,
+                                                    weight_initializer=weight_initializer,
+                                                    bias_initializer=bias_initializer)
+        self.inter_proj_l = nn.HybridSequential()
+        self.out_proj_l = nn.HybridSequential()
+        if div_val == 1.0:
+            if in_units != embed_size:
+                self.inter_proj_l.add(nn.Dense(in_units=in_units,
+                                               units=embed_size,
+                                               flatten=False,
+                                               use_bias=False,
+                                               weight_initializer=weight_initializer,
+                                               bias_initializer=bias_initializer))
+            self.out_proj_l.add(nn.Dense(in_units=embed_size,
+                                         units=vocab_size,
+                                         flatten=False,
+                                         use_bias=use_bias,
+                                         weight_initializer=weight_initializer,
+                                         bias_initializer=bias_initializer))
+        else:
+            for i, (l_idx, r_idx) in enumerate(zip([0] + self._cutoffs,
+                                                   self._cutoffs + [vocab_size])):
+                ele_embed_size = int(embed_size / (div_val ** i))
+                self.inter_proj_l.add(nn.Dense(in_units=in_units,
+                                               units=ele_embed_size,
+                                               flatten=False,
+                                               use_bias=False,
+                                               weight_initializer=weight_initializer,
+                                               bias_initializer=bias_initializer))
+                self.out_proj_l.add(nn.Dense(in_units=ele_embed_size,
+                                             units=r_idx - l_idx,
+                                             flatten=False,
+                                             use_bias=use_bias,
+                                             weight_initializer=weight_initializer,
+                                             bias_initializer=bias_initializer))
 
     def get_logits(self, F, hidden):
         """Get all the logits.

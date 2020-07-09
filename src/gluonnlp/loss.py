@@ -29,7 +29,7 @@ class LabelSmoothCrossEntropyLoss(HybridBlock):
         Whether input is a log probability (usually from log_softmax) instead of unnormalized numbers.
     """
     def __init__(self, num_labels: int, alpha: float = 0.1, from_logits: bool = False, **kwargs):
-        super(LabelSmoothCrossEntropyLoss, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._num_labels = num_labels
         self._alpha = alpha
         self._from_logits = from_logits

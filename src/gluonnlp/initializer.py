@@ -51,7 +51,7 @@ class TruncNorm(Initializer):
     """
     def __init__(self, mean: float = 0, stdev: float = 0.01,
                  scale=2, **kwargs):
-        super(TruncNorm, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._mean = mean
         self._stdev = stdev
         self._scale = scale

@@ -93,8 +93,8 @@ class AlbertEncoder(HybridBlock):
                  layer_norm_eps=1E-12,
                  weight_initializer=TruncNorm(stdev=0.02),
                  bias_initializer='zeros',
-                 activation='gelu', prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
+                 activation='gelu'):
+        super().__init__()
         assert units % num_heads == 0,\
             'In AlbertEncoder, The units should be divided exactly ' \
             'by the number of heads. Received units={}, num_heads={}' \
@@ -109,22 +109,18 @@ class AlbertEncoder(HybridBlock):
         self._output_attention = output_attention
         self._output_all_encodings = output_all_encodings
 
-        with self.name_scope():
-            self.all_encoder_groups = nn.HybridSequential(prefix='groups_')
-
-            with self.all_encoder_groups.name_scope():
-                for group_idx in range(num_groups):
-                    self.all_encoder_groups.add(
-                        TransformerEncoderLayer(units=units,
-                                                hidden_size=hidden_size,
-                                                num_heads=num_heads,
-                                                attention_dropout_prob=attention_dropout_prob,
-                                                hidden_dropout_prob=hidden_dropout_prob,
-                                                layer_norm_eps=layer_norm_eps,
-                                                weight_initializer=weight_initializer,
-                                                bias_initializer=bias_initializer,
-                                                activation=activation,
-                                                prefix='{}_'.format(group_idx)))
+        self.all_encoder_groups = nn.HybridSequential()
+        for group_idx in range(num_groups):
+            self.all_encoder_groups.add(
+                TransformerEncoderLayer(units=units,
+                                        hidden_size=hidden_size,
+                                        num_heads=num_heads,
+                                        attention_dropout_prob=attention_dropout_prob,
+                                        hidden_dropout_prob=hidden_dropout_prob,
+                                        layer_norm_eps=layer_norm_eps,
+                                        weight_initializer=weight_initializer,
+                                        bias_initializer=bias_initializer,
+                                        activation=activation))
 
     def hybrid_forward(self, F, data, valid_length):
         """
@@ -195,10 +191,8 @@ class AlbertModel(HybridBlock):
                  weight_initializer=TruncNorm(stdev=0.02),
                  bias_initializer='zeros',
                  dtype='float32',
-                 use_pooler=True,
-                 prefix=None,
-                 params=None):
-        super().__init__(prefix=prefix, params=params)
+                 use_pooler=True):
+        super().__init__()
         self._dtype = dtype
         self.use_pooler = use_pooler
         self.pos_embed_type = pos_embed_type
@@ -212,60 +206,52 @@ class AlbertModel(HybridBlock):
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
         self.layer_norm_eps = layer_norm_eps
-        with self.name_scope():
-            # Construct AlbertEncoder
-            self.encoder = AlbertEncoder(
-                units=units,
-                hidden_size=hidden_size,
-                num_layers=num_layers,
-                num_heads=num_heads,
-                num_groups=num_groups,
-                attention_dropout_prob=attention_dropout_prob,
-                hidden_dropout_prob=hidden_dropout_prob,
-                output_attention=False,
-                output_all_encodings=False,
-                activation=activation,
-                layer_norm_eps=layer_norm_eps,
-                weight_initializer=weight_initializer,
-                bias_initializer=bias_initializer,
-                dtype=dtype,
-                prefix='enc_',
-            )
-            self.encoder.hybridize()
-            # Construct word embedding
-            self.word_embed = nn.Embedding(input_dim=vocab_size,
-                                           output_dim=embed_size,
-                                           weight_initializer=embed_initializer,
-                                           dtype=dtype,
-                                           prefix='word_embed_')
-            if embed_size != units:
-                self.embed_factorized_proj = nn.Dense(units=units,
-                                                      flatten=False,
-                                                      weight_initializer=weight_initializer,
-                                                      bias_initializer=bias_initializer,
-                                                      prefix='embed_factorized_proj_')
-            self.embed_layer_norm = nn.LayerNorm(epsilon=self.layer_norm_eps,
-                                                 prefix='embed_ln_')
-            self.embed_dropout = nn.Dropout(hidden_dropout_prob)
-            # Construct token type embedding
-            self.token_type_embed = nn.Embedding(input_dim=num_token_types,
-                                                 output_dim=embed_size,
-                                                 weight_initializer=weight_initializer,
-                                                 prefix='token_type_embed_')
-            self.token_pos_embed = PositionalEmbedding(units=embed_size,
-                                                       max_length=max_length,
-                                                       dtype=self._dtype,
-                                                       method=pos_embed_type,
-                                                       prefix='token_pos_embed_')
-            if self.use_pooler:
-                # Construct pooler
-                self.pooler = nn.Dense(units=units,
-                                       in_units=units,
-                                       flatten=False,
-                                       activation='tanh',
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       prefix='pooler_')
+        # Construct AlbertEncoder
+        self.encoder = AlbertEncoder(
+            units=units,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            num_heads=num_heads,
+            num_groups=num_groups,
+            attention_dropout_prob=attention_dropout_prob,
+            hidden_dropout_prob=hidden_dropout_prob,
+            output_attention=False,
+            output_all_encodings=False,
+            activation=activation,
+            layer_norm_eps=layer_norm_eps,
+            weight_initializer=weight_initializer,
+            bias_initializer=bias_initializer,
+            dtype=dtype,
+        )
+        self.encoder.hybridize()
+        # Construct word embedding
+        self.word_embed = nn.Embedding(input_dim=vocab_size,
+                                       output_dim=embed_size,
+                                       weight_initializer=embed_initializer,
+                                       dtype=dtype)
+        if embed_size != units:
+            self.embed_factorized_proj = nn.Dense(units=units,
+                                                  flatten=False,
+                                                  weight_initializer=weight_initializer,
+                                                  bias_initializer=bias_initializer)
+        self.embed_layer_norm = nn.LayerNorm(epsilon=self.layer_norm_eps)
+        self.embed_dropout = nn.Dropout(hidden_dropout_prob)
+        # Construct token type embedding
+        self.token_type_embed = nn.Embedding(input_dim=num_token_types,
+                                             output_dim=embed_size,
+                                             weight_initializer=weight_initializer)
+        self.token_pos_embed = PositionalEmbedding(units=embed_size,
+                                                   max_length=max_length,
+                                                   dtype=self._dtype,
+                                                   method=pos_embed_type)
+        if self.use_pooler:
+            # Construct pooler
+            self.pooler = nn.Dense(units=units,
+                                   in_units=units,
+                                   flatten=False,
+                                   activation='tanh',
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer)
 
     def hybrid_forward(self, F, inputs, token_types, valid_length=None):
         # pylint: disable=arguments-differ
@@ -387,7 +373,7 @@ class AlbertModel(HybridBlock):
         return cfg
 
     @classmethod
-    def from_cfg(cls, cfg, use_pooler=True, prefix=None, params=None) -> 'AlbertModel':
+    def from_cfg(cls, cfg, use_pooler=True) -> 'AlbertModel':
         """
 
         Parameters
@@ -395,8 +381,6 @@ class AlbertModel(HybridBlock):
         cfg
         use_pooler
             Whether to use pooler
-        prefix
-        params
 
         Returns
         -------
@@ -426,18 +410,14 @@ class AlbertModel(HybridBlock):
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
-                   use_pooler=use_pooler,
-                   prefix=prefix,
-                   params=params)
+                   use_pooler=use_pooler)
 
 
 @use_np
 class AlbertForMLM(HybridBlock):
     def __init__(self, backbone_cfg,
                  weight_initializer=None,
-                 bias_initializer=None,
-                 prefix=None,
-                 params=None):
+                 bias_initializer=None):
         """
 
         Parameters
@@ -445,36 +425,29 @@ class AlbertForMLM(HybridBlock):
         backbone_cfg
         weight_initializer
         bias_initializer
-        prefix
-        params
-        """
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone_model = AlbertModel.from_cfg(backbone_cfg, prefix='')
-            if weight_initializer is None:
-                weight_initializer = self.backbone_model.weight_initializer
-            if bias_initializer is None:
-                bias_initializer = self.backbone_model.bias_initializer
-            self.mlm_decoder = nn.HybridSequential(prefix='mlm_')
-            with self.mlm_decoder.name_scope():
-                # Extra non-linear layer
-                self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
-                                              flatten=False,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              prefix='proj_'))
-                self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
-                                                  prefix='ln_'))
-                # only load the dense weights with a re-initialized bias
-                # parameters are stored in 'word_embed_bias' which is
-                # not used in original embedding
-                self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
-                                              flatten=False,
-                                              params=self.backbone_model.word_embed.collect_params('.*weight'),
-                                              bias_initializer=bias_initializer,
-                                              prefix='score_'))
-            self.mlm_decoder.hybridize()
+                """
+        super().__init__()
+        self.backbone_model = AlbertModel.from_cfg(backbone_cfg)
+        if weight_initializer is None:
+            weight_initializer = self.backbone_model.weight_initializer
+        if bias_initializer is None:
+            bias_initializer = self.backbone_model.bias_initializer
+        self.mlm_decoder = nn.HybridSequential()
+        # Extra non-linear layer
+        self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
+                                      flatten=False,
+                                      weight_initializer=weight_initializer,
+                                      bias_initializer=bias_initializer))
+        self.mlm_decoder.add(get_activation(self.backbone_model.activation))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        # only load the dense weights with a re-initialized bias
+        # parameters are stored in 'word_embed_bias' which is
+        # not used in original embedding
+        self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
+                                      flatten=False,
+                                      bias_initializer=bias_initializer))
+        self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight  # TODO(leezu) double check
+        self.mlm_decoder.hybridize()
 
     def hybrid_forward(self, F, inputs, token_types, valid_length,
                        masked_positions):
@@ -515,8 +488,7 @@ class AlbertForMLM(HybridBlock):
 class AlbertForPretrain(HybridBlock):
     def __init__(self, backbone_cfg,
                  weight_initializer=None,
-                 bias_initializer=None,
-                 prefix=None, params=None):
+                 bias_initializer=None):
         """
 
         Parameters
@@ -525,40 +497,32 @@ class AlbertForPretrain(HybridBlock):
             The cfg of the backbone model
         weight_initializer
         bias_initializer
-        prefix
-        params
-        """
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone_model = AlbertModel.from_cfg(backbone_cfg, prefix='')
-            if weight_initializer is None:
-                weight_initializer = self.backbone_model.weight_initializer
-            if bias_initializer is None:
-                bias_initializer = self.backbone_model.bias_initializer
-            # Construct sop_classifier for sentence order prediction
-            self.sop_classifier = nn.Dense(units=2,
-                                           weight_initializer=weight_initializer,
-                                           prefix='sop_')
-            self.mlm_decoder = nn.HybridSequential(prefix='mlm_')
-            with self.mlm_decoder.name_scope():
-                # Extra non-linear layer
-                self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
-                                              flatten=False,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              prefix='proj_'))
-                self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
-                                                  prefix='ln_'))
-                # only load the dense weights with a re-initialized bias
-                # parameters are stored in 'word_embed_bias' which is
-                # not used in original embedding
-                self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
-                                              flatten=False,
-                                              params=self.backbone_model.word_embed.collect_params('.*weight'),
-                                              bias_initializer=bias_initializer,
-                                              prefix='score_'))
-            self.mlm_decoder.hybridize()
+                """
+        super().__init__()
+        self.backbone_model = AlbertModel.from_cfg(backbone_cfg)
+        if weight_initializer is None:
+            weight_initializer = self.backbone_model.weight_initializer
+        if bias_initializer is None:
+            bias_initializer = self.backbone_model.bias_initializer
+        # Construct sop_classifier for sentence order prediction
+        self.sop_classifier = nn.Dense(units=2,
+                                       weight_initializer=weight_initializer)
+        self.mlm_decoder = nn.HybridSequential()
+        # Extra non-linear layer
+        self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
+                                      flatten=False,
+                                      weight_initializer=weight_initializer,
+                                      bias_initializer=bias_initializer))
+        self.mlm_decoder.add(get_activation(self.backbone_model.activation))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        # only load the dense weights with a re-initialized bias
+        # parameters are stored in 'word_embed_bias' which is
+        # not used in original embedding
+        self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
+                                      flatten=False,
+                                      bias_initializer=bias_initializer))
+        self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight  # TODO(leezu) double check
+        self.mlm_decoder.hybridize()
 
     def hybrid_forward(self, F, inputs, token_types, valid_length,
                        masked_positions):

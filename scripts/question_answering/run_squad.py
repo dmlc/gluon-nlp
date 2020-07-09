@@ -324,8 +324,7 @@ def get_network(model_name,
                 backbone_params_path, num_params, num_fixed_params))
     qa_net = ModelForQAConditionalV1(backbone=backbone,
                                      dropout_prob=dropout,
-                                     weight_initializer=TruncNorm(stdev=0.02),
-                                     prefix='qa_net_')
+                                     weight_initializer=TruncNorm(stdev=0.02))
     if checkpoint_path is None:
         # Ignore the UserWarning during initialization,
         # There is no need to re-initialize the parameters of backbone

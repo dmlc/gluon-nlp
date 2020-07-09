@@ -100,9 +100,8 @@ class BeamSearchScorer(HybridBlock):
     def __init__(self, alpha: float = 1.0,
                  K: float = 5.0,
                  from_logits: bool = False,
-                 temperature: float = 1.0,
-                 prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
+                 temperature: float = 1.0):
+        super().__init__()
         self._alpha = float(alpha)
         self._K = K
         self._temperature = temperature
@@ -129,7 +128,7 @@ class BeamSearchScorer(HybridBlock):
             The scores of all the candidates. Shape (d1, d2, ..., dn, V), where V is the size
             of the vocabulary.
         """
-        return super(BeamSearchScorer, self).__call__(outputs, scores, step)
+        return super().__call__(outputs, scores, step)
 
     def hybrid_forward(self, F, outputs, scores, step):  # pylint: disable=arguments-differ
         if not self._from_logits:
@@ -251,7 +250,7 @@ def _choose_states(F, states, indices, state_batch_axis=None):
 
 class _BeamSearchStepUpdate(HybridBlock):
     def __init__(self, beam_size, vocab_size, eos_id, scorer, state_batch_axis,
-                 stochastic=False, prefix=None, params=None):
+                 stochastic=False):
         """
 
         Parameters
@@ -265,7 +264,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         prefix : None
         params : None
         """
-        super(_BeamSearchStepUpdate, self).__init__(prefix=prefix, params=params)
+        super().__init__()
         self._beam_size = beam_size
         self._vocab_size = vocab_size
         self._eos_id = eos_id
