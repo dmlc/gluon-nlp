@@ -22,7 +22,7 @@ from eval_utils import squad_eval
 from squad_utils import SquadFeature, get_squad_examples, convert_squad_example_to_feature
 from gluonnlp.models import get_backbone
 from gluonnlp.utils.misc import repeat, grouper, set_seed, init_comm, \
-    parse_ctx, logging_config, count_parameters
+    logging_config, count_parameters, parse_ctx
 from gluonnlp.initializer import TruncNorm
 from gluonnlp.data.sampler import SplitSampler
 from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm
@@ -305,6 +305,50 @@ class SquadDatasetProcessor:
         return train_dataset, num_token_answer_mismatch, num_unreliable
 
 
+def get_squad_features(args, tokenizer, segment):
+    """
+    Get processed data features of SQuADExampls
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+    tokenizer:
+        Tokenizer instance
+    segment: str
+        train or dev
+
+    Returns
+    -------
+    data_features
+        The list of processed data features
+    """
+    data_cache_path = os.path.join(CACHE_PATH,
+                                  'dev_{}_squad_{}.ndjson'.format(args.model_name,
+                                                                  args.version))
+    is_training = (segment == 'train')
+    if os.path.exists(data_cache_path) and not args.overwrite_cache:
+        data_features = []
+        with open(data_cache_path, 'r') as f:
+            for line in f:
+                data_features.append(SquadFeature.from_json(line))
+        logging.info('Found cached data features, load from {}'.format(data_cache_path))
+    else:
+        data_examples = get_squad_examples(args.data_dir, segment=segment, version=args.version)
+        start = time.time()
+        num_process = min(cpu_count(), 8)
+        logging.info('Tokenize Data:')
+        with Pool(num_process) as pool:
+            data_features = pool.map(functools.partial(convert_squad_example_to_feature,
+                                                      tokenizer=tokenizer,
+                                                      is_training=is_training), data_examples)
+        logging.info('Done! Time spent:{:.2f} seconds'.format(time.time() - start))
+        with open(data_cache_path, 'w') as f:
+            for feature in data_features:
+                f.write(feature.to_json() + '\n')
+
+    return data_features
+
+
 def get_network(model_name,
                 ctx_l,
                 dropout=0.1,
@@ -399,41 +443,14 @@ def untune_params(model, untunable_depth, not_included=[]):
 def train(args):
     store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
         args.comm_backend, args.gpus)
-
     cfg, tokenizer, qa_net, use_segmentation = \
         get_network(args.model_name, ctx_l,
                     args.classifier_dropout,
                     args.param_checkpoint,
                     args.backbone_path)
-    # Load the data
-    train_examples = get_squad_examples(args.data_dir, segment='train', version=args.version)
-    logging.info('Load data from {}, Version={}'.format(args.data_dir, args.version))
-    num_process = min(cpu_count(), 8)
-    train_cache_path = os.path.join(
-        CACHE_PATH, 'train_{}_squad_{}.ndjson'.format(
-            args.model_name, args.version))
-    if os.path.exists(train_cache_path) and not args.overwrite_cache:
-        train_features = []
-        with open(train_cache_path, 'r') as f:
-            for line in f:
-                train_features.append(SquadFeature.from_json(line))
-        logging.info('Found cached training features, load from {}'.format(train_cache_path))
 
-    else:
-        start = time.time()
-        logging.info('Tokenize Training Data:')
-        with Pool(num_process) as pool:
-            train_features = pool.map(
-                functools.partial(
-                    convert_squad_example_to_feature,
-                    tokenizer=tokenizer,
-                    is_training=True),
-                train_examples)
-        logging.info('Done! Time spent:{:.2f} seconds'.format(time.time() - start))
-        with open(train_cache_path, 'w') as f:
-            for feature in train_features:
-                f.write(feature.to_json() + '\n')
-
+    logging.info('Prepare training data')
+    train_features = get_squad_features(args, tokenizer, segment='train')
     dataset_processor = SquadDatasetProcessor(tokenizer=tokenizer,
                                               doc_stride=args.doc_stride,
                                               max_seq_length=args.max_seq_length,
@@ -459,8 +476,7 @@ def train(args):
         train_dataset,
         batchify_fn=dataset_processor.BatchifyFunction,
         batch_size=args.batch_size,
-        num_workers=4,
-        shuffle=True
+        num_workers=0,
         sampler=sampler)
     # Froze parameters
     if 'electra' in args.model_name:
@@ -612,8 +628,8 @@ def train(args):
             param_dict.zero_grad()
 
         # saving
-        if local_rank == 0 and is_master_node and (
-                step_num + 1) % save_interval == 0 or (step_num + 1) >= num_train_steps:
+        if local_rank == 0 and (step_num + 1) % save_interval == 0 or (
+                step_num + 1) >= num_train_steps:
             version_prefix = 'squad' + args.version
             ckpt_name = '{}_{}_{}.params'.format(args.model_name,
                                                  version_prefix,
@@ -650,9 +666,10 @@ def train(args):
             num_samples_per_update = 0
 
         if (step_num + 1) >= num_train_steps:
+            toc = time.time()
             logging.info(
                 'Finish training step: {} within {} hours'.format(
-                    step_num + 1, toc - global_tic))
+                    step_num + 1, (toc - global_tic) / 3600))
             break
 
     return params_saved
@@ -790,31 +807,13 @@ def predict_extended(original_feature,
 
 def evaluate(args, last=True):
     ctx_l = parse_ctx(args.gpus)
+    logging.info('Srarting inference without horovod')
+
     cfg, tokenizer, qa_net, use_segmentation = get_network(
         args.model_name, ctx_l, args.classifier_dropout)
-    # Prepare dev set
-    dev_cache_path = os.path.join(CACHE_PATH,
-                                  'dev_{}_squad_{}.ndjson'.format(args.model_name,
-                                                                  args.version))
-    if os.path.exists(dev_cache_path) and not args.overwrite_cache:
-        dev_features = []
-        with open(dev_cache_path, 'r') as f:
-            for line in f:
-                dev_features.append(SquadFeature.from_json(line))
-        logging.info('Found cached dev features, load from {}'.format(dev_cache_path))
-    else:
-        dev_examples = get_squad_examples(args.data_dir, segment='dev', version=args.version)
-        start = time.time()
-        num_process = min(cpu_count(), 8)
-        logging.info('Tokenize Dev Data:')
-        with Pool(num_process) as pool:
-            dev_features = pool.map(functools.partial(convert_squad_example_to_feature,
-                                                      tokenizer=tokenizer,
-                                                      is_training=False), dev_examples)
-        logging.info('Done! Time spent:{:.2f} seconds'.format(time.time() - start))
-        with open(dev_cache_path, 'w') as f:
-            for feature in dev_features:
-                f.write(feature.to_json() + '\n')
+
+    logging.info('Prepare dev data')
+    dev_features = get_squad_features(args, tokenizer, segment='dev')
     dev_data_path = os.path.join(args.data_dir, 'dev-v{}.json'.format(args.version))
     dataset_processor = SquadDatasetProcessor(tokenizer=tokenizer,
                                               doc_stride=args.doc_stride,
@@ -831,8 +830,6 @@ def evaluate(args, last=True):
         """
         Model inference during validation or final evaluation.
         """
-        ctx_l = parse_ctx(args.gpus)
-        # We process all the chunk features and also
         dev_dataloader = mx.gluon.data.DataLoader(
             dev_all_chunk_features,
             batchify_fn=dataset_processor.BatchifyFunction,

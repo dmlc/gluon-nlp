@@ -179,12 +179,30 @@ def find_all_best_thresh(main_eval, preds, exact_raw, f1_raw, na_probs, qid_to_h
     main_eval['best_f1_thresh'] = f1_thresh
 
 
-def get_revised_results(preds, na_probs, thresh):
-    results = copy.deepcopy(preds)
+def revise_unanswerable(preds, na_probs, na_prob_thresh):
+    """
+    Revise the predictions results and return a null string for unanswerable question
+    whose unanswerable probability above the threshold.
+
+    Parameters
+    ----------
+    preds: dict
+        A dictionary of full prediction of spans
+    na_probs: dict
+        A dictionary of unanswerable probabilities
+    na_prob_thresh: float
+        threshold of the unanswerable probability
+
+    Returns
+    -------
+    revised: dict
+        A dictionary of revised prediction
+    """
+    revised = copy.deepcopy(preds)
     for q_id in na_probs.keys():
-        if na_probs[q_id] > thresh:
-            results[q_id] = ""
-    return results
+        if na_probs[q_id] > na_prob_thresh:
+            revised[q_id] = ""
+    return revised
 
 
 def squad_eval(data_file, preds, na_probs, na_prob_thresh=0.0, revise=False):
@@ -197,7 +215,7 @@ def squad_eval(data_file, preds, na_probs, na_prob_thresh=0.0, revise=False):
     preds
         predictions dictionary
     na_probs
-        probabilities dict of unanswerable
+        probabilities dictionary of unanswerable
     na_prob_thresh
         threshold of unanswerable
     revise
@@ -205,10 +223,10 @@ def squad_eval(data_file, preds, na_probs, na_prob_thresh=0.0, revise=False):
         with null string ''
     Returns
     -------
-        out_eval
-            A dictionary of output results
-        (preds_out)
-            A dictionary of final predictions
+    out_eval
+        A dictionary of output results
+    (preds_out)
+        A dictionary of final predictions
     """
     if isinstance(data_file, str):
         with open(data_file) as f:
@@ -243,7 +261,7 @@ def squad_eval(data_file, preds, na_probs, na_prob_thresh=0.0, revise=False):
     if revise:
         thresh = (out_eval['best_exact_thresh'] +
                   out_eval['best_f1_thresh']) * 0.5
-        preds_out = get_revised_results(preds, na_probs, thresh)
+        preds_out = revise_unanswerable(preds, na_probs, thresh)
         return out_eval, preds_out
     else:
         return out_eval, preds
