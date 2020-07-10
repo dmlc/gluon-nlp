@@ -347,7 +347,7 @@ class GELU(HybridBlock):
         Parameters
         ----------
         mode
-                """
+        """
         super().__init__()
         if mode not in ['erf', 'tanh', 'sigmoid']:
             raise ValueError('Unsupported mode, only support "erf", "tanh", or "sigmoid". '
@@ -598,7 +598,7 @@ class PositionwiseFFN(HybridBlock):
             This will stabilize the training of Transformers.
             You may also refer to
             "[Arxiv2020] Understanding the Difficulty of Training Transformers"
-                """
+        """
         super().__init__()
         self._dtype = dtype
         self._pre_norm = pre_norm
@@ -709,7 +709,7 @@ class AdaptiveEmbedding(HybridBlock):
             Initializer of projection layers
         bias_initializer
             Initializer of the bias
-                """
+        """
         super().__init__()
         cutoffs = _fmt_and_check_cutoffs(cutoffs, vocab_size)
         if cutoffs is None:
@@ -884,7 +884,7 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
             Whether to use bias when computing the scores for the tokens
         weight_initializer
         bias_initializer
-                """
+        """
         super().__init__()
         cutoffs = _fmt_and_check_cutoffs(cutoffs, vocab_size)
         if cutoffs is None:

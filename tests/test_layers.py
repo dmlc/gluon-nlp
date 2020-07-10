@@ -120,7 +120,7 @@ def test_adaptive_embedding(vocab_size, cutoffs, embed_size, units, div_val):
                           [1000, None, 1.0]])
 @pytest.mark.parametrize('embed_size', [128])
 @pytest.mark.parametrize('in_units', [16])
-# TODO(leezu): This test even passes without sharing the parameters. It needs to be improved.
+# TODO This test even passes without sharing the parameters. It needs to be improved.
 def test_projected_adaptive_softmax(vocab_size, cutoffs, embed_size, in_units, div_val):
     layer = ProjectedAdaptiveLogSoftmaxWithLoss(vocab_size=vocab_size, cutoffs=cutoffs,
                                                 embed_size=embed_size, in_units=in_units,

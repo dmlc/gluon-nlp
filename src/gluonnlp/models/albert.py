@@ -425,7 +425,7 @@ class AlbertForMLM(HybridBlock):
         backbone_cfg
         weight_initializer
         bias_initializer
-                """
+        """
         super().__init__()
         self.backbone_model = AlbertModel.from_cfg(backbone_cfg)
         if weight_initializer is None:
@@ -446,7 +446,7 @@ class AlbertForMLM(HybridBlock):
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
                                       flatten=False,
                                       bias_initializer=bias_initializer))
-        self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight  # TODO(leezu) double check
+        self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
         self.mlm_decoder.hybridize()
 
     def hybrid_forward(self, F, inputs, token_types, valid_length,
@@ -497,7 +497,7 @@ class AlbertForPretrain(HybridBlock):
             The cfg of the backbone model
         weight_initializer
         bias_initializer
-                """
+        """
         super().__init__()
         self.backbone_model = AlbertModel.from_cfg(backbone_cfg)
         if weight_initializer is None:
@@ -521,7 +521,7 @@ class AlbertForPretrain(HybridBlock):
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
                                       flatten=False,
                                       bias_initializer=bias_initializer))
-        self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight  # TODO(leezu) double check
+        self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
         self.mlm_decoder.hybridize()
 
     def hybrid_forward(self, F, inputs, token_types, valid_length,

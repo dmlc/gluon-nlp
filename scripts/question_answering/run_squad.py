@@ -528,7 +528,7 @@ def train(args):
     log_sample_num = 0
     if args.num_accumulated != 1:
         # set grad to zero for gradient accumulation
-        qa_net.collect_params().zero_grad()
+        qa_net.zero_grad()
     global_tic = time.time()
     while not finish_flag:
         epoch_tic = time.time()
@@ -593,7 +593,7 @@ def train(args):
                 step_num += 1
                 if args.num_accumulated != 1:
                     # set grad to zero for gradient accumulation
-                    qa_net.collect_params().zero_grad()
+                    qa_net.zero_grad()
 
                 # saving
                 if step_num % save_interval == 0 or step_num >= num_train_steps:
@@ -963,7 +963,6 @@ def evaluate(args, last=True):
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
-    os.environ['MXNET_USE_FUSION'] = '0'  # Manually disable pointwise fusion
     args = parse_args()
     logging_config(args.output_dir, name='finetune_squad{}'.format(args.version))
     set_seed(args.seed)

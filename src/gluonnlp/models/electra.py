@@ -417,7 +417,7 @@ class ElectraDiscriminator(HybridBlock):
         backbone_cfg
         weight_initializer
         bias_initializer
-                """
+        """
         super().__init__()
         self.backbone_model = ElectraModel.from_cfg(backbone_cfg)
         if weight_initializer is None:
@@ -486,7 +486,7 @@ class ElectraGenerator(HybridBlock):
             Configuration of the backbone model
         weight_initializer
         bias_initializer
-                """
+        """
         super().__init__()
         self.backbone_model = ElectraModel.from_cfg(backbone_cfg)
         if weight_initializer is None:
@@ -597,7 +597,7 @@ class ElectraForPretrain(HybridBlock):
             Temperature of gumbel distribution for sampling from generator
         weight_initializer
         bias_initializer
-                """
+        """
         super().__init__()
         self._uniform_generator = uniform_generator
         self._tied_generator = tied_generator

@@ -164,7 +164,7 @@ class TransformerEncoderLayer(HybridBlock):
         bias_initializer
         activation
         dtype
-                """
+        """
         super().__init__()
         self._units = units
         self._hidden_size = hidden_size
@@ -276,7 +276,7 @@ class TransformerEncoder(HybridBlock):
         weight_initializer
         bias_initializer
         activation
-                """
+        """
         super().__init__()
         self._dtype = dtype
         self.num_layers = num_layers
@@ -376,7 +376,7 @@ class TransformerDecoderLayer(HybridBlock):
         weight_initializer
         bias_initializer
         dtype
-                """
+        """
         super().__init__()
         self._dtype = dtype
         self._units = units
@@ -883,7 +883,7 @@ class TransformerNMTModel(HybridBlock):
             Initializer of the bias
         dtype
             Data type of the weights
-                """
+        """
         super().__init__()
         assert src_vocab_size > 0 and tgt_vocab_size > 0,\
             'Cannot set "src_vocab_size" and "tgt_vocab_size" to negative numbers. ' \
@@ -1115,7 +1115,7 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
         Parameters
         ----------
         model
-                """
+        """
         super().__init__()
         self.model = model
 

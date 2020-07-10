@@ -109,7 +109,7 @@ class MobileBertEncoderLayer(HybridBlock):
         weight_initializer
         bias_initializer
         dtype
-                """
+        """
         super().__init__()
         self._use_bottleneck = use_bottleneck
         self._units = units
@@ -664,7 +664,7 @@ class MobileBertForMLM(HybridBlock):
         backbone_cfg
         weight_initializer
         bias_initializer
-                """
+        """
         super().__init__()
         self.backbone_model = MobileBertModel.from_cfg(backbone_cfg,
                                                        use_bottleneck=use_bottleneck,
@@ -758,7 +758,7 @@ class MobileBertForPretrain(HybridBlock):
             The cfg of the backbone model
         weight_initializer
         bias_initializer
-                """
+        """
         super().__init__()
         self.backbone_model = MobileBertModel.from_cfg(backbone_cfg,
                                                        use_bottleneck=use_bottleneck,

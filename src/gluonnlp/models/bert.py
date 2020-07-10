@@ -418,7 +418,7 @@ class BertForMLM(HybridBlock):
         backbone_cfg
         weight_initializer
         bias_initializer
-                """
+        """
         super().__init__()
         self.backbone_model = BertModel.from_cfg(backbone_cfg)
         if weight_initializer is None:
@@ -491,7 +491,7 @@ class BertForPretrain(HybridBlock):
             The cfg of the backbone model
         weight_initializer
         bias_initializer
-                """
+        """
         super().__init__()
         self.backbone_model = BertModel.from_cfg(backbone_cfg)
         if weight_initializer is None:
