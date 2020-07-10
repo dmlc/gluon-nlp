@@ -92,7 +92,7 @@ def _load_embedding_txt(file_path, vocab, unknown_token, init_method):
                     word = vocab.unk_token
                 if word in vocab:
                     index = vocab[word]
-                    matrix[index] = np.fromstring(' '.join(nums), sep=' ', dtype=dtype, count=dim)
+                    matrix[index] = np.fromstring(' '.join(nums), sep=' ', dtype='float32', count=dim)
                     hit_flags[index] = True
             except Exception as e:
                 logging.error("Error occurred at the {} line.".format(idx))
@@ -113,22 +113,23 @@ def _load_embedding_npz(file_path, vocab, unknown, init_method):
                 unknown_token = str(unknown_token)
     if unknown != unknown_token:
         warnings.warn("You may not assign correct unknown token in the pretrained file"
-                      "Use {} as then unknown mark.".format{unknown_token})
+                      "Use {} as the unknown mark.".format(unknown_token))
 
     idx_to_token = npz_dict['idx_to_token'].tolist()
+    token2idx = {x : i for i, x in enumerate(idx_to_token)}
     idx_to_vec = nd.array(npz_dict['idx_to_vec'])
     matrix = np.random.randn(len(vocab), idx_to_vec.shape[-1]).astype('float32')
     if init_method:
         matrix = init_method(matrix)
-    for i, token in enumerate(idx_to_token):
-        if token == unknown_token and vocab.unk_token is not None:
-            word = vocab.unk_token
+    for token, i in vocab.token_to_idx.items():
+        if token == vocab.unk_token and unknown_token is not None:
+            word = unknown_token
         else:
             word = token
-        if word in vocab:
-            index = vocab[word]
-            matrix[index] = idx_to_vec[i]
-            hit_flags[index] = True
+        if word in token2idx:
+            index = token2idx[word]
+            matrix[i] = idx_to_vec[index].asnumpy()
+            hit_flags[i] = True
     return matrix, hit_flags
 
 def _get_file_url(cls_name, file_name):
@@ -148,7 +149,7 @@ def _check_and_get_path(pretrained_name_or_dir):
             file_path = os.path.join(embedding_dir, file_name)
             if not os.path.exists(file_path) or not check_sha1(file_path, file_hash):
                 logging.info('Embedding file {} is not found. Downloading from Gluon Repository. '
-                             'This may take some time.'.format(pretrained_file_name))
+                             'This may take some time.'.format(file_name))
                 download(url, file_path, sha1_hash=file_hash)
             return file_path
 
@@ -186,7 +187,7 @@ def load_embeddings(vocab, pretrained_name_or_dir='glove.6B.50d', unknown='<unk>
         An embedding matrix for the given vocabulary.
     """
     assert isinstance(vocab, Vocab), "Only gluonnlp.data.Vocab is supported."
-    file_path = _check_and_get_path(pretrained_name_or_dir):
+    file_path = _check_and_get_path(pretrained_name_or_dir)
     if file_path is None:
         raise ValueError("Cannot recognize `{}`".format(pretrained_name_or_dir))
 
@@ -194,7 +195,7 @@ def load_embeddings(vocab, pretrained_name_or_dir='glove.6B.50d', unknown='<unk>
         matrix, hit_flags = _load_embedding_npz(file_path, vocab, unknown, init_method)
     else:
         matrix, hit_flags = _load_embedding_txt(file_path, vocab, unknown, init_method)
-
+    dim = matrix.shape[-1]
     total_hits = sum(hit_flags)
     logging.info("Found {} out of {} words in the pre-training embedding.".format(total_hits, len(vocab)))
     if total_hits != len(vocab):
@@ -203,7 +204,7 @@ def load_embeddings(vocab, pretrained_name_or_dir='glove.6B.50d', unknown='<unk>
             mean = np.mean(found_vectors, axis=0, keepdims=True)
             std = np.std(found_vectors, axis=0, keepdims=True)
             unfound_vec_num = len(vocab) - total_hits
-            r_vecs = np.random.randn(unfound_vec_num, dim).astype(dtype) * std + mean
+            r_vecs = np.random.randn(unfound_vec_num, dim).astype('float32') * std + mean
             matrix[hit_flags == False] = r_vecs
         else:
             unk_idxs = (hit_flags == False).nonzero()[0]
