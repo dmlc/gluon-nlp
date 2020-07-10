@@ -806,8 +806,13 @@ def predict_extended(original_feature,
 
 
 def evaluate(args, last=True):
+    store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
+        args.comm_backend, args.gpus)
+    # only evaluate once
+    if rank != 0:
+        return
     ctx_l = parse_ctx(args.gpus)
-    logging.info('Srarting inference without horovod')
+    logging.info('Srarting inference without horovod on the first node')
 
     cfg, tokenizer, qa_net, use_segmentation = get_network(
         args.model_name, ctx_l, args.classifier_dropout)
