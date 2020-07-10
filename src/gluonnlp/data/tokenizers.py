@@ -1259,7 +1259,7 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
     Examples
     --------
     >>> from mxnet import gluon
-    >>> url = 'https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/tokenizer_test_models/sentencepiece/test_ende-a9bee4.model'
+    >>> url = 'https://gluonnlp-numpy-data.s3-accelerate.amazonaws.com/tokenizer_test_models/sentencepiece/test_ende-a9bee4.model'
     >>> model_f = gluon.utils.download(url)
     -etc-
     >>> tokenizer = gluonnlp.data.SentencepieceTokenizer(model_f)
