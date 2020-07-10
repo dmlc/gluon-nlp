@@ -1,1 +1,1 @@
-https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/pretrain_corpus/Gutenberg.zip 91e842dc3671ed5a917b7ff6a60f5f87397780e2 461506225
+https://gluonnlp-numpy-data.s3-accelerate.amazonaws.com/pretrain_corpus/Gutenberg.zip 91e842dc3671ed5a917b7ff6a60f5f87397780e2 461506225
