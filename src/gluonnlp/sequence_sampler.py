@@ -433,7 +433,7 @@ class BeamSearchSampler:
         - states and new_states have the same structure.
     eos_id
         Id of the EOS token. No other elements will be appended to the sample if it reaches eos_id,
-        if eos_id == None, # TODO
+        if eos_id == None, beam will not die
     scorer : BeamSearchScorer, default BeamSearchScorer(alpha=1.0, K=5)
         The score function used in beam search.
     max_length_a
@@ -581,8 +581,6 @@ class BeamSearchSampler:
         samples = step_input.reshape((batch_size, beam_size, 1))
         batch_shift = mx.np.arange(0, batch_size * beam_size, beam_size, ctx=ctx, dtype=np.int32)
         step = mx.np.array(0, ctx=ctx, dtype=np.float32)
-        # TODO eos_id = None
-        # 不会sample eos id
         for i in range(max_length):
             log_probs, new_states = self._decoder(step_input, states)
             assert log_probs.shape[1] == self._vocab_size
