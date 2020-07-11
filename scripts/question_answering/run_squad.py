@@ -391,7 +391,6 @@ def get_network(model_name,
         backbone.load_parameters(
             backbone_params_path,
             ignore_extra=True,
-            allow_missing=True,
             ctx=ctx_l)
         num_params, num_fixed_params = count_parameters(backbone.collect_params())
         logging.info(
@@ -478,9 +477,8 @@ def train(args):
         batch_size=args.batch_size,
         num_workers=0,
         sampler=sampler)
-    # Froze parameters
     if 'electra' in args.model_name:
-        # does not work for albert model since parameters in all layers are shared
+        # Froze parameters, does not work for albert model since parameters in all layers are shared
         if args.untunable_depth > 0:
             untune_params(qa_net, args.untunable_depth)
         if args.layerwise_decay > 0:
