@@ -31,6 +31,7 @@ def transformer_nmt_base():
     cfg.MODEL.attention_dropout = 0.0
     cfg.MODEL.activation_dropout = 0.0
     cfg.MODEL.dropout = 0.1
+    cfg.MODEL.layout = 'NT'
 
     # Parameters for the encoder
     cfg.MODEL.ENCODER = CN()
@@ -122,8 +123,30 @@ def transformer_wmt_en_de_big_t2t():
     return cfg
 
 
+class HybridBlockWithLayout(HybridBlock):
+    def __init__(self, layout, **kwargs):
+        super().__init__(**kwargs)
+        assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
+                                       'Only "TN" and "NT" are accepted!'.format(layout)
+        self._layout = layout
+
+    @property
+    def layout(self):
+        return self._layout
+
+    def set_layout(self, layout):
+        assert layout in ['NT', 'TN'], 'Invalid layout received = {}. ' \
+                                       'Only "TN" and "NT" are accepted!'.format(layout)
+        if layout == self.layout:
+            return
+        self._layout = layout
+        if self._active:
+            # Detect if the Block has been hybridized. If so, re-hybridize the model
+            self.hybridize(active=False)
+
+
 @use_np
-class TransformerEncoderLayer(HybridBlock):
+class TransformerEncoderLayer(HybridBlockWithLayout):
     """Transformer Encoder Layer"""
     def __init__(self,
                  units: int = 512,
@@ -167,7 +190,7 @@ class TransformerEncoderLayer(HybridBlock):
         prefix
         params
         """
-        super().__init__(prefix=prefix, params=params)
+        super().__init__(layout=layout, prefix=prefix, params=params)
         self._units = units
         self._hidden_size = hidden_size
         self._num_heads = num_heads
@@ -177,8 +200,6 @@ class TransformerEncoderLayer(HybridBlock):
         self._pre_norm = pre_norm
         self._dtype = dtype
         self._layout = layout
-        assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
-                                       'Only "TN" and "NT" are accepted!'.format(layout)
         assert self._units % self._num_heads == 0, 'units must be divisive by the number of heads'
         with self.name_scope():
             self.dropout_layer = nn.Dropout(hidden_dropout_prob)
@@ -224,10 +245,6 @@ class TransformerEncoderLayer(HybridBlock):
                                        dtype=self._dtype,
                                        prefix='ffn_')
 
-    @property
-    def layout(self):
-        return self._layout
-
     def hybrid_forward(self, F, data, attn_mask):
         """
 
@@ -269,7 +286,7 @@ class TransformerEncoderLayer(HybridBlock):
 
 
 @use_np
-class TransformerEncoder(HybridBlock):
+class TransformerEncoder(HybridBlockWithLayout):
     def __init__(self, num_layers=6, recurrent=False,
                  units=512, hidden_size=2048, num_heads=8,
                  activation_dropout=0.0, dropout=0.1,
@@ -302,10 +319,9 @@ class TransformerEncoder(HybridBlock):
         prefix
         params
         """
-        super(TransformerEncoder, self).__init__(prefix=prefix, params=params)
+        super(TransformerEncoder, self).__init__(layout=layout, prefix=prefix, params=params)
         self._dtype = dtype
         self.num_layers = num_layers
-        self._layout = layout
         self._recurrent = recurrent
         self._data_norm = data_norm
         self._pre_norm = pre_norm
@@ -340,9 +356,17 @@ class TransformerEncoder(HybridBlock):
                         layout=self._layout,
                         prefix='{}_'.format(i)))
 
-    @property
-    def layout(self):
-        return self._layout
+    def set_layout(self, layout):
+        """
+
+        Parameters
+        ----------
+        layout
+            Layout of the model. Can either be 'NT' or 'TN'
+        """
+        for layer in self.layers:
+            layer.set_layout(layout)
+        super().set_layout(layout)
 
     def hybrid_forward(self, F, data, valid_length):
         """
@@ -384,7 +408,7 @@ class TransformerEncoder(HybridBlock):
 
 
 @use_np
-class TransformerDecoderLayer(HybridBlock):
+class TransformerDecoderLayer(HybridBlockWithLayout):
     def __init__(self, units: int = 512,
                  mem_units: Optional[int] = None,
                  hidden_size: int = 2048,
@@ -426,9 +450,8 @@ class TransformerDecoderLayer(HybridBlock):
         prefix
         params
         """
-        super(TransformerDecoderLayer, self).__init__(prefix=prefix, params=params)
+        super(TransformerDecoderLayer, self).__init__(layout=layout, prefix=prefix, params=params)
         self._dtype = dtype
-        self._layout = layout
         self._units = units
         if mem_units is None:
             mem_units = units
@@ -513,10 +536,6 @@ class TransformerDecoderLayer(HybridBlock):
                                        dtype=dtype,
                                        prefix='ffn_')
 
-    @property
-    def layout(self):
-        return self._layout
-
     def hybrid_forward(self, F, data, mem, self_causal_mask, mem_attn_mask):
         """
 
@@ -599,7 +618,7 @@ class TransformerDecoderLayer(HybridBlock):
 
     @property
     def state_batch_axis(self):
-        if self._layout == 'NT':
+        if self.layout == 'NT':
             return 0, 0
         else:
             return 1, 1
@@ -719,7 +738,7 @@ class TransformerDecoderLayer(HybridBlock):
 
 
 @use_np
-class TransformerDecoder(HybridBlock):
+class TransformerDecoder(HybridBlockWithLayout):
     def __init__(self, num_layers=6, recurrent=False,
                  units=512, mem_units=None, hidden_size=2048,
                  num_heads=8, max_shift=None, rel_pos_embed=False, activation_dropout=0.0,
@@ -728,10 +747,9 @@ class TransformerDecoder(HybridBlock):
                  activation='relu', dtype='float32',
                  layout='NT',
                  prefix=None, params=None):
-        super(TransformerDecoder, self).__init__(prefix=prefix, params=params)
+        super(TransformerDecoder, self).__init__(layout=layout, prefix=prefix, params=params)
         self._dtype = dtype
         self._units = units
-        self._layout = layout
         self._mem_units = mem_units
         self.num_layers = num_layers
         self.recurrent = recurrent
@@ -769,6 +787,18 @@ class TransformerDecoder(HybridBlock):
                                                             dtype=dtype,
                                                             layout=layout,
                                                             prefix='{}_'.format(i)))
+
+    def set_layout(self, layout):
+        """
+
+        Parameters
+        ----------
+        layout
+            Layout of the model. Can either be 'NT' or 'TN'
+        """
+        for layer in self.layers:
+            layer.set_layout(layout)
+        super().set_layout(layout)
 
     def hybrid_forward(self, F, data, valid_length, mem_data, mem_valid_length):
         """
@@ -916,7 +946,7 @@ class TransformerDecoder(HybridBlock):
 
 
 @use_np
-class TransformerNMTModel(HybridBlock):
+class TransformerNMTModel(HybridBlockWithLayout):
     def __init__(self, src_vocab_size: int,
                  tgt_vocab_size: int,
                  max_src_length: Optional[int] = None,
@@ -1019,11 +1049,11 @@ class TransformerNMTModel(HybridBlock):
         dtype
             Data type of the weights
         layout
-            The layout
+            The layout of the input + target
         prefix
         params
         """
-        super(TransformerNMTModel, self).__init__(prefix=prefix, params=params)
+        super(TransformerNMTModel, self).__init__(layout=layout, prefix=prefix, params=params)
         assert src_vocab_size > 0 and tgt_vocab_size > 0,\
             'Cannot set "src_vocab_size" and "tgt_vocab_size" to negative numbers. ' \
             'Are you creating ' \
@@ -1032,7 +1062,6 @@ class TransformerNMTModel(HybridBlock):
             'cfg.MODEL.tgt_vocab_size manually before passing to ' \
             'TransformerNMTModel.from_cfg().'
         self._dtype = dtype
-        self._layout = layout
         self._src_vocab_size = src_vocab_size
         self._tgt_vocab_size = tgt_vocab_size
         self.pos_embed_type = pos_embed_type
@@ -1124,6 +1153,18 @@ class TransformerNMTModel(HybridBlock):
         self.encoder.hybridize()
         self.decoder.hybridize()
 
+    def set_layout(self, layout):
+        """
+
+        Parameters
+        ----------
+        layout
+            Layout of the model. Can either be 'NT' or 'TN'
+        """
+        self.encoder.set_layout(layout)
+        self.decoder.set_layout(layout)
+        super().set_layout(layout)
+
     @property
     def src_vocab_size(self):
         return self._src_vocab_size
@@ -1140,15 +1181,21 @@ class TransformerNMTModel(HybridBlock):
         Parameters
         ----------
         F
-        src_data :
-            Shape (batch_size, src_length)
-        src_valid_length :
+        src_data
+            - layout = 'NT'
+                Shape (batch_size, src_length)
+            - layout = 'TN'
+                Shape (src_length, batch_size)
+        src_valid_length
             Shape (batch_size,)
 
         Returns
         -------
-        enc_out :
-            Shape (batch_size, src_length, C_out)
+        enc_out
+            - layout = 'NT'
+                Shape (batch_size, src_length, C_out)
+            - layout = 'TN'
+                Shape (src_length, batch_size, C_out)
         """
         src_data = self.src_embed_layer(src_data)
         if self.scaled_embed:
@@ -1164,19 +1211,28 @@ class TransformerNMTModel(HybridBlock):
         Parameters
         ----------
         F
-        tgt_data :
-            Shape (batch_size, tgt_length)
-        tgt_valid_length :
+        tgt_data
+            - layout = 'NT'
+                Shape (batch_size, tgt_length)
+            - layout = 'TN'
+                Shape (tgt_length, batch_size)
+        tgt_valid_length
             Shape (batch_size,)
-        mem_data :
-            Shape (batch_size, src_length, C_out)
+        mem_data
+            - layout = 'NT'
+                Shape (batch_size, src_length, C_out)
+            - layout = 'TN'
+                Shape (src_length, batch_size, C_out)
         mem_valid_length :
             Shape (batch_size,)
 
         Returns
         -------
-        dec_out :
-            Shape (batch_size, tgt_length, tgt_vocab_size)
+        dec_out
+            - layout = 'NT'
+                Shape (batch_size, tgt_length, tgt_vocab_size)
+            - layout = 'TN'
+                Shape (tgt_length, batch_size, tgt_vocab_size)
         """
         tgt_data = self.tgt_embed_layer(tgt_data)
         if self.scaled_embed:
@@ -1194,19 +1250,28 @@ class TransformerNMTModel(HybridBlock):
         Parameters
         ----------
         F
-        src_data :
-            Shape (batch_size, src_length)
-        src_valid_length :
+        src_data
+            - layout = 'NT'
+                Shape (batch_size, src_length)
+            - layout = 'TN'
+                Shape (src_length, batch_size)
+        src_valid_length
             Shape (batch_size,)
-        tgt_data :
-            Shape (batch_size, tgt_length)
-        tgt_valid_length :
+        tgt_data
+            - layout = 'NT'
+                Shape (batch_size, tgt_length)
+            - layout = 'TN'
+                Shape (tgt_length, batch_size)
+        tgt_valid_length
             Shape (batch_size,)
 
         Returns
         -------
-        out :
-            Shape (batch_size, tgt_length, tgt_vocab_size)
+        out
+            - layout = 'NT'
+                Shape (batch_size, tgt_length, tgt_vocab_size)
+            - layout = 'TN'
+                Shape (tgt_length, batch_size, tgt_vocab_size)
         """
         enc_out = self.encode(F, src_data, src_valid_length)
         dec_out = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out, src_valid_length)
@@ -1251,6 +1316,7 @@ class TransformerNMTModel(HybridBlock):
                    dec_recurrent=cfg.MODEL.DECODER.recurrent,
                    dec_activation=cfg.MODEL.DECODER.activation,
                    dec_pre_norm=cfg.MODEL.DECODER.pre_norm,
+                   layout=cfg.MODEL.layout,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
@@ -1291,32 +1357,41 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
         position_batch_axis : int
         dec_layer_batch_axis : list
         """
-        return 0, 0, 0, self.model.decoder.state_batch_axis
+        if self.model.layout == 'NT':
+            return 0, 0, 0, self.model.decoder.state_batch_axis
+        else:
+            return 1, 0, 0, self.model.decoder.state_batch_axis
 
     def init_states(self, src_data, src_valid_length):  # TODO(sxjscience) Revisit here, support auxiliary states?
         """Initialize the states required for sequence sampling
 
         Parameters
         ----------
-        src_data :
-            Shape (batch_size, src_length)
-        src_valid_length :
+        src_data
+            - layout = 'NT'
+                Shape (batch_size, src_length)
+            - layout = 'TN'
+                Shape (src_length, batch_size)
+        src_valid_length
             Shape (batch_size,)
 
         Returns
         -------
-        enc_out :
-            Shape (batch_size, src_length, C_mem)
-        src_valid_length :
+        enc_out
+            - layout = 'NT'
+                Shape (batch_size, src_length, C_mem)
+            - layout = 'TN'
+                Shape (src_length, batch_size, C_mem)
+        src_valid_length
             Shape (batch_size,)
-        position :
+        position
             Shape (batch_size,)
         dec_states: list
             The states of the decoder
         """
         batch_size = src_data.shape[0]
         ctx = src_data.ctx
-        enc_out = self.model.encode(mx.nd, src_data, src_valid_length)
+        enc_out = self.model.encode(mx, src_data, src_valid_length)
         position = mx.np.zeros((batch_size, 1), dtype=np.int32, ctx=ctx)
         dtype = enc_out.dtype
         dec_states = self.model.decoder.init_states(batch_size, ctx, dtype)
@@ -1327,19 +1402,25 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
 
         Parameters
         ----------
-        step_data :
+        step_data
             Shape (batch_size,)
-        states : tuple
+        states
             It includes :
-                mem_data : (batch_size, src_length, C_mem)
-                mem_valid_length : (batch_size,)
-                position : (batch_size,)
-                dec_states : list
+                - layout = 'NT'
+                    mem_data : (batch_size, src_length, C_mem)
+                    mem_valid_length : (batch_size,)
+                    position : (batch_size,)
+                    dec_states : list
+                - layout = 'TN'
+                    mem_data : (src_length, batch_size, C_mem)
+                    mem_valid_length : (batch_size,)
+                    position : (batch_size,)
+                    dec_states : list
         Returns
         -------
-        out :
+        out
             Shape (batch_size, C)
-        new_states : tuple
+        new_states
             Has the same structure as the states
         """
         mem_data, mem_valid_length, position, dec_states = states
