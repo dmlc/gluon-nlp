@@ -161,7 +161,7 @@ def test_beam_search_stochastic(early_return):
     assert has_different_sample
 
 @pytest.mark.parametrize('early_return', [False, True])
-@pytest.mark.parametrize('sampling_paras', [(-1.0, -1), (0.05, -1), (-1.0, 1)])
+@pytest.mark.parametrize('sampling_paras', [(-1.0, -1), (0.05, -1), (-1.0, 1), (-1.0, 3)])
 def test_multinomial_sampling(early_return, sampling_paras):
     class SimpleStepDecoder(HybridBlock):
         def __init__(self, vocab_size=5, hidden_units=4, prefix=None, params=None):
@@ -179,7 +179,7 @@ def test_multinomial_sampling(early_return, sampling_paras):
             out = self.vocab_map(self.x2h_map(data) + new_state)
             return out, new_state
 
-    vocab_size = 3
+    vocab_size = 5
     batch_size = 2
     hidden_units = 3
     beam_size = 4
