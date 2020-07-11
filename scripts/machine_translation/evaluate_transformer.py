@@ -5,7 +5,6 @@ import mxnet as mx
 from mxnet import gluon
 import argparse
 import logging
-import io
 import time
 from gluonnlp.utils.misc import logging_config
 from gluonnlp.models.transformer import TransformerNMTModel,\
@@ -25,9 +24,9 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=100, help='The random seed.')
     parser.add_argument('--src_lang', type=str, default='en', help='Source language')
     parser.add_argument('--tgt_lang', type=str, default='de', help='Target language')
-    parser.add_argument('--src_corpus', type=str,
+    parser.add_argument('--src_corpus', type=str, required=True,
                         help='The source corpus for evaluation.')
-    parser.add_argument('--tgt_corpus', type=str,
+    parser.add_argument('--tgt_corpus', type=str, default=None,
                         help='The target corpus for evaluation.')
     parser.add_argument('--src_tokenizer', choices=['spm',
                                                     'subword_nmt',
@@ -68,17 +67,21 @@ def parse_args():
                         help='The b in the a * x + b formula of beam search')
     parser.add_argument('--param_path', type=str, help='The path to the model parameters.')
     parser.add_argument('--gpus', type=str, default='0',
-                        help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.'
+                        help='List of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.'
                              '(using single gpu is suggested)')
     parser.add_argument('--save_dir', type=str, default=None,
                         help='The path to save the log files and predictions.')
     parser.add_argument('--stochastic', action='store_true',
                         help='Whether to use the stochastic beam search')
     parser.add_argument('--inference', action='store_true',
-                        help='Whether to inference with your own data')
+                        help='Whether to inference with your own data, '
+                        'when applying inference, tgt_corpus is not needed and will be set to None.')
     args = parser.parse_args()
     if args.save_dir is None:
         args.save_dir = os.path.splitext(args.param_path)[0] + '_evaluation'
+    assert args.inference or args.tgt_corpus, 'requring --tgt_corpus while not using --inference'
+    if args.inference:
+        args.tgt_corpus = None
     logging_config(args.save_dir, console=True)
     logging.info(args)
     return args
@@ -91,8 +94,8 @@ def process_corpus(corpus_path, sentence_normalizer, bpe_tokenizer,
     raw_lines = []
     with open(corpus_path, 'r', encoding='utf-8') as f:
         for line in f:
-            raw_lines.append(line)
             line = line.strip()
+            raw_lines.append(line)
             line = sentence_normalizer(line)
             if base_tokenizer is not None:
                 line = ' '.join(base_tokenizer.encode(line))
@@ -171,24 +174,25 @@ def evaluate(args):
                                             max_length_b=args.max_length_b)   
 
     logging.info(beam_search_sampler)
-    ctx = ctx_l[0]
-    avg_nll_loss = 0
-    ntokens = 0
-    pred_sentences = []
-    processed_sent = 0
-    start_eval_time = time.time()
-    all_src_token_ids, all_src_lines = process_corpus(args.src_corpus,
-                                                      sentence_normalizer=src_normalizer,
-                                                      base_tokenizer=base_src_tokenizer,
-                                                      bpe_tokenizer=src_tokenizer,
-                                                      add_bos=False,
-                                                      add_eos=True)
-    all_tgt_token_ids, all_tgt_lines = process_corpus(args.tgt_corpus,
-                                                      sentence_normalizer=tgt_normalizer,
-                                                      base_tokenizer=base_tgt_tokenizer,
-                                                      bpe_tokenizer=tgt_tokenizer,
-                                                      add_bos=True,
-                                                      add_eos=True)
+    all_src_token_ids, all_src_lines = process_corpus(
+        args.src_corpus,
+        sentence_normalizer=src_normalizer,
+        base_tokenizer=base_src_tokenizer,
+        bpe_tokenizer=src_tokenizer,
+        add_bos=False,
+        add_eos=True
+    )
+    if args.tgt_corpus is not None:
+        all_tgt_token_ids, all_tgt_lines = process_corpus(
+            args.tgt_corpus,
+            sentence_normalizer=tgt_normalizer,
+            base_tokenizer=base_tgt_tokenizer,
+            bpe_tokenizer=tgt_tokenizer,
+            add_bos=True,
+            add_eos=True
+        )
+    else: # when applying inference, populate the fake tgt tokens
+        all_tgt_token_ids = all_tgt_lines = [[] for i in range(len(all_src_token_ids))]
     test_dataloader = gluon.data.DataLoader(
         list(zip(all_src_token_ids,
                  [len(ele) for ele in all_src_token_ids],
@@ -197,8 +201,14 @@ def evaluate(args):
         batch_size=32,
         batchify_fn=Tuple(Pad(), Stack(), Pad(), Stack()),
         shuffle=False)
-    
+
+    ctx = ctx_l[0]
+    pred_sentences = []
+    start_eval_time = time.time()
+    # evaluate
     if not args.inference:
+        avg_nll_loss = 0
+        ntokens = 0
         for i, (src_token_ids, src_valid_length, tgt_token_ids, tgt_valid_length)\
                 in enumerate(test_dataloader):
             src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
@@ -226,38 +236,39 @@ def evaluate(args):
         end_eval_time = time.time()
         avg_nll_loss = avg_nll_loss / ntokens
 
-        with io.open(os.path.join(args.save_dir, 'gt_sentences.txt'), 'w', encoding='utf-8') as of:
-            for line in all_tgt_lines:
-                of.write(line + '\n')
-        with io.open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
-            for line in pred_sentences:
-                of.write(line + '\n')
+        with open(os.path.join(args.save_dir, 'gt_sentences.txt'), 'w', encoding='utf-8') as of:
+            of.write('\n'.join(all_tgt_lines))
+            of.write('\n')
+        with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
+            of.write('\n'.join(pred_sentences))
+            of.write('\n')
 
         sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences, ref_streams=[all_tgt_lines])
         logging.info('Time Spent: {}, #Sent={}, SacreBlEU={} Avg NLL={}, Perplexity={}'
                      .format(end_eval_time - start_eval_time, len(all_tgt_lines),
                              sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
-
+    # inference only
     else:
-        for i, (src_token_ids, src_valid_length, _, _) in tqdm(enumerate(test_dataloader)):
-            src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
-            src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
-            init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
-            states = inference_model.init_states(src_token_ids, src_valid_length)
-            samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
-            for j in range(samples.shape[0]):
-                pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
-                bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
-                pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
-                pred_sentences.append(pred_sentence)
-            
-            with io.open('pred_sentences.txt', 'a', encoding='utf-8') as of:
-                for line in pred_sentences:
-                    of.write(line + '\n')
-            
-            processed_sent = processed_sent + len(pred_sentences)
-            pred_sentences = []
-
+        with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
+            processed_sentences = 0
+            for src_token_ids, src_valid_length, _, _ in tqdm(test_dataloader):
+                src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
+                src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
+                init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
+                states = inference_model.init_states(src_token_ids, src_valid_length)
+                samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
+                for j in range(samples.shape[0]):
+                    pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
+                    bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
+                    pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
+                    pred_sentences.append(pred_sentence)
+                of.write('\n'.join(pred_sentences))
+                of.write('\n')
+                processed_sentences += len(pred_sentences)
+                pred_sentences = []
+        end_eval_time = time.time()
+        logging.info('Time Spent: {}, Inferred sentences: {}'
+                     .format(end_eval_time - start_eval_time, processed_sentences))
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
