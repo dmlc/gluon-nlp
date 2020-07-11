@@ -67,9 +67,7 @@ class BaseStepDecoder(abc.ABC):
 
 
 # TODO(sxjscience)
-#  1. Add Nucleus Sampling "[ICLR2020] The Curious Case of Neural Text Degeneration"
-#       (https://openreview.net/pdf?id=rygGQyrFvH)
-#  2. Add ParticleFilter Sampler
+#  1. Add ParticleFilter Sampler
 class BeamSearchScorer(HybridBlock):
     r"""Score function used in beam search.
 
@@ -447,12 +445,21 @@ class BeamSearchSampler:
         where `x` is the maximum source length.
     min_length
         The minimum length of the generated sequences.
-    # TODO doc
     temperature
     stochastic
+        Whether to use stochastic sampler,
+        see [ICML2019] "Stochastic Beams and Where to Find Them" for detail.
+        https://arxiv.org/abs/1903.06059
     sampling
+        Whether to use multinomial sampler.
     sampling_topp
+        Multinomial sampling with topp,
+        see [ICLR2020] "The Curious Case of Neural Text Degeneration"
+        https://arxiv.org/abs/1904.09751
     sampling_topk
+        Multinomial sampling with topk,
+        see [ACL2018] "Hierarchical Neural Story Generation"
+        https://www.aclweb.org/anthology/P18-1082.pdf
     """
     def __init__(self, beam_size: int,
                  decoder: BaseStepDecoder,
