@@ -81,12 +81,9 @@ for NUM in ` seq -f %03g 0 193 `; do
 done
 wait
 
-####
 cat ` seq -f "${datapath}/wmt2014_mono/train.tok.${SRC}.split%03g/pred_sentences.txt" 0 193 ` \
     > ${datapath}/wmt2014_mono/syn.train.raw.${SRC}
 cp ${datapath}/wmt2014_mono/train.tok.${TGT} ${datapath}/wmt2014_mono/syn.train.raw.${TGT}
-
-
 
 # Clean the synthetic data
 nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
@@ -98,7 +95,7 @@ nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
     --max-ratio 1.5 \
     --src-save-path ${datapath}/wmt2014_mono/syn.train.tok.${SRC} \
     --tgt-save-path ${datapath}/wmt2014_mono/syn.train.tok.${TGT} \
-    --num-process 24
+    --num-process 32
 
 # Combine the synthetic data with upsampled original data
 # TODO upsample
@@ -107,7 +104,7 @@ mkdir ${datapath}/wmt2014_backtranslation
 for LANG in ${SRC} ${TGT} ; do
     cat ${datapath}/wmt2014_ende/train.tok.${LANG} ${datapath}/wmt2014_mono/syn.train.tok.${LANG} \
         > ${datapath}/wmt2014_backtranslation/bt.train.tok.${LANG}
-done 
+done
 
 # Tokenize
 for LANG in ${SRC} ${TGT} ; do
@@ -134,12 +131,15 @@ python train_transformer.py \
     --lr 0.002 \
     --max_update 60000 \
     --save_interval_update 1000 \
-    --num_averages 10 \
     --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
     --seed 100 \
     --gpus 0,1,2,3
 
+# TODO nlp_average_checkpoint
+nlp_nmt average_checkpoint --prefix range() \
+    --suffix \
+    --save-path backtranslation_transformer_wmt2014_ende_${SUBWORD_ALGO}/average.params
 
 # Finally, we can evaluate the model
 python evaluate_transformer.py \
