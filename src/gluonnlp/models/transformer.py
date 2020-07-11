@@ -712,23 +712,29 @@ class TransformerDecoderLayer(HybridBlockWithLayout):
             data = self.ln_in(data)
         if self.layout == 'NT':
             # Shape (B, 1, C)
+            time_axis = 1
             data = F.np.expand_dims(data, axis=1)
         else:
             # Shape (1, B, C)
+            time_axis = 0
             data = F.np.expand_dims(data, axis=0)
-        prev_key, prev_value = states  # Shape (B, prev_L, #Head, C_K), (B, prev_L, #Head, C_V)
+        # Shape (B, prev_L, #Head, C_K), (B, prev_L, #Head, C_V)
+        #  or (prev_L, B, #Head, C_K), (prev_L, B, #Head, C_V)
+        prev_key, prev_value = states
         if mem_attn_mask is None:
             mem_attn_mask = gen_mem_attn_mask(F, mem, mem_valid_length, data, None,
                                               dtype=self._dtype, layout=self.layout)
         # 1. Get the causal self-attention value, we need to attend to both the current data
         # and the previous stored key/values
-        step_qkv = self.attn_in_qkv(data)  # Shape (B, 1, 3 * num_heads * C_key)
+        # Shape (B, 1, 3 * num_heads * C_key)
+        #  or (1, B, 3 * num_heads * C_key)
+        step_qkv = self.attn_in_qkv(data)
         step_query, step_key, step_value = F.np.split(step_qkv, 3, axis=-1)
         step_query = F.npx.reshape(step_query, (-2, -2, self._num_heads, -1))
         step_key = F.npx.reshape(step_key, (-2, -2, self._num_heads, -1))
         step_value = F.npx.reshape(step_value, (-2, -2, self._num_heads, -1))
-        new_key = F.np.concatenate([prev_key, step_key], axis=1)
-        new_value = F.np.concatenate([prev_value, step_value], axis=1)
+        new_key = F.np.concatenate([prev_key, step_key], axis=time_axis)
+        new_value = F.np.concatenate([prev_value, step_value], axis=time_axis)
         out, _ = self.self_attention(step_query, new_key, new_value, None)
         out = self.proj_in(out)
         out = self.dropout_layer(out)
@@ -949,8 +955,13 @@ class TransformerDecoder(HybridBlockWithLayout):
         out = self.dropout_layer(data)
         if self._data_norm:
             out = self.ln_data(out)
-        mem_attn_mask = gen_mem_attn_mask(F, mem, mem_valid_length, data, None,
-                                          dtype=self._dtype)
+        time_axis = 0 if self.layout == 'TN' else 1
+        # Generate the mem_attn_mask
+        time_steps = F.npx.arange_like(mem, axis=time_axis)  # (mem_length,)
+        mem_attn_mask = F.np.reshape(time_steps, (1, 1, -1))\
+                        < F.np.reshape(mem_valid_length, (-1, 1, 1))
+        # TODO(sxjscience) Try with boolean masking
+        mem_attn_mask = mem_attn_mask.astype(self._dtype)
         new_states = []
         for i in range(self.num_layers):
             if self.recurrent:
@@ -1412,7 +1423,7 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
         batch_size = src_data.shape[0]
         ctx = src_data.ctx
         enc_out = self.model.encode(mx, src_data, src_valid_length)
-        position = mx.np.zeros((batch_size, 1), dtype=np.int32, ctx=ctx)
+        position = mx.np.zeros((batch_size,), dtype=np.int32, ctx=ctx)
         dtype = enc_out.dtype
         dec_states = self.model.decoder.init_states(batch_size, ctx, dtype)
         return enc_out, src_valid_length, position, dec_states
@@ -1445,7 +1456,6 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
         """
         mem_data, mem_valid_length, position, dec_states = states
         # 1. Get the embedding
-        step_data = F.np.expand_dims(step_data, axis=1)
         step_data = self.model.tgt_embed_layer(step_data)
         if self.model.scaled_embed:
             step_data = step_data * np.sqrt(self.model.dec_units)

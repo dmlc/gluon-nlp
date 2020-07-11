@@ -229,16 +229,16 @@ def gen_mem_attn_mask(F, mem, mem_valid_length, data, data_valid_length=None,
         raise NotImplementedError('Unsupported layout={}'.format(layout))
     mem_valid_length = mem_valid_length.astype(dtype)
     mem_steps = F.npx.arange_like(mem, axis=time_axis)  # (mem_length,)
+    data_steps = F.npx.arange_like(data, axis=time_axis)  # (query_length,)
     mem_mask = (F.npx.reshape(mem_steps, (1, 1, -1))
                 < F.npx.reshape(mem_valid_length, (-2, 1, 1))).astype(dtype)  # (B, 1, mem_length)
     if data_valid_length is not None:
         data_valid_length = data_valid_length.astype(dtype)
-        data_steps = F.npx.arange_like(data, axis=time_axis)  # (query_length,)
         data_mask = (F.npx.reshape(data_steps, (1, -1, 1))
                      < F.npx.reshape(data_valid_length, (-2, 1, 1))).astype(dtype)  # (B, query_length, 1)
         mask = mem_mask * data_mask
     else:
-        query_length_ones = F.np.ones_like(F.npx.arange_like(data, axis=time_axis))  # (query_length,)
+        query_length_ones = F.np.ones_like(data_steps)
         mask = query_length_ones.reshape((1, -1, 1)) * mem_mask
     return mask
 

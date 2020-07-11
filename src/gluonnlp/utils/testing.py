@@ -51,13 +51,13 @@ def verify_nmt_inference(train_model, inference_model,
 
     Parameters
     ----------
-    train_model :
-    inference_model :
-    batch_size :
-    src_seq_length :
-    tgt_seq_length :
-    atol :
-    rtol :
+    train_model
+    inference_model
+    batch_size
+    src_seq_length
+    tgt_seq_length
+    atol
+    rtol
 
     """
     src_word_sequences = mx.np.random.randint(0, train_model.src_vocab_size,
@@ -69,13 +69,28 @@ def verify_nmt_inference(train_model, inference_model,
     tgt_valid_length = mx.np.random.randint(min_tgt_seq_length, tgt_seq_length, (batch_size,))
     full_out = train_model(src_word_sequences, src_valid_length,
                            tgt_word_sequences, tgt_valid_length)
-    for partial_batch_size in range(1, batch_size + 1):
-        step_out_l = []
-        states = inference_model.init_states(src_word_sequences[:partial_batch_size, :],
-                                             src_valid_length[:partial_batch_size])
-        for i in range(min_tgt_seq_length):
-            step_out, states = inference_model(tgt_word_sequences[:partial_batch_size, i], states)
-            step_out_l.append(step_out)
-        partial_out = mx.np.stack(step_out_l, axis=1)
-        npt.assert_allclose(full_out[:partial_batch_size, :min_tgt_seq_length].asnumpy(),
-                            partial_out[:partial_batch_size, :].asnumpy(), atol, rtol)
+    if train_model.layout == 'NT':
+        for partial_batch_size in range(1, batch_size + 1):
+            step_out_l = []
+            states = inference_model.init_states(src_word_sequences[:partial_batch_size, :],
+                                                 src_valid_length[:partial_batch_size])
+            for i in range(min_tgt_seq_length):
+                step_out, states = inference_model(tgt_word_sequences[:partial_batch_size, i], states)
+                step_out_l.append(step_out)
+            partial_out = mx.np.stack(step_out_l, axis=1)
+            npt.assert_allclose(full_out[:partial_batch_size, :min_tgt_seq_length].asnumpy(),
+                                partial_out[:partial_batch_size, :].asnumpy(), atol, rtol)
+    elif train_model.layout == 'TN':
+        for partial_batch_size in range(1, batch_size + 1):
+            step_out_l = []
+            states = inference_model.init_states(src_word_sequences[:, :partial_batch_size],
+                                                 src_valid_length[:partial_batch_size])
+            for i in range(min_tgt_seq_length):
+                step_out, states = inference_model(tgt_word_sequences[i, :partial_batch_size],
+                                                   states)
+                step_out_l.append(step_out)
+            partial_out = mx.np.stack(step_out_l, axis=1)
+            npt.assert_allclose(full_out[:min_tgt_seq_length, :partial_batch_size].asnumpy(),
+                                partial_out[:, :partial_batch_size].asnumpy(), atol, rtol)
+    else:
+        raise NotImplementedError

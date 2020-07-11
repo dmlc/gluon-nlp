@@ -43,6 +43,8 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
                     mx.np.swapaxes(encoded_mem, 0, 1).asnumpy(), 1E-5, 1E-5)
     assert_allclose(full_decode_out_tn.asnumpy(),
                     mx.np.swapaxes(full_decode_out, 0, 1).asnumpy(), 1E-5, 1E-5)
+    enc.set_layout('NT')
+    dec.set_layout('NT')
 
     # Test the consistency via shifting the data and the valid_length
     for i in range(1, dst_valid_length.asnumpy().min()):
@@ -63,11 +65,11 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
     states = dec.layers[0].init_states(batch_size, h_out.ctx, h_out.dtype)
     h_out_from_incremental = []
     for i in range(tgt_seq_length):
-        ele_h_out, states = dec.layers[0].incremental_decode(mx, dst_data[:, i:(i + 1), :], states,
+        ele_h_out, states = dec.layers[0].incremental_decode(mx, dst_data[:, i, :], states,
                                                              encoded_mem, src_valid_length,
                                                              enc_mem_attn_mask)
         h_out_from_incremental.append(ele_h_out)
-    h_out_from_incremental = mx.np.concatenate(h_out_from_incremental, axis=1)
+    h_out_from_incremental = mx.np.stack(h_out_from_incremental, axis=1)
 
     for i in range(batch_size):
         val_length = dst_valid_length[i].asnumpy()
@@ -77,10 +79,10 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
     states = dec.init_states(batch_size, src_data.ctx, src_data.dtype)
     final_out_from_incremental = []
     for i in range(tgt_seq_length):
-        ele_final_out, states = dec.incremental_decode(mx, dst_data[:, i:(i + 1), :],
+        ele_final_out, states = dec.incremental_decode(mx, dst_data[:, i, :],
                                                        states, encoded_mem, src_valid_length)
         final_out_from_incremental.append(ele_final_out)
-    final_out_from_incremental = mx.np.concatenate(final_out_from_incremental, axis=1)
+    final_out_from_incremental = mx.np.stack(final_out_from_incremental, axis=1)
     for i in range(batch_size):
         val_length = dst_valid_length[i].asnumpy()
         assert_allclose(final_out_from_incremental[i, :val_length, :].asnumpy(),
@@ -136,6 +138,9 @@ def test_transformer_nmt_model(train_hybridize, inference_hybridize,
     verify_nmt_model(model)
     if inference_hybridize:
         inference_model.hybridize()
+    verify_nmt_inference(train_model=model, inference_model=inference_model)
+    model.set_layout('TN')
+    inference_model = TransformerNMTInference(model=model)
     verify_nmt_inference(train_model=model, inference_model=inference_model)
 
 
