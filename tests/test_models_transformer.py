@@ -33,6 +33,17 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
     encoded_mem = enc(src_data, src_valid_length)
     full_decode_out = dec(dst_data, dst_valid_length, encoded_mem, src_valid_length)
 
+    # Test for the TN layout
+    enc.set_layout('TN')
+    dec.set_layout('TN')
+    encoded_mem_tn = enc(mx.np.swapaxes(src_data, 0, 1), src_valid_length)
+    full_decode_out_tn = dec(mx.np.swapaxes(dst_data, 0, 1), dst_valid_length,
+                             encoded_mem_tn, src_valid_length)
+    assert_allclose(encoded_mem_tn.asnumpy(),
+                    mx.np.swapaxes(encoded_mem, 0, 1).asnumpy(), 1E-5, 1E-5)
+    assert_allclose(full_decode_out_tn.asnumpy(),
+                    mx.np.swapaxes(full_decode_out, 0, 1).asnumpy(), 1E-5, 1E-5)
+
     # Test the consistency via shifting the data and the valid_length
     for i in range(1, dst_valid_length.asnumpy().min()):
         for partial_decode_out in [dec(dst_data[:, :(-i), :],

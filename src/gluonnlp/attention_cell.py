@@ -640,6 +640,7 @@ class MultiHeadAttentionCell(HybridBlock):
         self._normalized = normalized
         self._eps = eps
         self._dtype = dtype
+        assert layout in ['NTK', 'NKT', 'TNK']
         self._layout = layout
         self._use_einsum = use_einsum
         if self._query_units is not None:
@@ -649,6 +650,26 @@ class MultiHeadAttentionCell(HybridBlock):
             self._query_head_units = self._query_units // self._num_heads
         else:
             self._query_head_units = None
+
+    @property
+    def layout(self):
+        return self._layout
+
+    def set_layout(self, layout):
+        """
+
+        Parameters
+        ----------
+        layout
+            The new layout
+        """
+        assert layout in ['NTK', 'NKT', 'TNK']
+        if layout == self.layout:
+            return
+        self._layout = layout
+        if self._active:
+            # Detect if the Block has been hybridized. If so, re-hybridize the model
+            self.hybridize(active=False)
 
     def hybrid_forward(self, F, query, key, value, mask=None, edge_scores=None):
         return multi_head_dot_attn(F, query=query, key=key, value=value,
@@ -816,6 +837,27 @@ class RelAttentionScoreCell(HybridBlock):
                     dtype=self._dtype)
             else:
                 raise NotImplementedError('method="{}" is currently not supported!'.format(method))
+
+    @property
+    def layout(self) -> str:
+        """Layout of the cell"""
+        return self._layout
+
+    def set_layout(self, layout):
+        """
+
+        Parameters
+        ----------
+        layout
+            The new layout
+        """
+        assert layout in ['NKT', 'NTK', 'TNK']
+        if layout == self._layout:
+            return
+        self._layout = layout
+        if self._active:
+            # Detect if the Block has been hybridized. If so, re-hybridize the model
+            self.hybridize(active=False)
 
     def hybrid_forward(self, F, rel_positions, query=None):
         """

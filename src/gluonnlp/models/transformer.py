@@ -1,3 +1,5 @@
+from abc import ABC
+
 import numpy as np
 import mxnet as mx
 from mxnet import use_np
@@ -123,7 +125,7 @@ def transformer_wmt_en_de_big_t2t():
     return cfg
 
 
-class HybridBlockWithLayout(HybridBlock):
+class HybridBlockWithLayout(HybridBlock, ABC):
     def __init__(self, layout, **kwargs):
         super().__init__(**kwargs)
         assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
@@ -187,6 +189,7 @@ class TransformerEncoderLayer(HybridBlockWithLayout):
         bias_initializer
         activation
         dtype
+        layout
         prefix
         params
         """
@@ -199,7 +202,6 @@ class TransformerEncoderLayer(HybridBlockWithLayout):
         self._activation_dropout_prob = activation_dropout_prob
         self._pre_norm = pre_norm
         self._dtype = dtype
-        self._layout = layout
         assert self._units % self._num_heads == 0, 'units must be divisive by the number of heads'
         with self.name_scope():
             self.dropout_layer = nn.Dropout(hidden_dropout_prob)
@@ -244,6 +246,15 @@ class TransformerEncoderLayer(HybridBlockWithLayout):
                                        pre_norm=pre_norm,
                                        dtype=self._dtype,
                                        prefix='ffn_')
+
+    def set_layout(self, layout):
+        assert layout in ['NT', 'TN'], 'Invalid layout received = {}. ' \
+                                       'Only "TN" and "NT" are accepted!'.format(layout)
+        if layout == self.layout:
+            return
+        attention_layout = 'NTK' if layout == 'NT' else 'TNK'
+        self.attention_cell.set_layout(attention_layout)
+        super().set_layout(layout)
 
     def hybrid_forward(self, F, data, attn_mask):
         """
@@ -392,7 +403,9 @@ class TransformerEncoder(HybridBlockWithLayout):
         """
         # 1. Embed the data
         attn_mask = gen_self_attn_mask(F, data, valid_length,
-                                       dtype=self._dtype, attn_type='full')
+                                       dtype=self._dtype,
+                                       layout=self.layout,
+                                       attn_type='full')
         out = self.dropout_layer(data)
         if self._data_norm:
             out = self.ln_data(out)
@@ -460,8 +473,6 @@ class TransformerDecoderLayer(HybridBlockWithLayout):
         self._num_heads = num_heads
         self._attention_dropout = attention_dropout
         self._dtype = dtype
-        assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
-                                       'Only "TN" and "NT" are accepted!'.format(layout)
         attention_layout = 'NTK' if layout == 'NT' else 'TNK'
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
@@ -535,6 +546,15 @@ class TransformerDecoderLayer(HybridBlockWithLayout):
                                        pre_norm=pre_norm,
                                        dtype=dtype,
                                        prefix='ffn_')
+
+    def set_layout(self, layout):
+        if layout == self._layout:
+            return
+        assert layout in ['NT', 'TN']
+        attention_layout = 'NTK' if layout == 'NT' else 'TNK'
+        self.self_attention.set_layout(attention_layout)
+        self.inter_attention.set_layout(attention_layout)
+        super().set_layout(layout)
 
     def hybrid_forward(self, F, data, mem, self_causal_mask, mem_attn_mask):
         """
