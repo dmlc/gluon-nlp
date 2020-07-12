@@ -161,8 +161,11 @@ def test_beam_search_stochastic(early_return):
     assert has_different_sample
 
 @pytest.mark.parametrize('early_return', [False, True])
-@pytest.mark.parametrize('sampling_paras', [(-1.0, -1), (0.05, -1), (-1.0, 1)])
+@pytest.mark.parametrize('sampling_paras', [(-1.0, -1, 0), (0.05, -1, 0), (-1.0, 1, 0), (-1.0, 3, 0),
+                                            (0.05, -1, None), (-1.0, 3, None)])
 def test_multinomial_sampling(early_return, sampling_paras):
+    sampling_topp, sampling_topk, eos_id = sampling_paras
+    
     class SimpleStepDecoder(HybridBlock):
         def __init__(self, vocab_size=5, hidden_units=4, prefix=None, params=None):
             super(SimpleStepDecoder, self).__init__(prefix=prefix, params=params)
@@ -179,13 +182,12 @@ def test_multinomial_sampling(early_return, sampling_paras):
             out = self.vocab_map(self.x2h_map(data) + new_state)
             return out, new_state
 
-    vocab_size = 3
+    vocab_size = 5
     batch_size = 2
     hidden_units = 3
     beam_size = 4
     step_decoder = SimpleStepDecoder(vocab_size, hidden_units)
     step_decoder.initialize()
-    sampling_topp, sampling_topk = sampling_paras
     sampler = BeamSearchSampler(beam_size=4, decoder=step_decoder, eos_id=0, vocab_size=vocab_size,
                                 stochastic=False,
                                 sampling=True, sampling_topp=sampling_topp, sampling_topk=sampling_topk,
