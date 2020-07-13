@@ -271,6 +271,10 @@ class BertTransformer(HybridBlock):
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_out)
         """
+        if self.layout == 'NT':
+            time_axis, batch_axis = 1, 0
+        else:
+            time_axis, batch_axis = 0, 1
         # 1. Embed the data
         attn_mask = gen_self_attn_mask(F, data, valid_length, dtype=self._dtype,
                                        attn_type='full', layout=self.layout)
@@ -280,12 +284,12 @@ class BertTransformer(HybridBlock):
         for layer_idx in range(self._num_layers):
             layer = self.all_layers[layer_idx]
             out, attention_weights = layer(out, attn_mask)
-            # out : [batch_size, seq_len, units]
+            # out : [batch_size, seq_len, units] or [seq_len, batch_size, units]
             # attention_weights : [batch_size, num_heads, seq_len, seq_len]
             if self._output_all_encodings:
                 out = F.npx.sequence_mask(out,
                                           sequence_length=valid_length,
-                                          use_sequence_length=True, axis=1)
+                                          use_sequence_length=True, axis=time_axis)
                 all_encodings_outputs.append(out)
 
             if self._output_attention:
@@ -294,7 +298,7 @@ class BertTransformer(HybridBlock):
         if not self._output_all_encodings:
             # if self._output_all_encodings, SequenceMask is already applied above
             out = F.npx.sequence_mask(out, sequence_length=valid_length,
-                                      use_sequence_length=True, axis=1)
+                                      use_sequence_length=True, axis=time_axis)
             return out, additional_outputs
         else:
             return all_encodings_outputs, additional_outputs
@@ -320,6 +324,7 @@ class BertModel(HybridBlock):
                  bias_initializer='zeros',
                  dtype='float32',
                  use_pooler=True,
+                 layout='NT',
                  prefix=None,
                  params=None):
         super().__init__(prefix=prefix, params=params)
@@ -335,6 +340,7 @@ class BertModel(HybridBlock):
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
         self.layer_norm_eps = layer_norm_eps
+        self._layout = layout
         with self.name_scope():
             # Construct BertTransformer
             self.encoder = BertTransformer(
@@ -351,6 +357,7 @@ class BertModel(HybridBlock):
                 weight_initializer=weight_initializer,
                 bias_initializer=bias_initializer,
                 dtype=dtype,
+                layout=layout,
                 prefix='enc_',
             )
             self.encoder.hybridize()
@@ -383,6 +390,10 @@ class BertModel(HybridBlock):
                                        bias_initializer=bias_initializer,
                                        prefix='pooler_')
 
+    @property
+    def layout(self):
+        return self._layout
+
     def hybrid_forward(self, F, inputs, token_types, valid_length):
         # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
@@ -392,10 +403,16 @@ class BertModel(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
-        token_types :
-            Shape (batch_size, seq_length)
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (batch_size, seq_length)
 
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
@@ -405,8 +422,11 @@ class BertModel(HybridBlock):
 
         Returns
         -------
-        contextual_embedding :
-            Shape (batch_size, seq_length, units).
+        contextual_embedding
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units).
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units).
         pooled_output :
             This is optional. Shape (batch_size, units)
         """
@@ -428,9 +448,15 @@ class BertModel(HybridBlock):
         ----------
         F
         inputs
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
         token_types
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
             If None, it will be initialized as all zero
 
         Returns
@@ -438,14 +464,18 @@ class BertModel(HybridBlock):
         embedding
             The initial embedding that will be fed into the encoder
         """
+        if self.layout == 'NT':
+            time_axis, batch_axis = 1, 0
+        else:
+            time_axis, batch_axis = 0, 1
         embedding = self.word_embed(inputs)
         if token_types is None:
             token_types = F.np.zeros_like(inputs)
         type_embedding = self.token_type_embed(token_types)
         embedding = embedding + type_embedding
         if self.pos_embed_type is not None:
-            positional_embedding = self.token_pos_embed(F.npx.arange_like(inputs, axis=1))
-            positional_embedding = F.np.expand_dims(positional_embedding, axis=0)
+            positional_embedding = self.token_pos_embed(F.npx.arange_like(inputs, axis=time_axis))
+            positional_embedding = F.np.expand_dims(positional_embedding, axis=batch_axis)
             embedding = embedding + positional_embedding
         # Extra layer normalization plus dropout
         embedding = self.embed_layer_norm(embedding)
@@ -458,12 +488,18 @@ class BertModel(HybridBlock):
         This is used for pre-training or fine-tuning a bert model.
         Get the first token of the whole sequence which is [CLS]
 
-        sequence:
-            Shape (batch_size, sequence_length, units)
+        sequence
+            - layout = 'NT'
+                Shape (batch_size, sequence_length, units)
+            - layout = 'TN'
+                Shape (sequence_length, batch_size, units)
         return:
             Shape (batch_size, units)
         """
-        outputs = sequence[:, 0, :]
+        if self.layout == 'NT':
+            outputs = sequence[:, 0, :]
+        else:
+            outputs = sequence[0, :, :]
         return self.pooler(outputs)
 
     @staticmethod
@@ -497,6 +533,7 @@ class BertModel(HybridBlock):
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
                    use_pooler=use_pooler,
+                   layout=cfg.MODEL.layout,
                    prefix=prefix,
                    params=params)
 
@@ -546,6 +583,10 @@ class BertForMLM(HybridBlock):
                                               prefix='score_'))
             self.mlm_decoder.hybridize()
 
+    @property
+    def layout(self):
+        return self.backbone_model.layout
+
     def hybrid_forward(self, F, inputs, token_types, valid_length,
                        masked_positions):
         """Getting the scores of the masked positions.
@@ -553,10 +594,16 @@ class BertForMLM(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
-        token_types :
-            Shape (batch_size, seq_length)
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
 
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
@@ -570,14 +617,21 @@ class BertForMLM(HybridBlock):
         Returns
         -------
         contextual_embedding
-            Shape (batch_size, seq_length, units).
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units).
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units)
         pooled_out
             Shape (batch_size, units)
         mlm_scores :
             Shape (batch_size, num_masked_positions, vocab_size)
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
-        mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        if self.layout == 'NT':
+            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        else:
+            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+                                                      masked_positions)
         mlm_scores = self.mlm_decoder(mlm_features)
         return contextual_embeddings, pooled_out, mlm_scores
 
@@ -631,6 +685,10 @@ class BertForPretrain(HybridBlock):
                                               prefix='score_'))
             self.mlm_decoder.hybridize()
 
+    @property
+    def layout(self):
+        return self.backbone_model.layout
+
     def hybrid_forward(self, F, inputs, token_types, valid_length,
                        masked_positions):
         """Generate the representation given the inputs.
@@ -640,24 +698,33 @@ class BertForPretrain(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
-        token_types :
-            Shape (batch_size, seq_length)
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
 
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
-        valid_length :
+        valid_length
             The valid length of each sequence
             Shape (batch_size,)
-        masked_positions :
+        masked_positions
             The masked position of the sequence
             Shape (batch_size, num_masked_positions).
 
         Returns
         -------
         contextual_embedding
-            Shape (batch_size, seq_length, units).
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units).
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units).
         pooled_out
             Shape (batch_size, units)
         nsp_score :
@@ -667,7 +734,11 @@ class BertForPretrain(HybridBlock):
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
         nsp_score = self.nsp_classifier(pooled_out)
-        mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        if self.layout == 'NT':
+            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        else:
+            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+                                                      masked_positions)
         mlm_scores = self.mlm_decoder(mlm_features)
         return contextual_embeddings, pooled_out, nsp_score, mlm_scores
 
