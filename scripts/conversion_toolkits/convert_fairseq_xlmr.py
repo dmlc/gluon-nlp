@@ -1,20 +1,17 @@
 import os
-import argparse
-import logging
 import copy
+import logging
+import argparse
+
 import mxnet as mx
-from gluonnlp.third_party import sentencepiece_model_pb2
+
 from gluonnlp.utils.misc import logging_config
 from gluonnlp.models.xlmr import XLMRModel as gluon_XLMRModel
-from gluonnlp.data.tokenizers import SentencepieceTokenizer
+from gluonnlp.third_party import sentencepiece_model_pb2
 from fairseq.models.roberta import XLMRModel as fairseq_XLMRModel
-from convert_fairseq_roberta import (
-    convert_config,
-    convert_params,
-    test_model,
-    test_vocab,
-    rename
-)
+from convert_fairseq_roberta import rename, test_model, test_vocab, convert_config, convert_params
+from gluonnlp.data.tokenizers import SentencepieceTokenizer
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert the fairseq XLM-R Model to Gluon.')
