@@ -67,10 +67,7 @@ class BaseStepDecoder(abc.ABC):
 
 
 # TODO(sxjscience)
-#  1. Add Multinomial Sampler with Temperature
-#  2. Add Nucleus Sampling "[ICLR2020] The Curious Case of Neural Text Degeneration"
-#       (https://openreview.net/pdf?id=rygGQyrFvH)
-#  3. Add ParticleFilter Sampler
+#  1. Add ParticleFilter Sampler
 class BeamSearchScorer(HybridBlock):
     r"""Score function used in beam search.
 
@@ -353,8 +350,6 @@ class _BeamSearchStepUpdate(HybridBlock):
             Shape (batch_size, beam_size)
         new_states : nested structure of NDArrays/Symbols
             Inner NDArrays have shape (batch_size * beam_size, ...)
-        step : NDArray or Symbol
-            The current step for doing beam search. Begins from 1. Shape ()
         """
         beam_size = self._beam_size
         vocab_size = self._vocab_size
@@ -437,7 +432,8 @@ class BeamSearchSampler:
         - outputs has shape (batch_size, V),
         - states and new_states have the same structure.
     eos_id
-        Id of the EOS token. No other elements will be appended to the sample if it reaches eos_id.
+        Id of the EOS token. No other elements will be appended to the sample if it reaches eos_id,
+        if eos_id == None, beam will not die
     scorer : BeamSearchScorer, default BeamSearchScorer(alpha=1.0, K=5)
         The score function used in beam search.
     max_length_a
@@ -449,6 +445,21 @@ class BeamSearchSampler:
         where `x` is the maximum source length.
     min_length
         The minimum length of the generated sequences.
+    temperature
+    stochastic
+        Whether to use stochastic sampler,
+        see [ICML2019] "Stochastic Beams and Where to Find Them" for detail.
+        https://arxiv.org/abs/1903.06059
+    sampling
+        Whether to use multinomial sampler.
+    sampling_topp
+        Multinomial sampling with topp,
+        see [ICLR2020] "The Curious Case of Neural Text Degeneration"
+        https://arxiv.org/abs/1904.09751
+    sampling_topk
+        Multinomial sampling with topk,
+        see [ACL2018] "Hierarchical Neural Story Generation"
+        https://www.aclweb.org/anthology/P18-1082.pdf
     """
     def __init__(self, beam_size: int,
                  decoder: BaseStepDecoder,
@@ -458,7 +469,11 @@ class BeamSearchSampler:
                  max_length_a: int = 0,
                  max_length_b: int = 200,
                  min_length: int = 1,
-                 stochastic: bool = False):
+                 temperature: float = 1.0,
+                 stochastic: bool = False,
+                 sampling: bool = False,
+                 sampling_topp: float = -1.0,
+                 sampling_topk: int = -1):
         self._beam_size = beam_size
         self._vocab_size = vocab_size
         assert beam_size > 0,\
@@ -471,18 +486,34 @@ class BeamSearchSampler:
         self._min_length = min_length
         if scorer is None:
             if stochastic:
-                scorer = BeamSearchScorer(alpha=0.0, temperature=1.0)
+                scorer = BeamSearchScorer(alpha=0.0, temperature=temperature)
             else:
-                scorer = BeamSearchScorer(alpha=1.0, K=5)
+                scorer = BeamSearchScorer(alpha=1.0, K=5, temperature=temperature)
 
         self._scorer = scorer
         self._state_batch_axis = decoder.state_batch_axis
-        self._updater = _BeamSearchStepUpdate(beam_size=beam_size,
-                                              vocab_size=vocab_size,
-                                              eos_id=eos_id,
-                                              scorer=scorer,
-                                              state_batch_axis=decoder.state_batch_axis,
-                                              stochastic=stochastic)
+        self._sampling = sampling
+        self._sampling_topp = sampling_topp
+        self._sampling_topk = sampling_topk
+        if sampling:
+            self._updater = _MultinomialStepUpdate(
+                beam_size=beam_size,
+                vocab_size=vocab_size,
+                eos_id=eos_id,
+                state_batch_axis=decoder.state_batch_axis,
+                sampling_topp=sampling_topp,
+                sampling_topk=sampling_topk,
+                temperature=temperature
+            )
+        else:
+            self._updater = _BeamSearchStepUpdate(
+                beam_size=beam_size,
+                vocab_size=vocab_size,
+                eos_id=eos_id,
+                scorer=scorer,
+                state_batch_axis=decoder.state_batch_axis,
+                stochastic=stochastic
+            )
 
         if not stochastic:
             self._updater.hybridize()
@@ -581,6 +612,9 @@ class BeamSearchSampler:
               '  max_length_a={max_length_a}\n' \
               '  max_length_b={max_length_b}\n' \
               '  scorer={scorer}\n' \
+              '  sampling={sampling}\n' \
+              '  sampling_topp={sampling_topp}\n' \
+              '  sampling_topk={sampling_topk}\n' \
               ')' \
             .format(name=self.__class__.__name__,
                     beam_size=self._beam_size,
@@ -588,5 +622,124 @@ class BeamSearchSampler:
                     vocab_size=self._vocab_size,
                     max_length_a=self._max_length_a,
                     max_length_b=self._max_length_b,
-                    scorer=self._scorer)
+                    scorer=self._scorer,
+                    sampling=self._sampling,
+                    sampling_topp=self._sampling_topp,
+                    sampling_topk=self._sampling_topk)
         return ret
+
+class _MultinomialStepUpdate(HybridBlock):
+    def __init__(self, beam_size, vocab_size, eos_id, state_batch_axis,
+                 sampling_topp=-1.0, sampling_topk=-1, temperature=1.0,
+                 prefix=None, params=None):
+        super(_MultinomialStepUpdate, self).__init__(prefix=prefix, params=params)
+        self._beam_size = beam_size
+        self._vocab_size = vocab_size
+        self._eos_id = eos_id
+        self._state_batch_axis = state_batch_axis
+        self._sampling_topp = sampling_topp
+        self._sampling_topk = sampling_topk
+        self._temperature = temperature
+        self.activation = get_activation('relu')
+        assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
+        assert sampling_topp <= 0 or sampling_topk <= 0, 'sampling_topp conflicts with sampling_topk'
+
+    def hybrid_forward(self, F, samples, valid_length, outputs, scores, step, beam_alive_mask,
+                       states, batch_shift):
+        """
+
+        Parameters
+        ----------
+        F
+        samples : mx.np.ndarray or Symbol
+            The current samples generated by beam search.
+            Shape (batch_size, beam_size, L).
+        valid_length : NDArray or Symbol
+            The current valid lengths of the samples
+        outputs : NDArray or Symbol
+            Outputs from predictor. If from_logits was set to True in scorer, then it's the
+            log probability of the current step. Else, it's the unnormalized outputs before
+            softmax or log_softmax.
+            Shape (batch_size * beam_size, V).
+        scores : NDArray or Symbol
+            The previous scores. Shape (batch_size, beam_size)
+        step : NDArray or Symbol
+            The current step for doing beam search. Begins from 1. Shape ()
+        beam_alive_mask : NDArray or Symbol
+            Shape (batch_size, beam_size)
+        states : nested structure of NDArrays/Symbols
+            Each NDArray/Symbol should have shape (N, ...) when state_info is None,
+            or same as the layout in state_info when it's not None.
+        batch_shift : NDArray or Symbol
+            Contains [0, beam_size, 2 * beam_size, ..., (batch_size - 1) * beam_size].
+            Shape (batch_size,)
+
+        Returns
+        -------
+        new_samples : NDArray or Symbol or an empty list
+            The updated samples.
+            When single_step is False, shape (batch_size, beam_size, L + 1)
+        new_valid_length : NDArray or Symbol
+            Valid lengths of the samples. Shape (batch_size, beam_size)
+        new_scores : NDArray or Symbol
+            Shape (batch_size, beam_size)
+        chosen_word_ids : NDArray or Symbol
+            The chosen word ids of the step. Shape (batch_size, beam_size). If it's negative,
+            no word will be appended to the beam.
+        beam_alive_mask : NDArray or Symbol
+            Shape (batch_size, beam_size)
+        new_states : nested structure of NDArrays/Symbols
+            Inner NDArrays have shape (batch_size * beam_size, ...)
+        """
+        # bsz * beam_size * vocab_size
+        outputs = outputs.reshape((-1, self._beam_size, self._vocab_size))
+        probs = F.npx.softmax(outputs / self._temperature)
+        
+        if self._sampling_topp > 0:
+            probs = F.np.where(
+                probs > self._sampling_topp,
+                probs,
+                F.np.zeros_like(probs)
+            )
+        elif self._sampling_topk > 0:
+            topk_probs = F.npx.topk(probs, axis=2, k=self._sampling_topk, ret_typ='value')
+            # choose the k max prob
+            k_prob = topk_probs[:,:,-1]
+            k_prob = F.np.expand_dims(k_prob, axis=-1)
+            probs = F.np.where(
+                probs >= k_prob,
+                probs,
+                F.np.zeros_like(probs)
+            )
+            
+        # renormalize
+        probs_sum = F.np.sum(probs, axis=2, keepdims=True)
+        probs = probs / probs_sum
+        
+        # bsz * beam_size
+        chosen_word_ids, chosen_word_log_probs = \
+            F.npx.random.categorical(probs, get_prob=True)
+        
+        new_scores = scores + F.np.where(
+            beam_alive_mask,
+            chosen_word_log_probs,
+            F.np.zeros_like(chosen_word_log_probs)
+        )
+        
+        # mask dead words
+        chosen_word_ids = F.np.where(
+            beam_alive_mask,
+            chosen_word_ids,
+            F.np.full_like(beam_alive_mask, -1, dtype=np.int32)
+        )
+
+        new_valid_length = valid_length + beam_alive_mask.astype(np.int32)
+        new_samples = F.np.concatenate(
+            [samples, F.np.expand_dims(chosen_word_ids, axis=2)],
+            axis=2
+        )
+        new_states = states
+        beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(np.int32)
+        
+        return new_samples, new_valid_length, new_scores, chosen_word_ids,\
+               beam_alive_mask, new_states

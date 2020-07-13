@@ -246,7 +246,8 @@ def get_parser():
         description='Clean parallel corpus used in machine translation.')
     parser.add_argument('--src-corpus', type=str, nargs='+', required=True)
     parser.add_argument('--tgt-corpus', type=str, nargs='+', required=True)
-    parser.add_argument('--lang-pair', type=str, required=True)
+    parser.add_argument('--src-lang', type=str, required=True)
+    parser.add_argument('--tgt-lang', type=str, required=True)
     parser.add_argument('--src-save-path', type=str, default=None,
                         help='Path to save the cleaned and tokenized source corpus. If not set, '
                              'the default is "corpus.tok.{src_lang}"')
@@ -261,13 +262,15 @@ def get_parser():
     parser.add_argument('--discard-non-latin1', action='store_true',
                         help='Whether to discard the sentence pair if both sentences cannot be '
                              'encoded into latin1.')
+    parser.add_argument('--num-process', type=int, default=8,
+                        help='number of process')
     parser.add_argument('--overwrite', action='store_true')
 
     return parser
 
 
 def main(args):
-    src_lang, tgt_lang = args.lang_pair.split('-')
+    src_lang, tgt_lang = args.src_lang, args.tgt_lang
     corpus_processor = ParallelCorpusProcessor(src_lang=src_lang,
                                                tgt_lang=tgt_lang,
                                                src_tokenizer=args.src_tokenizer,
@@ -297,7 +300,8 @@ def main(args):
             src_corpus_paths=args.src_corpus,
             tgt_corpus_paths=args.tgt_corpus,
             src_out_path=src_save_path,
-            tgt_out_path=tgt_save_path)
+            tgt_out_path=tgt_save_path,
+            num_process=args.num_process)
 
 
 def cli_main():
