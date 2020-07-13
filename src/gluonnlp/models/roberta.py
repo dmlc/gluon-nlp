@@ -62,8 +62,8 @@ PRETRAINED_URL = {
         'merges': 'fairseq_roberta_large/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_roberta_large/gpt2-f1335494.vocab',
         'params': 'fairseq_roberta_large/model-6b043b91.params',
-        'mlm_params': 'fairseq_roberta_large/model_mlm-119f38e1.params'
-    },
+        'mlm_params': 'fairseq_roberta_large/model_mlm-119f38e1.params',
+    }
 }
 
 FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'roberta.txt'))
@@ -524,11 +524,13 @@ def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
     """
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_roberta())
-    cfg_path = PRETRAINED_URL[model_name]['cfg']
+    cfg_path = PRETRAINED_URL[model_name
+    ]['cfg']
     merges_path = PRETRAINED_URL[model_name]['merges']
     vocab_path = PRETRAINED_URL[model_name]['vocab']
     params_path = PRETRAINED_URL[model_name]['params']
     mlm_params_path = PRETRAINED_URL[model_name]['mlm_params']
+
     local_paths = dict()
     for k, path in [('cfg', cfg_path), ('vocab', vocab_path),
                     ('merges', merges_path)]:
@@ -541,7 +543,7 @@ def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
                                      sha1_hash=FILE_STATS[params_path])
     else:
         local_params_path = None
-    if load_mlm:
+    if load_mlm and mlm_params_path is not None:
         local_mlm_params_path = download(url=get_repo_model_zoo_url() + mlm_params_path,
                                          path=os.path.join(root, mlm_params_path),
                                          sha1_hash=FILE_STATS[mlm_params_path])

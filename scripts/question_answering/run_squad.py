@@ -808,9 +808,10 @@ def evaluate(args, last=True):
         args.comm_backend, args.gpus)
     # only evaluate once
     if rank != 0:
+        logging.info('Skipping node {}'.format(rank))
         return
     ctx_l = parse_ctx(args.gpus)
-    logging.info('Srarting inference without horovod on the first node')
+    logging.info('Srarting inference without horovod on the first node on device {}'.format(str(ctx_l)))
 
     cfg, tokenizer, qa_net, use_segmentation = get_network(
         args.model_name, ctx_l, args.classifier_dropout)

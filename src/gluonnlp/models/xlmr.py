@@ -44,19 +44,19 @@ PRETRAINED_URL = {
         'cfg': 'fairseq_xlmr_base/model-b893d178.yml',
         'sentencepiece.model': 'fairseq_xlmr_base/sentencepiece-18e17bae.model',
         'params': 'fairseq_xlmr_base/model-3fa134e9.params',
-        'mlm_params': 'model_mlm-86e37954.params'
+        'mlm_params': 'model_mlm-86e37954.params',
     },
     'fairseq_xlmr_large': {
         'cfg': 'fairseq_xlmr_large/model-01fc59fb.yml',
         'sentencepiece.model': 'fairseq_xlmr_large/sentencepiece-18e17bae.model',
         'params': 'fairseq_xlmr_large/model-b62b074c.params',
-        'mlm_params': 'model_mlm-887506c2.params'
+        'mlm_params': 'model_mlm-887506c2.params',
 
     }
 }
 
 FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'xlmr.txt'))
-xlmr_cfg_reg = Registry('roberta_cfg')
+xlmr_cfg_reg = Registry('xlmr_cfg')
 
 
 @xlmr_cfg_reg.register()
@@ -139,7 +139,7 @@ def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
                                      sha1_hash=FILE_STATS[params_path])
     else:
         local_params_path = None
-    if load_mlm:
+    if load_mlm and mlm_params_path is not None:
         local_mlm_params_path = download(url=get_repo_model_zoo_url() + mlm_params_path,
                                          path=os.path.join(root, mlm_params_path),
                                          sha1_hash=FILE_STATS[mlm_params_path])
