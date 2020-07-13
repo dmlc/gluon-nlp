@@ -55,7 +55,7 @@ PRETRAINED_URL = {
         'merges': 'fairseq_roberta_base/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_roberta_base/gpt2-f1335494.vocab',
         'params': 'fairseq_roberta_base/model-09a1520a.params',
-        'mlm_params': 'google_uncased_mobilebert/model_mlm-29889e2b.params',
+        'mlm_params': 'fairseq_roberta_base/model_mlm-29889e2b.params',
     },
     'fairseq_roberta_large': {
         'cfg': 'fairseq_roberta_large/model-6e66dc4a.yml',
