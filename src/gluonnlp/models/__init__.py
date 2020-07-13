@@ -1,4 +1,5 @@
 from typing import Tuple, List
+from . import base
 from . import albert
 from . import bert
 from . import electra
@@ -30,7 +31,7 @@ def get_backbone(model_name: str,
     model_name
         The name of the pretrained model
     root
-        The
+        Downloaded directory of the model zoo
 
     Returns
     -------

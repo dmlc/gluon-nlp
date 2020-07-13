@@ -5,6 +5,7 @@ import mxnet as mx
 from mxnet import use_np
 from mxnet.gluon import nn, HybridBlock
 from typing import Optional, Tuple, List
+from .base import HybridBlockWithLayout
 from ..utils.registry import Registry
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask, gen_mem_attn_mask
 from ..layers import PositionalEmbedding, PositionwiseFFN, InitializerType
@@ -44,7 +45,6 @@ def transformer_nmt_base():
     cfg.MODEL.ENCODER.recurrent = False
     cfg.MODEL.ENCODER.activation = 'relu'
     cfg.MODEL.ENCODER.pre_norm = False
-    cfg.MODEL.ENCODER.layout = 'NT'
 
     # Parameters for the decoder
     cfg.MODEL.DECODER = CN()
@@ -55,7 +55,6 @@ def transformer_nmt_base():
     cfg.MODEL.DECODER.recurrent = False
     cfg.MODEL.DECODER.activation = 'relu'
     cfg.MODEL.DECODER.pre_norm = False
-    cfg.MODEL.DECODER.layout = 'NT'
 
     # Parameters for the initializer
     cfg.INITIALIZER = CN()
@@ -123,28 +122,6 @@ def transformer_wmt_en_de_big_t2t():
     cfg.MODEL.DECODER.pre_norm = True
     cfg.freeze()
     return cfg
-
-
-class HybridBlockWithLayout(HybridBlock, ABC):
-    def __init__(self, layout, **kwargs):
-        super().__init__(**kwargs)
-        assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
-                                       'Only "TN" and "NT" are accepted!'.format(layout)
-        self._layout = layout
-
-    @property
-    def layout(self):
-        return self._layout
-
-    def set_layout(self, layout):
-        assert layout in ['NT', 'TN'], 'Invalid layout received = {}. ' \
-                                       'Only "TN" and "NT" are accepted!'.format(layout)
-        if layout == self.layout:
-            return
-        self._layout = layout
-        if self._active:
-            # Detect if the Block has been hybridized. If so, re-hybridize the model
-            self.hybridize(active=False)
 
 
 @use_np
@@ -246,15 +223,6 @@ class TransformerEncoderLayer(HybridBlockWithLayout):
                                        pre_norm=pre_norm,
                                        dtype=self._dtype,
                                        prefix='ffn_')
-
-    def set_layout(self, layout):
-        assert layout in ['NT', 'TN'], 'Invalid layout received = {}. ' \
-                                       'Only "TN" and "NT" are accepted!'.format(layout)
-        if layout == self.layout:
-            return
-        attention_layout = 'NTK' if layout == 'NT' else 'TNK'
-        self.attention_cell.set_layout(attention_layout)
-        super().set_layout(layout)
 
     def hybrid_forward(self, F, data, attn_mask):
         """
@@ -366,18 +334,6 @@ class TransformerEncoder(HybridBlockWithLayout):
                         dtype=dtype,
                         layout=self._layout,
                         prefix='{}_'.format(i)))
-
-    def set_layout(self, layout):
-        """
-
-        Parameters
-        ----------
-        layout
-            Layout of the model. Can either be 'NT' or 'TN'
-        """
-        for layer in self.layers:
-            layer.set_layout(layout)
-        super().set_layout(layout)
 
     def hybrid_forward(self, F, data, valid_length):
         """
@@ -492,7 +448,8 @@ class TransformerDecoderLayer(HybridBlockWithLayout):
                                                          dtype=dtype,
                                                          layout=attention_layout,
                                                          prefix='self_attn_')
-            self.proj_in = nn.Dense(units=units, in_units=units, flatten=False,  use_bias=False,
+            self.proj_in = nn.Dense(units=units, in_units=units, flatten=False,
+                                    use_bias=False,
                                     weight_initializer=weight_initializer,
                                     bias_initializer=bias_initializer,
                                     dtype=dtype,
@@ -546,15 +503,6 @@ class TransformerDecoderLayer(HybridBlockWithLayout):
                                        pre_norm=pre_norm,
                                        dtype=dtype,
                                        prefix='ffn_')
-
-    def set_layout(self, layout):
-        if layout == self._layout:
-            return
-        assert layout in ['NT', 'TN']
-        attention_layout = 'NTK' if layout == 'NT' else 'TNK'
-        self.self_attention.set_layout(attention_layout)
-        self.inter_attention.set_layout(attention_layout)
-        super().set_layout(layout)
 
     def hybrid_forward(self, F, data, mem, self_causal_mask, mem_attn_mask):
         """
@@ -648,10 +596,16 @@ class TransformerDecoderLayer(HybridBlockWithLayout):
 
         Returns
         -------
-        init_key :
-            Shape (batch_size, 0, N, C_key)
+        init_key
+            - layout = 'NT'
+                Shape (batch_size, 0, N, C_key)
+            - layout = 'TN'
+                Shape (0, batch_size, N, C_key)
         init_value :
-            Shape (batch_size, 0, N, C_value)
+            - layout = 'NT'
+                Shape (batch_size, 0, N, C_value)
+            - layout = 'TN'
+                Shape (0, batch_size, N, C_value)
         """
         if self.layout == 'NT':
             init_key = mx.np.zeros(shape=(batch_size, 0, self._num_heads,
@@ -711,13 +665,10 @@ class TransformerDecoderLayer(HybridBlockWithLayout):
         if self._pre_norm:
             data = self.ln_in(data)
         if self.layout == 'NT':
-            # Shape (B, 1, C)
             time_axis = 1
-            data = F.np.expand_dims(data, axis=1)
         else:
-            # Shape (1, B, C)
             time_axis = 0
-            data = F.np.expand_dims(data, axis=0)
+        data = F.np.expand_dims(data, axis=time_axis)
         # Shape (B, prev_L, #Head, C_K), (B, prev_L, #Head, C_V)
         #  or (prev_L, B, #Head, C_K), (prev_L, B, #Head, C_V)
         prev_key, prev_value = states
@@ -759,7 +710,7 @@ class TransformerDecoderLayer(HybridBlockWithLayout):
             out = self.ln_inter(out)
         # 3. Encode the output via an FFN layer
         out = self.ffn(out)
-        out = F.npx.reshape(out, (-2, -1))
+        out = F.npx.reshape(out, (-5, -1))
         return out, (new_key, new_value)
 
 
@@ -813,18 +764,6 @@ class TransformerDecoder(HybridBlockWithLayout):
                                                             dtype=dtype,
                                                             layout=layout,
                                                             prefix='{}_'.format(i)))
-
-    def set_layout(self, layout):
-        """
-
-        Parameters
-        ----------
-        layout
-            Layout of the model. Can either be 'NT' or 'TN'
-        """
-        for layer in self.layers:
-            layer.set_layout(layout)
-        super().set_layout(layout)
 
     def hybrid_forward(self, F, data, valid_length, mem_data, mem_valid_length):
         """
@@ -887,15 +826,19 @@ class TransformerDecoder(HybridBlockWithLayout):
             ret.append(layer.state_batch_axis)
         return ret
 
-    def init_states(self, batch_size, ctx, dtype):
+    def init_states(self, batch_size, ctx, dtype='float32'):
         """Initialize the states required for incremental decoding
 
         Returns
         -------
-        init_key :
-            Shape (batch_size, 0, N, C_key)
-        init_value :
-            Shape (batch_size, 0, N, C_value)
+        states
+            A list of states, each includes:
+                - init_key :
+                    layout = 'NT':
+                        Shape (batch_size, 0, N, C_key)
+                - init_value :
+                    layout = 'TN':
+                        Shape (0, batch_size, N, C_value)
         """
         states = []
         for i in range(self.num_layers):
@@ -1146,6 +1089,7 @@ class TransformerNMTModel(HybridBlockWithLayout):
                                               data_norm=data_norm,
                                               pre_norm=enc_pre_norm,
                                               dtype=self._dtype,
+                                              layout=layout,
                                               prefix='enc_')
             self.decoder = TransformerDecoder(num_layers=dec_num_layers,
                                               recurrent=dec_recurrent,
@@ -1163,6 +1107,7 @@ class TransformerNMTModel(HybridBlockWithLayout):
                                               data_norm=data_norm,
                                               pre_norm=dec_pre_norm,
                                               dtype=self._dtype,
+                                              layout=layout,
                                               prefix='dec_')
             if tie_weights:
                 self.tgt_final_layer =\
@@ -1183,18 +1128,6 @@ class TransformerNMTModel(HybridBlockWithLayout):
                              prefix='tgt_final_')
         self.encoder.hybridize()
         self.decoder.hybridize()
-
-    def set_layout(self, layout):
-        """
-
-        Parameters
-        ----------
-        layout
-            Layout of the model. Can either be 'NT' or 'TN'
-        """
-        self.encoder.set_layout(layout)
-        self.decoder.set_layout(layout)
-        super().set_layout(layout)
 
     @property
     def src_vocab_size(self):
@@ -1232,7 +1165,11 @@ class TransformerNMTModel(HybridBlockWithLayout):
         if self.scaled_embed:
             src_data = src_data * np.sqrt(self.enc_units)
         if self.pos_embed_type is not None:
-            src_data = src_data + self.src_pos_embed_layer(F.npx.arange_like(src_data, axis=1))
+            if self.layout == 'NT':
+                src_data = src_data + self.src_pos_embed_layer(F.npx.arange_like(src_data, axis=1))
+            else:
+                src_data = src_data + F.np.expand_dims(self.src_pos_embed_layer(
+                    F.npx.arange_like(src_data, axis=0)), axis=1)
         enc_out = self.encoder(src_data, src_valid_length)
         return enc_out
 
@@ -1269,8 +1206,12 @@ class TransformerNMTModel(HybridBlockWithLayout):
         if self.scaled_embed:
             tgt_data = tgt_data * np.sqrt(self.dec_units)
         if self.pos_embed_type is not None:
-            tgt_data = tgt_data + self.tgt_pos_embed_layer(
-                F.npx.arange_like(tgt_data, axis=1))
+            if self.layout == 'NT':
+                tgt_data = tgt_data + self.tgt_pos_embed_layer(
+                    F.npx.arange_like(tgt_data, axis=1))
+            else:
+                tgt_data = tgt_data + F.np.expand_dims(self.tgt_pos_embed_layer(
+                    F.npx.arange_like(tgt_data, axis=0)), axis=1)
         dec_out = self.decoder(tgt_data, tgt_valid_length, mem_data, mem_valid_length)
         dec_out = self.tgt_final_layer(dec_out)
         return dec_out
@@ -1420,7 +1361,10 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
         dec_states: list
             The states of the decoder
         """
-        batch_size = src_data.shape[0]
+        if self.model.layout == 'NT':
+            batch_size = src_data.shape[0]
+        else:
+            batch_size = src_data.shape[1]
         ctx = src_data.ctx
         enc_out = self.model.encode(mx, src_data, src_valid_length)
         position = mx.np.zeros((batch_size,), dtype=np.int32, ctx=ctx)
@@ -1465,5 +1409,4 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
             self.model.decoder.incremental_decode(F, step_data, dec_states,
                                                   mem_data, mem_valid_length)
         out = self.model.tgt_final_layer(out)
-        out = F.npx.reshape(out, (-2, -1))
         return out, (mem_data, mem_valid_length, position + 1, new_states)
