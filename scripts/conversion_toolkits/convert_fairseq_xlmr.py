@@ -94,15 +94,15 @@ def convert_fairseq_model(args):
 
     ctx = mx.gpu(args.gpu) if args.gpu is not None else mx.cpu()
     for is_mlm in [False, True]:
-        gluon_xlmr = convert_params(fairseq_roberta,
-                                       gluon_cfg,
-                                       ctx,
-                                       is_mlm=is_mlm,
-                                       gluon_prefix='roberta_')
+        gluon_xlmr = convert_params(fairseq_xlmr,
+                                    gluon_cfg,
+                                    ctx,
+                                    is_mlm=is_mlm,
+                                    gluon_prefix='roberta_')
 
         if is_mlm:
             if args.test:
-                test_model(fairseq_roberta, gluon_xlmr, args.gpu)
+                test_model(fairseq_xlmr, gluon_xlmr, args.gpu)
 
             gluon_xlmr.save_parameters(os.path.join(args.save_dir, 'model_mlm.params'), deduplicate=True)
             logging.info('Convert the RoBERTa MLM model in {} to {}'.

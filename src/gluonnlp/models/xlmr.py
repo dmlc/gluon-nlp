@@ -30,7 +30,7 @@ __all__ = ['XLMRModel', 'XLMRForMLM', 'list_pretrained_xlmr', 'get_pretrained_xl
 from typing import Tuple
 import os
 from mxnet import use_np
-from .roberta import RobertaModel, RobertaForMLM roberta_base, roberta_large
+from .roberta import RobertaModel, RobertaForMLM, roberta_base, roberta_large
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
 from ..utils.registry import Registry
@@ -84,7 +84,7 @@ class XLMRModel(RobertaModel):
             return xlmr_base()
 @use_np
 class XLMRForMLM(RobertaForMLM):
-    super().__init__()
+    pass
 
 def list_pretrained_xlmr():
     return sorted(list(PRETRAINED_URL.keys()))
@@ -92,7 +92,8 @@ def list_pretrained_xlmr():
 
 def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
                         root: str = get_model_zoo_home_dir(),
-                        load_backbone: bool = True) \
+                        load_backbone: bool = True,
+                        load_mlm: bool = False) \
         -> Tuple[CN, SentencepieceTokenizer, str]:
     """Get the pretrained XLM-R weights
 
@@ -104,21 +105,26 @@ def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
         The downloading root
     load_backbone
         Whether to load the weights of the backbone network
+    load_mlm
+        Whether to load the weights of MLM
 
     Returns
     -------
     cfg
         Network configuration
     tokenizer
-        The SentencepieceTokenizer
+        The HuggingFaceByteBPETokenizer
     params_path
         Path to the parameters
+    mlm_params_path
+        Path to the parameter that includes both the backbone and the MLM
     """
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_xlmr())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
     sp_model_path = PRETRAINED_URL[model_name]['sentencepiece.model']
     params_path = PRETRAINED_URL[model_name]['params']
+    mlm_params_path = PRETRAINED_URL[model_name]['mlm_params']
     local_paths = dict()
     for k, path in [('cfg', cfg_path), ('sentencepiece.model', sp_model_path)]:
         local_paths[k] = download(url=get_repo_model_zoo_url() + path,
@@ -130,10 +136,16 @@ def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
                                      sha1_hash=FILE_STATS[params_path])
     else:
         local_params_path = None
+    if load_mlm:
+        local_mlm_params_path = download(url=get_repo_model_zoo_url() + mlm_params_path,
+                                         path=os.path.join(root, mlm_params_path),
+                                         sha1_hash=FILE_STATS[mlm_params_path])
+    else:
+        local_mlm_params_path = None
 
     tokenizer = SentencepieceTokenizer(local_paths['sentencepiece.model'])
     cfg = XLMRModel.get_cfg().clone_merge(local_paths['cfg'])
-    return cfg, tokenizer, local_params_path
+    return cfg, tokenizer, local_params_path, local_mlm_params_path
 
 
 BACKBONE_REGISTRY.register('xlmr', [XLMRModel,

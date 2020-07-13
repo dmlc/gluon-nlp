@@ -54,7 +54,7 @@ PRETRAINED_URL = {
         'cfg': 'fairseq_roberta_base/model-565d1db7.yml',
         'merges': 'fairseq_roberta_base/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_roberta_base/gpt2-f1335494.vocab',
-        'params': 'fairseq_roberta_base/model-09a1520a.params'
+        'params': 'fairseq_roberta_base/model-09a1520a.params',
         'mlm_params': 'google_uncased_mobilebert/model_mlm-29889e2b.params',
     },
     'fairseq_roberta_large': {
@@ -495,7 +495,8 @@ def list_pretrained_roberta():
 
 def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
                            root: str = get_model_zoo_home_dir(),
-                           load_backbone: bool = True) \
+                           load_backbone: bool = True,
+                           load_mlm: bool = False) \
         -> Tuple[CN, HuggingFaceByteBPETokenizer, str]:
     """Get the pretrained RoBERTa weights
 
@@ -507,6 +508,8 @@ def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
         The downloading root
     load_backbone
         Whether to load the weights of the backbone network
+    load_mlm
+        Whether to load the weights of MLM
 
     Returns
     -------
@@ -516,6 +519,8 @@ def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
         The HuggingFaceByteBPETokenizer
     params_path
         Path to the parameters
+    mlm_params_path
+        Path to the parameter that includes both the backbone and the MLM
     """
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_roberta())
@@ -523,6 +528,7 @@ def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
     merges_path = PRETRAINED_URL[model_name]['merges']
     vocab_path = PRETRAINED_URL[model_name]['vocab']
     params_path = PRETRAINED_URL[model_name]['params']
+    mlm_params_path = PRETRAINED_URL[model_name]['mlm_params']
     local_paths = dict()
     for k, path in [('cfg', cfg_path), ('vocab', vocab_path),
                     ('merges', merges_path)]:
@@ -535,10 +541,15 @@ def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
                                      sha1_hash=FILE_STATS[params_path])
     else:
         local_params_path = None
-
+    if load_mlm:
+        local_mlm_params_path = download(url=get_repo_model_zoo_url() + mlm_params_path,
+                                         path=os.path.join(root, mlm_params_path),
+                                         sha1_hash=FILE_STATS[mlm_params_path])
+    else:
+        local_mlm_params_path = None
     tokenizer = HuggingFaceByteBPETokenizer(local_paths['merges'], local_paths['vocab'])
     cfg = RobertaModel.get_cfg().clone_merge(local_paths['cfg'])
-    return cfg, tokenizer, local_params_path
+    return cfg, tokenizer, local_params_path, local_mlm_params_path
 
 
 BACKBONE_REGISTRY.register('roberta', [RobertaModel,
