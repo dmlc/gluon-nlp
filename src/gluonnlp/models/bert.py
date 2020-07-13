@@ -39,61 +39,152 @@ from .transformer import TransformerEncoderLayer
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
+from ..utils.registry import Registry
 from ..initializer import TruncNorm
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask
 from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN, InitializerType
 from ..op import select_vectors_by_position
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 
+bert_cfg_reg = Registry('bert_cfg')
+
+
+@bert_cfg_reg.register()
+def google_en_uncased_bert_base():
+    cfg = CN()
+    # Parameters for thr small model
+    cfg.MODEL = CN()
+    cfg.MODEL.vocab_size = 30522
+    cfg.MODEL.units = 768
+    cfg.MODEL.hidden_size = 3072
+    cfg.MODEL.max_length = 512
+    cfg.MODEL.num_heads = 12
+    cfg.MODEL.num_layers = 12
+    cfg.MODEL.pos_embed_type = 'learned'
+    cfg.MODEL.activation = 'gelu'
+    cfg.MODEL.layer_norm_eps = 1E-12
+    cfg.MODEL.num_token_types = 2
+    cfg.MODEL.hidden_dropout_prob = 0.1
+    cfg.MODEL.attention_dropout_prob = 0.1
+    cfg.MODEL.dtype = 'float32'
+    cfg.MODEL.layout = 'NT'
+    # Hyper-parameters of the Initializers
+    cfg.INITIALIZER = CN()
+    cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
+    cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]  # TruncNorm(0, 0.02)
+    cfg.INITIALIZER.bias = ['zeros']
+    # Version of the model. This helps ensure backward compatibility.
+    # Also, we can not use string here due to https://github.com/rbgirshick/yacs/issues/26
+    cfg.VERSION = 1
+    cfg.freeze()
+    return cfg
+
+
+@bert_cfg_reg.register()
+def google_en_uncased_bert_large():
+    cfg = google_en_uncased_bert_base()
+    cfg.defrost()
+    cfg.MODEL.hidden_size = 4096
+    cfg.MODEL.num_heads = 16
+    cfg.MODEL.num_layers = 24
+    cfg.MODEL.units = 1024
+    cfg.freeze()
+    return cfg
+
+
+@bert_cfg_reg.register()
+def google_en_cased_bert_base():
+    cfg = google_en_uncased_bert_base()
+    cfg.defrost()
+    cfg.MODEL.vocab_size = 28996
+    cfg.freeze()
+    return cfg
+
+
+@bert_cfg_reg.register()
+def google_en_cased_bert_large():
+    cfg = google_en_uncased_bert_large()
+    cfg.defrost()
+    cfg.MODEL.vocab_size = 28996
+    cfg.freeze()
+    return cfg
+
+
+@bert_cfg_reg.register()
+def google_zh_bert_base():
+    cfg = google_en_uncased_bert_base()
+    cfg.defrost()
+    cfg.MODEL.vocab_size = 21128
+    cfg.freeze()
+    return cfg
+
+
+@bert_cfg_reg.register()
+def google_multi_cased_bert_base():
+    cfg = google_en_uncased_bert_base()
+    cfg.defrost()
+    cfg.MODEL.vocab_size = 119547
+    cfg.freeze()
+    return cfg
+
+
+@bert_cfg_reg.register()
+def google_multi_cased_bert_large():
+    cfg = google_en_uncased_bert_large()
+    cfg.defrost()
+    cfg.MODEL.vocab_size = 119547
+    cfg.freeze()
+    return cfg
+
 
 PRETRAINED_URL = {
     'google_en_cased_bert_base': {
-        'cfg': 'google_en_cased_bert_base/model-5620839a.yml',
+        'cfg': google_en_cased_bert_base(),
         'vocab': 'google_en_cased_bert_base/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_base/model-c566c289.params',
         'mlm_params': 'google_en_cased_bert_base/model_mlm-c3ff36a3.params',
     },
 
     'google_en_uncased_bert_base': {
-        'cfg': 'google_en_uncased_bert_base/model-4d8422ad.yml',
+        'cfg': google_en_uncased_bert_base(),
         'vocab': 'google_en_uncased_bert_base/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_base/model-3712e50a.params',
         'mlm_params': 'google_en_uncased_bert_base/model_mlm-2a23a633.params',
         'lowercase': True,
     },
     'google_en_cased_bert_large': {
-        'cfg': 'google_en_cased_bert_large/model-9e127fee.yml',
+        'cfg': google_en_cased_bert_large(),
         'vocab': 'google_en_cased_bert_large/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_large/model-7aa93704.params',
         'mlm_params': 'google_en_cased_bert_large/model_mlm-d6443fe9.params',
     },
     'google_en_uncased_bert_large': {
-        'cfg': 'google_en_uncased_bert_large/model-d0c37dcc.yml',
+        'cfg': google_en_uncased_bert_large(),
         'vocab': 'google_en_uncased_bert_large/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_large/model-e53bbc57.params',
         'mlm_params': 'google_en_uncased_bert_large/model_mlm-f5cb8678.params',
         'lowercase': True,
     },
     'google_zh_bert_base': {
-        'cfg': 'google_zh_bert_base/model-9b16bda6.yml',
+        'cfg': google_zh_bert_base(),
         'vocab': 'google_zh_bert_base/vocab-711c13e4.json',
         'params': 'google_zh_bert_base/model-2efbff63.params',
         'mlm_params': 'google_zh_bert_base/model_mlm-75339658.params',
     },
     'google_multi_cased_bert_base': {
-        'cfg': 'google_multi_cased_bert_base/model-881ad607.yml',
+        'cfg': google_multi_cased_bert_base(),
         'vocab': 'google_multi_cased_bert_base/vocab-016e1169.json',
         'params': 'google_multi_cased_bert_base/model-c2110078.params',
         'mlm_params': 'google_multi_cased_bert_base/model_mlm-4611e7a3.params',
     },
     'google_en_cased_bert_wwm_large': {
-        'cfg': 'google_en_cased_bert_wwm_large/model-9e127fee.yml',
+        'cfg': google_en_cased_bert_large(),
         'vocab': 'google_en_cased_bert_wwm_large/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_wwm_large/model-0fe841cf.params',
         'mlm_params': None,
     },
     'google_en_uncased_bert_wwm_large': {
-        'cfg': 'google_en_uncased_bert_wwm_large/model-d0c37dcc.yml',
+        'cfg': google_en_uncased_bert_large(),
         'vocab': 'google_en_uncased_bert_wwm_large/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_wwm_large/model-cb3ad3c2.params',
         'mlm_params': None,
@@ -363,35 +454,10 @@ class BertModel(HybridBlock):
 
     @staticmethod
     def get_cfg(key=None):
-        if key is None:
-            cfg = CN()
-            # Parameters for thr small model
-            cfg.MODEL = CN()
-            cfg.MODEL.vocab_size = 30000
-            cfg.MODEL.units = 256
-            cfg.MODEL.hidden_size = 1024
-            cfg.MODEL.max_length = 512
-            cfg.MODEL.num_heads = 4
-            cfg.MODEL.num_layers = 12
-            cfg.MODEL.pos_embed_type = 'learned'
-            cfg.MODEL.activation = 'gelu'
-            cfg.MODEL.layer_norm_eps = 1E-12
-            cfg.MODEL.num_token_types = 2
-            cfg.MODEL.hidden_dropout_prob = 0.1
-            cfg.MODEL.attention_dropout_prob = 0.1
-            cfg.MODEL.dtype = 'float32'
-            # Hyper-parameters of the Initializers
-            cfg.INITIALIZER = CN()
-            cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
-            cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]  # TruncNorm(0, 0.02)
-            cfg.INITIALIZER.bias = ['zeros']
-            # Version of the model. This helps ensure backward compatibility.
-            # Also, we can not use string here due to https://github.com/rbgirshick/yacs/issues/26
-            cfg.VERSION = 1
+        if key is not None:
+            return bert_cfg_reg.create(key)
         else:
-            raise NotImplementedError
-        cfg.freeze()
-        return cfg
+            return google_en_uncased_bert_base()
 
     @classmethod
     def from_cfg(cls, cfg, use_pooler=True, prefix=None, params=None):
@@ -627,14 +693,21 @@ def get_pretrained_bert(model_name: str = 'google_en_cased_bert_base',
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_bert())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
+    if isinstance(cfg_path, CN):
+        cfg = cfg_path
+    else:
+        cfg = None
     vocab_path = PRETRAINED_URL[model_name]['vocab']
     params_path = PRETRAINED_URL[model_name]['params']
     mlm_params_path = PRETRAINED_URL[model_name]['mlm_params']
     local_paths = dict()
-    for k, path in [('cfg', cfg_path), ('vocab', vocab_path)]:
-        local_paths[k] = download(url=get_repo_model_zoo_url() + path,
-                                  path=os.path.join(root, path),
-                                  sha1_hash=FILE_STATS[path])
+    download_jobs = [('vocab', vocab_path)]
+    if cfg is None:
+        download_jobs.append(('cfg', cfg_path))
+    for key, path in download_jobs:
+        local_paths[key] = download(url=get_repo_model_zoo_url() + path,
+                                    path=os.path.join(root, path),
+                                    sha1_hash=FILE_STATS[path])
     if load_backbone:
         local_params_path = download(url=get_repo_model_zoo_url() + params_path,
                                      path=os.path.join(root, params_path),

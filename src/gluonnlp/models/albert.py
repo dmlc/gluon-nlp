@@ -25,7 +25,8 @@
 
 """
 __all__ = ['AlbertModel', 'AlbertForMLM', 'AlbertForPretrain',
-           'list_pretrained_albert', 'get_pretrained_albert']
+           'list_pretrained_albert', 'get_pretrained_albert',
+           'albert_cfg_reg']
 
 import os
 from typing import Tuple
@@ -49,7 +50,7 @@ albert_cfg_reg = Registry('albert_cfg')
 
 
 @albert_cfg_reg.register()
-def albert_base():
+def google_albert_base():
     cfg = CN()
     # Model Parameters
     cfg.MODEL = CN()
@@ -80,9 +81,10 @@ def albert_base():
     cfg.freeze()
     return cfg
 
+
 @albert_cfg_reg.register()
-def albert_large():
-    cfg = albert_base()
+def google_albert_large():
+    cfg = google_albert_base()
     cfg.defrost()
     cfg.MODEL.hidden_size = 4096
     cfg.MODEL.num_heads = 16
@@ -93,8 +95,8 @@ def albert_large():
 
 
 @albert_cfg_reg.register()
-def albert_xlarge():
-    cfg = albert_base()
+def google_albert_xlarge():
+    cfg = google_albert_base()
     cfg.defrost()
     cfg.MODEL.hidden_size = 8192
     cfg.MODEL.num_heads = 32
@@ -105,8 +107,8 @@ def albert_xlarge():
 
 
 @albert_cfg_reg.register()
-def albert_xxlarge():
-    cfg = albert_base()
+def google_albert_xxlarge():
+    cfg = google_albert_base()
     cfg.defrost()
     cfg.MODEL.hidden_size = 16384
     cfg.MODEL.num_heads = 64
@@ -118,28 +120,28 @@ def albert_xxlarge():
 
 PRETRAINED_URL = {
     'google_albert_base_v2': {
-        'cfg': albert_base(),
+        'cfg': google_albert_base(),
         'spm_model': 'google_albert_base_v2/spm-65999e5d.model',
         'vocab': 'google_albert_base_v2/vocab-2ee53ae7.json',
         'params': 'google_albert_base_v2/model-125be477.params',
         'mlm_params': 'google_albert_base_v2/model_mlm-fe20650e.params',
     },
     'google_albert_large_v2': {
-        'cfg': albert_large(),
+        'cfg': google_albert_large(),
         'spm_model': 'google_albert_large_v2/spm-65999e5d.model',
         'vocab': 'google_albert_large_v2/vocab-2ee53ae7.json',
         'params': 'google_albert_large_v2/model-ad60bcd5.params',
         'mlm_params': 'google_albert_large_v2/model_mlm-6a5015ee.params',
     },
     'google_albert_xlarge_v2': {
-        'cfg': albert_xlarge(),
+        'cfg': google_albert_xlarge(),
         'spm_model': 'google_albert_xlarge_v2/spm-65999e5d.model',
         'vocab': 'google_albert_xlarge_v2/vocab-2ee53ae7.json',
         'params': 'google_albert_xlarge_v2/model-4149c9e2.params',
         'mlm_params': 'google_albert_xlarge_v2/model_mlm-ee184d38.params',
     },
     'google_albert_xxlarge_v2': {
-        'cfg': albert_xxlarge(),
+        'cfg': google_albert_xxlarge(),
         'spm_model': 'google_albert_xxlarge_v2/spm-65999e5d.model',
         'vocab': 'google_albert_xxlarge_v2/vocab-2ee53ae7.json',
         'params': 'google_albert_xxlarge_v2/model-5601a0ed.params',
@@ -487,7 +489,7 @@ class AlbertModel(HybridBlock):
         if key is not None:
             return albert_cfg_reg.create(key)
         else:
-            return albert_base()
+            return google_albert_base()
 
     @classmethod
     def from_cfg(cls, cfg, use_pooler=True, prefix=None, params=None) -> 'AlbertModel':
@@ -783,9 +785,10 @@ def get_pretrained_albert(model_name: str = 'google_albert_base_v2',
     params_path = PRETRAINED_URL[model_name]['params']
     mlm_params_path = PRETRAINED_URL[model_name]['mlm_params']
     local_paths = dict()
-    for key, path in [('cfg', cfg_path), ('spm_model', spm_model_path), ('vocab', vocab_path)]:
-        if cfg is not None and key == 'cfg':
-            continue
+    download_jobs = [('spm_model', spm_model_path), ('vocab', vocab_path)]
+    if cfg is None:
+        download_jobs.append(('cfg', cfg_path))
+    for key, path in download_jobs:
         local_paths[key] = download(url=get_repo_model_zoo_url() + path,
                                     path=os.path.join(root, path),
                                     sha1_hash=FILE_STATS[path])
