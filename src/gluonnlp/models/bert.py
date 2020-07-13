@@ -745,7 +745,8 @@ def get_pretrained_bert(model_name: str = 'google_en_cased_bert_base',
                     sep_token='[SEP]',
                     mask_token='[MASK]',
                     lowercase=do_lower)
-    cfg = BertModel.get_cfg().clone_merge(local_paths['cfg'])
+    if cfg is None:
+        cfg = BertModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_mlm_params_path
 
 
