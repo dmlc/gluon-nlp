@@ -211,6 +211,7 @@ class BertTransformer(HybridBlock):
                  weight_initializer: InitializerType = TruncNorm(stdev=0.02),
                  bias_initializer: InitializerType = 'zeros',
                  activation='gelu',
+                 layout='NT',
                  prefix=None, params=None):
         super().__init__(prefix=prefix, params=params)
         assert units % num_heads == 0,\
@@ -222,6 +223,7 @@ class BertTransformer(HybridBlock):
         self._num_layers = num_layers
         self._output_attention = output_attention
         self._output_all_encodings = output_all_encodings
+        self._layout = layout
 
         with self.name_scope():
             self.all_layers = nn.HybridSequential(prefix='layers_')
@@ -237,7 +239,12 @@ class BertTransformer(HybridBlock):
                                               weight_initializer=weight_initializer,
                                               bias_initializer=bias_initializer,
                                               activation=activation,
+                                              layout=layout,
                                               prefix='{}_'.format(layer_idx)))
+
+    @property
+    def layout(self):
+        return self._layout
 
     def hybrid_forward(self, F, data, valid_length):
         """
@@ -248,18 +255,25 @@ class BertTransformer(HybridBlock):
         Parameters
         ----------
         F
-        data :
-            Shape (batch_size, seq_length, C)
-        valid_length :
+        data
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C)
+        valid_length
             Shape (batch_size,)
 
         Returns
         -------
-        out :
-            Shape (batch_size, seq_length, C_out)
+        out
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_out)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_out)
         """
         # 1. Embed the data
-        attn_mask = gen_self_attn_mask(F, data, valid_length, dtype=self._dtype, attn_type='full')
+        attn_mask = gen_self_attn_mask(F, data, valid_length, dtype=self._dtype,
+                                       attn_type='full', layout=self.layout)
         out = data
         all_encodings_outputs = []
         additional_outputs = []
