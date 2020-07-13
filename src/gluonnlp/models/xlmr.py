@@ -53,7 +53,7 @@ PRETRAINED_URL = {
 }
 
 FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'xlmr.txt'))
-xlmr_cfg_reg = Registry('roberta_cfg')
+xlmr_cfg_reg = Registry('xlmr_cfg')
 
 
 @xlmr_cfg_reg.register()
