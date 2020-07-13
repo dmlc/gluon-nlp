@@ -382,18 +382,18 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
                 model = 'xx_ent_wiki_sm'
         try:
             self._nlp = spacy.load(model, disable=['parser', 'tagger', 'ner'])
-        except IOError:
+        except Exception as loading_err:
             from spacy.cli import download
             try:
                 download(model, False, '--user')
                 self._nlp = spacy.load(model, disable=['parser', 'tagger', 'ner'])
-            except:
+            except Exception as download_err:
                 print('SpaCy Model for the specified model="{model}" has not been '
                       'successfully loaded. You need to check the installation guide in '
                       'https://spacy.io/usage/models. Usually, the installation command '
                       'should be `python -m spacy download {model}`.\n'
                       'Compete Error Message: {err_msg}'.format(model=model,
-                                                                err_msg=sys.exc_info()[0]))
+                                                                err_msg=str(download_err)))
                 raise
 
     def encode(self, sentences, output_type=str):
