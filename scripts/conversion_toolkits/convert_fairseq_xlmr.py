@@ -6,7 +6,7 @@ import argparse
 import mxnet as mx
 
 from gluonnlp.utils.misc import logging_config
-from gluonnlp.models.xlmr import XLMRModel as gluon_XLMRModel
+from gluonnlp.models.xlmr import XLMRModel, XLMRForMLM
 from gluonnlp.third_party import sentencepiece_model_pb2
 from fairseq.models.roberta import XLMRModel as fairseq_XLMRModel
 from convert_fairseq_roberta import rename, test_model, test_vocab, convert_config, convert_params
@@ -88,23 +88,32 @@ def convert_fairseq_model(args):
     vocab_size = convert_vocab(args, fairseq_xlmr)
 
     gluon_cfg = convert_config(fairseq_xlmr.args, vocab_size,
-                               gluon_XLMRModel.get_cfg().clone())
+                               XLMRModel.get_cfg().clone())
     with open(os.path.join(args.save_dir, 'model.yml'), 'w') as of:
         of.write(gluon_cfg.dump())
 
     ctx = mx.gpu(args.gpu) if args.gpu is not None else mx.cpu()
-    gluon_xlmr = convert_params(fairseq_xlmr,
-                                gluon_cfg,
-                                gluon_XLMRModel,
-                                ctx,
-                                gluon_prefix='xlmr_')
-    if args.test:
-        test_model(fairseq_xlmr, gluon_xlmr, args.gpu)
+    for is_mlm in [False, True]:
+        gluon_xlmr = convert_params(fairseq_roberta,
+                                       gluon_cfg,
+                                       ctx,
+                                       is_mlm=is_mlm,
+                                       gluon_prefix='roberta_')
 
-    gluon_xlmr.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
-    logging.info('Convert the XLM-R model in {} to {}'.
-                 format(os.path.join(args.fairseq_model_path, 'model.pt'), \
-                        os.path.join(args.save_dir, 'model.params')))
+        if is_mlm:
+            if args.test:
+                test_model(fairseq_roberta, gluon_xlmr, args.gpu)
+
+            gluon_xlmr.save_parameters(os.path.join(args.save_dir, 'model_mlm.params'), deduplicate=True)
+            logging.info('Convert the RoBERTa MLM model in {} to {}'.
+                         format(os.path.join(args.fairseq_model_path, 'model.pt'), \
+                                os.path.join(args.save_dir, 'model_mlm.params')))
+        else:
+            gluon_xlmr.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
+            logging.info('Convert the RoBERTa backbone model in {} to {}'.
+                         format(os.path.join(args.fairseq_model_path, 'model.pt'), \
+                                os.path.join(args.save_dir, 'model.params')))
+
     logging.info('Conversion finished!')
     logging.info('Statistics:')
     rename(args.save_dir)

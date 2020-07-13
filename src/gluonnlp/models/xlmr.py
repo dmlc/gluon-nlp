@@ -25,12 +25,12 @@ XLM-R Model
 }
 """
 
-__all__ = ['XLMRModel', 'list_pretrained_xlmr', 'get_pretrained_xlmr']
+__all__ = ['XLMRModel', 'XLMRForMLM', 'list_pretrained_xlmr', 'get_pretrained_xlmr']
 
 from typing import Tuple
 import os
 from mxnet import use_np
-from .roberta import RobertaModel, roberta_base, roberta_large
+from .roberta import RobertaModel, RobertaForMLM roberta_base, roberta_large
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
 from ..utils.registry import Registry
@@ -82,7 +82,9 @@ class XLMRModel(RobertaModel):
             return xlmr_cfg_reg.create(key)
         else:
             return xlmr_base()
-
+@use_np
+class XLMRForMLM(RobertaForMLM):
+    super().__init__()
 
 def list_pretrained_xlmr():
     return sorted(list(PRETRAINED_URL.keys()))

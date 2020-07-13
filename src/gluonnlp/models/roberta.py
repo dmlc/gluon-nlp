@@ -27,7 +27,7 @@ RoBERTa Model
 }
 """
 
-__all__ = ['RobertaModel', 'list_pretrained_roberta', 'get_pretrained_roberta']
+__all__ = ['RobertaModel', 'RobertaForMLM', 'list_pretrained_roberta', 'get_pretrained_roberta']
 
 import os
 from typing import Tuple
@@ -54,20 +54,16 @@ PRETRAINED_URL = {
         'cfg': 'fairseq_roberta_base/model-565d1db7.yml',
         'merges': 'fairseq_roberta_base/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_roberta_base/gpt2-f1335494.vocab',
-        'params': 'fairseq_roberta_base/model-98b4532f.params'
+        'params': 'fairseq_roberta_base/model-09a1520a.params'
+        'mlm_params': 'google_uncased_mobilebert/model_mlm-29889e2b.params',
     },
     'fairseq_roberta_large': {
         'cfg': 'fairseq_roberta_large/model-6e66dc4a.yml',
         'merges': 'fairseq_roberta_large/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_roberta_large/gpt2-f1335494.vocab',
-        'params': 'fairseq_roberta_large/model-e3f578dc.params'
+        'params': 'fairseq_roberta_large/model-6b043b91.params',
+        'mlm_params': 'fairseq_roberta_large/model_mlm-119f38e1.params'
     },
-    'fairseq_roberta_large_mnli': {
-        'cfg': 'fairseq_roberta_large_mnli/model-6e66dc4a.yml',
-        'merges': 'fairseq_roberta_large_mnli/gpt2-396d4d8e.merges',
-        'vocab': 'fairseq_roberta_large_mnli/gpt2-f1335494.vocab',
-        'params': 'fairseq_roberta_large_mnli/model-5288bb09.params'
-    }
 }
 
 FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'roberta.txt'))
