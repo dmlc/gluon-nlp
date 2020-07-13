@@ -96,6 +96,7 @@ def roberta_base():
     cfg.freeze()
     return cfg
 
+
 @roberta_cfg_reg.register()
 def roberta_large():
     cfg = roberta_base()
@@ -106,6 +107,7 @@ def roberta_large():
     cfg.MODEL.num_layers = 24
     cfg.freeze()
     return cfg
+
 
 @use_np
 class RobertaModel(HybridBlock):
@@ -259,7 +261,7 @@ class RobertaModel(HybridBlock):
 
     @staticmethod
     def get_cfg(key=None):
-        if key:
+        if key is not None:
             return roberta_cfg_reg.create(key)
         else:
             return roberta_base()

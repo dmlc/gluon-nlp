@@ -5,7 +5,6 @@ import mxnet as mx
 from mxnet import use_np
 from mxnet.gluon import nn, HybridBlock
 from typing import Optional, Tuple, List
-from .base import HybridBlockWithLayout
 from ..utils.registry import Registry
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask, gen_mem_attn_mask
 from ..layers import PositionalEmbedding, PositionwiseFFN, InitializerType
@@ -125,7 +124,7 @@ def transformer_wmt_en_de_big_t2t():
 
 
 @use_np
-class TransformerEncoderLayer(HybridBlockWithLayout):
+class TransformerEncoderLayer(HybridBlock):
     """Transformer Encoder Layer"""
     def __init__(self,
                  units: int = 512,
@@ -170,7 +169,7 @@ class TransformerEncoderLayer(HybridBlockWithLayout):
         prefix
         params
         """
-        super().__init__(layout=layout, prefix=prefix, params=params)
+        super().__init__(prefix=prefix, params=params)
         self._units = units
         self._hidden_size = hidden_size
         self._num_heads = num_heads
@@ -179,6 +178,9 @@ class TransformerEncoderLayer(HybridBlockWithLayout):
         self._activation_dropout_prob = activation_dropout_prob
         self._pre_norm = pre_norm
         self._dtype = dtype
+        self._layout = layout
+        assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
+                                       'Only "TN" and "NT" are accepted!'.format(layout)
         assert self._units % self._num_heads == 0, 'units must be divisive by the number of heads'
         with self.name_scope():
             self.dropout_layer = nn.Dropout(hidden_dropout_prob)
@@ -224,6 +226,10 @@ class TransformerEncoderLayer(HybridBlockWithLayout):
                                        dtype=self._dtype,
                                        prefix='ffn_')
 
+    @property
+    def layout(self) -> str:
+        return self._layout
+
     def hybrid_forward(self, F, data, attn_mask):
         """
 
@@ -265,7 +271,7 @@ class TransformerEncoderLayer(HybridBlockWithLayout):
 
 
 @use_np
-class TransformerEncoder(HybridBlockWithLayout):
+class TransformerEncoder(HybridBlock):
     def __init__(self, num_layers=6, recurrent=False,
                  units=512, hidden_size=2048, num_heads=8,
                  activation_dropout=0.0, dropout=0.1,
@@ -298,12 +304,15 @@ class TransformerEncoder(HybridBlockWithLayout):
         prefix
         params
         """
-        super(TransformerEncoder, self).__init__(layout=layout, prefix=prefix, params=params)
+        super(TransformerEncoder, self).__init__(prefix=prefix, params=params)
         self._dtype = dtype
         self.num_layers = num_layers
         self._recurrent = recurrent
         self._data_norm = data_norm
         self._pre_norm = pre_norm
+        self._layout = layout
+        assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
+                                       'Only "TN" and "NT" are accepted!'.format(layout)
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
             if self._pre_norm:
@@ -334,6 +343,10 @@ class TransformerEncoder(HybridBlockWithLayout):
                         dtype=dtype,
                         layout=self._layout,
                         prefix='{}_'.format(i)))
+
+    @property
+    def layout(self) -> str:
+        return self._layout
 
     def hybrid_forward(self, F, data, valid_length):
         """
@@ -377,7 +390,7 @@ class TransformerEncoder(HybridBlockWithLayout):
 
 
 @use_np
-class TransformerDecoderLayer(HybridBlockWithLayout):
+class TransformerDecoderLayer(HybridBlock):
     def __init__(self, units: int = 512,
                  mem_units: Optional[int] = None,
                  hidden_size: int = 2048,
@@ -419,7 +432,7 @@ class TransformerDecoderLayer(HybridBlockWithLayout):
         prefix
         params
         """
-        super(TransformerDecoderLayer, self).__init__(layout=layout, prefix=prefix, params=params)
+        super(TransformerDecoderLayer, self).__init__(prefix=prefix, params=params)
         self._dtype = dtype
         self._units = units
         if mem_units is None:
@@ -429,6 +442,9 @@ class TransformerDecoderLayer(HybridBlockWithLayout):
         self._num_heads = num_heads
         self._attention_dropout = attention_dropout
         self._dtype = dtype
+        self._layout = layout
+        assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
+                                       'Only "TN" and "NT" are accepted!'.format(layout)
         attention_layout = 'NTK' if layout == 'NT' else 'TNK'
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
@@ -503,6 +519,10 @@ class TransformerDecoderLayer(HybridBlockWithLayout):
                                        pre_norm=pre_norm,
                                        dtype=dtype,
                                        prefix='ffn_')
+
+    @property
+    def layout(self) -> str:
+        return self._layout
 
     def hybrid_forward(self, F, data, mem, self_causal_mask, mem_attn_mask):
         """
@@ -715,7 +735,7 @@ class TransformerDecoderLayer(HybridBlockWithLayout):
 
 
 @use_np
-class TransformerDecoder(HybridBlockWithLayout):
+class TransformerDecoder(HybridBlock):
     def __init__(self, num_layers=6, recurrent=False,
                  units=512, mem_units=None, hidden_size=2048,
                  num_heads=8, max_shift=None, rel_pos_embed=False, activation_dropout=0.0,
@@ -724,7 +744,7 @@ class TransformerDecoder(HybridBlockWithLayout):
                  activation='relu', dtype='float32',
                  layout='NT',
                  prefix=None, params=None):
-        super(TransformerDecoder, self).__init__(layout=layout, prefix=prefix, params=params)
+        super(TransformerDecoder, self).__init__(prefix=prefix, params=params)
         self._dtype = dtype
         self._units = units
         self._mem_units = mem_units
@@ -734,6 +754,9 @@ class TransformerDecoder(HybridBlockWithLayout):
         self.rel_pos_embed = rel_pos_embed
         self._data_norm = data_norm
         self._pre_norm = pre_norm
+        self._layout = layout
+        assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
+                                       'Only "TN" and "NT" are accepted!'.format(layout)
         with self.name_scope():
             self.dropout_layer = nn.Dropout(dropout)
             if self._data_norm:
@@ -764,6 +787,10 @@ class TransformerDecoder(HybridBlockWithLayout):
                                                             dtype=dtype,
                                                             layout=layout,
                                                             prefix='{}_'.format(i)))
+
+    @property
+    def layout(self) -> str:
+        return self._layout
 
     def hybrid_forward(self, F, data, valid_length, mem_data, mem_valid_length):
         """
@@ -920,7 +947,7 @@ class TransformerDecoder(HybridBlockWithLayout):
 
 
 @use_np
-class TransformerNMTModel(HybridBlockWithLayout):
+class TransformerNMTModel(HybridBlock):
     def __init__(self, src_vocab_size: int,
                  tgt_vocab_size: int,
                  max_src_length: Optional[int] = None,
@@ -1027,7 +1054,7 @@ class TransformerNMTModel(HybridBlockWithLayout):
         prefix
         params
         """
-        super(TransformerNMTModel, self).__init__(layout=layout, prefix=prefix, params=params)
+        super(TransformerNMTModel, self).__init__(prefix=prefix, params=params)
         assert src_vocab_size > 0 and tgt_vocab_size > 0,\
             'Cannot set "src_vocab_size" and "tgt_vocab_size" to negative numbers. ' \
             'Are you creating ' \
@@ -1042,6 +1069,9 @@ class TransformerNMTModel(HybridBlockWithLayout):
         self.scaled_embed = scale_embed
         self.enc_units = enc_units
         self.dec_units = dec_units
+        self._layout = layout
+        assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
+                                       'Only "TN" and "NT" are accepted!'.format(layout)
         if max_src_length is not None and max_src_length < 0:
             max_src_length = None
         if max_tgt_length is not None and max_tgt_length < 0:
@@ -1128,6 +1158,10 @@ class TransformerNMTModel(HybridBlockWithLayout):
                              prefix='tgt_final_')
         self.encoder.hybridize()
         self.decoder.hybridize()
+
+    @property
+    def layout(self) -> str:
+        return self._layout
 
     @property
     def src_vocab_size(self):

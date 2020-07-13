@@ -34,17 +34,21 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
     full_decode_out = dec(dst_data, dst_valid_length, encoded_mem, src_valid_length)
 
     # Test for the TN layout
-    enc.set_layout('TN')
-    dec.set_layout('TN')
-    encoded_mem_tn = enc(mx.np.swapaxes(src_data, 0, 1), src_valid_length)
-    full_decode_out_tn = dec(mx.np.swapaxes(dst_data, 0, 1), dst_valid_length,
-                             encoded_mem_tn, src_valid_length)
+    enc_tn = TransformerEncoder(units=units, hidden_size=64, num_layers=num_enc_layers, num_heads=4,
+                                dropout=0.0, pre_norm=pre_norm, prefix='enc_', layout='TN',
+                                params=enc.collect_params())
+    dec_tn = TransformerDecoder(units=units, hidden_size=64, num_layers=num_dec_layers, num_heads=4,
+                                dropout=0.0, pre_norm=pre_norm, prefix='dec_', layout='TN',
+                                params=dec.collect_params())
+    enc_tn.hybridize()
+    dec_tn.hybridize()
+    encoded_mem_tn = enc_tn(mx.np.swapaxes(src_data, 0, 1), src_valid_length)
+    full_decode_out_tn = dec_tn(mx.np.swapaxes(dst_data, 0, 1), dst_valid_length,
+                                encoded_mem_tn, src_valid_length)
     assert_allclose(encoded_mem_tn.asnumpy(),
                     mx.np.swapaxes(encoded_mem, 0, 1).asnumpy(), 1E-5, 1E-5)
     assert_allclose(full_decode_out_tn.asnumpy(),
                     mx.np.swapaxes(full_decode_out, 0, 1).asnumpy(), 1E-5, 1E-5)
-    enc.set_layout('NT')
-    dec.set_layout('NT')
 
     # Test the consistency via shifting the data and the valid_length
     for i in range(1, dst_valid_length.asnumpy().min()):
@@ -98,12 +102,13 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
                           (2, 3, 16, 24)])
 @pytest.mark.parametrize('enc_recurrent', [False, True])
 @pytest.mark.parametrize('dec_recurrent', [False, True])
-@pytest.mark.parametrize('tie_weights', [False, True])
+@pytest.mark.parametrize('tie_weights,layout', [(False, 'NT'), (True, 'NT'), (True, 'TN')])
 def test_transformer_nmt_model(train_hybridize, inference_hybridize,
                                enc_pre_norm, dec_pre_norm,
                                enc_units, dec_units,
                                enc_num_layers, dec_num_layers,
-                               enc_recurrent, dec_recurrent, tie_weights):
+                               enc_recurrent, dec_recurrent, tie_weights,
+                               layout):
     src_seq_length = 20
     tgt_seq_length = 15
     src_vocab_size = 32
@@ -130,7 +135,8 @@ def test_transformer_nmt_model(train_hybridize, inference_hybridize,
                                 dec_recurrent=dec_recurrent,
                                 shared_embed=shared_embed,
                                 tie_weights=tie_weights,
-                                dropout=0.0)
+                                dropout=0.0,
+                                layout=layout)
     inference_model = TransformerNMTInference(model=model)
     model.initialize()
     if train_hybridize:
@@ -138,9 +144,6 @@ def test_transformer_nmt_model(train_hybridize, inference_hybridize,
     verify_nmt_model(model)
     if inference_hybridize:
         inference_model.hybridize()
-    verify_nmt_inference(train_model=model, inference_model=inference_model)
-    model.set_layout('TN')
-    inference_model = TransformerNMTInference(model=model)
     verify_nmt_inference(train_model=model, inference_model=inference_model)
 
 
@@ -152,10 +155,15 @@ def test_transformer_cfg_registry():
 def test_transformer_cfg(cfg_key):
     cfg = TransformerNMTModel.get_cfg(cfg_key)
     cfg.defrost()
-    cfg.MODEL.src_vocab_size = 1000
-    cfg.MODEL.tgt_vocab_size = 1000
+    cfg.MODEL.src_vocab_size = 32
+    cfg.MODEL.tgt_vocab_size = 32
     cfg.freeze()
     model = TransformerNMTModel.from_cfg(cfg)
     model.initialize()
     model.hybridize()
+    cfg.defrost()
+    cfg.MODEL.layout = 'TN'
+    cfg.freeze()
+    model_tn = TransformerNMTModel.from_cfg(cfg, params=model.collect_params())
+    model_tn.hybridize()
     mx.npx.waitall()
