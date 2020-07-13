@@ -68,7 +68,7 @@ def list_sources(embedding_name=None):
         return {embedding_name: list(embedding_cls.keys())
                 for embedding_name, embedding_cls in text_embedding_reg.items()}
 
-def _load_embedding_txt(file_path, vocab, unknown_token, init_method):
+def _load_embedding_txt(file_path, vocab, unknown_token):
     hit_flags = np.zeros(len(vocab), dtype=bool)
     with open(file_path, 'r', encoding='utf-8') as f:
         line = f.readline().strip()
@@ -81,8 +81,6 @@ def _load_embedding_txt(file_path, vocab, unknown_token, init_method):
             dim = len(parts) - 1
             f.seek(0)
         matrix = np.random.randn(len(vocab), dim).astype('float32')
-        if init_method:
-            matrix = init_method(matrix)
         for idx, line in enumerate(f, start_idx):
             try:
                 parts = line.strip().split()
@@ -99,7 +97,7 @@ def _load_embedding_txt(file_path, vocab, unknown_token, init_method):
                 raise e
     return matrix, hit_flags
 
-def _load_embedding_npz(file_path, vocab, unknown, init_method):
+def _load_embedding_npz(file_path, vocab, unknown):
     hit_flags = np.zeros(len(vocab), dtype=bool)
     npz_dict = np.load(file_path, allow_pickle=True)
     unknown_token = npz_dict['unknown_token']
@@ -119,8 +117,6 @@ def _load_embedding_npz(file_path, vocab, unknown, init_method):
     token2idx = {x : i for i, x in enumerate(idx_to_token)}
     idx_to_vec = nd.array(npz_dict['idx_to_vec'])
     matrix = np.random.randn(len(vocab), idx_to_vec.shape[-1]).astype('float32')
-    if init_method:
-        matrix = init_method(matrix)
     for token, i in vocab.token_to_idx.items():
         if token == vocab.unk_token and unknown_token is not None:
             word = unknown_token
@@ -156,7 +152,7 @@ def _check_and_get_path(pretrained_name_or_dir):
     return None
 
 def load_embeddings(vocab, pretrained_name_or_dir='glove.6B.50d', unknown='<unk>',
-                    init_method=None, unk_method=None):
+                    unk_method=None):
     """Load pretrained word embeddings for building an embedding matrix for a give Vocab.
 
     Parameters
@@ -171,9 +167,6 @@ def load_embeddings(vocab, pretrained_name_or_dir='glove.6B.50d', unknown='<unk>
         If not, the method will search it in the registry.
     unknown : str, default '<unk>'
         Unknown token in the pretrained file.
-    init_method : Callable, default None
-        A function which receives `numpy.ndarray` and returns `numpy.ndarray`.
-        It is used to initialize the embedding matrix for the given matrix.
     unk_method : Callable, default None
         A function which receives `List[str]` and returns `numpy.ndarray`.
         The input of the function is a list of words which do not occur in the pretrained file.
@@ -192,12 +185,13 @@ def load_embeddings(vocab, pretrained_name_or_dir='glove.6B.50d', unknown='<unk>
         raise ValueError("Cannot recognize `{}`".format(pretrained_name_or_dir))
 
     if file_path.endswith('.npz'):
-        matrix, hit_flags = _load_embedding_npz(file_path, vocab, unknown, init_method)
+        matrix, hit_flags = _load_embedding_npz(file_path, vocab, unknown)
     else:
-        matrix, hit_flags = _load_embedding_txt(file_path, vocab, unknown, init_method)
+        matrix, hit_flags = _load_embedding_txt(file_path, vocab, unknown)
     dim = matrix.shape[-1]
     total_hits = sum(hit_flags)
-    logging.info("Found {} out of {} words in the pre-training embedding.".format(total_hits, len(vocab)))
+    logging.info("Pre-trained embedding dim: {}".format(dim))
+    logging.info("Found {} out of {} words in the pretrained embedding.".format(total_hits, len(vocab)))
     if total_hits != len(vocab):
         if unk_method is None:
             found_vectors = matrix[hit_flags]

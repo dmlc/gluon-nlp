@@ -19,7 +19,7 @@
 
 import mxnet as mx
 from mxnet import registry
-from mxnet.gluon import HybridBlock
+from mxnet.gluon import HybridBlock, Constant
 
 __all__ = [
     'register', 'create', 'list_evaluation_functions',
@@ -212,6 +212,47 @@ class CosineSimilarity(WordEmbeddingSimilarityFunction):
         y = F.expand_dims(y, axis=2)
         return F.batch_dot(x, y).reshape((-1, ))
 
+def _HyperbolicDist(F, a, b, eps):
+    return 1 + 2 * F.dot(a - b, a - b)/ \
+            ((1 - F.dot(a, a))*(1 - F.dot(b, b)) + eps)
+
+@register
+class HyperbolicCosineSimilarity(WordEmbeddingSimilarityFunction):
+    """Computes the cosine similarity in the Hyperbolic space.
+
+    Parameters
+    ----------
+    eps : float, optional, default=1e-10
+        A small constant for numerical stability.
+
+    """
+
+    def __init__(self, eps=1e-10, **kwargs):
+        super(HyperbolicCosineSimilarity, self).__init__(**kwargs)
+        self.eps = eps
+
+    def hybrid_forward(self, F, x, y):  # pylint: disable=arguments-differ
+        """Compute the cosine similarity between two batches of vectors.
+
+        The cosine similarity is the dot product between the L2 normalized
+        vectors.
+
+        Parameters
+        ----------
+        x : Symbol or NDArray
+        y : Symbol or NDArray
+
+        Returns
+        -------
+        similarity : Symbol or NDArray
+            The similarity computed by WordEmbeddingSimilarity.similarity_function.
+
+        """
+        xy = _HyperbolicDist(x, y, self.eps)
+        dis_x = _HyperbolicDist(x, F.zeros_like(x), self.eps)
+        dis_y = _HyperbolicDist(y, F.zeros_like(y), self.eps)
+        cos_xy = (dis_x * dis_y - xy) / (F.sinh(F.arccosh(dis_x)) * F.sinh(F.arccosh(dis_y)) + self.eps)
+        return cos_xy
 
 ###############################################################################
 # Word embedding analogy functions
@@ -255,8 +296,7 @@ class ThreeCosMul(WordEmbeddingAnalogyFunction):
         self._vocab_size, self._embed_size = idx_to_vec.shape
 
         idx_to_vec = mx.nd.L2Normalization(idx_to_vec, eps=self.eps)
-        with self.name_scope():
-            self.weight = self.params.get_constant('weight', idx_to_vec)
+        self.weight = Constant(idx_to_vec)
 
     def hybrid_forward(self, F, words1, words2, words3, weight):  # pylint: disable=arguments-differ
         """Compute ThreeCosMul for given question words.
@@ -349,8 +389,7 @@ class ThreeCosAdd(WordEmbeddingAnalogyFunction):
         if self.normalize:
             idx_to_vec = mx.nd.L2Normalization(idx_to_vec, eps=self.eps)
 
-        with self.name_scope():
-            self.weight = self.params.get_constant('weight', idx_to_vec)
+        self.weight = Constant(idx_to_vec)
 
     def hybrid_forward(self, F, words1, words2, words3, weight):  # pylint: disable=arguments-differ
         """Compute ThreeCosAdd for given question words.
@@ -421,10 +460,9 @@ class WordEmbeddingSimilarity(HybridBlock):
         self.eps = eps
         self._vocab_size, self._embed_size = idx_to_vec.shape
 
-        with self.name_scope():
-            self.weight = self.params.get_constant('weight', idx_to_vec)
-            self.similarity = create(kind='similarity',
-                                     name=similarity_function, eps=self.eps)
+        self.weight = Constant(idx_to_vec)
+        self.similarity = create(kind='similarity',
+                                 name=similarity_function, eps=self.eps)
 
         if not isinstance(self.similarity, WordEmbeddingSimilarityFunction):
             raise RuntimeError(
@@ -480,13 +518,12 @@ class WordEmbeddingAnalogy(HybridBlock):
         self.k = k
         self.exclude_question_words = exclude_question_words
 
-        with self.name_scope():
-            self.analogy = create(
-                kind='analogy',
-                name=analogy_function,
-                idx_to_vec=idx_to_vec,
-                k=self.k,
-                exclude_question_words=exclude_question_words)
+        self.analogy = create(
+            kind='analogy',
+            name=analogy_function,
+            idx_to_vec=idx_to_vec,
+            k=self.k,
+            exclude_question_words=exclude_question_words)
 
         if not isinstance(self.analogy, WordEmbeddingAnalogyFunction):
             raise RuntimeError(
