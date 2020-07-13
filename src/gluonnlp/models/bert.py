@@ -68,6 +68,7 @@ def google_en_uncased_bert_base():
     cfg.MODEL.attention_dropout_prob = 0.1
     cfg.MODEL.dtype = 'float32'
     cfg.MODEL.layout = 'NT'
+    cfg.MODEL.compute_layout = 'auto'
     # Hyper-parameters of the Initializers
     cfg.INITIALIZER = CN()
     cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
@@ -325,6 +326,7 @@ class BertModel(HybridBlock):
                  dtype='float32',
                  use_pooler=True,
                  layout='NT',
+                 compute_layout='auto',
                  prefix=None,
                  params=None):
         super().__init__(prefix=prefix, params=params)
@@ -341,6 +343,10 @@ class BertModel(HybridBlock):
         self.bias_initializer = bias_initializer
         self.layer_norm_eps = layer_norm_eps
         self._layout = layout
+        if compute_layout is None or compute_layout == 'auto':
+            self._compute_layout = layout
+        else:
+            self._compute_layout = compute_layout
         with self.name_scope():
             # Construct BertTransformer
             self.encoder = BertTransformer(
@@ -357,7 +363,7 @@ class BertModel(HybridBlock):
                 weight_initializer=weight_initializer,
                 bias_initializer=bias_initializer,
                 dtype=dtype,
-                layout=layout,
+                layout=self._compute_layout,
                 prefix='enc_',
             )
             self.encoder.hybridize()
@@ -433,8 +439,13 @@ class BertModel(HybridBlock):
         initial_embedding = self.get_initial_embedding(F, inputs, token_types)
         prev_out = initial_embedding
         outputs = []
-
-        contextual_embeddings, additional_outputs = self.encoder(prev_out, valid_length)
+        if self._compute_layout != self._layout:
+            # Swap the axes if the compute_layout and layout mismatch
+            contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(prev_out, 0, 1),
+                                                                     valid_length)
+            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
+        else:
+            contextual_embeddings, additional_outputs = self.encoder(prev_out, valid_length)
         outputs.append(contextual_embeddings)
         if self.use_pooler:
             pooled_out = self.apply_pooling(contextual_embeddings)
@@ -534,6 +545,7 @@ class BertModel(HybridBlock):
                    bias_initializer=bias_initializer,
                    use_pooler=use_pooler,
                    layout=cfg.MODEL.layout,
+                   compute_layout=cfg.MODEL.compute_layout,
                    prefix=prefix,
                    params=params)
 

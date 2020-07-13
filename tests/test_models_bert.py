@@ -11,13 +11,17 @@ def test_list_pretrained_bert():
     assert len(list_pretrained_bert()) > 0
 
 
-def test_bert_small_cfg():
+@pytest.mark.parametrize('compute_layout', ['auto', 'NT', 'TN'])
+def test_bert_small_cfg(compute_layout):
     cfg = BertModel.get_cfg()
     cfg.defrost()
     cfg.MODEL.vocab_size = 100
     cfg.MODEL.units = 12 * 8
     cfg.MODEL.num_layers = 2
+    cfg.MODEL.compute_layout = compute_layout
     cfg.freeze()
+
+    # Generate TN layout
     cfg_tn = cfg.clone()
     cfg_tn.defrost()
     cfg_tn.MODEL.layout = 'TN'
