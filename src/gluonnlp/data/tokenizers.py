@@ -38,7 +38,8 @@ from ..utils.lazy_imports import try_import_subword_nmt,\
                                  try_import_sentencepiece,\
                                  try_import_huggingface_tokenizers,\
                                  try_import_yttm,\
-                                 try_import_spacy
+                                 try_import_spacy,\
+                                 try_import_jieba
 
 
 SentencesType = NewType('SentencesType', Union[str, List[str]])
@@ -547,6 +548,7 @@ class JiebaTokenizer(BaseTokenizerWithVocab):
     """
     def __init__(self, ditionary=None, vocab: Optional[Vocab] = None):
         self._vocab = vocab
+        jieba = try_import_jieba()
         self._tokenizer = jieba.Tokenizer(ditionary)
         self._tokenizer.initialize(self._tokenizer.dictionary)
 
