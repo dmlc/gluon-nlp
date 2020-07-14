@@ -268,7 +268,6 @@ def test_model(fairseq_model, gluon_model, gpu):
     ctx = mx.gpu(gpu) if gpu is not None else mx.cpu()
     batch_size = 3
     seq_length = 32
-    num_mask = 5
     vocab_size = len(fairseq_model.task.dictionary)
     padding_id = fairseq_model.model.decoder.sentence_encoder.padding_idx
     input_ids = np.random.randint( # skip padding_id
@@ -281,34 +280,30 @@ def test_model(fairseq_model, gluon_model, gpu):
         seq_length,
         (batch_size,)
     )
-    mlm_positions = np.random.randint(
-        0,
-        seq_length // 2,
-        (batch_size, num_mask)
-    )
+
     for i in range(batch_size): # add padding, for fairseq padding mask
         input_ids[i,valid_length[i]:] = padding_id
 
     gl_input_ids = mx.np.array(input_ids, dtype=np.int32, ctx=ctx)
     gl_valid_length = mx.np.array(valid_length, dtype=np.int32, ctx=ctx)
-    gl_masked_positions = mx.np.array(mlm_positions, dtype=np.int32, ctx=ctx)
+    # project the all tokens that is taking whole positions
+    gl_masked_positions = mx.npx.arange_like(gl_input_ids, axis=1)
+    gl_masked_positions = gl_masked_positions + mx.np.zeros_like(gl_input_ids)
 
     fs_input_ids = torch.from_numpy(input_ids).cuda(gpu)
-    fs_masked_positions = torch.from_numpy(mlm_positions).cuda(gpu)
-    if gpu is not None:
-        fs_input_ids = fs_input_ids.cuda(gpu)
 
     fairseq_model.model.eval()
 
     gl_all_hiddens, gl_pooled, gl_mlm_scores = \
         gluon_model(gl_input_ids, gl_valid_length, gl_masked_positions)
+
     fs_mlm_scores, fs_extra = \
         fairseq_model.model.cuda(gpu)(
                 fs_input_ids,
-                return_all_hiddens=True,
-                masked_tokens=fs_masked_positions)
+                return_all_hiddens=True)
     fs_all_hiddens = fs_extra['inner_states']
 
+    # checking all_encodings_outputs
     num_layers = fairseq_model.args.encoder_layers
     for i in range(num_layers + 1):
         gl_hidden = gl_all_hiddens[i].asnumpy()
@@ -322,7 +317,17 @@ def test_model(fairseq_model, gluon_model, gpu):
                 1E-3,
                 1E-3
             )
-    #TODO(zheyuye), checking the masking scores
+    # checking masked_language_scores
+    gl_mlm_scores = gl_mlm_scores.asnumpy()
+    fs_mlm_scores = fs_mlm_scores.transpose(0, 1)
+    fs_mlm_scores = fs_mlm_scores.detach().cpu().numpy()
+    for j in range(batch_size):
+        assert_allclose(
+            gl_mlm_scores[j, :valid_length[j], :],
+            fs_mlm_scores[j, :valid_length[j], :],
+            1E-3,
+            1E-3
+        )
 
 def rename(save_dir):
     """Rename converted files with hash"""
