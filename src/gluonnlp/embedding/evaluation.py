@@ -57,9 +57,9 @@ def CosineSimilarity(x, y, eps=1e-10):
 
 def _HyperbolicDist(a, b, eps):
     return 1 + 2 * _np_batch_dot(a - b, a - b)/ \
-            ((1 - _np_batch_dot(a, a))*(1 - _np_batch_dot(b, b)) + eps)
+            (np.clip(1 - _np_batch_dot(a, a), eps, 1) * np.clip(1 - _np_batch_dot(b, b), eps, 1))
 
-def HyperbolicCosineSimilarity(x, y, eps):
+def HyperbolicCosineSimilarity(x, y, eps=1e-10):
     """Computes the cosine similarity in the Hyperbolic space.
 
     Parameters
@@ -78,8 +78,10 @@ def HyperbolicCosineSimilarity(x, y, eps):
     """
     dim = x.shape[-1]
     assert dim == y.shape[-1], "Embedding dim for x, y are different!"
-    x = x.reshape(-1, dim).asnumpy()
-    y = y.reshape(-1, dim).asnumpy()
+    x = x.reshape(-1, dim)
+    y = y.reshape(-1, dim)
+    x = mx.nd.L2Normalization(x, eps=eps).asnumpy()
+    y = mx.nd.L2Normalization(y, eps=eps).asnumpy()
     n, m = x.shape[0], y.shape[0]
     x = np.expand_dims(x, axis=1)
     y = np.expand_dims(y, axis=0)
@@ -90,7 +92,7 @@ def HyperbolicCosineSimilarity(x, y, eps):
     dis_x = _HyperbolicDist(x, np.zeros_like(x), eps)
     dis_y = _HyperbolicDist(y, np.zeros_like(y), eps)
     cos_xy = (dis_x * dis_y - xy) / \
-        (dis_x.arccosh().sinh() * dis_x.arccosh().sinh() + eps)
+        (np.sinh(np.arccosh(dis_x)) * np.sinh(np.arccosh(dis_y)) + eps)
     return cos_xy.reshape((n, m))
 
 class ThreeCosMul:
@@ -129,7 +131,7 @@ class ThreeCosMul:
         self._vocab_size, self._embed_size = idx_to_vec.shape
 
         idx_to_vec = mx.nd.L2Normalization(idx_to_vec, eps=self.eps)
-        self.weight = mx.gluon.Constant(idx_to_vec)
+        self.weight = idx_to_vec
 
     def compute(self, words1, words2, words3):  # pylint: disable=arguments-differ
         """Compute ThreeCosMul for given question words.
@@ -210,7 +212,7 @@ class ThreeCosAdd:
         if self.normalize:
             idx_to_vec = mx.nd.L2Normalization(idx_to_vec, eps=self.eps)
 
-        self.weight = mx.gluon.Constant(idx_to_vec)
+        self.weight = idx_to_vec
 
     def compute(self, words1, words2, words3): # pylint: disable=arguments-differ
         """Compute ThreeCosAdd for given question words.
