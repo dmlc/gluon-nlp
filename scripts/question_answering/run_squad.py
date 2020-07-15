@@ -314,7 +314,10 @@ def get_network(model_name,
     # Create the network
     Model, cfg, tokenizer, download_params_path, _ = \
         get_backbone(model_name, load_backbone=not backbone_path)
-    backbone = Model.from_cfg(cfg, use_pooler=False, dtype=dtype)
+    cfg.defrost()
+    cfg.MODEL.dtype = dtype
+    cfg.freeze()
+    backbone = Model.from_cfg(cfg, use_pooler=False)
     # Load local backbone parameters if backbone_path provided.
     # Otherwise, download backbone parameters from gluon zoo.
 
