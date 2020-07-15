@@ -526,8 +526,7 @@ def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
     """
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_roberta())
-    cfg_path = PRETRAINED_URL[model_name
-    ]['cfg']
+    cfg_path = PRETRAINED_URL[model_name]['cfg']
     merges_path = PRETRAINED_URL[model_name]['merges']
     vocab_path = PRETRAINED_URL[model_name]['vocab']
     params_path = PRETRAINED_URL[model_name]['params']

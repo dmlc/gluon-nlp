@@ -18,20 +18,22 @@
 __all__ = ['WhitespaceTokenizer', 'SpacyTokenizer', 'JiebaTokenizer', 'MosesTokenizer',
            'SubwordNMTTokenizer', 'YTTMTokenizer', 'SentencepieceTokenizer',
            'HuggingFaceBPETokenizer', 'HuggingFaceByteBPETokenizer', 'HuggingFaceWordPieceTokenizer',
-           'create', 'create_with_json', 'list_all']
+           'CharTokenizer', 'create', 'create_with_json', 'list_all']
 
-from typing import List, Tuple, Union, Optional
 import os
-import json
-from collections import OrderedDict
 import abc
 import sys
+import json
 import warnings
 import itertools
-from typing import NewType
-import sacremoses
-import jieba
+import unicodedata
 from uuid import uuid4
+from typing import List, Tuple, Union, NewType, Optional
+from collections import OrderedDict
+
+import jieba
+import sacremoses
+
 from .vocab import Vocab
 from ..registry import TOKENIZER_REGISTRY
 from ..utils.lazy_imports import try_import_subword_nmt,\
@@ -201,7 +203,6 @@ class BaseTokenizer(abc.ABC):
             The detokenized sentence(s)
         """
         pass
-
 
     def encode_with_offsets(self, sentences: SentencesType,
                             output_type: type = str)\
@@ -784,6 +785,7 @@ class SubwordNMTTokenizer(BaseTokenizerWithVocab):
         with open(self._codec_path, 'r', encoding='utf-8') as merge_codes:
             self._bpe = BPE(codes=merge_codes, separator=self._separator)
 
+
 class HuggingFaceTokenizer(BaseTokenizerWithVocab):
     def encode(self, sentences, output_type=str):
         is_multi_sentences = isinstance(sentences, list)
@@ -968,7 +970,7 @@ class HuggingFaceByteBPETokenizer(HuggingFaceTokenizer):
     def __init__(self, merges_file: Optional[str] = None, vocab_file: Optional[str] = None,
                  add_prefix_space: bool = False, lowercase: bool = False, dropout: Optional[float] = None,
                  unicode_normalizer: Optional[str] = None, continuing_subword_prefix: Optional[str] = None,
-                 end_of_word_suffix: Optional[str] = None, trim_offsets:bool=False):
+                 end_of_word_suffix: Optional[str] = None, trim_offsets: bool=False):
         self._merges_file = merges_file
         self._vocab_file = vocab_file
         self._add_prefix_space = add_prefix_space
@@ -1170,10 +1172,10 @@ class HuggingFaceWordPieceTokenizer(HuggingFaceTokenizer):
             # defualt special tokens corresponding to the default
             # special_tokens setting in BertWordPieceTokenizer.train
             # and the default special_tokens=[pad, unk, cls, sep, mask]
-            default_special_tokens = {'pad_token':self._pad_token,
-                                      'cls_token':self._cls_token,
-                                      'sep_token':self._sep_token,
-                                      'mask_token':self._mask_token}
+            default_special_tokens = {'pad_token': self._pad_token,
+                                      'cls_token': self._cls_token,
+                                      'sep_token': self._sep_token,
+                                      'mask_token': self._mask_token}
             self._vocab = Vocab(all_tokens, unk_token=self._unk_token, **default_special_tokens)
             all_tokens = self._vocab.all_tokens
         # for safety, also use temp file when using wordpiece vocab file
@@ -1323,7 +1325,7 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
                 if k != token_id_to_token_name[v]:
                     raise ValueError('"{}" is already registered as "vocab.{}". '
                                      'We cannot rename it to "vocab.{}".'
-                                     .format(v, token_id_to_token_name[v],k))
+                                     .format(v, token_id_to_token_name[v], k))
                 continue
             if v in other_control_tokens:
                 if v in matched_other_control_tokens:
@@ -1708,3 +1710,113 @@ def create_with_json(name: str, json_str: str) -> BaseTokenizer:
 
 def list_all():
     return TOKENIZER_REGISTRY.list_keys()
+
+
+@TOKENIZER_REGISTRY.register('char')
+class CharTokenizer(BaseTokenizerWithVocab):
+    def __init__(self, vocab: Optional[Vocab] = None,
+                 unk_token: Optional[str] = None,
+                 lowercase: bool = False,
+                 unicode_normalizer: Optional[str] = None):
+        self._vocab = vocab
+        self._unk_token = unk_token
+        self._lowercase = lowercase
+        self._unicode_normalizer = unicode_normalizer
+        if unicode_normalizer is not None:
+            assert unicode_normalizer in ['NFC', 'NFKC', 'NFD', 'NFKD']
+
+    def process_text(self, text):
+        if self._lowercase:
+            text = text.lower()
+        if self._unicode_normalizer:
+            text = unicodedata.normalize(self._unicode_normalizer, text)
+        return text
+
+    def text_to_list(self, text):
+        sequence = list(self.process_text(text))
+        for index in range(len(sequence)):
+            if sequence[index] not in self._vocab.all_tokens:
+                sequence[index] = self._unk_token
+        return sequence
+
+    def encode(self, sentences, output_type=str):
+        is_multiple_sentences = isinstance(sentences, list)
+        if not is_multiple_sentences:
+            sentences = [sentences]
+
+        if output_type is str:
+            tokens = [self.text_to_list(sentence) for sentence in sentences]
+        elif output_type is int:
+            if self._vocab is None:
+                raise ValueError(_encode_no_vocab_err_msg())
+            tokens = [self._vocab[self.text_to_list(sentence)] for sentence in sentences]
+        else:
+            raise NotImplementedError
+        if is_multiple_sentences:
+            return tokens
+        else:
+            return tokens[0]
+
+    def decode(self, tokens):
+        pass
+
+    @property
+    def vocab(self):
+        return self._vocab
+
+    def set_vocab(self, vocab):
+        """Set the vocabulary of the tokenizer
+
+        Parameters
+        ----------
+        vocab
+        """
+        self._vocab = vocab
+
+    def set_vocab_from_text(self, sentences, vocab_size=None):
+        """Set the vocabulary of the tokenizer from list of sentences
+
+        Parameters
+        ----------
+        sentences
+        """
+        is_multiple_sentences = isinstance(sentences, list)
+        if not is_multiple_sentences:
+            sentences = [sentences]
+        word_counts = OrderedDict()
+        for sentence in sentences:
+            sentence = self.process_text(sentence)
+            for word in sentence:
+                if word in word_counts:
+                    word_counts[word] += 1
+                else:
+                    word_counts[word] = 1
+        word_lists = list(word_counts.items())
+        word_lists.sort(key=lambda x: x[1], reverse=True)
+        if vocab_size:
+            word_lists = word_lists[:vocab_size]
+        if self._unk_token is None:
+            all_tokens = []
+        else:
+            all_tokens = [self._unk_token]
+        all_tokens.extend(wc[0] for wc in word_lists)
+        self._vocab = Vocab(all_tokens, unk_token=self._unk_token)
+
+    def set_lowercase(self, lowercase: float):
+        self._lowercase = lowercase
+        # no need to rebuild the tokenizer
+
+    @property
+    def lowercase(self):
+        return self._lowercase
+
+    def __repr__(self):
+        ret = '{}(\n' \
+              '   model_path = {}\n' \
+              '   lowercase = {}, vocab = {}\n' \
+              '   unicode_normalizer = {}\n' \
+              ')'.format(self.__class__.__name__,
+                         os.path.realpath(self._model_path),
+                         self._lowercase, self._vocab,
+                         self._unicode_normalizer)
+        return ret
