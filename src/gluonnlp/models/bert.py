@@ -650,7 +650,6 @@ def get_pretrained_bert(model_name: str = 'google_en_cased_bert_base',
         local_mlm_params_path = None
     do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
                        and PRETRAINED_URL[model_name]['lowercase'] else False
-    # TODO(sxjscience) Move do_lower to assets.
     tokenizer = HuggingFaceWordPieceTokenizer(
                     vocab_file=local_paths['vocab'],
                     unk_token='[UNK]',

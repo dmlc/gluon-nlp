@@ -73,6 +73,7 @@ PRETRAINED_URL = {
         'params': 'google_electra_small/model-2654c8b4.params',
         'disc_model': 'google_electra_small/disc_model-137714b6.params',
         'gen_model': 'google_electra_small/gen_model-d11fd0b1.params',
+        'lowercase': True,
     },
     'google_electra_base': {
         'cfg': 'google_electra_base/model-5b35ca0b.yml',
@@ -80,6 +81,7 @@ PRETRAINED_URL = {
         'params': 'google_electra_base/model-31c235cc.params',
         'disc_model': 'google_electra_base/disc_model-514bd353.params',
         'gen_model': 'google_electra_base/gen_model-665ce594.params',
+        'lowercase': True,
     },
     'google_electra_large': {
         'cfg': 'google_electra_large/model-31b7dfdd.yml',
@@ -87,6 +89,7 @@ PRETRAINED_URL = {
         'params': 'google_electra_large/model-9baf9ff5.params',
         'disc_model': 'google_electra_large/disc_model-5b820c02.params',
         'gen_model': 'google_electra_large/gen_model-667121df.params',
+        'lowercase': True,
     },
     'gluon_electra_small_owt':{
         'cfg': 'gluon_electra_small_owt/model-6e276d98.yml',
@@ -94,6 +97,7 @@ PRETRAINED_URL = {
         'params': 'gluon_electra_small_owt/model-e9636891.params',
         'disc_model': 'gluon_electra_small_owt/disc_model-87836017.params',
         'gen_model': 'gluon_electra_small_owt/gen_model-45a6fb67.params',
+        'lowercase': True,
     }
 }
 
@@ -951,7 +955,8 @@ def get_pretrained_electra(model_name: str = 'google_electra_small',
                                          sha1_hash=FILE_STATS[gen_params_path])
     else:
         local_gen_params_path = None
-    # TODO(sxjscience) Move do_lower to assets.
+    do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
+                       and PRETRAINED_URL[model_name]['lowercase'] else False
     tokenizer = HuggingFaceWordPieceTokenizer(
         vocab_file=local_paths['vocab'],
         unk_token='[UNK]',
@@ -959,7 +964,7 @@ def get_pretrained_electra(model_name: str = 'google_electra_small',
         cls_token='[CLS]',
         sep_token='[SEP]',
         mask_token='[MASK]',
-        lowercase=True)
+        lowercase=do_lower)
     cfg = ElectraModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, (local_disc_params_path, local_gen_params_path)
 

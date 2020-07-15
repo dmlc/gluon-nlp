@@ -783,7 +783,7 @@ class SubwordNMTTokenizer(BaseTokenizerWithVocab):
         from subword_nmt.apply_bpe import BPE
         with open(self._codec_path, 'r', encoding='utf-8') as merge_codes:
             self._bpe = BPE(codes=merge_codes, separator=self._separator)
-        
+
 class HuggingFaceTokenizer(BaseTokenizerWithVocab):
     def encode(self, sentences, output_type=str):
         is_multi_sentences = isinstance(sentences, list)
@@ -1252,7 +1252,7 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
         algorithm.
     alpha
         A scalar for a smoothing parameter for probability rescaling.
-    do_lower
+    lowercase
         Whether to convert the input string to lower-case strings
     **kwargs
 
@@ -1273,7 +1273,7 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
     """
     def __init__(self, model_path: Optional[str] = None,
                  vocab: Optional[Union[str, Vocab]] = None,
-                 nbest: int = 0, alpha: float = 0.0, do_lower=False,
+                 nbest: int = 0, alpha: float = 0.0, lowercase=False,
                  **kwargs):
         self._model_path = model_path
         sentencepiece = try_import_sentencepiece()
@@ -1283,7 +1283,7 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
         self._sp_model.load(model_path)
         self._nbest = nbest
         self._alpha = alpha
-        self._do_lower = do_lower
+        self._lowercase = lowercase
         self._meta_symbol = u'▁'
         sp_model_all_tokens = [self._sp_model.id_to_piece(i) for i in range(len(self._sp_model))]
         special_tokens_kv = dict()
@@ -1364,7 +1364,7 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
         is_multi_sentences = isinstance(sentences, list)
         if not is_multi_sentences:
             sentences = [sentences]
-        if self._do_lower:
+        if self._lowercase:
             sentences = [sentence.lower() for sentence in sentences]
         if output_type is str:
             ret = [self._sp_model.sample_encode_as_pieces(sentence, self._nbest, self._alpha)
@@ -1403,7 +1403,7 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
         token_ids = []
         offsets = []
         for sentence in sentences:
-            if self._do_lower:
+            if self._lowercase:
                 sentence = sentence.lower()
             spt = self._spt_cls()
             spt.ParseFromString(self._sp_model.SampleEncodeAsSerializedProto(
@@ -1464,8 +1464,8 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
                                   'SentencepieceTokenizer.')
 
     @property
-    def do_lower(self):
-        return self._do_lower
+    def lowercase(self):
+        return self._lowercase
 
     def set_subword_regularization(self, nbest, alpha):
         self._nbest = nbest
@@ -1474,11 +1474,11 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
     def __repr__(self):
         ret = '{}(\n' \
               '   model_path = {}\n' \
-              '   do_lower = {}, nbest = {}, alpha = {}\n' \
+              '   lowercase = {}, nbest = {}, alpha = {}\n' \
               '   vocab = {}\n' \
               ')'.format(self.__class__.__name__,
                          os.path.realpath(self._model_path),
-                         self._do_lower, self._nbest, self._alpha,
+                         self._lowercase, self._nbest, self._alpha,
                          self._vocab)
         return ret
 

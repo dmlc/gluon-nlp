@@ -54,6 +54,7 @@ PRETRAINED_URL = {
         'vocab': 'google_uncased_mobilebert/vocab-e6d2b21d.json',
         'params': 'google_uncased_mobilebert/model-c8346cf2.params',
         'mlm_params': 'google_uncased_mobilebert/model_mlm-53948e82.params',
+        'lowercase': True,
     }
 }
 
@@ -64,7 +65,7 @@ FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'mob
 @use_np
 class MobileBertEncoderLayer(HybridBlock):
     """The Transformer Encoder Layer in Mobile Bert"""
-    # TODO(zheyuye), use stacked groups for single ffn layer in transformer.TransformerEncoderLayer
+    # TODO(zheyuye), use stacked groups for single ffn layer in TransformerEncoderLayer
     # and revise the other models and scripts, masking sure their are compatible.
 
     def __init__(self,
@@ -959,7 +960,9 @@ def get_pretrained_mobilebert(model_name: str = 'google_uncased_mobilebert',
                                          sha1_hash=FILE_STATS[mlm_params_path])
     else:
         local_mlm_params_path = None
-    # TODO(sxjscience) Move do_lower to assets.
+
+    do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
+                       and PRETRAINED_URL[model_name]['lowercase'] else False
     tokenizer = HuggingFaceWordPieceTokenizer(
                     vocab_file=local_paths['vocab'],
                     unk_token='[UNK]',
@@ -967,7 +970,7 @@ def get_pretrained_mobilebert(model_name: str = 'google_uncased_mobilebert',
                     cls_token='[CLS]',
                     sep_token='[SEP]',
                     mask_token='[MASK]',
-                    lowercase=True)
+                    lowercase=do_lower)
     cfg = MobileBertModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_mlm_params_path
 

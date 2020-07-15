@@ -22,8 +22,17 @@ def test_xlmr():
             cfg, tokenizer, params_path, mlm_params_path =\
                 get_pretrained_xlmr(model_name, load_backbone=True, load_mlm=True, root=root)
             assert cfg.MODEL.vocab_size == len(tokenizer.vocab)
+            # test backbone
             xlmr_model = XLMRModel.from_cfg(cfg)
             xlmr_model.load_parameters(params_path)
+            # test mlm model
+            xlmr = XLMRForMLM(cfg)
+            if mlm_params_path is not None:
+                xlmr.load_parameters(mlm_params_path)
+            xlmr = XLMRForMLM(cfg)
+            xlmr.backbone_model.load_parameters(params_path)
+
+
         # test forward
         batch_size = 1
         seq_length = 8
@@ -53,10 +62,3 @@ def test_xlmr():
             loss = label_smooth_loss(contextual_embeddings, input_ids)
             loss.backward()
         mx.npx.waitall()
-
-        # test for mlm model
-        xlmr = XLMRForMLM(cfg)
-        if mlm_params_path is not None:
-            xlmr.load_parameters(mlm_params_path)
-        xlmr = XLMRForMLM(cfg)
-        xlmr.backbone_model.load_parameters(params_path)

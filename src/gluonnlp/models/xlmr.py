@@ -45,13 +45,14 @@ PRETRAINED_URL = {
         'sentencepiece.model': 'fairseq_xlmr_base/sentencepiece-18e17bae.model',
         'params': 'fairseq_xlmr_base/model-3fa134e9.params',
         'mlm_params': 'model_mlm-86e37954.params',
+        'lowercase': False,
     },
     'fairseq_xlmr_large': {
         'cfg': 'fairseq_xlmr_large/model-01fc59fb.yml',
         'sentencepiece.model': 'fairseq_xlmr_large/sentencepiece-18e17bae.model',
         'params': 'fairseq_xlmr_large/model-b62b074c.params',
         'mlm_params': 'model_mlm-887506c2.params',
-
+        'lowercase': False,
     }
 }
 
@@ -146,7 +147,11 @@ def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
     else:
         local_mlm_params_path = None
 
-    tokenizer = SentencepieceTokenizer(local_paths['sentencepiece.model'])
+    do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
+                       and PRETRAINED_URL[model_name]['lowercase'] else False
+    tokenizer = SentencepieceTokenizer(
+                    model_path=local_paths['sentencepiece.model'],
+                    lowercase=do_lower)
     cfg = XLMRModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_mlm_params_path
 

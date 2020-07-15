@@ -56,6 +56,7 @@ PRETRAINED_URL = {
         'vocab': 'fairseq_roberta_base/gpt2-f1335494.vocab',
         'params': 'fairseq_roberta_base/model-09a1520a.params',
         'mlm_params': 'fairseq_roberta_base/model_mlm-29889e2b.params',
+        'lowercase': False,
     },
     'fairseq_roberta_large': {
         'cfg': 'fairseq_roberta_large/model-6e66dc4a.yml',
@@ -63,6 +64,7 @@ PRETRAINED_URL = {
         'vocab': 'fairseq_roberta_large/gpt2-f1335494.vocab',
         'params': 'fairseq_roberta_large/model-6b043b91.params',
         'mlm_params': 'fairseq_roberta_large/model_mlm-119f38e1.params',
+        'lowercase': False,
     }
 }
 
@@ -549,7 +551,12 @@ def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
                                          sha1_hash=FILE_STATS[mlm_params_path])
     else:
         local_mlm_params_path = None
-    tokenizer = HuggingFaceByteBPETokenizer(local_paths['merges'], local_paths['vocab'])
+    do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
+                       and PRETRAINED_URL[model_name]['lowercase'] else False
+    tokenizer = HuggingFaceByteBPETokenizer(
+                    merges_file=local_paths['merges'],
+                    vocab_file=local_paths['vocab'],
+                    lowercase=do_lower)
     cfg = RobertaModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_mlm_params_path
 

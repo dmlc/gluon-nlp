@@ -22,8 +22,15 @@ def test_roberta(model_name):
         cfg, tokenizer, params_path, mlm_params_path =\
             get_pretrained_roberta(model_name, load_backbone=True, load_mlm=True, root=root)
         assert cfg.MODEL.vocab_size == len(tokenizer.vocab)
+        # test backbone
         roberta_model = RobertaModel.from_cfg(cfg)
         roberta_model.load_parameters(params_path)
+        # test mlm model
+        roberta_mlm_model = RobertaForMLM(cfg)
+        if mlm_params_path is not None:
+            roberta_mlm_model.load_parameters(mlm_params_path)
+        roberta_mlm_model = RobertaForMLM(cfg)
+        roberta_mlm_model.backbone_model.load_parameters(params_path)
 
     # test forward
     batch_size = 3
@@ -54,10 +61,3 @@ def test_roberta(model_name):
         loss = label_smooth_loss(contextual_embeddings, input_ids)
         loss.backward()
     mx.npx.waitall()
-
-    # test for mlm model
-    roberta_mlm_model = RobertaForMLM(cfg)
-    if mlm_params_path is not None:
-        roberta_mlm_model.load_parameters(mlm_params_path)
-    roberta_mlm_model = RobertaForMLM(cfg)
-    roberta_mlm_model.backbone_model.load_parameters(params_path)
