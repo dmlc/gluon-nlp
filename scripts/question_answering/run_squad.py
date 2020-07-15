@@ -119,6 +119,8 @@ def parse_args():
                         help='Whether to evaluate all intermediate checkpoints instead of only last one')
     parser.add_argument('--max_saved_ckpt', type=int, default=10,
                         help='The maximum number of saved checkpoints')
+    parser.add_argument('--eval_dtype', type=str, default='float32',
+                        help='Data type used for evaluation. Either float32 or float16')
     args = parser.parse_args()
     return args
 
@@ -285,7 +287,8 @@ def get_network(model_name,
                 ctx_l,
                 dropout=0.1,
                 checkpoint_path=None,
-                backbone_path=None):
+                backbone_path=None,
+                dtype='float32'):
     """
     Get the network that fine-tune the Question Answering Task
 
@@ -311,13 +314,14 @@ def get_network(model_name,
     # Create the network
     Model, cfg, tokenizer, download_params_path, _ = \
         get_backbone(model_name, load_backbone=not backbone_path)
-    backbone = Model.from_cfg(cfg, use_pooler=False)
+    backbone = Model.from_cfg(cfg, use_pooler=False, dtype=dtype)
     # Load local backbone parameters if backbone_path provided.
     # Otherwise, download backbone parameters from gluon zoo.
 
     backbone_params_path = backbone_path if backbone_path else download_params_path
     if checkpoint_path is None:
-        backbone.load_parameters(backbone_params_path, ignore_extra=True, ctx=ctx_l)
+        backbone.load_parameters(backbone_params_path, ignore_extra=True,
+                                 ctx=ctx_l, cast_dtype=True)
         num_params, num_fixed_params = count_parameters(backbone.collect_params())
         logging.info(
             'Loading Backbone Model from {}, with total/fixd parameters={}/{}'.format(
@@ -777,7 +781,9 @@ def predict_extended(original_feature,
 def evaluate(args, last=True):
     ctx_l = parse_ctx(args.gpus)
     cfg, tokenizer, qa_net = get_network(
-        args.model_name, ctx_l, args.classifier_dropout)
+        args.model_name, ctx_l, args.classifier_dropout, dtype=args.eval_dtype)
+    if args.eval_dtype == 'float16':
+        qa_net.cast('float16')
     # Prepare dev set
     dev_cache_path = os.path.join(CACHE_PATH,
                                   'dev_{}_squad_{}.ndjson'.format(args.model_name,

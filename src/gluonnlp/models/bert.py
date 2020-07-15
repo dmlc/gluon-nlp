@@ -146,6 +146,7 @@ class BertTransformer(HybridBlock):
                                               weight_initializer=weight_initializer,
                                               bias_initializer=bias_initializer,
                                               activation=activation,
+                                              dtype=self._dtype,
                                               prefix='{}_'.format(layer_idx)))
 
     def hybrid_forward(self, F, data, valid_length):
@@ -394,7 +395,7 @@ class BertModel(HybridBlock):
         return cfg
 
     @classmethod
-    def from_cfg(cls, cfg, use_pooler=True, prefix=None, params=None):
+    def from_cfg(cls, cfg, use_pooler=True, prefix=None, params=None, dtype='float32'):
         cfg = BertModel.get_cfg().clone_merge(cfg)
         assert cfg.VERSION == 1, 'Wrong version!'
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
@@ -412,7 +413,7 @@ class BertModel(HybridBlock):
                    pos_embed_type=cfg.MODEL.pos_embed_type,
                    activation=cfg.MODEL.activation,
                    layer_norm_eps=cfg.MODEL.layer_norm_eps,
-                   dtype=cfg.MODEL.dtype,
+                   dtype=dtype,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
