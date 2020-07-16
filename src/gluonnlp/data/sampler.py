@@ -304,7 +304,8 @@ class FixedSizeSampler(BaseSampler):
             yield self._indices[batch]
 
     def __len__(self):
-        return -1
+        # TODO warning
+        return 0
 
 #    def __repr__(self):
 #        # TODO
