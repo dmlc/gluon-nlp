@@ -17,10 +17,9 @@ def test_list_pretrained_xlmr():
 def test_xlmr():
     # test from pretrained
     assert len(list_pretrained_xlmr()) > 0
-    for model_name in list_pretrained_xlmr():
+    for model_name in ['fairseq_xlmr_base']:
         with tempfile.TemporaryDirectory() as root:
-            cfg, tokenizer, params_path =\
-                get_pretrained_xlmr(model_name, root=root)
+            cfg, tokenizer, params_path = get_pretrained_xlmr(model_name, root=root)
             assert cfg.MODEL.vocab_size == len(tokenizer.vocab)
             xlmr_model = XLMRModel.from_cfg(cfg)
             xlmr_model.load_parameters(params_path)
