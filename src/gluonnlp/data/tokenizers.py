@@ -398,7 +398,7 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
                               'successfully loaded. You need to check the installation guide in '
                               'https://spacy.io/usage/models. Usually, the installation command '
                               'should be `python -m spacy download {model}`.\n'
-                              'Compete Error Message: {err_msg}'.format(model=model,
+                              'Complete Error Message: {err_msg}'.format(model=model,
                                                                         err_msg=str(download_err)))
                         raise
 
