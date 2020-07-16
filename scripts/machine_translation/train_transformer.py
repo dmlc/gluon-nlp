@@ -46,6 +46,7 @@ from gluonnlp.models.transformer import TransformerNMTModel
 from gluonnlp.utils.misc import logging_config, AverageSGDTracker, count_parameters,\
     md5sum, grouper
 from gluonnlp.data.sampler import *
+from gluonnlp.data.sampler import RandomSampler
 import gluonnlp.data.batchify as bf
 from gluonnlp.data import Vocab
 from gluonnlp.data import tokenizers
