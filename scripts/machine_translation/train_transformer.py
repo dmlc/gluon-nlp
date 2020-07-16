@@ -361,7 +361,6 @@ def train(args):
                                             batchify_fn=batchify_fn,
                                             num_workers=0,
                                             shuffle=False)
-    num_batches = len(train_data_loader)
     for v in model.collect_params().values():
         if v.grad_req != 'null':
             v.grad_req = 'add'
@@ -441,7 +440,7 @@ def train(args):
                     log_avg_loss = (log_avg_loss / log_loss_denom).asnumpy()
                     logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, '
                                  'throughput={:.2f}K wps, wc={:.2f}K, LR={}'
-                                 .format(epoch_id, processed_batch_num, num_batches,
+                                 .format(epoch_id, processed_batch_num, len(train_data_loader),
                                          log_avg_loss, np.exp(log_avg_loss),
                                          wps / 1000, log_wc / 1000, trainer.learning_rate))
                     log_start_time = time.time()

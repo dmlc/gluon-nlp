@@ -297,7 +297,7 @@ class FixedSizeSampler(BaseSampler):
             # try to insert new sample to the batch
             batch_num_tokens = (len(batch) + 1) * batch_max_sample_len.sum()
             if (self._max_sentences > 0 and len(batch) + 1 > self._max_sentences) or \
-               (self._max_tokens > 0 and np.any(batch_num_tokens > self._max_tokens)):
+               (self._max_tokens > 0 and batch_num_tokens > self._max_tokens):
                 self._batches.append(batch)
                 batch = []
                 batch_max_sample_len = self._lengths[index]
