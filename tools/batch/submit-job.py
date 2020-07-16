@@ -15,16 +15,14 @@ parser.add_argument('--profile', help='profile name of aws account.', type=str,
 parser.add_argument('--region', help='Default region when creating new connections', type=str,
                     default=None)
 parser.add_argument('--name', help='name of the job', type=str, default='dummy')
-parser.add_argument('--job-queue', help='name of the job queue to submit this job', type=str,
-                    default='gluon-nlp-jobs')
-parser.add_argument('--job-definition', help='name of the job job definition', type=str,
-                    default='gluon-nlp-jobs:8')
+parser.add_argument('--job-type', help='type of job to submit.', type=str,
+                    choices=['g4dn.4x', 'g4dn.8x', 'g4dn.16x'], default='g4dn.4x')
 parser.add_argument('--source-ref',
-                    help='ref in GluonNLP main github. e.g. master, refs/pull/500/head',
-                    type=str, default='master')
+                    help='ref in GluonNLP main github. e.g. numpy, refs/pull/500/head',
+                    type=str, default='numpy')
 parser.add_argument('--work-dir',
-                    help='working directory inside the repo. e.g. scripts/sentiment_analysis',
-                    type=str, default='scripts/bert')
+                    help='working directory inside the repo. e.g. scripts/preprocess',
+                    type=str, default='scripts/preprocess')
 parser.add_argument('--saved-output',
                     help='output to be saved, relative to working directory. '
                          'it can be either a single file or a directory',
@@ -32,9 +30,6 @@ parser.add_argument('--saved-output',
 parser.add_argument('--save-path',
                     help='s3 path where files are saved.',
                     type=str, default='batch/temp/{}'.format(datetime.now().isoformat()))
-parser.add_argument('--conda-env',
-                    help='conda environment preset to use.',
-                    type=str, default='gpu/py3')
 parser.add_argument('--command', help='command to run', type=str,
                     default='git rev-parse HEAD | tee stdout.log')
 parser.add_argument('--remote',
@@ -43,6 +38,7 @@ parser.add_argument('--remote',
 parser.add_argument('--wait', help='block wait until the job completes. '
                     'Non-zero exit code if job fails.', action='store_true')
 parser.add_argument('--timeout', help='job timeout in seconds', default=None, type=int)
+
 
 args = parser.parse_args()
 
@@ -87,14 +83,20 @@ def nowInMillis():
     endTime = long(total_seconds(datetime.utcnow() - datetime(1970, 1, 1))) * 1000
     return endTime
 
+job_definitions = {
+    'g4dn.4x': 'gluon-nlp-1-jobs:5',
+    'g4dn.8x': 'gluon-nlp-1-jobs:4',
+    'g4dn.16x': 'gluon-nlp-1-jobs:3'
+}
 
 def main():
     spin = ['-', '/', '|', '\\', '-', '/', '|', '\\']
     logGroupName = '/aws/batch/job'
 
     jobName = re.sub('[^A-Za-z0-9_\-]', '', args.name)[:128]  # Enforce AWS Batch jobName rules
-    jobQueue = args.job_queue
-    jobDefinition = args.job_definition
+    jobType = args.job_type
+    jobQueue = jobType.split('.')[0]
+    jobDefinition = job_definitions[jobType]
     command = args.command.split()
     wait = args.wait
 
@@ -103,7 +105,6 @@ def main():
         'WORK_DIR': args.work_dir,
         'SAVED_OUTPUT': args.saved_output,
         'SAVE_PATH': args.save_path,
-        'CONDA_ENV': args.conda_env,
         'COMMAND': args.command,
         'REMOTE': args.remote
     }
