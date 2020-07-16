@@ -266,7 +266,7 @@ class SortedSampler(BaseSampler):
         return len(self._sorted_ids)
 
 
-class RandomSampler(BaseSampler):
+class FixedSizeSampler():
     """
     # TODO
     """

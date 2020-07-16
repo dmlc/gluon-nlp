@@ -46,7 +46,7 @@ from gluonnlp.models.transformer import TransformerNMTModel
 from gluonnlp.utils.misc import logging_config, AverageSGDTracker, count_parameters,\
     md5sum, grouper
 from gluonnlp.data.sampler import *
-from gluonnlp.data.sampler import RandomSampler
+from gluonnlp.data.sampler import FixedSizeSampler
 import gluonnlp.data.batchify as bf
 from gluonnlp.data import Vocab
 from gluonnlp.data import tokenizers
@@ -124,6 +124,7 @@ def parse_args():
                              '"exp": the width of bucket increases exponentially')
     parser.add_argument('--bucket_ratio', type=float, default=0.0,
                         help='Ratio for increasing the throughput of the bucketing')
+    parser.add_argument('--sampler', type=int, default=-1)
     parser.add_argument('--max_tokens', type=int, default=-1)
 #    parser.add_argument('--max_sequences') # TODO
     parser.add_argument('--lr', type=float, default=0.002,
@@ -346,7 +347,7 @@ def train(args):
 #                                             use_average_length=True,
 #                                             bucket_scheme=bucket_scheme,
 #                                             seed=args.seed)
-    train_batch_sampler = RandomSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
+    train_batch_sampler = FixedSizeSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
                                                  max_tokens=args.max_tokens,
                                                  #max_sequence=args.max_sequence,
                                                  seed=args.seed)
