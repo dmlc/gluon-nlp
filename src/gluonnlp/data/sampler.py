@@ -280,6 +280,7 @@ class FixedSizeSampler(BaseSampler):
         self._max_tokens = max_tokens
         self._max_sentences = max_sentences
         self._seed = seed
+        self._batches = []
 
     def __iter__(self):
         if self._seed > 0:
@@ -296,16 +297,17 @@ class FixedSizeSampler(BaseSampler):
             batch_num_tokens = (len(batch) + 1) * batch_max_sample_len.sum()
             if (self._max_sentences > 0 and len(batch) + 1 > self._max_sentences) or \
                (self._max_tokens > 0 and np.any(batch_num_tokens > self._max_tokens)):
-                yield self._indices[batch]
+                self._batches.append(batch)
                 batch = []
                 batch_max_sample_len = self._lengths[index]
             batch.append(index)
         if len(batch) > 0:
+            self._batches.append(batch)
+        for batch in self._batches:
             yield self._indices[batch]
 
     def __len__(self):
-        # TODO warning
-        return 0
+        return len(self._batches)
 
 #    def __repr__(self):
 #        # TODO
