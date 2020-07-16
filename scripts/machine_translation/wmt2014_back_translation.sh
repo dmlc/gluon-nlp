@@ -138,7 +138,7 @@ python train_transformer.py \
 
 # TODO nlp_average_checkpoint
 nlp_nmt average_checkpoint --prefix range() \
-    --suffix \
+    --suffix .params \
     --save-path backtranslation_transformer_wmt2014_ende_${SUBWORD_ALGO}/average.params
 
 # Finally, we can evaluate the model

@@ -123,6 +123,8 @@ def parse_args():
                              '"exp": the width of bucket increases exponentially')
     parser.add_argument('--bucket_ratio', type=float, default=0.0,
                         help='Ratio for increasing the throughput of the bucketing')
+    parser.add_argument('--max_tokens', type=int, default=-1)
+#    parser.add_argument('--max_sequences') # TODO
     parser.add_argument('--lr', type=float, default=0.002,
                         help='The learning rate at the end of the warmup stage. '
                              'If it is not given, we will use the formula suggested in the '
@@ -335,14 +337,18 @@ def train(args):
         raise NotImplementedError
     batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
     # TODO(sxjscience) Support auto-bucket-size tuning
-    train_batch_sampler = FixedBucketSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
-                                             batch_size=args.batch_size,
-                                             num_buckets=args.num_buckets,
-                                             ratio=args.bucket_ratio,
-                                             shuffle=True,
-                                             use_average_length=True,
-                                             bucket_scheme=bucket_scheme,
-                                             seed=args.seed)
+#    train_batch_sampler = FixedBucketSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
+#                                             batch_size=args.batch_size,
+#                                             num_buckets=args.num_buckets,
+#                                             ratio=args.bucket_ratio,
+#                                             shuffle=True,
+#                                             use_average_length=True,
+#                                             bucket_scheme=bucket_scheme,
+#                                             seed=args.seed)
+    train_batch_sampler = RandomSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
+                                                 max_tokens=args.max_tokens,
+                                                 #max_sequence=args.max_sequence,
+                                                 seed=args.seed)
     train_data_loader = gluon.data.DataLoader(data_train,
                                               batch_sampler=train_batch_sampler,
                                               batchify_fn=batchify_fn,

@@ -266,6 +266,48 @@ class SortedSampler(BaseSampler):
         return len(self._sorted_ids)
 
 
+class RandomSampler(BaseSampler):
+    """
+    # TODO
+    """
+    def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
+                 max_tokens: int = -1, max_sequence: int = -1,
+                 seed: Optional[int] = -1):
+        assert len(lengths) > 0, 'RandomSampler does not support empty lengths.'
+        assert max_tokens > 0 or max_sequence > 0, 'One of max_tokens and max_sequence must larger than 0'
+        self._lengths = np.array(lengths, dtype=np.int64)
+        self._indices = np.array(range(len(lengths)), dtype=np.int64)
+        if seed > 0:
+            rng = np.random.RandomState(seed)
+            rng.shuffle(self._indices)
+        self._batch_infos = []
+        batch = []
+        dims = self._lengths.ndim
+        max_tokens = np.array([max_tokens] * dims)
+        # max len in a batch
+        batch_max_sample_len = np.array([0] * dims)
+        for index in self._indices:
+            batch_max_sample_len = np.stack([batch_max_sample_len, self._lengths[index]],
+                                            axis=1).max(axis=1)
+            # try to insert new sample to the batch
+            batch_num_tokens = (len(batch) + 1) * batch_max_sample_len
+            if (max_sequence > 0 and len(batch) + 1 > max_sequence) or \
+               (max_tokens[0] > 0 and np.any(batch_num_tokens > max_tokens)):
+                self._batch_infos.append(np.array(batch))
+                batch = []
+                batch_max_sample_len = self._lengths[index]
+            batch.append(index)
+        if len(batch) > 0:
+            self._batch_infos.append(np.array(batch))
+
+    def __iter__(self):
+        for batch_info in self._batch_infos:
+            yield self._indices[batch_info]
+
+    def __len__(self):
+        return len(self._batch_infos)
+
+
 # TODO(?) Add rollover flag to BucketSampler, issue: https://github.com/dmlc/gluon-nlp/issues/982
 # TODO(?) Add max_tokens option to BucketSampler and SortedSampler to make it similar to Fairseq: https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
 class FixedBucketSampler(BaseSampler):
