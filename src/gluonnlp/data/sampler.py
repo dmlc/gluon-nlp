@@ -286,6 +286,7 @@ class FixedSizeSampler(BaseSampler):
         if self._seed > 0:
             rng = np.random.RandomState(self._seed)
             rng.shuffle(self._indices)
+            self._batches = []
         batch = []
         dims = self._lengths.ndim
         # max len in a batch
