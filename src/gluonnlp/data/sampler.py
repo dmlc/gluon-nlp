@@ -275,38 +275,49 @@ class RandomSampler(BaseSampler):
                  seed: Optional[int] = -1):
         assert len(lengths) > 0, 'RandomSampler does not support empty lengths.'
         assert max_tokens > 0 or max_sequence > 0, 'One of max_tokens and max_sequence must larger than 0'
-        self._lengths = np.array(lengths, dtype=np.int64)
-        self._indices = np.array(range(len(lengths)), dtype=np.int64)
-        if seed > 0:
-            rng = np.random.RandomState(seed)
+        self._lengths = np.array(lengths)
+        self._indices = np.array(range(len(lengths)))
+        self._max_tokens = max_tokens
+        self._max_sequence = max_sequence
+        self._seed = seed
+
+    def __iter__(self):
+        if self._seed > 0:
+            rng = np.random.RandomState(self._seed)
             rng.shuffle(self._indices)
-        self._batch_infos = []
         batch = []
         dims = self._lengths.ndim
-        max_tokens = np.array([max_tokens] * dims)
         # max len in a batch
         batch_max_sample_len = np.array([0] * dims)
         for index in self._indices:
-            batch_max_sample_len = np.stack([batch_max_sample_len, self._lengths[index]],
-                                            axis=1).max(axis=1)
+            batch_max_sample_len = np.max([batch_max_sample_len, self._lengths[index]],
+                                            axis=0)
             # try to insert new sample to the batch
-            batch_num_tokens = (len(batch) + 1) * batch_max_sample_len
-            if (max_sequence > 0 and len(batch) + 1 > max_sequence) or \
-               (max_tokens[0] > 0 and np.any(batch_num_tokens > max_tokens)):
-                self._batch_infos.append(np.array(batch))
+            batch_num_tokens = (len(batch) + 1) * batch_max_sample_len.sum()
+            if (self._max_sequence > 0 and len(batch) + 1 > self._max_sequence) or \
+               (self._max_tokens > 0 and np.any(batch_num_tokens > self._max_tokens)):
+                yield self._indices[batch]
                 batch = []
                 batch_max_sample_len = self._lengths[index]
             batch.append(index)
         if len(batch) > 0:
-            self._batch_infos.append(np.array(batch))
+            yield self._indices[batch]
 
-    def __iter__(self):
-        for batch_info in self._batch_infos:
-            yield self._indices[batch_info]
-
-    def __len__(self):
-        return len(self._batch_infos)
-
+#    def __repr__(self):
+#        # TODO
+#        ret = '{name}(\n' \
+#            '  sample_num={sample_num}, batch_num={batch_num}\n' \
+#            '  key={bucket_keys}\n' \
+#            '  cnt={bucket_counts}\n' \
+#            '  batch_size={bucket_batch_sizes}\n'\
+#            ')'\
+#            .format(name=self.__class__.__name__,
+#                    sample_num=len(self._lengths),
+#                    batch_num=len(self._batch_infos),
+#                    bucket_keys=self._bucket_keys,
+#                    bucket_counts=[len(sample_ids) for sample_ids in self._bucket_sample_ids],
+#                    bucket_batch_sizes=self._bucket_batch_sizes)
+#        return ret
 
 # TODO(?) Add rollover flag to BucketSampler, issue: https://github.com/dmlc/gluon-nlp/issues/982
 # TODO(?) Add max_tokens option to BucketSampler and SortedSampler to make it similar to Fairseq: https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
