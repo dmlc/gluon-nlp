@@ -266,7 +266,7 @@ class SortedSampler(BaseSampler):
         return len(self._sorted_ids)
 
 
-class FixedSizeSampler():
+class FixedSizeSampler(BaseSampler):
     """
     # TODO
     """
@@ -302,6 +302,9 @@ class FixedSizeSampler():
             batch.append(index)
         if len(batch) > 0:
             yield self._indices[batch]
+
+    def __len__(self):
+        return -1
 
 #    def __repr__(self):
 #        # TODO

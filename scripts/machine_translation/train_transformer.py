@@ -126,7 +126,7 @@ def parse_args():
                         help='Ratio for increasing the throughput of the bucketing')
     parser.add_argument('--sampler', type=int, default=-1)
     parser.add_argument('--max_tokens', type=int, default=-1)
-#    parser.add_argument('--max_sequences') # TODO
+    parser.add_argument('--max_sequences', type=int, default=-1) # TODO
     parser.add_argument('--lr', type=float, default=0.002,
                         help='The learning rate at the end of the warmup stage. '
                              'If it is not given, we will use the formula suggested in the '
@@ -349,7 +349,7 @@ def train(args):
 #                                             seed=args.seed)
     train_batch_sampler = FixedSizeSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
                                                  max_tokens=args.max_tokens,
-                                                 #max_sequence=args.max_sequence,
+                                                 max_sequence=args.max_sequence,
                                                  seed=args.seed)
     train_data_loader = gluon.data.DataLoader(data_train,
                                               batch_sampler=train_batch_sampler,
