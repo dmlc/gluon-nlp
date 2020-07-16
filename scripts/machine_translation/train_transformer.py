@@ -50,7 +50,7 @@ from gluonnlp.data.sampler import (
     LinearWidthBucket,
     ExpWidthBucket,
     FixedBucketSampler,
-    FixedSizeSampler
+    BoundedBudgetSampler
 )
 import gluonnlp.data.batchify as bf
 from gluonnlp.data import Vocab
@@ -117,7 +117,7 @@ def parse_args():
                              'You may select a yml file or use the prebuild configurations.')
     parser.add_argument('--label_smooth_alpha', type=float, default=0.1,
                         help='Weight of label smoothing')
-    parser.add_argument('--sampler', type=str, choices=['FixedSizeSampler', 'FixedBucketSampler'],
+    parser.add_argument('--sampler', type=str, choices=['BoundedBudgetSampler', 'FixedBucketSampler'],
                         default='FixedBucketSampler', help='Type of sampler')
     parser.add_argument('--batch_size', type=int, default=2700,
                         help='Batch size. Number of tokens per gpu in a minibatch.')
@@ -132,9 +132,9 @@ def parse_args():
     parser.add_argument('--bucket_ratio', type=float, default=0.0,
                         help='Ratio for increasing the throughput of the bucketing')
     parser.add_argument('--max_tokens', type=int, default=-1,
-                        help='max tokens num of each batch, applicable while using FixedSizeSampler')
+                        help='max tokens num of each batch, applicable while using BoundedBudgetSampler')
     parser.add_argument('--max_sentences', type=int, default=-1,
-                        help='max sentences num of each batch, applicable while using FixedSizeSampler')
+                        help='max sentences num of each batch, applicable while using BoundedBudgetSampler')
     parser.add_argument('--lr', type=float, default=0.002,
                         help='The learning rate at the end of the warmup stage. '
                              'If it is not given, we will use the formula suggested in the '
@@ -337,8 +337,8 @@ def train(args):
                             {'learning_rate': args.lr, 'beta1': 0.9,
                              'beta2': 0.98, 'epsilon': 1e-9, 'lr_scheduler': lr_scheduler})
     # Load Data
-    if args.sampler == 'FixedSizeSampler':
-        train_batch_sampler = FixedSizeSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
+    if args.sampler == 'BoundedBudgetSampler':
+        train_batch_sampler = BoundedBudgetSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
                                                      max_tokens=args.max_tokens,
                                                      max_sentences=args.max_sentences,
                                                      seed=args.seed)

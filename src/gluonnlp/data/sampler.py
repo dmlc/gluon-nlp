@@ -266,8 +266,8 @@ class SortedSampler(BaseSampler):
         return len(self._sorted_ids)
 
 
-class FixedSizeSampler(BaseSampler):
-    r"""Assign each data sample to a fixed size batches.
+class BoundedBudgetSampler(BaseSampler):
+    r"""Assign each data sample to bounded budget batches.
     see https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
 
     Parameters
@@ -284,7 +284,7 @@ class FixedSizeSampler(BaseSampler):
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_tokens: int = -1, max_sentences: int = -1,
                  seed: Optional[int] = -1):
-        assert len(lengths) > 0, 'FixedSizeSampler does not support empty lengths.'
+        assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
         assert max_tokens > 0 or max_sentences > 0, 'One of max_tokens and max_sentences must be larger than 0'
         self._lengths = np.array(lengths)
         self._indices = np.array(range(len(lengths)))
