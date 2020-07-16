@@ -271,14 +271,14 @@ class FixedSizeSampler(BaseSampler):
     # TODO
     """
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
-                 max_tokens: int = -1, max_sequence: int = -1,
+                 max_tokens: int = -1, max_sentences: int = -1,
                  seed: Optional[int] = -1):
         assert len(lengths) > 0, 'RandomSampler does not support empty lengths.'
-        assert max_tokens > 0 or max_sequence > 0, 'One of max_tokens and max_sequence must larger than 0'
+        assert max_tokens > 0 or max_sentences > 0, 'One of max_tokens and max_sentences must larger than 0'
         self._lengths = np.array(lengths)
         self._indices = np.array(range(len(lengths)))
         self._max_tokens = max_tokens
-        self._max_sequence = max_sequence
+        self._max_sentences = max_sentences
         self._seed = seed
 
     def __iter__(self):
@@ -294,7 +294,7 @@ class FixedSizeSampler(BaseSampler):
                                             axis=0)
             # try to insert new sample to the batch
             batch_num_tokens = (len(batch) + 1) * batch_max_sample_len.sum()
-            if (self._max_sequence > 0 and len(batch) + 1 > self._max_sequence) or \
+            if (self._max_sentences > 0 and len(batch) + 1 > self._max_sentences) or \
                (self._max_tokens > 0 and np.any(batch_num_tokens > self._max_tokens)):
                 yield self._indices[batch]
                 batch = []
