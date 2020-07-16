@@ -45,8 +45,13 @@ from mxnet import gluon
 from gluonnlp.models.transformer import TransformerNMTModel
 from gluonnlp.utils.misc import logging_config, AverageSGDTracker, count_parameters,\
     md5sum, grouper
-from gluonnlp.data.sampler import *
-from gluonnlp.data.sampler import FixedSizeSampler
+from gluonnlp.data.sampler import (
+    ConstWidthBucket,
+    LinearWidthBucket,
+    ExpWidthBucket,
+    FixedBucketSampler,
+    FixedSizeSampler
+)
 import gluonnlp.data.batchify as bf
 from gluonnlp.data import Vocab
 from gluonnlp.data import tokenizers
@@ -329,28 +334,31 @@ def train(args):
                             {'learning_rate': args.lr, 'beta1': 0.9,
                              'beta2': 0.98, 'epsilon': 1e-9, 'lr_scheduler': lr_scheduler})
     # Load Data
-    if args.bucket_scheme == 'constant':
-        bucket_scheme = ConstWidthBucket()
-    elif args.bucket_scheme == 'linear':
-        bucket_scheme = LinearWidthBucket()
-    elif args.bucket_scheme == 'exp':
-        bucket_scheme = ExpWidthBucket(bucket_len_step=1.2)
+    if args.max_tokens > 0:
+        train_batch_sampler = FixedSizeSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
+                                                     max_tokens=args.max_tokens,
+                                                     max_sentences=args.max_sentences,
+                                                     seed=args.seed)
     else:
-        raise NotImplementedError
-    batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
-    # TODO(sxjscience) Support auto-bucket-size tuning
-#    train_batch_sampler = FixedBucketSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
-#                                             batch_size=args.batch_size,
-#                                             num_buckets=args.num_buckets,
-#                                             ratio=args.bucket_ratio,
-#                                             shuffle=True,
-#                                             use_average_length=True,
-#                                             bucket_scheme=bucket_scheme,
-#                                             seed=args.seed)
-    train_batch_sampler = FixedSizeSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
-                                                 max_tokens=args.max_tokens,
-                                                 max_sentences=args.max_sentences,
+        if args.bucket_scheme == 'constant':
+            bucket_scheme = ConstWidthBucket()
+        elif args.bucket_scheme == 'linear':
+            bucket_scheme = LinearWidthBucket()
+        elif args.bucket_scheme == 'exp':
+            bucket_scheme = ExpWidthBucket(bucket_len_step=1.2)
+        else:
+            raise NotImplementedError
+        batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
+        # TODO(sxjscience) Support auto-bucket-size tuning
+        train_batch_sampler = FixedBucketSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
+                                                 batch_size=args.batch_size,
+                                                 num_buckets=args.num_buckets,
+                                                 ratio=args.bucket_ratio,
+                                                 shuffle=True,
+                                                 use_average_length=True,
+                                                 bucket_scheme=bucket_scheme,
                                                  seed=args.seed)
+
     train_data_loader = gluon.data.DataLoader(data_train,
                                               batch_sampler=train_batch_sampler,
                                               batchify_fn=batchify_fn,

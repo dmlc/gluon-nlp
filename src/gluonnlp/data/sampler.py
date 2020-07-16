@@ -267,14 +267,25 @@ class SortedSampler(BaseSampler):
 
 
 class FixedSizeSampler(BaseSampler):
-    """
-    # TODO
+    r"""Assign each data sample to a fixed size batches.
+    see https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
+
+    Parameters
+    ----------
+    lengths
+        The length of the sequences in the input data sample.
+    max_tokens
+        max tokens num of each batch
+    max_sentences
+        max sentences num of each batch
+    seed
+        The seed of the sampler, set seed = -1 to disable random shuffle
     """
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_tokens: int = -1, max_sentences: int = -1,
                  seed: Optional[int] = -1):
-        assert len(lengths) > 0, 'RandomSampler does not support empty lengths.'
-        assert max_tokens > 0 or max_sentences > 0, 'One of max_tokens and max_sentences must larger than 0'
+        assert len(lengths) > 0, 'FixedSizeSampler does not support empty lengths.'
+        assert max_tokens > 0 or max_sentences > 0, 'One of max_tokens and max_sentences must be larger than 0'
         self._lengths = np.array(lengths)
         self._indices = np.array(range(len(lengths)))
         self._max_tokens = max_tokens
@@ -288,15 +299,17 @@ class FixedSizeSampler(BaseSampler):
             rng.shuffle(self._indices)
             self._batches = []
         batch = []
-        dims = self._lengths.ndim
         # max len in a batch
-        batch_max_sample_len = np.array([0] * dims)
+        batch_max_sample_len = np.array([0] * self._lengths.ndim)
         for index in self._indices:
-            batch_max_sample_len = np.max([batch_max_sample_len, self._lengths[index]],
-                                            axis=0)
+            batch_max_sample_len = np.max(
+                [batch_max_sample_len, self._lengths[index]],
+                axis=0
+            )
             # try to insert new sample to the batch
-            batch_num_tokens = (len(batch) + 1) * batch_max_sample_len.sum()
-            if (self._max_sentences > 0 and len(batch) + 1 > self._max_sentences) or \
+            batch_num_sentences = len(batch) + 1
+            batch_num_tokens = batch_num_sentences * batch_max_sample_len.sum()
+            if (self._max_sentences > 0 and batch_num_sentences > self._max_sentences) or \
                (self._max_tokens > 0 and batch_num_tokens > self._max_tokens):
                 self._batches.append(batch)
                 batch = []
@@ -310,21 +323,16 @@ class FixedSizeSampler(BaseSampler):
     def __len__(self):
         return len(self._batches)
 
-#    def __repr__(self):
-#        # TODO
-#        ret = '{name}(\n' \
-#            '  sample_num={sample_num}, batch_num={batch_num}\n' \
-#            '  key={bucket_keys}\n' \
-#            '  cnt={bucket_counts}\n' \
-#            '  batch_size={bucket_batch_sizes}\n'\
-#            ')'\
-#            .format(name=self.__class__.__name__,
-#                    sample_num=len(self._lengths),
-#                    batch_num=len(self._batch_infos),
-#                    bucket_keys=self._bucket_keys,
-#                    bucket_counts=[len(sample_ids) for sample_ids in self._bucket_sample_ids],
-#                    bucket_batch_sizes=self._bucket_batch_sizes)
-#        return ret
+    def __repr__(self):
+        ret = '{name}(\n' \
+            '  sample_num={sample_num}, batch_num={batch_num}\n' \
+            '  batch_num={batch_num}\n'\
+            ')'\
+            .format(name=self.__class__.__name__,
+                    sample_num=len(self._lengths),
+                    batch_num=len(self._batches))
+        return ret
+
 
 # TODO(?) Add rollover flag to BucketSampler, issue: https://github.com/dmlc/gluon-nlp/issues/982
 # TODO(?) Add max_tokens option to BucketSampler and SortedSampler to make it similar to Fairseq: https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
