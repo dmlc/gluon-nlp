@@ -14,9 +14,11 @@ class ModelForQABasic(HybridBlock):
     another dense layer to map the contextual embeddings to the start scores and end scores.
 
     """
-    def __init__(self, backbone, weight_initializer=None, bias_initializer=None):
+    def __init__(self, backbone, weight_initializer=None, bias_initializer=None,
+                 use_segmentation=True):
         super().__init__()
         self.backbone = backbone
+        self.use_segmentation = use_segmentation
         self.qa_outputs = nn.Dense(units=2, flatten=False,
                                    weight_initializer=weight_initializer,
                                    bias_initializer=bias_initializer)
@@ -50,8 +52,11 @@ class ModelForQABasic(HybridBlock):
             The log-softmax scores that the position is the end position.
         """
         # Get contextual embedding with the shape (batch_size, sequence_length, C)
-        contextual_embedding = self.backbone(tokens, token_types, valid_length)
-        scores = self.qa_outputs(contextual_embedding)
+        if self.use_segmentation:
+            contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+        else:
+            contextual_embeddings = self.backbone(tokens, valid_length)
+        scores = self.qa_outputs(contextual_embeddings)
         start_scores = scores[:, :, 0]
         end_scores = scores[:, :, 1]
         start_logits = masked_logsoftmax(F, start_scores, mask=p_mask, axis=-1)
@@ -74,9 +79,11 @@ class ModelForQAConditionalV1(HybridBlock):
 
     """
     def __init__(self, backbone, units=768, layer_norm_eps=1E-12, dropout_prob=0.1,
-                 activation='tanh', weight_initializer=None, bias_initializer=None):
+                 activation='tanh', weight_initializer=None, bias_initializer=None,
+                 use_segmentation=True):
         super().__init__()
         self.backbone = backbone
+        self.use_segmentation = use_segmentation
         self.start_scores = nn.Dense(1, flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer)

@@ -50,7 +50,7 @@ python run_squad.py \
     --epochs 3 \
     --lr 2e-5 \
     --warmup_ratio 0.1 \
-    --wd=0.01 \
+    --wd 0.01 \
     --max_seq_length 512 \
     --max_grad_norm 0.1 \
     --overwrite_cache \
@@ -60,9 +60,9 @@ or evaluate SQuAD1.1 based on a SQuAD2.0 fine-tuned checkpoint as
 ```bash
 python run_squad.py \
     --model_name ${MODEL_NAME} \
-    --data_dir=squad \
-    --output_dir=${OUT_DIR} \
-    --param_checkpoint=${CKPT_PATH} \
+    --data_dir squad \
+    --output_dir ${OUT_DIR} \
+    --param_checkpoint ${CKPT_PATH} \
     --version 2.0 \
     --do_eval \
     --gpus 0,1,2,3 \
@@ -90,11 +90,35 @@ python run_squad.py \
     --lr 3e-4 \
     --layerwise_decay 0.8 \
     --warmup_ratio 0.1 \
-    --wd=0 \
+    --wd 0 \
     --max_seq_length 512 \
     --max_grad_norm 0.1 \
 ```
 
+For RoBERTa and XLMR, we remove 'segment_ids' and replace [CLS] and [SEP] with
+<bos> and <eos> which stand for the beginning and end of sentences specifically.
+
+```bash
+VERSION=2.0  # Either 2.0 or 1.1
+MODEL_NAME=fairseq_roberta_large
+
+python run_squad.py \
+    --model_name ${MODEL_NAME} \
+    --data_dir squad \
+    --output_dir fintune_${MODEL_NAME}_squad_${VERSION} \
+    --version ${VERSION} \
+    --do_eval \
+    --do_train \
+    --batch_size 2 \
+    --num_accumulated 6 \
+    --gpus 0,1,2,3 \
+    --epochs 3 \
+    --lr 3e-5 \
+    --warmup_ratio 0.2 \
+    --wd 0.01 \
+    --max_seq_length 512 \
+    --max_grad_norm 0.1 \
+```
 
 ### Results
 We reproduced the ALBERT model which is released by Google, and fine-tune the the SQuAD with single models. ALBERT Version 2 are pre-trained without the dropout mechanism but with extra training steps compared to the version 1 (see the [original paper](https://arxiv.org/abs/1909.11942) for details).
@@ -119,7 +143,7 @@ For reference, we've included the results from Google's Original Experiments
 |ALBERT xlarge (googleresearch/albert)  | 92.9/86.4     | 87.9/84.1    |
 |ALBERT xxlarge (googleresearch/albert) | 94.6/89.1     | 89.8/86.9    |
 
-For BERT and ELECTRA model, the results on SQuAD1.1 and SQuAD2.0 are given as follows.
+For the reset pretrained models, the results on SQuAD1.1 and SQuAD2.0 are given as follows.
 
 | Model Name    | SQuAD1.1 dev  | SQuAD2.0 dev |
 |--------------------------|---------------|--------------|
@@ -128,8 +152,9 @@ For BERT and ELECTRA model, the results on SQuAD1.1 and SQuAD2.0 are given as fo
 |ELECTRA small             | 85.42/78.95   | 74.44/71.86  |        
 |ELECTRA base              | 92.63/87.34   | 86.34/83.62  |
 |ELECTRA large             | 94.95/89.94   | 90.59/88.13  |
+|RoBERTa larger            | 88.86/94.58   | 85.93/89.01  |
 
-For reference, we have also included the results of Google's original version
+For reference, we have also included the results of original version from Google and Fairseq
 
 | Model Name               | SQuAD1.1 dev   | SQuAD2.0 dev  |
 |--------------------------|----------------|---------------|
@@ -138,5 +163,7 @@ For reference, we have also included the results of Google's original version
 |Google ELECTRA base       |     - /75.8    |     - /70.1   |
 |Google ELECTRA base       |     - /86.8    |     - /83.7   |
 |Google ELECTRA large      |     - /89.7    |     - /88.1   |
+|Fairseq RoBERTa large     |   88.9/94.6    |	86.5/89.4   |
+
 
 All experiments done on AWS P3.8xlarge (4 x NVIDIA Tesla V100 16 GB)
