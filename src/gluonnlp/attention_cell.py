@@ -388,7 +388,8 @@ def multi_head_dot_attn(F, query, key, value,
                         scaled: bool = True, normalized: bool = False,
                         eps: float = 1E-6, query_head_units: Optional[int] = None,
                         layout: str = 'NKT',
-                        use_einsum: bool = False):
+                        use_einsum: bool = False,
+                        dtype=np.float32):
     """Multihead dot product attention between the query, key, value.
 
     scaled is False, normalized is False:
@@ -497,7 +498,7 @@ def multi_head_dot_attn(F, query, key, value,
             scores = scores + edge_scores
         if scaled:
             scores = scores / scale
-        attn_weights = masked_softmax(F, scores, mask, axis=-1)
+        attn_weights = masked_softmax(F, scores, mask, dtype=dtype, axis=-1)
         attn_weights = F.npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (B, N, L_mem, C_V) --> (B, L_query, N * C_V)
@@ -522,7 +523,7 @@ def multi_head_dot_attn(F, query, key, value,
             scores = scores + edge_scores
         if scaled:
             scores = scores / scale
-        attn_weights = masked_softmax(F, scores, mask)
+        attn_weights = masked_softmax(F, scores, mask, dtype=dtype)
         attn_weights = F.npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (B, L_mem, N, C_V) --> (B, L_query, N * C_V)
@@ -553,7 +554,7 @@ def multi_head_dot_attn(F, query, key, value,
             scores = scores + edge_scores
         if scaled:
             scores = scores / scale
-        attn_weights = masked_softmax(F, scores, mask)
+        attn_weights = masked_softmax(F, scores, mask, dtype=dtype)
         attn_weights = F.npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (L_mem, B, N, C_V) --> (L_query, B, N * C_V)
@@ -627,7 +628,8 @@ class MultiHeadAttentionCell(HybridBlock):
                                    scaled=self._scaled, normalized=self._normalized,
                                    eps=self._eps,
                                    query_head_units=self._query_head_units,
-                                   layout=self._layout, use_einsum=self._use_einsum)
+                                   layout=self._layout, use_einsum=self._use_einsum,
+                                   dtype=self._dtype)
 
     def __repr__(self):
         s = '{name}(\n' \
