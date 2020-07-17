@@ -615,10 +615,11 @@ class MobileBertModel(HybridBlock):
     @classmethod
     def from_cfg(cls,
                  cfg,
+                 use_pooler=True,
+                 dtype='float32',
                  use_bottleneck=True,
                  trigram_embed=True,
-                 use_pooler=True,
-                 classifier_activation=False):
+                 classifier_activation=False) -> 'MobileBertModel':
         cfg = MobileBertModel.get_cfg().clone_merge(cfg)
         assert cfg.VERSION == 1, 'Wrong version!'
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
@@ -641,7 +642,7 @@ class MobileBertModel(HybridBlock):
                    activation=cfg.MODEL.activation,
                    normalization=cfg.MODEL.normalization,
                    layer_norm_eps=cfg.MODEL.layer_norm_eps,
-                   dtype=cfg.MODEL.dtype,
+                   dtype=dtype,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,

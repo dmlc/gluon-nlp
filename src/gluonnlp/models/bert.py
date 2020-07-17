@@ -386,7 +386,7 @@ class BertModel(HybridBlock):
         return cfg
 
     @classmethod
-    def from_cfg(cls, cfg, use_pooler=True, dtype='float32'):
+    def from_cfg(cls, cfg, use_pooler=True, dtype='float32') -> 'BertModel':
         cfg = BertModel.get_cfg().clone_merge(cfg)
         assert cfg.VERSION == 1, 'Wrong version!'
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)

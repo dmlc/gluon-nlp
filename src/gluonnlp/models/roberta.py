@@ -293,9 +293,10 @@ class RobertaModel(HybridBlock):
     def from_cfg(cls,
                  cfg,
                  use_pooler=True,
+                 dtype='float32',
                  classifier_activation=False,
                  encoder_normalize_before=True,
-                 output_all_encodings=False):
+                 output_all_encodings=False) -> 'RobertaModel':
         cfg = RobertaModel.get_cfg().clone_merge(cfg)
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
@@ -315,7 +316,7 @@ class RobertaModel(HybridBlock):
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
-                   dtype=cfg.MODEL.dtype,
+                   dtype=dtype,
                    use_pooler=use_pooler,
                    encoder_normalize_before=encoder_normalize_before,
                    output_all_encodings=output_all_encodings)

@@ -375,7 +375,7 @@ class ElectraModel(HybridBlock):
         return cfg
 
     @classmethod
-    def from_cfg(cls, cfg, use_pooler=True):
+    def from_cfg(cls, cfg, use_pooler=True, dtype='float32') -> 'ElectraModel':
         cfg = ElectraModel.get_cfg().clone_merge(cfg)
         assert cfg.VERSION == 1, 'Wrong version!'
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
@@ -394,7 +394,7 @@ class ElectraModel(HybridBlock):
                    pos_embed_type=cfg.MODEL.pos_embed_type,
                    activation=cfg.MODEL.activation,
                    layer_norm_eps=cfg.MODEL.layer_norm_eps,
-                   dtype=cfg.MODEL.dtype,
+                   dtype=dtype,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
