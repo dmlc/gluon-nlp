@@ -16,7 +16,8 @@ parser.add_argument('--region', help='Default region when creating new connectio
                     default=None)
 parser.add_argument('--name', help='name of the job', type=str, default='dummy')
 parser.add_argument('--job-type', help='type of job to submit.', type=str,
-                    choices=['g4dn.4x', 'g4dn.8x', 'g4dn.16x'], default='g4dn.4x')
+                    choices=['g4dn.4x', 'g4dn.8x', 'g4dn.12x', 'g4dn.16x',
+                             'p3.2x', 'p3.8x', 'p3.16x', 'p3dn.24x'], default='g4dn.4x')
 parser.add_argument('--source-ref',
                     help='ref in GluonNLP main github. e.g. numpy, refs/pull/500/head',
                     type=str, default='numpy')
@@ -86,7 +87,12 @@ def nowInMillis():
 job_definitions = {
     'g4dn.4x': 'gluon-nlp-1-jobs:5',
     'g4dn.8x': 'gluon-nlp-1-jobs:4',
-    'g4dn.16x': 'gluon-nlp-1-jobs:3'
+    'g4dn.12x': 'gluon-nlp-1-4gpu-jobs:1',
+    'g4dn.16x': 'gluon-nlp-1-jobs:3',
+    'p3.2x': 'gluon-nlp-1-jobs:5',
+    'p3.8x': 'gluon-nlp-1-4gpu-jobs:2',
+    'p3.16x': 'gluon-nlp-1-8gpu-jobs:1',
+    'p3dn.24x': 'gluon-nlp-1-8gpu-jobs:2'
 }
 
 def main():
@@ -96,6 +102,8 @@ def main():
     jobName = re.sub('[^A-Za-z0-9_\-]', '', args.name)[:128]  # Enforce AWS Batch jobName rules
     jobType = args.job_type
     jobQueue = jobType.split('.')[0]
+    if jobQueue == 'p3dn':
+        jobQueue = 'p3'
     jobDefinition = job_definitions[jobType]
     command = args.command.split()
     wait = args.wait
