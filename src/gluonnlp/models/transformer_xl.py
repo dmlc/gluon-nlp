@@ -277,11 +277,11 @@ class TransformerXLForLM(Block):
                                             weight_initializer=weight_initializer,
                                             bias_initializer=bias_initializer)
         if cfg.MODEL.tie_weights and cfg.MODEL.tie_projs:
-            crit_params = self.word_emb.collect_params('(.*_embed|.*_inter_proj)')
+            crit_params = self.word_emb.collect_params('(embed|inter_proj)')
         elif cfg.MODEL.tie_weights and not cfg.MODEL.tie_projs:
-            crit_params = self.word_emb.collect_params('.*_embed')
+            crit_params = self.word_emb.collect_params('embed')
         elif not cfg.MODEL.tie_weights and cfg.MODEL.tie_projs:
-            crit_params = self.word_emb.collect_params('.*_inter_proj')
+            crit_params = self.word_emb.collect_params('inter_proj')
         else:
             crit_params = None
         self.crit = ProjectedAdaptiveLogSoftmaxWithLoss(

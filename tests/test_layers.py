@@ -143,21 +143,21 @@ def test_projected_adaptive_softmax(vocab_size, cutoffs, embed_size, in_units, d
                                             embed_size=embed_size,
                                             in_units=in_units,
                                             div_val=div_val)
-    layer_with_shared_proj.share_parameters(embed_layer.collect_params('.*_inter_proj'))
+    layer_with_shared_proj.share_parameters(embed_layer.collect_params('inter_proj'))
     layer_with_shared_embed = \
         ProjectedAdaptiveLogSoftmaxWithLoss(vocab_size=vocab_size,
                                             cutoffs=cutoffs,
                                             embed_size=embed_size,
                                             in_units=in_units,
                                             div_val=div_val)
-    layer_with_shared_embed.share_parameters(embed_layer.collect_params('.*_embed'))
+    layer_with_shared_embed.share_parameters(embed_layer.collect_params('embed'))
     layer_with_shared_proj_embed = \
         ProjectedAdaptiveLogSoftmaxWithLoss(vocab_size=vocab_size,
                                             cutoffs=cutoffs,
                                             embed_size=embed_size,
                                             in_units=in_units,
                                             div_val=div_val)
-    layer_with_shared_proj_embed.share_parameters(embed_layer.collect_params('(.*_embed|.*_inter_proj)'))
+    layer_with_shared_proj_embed.share_parameters(embed_layer.collect_params('(embed|inter_proj)'))
     embed_layer.initialize()
     embed_layer.hybridize()
     layer_with_shared_proj.initialize()
