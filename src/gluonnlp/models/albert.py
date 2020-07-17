@@ -52,6 +52,7 @@ PRETRAINED_URL = {
         'vocab': 'google_albert_base_v2/vocab-2ee53ae7.json',
         'params': 'google_albert_base_v2/model-125be477.params',
         'mlm_params': 'google_albert_base_v2/model_mlm-fe20650e.params',
+        'lowercase': True,
     },
     'google_albert_large_v2': {
         'cfg': 'google_albert_large_v2/model-e2e9b974.yml',
@@ -59,6 +60,7 @@ PRETRAINED_URL = {
         'vocab': 'google_albert_large_v2/vocab-2ee53ae7.json',
         'params': 'google_albert_large_v2/model-ad60bcd5.params',
         'mlm_params': 'google_albert_large_v2/model_mlm-6a5015ee.params',
+        'lowercase': True,
     },
     'google_albert_xlarge_v2': {
         'cfg': 'google_albert_xlarge_v2/model-8123bffd.yml',
@@ -66,6 +68,7 @@ PRETRAINED_URL = {
         'vocab': 'google_albert_xlarge_v2/vocab-2ee53ae7.json',
         'params': 'google_albert_xlarge_v2/model-4149c9e2.params',
         'mlm_params': 'google_albert_xlarge_v2/model_mlm-ee184d38.params',
+        'lowercase': True,
     },
     'google_albert_xxlarge_v2': {
         'cfg': 'google_albert_xxlarge_v2/model-07fbeebc.yml',
@@ -73,6 +76,7 @@ PRETRAINED_URL = {
         'vocab': 'google_albert_xxlarge_v2/vocab-2ee53ae7.json',
         'params': 'google_albert_xxlarge_v2/model-5601a0ed.params',
         'mlm_params': 'google_albert_xxlarge_v2/model_mlm-d2e2b06f.params',
+        'lowercase': True,
     },
 }
 
@@ -621,10 +625,11 @@ def get_pretrained_albert(model_name: str = 'google_albert_base_v2',
                                          sha1_hash=FILE_STATS[mlm_params_path])
     else:
         local_mlm_params_path = None
-    # TODO(sxjscience) Move do_lower to assets.
+    do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
+                       and PRETRAINED_URL[model_name]['lowercase'] else False
     tokenizer = SentencepieceTokenizer(local_paths['spm_model'],
                                        vocab=local_paths['vocab'],
-                                       do_lower=True)
+                                       lowercase=do_lower)
     cfg = AlbertModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_mlm_params_path
 

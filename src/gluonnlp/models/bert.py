@@ -52,6 +52,7 @@ PRETRAINED_URL = {
         'vocab': 'google_en_cased_bert_base/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_base/model-c566c289.params',
         'mlm_params': 'google_en_cased_bert_base/model_mlm-c3ff36a3.params',
+        'lowercase': False,
     },
 
     'google_en_uncased_bert_base': {
@@ -66,6 +67,7 @@ PRETRAINED_URL = {
         'vocab': 'google_en_cased_bert_large/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_large/model-7aa93704.params',
         'mlm_params': 'google_en_cased_bert_large/model_mlm-d6443fe9.params',
+        'lowercase': False,
     },
     'google_en_uncased_bert_large': {
         'cfg': 'google_en_uncased_bert_large/model-d0c37dcc.yml',
@@ -79,18 +81,21 @@ PRETRAINED_URL = {
         'vocab': 'google_zh_bert_base/vocab-711c13e4.json',
         'params': 'google_zh_bert_base/model-2efbff63.params',
         'mlm_params': 'google_zh_bert_base/model_mlm-75339658.params',
+        'lowercase': False,
     },
     'google_multi_cased_bert_base': {
         'cfg': 'google_multi_cased_bert_base/model-881ad607.yml',
         'vocab': 'google_multi_cased_bert_base/vocab-016e1169.json',
         'params': 'google_multi_cased_bert_base/model-c2110078.params',
         'mlm_params': 'google_multi_cased_bert_base/model_mlm-4611e7a3.params',
+        'lowercase': False,
     },
     'google_en_cased_bert_wwm_large': {
         'cfg': 'google_en_cased_bert_wwm_large/model-9e127fee.yml',
         'vocab': 'google_en_cased_bert_wwm_large/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_wwm_large/model-0fe841cf.params',
         'mlm_params': None,
+        'lowercase': False,
     },
     'google_en_uncased_bert_wwm_large': {
         'cfg': 'google_en_uncased_bert_wwm_large/model-d0c37dcc.yml',
@@ -616,7 +621,6 @@ def get_pretrained_bert(model_name: str = 'google_en_cased_bert_base',
         local_mlm_params_path = None
     do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
                        and PRETRAINED_URL[model_name]['lowercase'] else False
-    # TODO(sxjscience) Move do_lower to assets.
     tokenizer = HuggingFaceWordPieceTokenizer(
                     vocab_file=local_paths['vocab'],
                     unk_token='[UNK]',

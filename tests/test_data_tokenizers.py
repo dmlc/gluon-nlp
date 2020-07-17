@@ -379,11 +379,11 @@ def test_sentencepiece_tokenizer():
         gt_lower_case_int_decode = ['hello, y ⁇ all! how are you viii  ⁇   ⁇   ⁇  ?',
                                     'gluonnlp is great!!!!!!',
                                     'gluonnlp-amazon-haibin-leonard-sheng-shuai-xingjian...../:! ⁇ #  ⁇ abc ⁇ ']
-        tokenizer = SentencepieceTokenizer(model_path, do_lower=True)
+        tokenizer = SentencepieceTokenizer(model_path, lowercase=True)
         verify_decode_spm(tokenizer, SUBWORD_TEST_SAMPLES, gt_lower_case_int_decode)
 
         # Case3, Use the sentencepiece regularization commands, we test whether we can obtain different encoding results
-        tokenizer = SentencepieceTokenizer(model_path, do_lower=True, nbest=-1, alpha=1.0)
+        tokenizer = SentencepieceTokenizer(model_path, lowercase=True, nbest=-1, alpha=1.0)
         has_different_encode_out = False
         encode_out = None
         for _ in range(10):
