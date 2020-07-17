@@ -602,9 +602,8 @@ class MultiHeadAttentionCell(HybridBlock):
     """
     def __init__(self, query_units=None, num_heads=None, attention_dropout=0.0,
                  scaled: bool = True, normalized: bool = False, eps: float = 1E-6,
-                 dtype='float32', layout='NTK', use_einsum=False,
-                 prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
+                 dtype='float32', layout='NTK', use_einsum=False):
+        super().__init__()
         self._query_units = query_units
         self._num_heads = num_heads
         self._attention_dropout = attention_dropout
@@ -707,8 +706,7 @@ class RelAttentionScoreCell(HybridBlock):
                  dropout: float = 0.0,
                  dtype='float32',
                  layout='NTK',
-                 use_einsum=False,
-                 prefix=None, params=None):
+                 use_einsum=False):
         """
 
         Parameters
@@ -727,10 +725,8 @@ class RelAttentionScoreCell(HybridBlock):
         scaled
         dtype
         layout
-        prefix
-        params
         """
-        super().__init__(prefix=prefix, params=params)
+        super().__init__()
         self._dropout = dropout
         self._method = method
         self._query_units = query_units
@@ -746,49 +742,44 @@ class RelAttentionScoreCell(HybridBlock):
         self._layout = layout
         if self._layout not in ['NKT', 'NTK', 'TNK']:
             raise ValueError('layout="{}" is not supported'.format(self._layout))
-        with self.name_scope():
-            if method == 'transformer_xl':
-                if pos_embed_units is None:
-                    pos_embed_units = self._num_heads * self._head_query_units
-                self._rel_pos_embed = SinusoidalPositionalEmbedding(units=pos_embed_units,
-                                                                    prefix='rel_pos_embed_',
-                                                                    dtype=self._dtype)
-                self._rel_proj = nn.Dense(units=query_units,
-                                          in_units=pos_embed_units,
-                                          flatten=False,
-                                          use_bias=False,
-                                          prefix='rel_proj_',
-                                          dtype=self._dtype)
-                self._dropout_layer = nn.Dropout(dropout)
-            elif method == 'shaw':
-                assert self._max_distance is not None, 'Must set max_distance when method="shaw".'
-                if self._bidirectional:
-                    vocab_size = self._max_distance * 2 + 1
-                else:
-                    vocab_size = self._max_distance + 1
-                self._rel_pos_embed = LearnedPositionalEmbedding(
-                    units=self._num_heads * self._head_query_units,
-                    max_length=vocab_size,
-                    weight_initializer=mx.init.Xavier(rnd_type="gaussian",
-                                                      factor_type="in",
-                                                      magnitude=1),
-                    prefix='rel_pos_embed_',
-                    mode='wrap' if self._bidirectional else 'raise',
-                    dtype=self._dtype)
-            elif method == 't5':
-                if self._num_buckets is None:
-                    self._num_buckets = 32
-                if self._max_distance is None:
-                    self._max_distance = 128
-                self._rel_pos_embed = BucketPositionalEmbedding(
-                    units=num_heads,
-                    num_buckets=self._num_buckets,
-                    max_distance=self._max_distance,
-                    bidirectional=self._bidirectional,
-                    prefix='rel_pos_embed_',
-                    dtype=self._dtype)
+        if method == 'transformer_xl':
+            if pos_embed_units is None:
+                pos_embed_units = self._num_heads * self._head_query_units
+            self._rel_pos_embed = SinusoidalPositionalEmbedding(units=pos_embed_units,
+                                                                dtype=self._dtype)
+            self._rel_proj = nn.Dense(units=query_units,
+                                      in_units=pos_embed_units,
+                                      flatten=False,
+                                      use_bias=False,
+                                      dtype=self._dtype)
+            self._dropout_layer = nn.Dropout(dropout)
+        elif method == 'shaw':
+            assert self._max_distance is not None, 'Must set max_distance when method="shaw".'
+            if self._bidirectional:
+                vocab_size = self._max_distance * 2 + 1
             else:
-                raise NotImplementedError('method="{}" is currently not supported!'.format(method))
+                vocab_size = self._max_distance + 1
+            self._rel_pos_embed = LearnedPositionalEmbedding(
+                units=self._num_heads * self._head_query_units,
+                max_length=vocab_size,
+                weight_initializer=mx.init.Xavier(rnd_type="gaussian",
+                                                  factor_type="in",
+                                                  magnitude=1),
+                mode='wrap' if self._bidirectional else 'raise',
+                dtype=self._dtype)
+        elif method == 't5':
+            if self._num_buckets is None:
+                self._num_buckets = 32
+            if self._max_distance is None:
+                self._max_distance = 128
+            self._rel_pos_embed = BucketPositionalEmbedding(
+                units=num_heads,
+                num_buckets=self._num_buckets,
+                max_distance=self._max_distance,
+                bidirectional=self._bidirectional,
+                dtype=self._dtype)
+        else:
+            raise NotImplementedError('method="{}" is currently not supported!'.format(method))
 
     def hybrid_forward(self, F, rel_positions, query=None):
         """

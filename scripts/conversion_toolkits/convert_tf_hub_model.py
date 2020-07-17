@@ -358,7 +358,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
     gluon_model = PretrainedModel.from_cfg(cfg, prefix='', use_pooler=True)
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
-    gluon_mlm_model = PretrainedMLMModel(backbone_cfg=cfg, prefix='')
+    gluon_mlm_model = PretrainedMLMModel(backbone_cfg=cfg)
     gluon_mlm_model.initialize(ctx=ctx)
     gluon_mlm_model.hybridize()
 

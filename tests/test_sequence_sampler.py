@@ -40,8 +40,8 @@ def test_beam_search_score(length, alpha, K, batch_size, vocab_size, from_logits
 @pytest.mark.parametrize('early_return', [False, True])
 def test_beam_search(early_return):
     class SimpleStepDecoder(HybridBlock):
-        def __init__(self, vocab_size=5, hidden_units=4, prefix=None, params=None):
-            super(SimpleStepDecoder, self).__init__(prefix=prefix, params=params)
+        def __init__(self, vocab_size=5, hidden_units=4):
+            super().__init__()
             self.x2h_map = nn.Embedding(input_dim=vocab_size, output_dim=hidden_units)
             self.h2h_map = nn.Dense(units=hidden_units, flatten=False)
             self.vocab_map = nn.Dense(units=vocab_size, flatten=False)
@@ -98,8 +98,8 @@ def test_beam_search(early_return):
 @pytest.mark.parametrize('early_return', [False, True])
 def test_beam_search_stochastic(early_return):
     class SimpleStepDecoder(HybridBlock):
-        def __init__(self, vocab_size=5, hidden_units=4, prefix=None, params=None):
-            super(SimpleStepDecoder, self).__init__(prefix=prefix, params=params)
+        def __init__(self, vocab_size=5, hidden_units=4):
+            super().__init__()
             self.x2h_map = nn.Embedding(input_dim=vocab_size, output_dim=hidden_units)
             self.h2h_map = nn.Dense(units=hidden_units, flatten=False)
             self.vocab_map = nn.Dense(units=vocab_size, flatten=False)
@@ -164,8 +164,8 @@ def test_beam_search_stochastic(early_return):
 @pytest.mark.parametrize('sampling_paras', [(-1.0, -1), (0.05, -1), (-1.0, 1), (-1.0, 3)])
 def test_multinomial_sampling(early_return, sampling_paras):
     class SimpleStepDecoder(HybridBlock):
-        def __init__(self, vocab_size=5, hidden_units=4, prefix=None, params=None):
-            super(SimpleStepDecoder, self).__init__(prefix=prefix, params=params)
+        def __init__(self, vocab_size=5, hidden_units=4):
+            super().__init__()
             self.x2h_map = nn.Embedding(input_dim=vocab_size, output_dim=hidden_units)
             self.h2h_map = nn.Dense(units=hidden_units, flatten=False)
             self.vocab_map = nn.Dense(units=vocab_size, flatten=False)
