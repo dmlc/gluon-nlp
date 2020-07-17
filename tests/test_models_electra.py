@@ -26,17 +26,14 @@ def test_bert_get_pretrained(model_name):
         electra_disc_model.backbone_model.load_parameters(backbone_params_path)
 
         gen_cfg = get_generator_cfg(cfg)
-        word_embed_params = electra_disc_model.backbone_model.word_embed.collect_params()
-        token_type_embed_params = electra_disc_model.backbone_model.token_pos_embed.collect_params()
-        token_pos_embed_params = electra_disc_model.backbone_model.token_pos_embed.collect_params()
-        embed_layer_norm_params = electra_disc_model.backbone_model.embed_layer_norm.collect_params()
-        electra_gen_model = ElectraGenerator(gen_cfg,
-                            tied_embeddings=True,
-                            word_embed_params=word_embed_params,
-                            token_type_embed_params=token_type_embed_params,
-                            token_pos_embed_params=token_pos_embed_params,
-                            embed_layer_norm_params=embed_layer_norm_params,
-                            )
+        electra_gen_model = ElectraGenerator(gen_cfg)
         electra_gen_model.load_parameters(gen_params_path)
-        electra_gen_model = ElectraGenerator(cfg, tied_embeddings=False)
+        electra_gen_model.tie_embeddings(
+            electra_disc_model.backbone_model.word_embed.collect_params(),
+            electra_disc_model.backbone_model.token_type_embed.collect_params(),
+            electra_disc_model.backbone_model.token_pos_embed.collect_params(),
+            electra_disc_model.backbone_model.embed_layer_norm.collect_params())
+
+
+        electra_gen_model = ElectraGenerator(cfg)
         electra_gen_model.backbone_model.load_parameters(backbone_params_path)

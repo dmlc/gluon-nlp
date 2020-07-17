@@ -23,7 +23,7 @@ class InverseSquareRootScheduler(lr_scheduler.LRScheduler):
     """
 
     def __init__(self, warmup_steps: int, base_lr: float = 1E-3, warmup_init_lr: float = 0.0):
-        super(InverseSquareRootScheduler, self).__init__(
+        super().__init__(
             base_lr, warmup_steps, warmup_init_lr, 'linear')
         self.base_lr = base_lr
         self.warmup_steps = warmup_steps

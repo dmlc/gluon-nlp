@@ -34,7 +34,7 @@ _URL_FILE_STATS = load_checksum_stats(_URL_FILE_STATS_PATH)
 
 _URLS = {
     'gutenberg':
-        'https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/pretrain_corpus/Gutenberg.zip',
+        'https://gluonnlp-numpy-data.s3-accelerate.amazonaws.com/pretrain_corpus/Gutenberg.zip',
 }
 
 

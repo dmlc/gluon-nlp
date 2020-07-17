@@ -44,14 +44,14 @@ PRETRAINED_URL = {
         'cfg': 'fairseq_xlmr_base/model-b893d178.yml',
         'sentencepiece.model': 'fairseq_xlmr_base/sentencepiece-18e17bae.model',
         'params': 'fairseq_xlmr_base/model-3fa134e9.params',
-        'mlm_params': 'model_mlm-86e37954.params',
+        'mlm_params': 'fairseq_xlmr_base/model_mlm-86e37954.params',
         'lowercase': False,
     },
     'fairseq_xlmr_large': {
         'cfg': 'fairseq_xlmr_large/model-01fc59fb.yml',
         'sentencepiece.model': 'fairseq_xlmr_large/sentencepiece-18e17bae.model',
         'params': 'fairseq_xlmr_large/model-b62b074c.params',
-        'mlm_params': 'model_mlm-887506c2.params',
+        'mlm_params': 'fairseq_xlmr_large/model_mlm-887506c2.params',
         'lowercase': False,
     }
 }

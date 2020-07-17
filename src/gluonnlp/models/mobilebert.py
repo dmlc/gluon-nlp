@@ -85,8 +85,7 @@ class MobileBertEncoderLayer(HybridBlock):
                  use_qkv_bias: bool = True,
                  weight_initializer: Optional[InitializerType] = None,
                  bias_initializer: Optional[InitializerType] = 'zeros',
-                 dtype='float32',
-                 prefix=None, params=None):
+                 dtype='float32'):
         """
 
         Parameters
@@ -111,10 +110,8 @@ class MobileBertEncoderLayer(HybridBlock):
         weight_initializer
         bias_initializer
         dtype
-        prefix
-        params
         """
-        super().__init__(prefix=prefix, params=params)
+        super().__init__()
         self._use_bottleneck = use_bottleneck
         self._units = units
         self._real_units = real_units
@@ -123,107 +120,92 @@ class MobileBertEncoderLayer(HybridBlock):
         self._bottleneck_strategy = bottleneck_strategy
         self._dtype = dtype
         assert real_units % num_heads == 0, 'units must be divisive by the number of heads'
-        with self.name_scope():
-            self.dropout_layer = nn.Dropout(hidden_dropout_prob)
-            if use_bottleneck:
-                self.in_bottleneck_proj = nn.Dense(units=real_units,
-                                                   in_units=units,
-                                                   flatten=False,
-                                                   weight_initializer=weight_initializer,
-                                                   bias_initializer=bias_initializer,
-                                                   dtype=self._dtype,
-                                                   prefix='in_bottleneck_proj_')
-                self.in_bottleneck_ln = get_layer_norm(normalization=normalization,
-                                                       in_channels=real_units,
-                                                       epsilon=layer_norm_eps,
-                                                       prefix='in_bottleneck_ln_')
-                self.out_bottleneck_proj = nn.Dense(units=units,
-                                                    in_units=real_units,
-                                                    flatten=False,
-                                                    weight_initializer=weight_initializer,
-                                                    bias_initializer=bias_initializer,
-                                                    dtype=self._dtype,
-                                                    prefix='out_bottleneck_proj_')
-                self.out_bottleneck_ln = get_layer_norm(normalization=normalization,
-                                                        in_channels=units,
-                                                        epsilon=layer_norm_eps,
-                                                        prefix='out_bottleneck_ln_')
+        self.dropout_layer = nn.Dropout(hidden_dropout_prob)
+        if use_bottleneck:
+            self.in_bottleneck_proj = nn.Dense(units=real_units,
+                                               in_units=units,
+                                               flatten=False,
+                                               weight_initializer=weight_initializer,
+                                               bias_initializer=bias_initializer,
+                                               dtype=self._dtype)
+            self.in_bottleneck_ln = get_layer_norm(normalization=normalization,
+                                                   in_channels=real_units,
+                                                   epsilon=layer_norm_eps)
+            self.out_bottleneck_proj = nn.Dense(units=units,
+                                                in_units=real_units,
+                                                flatten=False,
+                                                weight_initializer=weight_initializer,
+                                                bias_initializer=bias_initializer,
+                                                dtype=self._dtype)
+            self.out_bottleneck_ln = get_layer_norm(normalization=normalization,
+                                                    in_channels=units,
+                                                    epsilon=layer_norm_eps)
 
-                if bottleneck_strategy == 'qk_sharing':
-                    self.shared_qk = nn.Dense(units=real_units,
-                                              in_units=units,
-                                              flatten=False,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              dtype=self._dtype,
-                                              prefix='shared_qk_')
-                    self.shared_qk_ln = get_layer_norm(normalization=normalization,
-                                                       in_channels=real_units,
-                                                       epsilon=layer_norm_eps,
-                                                       prefix='shared_qk_ln_')
-            self.attention_proj = nn.Dense(units=real_units,
-                                           flatten=False,
-                                           in_units=real_units,
-                                           use_bias=True,
-                                           weight_initializer=weight_initializer,
-                                           bias_initializer=bias_initializer,
-                                           dtype=self._dtype,
-                                           prefix='proj_')
-            # The in_units of qkv varies according to the sharing strategy
-            self.attn_query = nn.Dense(units=real_units,
+            if bottleneck_strategy == 'qk_sharing':
+                self.shared_qk = nn.Dense(units=real_units,
+                                          in_units=units,
+                                          flatten=False,
+                                          weight_initializer=weight_initializer,
+                                          bias_initializer=bias_initializer,
+                                          dtype=self._dtype)
+                self.shared_qk_ln = get_layer_norm(normalization=normalization,
+                                                   in_channels=real_units,
+                                                   epsilon=layer_norm_eps)
+        self.attention_proj = nn.Dense(units=real_units,
                                        flatten=False,
-                                       use_bias=use_qkv_bias,
+                                       in_units=real_units,
+                                       use_bias=True,
                                        weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer,
-                                       dtype=self._dtype,
-                                       prefix='attn_query_')
-            self.attn_key = nn.Dense(units=real_units,
-                                     flatten=False,
-                                     use_bias=use_qkv_bias,
-                                     weight_initializer=weight_initializer,
-                                     bias_initializer=bias_initializer,
-                                     dtype=self._dtype,
-                                     prefix='attn_key_')
-            self.attn_value = nn.Dense(units=real_units,
-                                       flatten=False,
-                                       use_bias=use_qkv_bias,
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       dtype=self._dtype,
-                                       prefix='attn_value_')
-            self.attention_cell = \
-                MultiHeadAttentionCell(
-                    query_units=real_units,
-                    num_heads=num_heads,
-                    attention_dropout=attention_dropout_prob,
-                    scaled=True,
-                    prefix='attn_cell_',
-                    dtype=self._dtype,
-                    layout='NTK'
-                )
-            self.layer_norm = get_layer_norm(normalization=normalization,
-                                             in_channels=real_units,
-                                             epsilon=layer_norm_eps,
-                                             prefix='ln_')
+                                       dtype=self._dtype)
+        # The in_units of qkv varies according to the sharing strategy
+        self.attn_query = nn.Dense(units=real_units,
+                                   flatten=False,
+                                   use_bias=use_qkv_bias,
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer,
+                                   dtype=self._dtype)
+        self.attn_key = nn.Dense(units=real_units,
+                                 flatten=False,
+                                 use_bias=use_qkv_bias,
+                                 weight_initializer=weight_initializer,
+                                 bias_initializer=bias_initializer,
+                                 dtype=self._dtype)
+        self.attn_value = nn.Dense(units=real_units,
+                                   flatten=False,
+                                   use_bias=use_qkv_bias,
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer,
+                                   dtype=self._dtype)
+        self.attention_cell = \
+            MultiHeadAttentionCell(
+                query_units=real_units,
+                num_heads=num_heads,
+                attention_dropout=attention_dropout_prob,
+                scaled=True,
+                dtype=self._dtype,
+                layout='NTK'
+            )
+        self.layer_norm = get_layer_norm(normalization=normalization,
+                                         in_channels=real_units,
+                                         epsilon=layer_norm_eps)
 
-            self.stacked_ffn = nn.HybridSequential(prefix='stacked_ffns_')
-            with self.stacked_ffn.name_scope():
-                for ffn_idx in range(num_stacked_ffn):
-                    is_last_ffn = (ffn_idx == (num_stacked_ffn - 1))
-                    # only apply dropout on last ffn layer if use bottleneck
-                    dropout = float(hidden_dropout_prob * (not use_bottleneck) * is_last_ffn)
-                    self.stacked_ffn.add(
-                        PositionwiseFFN(units=real_units,
-                                        hidden_size=hidden_size,
-                                        dropout=dropout,
-                                        activation_dropout=activation_dropout_prob,
-                                        weight_initializer=weight_initializer,
-                                        bias_initializer=bias_initializer,
-                                        activation=activation,
-                                        normalization=normalization,
-                                        layer_norm_eps=layer_norm_eps,
-                                        dtype=self._dtype,
-                                        prefix='{}_'.format(ffn_idx)))
+        self.stacked_ffn = nn.HybridSequential()
+        for ffn_idx in range(num_stacked_ffn):
+            is_last_ffn = (ffn_idx == (num_stacked_ffn - 1))
+            # only apply dropout on last ffn layer if use bottleneck
+            dropout = float(hidden_dropout_prob * (not use_bottleneck) * is_last_ffn)
+            self.stacked_ffn.add(
+                PositionwiseFFN(units=real_units,
+                                hidden_size=hidden_size,
+                                dropout=dropout,
+                                activation_dropout=activation_dropout_prob,
+                                weight_initializer=weight_initializer,
+                                bias_initializer=bias_initializer,
+                                activation=activation,
+                                normalization=normalization,
+                                layer_norm_eps=layer_norm_eps,
+                                dtype=self._dtype))
 
     def hybrid_forward(self, F, data, attn_mask):
         """
@@ -314,9 +296,8 @@ class MobileBertTransformer(HybridBlock):
                  layer_norm_eps: float = 1E-12,
                  weight_initializer: InitializerType = TruncNorm(stdev=0.02),
                  bias_initializer: InitializerType = 'zeros',
-                 dtype='float32',
-                 prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
+                 dtype='float32'):
+        super().__init__()
         self._dtype = dtype
         self._num_layers = num_layers
         self._output_attention = output_attention
@@ -330,26 +311,24 @@ class MobileBertTransformer(HybridBlock):
             'by the number of heads. Received real_units={}, num_heads={}' \
             .format(real_units, num_heads)
 
-        with self.name_scope():
-            self.all_layers = nn.HybridSequential(prefix='layers_')
-            with self.all_layers.name_scope():
-                for layer_idx in range(num_layers):
-                    self.all_layers.add(
-                        MobileBertEncoderLayer(use_bottleneck=use_bottleneck,
-                                               units=units,
-                                               real_units=real_units,
-                                               hidden_size=hidden_size,
-                                               num_heads=num_heads,
-                                               attention_dropout_prob=attention_dropout_prob,
-                                               hidden_dropout_prob=hidden_dropout_prob,
-                                               num_stacked_ffn=num_stacked_ffn,
-                                               bottleneck_strategy=bottleneck_strategy,
-                                               layer_norm_eps=layer_norm_eps,
-                                               weight_initializer=weight_initializer,
-                                               bias_initializer=bias_initializer,
-                                               normalization=normalization,
-                                               activation=activation,
-                                               prefix='{}_'.format(layer_idx)))
+        self.all_layers = nn.HybridSequential()
+
+        for layer_idx in range(num_layers):
+            self.all_layers.add(
+                MobileBertEncoderLayer(use_bottleneck=use_bottleneck,
+                                       units=units,
+                                       real_units=real_units,
+                                       hidden_size=hidden_size,
+                                       num_heads=num_heads,
+                                       attention_dropout_prob=attention_dropout_prob,
+                                       hidden_dropout_prob=hidden_dropout_prob,
+                                       num_stacked_ffn=num_stacked_ffn,
+                                       bottleneck_strategy=bottleneck_strategy,
+                                       layer_norm_eps=layer_norm_eps,
+                                       weight_initializer=weight_initializer,
+                                       bias_initializer=bias_initializer,
+                                       normalization=normalization,
+                                       activation=activation))
 
     def hybrid_forward(self, F, data, valid_length):
         """
@@ -426,10 +405,8 @@ class MobileBertModel(HybridBlock):
                  trigram_embed=True,
                  use_pooler=True,
                  classifier_activation=False,
-                 dtype='float32',
-                 prefix=None,
-                 params=None):
-        super().__init__(prefix=prefix, params=params)
+                 dtype='float32'):
+        super().__init__()
         self._dtype = dtype
         self.use_bottleneck = use_bottleneck
         self.bottleneck_strategy = bottleneck_strategy
@@ -450,66 +427,58 @@ class MobileBertModel(HybridBlock):
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
         self.layer_norm_eps = layer_norm_eps
-        with self.name_scope():
-            # Construct MobileBertTransformer
-            self.encoder = MobileBertTransformer(
-                units=units,
-                hidden_size=hidden_size,
-                num_layers=num_layers,
-                num_heads=num_heads,
-                inner_size=inner_size,
-                num_stacked_ffn=num_stacked_ffn,
-                bottleneck_strategy=bottleneck_strategy,
-                attention_dropout_prob=attention_dropout_prob,
-                hidden_dropout_prob=hidden_dropout_prob,
-                output_attention=False,
-                output_all_encodings=False,
-                activation=activation,
-                normalization=normalization,
-                layer_norm_eps=layer_norm_eps,
-                weight_initializer=weight_initializer,
-                bias_initializer=bias_initializer,
-                dtype=dtype,
-                prefix='enc_',
-            )
-            self.encoder.hybridize()
-            # Construct word embedding
-            self.word_embed = nn.Embedding(input_dim=vocab_size,
-                                           output_dim=embed_size,
-                                           weight_initializer=embed_initializer,
-                                           dtype=dtype,
-                                           prefix='word_embed_')
-            if trigram_embed or embed_size != units:
-                self.embed_factorized_proj = nn.Dense(units=units,
-                                                      flatten=False,
-                                                      weight_initializer=weight_initializer,
-                                                      bias_initializer=bias_initializer,
-                                                      prefix='embed_factorized_proj_')
-            self.embed_layer_norm = get_layer_norm(normalization=normalization,
-                                                   in_channels=units,
-                                                   epsilon=self.layer_norm_eps,
-                                                   prefix='embed_ln_')
+        # Construct MobileBertTransformer
+        self.encoder = MobileBertTransformer(
+            units=units,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            num_heads=num_heads,
+            inner_size=inner_size,
+            num_stacked_ffn=num_stacked_ffn,
+            bottleneck_strategy=bottleneck_strategy,
+            attention_dropout_prob=attention_dropout_prob,
+            hidden_dropout_prob=hidden_dropout_prob,
+            output_attention=False,
+            output_all_encodings=False,
+            activation=activation,
+            normalization=normalization,
+            layer_norm_eps=layer_norm_eps,
+            weight_initializer=weight_initializer,
+            bias_initializer=bias_initializer,
+            dtype=dtype,
+        )
+        self.encoder.hybridize()
+        # Construct word embedding
+        self.word_embed = nn.Embedding(input_dim=vocab_size,
+                                       output_dim=embed_size,
+                                       weight_initializer=embed_initializer,
+                                       dtype=dtype)
+        if trigram_embed or embed_size != units:
+            self.embed_factorized_proj = nn.Dense(units=units,
+                                                  flatten=False,
+                                                  weight_initializer=weight_initializer,
+                                                  bias_initializer=bias_initializer)
+        self.embed_layer_norm = get_layer_norm(normalization=normalization,
+                                               in_channels=units,
+                                               epsilon=self.layer_norm_eps)
 
-            self.embed_dropout = nn.Dropout(hidden_dropout_prob)
-            # Construct token type embedding
-            self.token_type_embed = nn.Embedding(input_dim=num_token_types,
-                                                 output_dim=units,
-                                                 weight_initializer=weight_initializer,
-                                                 prefix='token_type_embed_')
-            self.token_pos_embed = PositionalEmbedding(units=units,
-                                                       max_length=max_length,
-                                                       dtype=self._dtype,
-                                                       method=pos_embed_type,
-                                                       prefix='token_pos_embed_')
-            if self.use_pooler and self.classifier_activation:
-                # Construct pooler
-                self.pooler = nn.Dense(units=units,
-                                       in_units=units,
-                                       flatten=False,
-                                       activation='tanh',
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       prefix='pooler_')
+        self.embed_dropout = nn.Dropout(hidden_dropout_prob)
+        # Construct token type embedding
+        self.token_type_embed = nn.Embedding(input_dim=num_token_types,
+                                             output_dim=units,
+                                             weight_initializer=weight_initializer)
+        self.token_pos_embed = PositionalEmbedding(units=units,
+                                                   max_length=max_length,
+                                                   dtype=self._dtype,
+                                                   method=pos_embed_type)
+        if self.use_pooler and self.classifier_activation:
+            # Construct pooler
+            self.pooler = nn.Dense(units=units,
+                                   in_units=units,
+                                   flatten=False,
+                                   activation='tanh',
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer)
 
     def hybrid_forward(self, F, inputs, token_types, valid_length):
         # pylint: disable=arguments-differ
@@ -648,9 +617,7 @@ class MobileBertModel(HybridBlock):
                  use_bottleneck=True,
                  trigram_embed=True,
                  use_pooler=True,
-                 classifier_activation=False,
-                 prefix=None,
-                 params=None):
+                 classifier_activation=False):
         cfg = MobileBertModel.get_cfg().clone_merge(cfg)
         assert cfg.VERSION == 1, 'Wrong version!'
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
@@ -680,9 +647,7 @@ class MobileBertModel(HybridBlock):
                    use_bottleneck=use_bottleneck,
                    trigram_embed=trigram_embed,
                    use_pooler=use_pooler,
-                   classifier_activation=classifier_activation,
-                   prefix=prefix,
-                   params=params)
+                   classifier_activation=classifier_activation)
 
 
 @use_np
@@ -691,9 +656,7 @@ class MobileBertForMLM(HybridBlock):
                  use_bottleneck=True,
                  trigram_embed=True,
                  weight_initializer=None,
-                 bias_initializer=None,
-                 prefix=None,
-                 params=None):
+                 bias_initializer=None):
         """
 
         Parameters
@@ -701,50 +664,41 @@ class MobileBertForMLM(HybridBlock):
         backbone_cfg
         weight_initializer
         bias_initializer
-        prefix
-        params
         """
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone_model = MobileBertModel.from_cfg(backbone_cfg,
-                                                           use_bottleneck=use_bottleneck,
-                                                           trigram_embed=trigram_embed,
-                                                           prefix='')
-            if weight_initializer is None:
-                weight_initializer = self.backbone_model.weight_initializer
-            if bias_initializer is None:
-                bias_initializer = self.backbone_model.bias_initializer
-            self.mlm_decoder = nn.HybridSequential(prefix='mlm_')
-            with self.mlm_decoder.name_scope():
-                # Extra non-linear layer
-                self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
-                                              flatten=False,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              prefix='proj_'))
-                self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                # use basic layer normalization for pretaining
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
-                                                  prefix='ln_'))
-            self.mlm_decoder.hybridize()
-            # only load the dense weights with a re-initialized bias
-            # parameters are stored in 'word_embed_bias' which is
-            # not used in original embedding
-            self.embedding_table = nn.Dense(
+        super().__init__()
+        self.backbone_model = MobileBertModel.from_cfg(backbone_cfg,
+                                                       use_bottleneck=use_bottleneck,
+                                                       trigram_embed=trigram_embed)
+        if weight_initializer is None:
+            weight_initializer = self.backbone_model.weight_initializer
+        if bias_initializer is None:
+            bias_initializer = self.backbone_model.bias_initializer
+        self.mlm_decoder = nn.HybridSequential()
+        # Extra non-linear layer
+        self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
+                                      flatten=False,
+                                      weight_initializer=weight_initializer,
+                                      bias_initializer=bias_initializer))
+        self.mlm_decoder.add(get_activation(self.backbone_model.activation))
+        # use basic layer normalization for pretaining
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        self.mlm_decoder.hybridize()
+        # only load the dense weights with a re-initialized bias
+        # parameters are stored in 'word_embed_bias' which is
+        # not used in original embedding
+        self.embedding_table = nn.Dense(
+            units=self.backbone_model.vocab_size,
+            in_units=self.backbone_model.embed_size,
+            flatten=False,
+            bias_initializer=bias_initializer)
+        self.embedding_table.weight = self.backbone_model.word_embed.weight
+        if self.backbone_model.embed_size != self.backbone_model.units:
+            self.extra_table = nn.Dense(
                 units=self.backbone_model.vocab_size,
-                in_units=self.backbone_model.embed_size,
-                flatten=False,
-                params=self.backbone_model.word_embed.collect_params('.*weight'),
-                bias_initializer=bias_initializer,
-                prefix='mlm_score_')
-            if self.backbone_model.embed_size != self.backbone_model.units:
-                self.extra_table = nn.Dense(
-                    units=self.backbone_model.vocab_size,
-                    use_bias=False,
-                    in_units=self.backbone_model.units -
-                    self.backbone_model.embed_size,
-                    flatten=False,
-                    prefix='mlm_extra_score_')
+                use_bias=False,
+                in_units=self.backbone_model.units -
+                self.backbone_model.embed_size,
+                flatten=False)
 
     def hybrid_forward(self, F, inputs, token_types, valid_length,
                        masked_positions):
@@ -795,8 +749,7 @@ class MobileBertForPretrain(HybridBlock):
                  use_bottleneck=True,
                  trigram_embed=True,
                  weight_initializer=None,
-                 bias_initializer=None,
-                 prefix=None, params=None):
+                 bias_initializer=None):
         """
 
         Parameters
@@ -805,55 +758,46 @@ class MobileBertForPretrain(HybridBlock):
             The cfg of the backbone model
         weight_initializer
         bias_initializer
-        prefix
-        params
         """
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone_model = MobileBertModel.from_cfg(backbone_cfg,
-                                                           use_bottleneck=use_bottleneck,
-                                                           trigram_embed=trigram_embed,
-                                                           prefix='')
-            if weight_initializer is None:
-                weight_initializer = self.backbone_model.weight_initializer
-            if bias_initializer is None:
-                bias_initializer = self.backbone_model.bias_initializer
-            # Construct nsp_classifier for next sentence prediction
-            self.nsp_classifier = nn.Dense(units=2,
-                                           weight_initializer=weight_initializer,
-                                           prefix='nsp_')
-            self.mlm_decoder = nn.HybridSequential(prefix='mlm_')
-            with self.mlm_decoder.name_scope():
-                # Extra non-linear layer
-                self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
-                                              flatten=False,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              prefix='proj_'))
-                self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                # use basic layer normalization for pretaining
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
-                                                  prefix='ln_'))
-            self.mlm_decoder.hybridize()
-            # only load the dense weights with a re-initialized bias
-            # parameters are stored in 'word_embed_bias' which is
-            # not used in original embedding
-            self.embedding_table = nn.Dense(
+        super().__init__()
+        self.backbone_model = MobileBertModel.from_cfg(backbone_cfg,
+                                                       use_bottleneck=use_bottleneck,
+                                                       trigram_embed=trigram_embed,
+                                                       )
+        if weight_initializer is None:
+            weight_initializer = self.backbone_model.weight_initializer
+        if bias_initializer is None:
+            bias_initializer = self.backbone_model.bias_initializer
+        # Construct nsp_classifier for next sentence prediction
+        self.nsp_classifier = nn.Dense(units=2,
+                                       weight_initializer=weight_initializer)
+        self.mlm_decoder = nn.HybridSequential()
+        # Extra non-linear layer
+        self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
+                                      flatten=False,
+                                      weight_initializer=weight_initializer,
+                                      bias_initializer=bias_initializer))
+        self.mlm_decoder.add(get_activation(self.backbone_model.activation))
+        # use basic layer normalization for pretaining
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        self.mlm_decoder.hybridize()
+        # only load the dense weights with a re-initialized bias
+        # parameters are stored in 'word_embed_bias' which is
+        # not used in original embedding
+        self.embedding_table = nn.Dense(
+            units=self.backbone_model.vocab_size,
+            in_units=self.backbone_model.embed_size,
+            flatten=False,
+            bias_initializer=bias_initializer)
+        self.embedding_table self.backbone_model.word_embed
+        if self.backbone_model.embed_size != self.backbone_model.units:
+            self.extra_table = nn.Dense(
                 units=self.backbone_model.vocab_size,
-                in_units=self.backbone_model.embed_size,
+                in_units=self.backbone_model.units -
+                self.backbone_model.embed_size,
                 flatten=False,
-                params=self.backbone_model.word_embed.collect_params('.*weight'),
-                bias_initializer=bias_initializer,
-                prefix='mlm_score_')
-            if self.backbone_model.embed_size != self.backbone_model.units:
-                self.extra_table = nn.Dense(
-                    units=self.backbone_model.vocab_size,
-                    in_units=self.backbone_model.units -
-                    self.backbone_model.embed_size,
-                    flatten=False,
-                    use_bias=False,
-                    bias_initializer=bias_initializer,
-                    prefix='mlm_extra_score_')
+                use_bias=False,
+                bias_initializer=bias_initializer)
 
     def hybrid_forward(self, F, inputs, token_types, valid_length,
                        masked_positions):

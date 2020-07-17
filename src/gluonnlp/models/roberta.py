@@ -37,8 +37,8 @@ from mxnet import use_np
 from mxnet.gluon import HybridBlock, nn
 
 from ..op import select_vectors_by_position
-from ..base import (get_model_zoo_home_dir, get_repo_model_zoo_url,
-                    get_model_zoo_checksum_dir)
+from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, \
+                   get_model_zoo_checksum_dir)
 from ..layers import PositionalEmbedding, get_activation
 from ..registry import BACKBONE_REGISTRY
 from ..utils.misc import download, load_checksum_stats
@@ -133,9 +133,7 @@ class RobertaModel(HybridBlock):
                  use_pooler=True,
                  classifier_activation=False,
                  encoder_normalize_before=True,
-                 output_all_encodings=False,
-                 prefix=None,
-                 params=None):
+                 output_all_encodings=False):
         """
 
         Parameters
@@ -162,10 +160,8 @@ class RobertaModel(HybridBlock):
             Whether to use classification head
         encoder_normalize_before
         output_all_encodings
-        prefix
-        params
         """
-        super(RobertaModel, self).__init__(prefix=prefix, params=params)
+        super().__init__()
         self._dtype = dtype
         self._output_all_encodings = output_all_encodings
         self.vocab_size = vocab_size
@@ -187,54 +183,47 @@ class RobertaModel(HybridBlock):
         self.embed_initializer = embed_initializer
         self.bias_initializer = bias_initializer
 
-        with self.name_scope():
-            self.word_embed = nn.Embedding(
-                input_dim=self.vocab_size,
-                output_dim=self.units,
-                weight_initializer=self.embed_initializer,
-                dtype=self._dtype,
-                prefix='word_embed_'
-            )
-            if self.encoder_normalize_before:
-                self.embed_ln = nn.LayerNorm(
-                    epsilon=self.layer_norm_eps,
-                    in_channels=self.units,
-                    prefix='embed_ln_'
-                )
-            self.embed_dropout = nn.Dropout(self.hidden_dropout_prob)
-            self.pos_embed = PositionalEmbedding(
-                units=self.units,
-                max_length=self.max_length,
-                dtype=self._dtype,
-                method=pos_embed_type,
-                prefix='pos_embed_'
-            )
+        self.word_embed = nn.Embedding(
+            input_dim=self.vocab_size,
+            output_dim=self.units,
+            weight_initializer=self.embed_initializer,
+            dtype=self._dtype
+        )
+        if self.encoder_normalize_before:
+            self.embed_ln = nn.LayerNorm(
+                epsilon=self.layer_norm_eps,
+                in_channels=self.units)
+        self.embed_dropout = nn.Dropout(self.hidden_dropout_prob)
+        self.pos_embed = PositionalEmbedding(
+            units=self.units,
+            max_length=self.max_length,
+            dtype=self._dtype,
+            method=pos_embed_type)
 
-            self.encoder = RobertaEncoder(
-                units=self.units,
-                hidden_size=self.hidden_size,
-                num_layers=self.num_layers,
-                num_heads=self.num_heads,
-                attention_dropout_prob=self.attention_dropout_prob,
-                hidden_dropout_prob=self.hidden_dropout_prob,
-                layer_norm_eps=self.layer_norm_eps,
-                weight_initializer=self.weight_initializer,
-                bias_initializer=self.bias_initializer,
-                activation=self.activation,
-                dtype=self._dtype,
-                output_all_encodings=self._output_all_encodings
-            )
-            self.encoder.hybridize()
+        self.encoder = RobertaEncoder(
+            units=self.units,
+            hidden_size=self.hidden_size,
+            num_layers=self.num_layers,
+            num_heads=self.num_heads,
+            attention_dropout_prob=self.attention_dropout_prob,
+            hidden_dropout_prob=self.hidden_dropout_prob,
+            layer_norm_eps=self.layer_norm_eps,
+            weight_initializer=self.weight_initializer,
+            bias_initializer=self.bias_initializer,
+            activation=self.activation,
+            dtype=self._dtype,
+            output_all_encodings=self._output_all_encodings
+        )
+        self.encoder.hybridize()
 
-            if self.use_pooler and self.classifier_activation:
-                # Construct pooler
-                self.pooler = nn.Dense(units=self.units,
-                                       in_units=self.units,
-                                       flatten=False,
-                                       activation=self.pooler_activation,
-                                       weight_initializer=self.weight_initializer,
-                                       bias_initializer=self.bias_initializer,
-                                       prefix='pooler_')
+        if self.use_pooler and self.classifier_activation:
+            # Construct pooler
+            self.pooler = nn.Dense(units=self.units,
+                                   in_units=self.units,
+                                   flatten=False,
+                                   activation=self.pooler_activation,
+                                   weight_initializer=self.weight_initializer,
+                                   bias_initializer=self.bias_initializer)
 
     def hybrid_forward(self, F, tokens, valid_length):
         outputs = []
@@ -306,9 +295,7 @@ class RobertaModel(HybridBlock):
                  use_pooler=True,
                  classifier_activation=False,
                  encoder_normalize_before=True,
-                 output_all_encodings=False,
-                 prefix=None,
-                 params=None):
+                 output_all_encodings=False):
         cfg = RobertaModel.get_cfg().clone_merge(cfg)
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
@@ -331,9 +318,7 @@ class RobertaModel(HybridBlock):
                    dtype=cfg.MODEL.dtype,
                    use_pooler=use_pooler,
                    encoder_normalize_before=encoder_normalize_before,
-                   output_all_encodings=output_all_encodings,
-                   prefix=prefix,
-                   params=params)
+                   output_all_encodings=output_all_encodings)
 
 
 @use_np
@@ -351,10 +336,8 @@ class RobertaEncoder(HybridBlock):
                  activation='gelu',
                  dtype='float32',
                  output_all_encodings=False,
-                 output_attention=False,
-                 prefix='encoder_',
-                 params=None):
-        super(RobertaEncoder, self).__init__(prefix=prefix, params=params)
+                 output_attention=False):
+        super().__init__()
         self.units = units
         self.hidden_size = hidden_size
         self.num_layers = num_layers
@@ -366,25 +349,21 @@ class RobertaEncoder(HybridBlock):
         self._dtype = dtype
         self._output_all_encodings = output_all_encodings
         self._output_attention = output_attention
-        with self.name_scope():
-            self.all_layers = nn.HybridSequential(prefix='layers_')
-            with self.all_layers.name_scope():
-                for layer_idx in range(self.num_layers):
-                    self.all_layers.add(
-                        TransformerEncoderLayer(
-                            units=self.units,
-                            hidden_size=self.hidden_size,
-                            num_heads=self.num_heads,
-                            attention_dropout_prob=self.attention_dropout_prob,
-                            hidden_dropout_prob=self.hidden_dropout_prob,
-                            layer_norm_eps=self.layer_norm_eps,
-                            weight_initializer=weight_initializer,
-                            bias_initializer=bias_initializer,
-                            activation=self.activation,
-                            dtype=self._dtype,
-                            prefix='{}_'.format(layer_idx)
-                        )
-                    )
+        self.all_layers = nn.HybridSequential()
+        for layer_idx in range(self.num_layers):
+            self.all_layers.add(
+                TransformerEncoderLayer(
+                    units=self.units,
+                    hidden_size=self.hidden_size,
+                    num_heads=self.num_heads,
+                    attention_dropout_prob=self.attention_dropout_prob,
+                    hidden_dropout_prob=self.hidden_dropout_prob,
+                    layer_norm_eps=self.layer_norm_eps,
+                    weight_initializer=weight_initializer,
+                    bias_initializer=bias_initializer,
+                    activation=self.activation,
+                    dtype=self._dtype)
+            )
 
     def hybrid_forward(self, F, x, valid_length):
         atten_mask = gen_self_attn_mask(F, x, valid_length,
@@ -409,9 +388,7 @@ class RobertaEncoder(HybridBlock):
 class RobertaForMLM(HybridBlock):
     def __init__(self, backbone_cfg,
                  weight_initializer=None,
-                 bias_initializer=None,
-                 prefix=None,
-                 params=None):
+                 bias_initializer=None):
         """
 
         Parameters
@@ -419,42 +396,35 @@ class RobertaForMLM(HybridBlock):
         backbone_cfg
         weight_initializer
         bias_initializer
-        prefix
-        params
         """
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone_model = RobertaModel.from_cfg(backbone_cfg, prefix='')
-            if weight_initializer is None:
-                weight_initializer = self.backbone_model.weight_initializer
-            if bias_initializer is None:
-                bias_initializer = self.backbone_model.bias_initializer
-            self.units = self.backbone_model.units
-            self.mlm_decoder = nn.HybridSequential(prefix='mlm_')
-            with self.mlm_decoder.name_scope():
-                # Extra non-linear layer
-                self.mlm_decoder.add(nn.Dense(units=self.units,
-                                              in_units=self.units,
-                                              flatten=False,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              prefix='proj_'))
-                self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
-                                                  in_channels=self.units,
-                                                  prefix='ln_'))
-                # only load the dense weights with a re-initialized bias
-                # parameters are stored in 'word_embed_bias' which is
-                # not used in original embedding
-                self.mlm_decoder.add(
-                    nn.Dense(
-                        units=self.backbone_model.vocab_size,
-                        in_units=self.units,
-                        flatten=False,
-                        params=self.backbone_model.word_embed.collect_params('.*weight'),
-                        bias_initializer=bias_initializer,
-                        prefix='score_'))
-            self.mlm_decoder.hybridize()
+        super().__init__()
+        self.backbone_model = RobertaModel.from_cfg(backbone_cfg)
+        if weight_initializer is None:
+            weight_initializer = self.backbone_model.weight_initializer
+        if bias_initializer is None:
+            bias_initializer = self.backbone_model.bias_initializer
+        self.units = self.backbone_model.units
+        self.mlm_decoder = nn.HybridSequential()
+        # Extra non-linear layer
+        self.mlm_decoder.add(nn.Dense(units=self.units,
+                                      in_units=self.units,
+                                      flatten=False,
+                                      weight_initializer=weight_initializer,
+                                      bias_initializer=bias_initializer))
+        self.mlm_decoder.add(get_activation(self.backbone_model.activation))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                          in_channels=self.units))
+        # only load the dense weights with a re-initialized bias
+        # parameters are stored in 'word_embed_bias' which is
+        # not used in original embedding
+        self.mlm_decoder.add(
+            nn.Dense(
+                units=self.backbone_model.vocab_size,
+                in_units=self.units,
+                flatten=False
+                bias_initializer=bias_initializer))
+        self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
+        self.mlm_decoder.hybridize()
 
     def hybrid_forward(self, F, inputs, valid_length, masked_positions):
         """Getting the scores of the masked positions.

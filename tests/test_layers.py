@@ -120,6 +120,7 @@ def test_adaptive_embedding(vocab_size, cutoffs, embed_size, units, div_val):
                           [1000, None, 1.0]])
 @pytest.mark.parametrize('embed_size', [128])
 @pytest.mark.parametrize('in_units', [16])
+# TODO This test even passes without sharing the parameters. It needs to be improved.
 def test_projected_adaptive_softmax(vocab_size, cutoffs, embed_size, in_units, div_val):
     layer = ProjectedAdaptiveLogSoftmaxWithLoss(vocab_size=vocab_size, cutoffs=cutoffs,
                                                 embed_size=embed_size, in_units=in_units,
@@ -141,23 +142,22 @@ def test_projected_adaptive_softmax(vocab_size, cutoffs, embed_size, in_units, d
                                             cutoffs=cutoffs,
                                             embed_size=embed_size,
                                             in_units=in_units,
-                                            div_val=div_val,
-                                            params=embed_layer.collect_params('.*_inter_proj'))
+                                            div_val=div_val)
+    layer_with_shared_proj.share_parameters(embed_layer.collect_params('.*_inter_proj'))
     layer_with_shared_embed = \
         ProjectedAdaptiveLogSoftmaxWithLoss(vocab_size=vocab_size,
                                             cutoffs=cutoffs,
                                             embed_size=embed_size,
                                             in_units=in_units,
-                                            div_val=div_val,
-                                            params=embed_layer.collect_params('.*_embed'))
+                                            div_val=div_val)
+    layer_with_shared_embed.share_parameters(embed_layer.collect_params('.*_embed'))
     layer_with_shared_proj_embed = \
         ProjectedAdaptiveLogSoftmaxWithLoss(vocab_size=vocab_size,
                                             cutoffs=cutoffs,
                                             embed_size=embed_size,
                                             in_units=in_units,
-                                            div_val=div_val,
-                                            params=embed_layer.collect_params(
-                                                '(.*_embed|.*_inter_proj)'))
+                                            div_val=div_val)
+    layer_with_shared_proj_embed.share_parameters(embed_layer.collect_params('(.*_embed|.*_inter_proj)'))
     embed_layer.initialize()
     embed_layer.hybridize()
     layer_with_shared_proj.initialize()
