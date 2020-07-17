@@ -216,7 +216,10 @@ class ModelForQAConditionalV1(HybridBlock):
             Shape (batch_size, sequence_length)
         answerable_logits
         """
-        contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+        if self.use_segmentation:
+            contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+        else:
+            contextual_embeddings = self.backbone(tokens, valid_length)
         start_logits = self.get_start_logits(F, contextual_embeddings, p_mask)
         end_logits = self.get_end_logits(F, contextual_embeddings,
                                          F.np.expand_dims(start_position, axis=1),
@@ -264,7 +267,10 @@ class ModelForQAConditionalV1(HybridBlock):
             Shape (batch_size, sequence_length, 2)
         """
         # Shape (batch_size, sequence_length, C)
-        contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+        if self.use_segmentation:
+            contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+        else:
+            contextual_embeddings = self.backbone(tokens, valid_length)
         start_logits = self.get_start_logits(mx.nd, contextual_embeddings, p_mask)
         # The shape of start_top_index will be (..., start_top_n)
         start_top_logits, start_top_index = mx.npx.topk(start_logits, k=start_top_n, axis=-1,

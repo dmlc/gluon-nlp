@@ -171,6 +171,12 @@ class SquadDatasetProcessor:
         self._max_seq_length = max_seq_length
         self._max_query_length = max_query_length
 
+        vocab = tokenizer.vocab
+        self.pad_id = vocab.pad_id
+        # For roberta model, taking sepecial token <s> as [CLS] and </s> as [SEP]
+        self.cls_id = vocab.bos_id if 'cls_token' not in vocab.special_token_keys else vocab.cls_id
+        self.sep_id = vocab.eos_id if 'sep_token' not in vocab.special_token_keys else vocab.sep_id
+
     def process_sample(self, feature: SquadFeature):
         """Process the data to the following format.
 
@@ -220,10 +226,9 @@ class SquadDatasetProcessor:
             doc_stride=self._doc_stride,
             max_chunk_length=self._max_seq_length - len(truncated_query_ids) - 3)
         for chunk in chunks:
-            data = np.array([self._tokenizer.vocab.cls_id] + truncated_query_ids +
-                            [self._tokenizer.vocab.sep_id] +
+            data = np.array([self.cls_id] + truncated_query_ids + [self.sep_id] +
                             feature.context_token_ids[chunk.start:(chunk.start + chunk.length)] +
-                            [self._tokenizer.vocab.sep_id], dtype=np.int32)
+                            [self.sep_id], dtype=np.int32)
             valid_length = len(data)
             segment_ids = np.array([0] + [0] * len(truncated_query_ids) +
                                    [0] + [1] * chunk.length + [1], dtype=np.int32)

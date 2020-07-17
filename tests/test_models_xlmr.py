@@ -26,12 +26,11 @@ def test_xlmr():
             xlmr_model = XLMRModel.from_cfg(cfg)
             xlmr_model.load_parameters(params_path)
             # test mlm model
-            xlmr = XLMRForMLM(cfg)
+            xlmr_mlm_model = XLMRForMLM(cfg)
             if mlm_params_path is not None:
-                xlmr.load_parameters(mlm_params_path)
-            xlmr = XLMRForMLM(cfg)
-            xlmr.backbone_model.load_parameters(params_path)
-
+                xlmr_mlm_model.load_parameters(mlm_params_path)
+            xlmr_mlm_model = XLMRForMLM(cfg)
+            xlmr_mlm_model.backbone_model.load_parameters(params_path)
 
         # test forward
         batch_size = 1

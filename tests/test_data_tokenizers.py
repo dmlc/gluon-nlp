@@ -117,14 +117,14 @@ def verify_decode_spm(tokenizer, all_sentences, gt_int_decode_sentences):
                                           (all_sentences, gt_int_decode_sentences)]:
         if isinstance(sentences, str):
             gt_str_decode_sentences = sentences
-            if tokenizer.do_lower:
+            if tokenizer.lowercase:
                 gt_str_decode_sentences = gt_str_decode_sentences.lower()
             gt_str_decode_sentences = unicodedata.normalize('NFKC', gt_str_decode_sentences)
         elif isinstance(sentences, list):
             gt_str_decode_sentences = []
             for ele in sentences:
                 ele_gt_decode = ele
-                if tokenizer.do_lower:
+                if tokenizer.lowercase:
                     ele_gt_decode = ele_gt_decode.lower()
                 ele_gt_decode = unicodedata.normalize('NFKC', ele_gt_decode)
                 gt_str_decode_sentences.append(ele_gt_decode)

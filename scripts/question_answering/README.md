@@ -96,7 +96,7 @@ python run_squad.py \
 ```
 
 For RoBERTa and XLMR, we remove 'segment_ids' and replace [CLS] and [SEP] with
-<bos> and <eos> which stand for the beginning and end of sentences specifically.
+<s> and </s> which stand for the beginning and end of sentences specifically in original purpose.
 
 ```bash
 VERSION=2.0  # Either 2.0 or 1.1
