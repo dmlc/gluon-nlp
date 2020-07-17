@@ -270,7 +270,7 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
 
-    gluon_pretrain_model = MobileBertForPretrain(cfg, prefix='')
+    gluon_pretrain_model = MobileBertForPretrain(cfg)
     gluon_pretrain_model.initialize(ctx=ctx)
     gluon_pretrain_model.hybridize()
 

@@ -14,15 +14,12 @@ class ModelForQABasic(HybridBlock):
     another dense layer to map the contextual embeddings to the start scores and end scores.
 
     """
-    def __init__(self, backbone, weight_initializer=None, bias_initializer=None,
-                 prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone = backbone
-            self.qa_outputs = nn.Dense(units=2, flatten=False,
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       prefix='qa_outputs_')
+    def __init__(self, backbone, weight_initializer=None, bias_initializer=None):
+        super().__init__()
+        self.backbone = backbone
+        self.qa_outputs = nn.Dense(units=2, flatten=False,
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer)
 
     def hybrid_forward(self, F, tokens, token_types, valid_length, p_mask):
         """
@@ -77,39 +74,30 @@ class ModelForQAConditionalV1(HybridBlock):
 
     """
     def __init__(self, backbone, units=768, layer_norm_eps=1E-12, dropout_prob=0.1,
-                 activation='tanh', weight_initializer=None, bias_initializer=None,
-                 prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone = backbone
-            self.start_scores = nn.Dense(1, flatten=False,
-                                         weight_initializer=weight_initializer,
-                                         bias_initializer=bias_initializer,
-                                         prefix='start_scores_')
-            self.end_scores = nn.HybridSequential(prefix='end_scores_')
-            with self.end_scores.name_scope():
-                self.end_scores.add(nn.Dense(units, flatten=False,
-                                             weight_initializer=weight_initializer,
-                                             bias_initializer=bias_initializer,
-                                             prefix='mid_'))
-                self.end_scores.add(get_activation(activation))
-                self.end_scores.add(nn.LayerNorm(epsilon=layer_norm_eps))
-                self.end_scores.add(nn.Dense(1, flatten=False,
-                                             weight_initializer=weight_initializer,
-                                             bias_initializer=bias_initializer,
-                                             prefix='out_'))
-            self.answerable_scores = nn.HybridSequential(prefix='answerable_scores_')
-            with self.answerable_scores.name_scope():
-                self.answerable_scores.add(nn.Dense(units, flatten=False,
-                                                    weight_initializer=weight_initializer,
-                                                    bias_initializer=bias_initializer,
-                                                    prefix='mid_'))
-                self.answerable_scores.add(get_activation(activation))
-                self.answerable_scores.add(nn.Dropout(dropout_prob))
-                self.answerable_scores.add(nn.Dense(2, flatten=False,
-                                                    weight_initializer=weight_initializer,
-                                                    bias_initializer=bias_initializer,
-                                                    prefix='out_'))
+                 activation='tanh', weight_initializer=None, bias_initializer=None):
+        super().__init__()
+        self.backbone = backbone
+        self.start_scores = nn.Dense(1, flatten=False,
+                                     weight_initializer=weight_initializer,
+                                     bias_initializer=bias_initializer)
+        self.end_scores = nn.HybridSequential()
+        self.end_scores.add(nn.Dense(units, flatten=False,
+                                     weight_initializer=weight_initializer,
+                                     bias_initializer=bias_initializer))
+        self.end_scores.add(get_activation(activation))
+        self.end_scores.add(nn.LayerNorm(epsilon=layer_norm_eps))
+        self.end_scores.add(nn.Dense(1, flatten=False,
+                                     weight_initializer=weight_initializer,
+                                     bias_initializer=bias_initializer))
+        self.answerable_scores = nn.HybridSequential()
+        self.answerable_scores.add(nn.Dense(units, flatten=False,
+                                            weight_initializer=weight_initializer,
+                                            bias_initializer=bias_initializer))
+        self.answerable_scores.add(get_activation(activation))
+        self.answerable_scores.add(nn.Dropout(dropout_prob))
+        self.answerable_scores.add(nn.Dense(2, flatten=False,
+                                            weight_initializer=weight_initializer,
+                                            bias_initializer=bias_initializer))
 
     def get_start_logits(self, F, contextual_embedding, p_mask):
         """

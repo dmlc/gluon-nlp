@@ -265,11 +265,11 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
         assert_allclose(tf_params[k], backbone_params[k])
 
     # Build gluon model and initialize
-    gluon_model = ElectraModel.from_cfg(cfg, prefix='electra_')
+    gluon_model = ElectraModel.from_cfg(cfg)
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
 
-    gluon_disc_model = ElectraDiscriminator(cfg, prefix='electra_')
+    gluon_disc_model = ElectraDiscriminator(cfg)
     gluon_disc_model.initialize(ctx=ctx)
     gluon_disc_model.hybridize()
 
@@ -283,8 +283,7 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
                                        word_embed_params=word_embed_params,
                                        token_type_embed_params=token_type_embed_params,
                                        token_pos_embed_params=token_pos_embed_params,
-                                       embed_layer_norm_params=embed_layer_norm_params,
-                                       prefix='generator_')
+                                       embed_layer_norm_params=embed_layer_norm_params)
     gluon_gen_model.initialize(ctx=ctx)
     gluon_gen_model.hybridize()
 

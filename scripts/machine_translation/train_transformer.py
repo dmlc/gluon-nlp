@@ -357,7 +357,7 @@ def train(args):
     for v in model.collect_params().values():
         if v.grad_req != 'null':
             v.grad_req = 'add'
-    model.collect_params().zero_grad()
+    model.zero_grad()
     model_averager = AverageSGDTracker(model.collect_params())
     log_start_time = time.time()
     num_params, num_fixed_params = None, None
@@ -422,7 +422,7 @@ def train(args):
                 trainer.step(loss_denom.asnumpy() / rescale_loss)
                 accum_count = 0
                 loss_denom = 0
-                model.collect_params().zero_grad()
+                model.zero_grad()
                 if (args.epochs > 0 and epoch_id >= args.epochs - args.num_averages) or \
                    (args.max_update > 0 and n_train_iters >= args.max_update - args.num_averages * args.save_interval_update):
                     model_averager.step()

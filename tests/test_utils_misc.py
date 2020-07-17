@@ -18,10 +18,8 @@ def test_average_sgd_tracker():
     moving_avg_param = None
     net_final_moving_avg_param = None
     for use_moving_avg in [False, True]:
-        net = nn.HybridSequential(prefix='net_')
-        with net.name_scope():
-            net.add(nn.Dense(10))
-            net.add(nn.Dense(3))
+        net = nn.HybridSequential()
+        net.add(nn.Dense(10), nn.Dense(3))
         net.initialize(init=mx.init.One())
         net.hybridize()
         trainer = mx.gluon.Trainer(net.collect_params(), 'adam')
