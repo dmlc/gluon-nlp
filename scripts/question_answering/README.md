@@ -95,8 +95,8 @@ python run_squad.py \
     --max_grad_norm 0.1 \
 ```
 
-For RoBERTa and XLMR, we remove 'segment_ids' and replace [CLS] and [SEP] with
-<s> and </s> which stand for the beginning and end of sentences specifically in original purpose.
+For RoBERTa and XLMR, we remove 'segment_ids' and replace `[CLS]` and `[SEP]` with
+`<s>` and `</s>` which stand for the beginning and end of sentences respectively in original purpose.
 
 ```bash
 VERSION=2.0  # Either 2.0 or 1.1
