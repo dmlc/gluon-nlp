@@ -355,7 +355,6 @@ def train(args):
             bucket_scheme = ExpWidthBucket(bucket_len_step=1.2)
         else:
             raise NotImplementedError
-        batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
         # TODO(sxjscience) Support auto-bucket-size tuning
         train_batch_sampler = FixedBucketSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
                                                  batch_size=args.batch_size,
@@ -368,6 +367,7 @@ def train(args):
     else:
         raise NotImplementedError
     
+    batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
     train_data_loader = gluon.data.DataLoader(data_train,
                                               batch_sampler=train_batch_sampler,
                                               batchify_fn=batchify_fn,
