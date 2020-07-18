@@ -278,12 +278,14 @@ class BoundedBudgetSampler(BaseSampler):
         max tokens num of each batch
     max_sentences
         max sentences num of each batch
+    required_batch_size_multiple
+        require batch size to be a multiple of N (default: 1).
     seed
         The seed of the sampler
     """
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_tokens: int = -1, max_sentences: int = -1,
-                 seed: Optional[int] = -1):
+                 required_batch_size_multiple: int = 1, seed: Optional[int] = -1):
         assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
         assert max_tokens > 0 or max_sentences > 0, 'One of max_tokens and max_sentences must be larger than 0'
         self._lengths = np.array(lengths)
