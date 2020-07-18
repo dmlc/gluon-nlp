@@ -1105,7 +1105,8 @@ class TransformerNMTModel(HybridBlock):
                    dec_pre_norm=cfg.MODEL.DECODER.pre_norm,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
-                   bias_initializer=bias_initializer)
+                   bias_initializer=bias_initializer,
+                   dtype=cfg.MODEL.dtype)
 
 
 @use_np
