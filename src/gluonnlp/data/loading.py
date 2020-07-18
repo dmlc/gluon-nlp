@@ -81,7 +81,7 @@ class NumpyDataset(ArrayDataset):
         else:
             raise ValueError('Unsupported extension: %s' % filename)
         self._keys = keys
-        super(NumpyDataset, self).__init__(*data)
+        super().__init__(*data)
 
     @property
     def keys(self):
@@ -125,7 +125,7 @@ class _PathDataset(SimpleDataset):
         files = sorted(files)
         if len(files) == 0:
             raise ValueError('Cannot find any file with path "%s"' % file_pattern)
-        super(_PathDataset, self).__init__(files)
+        super().__init__(files)
 
 
 def _dataset_worker_fn(urls, dataset_fn, batch_sampler_fn):

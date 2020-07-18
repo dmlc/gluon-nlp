@@ -50,9 +50,9 @@ _URLS = {
     # The original address of Google One Billion Word dataset is
     # http://www.statmt.org/lm-benchmark/1-billion-word-language-modeling-benchmark-r13output.tar.gz
     # We uploaded the file to S3 to accelerate the speed
-    'gbw': 'https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/datasets/language_modeling/1-billion-word-language-modeling-benchmark-r13output.tar.gz',
+    'gbw': 'https://gluonnlp-numpy-data.s3-accelerate.amazonaws.com/datasets/language_modeling/1-billion-word-language-modeling-benchmark-r13output.tar.gz',
     # The data is obtained from https://raw.githubusercontent.com/rafaljozefowicz/lm/master/1b_word_vocab.txt
-    'gbw_vocab': 'https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/datasets/language_modeling/1b_word_vocab.txt'
+    'gbw_vocab': 'https://gluonnlp-numpy-data.s3-accelerate.amazonaws.com/datasets/language_modeling/1b_word_vocab.txt'
 }
 
 

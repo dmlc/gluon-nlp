@@ -1,7 +1,7 @@
 import mxnet as mx
 import numpy as np
 from numpy.testing import assert_allclose
-from mxnet.gluon import HybridBlock
+from mxnet.gluon import HybridBlock, Constant
 from mxnet.gluon.data import DataLoader
 import itertools
 mx.npx.set_np()
@@ -9,9 +9,9 @@ mx.npx.set_np()
 
 def test_const():
     class Foo(HybridBlock):
-        def __init__(self, prefix=None, params=None):
-            super(Foo, self).__init__(prefix=prefix, params=params)
-            self.weight = self.params.get_constant('const', np.ones((10, 10)))
+        def __init__(self):
+            super().__init__()
+            self.weight = Constant(np.ones((10, 10)))
 
         def hybrid_forward(self, F, x, weight):
             return x, weight.astype(np.float32)
@@ -35,8 +35,8 @@ def test_scalar():
 
 def test_gluon_nonzero_hybridize():
     class Foo(HybridBlock):
-        def __init__(self, prefix=None, params=None):
-            super(Foo, self).__init__(prefix=prefix, params=params)
+        def __init__(self):
+            super().__init__()
 
         def hybrid_forward(self, F, x):
             dat = F.np._internal.nonzero(x)

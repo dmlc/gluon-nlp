@@ -19,9 +19,9 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
     tgt_seq_length = 15
     units = 32
     enc = TransformerEncoder(units=units, hidden_size=64, num_layers=num_enc_layers, num_heads=4,
-                             dropout=0.0, pre_norm=pre_norm, prefix='enc_')
+                             dropout=0.0, pre_norm=pre_norm)
     dec = TransformerDecoder(units=units, hidden_size=64, num_layers=num_dec_layers, num_heads=4,
-                             dropout=0.0, pre_norm=pre_norm, prefix='dec_')
+                             dropout=0.0, pre_norm=pre_norm)
     enc.hybridize()
     dec.hybridize()
     enc.initialize()

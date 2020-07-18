@@ -1,6 +1,6 @@
 import argparse
 from .machine_translation import prepare_wmt
-from .question_answering import prepare_squad
+from .question_answering import prepare_squad, prepare_hotpotqa, prepare_searchqa, prepare_triviaqa
 from .language_modeling import prepare_lm
 from .music_generation import prepare_music_midi
 from .pretrain_corpus import prepare_bookcorpus, prepare_wikipedia, prepare_openwebtext

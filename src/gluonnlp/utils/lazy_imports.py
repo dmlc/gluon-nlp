@@ -23,7 +23,9 @@ __all__ = ['try_import_sentencepiece',
            'try_import_scipy',
            'try_import_mwparserfromhell',
            'try_import_fasttext',
-           'try_import_langid']
+           'try_import_langid',
+           'try_import_boto3',
+           'try_import_jieba']
 
 
 def try_import_sentencepiece():
@@ -132,3 +134,24 @@ def try_import_langid():
         raise ImportError('"langid" is not installed. You must install langid in order to use the'
                           ' functionality. You may try to use `pip install langid`.')
     return langid
+
+
+def try_import_boto3():
+    try:
+        import boto3
+    except ImportError:
+        raise ImportError('"boto3" is not installed. To enable fast downloading in EC2. You should '
+                          'install boto3 and correctly configure the S3. '
+                          'See https://boto3.readthedocs.io/ for more information. '
+                          'If you are using EC2, downloading from s3:// will '
+                          'be multiple times faster than using the traditional http/https URL.')
+    return boto3
+
+
+def try_import_jieba():
+    try:
+        import jieba
+    except ImportError:
+        raise ImportError('"jieba" is not installed. You must install jieba tokenizer. '
+                          'You may try to use `pip install jieba`')
+    return jieba

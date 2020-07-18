@@ -155,8 +155,7 @@ def get_pretraining_model(model_name, ctx_l,
                                tied_generator=False,
                                tied_embeddings=True,
                                disallow_correct=False,
-                               weight_initializer=TruncNorm(stdev=0.02),
-                               prefix='Pretrain_')
+                               weight_initializer=TruncNorm(stdev=0.02))
     model.initialize(ctx=ctx_l)
     model.hybridize()
     return cfg, tokenizer, model

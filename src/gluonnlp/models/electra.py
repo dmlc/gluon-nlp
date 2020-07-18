@@ -87,7 +87,7 @@ PRETRAINED_URL = {
         'params': 'google_electra_large/model-9baf9ff5.params',
         'disc_model': 'google_electra_large/disc_model-5b820c02.params',
         'gen_model': 'google_electra_large/gen_model-667121df.params',
-    },
+    }
 }
 
 FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'electra.txt'))
@@ -107,8 +107,8 @@ class ElectraEncoder(HybridBlock):
                  layer_norm_eps=1E-12,
                  weight_initializer=TruncNorm(stdev=0.02),
                  bias_initializer='zeros',
-                 activation='gelu', prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
+                 activation='gelu'):
+        super().__init__()
         assert units % num_heads == 0, \
             'In ElectraEncoder, The units should be divisible ' \
             'by the number of heads. Received units={}, num_heads={}' \
@@ -120,21 +120,18 @@ class ElectraEncoder(HybridBlock):
         self._output_attention = output_attention
         self._output_all_encodings = output_all_encodings
 
-        with self.name_scope():
-            self.all_encoder_layers = nn.HybridSequential(prefix='layers_')
-            with self.all_encoder_layers.name_scope():
-                for layer_idx in range(num_layers):
-                    self.all_encoder_layers.add(
-                        TransformerEncoderLayer(units=units,
-                                                hidden_size=hidden_size,
-                                                num_heads=num_heads,
-                                                attention_dropout_prob=attention_dropout_prob,
-                                                hidden_dropout_prob=hidden_dropout_prob,
-                                                layer_norm_eps=layer_norm_eps,
-                                                weight_initializer=weight_initializer,
-                                                bias_initializer=bias_initializer,
-                                                activation=activation,
-                                                prefix='{}_'.format(layer_idx)))
+        self.all_encoder_layers = nn.HybridSequential()
+        for layer_idx in range(num_layers):
+            self.all_encoder_layers.add(
+                TransformerEncoderLayer(units=units,
+                                        hidden_size=hidden_size,
+                                        num_heads=num_heads,
+                                        attention_dropout_prob=attention_dropout_prob,
+                                        hidden_dropout_prob=hidden_dropout_prob,
+                                        layer_norm_eps=layer_norm_eps,
+                                        weight_initializer=weight_initializer,
+                                        bias_initializer=bias_initializer,
+                                        activation=activation))
 
     def hybrid_forward(self, F, data, valid_length):
         """
@@ -208,15 +205,8 @@ class ElectraModel(HybridBlock):
                  weight_initializer=TruncNorm(stdev=0.02),
                  bias_initializer='zeros',
                  dtype='float32',
-                 use_pooler=True,
-                 tied_embeddings=False,
-                 word_embed_params=None,
-                 token_type_embed_params=None,
-                 token_pos_embed_params=None,
-                 embed_layer_norm_params=None,
-                 prefix=None,
-                 params=None):
-        super().__init__(prefix=prefix, params=params)
+                 use_pooler=True):
+        super().__init__()
         self._dtype = dtype
         self.use_pooler = use_pooler
         self.pos_embed_type = pos_embed_type
@@ -230,65 +220,44 @@ class ElectraModel(HybridBlock):
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
         self.layer_norm_eps = layer_norm_eps
-        with self.name_scope():
-            # Construct ElectraEncoder
-            self.encoder = ElectraEncoder(
-                units=units,
-                hidden_size=hidden_size,
-                num_layers=num_layers,
-                num_heads=num_heads,
-                attention_dropout_prob=attention_dropout_prob,
-                hidden_dropout_prob=hidden_dropout_prob,
-                output_attention=False,
-                output_all_encodings=False,
-                activation=activation,
-                layer_norm_eps=layer_norm_eps,
-                weight_initializer=weight_initializer,
-                bias_initializer=bias_initializer,
-                dtype=dtype,
-                prefix='enc_',
-            )
-            self.encoder.hybridize()
-            # Construct model embedding which consists of three parts including word embedding,
-            # type embedding and positional embeddings.
-            # The hyper-parameters "tied_embeddings" is particularly
-            # used for sharing the embeddings between the Electra generator and the
-            # Electra discriminator.
-            if tied_embeddings:
-                assert word_embed_params is not None
-                assert token_type_embed_params is not None
-                assert token_pos_embed_params is not None
-                assert embed_layer_norm_params is not None
+        # Construct ElectraEncoder
+        self.encoder = ElectraEncoder(
+            units=units,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            num_heads=num_heads,
+            attention_dropout_prob=attention_dropout_prob,
+            hidden_dropout_prob=hidden_dropout_prob,
+            output_attention=False,
+            output_all_encodings=False,
+            activation=activation,
+            layer_norm_eps=layer_norm_eps,
+            weight_initializer=weight_initializer,
+            bias_initializer=bias_initializer,
+            dtype=dtype,
+        )
+        self.encoder.hybridize()
 
-            self.word_embed = nn.Embedding(input_dim=vocab_size,
-                                           output_dim=embed_size,
-                                           weight_initializer=embed_initializer,
-                                           dtype=dtype,
-                                           params=word_embed_params,
-                                           prefix='word_embed_')
-            # Construct token type embedding
-            self.token_type_embed = nn.Embedding(input_dim=num_token_types,
-                                                 output_dim=embed_size,
-                                                 weight_initializer=weight_initializer,
-                                                 params=token_type_embed_params,
-                                                 prefix='token_type_embed_')
-            self.token_pos_embed = PositionalEmbedding(units=embed_size,
-                                                       max_length=max_length,
-                                                       dtype=self._dtype,
-                                                       method=pos_embed_type,
-                                                       params=token_pos_embed_params,
-                                                       prefix='token_pos_embed_')
-            self.embed_layer_norm = nn.LayerNorm(epsilon=self.layer_norm_eps,
-                                                 params=embed_layer_norm_params,
-                                                 prefix='embed_ln_')
+        self.word_embed = nn.Embedding(input_dim=vocab_size,
+                                       output_dim=embed_size,
+                                       weight_initializer=embed_initializer,
+                                       dtype=dtype)
+        # Construct token type embedding
+        self.token_type_embed = nn.Embedding(input_dim=num_token_types,
+                                             output_dim=embed_size,
+                                             weight_initializer=weight_initializer)
+        self.token_pos_embed = PositionalEmbedding(units=embed_size,
+                                                   max_length=max_length,
+                                                   dtype=self._dtype,
+                                                   method=pos_embed_type)
+        self.embed_layer_norm = nn.LayerNorm(epsilon=self.layer_norm_eps)
 
-            self.embed_dropout = nn.Dropout(hidden_dropout_prob)
-            if embed_size != units:
-                self.embed_factorized_proj = nn.Dense(units=units,
-                                                      flatten=False,
-                                                      weight_initializer=weight_initializer,
-                                                      bias_initializer=bias_initializer,
-                                                      prefix='embed_factorized_proj_')
+        self.embed_dropout = nn.Dropout(hidden_dropout_prob)
+        if embed_size != units:
+            self.embed_factorized_proj = nn.Dense(units=units,
+                                                  flatten=False,
+                                                  weight_initializer=weight_initializer,
+                                                  bias_initializer=bias_initializer)
 
     def hybrid_forward(self, F, inputs, token_types, valid_length=None):
         # pylint: disable=arguments-differ
@@ -403,16 +372,7 @@ class ElectraModel(HybridBlock):
         return cfg
 
     @classmethod
-    def from_cfg(cls,
-                 cfg,
-                 use_pooler=True,
-                 tied_embeddings=False,
-                 word_embed_params=None,
-                 token_type_embed_params=None,
-                 token_pos_embed_params=None,
-                 embed_layer_norm_params=None,
-                 prefix=None,
-                 params=None):
+    def from_cfg(cls, cfg, use_pooler=True):
         cfg = ElectraModel.get_cfg().clone_merge(cfg)
         assert cfg.VERSION == 1, 'Wrong version!'
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
@@ -435,14 +395,7 @@ class ElectraModel(HybridBlock):
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
-                   use_pooler=use_pooler,
-                   tied_embeddings=tied_embeddings,
-                   word_embed_params=word_embed_params,
-                   token_type_embed_params=token_type_embed_params,
-                   token_pos_embed_params=token_pos_embed_params,
-                   embed_layer_norm_params=embed_layer_norm_params,
-                   prefix=prefix,
-                   params=params)
+                   use_pooler=use_pooler)
 
 
 @use_np
@@ -456,9 +409,7 @@ class ElectraDiscriminator(HybridBlock):
 
     def __init__(self, backbone_cfg,
                  weight_initializer=None,
-                 bias_initializer=None,
-                 prefix=None,
-                 params=None):
+                 bias_initializer=None):
         """
 
         Parameters
@@ -466,31 +417,25 @@ class ElectraDiscriminator(HybridBlock):
         backbone_cfg
         weight_initializer
         bias_initializer
-        prefix
-        params
         """
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone_model = ElectraModel.from_cfg(backbone_cfg, prefix='')
-            if weight_initializer is None:
-                weight_initializer = self.backbone_model.weight_initializer
-            if bias_initializer is None:
-                bias_initializer = self.backbone_model.bias_initializer
-            self.rtd_encoder = nn.HybridSequential(prefix='disc_')
-            with self.rtd_encoder.name_scope():
-                # Extra non-linear layer
-                self.rtd_encoder.add(nn.Dense(units=self.backbone_model.units,
-                                              flatten=False,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              prefix='proj_'))
-                self.rtd_encoder.add(get_activation(self.backbone_model.activation))
-                self.rtd_encoder.add(nn.Dense(units=1,
-                                              flatten=False,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              prefix='predctions_'))
-            self.rtd_encoder.hybridize()
+        super().__init__()
+        self.backbone_model = ElectraModel.from_cfg(backbone_cfg)
+        if weight_initializer is None:
+            weight_initializer = self.backbone_model.weight_initializer
+        if bias_initializer is None:
+            bias_initializer = self.backbone_model.bias_initializer
+        self.rtd_encoder = nn.HybridSequential()
+        # Extra non-linear layer
+        self.rtd_encoder.add(nn.Dense(units=self.backbone_model.units,
+                                      flatten=False,
+                                      weight_initializer=weight_initializer,
+                                      bias_initializer=bias_initializer))
+        self.rtd_encoder.add(get_activation(self.backbone_model.activation))
+        self.rtd_encoder.add(nn.Dense(units=1,
+                                      flatten=False,
+                                      weight_initializer=weight_initializer,
+                                      bias_initializer=bias_initializer))
+        self.rtd_encoder.hybridize()
 
     def hybrid_forward(self, F, inputs, token_types, valid_length):
         """Getting the scores of the replaced token detection of the whole sentence
@@ -531,72 +476,49 @@ class ElectraGenerator(HybridBlock):
     """
 
     def __init__(self, backbone_cfg,
-                 tied_embeddings=True,
-                 word_embed_params=None,
-                 token_type_embed_params=None,
-                 token_pos_embed_params=None,
-                 embed_layer_norm_params=None,
                  weight_initializer=None,
-                 bias_initializer=None,
-                 prefix=None,
-                 params=None):
+                 bias_initializer=None):
         """
 
         Parameters
         ----------
         backbone_cfg
             Configuration of the backbone model
-        tied_embeddings
-            Reuse the embeddings of discriminator
-        word_embed_params
-            The parameters to load into word embeddings
-        token_type_embed_params
-            The parameters to load into word token type embeddings
-        token_pos_embed_params
-            The parameters to load into token positional embeddings
-        embed_layer_norm_params
-            The parameters to load into token layer normalization layer of embeddings
         weight_initializer
         bias_initializer
-        prefix
-        params
         """
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone_model = ElectraModel.from_cfg(
-                backbone_cfg,
-                tied_embeddings=tied_embeddings,
-                word_embed_params=word_embed_params,
-                token_type_embed_params=token_type_embed_params,
-                token_pos_embed_params=token_pos_embed_params,
-                embed_layer_norm_params=embed_layer_norm_params,
-                prefix='')
-            if weight_initializer is None:
-                weight_initializer = self.backbone_model.weight_initializer
-            if bias_initializer is None:
-                bias_initializer = self.backbone_model.bias_initializer
-            self.mlm_decoder = nn.HybridSequential(prefix='gen_')
-            with self.mlm_decoder.name_scope():
-                # Extra non-linear layer
-                self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
-                                              flatten=False,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              prefix='proj_'))
-                self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
-                                                  prefix='ln_'))
-                # only load the dense weights with a re-initialized bias
-                # parameters are stored in 'word_embed_bias' which is
-                # not used in original embedding
-                self.mlm_decoder.add(
-                    nn.Dense(
-                        units=self.backbone_model.vocab_size,
-                        flatten=False,
-                        params=self.backbone_model.word_embed.collect_params('.*weight'),
-                        bias_initializer=bias_initializer,
-                        prefix='score_'))
-            self.mlm_decoder.hybridize()
+        super().__init__()
+        self.backbone_model = ElectraModel.from_cfg(backbone_cfg)
+        if weight_initializer is None:
+            weight_initializer = self.backbone_model.weight_initializer
+        if bias_initializer is None:
+            bias_initializer = self.backbone_model.bias_initializer
+        self.mlm_decoder = nn.HybridSequential()
+        # Extra non-linear layer
+        self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
+                                      flatten=False,
+                                      weight_initializer=weight_initializer,
+                                      bias_initializer=bias_initializer))
+        self.mlm_decoder.add(get_activation(self.backbone_model.activation))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        # only load the dense weights with a re-initialized bias
+        # parameters are stored in 'word_embed_bias' which is
+        # not used in original embedding
+        self.mlm_decoder.add(
+            nn.Dense(
+                units=self.backbone_model.vocab_size,
+                flatten=False,
+                bias_initializer=bias_initializer))
+        self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
+        self.mlm_decoder.hybridize()
+
+    def tie_embeddings(self, word_embed_params=None, token_type_embed_params=None,
+                       token_pos_embed_params=None, embed_layer_norm_params=None):
+        self.backbone_model.word_embed.share_parameters(word_embed_params)
+        self.mlm_decoder[-1].share_parameters(word_embed_params)
+        self.backbone_model.token_type_embed.share_parameters(token_type_embed_params)
+        self.backbone_model.token_pos_embed.share_parameters(token_pos_embed_params)
+        self.backbone_model.embed_layer_norm.share_parameters(embed_layer_norm_params)
 
     def hybrid_forward(self, F, inputs, token_types, valid_length, masked_positions):
         """Getting the scores of the masked positions.
@@ -652,9 +574,7 @@ class ElectraForPretrain(HybridBlock):
                  temperature=1.0,
                  dtype='float32',
                  weight_initializer=None,
-                 bias_initializer=None,
-                 prefix=None,
-                 params=None):
+                 bias_initializer=None):
         """
 
         Parameters
@@ -677,10 +597,8 @@ class ElectraForPretrain(HybridBlock):
             Temperature of gumbel distribution for sampling from generator
         weight_initializer
         bias_initializer
-        prefix
-        params
         """
-        super().__init__(prefix=prefix, params=params)
+        super().__init__()
         self._uniform_generator = uniform_generator
         self._tied_generator = tied_generator
         self._tied_embeddings = tied_embeddings
@@ -691,34 +609,21 @@ class ElectraForPretrain(HybridBlock):
         self.disc_cfg = disc_cfg
         self.vocab_size = disc_cfg.MODEL.vocab_size
         self.gen_cfg = get_generator_cfg(disc_cfg)
-        self.discriminator = ElectraDiscriminator(disc_cfg, prefix='electra_')
+        self.discriminator = ElectraDiscriminator(disc_cfg)
         self.disc_backbone = self.discriminator.backbone_model
-        if tied_embeddings:
-            word_embed_params = self.disc_backbone.word_embed.collect_params()
-            token_type_embed_params = self.disc_backbone.token_pos_embed.collect_params()
-            token_pos_embed_params = self.disc_backbone.token_pos_embed.collect_params()
-            embed_layer_norm_params = self.disc_backbone.embed_layer_norm.collect_params()
-        else:
-            word_embed_params = None
-            token_type_embed_params = None
-            token_pos_embed_params = None
-            embed_layer_norm_params = None
 
         if not uniform_generator and not tied_generator:
-            self.generator = ElectraGenerator(
-                self.gen_cfg,
-                tied_embeddings=tied_embeddings,
-                word_embed_params=word_embed_params,
-                token_type_embed_params=token_type_embed_params,
-                token_pos_embed_params=token_pos_embed_params,
-                embed_layer_norm_params=embed_layer_norm_params,
-                prefix='generator_')
+            self.generator = ElectraGenerator(self.gen_cfg)
+            if tied_embeddings:
+                self.generator.tie_embeddings(self.disc_backbone.word_embed.collect_params(),
+                                              self.disc_backbone.token_type_embed.collect_params(),
+                                              self.disc_backbone.token_pos_embed.collect_params(),
+                                              self.disc_backbone.embed_layer_norm.collect_params())
             self.generator.hybridize()
 
         elif tied_generator:
             # Reuse the weight of the discriminator backbone model
-            self.generator = ElectraGenerator(
-                self.gen_cfg, tied_embeddings=False, prefix='generator_')
+            self.generator = ElectraGenerator(self.gen_cfg)
             self.generator.backbone_model = self.disc_backbone
             self.generator.hybridize()
         elif uniform_generator:
