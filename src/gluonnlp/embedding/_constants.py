@@ -539,3 +539,4 @@ FAST_TEXT_NPZ_SHA1 = {
     'cc.zea.300': ('cc.zea.300-c0a4fb02.npz', 'c0a4fb025aab6774db52d6a845108f5cf8738508'),
     'cc.zh.300': ('cc.zh.300-355cfcaf.npz', '355cfcafe71536226a1737aafb4530c9ba4fd09f'),
 }
+

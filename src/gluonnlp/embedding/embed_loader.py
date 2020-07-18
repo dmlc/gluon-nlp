@@ -28,8 +28,6 @@ import os
 import warnings
 
 import numpy as np
-from mxnet import nd, cpu
-from mxnet.util import use_np
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
 
 from . import _constants as C
@@ -102,7 +100,7 @@ def _load_embedding_npz(file_path, vocab, unknown):
     npz_dict = np.load(file_path, allow_pickle=True)
     unknown_token = npz_dict['unknown_token']
     if not unknown_token:
-        unknown_token = None
+        unknown_token = unknown
     else:
         if isinstance(unknown_token, np.ndarray):
             if unknown_token.dtype.kind == 'S':
@@ -115,7 +113,7 @@ def _load_embedding_npz(file_path, vocab, unknown):
 
     idx_to_token = npz_dict['idx_to_token'].tolist()
     token2idx = {x : i for i, x in enumerate(idx_to_token)}
-    idx_to_vec = nd.array(npz_dict['idx_to_vec'])
+    idx_to_vec = npz_dict['idx_to_vec']
     matrix = np.random.randn(len(vocab), idx_to_vec.shape[-1]).astype('float32')
     for token, i in vocab.token_to_idx.items():
         if token == vocab.unk_token and unknown_token is not None:
@@ -124,7 +122,7 @@ def _load_embedding_npz(file_path, vocab, unknown):
             word = token
         if word in token2idx:
             index = token2idx[word]
-            matrix[i] = idx_to_vec[index].asnumpy()
+            matrix[i] = idx_to_vec[index]
             hit_flags[i] = True
     return matrix, hit_flags
 
