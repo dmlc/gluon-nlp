@@ -142,7 +142,8 @@ class BertTransformer(HybridBlock):
                                       layer_norm_eps=layer_norm_eps,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer,
-                                      activation=activation))
+                                      activation=activation,
+                                      dtype=dtype))
 
     def hybrid_forward(self, F, data, valid_length):
         """
