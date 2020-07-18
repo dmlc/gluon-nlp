@@ -13,10 +13,21 @@ class ModelForQABasic(HybridBlock):
     Here, we directly use the backbone network to extract the contextual embeddings and use
     another dense layer to map the contextual embeddings to the start scores and end scores.
 
+    use_segmentation is used to mark whether we segment the input sentence. In RoBERTa and XLMR,
+    this flag is set to True, then the QA model no longer accept `token_types` as valid input.
+
+    - use_segmentation=True:
+        tokens :      <CLS> Question <SEP> Context <SEP>
+        token_typess:  0       0       0      1      1
+
+    - use_segmentation=False:
+        tokens :      <CLS> Question <SEP> Context <SEP>
+        token_typess:  None
     """
     def __init__(self, backbone, weight_initializer=None, bias_initializer=None,
                  use_segmentation=True):
         super().__init__()
+
         self.backbone = backbone
         self.use_segmentation = use_segmentation
         self.qa_outputs = nn.Dense(units=2, flatten=False,
@@ -77,6 +88,16 @@ class ModelForQAConditionalV1(HybridBlock):
 
     In the inference phase, we are able to use beam search to do the inference.
 
+    use_segmentation is used to mark whether we segment the input sentence. In RoBERTa and XLMR,
+    this flag is set to True, then the QA model no longer accept `token_types` as valid input.
+
+    - use_segmentation=True:
+        tokens :      <CLS> Question <SEP> Context <SEP>
+        token_typess:  0       0       0      1      1
+
+    - use_segmentation=False:
+        tokens :      <CLS> Question <SEP> Context <SEP>
+        token_typess:  None
     """
     def __init__(self, backbone, units=768, layer_norm_eps=1E-12, dropout_prob=0.1,
                  activation='tanh', weight_initializer=None, bias_initializer=None,
