@@ -160,7 +160,8 @@ def parse_args():
     parser.add_argument('--save_dir', type=str, default='transformer_out',
                         help='directory path to save the final model and training log')
     parser.add_argument('--overwrite_cache', action='store_true')
-    parser.add_argument('--fp16', action='store_true')
+    parser.add_argument('--fp16', action='store_true',
+                        help='Whether to use dtype float16')
     parser.add_argument('--gpus', type=str,
                         help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
     args = parser.parse_args()
@@ -445,7 +446,7 @@ def train(args):
                 trainer.step(loss_denom.asnumpy() / rescale_loss)
                 accum_count = 0
                 loss_denom = 0
-                model.collect_params().zero_grad()
+                model.zero_grad()
                 if (args.epochs > 0 and epoch_id >= args.epochs - args.num_averages) or \
                    (args.max_update > 0 and n_train_iters >= args.max_update - args.num_averages * args.save_interval_update):
                     model_averager.step()

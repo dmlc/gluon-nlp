@@ -128,7 +128,8 @@ python train_transformer.py \
     --tgt_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --save_dir backtranslation_transformer_wmt2014_ende_${SUBWORD_ALGO} \
     --cfg transformer_nmt_base \
-    --lr 0.002 \
+    --lr 0.0015 \
+    --batch_size 2025 \
     --max_update 60000 \
     --save_interval_update 1000 \
     --warmup_steps 4000 \
@@ -138,7 +139,7 @@ python train_transformer.py \
 
 # TODO nlp_average_checkpoint
 nlp_nmt average_checkpoint --prefix range() \
-    --suffix .params \
+    --suffix \
     --save-path backtranslation_transformer_wmt2014_ende_${SUBWORD_ALGO}/average.params
 
 # Finally, we can evaluate the model
