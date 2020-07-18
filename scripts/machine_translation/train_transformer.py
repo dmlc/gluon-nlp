@@ -160,6 +160,7 @@ def parse_args():
     parser.add_argument('--save_dir', type=str, default='transformer_out',
                         help='directory path to save the final model and training log')
     parser.add_argument('--overwrite_cache', action='store_true')
+    parser.add_argument('--fp16', action='store_true')
     parser.add_argument('--gpus', type=str,
                         help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
     args = parser.parse_args()
@@ -312,6 +313,8 @@ def train(args):
     cfg.defrost()
     cfg.MODEL.src_vocab_size = len(src_vocab)
     cfg.MODEL.tgt_vocab_size = len(tgt_vocab)
+    if args.fp16:
+        cfg.MODEL.dtype = 'float16'
     cfg.freeze()
     model = TransformerNMTModel.from_cfg(cfg)
     model.initialize(mx.init.Xavier(magnitude=args.magnitude),
