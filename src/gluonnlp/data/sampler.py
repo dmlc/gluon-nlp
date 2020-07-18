@@ -267,7 +267,7 @@ class SortedSampler(BaseSampler):
 
 
 class BoundedBudgetSampler(BaseSampler):
-    r"""Assign each data sample to bounded budget batches.
+    r"""Assign each data sample to bounded budget batches. (samples are sorted by length)
     see https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
 
     Parameters
@@ -279,7 +279,7 @@ class BoundedBudgetSampler(BaseSampler):
     max_sentences
         max sentences num of each batch
     seed
-        The seed of the sampler, set seed = -1 to disable random shuffle
+        The seed of the sampler
     """
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_tokens: int = -1, max_sentences: int = -1,
@@ -290,14 +290,17 @@ class BoundedBudgetSampler(BaseSampler):
         self._indices = np.array(range(len(lengths)))
         self._max_tokens = max_tokens
         self._max_sentences = max_sentences
-        self._seed = seed
         self._batches = []
-
-    def __iter__(self):
-        if self._seed > 0:
-            rng = np.random.RandomState(self._seed)
+        if seed > 0:
+            # some sentences with same length may influence the sort result
+            rng = np.random.RandomState(seed)
             rng.shuffle(self._indices)
-            self._batches = []
+        # sort
+        array_to_argsort = self._lengths[self._indices] if self._lengths.ndim == 1 else \
+                           self._lengths[self._indices][-1]
+        self._indices = self._indices[
+            np.argsort(array_to_argsort, kind='mergesort')
+        ]
         batch = []
         # max len in a batch
         batch_max_sample_len = np.array([0] * self._lengths.ndim)
@@ -311,12 +314,14 @@ class BoundedBudgetSampler(BaseSampler):
             batch_num_tokens = batch_num_sentences * batch_max_sample_len.sum()
             if (self._max_sentences > 0 and batch_num_sentences > self._max_sentences) or \
                (self._max_tokens > 0 and batch_num_tokens > self._max_tokens):
-                self._batches.append(batch)
+                self._batches.append(np.array(batch))
                 batch = []
                 batch_max_sample_len = self._lengths[index]
             batch.append(index)
         if len(batch) > 0:
-            self._batches.append(batch)
+            self._batches.append(np.array(batch))        
+        
+    def __iter__(self):
         for batch in self._batches:
             yield self._indices[batch]
 
@@ -325,7 +330,7 @@ class BoundedBudgetSampler(BaseSampler):
 
     def __repr__(self):
         ret = '{name}(\n' \
-            '  sample_num={sample_num}, batch_num={batch_num}\n' \
+            '  sample_num={sample_num},\n' \
             '  batch_num={batch_num}\n'\
             ')'\
             .format(name=self.__class__.__name__,
@@ -335,6 +340,7 @@ class BoundedBudgetSampler(BaseSampler):
 
 
 # TODO(?) Add rollover flag to BucketSampler, issue: https://github.com/dmlc/gluon-nlp/issues/982
+# TODO(Tao) sampler with bucket also need sort, https://github.com/pytorch/fairseq/blob/master/fairseq/data/language_pair_dataset.py#L370-L375
 # TODO(?) Add max_tokens option to BucketSampler and SortedSampler to make it similar to Fairseq: https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
 class FixedBucketSampler(BaseSampler):
     r"""Assign each data sample to a fixed bucket based on its length.
