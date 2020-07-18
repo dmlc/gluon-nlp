@@ -19,6 +19,7 @@
 
 import mxnet as mx
 import numpy as np
+from ..op import l2_normalize
 
 __all__ = ['CosineSimilarity', 'ThreeCosMul', 'ThreeCosAdd', 'HyperbolicCosineSimilarity']
 
@@ -45,8 +46,8 @@ def CosineSimilarity(x, y, eps=1e-10):
     assert dim == y.shape[-1], "Embedding dim for x, y are different!"
     x = x.reshape(-1, dim)
     y = y.reshape(-1, dim)
-    x = mx.nd.L2Normalization(x, eps=eps).asnumpy()
-    y = mx.nd.L2Normalization(y, eps=eps).asnumpy()
+    x = l2_normalize(mx.nd, x, eps=eps).asnumpy()
+    y = l2_normalize(mx.nd, y, eps=eps).asnumpy()
     n, m = x.shape[0], y.shape[0]
     x = np.expand_dims(x, axis=1)
     y = np.expand_dims(y, axis=0)
@@ -80,8 +81,8 @@ def HyperbolicCosineSimilarity(x, y, eps=1e-10):
     assert dim == y.shape[-1], "Embedding dim for x, y are different!"
     x = x.reshape(-1, dim)
     y = y.reshape(-1, dim)
-    x = mx.nd.L2Normalization(x, eps=eps).asnumpy()
-    y = mx.nd.L2Normalization(y, eps=eps).asnumpy()
+    x = l2_normalize(mx.nd, x, eps=eps).asnumpy()
+    y = l2_normalize(mx.nd, y, eps=eps).asnumpy()
     n, m = x.shape[0], y.shape[0]
     x = np.expand_dims(x, axis=1)
     y = np.expand_dims(y, axis=0)
