@@ -179,6 +179,8 @@ class RobertaModel(HybridBlock):
         self.use_pooler = use_pooler
         self.classifier_activation = classifier_activation
         self.encoder_normalize_before = encoder_normalize_before
+        self.weight_initializer = weight_initializer
+        self.bias_initializer = bias_initializer
 
         self.word_embed = nn.Embedding(
             input_dim=self.vocab_size,
