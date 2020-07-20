@@ -132,7 +132,7 @@ def _load_embedding_npz(file_path, vocab, unknown):
     token2idx = {x : i for i, x in enumerate(idx_to_token)}
     idx_to_vec = npz_dict['idx_to_vec']
     if vocab is None:
-        return idx_to_vec, Vocab(idx_to_vec, unk_token=unknown_token)
+        return idx_to_vec, Vocab(idx_to_token, unk_token=unknown_token)
     else:
         matrix = np.random.randn(len(vocab), idx_to_vec.shape[-1]).astype('float32')
         for token, i in vocab.token_to_idx.items():
@@ -172,7 +172,7 @@ def _check_and_get_path(pretrained_name_or_dir):
 
     return None
 
-def load_embeddings(vocab, pretrained_name_or_dir='glove.6B.50d', unknown='<unk>',
+def load_embeddings(vocab=None, pretrained_name_or_dir='glove.6B.50d', unknown='<unk>',
                     unk_method=None):
     """Load pretrained word embeddings for building an embedding matrix for a given Vocab.
 
@@ -238,7 +238,7 @@ def load_embeddings(vocab, pretrained_name_or_dir='glove.6B.50d', unknown='<unk>
         numpy.ndarray:
             An embedding matrix for the given vocabulary.
     """
-    assert isinstance(vocab, (Vocab, None)), "Only gluonnlp.data.Vocab is supported."
+    assert isinstance(vocab, (Vocab, type(None))), "Only gluonnlp.data.Vocab is supported."
     file_path = _check_and_get_path(pretrained_name_or_dir)
     if file_path is None:
         raise ValueError("Cannot recognize `{}`".format(pretrained_name_or_dir))
@@ -268,3 +268,4 @@ def load_embeddings(vocab, pretrained_name_or_dir='glove.6B.50d', unknown='<unk>
                 matrix[hit_flags == False] = unk_method(vocab.to_tokens(unk_idxs))
 
         return matrix
+
