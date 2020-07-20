@@ -20,17 +20,12 @@ def test_xlmr():
     for model_name in ['fairseq_xlmr_base']:
         with tempfile.TemporaryDirectory() as root:
             cfg, tokenizer, params_path, mlm_params_path =\
-                get_pretrained_xlmr(model_name, load_backbone=True, load_mlm=True, root=root)
+                get_pretrained_xlmr(model_name, load_backbone=True, load_mlm=False, root=root)
             assert cfg.MODEL.vocab_size == len(tokenizer.vocab)
             # test backbone
             xlmr_model = XLMRModel.from_cfg(cfg)
             xlmr_model.load_parameters(params_path)
-            # test mlm model
-            xlmr_mlm_model = XLMRForMLM(cfg)
-            if mlm_params_path is not None:
-                xlmr_mlm_model.load_parameters(mlm_params_path)
-            xlmr_mlm_model = XLMRForMLM(cfg)
-            xlmr_mlm_model.backbone_model.load_parameters(params_path)
+            # pass the mlm model
 
         # test forward
         batch_size = 1
