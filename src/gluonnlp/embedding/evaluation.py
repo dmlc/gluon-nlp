@@ -48,13 +48,8 @@ def CosineSimilarity(x, y, eps=1e-10):
     y = y.reshape(-1, dim)
     x = l2_normalize(mx.nd, x, eps=eps).asnumpy()
     y = l2_normalize(mx.nd, y, eps=eps).asnumpy()
-    n, m = x.shape[0], y.shape[0]
-    x = np.expand_dims(x, axis=1)
-    y = np.expand_dims(y, axis=0)
-    x = x.repeat(m, axis=1).reshape(-1, dim)
-    y = y.repeat(n, axis=0).reshape(-1, dim)
     res = _np_batch_dot(x, y)
-    return res.reshape((n, m))
+    return res.reshape((-1, ))
 
 def _HyperbolicDist(a, b, eps):
     return 1 + 2 * _np_batch_dot(a - b, a - b)/ \
@@ -83,18 +78,13 @@ def HyperbolicCosineSimilarity(x, y, eps=1e-10):
     y = y.reshape(-1, dim)
     x = l2_normalize(mx.nd, x, eps=eps).asnumpy()
     y = l2_normalize(mx.nd, y, eps=eps).asnumpy()
-    n, m = x.shape[0], y.shape[0]
-    x = np.expand_dims(x, axis=1)
-    y = np.expand_dims(y, axis=0)
-    x = x.repeat(m, axis=1).reshape(-1, dim)
-    y = y.repeat(n, axis=0).reshape(-1, dim)
 
     xy = _HyperbolicDist(x, y, eps)
     dis_x = _HyperbolicDist(x, np.zeros_like(x), eps)
     dis_y = _HyperbolicDist(y, np.zeros_like(y), eps)
     cos_xy = (dis_x * dis_y - xy) / \
         (np.sinh(np.arccosh(dis_x)) * np.sinh(np.arccosh(dis_y)) + eps)
-    return cos_xy.reshape((n, m))
+    return cos_xy.reshape((-1, ))
 
 class ThreeCosMul:
     """The 3CosMul analogy function.

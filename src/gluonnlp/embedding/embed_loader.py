@@ -16,7 +16,7 @@
 # under the License.
 
 # pylint: disable=consider-iterating-dictionary, too-many-lines
-"""Text token embedding."""
+"""Load token embedding"""
 
 __all__ = [
     'list_sources', 'load_embeddings'
@@ -67,7 +67,10 @@ def list_sources(embedding_name=None):
                 for embedding_name, embedding_cls in text_embedding_reg.items()}
 
 def _load_embedding_txt(file_path, vocab, unknown_token):
-    hit_flags = np.zeros(len(vocab), dtype=bool)
+    if vocab is not None:
+        result = np.zeros(len(vocab), dtype=bool)
+    else:
+        result = []
     with open(file_path, 'r', encoding='utf-8') as f:
         line = f.readline().strip()
         parts = line.split()
@@ -78,25 +81,39 @@ def _load_embedding_txt(file_path, vocab, unknown_token):
         else:
             dim = len(parts) - 1
             f.seek(0)
-        matrix = np.random.randn(len(vocab), dim).astype('float32')
+        if vocab is None:
+            matrix = []
+        else: matrix = np.random.randn(len(vocab), dim).astype('float32')
         for idx, line in enumerate(f, start_idx):
             try:
                 parts = line.strip().split()
                 word = ''.join(parts[:-dim])
                 nums = parts[-dim:]
-                if word == unknown_token and vocab.unk_token is not None:
-                    word = vocab.unk_token
-                if word in vocab:
-                    index = vocab[word]
-                    matrix[index] = np.fromstring(' '.join(nums), sep=' ', dtype='float32', count=dim)
-                    hit_flags[index] = True
+                if vocab is None:
+                    result.append(word)
+                    matrix.append(np.fromstring(' '.join(nums), sep=' ', dtype='float32', count=dim))
+                else:
+                    if word == unknown_token and vocab.unk_token is not None:
+                        word = vocab.unk_token
+                    if word in vocab:
+                        index = vocab[word]
+                        matrix[index] = np.fromstring(' '.join(nums), sep=' ', dtype='float32', count=dim)
+                        result[index] = True
             except Exception as e:
                 logging.error("Error occurred at the {} line.".format(idx))
                 raise e
-    return matrix, hit_flags
+    if vocab is None:
+        result = Vocab(result, unk_token=unknown_token)
+        if result[unknown_token] == len(result) - 1:
+            matrix.append(np.zeros_like(matrix[-1]))
+        matrix = np.array(matrix)
+    return matrix, result
 
 def _load_embedding_npz(file_path, vocab, unknown):
-    hit_flags = np.zeros(len(vocab), dtype=bool)
+    if vocab is not None:
+        result = np.zeros(len(vocab), dtype=bool)
+    else:
+        result = []
     npz_dict = np.load(file_path, allow_pickle=True)
     unknown_token = npz_dict['unknown_token']
     if not unknown_token:
@@ -114,38 +131,44 @@ def _load_embedding_npz(file_path, vocab, unknown):
     idx_to_token = npz_dict['idx_to_token'].tolist()
     token2idx = {x : i for i, x in enumerate(idx_to_token)}
     idx_to_vec = npz_dict['idx_to_vec']
-    matrix = np.random.randn(len(vocab), idx_to_vec.shape[-1]).astype('float32')
-    for token, i in vocab.token_to_idx.items():
-        if token == vocab.unk_token and unknown_token is not None:
-            word = unknown_token
-        else:
-            word = token
-        if word in token2idx:
-            index = token2idx[word]
-            matrix[i] = idx_to_vec[index]
-            hit_flags[i] = True
-    return matrix, hit_flags
+    if vocab is None:
+        return idx_to_vec, Vocab(idx_to_vec, unk_token=unknown_token)
+    else:
+        matrix = np.random.randn(len(vocab), idx_to_vec.shape[-1]).astype('float32')
+        for token, i in vocab.token_to_idx.items():
+            if token == vocab.unk_token and unknown_token is not None:
+                word = unknown_token
+            else:
+                word = token
+            if word in token2idx:
+                index = token2idx[word]
+                matrix[i] = idx_to_vec[index]
+                result[i] = True
+        return matrix, result
 
 def _get_file_url(cls_name, file_name):
     namespace = 'gluon/embeddings/{}'.format(cls_name)
     return _get_repo_file_url(namespace, file_name)
 
+def _get_file_path(cls_name, file_name, file_hash):
+    root_path = os.path.expanduser(os.path.join(get_home_dir(), 'embedding'))
+    embedding_dir = os.path.join(root_path, cls_name)
+    url = _get_file_url(cls_name, file_name)
+    file_path = os.path.join(embedding_dir, file_name)
+    if not os.path.exists(file_path) or not check_sha1(file_path, file_hash):
+        logging.info('Embedding file {} is not found. Downloading from Gluon Repository. '
+                        'This may take some time.'.format(file_name))
+        download(url, file_path, sha1_hash=file_hash)
+    return file_path
+
 def _check_and_get_path(pretrained_name_or_dir):
     if os.path.exists(pretrained_name_or_dir):
         return pretrained_name_or_dir
-    root_path = os.path.expanduser(os.path.join(get_home_dir(), 'embedding'))
     for cls_name, embedding_cls in text_embedding_reg.items():
         if pretrained_name_or_dir in embedding_cls:
             source = pretrained_name_or_dir
-            embedding_dir = os.path.join(root_path, cls_name)
             file_name, file_hash = embedding_cls[source]
-            url = _get_file_url(cls_name, file_name)
-            file_path = os.path.join(embedding_dir, file_name)
-            if not os.path.exists(file_path) or not check_sha1(file_path, file_hash):
-                logging.info('Embedding file {} is not found. Downloading from Gluon Repository. '
-                             'This may take some time.'.format(file_name))
-                download(url, file_path, sha1_hash=file_hash)
-            return file_path
+            return _get_file_path(cls_name, file_name, file_hash)
 
     return None
 
@@ -186,51 +209,62 @@ def load_embeddings(vocab, pretrained_name_or_dir='glove.6B.50d', unknown='<unk>
 
     Parameters
     ----------
-    vocab : gluonnlp.data.Vocab object, required
-        Any unknown token will be replaced by unknown_token and consequently
-        will be indexed as the same representation. Only used if oov_imputer is
-        not specified.
+    vocab : gluonnlp.data.Vocab object, default None
+        A vocabulary on which an embedding matrix is built.
+        If `vocab` is `None`, then all tokens in the pretrained file will be used.
     pretrained_name_or_dir : str, default 'glove.6B.50d'
         A file path for a pretrained embedding file or the name of the pretrained token embedding file.
         This method would first check if it is a file path.
         If not, the method will search it in the registry.
     unknown : str, default '<unk>'
-        Unknown token in the pretrained file.
+        To specify the unknown token in the pretrained file.
     unk_method : Callable, default None
         A function which receives `List[str]` and returns `numpy.ndarray`.
-        The input of the function is a list of words which do not occur in the pretrained file.
+        The input of the function is a list of words which are in the `vocab`,
+        but do not occur in the pretrained file.
         And the function is aimed to return an embedding matrix for these words.
         If `unk_method` is None, we generate vectors for these words,
         by sampling from normal distribution with the same std and mean of the embedding matrix.
+        It is only useful when `vocab` is not `None`.
 
     Returns
     -------
-    numpy.ndarray:
-        An embedding matrix for the given vocabulary.
+    If `vocab` is `None`
+        numpy.ndarray:
+            An embedding matrix in the pretrained file.
+        gluonnlp.data.Vocab:
+            The vocabulary in the pretrained file.
+    Otherwise,
+        numpy.ndarray:
+            An embedding matrix for the given vocabulary.
     """
-    assert isinstance(vocab, Vocab), "Only gluonnlp.data.Vocab is supported."
+    assert isinstance(vocab, (Vocab, None)), "Only gluonnlp.data.Vocab is supported."
     file_path = _check_and_get_path(pretrained_name_or_dir)
     if file_path is None:
         raise ValueError("Cannot recognize `{}`".format(pretrained_name_or_dir))
 
     if file_path.endswith('.npz'):
-        matrix, hit_flags = _load_embedding_npz(file_path, vocab, unknown)
+        matrix, result = _load_embedding_npz(file_path, vocab, unknown)
     else:
-        matrix, hit_flags = _load_embedding_txt(file_path, vocab, unknown)
+        matrix, result = _load_embedding_txt(file_path, vocab, unknown)
     dim = matrix.shape[-1]
-    total_hits = sum(hit_flags)
     logging.info("Pre-trained embedding dim: {}".format(dim))
-    logging.info("Found {} out of {} words in the pretrained embedding.".format(total_hits, len(vocab)))
-    if total_hits != len(vocab):
-        if unk_method is None:
-            found_vectors = matrix[hit_flags]
-            mean = np.mean(found_vectors, axis=0, keepdims=True)
-            std = np.std(found_vectors, axis=0, keepdims=True)
-            unfound_vec_num = len(vocab) - total_hits
-            r_vecs = np.random.randn(unfound_vec_num, dim).astype('float32') * std + mean
-            matrix[hit_flags == False] = r_vecs
-        else:
-            unk_idxs = (hit_flags == False).nonzero()[0]
-            matrix[hit_flags == False] = unk_method(vocab.to_tokens(unk_idxs))
+    if vocab is None:
+        return matrix, result
+    else:
+        hit_flags = result
+        total_hits = sum(hit_flags)
+        logging.info("Found {} out of {} words in the pretrained embedding.".format(total_hits, len(vocab)))
+        if total_hits != len(vocab):
+            if unk_method is None:
+                found_vectors = matrix[hit_flags]
+                mean = np.mean(found_vectors, axis=0, keepdims=True)
+                std = np.std(found_vectors, axis=0, keepdims=True)
+                unfound_vec_num = len(vocab) - total_hits
+                r_vecs = np.random.randn(unfound_vec_num, dim).astype('float32') * std + mean
+                matrix[hit_flags == False] = r_vecs
+            else:
+                unk_idxs = (hit_flags == False).nonzero()[0]
+                matrix[hit_flags == False] = unk_method(vocab.to_tokens(unk_idxs))
 
-    return matrix
+        return matrix
