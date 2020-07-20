@@ -51,7 +51,7 @@ def compute_exact(a_gold, a_pred):
 def compute_f1(a_gold, a_pred):
     """
     Compute the token-level f1 scores in which the common tokens are considered
-    as True Postives. Precision and recall are percentages of the number of
+    as True Positives. Precision and recall are percentages of the number of
     common tokens in the prediction and groud truth, respectively.
     """
     gold_toks = get_tokens(a_gold)

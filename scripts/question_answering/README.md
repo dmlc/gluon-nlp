@@ -126,6 +126,7 @@ We reproduced the ALBERT model which is released by Google, and fine-tune the th
 Fine-tuning the listed models with hyper-parameter learning rate 2e-5, epochs 3, warmup ratio 0.1 and max gradient norm 0.1 (as shown in command). Notice that the `batch_size` is set for each GPU and the global batch size is 48 for all experiments, besides that gradient accumulation (`num_accumulated`) is supported in the case of out of memory.
 
 Performance are shown in the table below, in which the SQuAD1.1 are evaluated with SQuAD2.0 checkpoints.
+Notice that the standard metrics of SQuAD are EM and F1. The former is an exact match score between predictions and references, while the latter is a token-level f1 score in which the common tokens are considered as True Positives.
 
 |Reproduced ALBERT Models (F1/EM)  | SQuAD 1.1 dev | SQuAD 2.0 dev |
 |----------------------------------|---------------|---------------|
@@ -152,7 +153,7 @@ For the reset pretrained models, the results on SQuAD1.1 and SQuAD2.0 are given 
 |ELECTRA small             | 85.42/78.95   | 74.44/71.86  |        
 |ELECTRA base              | 92.63/87.34   | 86.34/83.62  |
 |ELECTRA large             | 94.95/89.94   | 90.59/88.13  |
-|RoBERTa larger            | 88.86/94.58   | 85.93/89.01  |
+|RoBERTa large             | 94.58/88.86   | 89.01/85.93  |
 
 For reference, we have also included the results of original version from Google and Fairseq
 
@@ -163,7 +164,7 @@ For reference, we have also included the results of original version from Google
 |Google ELECTRA base       |     - /75.8    |     - /70.1   |
 |Google ELECTRA base       |     - /86.8    |     - /83.7   |
 |Google ELECTRA large      |     - /89.7    |     - /88.1   |
-|Fairseq RoBERTa large     |   88.9/94.6    |	86.5/89.4   |
+|Fairseq RoBERTa large     |   94.6/88.9    |	89.4/86.5   |
 
 
 All experiments done on AWS P3.8xlarge (4 x NVIDIA Tesla V100 16 GB)

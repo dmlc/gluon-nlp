@@ -179,14 +179,11 @@ class RobertaModel(HybridBlock):
         self.use_pooler = use_pooler
         self.classifier_activation = classifier_activation
         self.encoder_normalize_before = encoder_normalize_before
-        self.weight_initializer = weight_initializer
-        self.embed_initializer = embed_initializer
-        self.bias_initializer = bias_initializer
 
         self.word_embed = nn.Embedding(
             input_dim=self.vocab_size,
             output_dim=self.units,
-            weight_initializer=self.embed_initializer,
+            weight_initializer=embed_initializer,
             dtype=self._dtype
         )
         if self.encoder_normalize_before:
@@ -208,8 +205,8 @@ class RobertaModel(HybridBlock):
             attention_dropout_prob=self.attention_dropout_prob,
             hidden_dropout_prob=self.hidden_dropout_prob,
             layer_norm_eps=self.layer_norm_eps,
-            weight_initializer=self.weight_initializer,
-            bias_initializer=self.bias_initializer,
+            weight_initializer=weight_initializer,
+            bias_initializer=bias_initializer,
             activation=self.activation,
             dtype=self._dtype,
             output_all_encodings=self._output_all_encodings
@@ -222,8 +219,8 @@ class RobertaModel(HybridBlock):
                                    in_units=self.units,
                                    flatten=False,
                                    activation=self.pooler_activation,
-                                   weight_initializer=self.weight_initializer,
-                                   bias_initializer=self.bias_initializer)
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer)
 
     def hybrid_forward(self, F, tokens, valid_length):
         outputs = []
