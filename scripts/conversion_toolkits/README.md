@@ -40,24 +40,28 @@ done
 ## RoBERTa
 
 ```bash
+pip install fairseq==0.9.0
+
 for model in base large
 do
     mkdir roberta_${model}
     wget "https://dl.fbaipublicfiles.com/fairseq/models/roberta.${model}.tar.gz"
     tar zxf roberta.${model}.tar.gz --directory roberta_${model}
-    python convert_fairseq_roberta.py --fairseq_model_dir roberta_${model}/roberta.${model} --model_size ${model} --test
+    python convert_fairseq_roberta.py --fairseq_model_path roberta_${model}/roberta.${model} --model_size ${model} --test
 done
 ```
 
 ## XLM-R
 
 ```bash
+pip install fairseq==0.9.0
+
 for model in base large
 do
     mkdir xlmr_${model}
     wget "https://dl.fbaipublicfiles.com/fairseq/models/xlmr.${model}.tar.gz"
     tar zxf xlmr.${model}.tar.gz --directory xlmr_${model}
-    python convert_fairseq_xlmr.py --fairseq_model_dir xlmr_${model}/xlmr.${model} --model_size ${model} --test
+    python convert_fairseq_xlmr.py --fairseq_model_path xlmr_${model}/xlmr.${model} --model_size ${model} --test
 done
 ```
 
