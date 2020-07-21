@@ -33,7 +33,8 @@ def test_bert_get_pretrained(model_name):
 @pytest.mark.parametrize('model_name', list_pretrained_bert())
 def test_bert(model_name):
     # test from pretrained (fp32, fp16 only on GPU)
-    ctx = mx.gpu()
+    ctx = mx.context.current_context()
+    device_type = ctx.device_type
     assert len(list_pretrained_bert()) > 0
     with tempfile.TemporaryDirectory() as root:
         cfg, tokenizer, backbone_params_path, mlm_params_path =\
@@ -41,10 +42,10 @@ def test_bert(model_name):
         assert cfg.MODEL.vocab_size == len(tokenizer.vocab)
         bert_model = BertModel.from_cfg(cfg, dtype='float32')
         bert_model.load_parameters(backbone_params_path, ctx=ctx)
-        bert_model_fp16 = BertModel.from_cfg(cfg, dtype='float16')
-        bert_model_fp16.load_parameters(backbone_params_path, cast_dtype=True, ctx=ctx)
+        if device_type == 'gpu':
+            bert_model_fp16 = BertModel.from_cfg(cfg, dtype='float16')
+            bert_model_fp16.load_parameters(backbone_params_path, cast_dtype=True, ctx=ctx)
 
-    # test forward fp32 and fp16
     batch_size = 3
     seq_length = 32
     vocab_size = len(tokenizer.vocab)
@@ -58,11 +59,12 @@ def test_bert(model_name):
     out_fp32 = bert_model(input_ids, token_types, valid_length)
     mx.npx.waitall()
     # fp16
-    os.environ['MXNET_SAFE_ACCUMULATION'] = '1'
-    bert_model_fp16.cast('float16')
-    bert_model_fp16.hybridize()
-    out_fp16 = bert_model_fp16(input_ids, token_types, valid_length)
-    mx.npx.waitall()
-    os.environ['MXNET_SAFE_ACCUMULATION'] = '0'
-    for i, output in enumerate(out_fp32):
-        assert_allclose(out_fp32[i].asnumpy(), out_fp16[i].asnumpy(), 1E-1, 1E-1)
+    if device_type == 'gpu':
+        os.environ['MXNET_SAFE_ACCUMULATION'] = '1'
+        bert_model_fp16.cast('float16')
+        bert_model_fp16.hybridize()
+        out_fp16 = bert_model_fp16(input_ids, token_types, valid_length)
+        mx.npx.waitall()
+        os.environ['MXNET_SAFE_ACCUMULATION'] = '0'
+        for i, output in enumerate(out_fp32):
+            assert_allclose(out_fp32[i].asnumpy(), out_fp16[i].asnumpy(), 1E-1, 1E-1)
