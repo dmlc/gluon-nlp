@@ -783,6 +783,7 @@ def evaluate(args, last=True):
         args.model_name, ctx_l, args.classifier_dropout, dtype=args.eval_dtype)
     if args.eval_dtype == 'float16':
         qa_net.cast('float16')
+        qa_net.hybridize()
     # Prepare dev set
     dev_cache_path = os.path.join(CACHE_PATH,
                                   'dev_{}_squad_{}.ndjson'.format(args.model_name,
