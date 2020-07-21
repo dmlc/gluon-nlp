@@ -347,7 +347,6 @@ class ElectraModel(HybridBlock):
         embedding = self.embed_dropout(embedding)
         return embedding
 
-
     def apply_layerwise_decay(self, layerwise_decay, not_included=[]):
         """Apply the layer-wise gradient decay
 
@@ -376,6 +375,29 @@ class ElectraModel(HybridBlock):
                         continue
                 value.lr_mult = layerwise_decay**(max_depth - layer_depth)
 
+    def frozen_params(self, untunable_depth, not_included=[]):
+        """Froze part of parameters according to layer depth.
+
+        That is, make all layer that shallower than `untunable_depth` untunable
+        to stop the gradient backward computation and accelerate the training.
+
+        Parameters:
+        ----------
+        untunable_depth: int
+            the depth of the neural network starting from 1 to number of layers
+        not_included: list of str
+            A list or parameter names that not included in the untunable parameters
+        """
+        all_layers = self.encoder.all_encoder_layers
+        for _, value in self.collect_params('.*embed*').items():
+            value.grad_req = 'null'
+
+        for layer in all_layers[:untunable_depth]:
+            for key, value in layer.collect_params().items():
+                for pn in not_included:
+                    if pn in key:
+                        continue
+                value.grad_req = 'null'
 
     @staticmethod
     def get_cfg(key=None):

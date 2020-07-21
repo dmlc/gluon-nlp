@@ -414,33 +414,6 @@ def get_network(model_name,
     return cfg, tokenizer, qa_net, use_segmentation
 
 
-def untune_params(model, untunable_depth, not_included=[]):
-    """Froze part of parameters according to layer depth.
-
-    That is, make all layer that shallower than `untunable_depth` untunable
-    to stop the gradient backward computation and accelerate the training.
-
-    Parameters:
-    ----------
-    model
-        qa_net
-    untunable_depth: int
-        the depth of the neural network starting from 1 to number of layers
-    not_included: list of str
-        A list or parameter names that not included in the untunable parameters
-    """
-    all_layers = model.backbone.encoder.all_encoder_layers
-    for _, value in model.collect_params('.*embed*').items():
-        value.grad_req = 'null'
-
-    for layer in all_layers[:untunable_depth]:
-        for key, value in layer.collect_params().items():
-            for pn in not_included:
-                if pn in key:
-                    continue
-            value.grad_req = 'null'
-
-
 def train(args):
     store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
         args.comm_backend, args.gpus)
@@ -482,7 +455,7 @@ def train(args):
     if 'electra' in args.model_name:
         # Froze parameters, does not work for albert model since parameters in all layers are shared
         if args.untunable_depth > 0:
-            untune_params(qa_net, args.untunable_depth)
+            qa_net.backbone.frozen_params(args.untunable_depth)
         if args.layerwise_decay > 0:
             qa_net.backbone.apply_layerwise_decay(args.layerwise_decay)
 
