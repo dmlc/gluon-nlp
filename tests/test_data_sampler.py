@@ -128,3 +128,20 @@ def test_split_sampler_even_size(num_samples, num_parts):
         print(count)
     expected_count = int(num_samples + num_parts - 1) // num_parts * num_parts
     assert total_count == expected_count, (total_count, expected_count)
+
+
+@pytest.mark.parametrize('seq_lengths', [[np.random.randint(10, 100) for _ in range(N)],
+                                         [(np.random.randint(10, 100), np.random.randint(10, 100)) for _ in range(N)]])
+@pytest.mark.parametrize('max_tokens', [200, 500])
+@pytest.mark.parametrize('max_sentences', [-1, 5])
+@pytest.mark.parametrize('required_batch_size_multiple', [1, 5])
+@pytest.mark.parametrize('seed', [100, -1])
+def test_bounded_budget_sampler(seq_lengths, max_tokens, max_sentences,
+                                required_batch_size_multiple, seed):
+    sampler = s.BoundedBudgetSampler(seq_lengths, max_tokens, max_sentences,
+                                     required_batch_size_multiple, seed)
+    print(sampler)
+    total_sampled_ids = []
+    for batch_sample_ids in sampler:
+        total_sampled_ids.extend(batch_sample_ids)
+    assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
