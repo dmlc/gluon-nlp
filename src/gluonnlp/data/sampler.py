@@ -267,7 +267,7 @@ class SortedSampler(BaseSampler):
 
 
 class BoundedBudgetSampler(BaseSampler):
-    r"""Assign each data sample to bounded budget batches. (samples are sorted by length)
+    r"""Assign each data sample to bounded budget batches. Samples will be sorted by length before batchfy
     see https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
 
     Parameters
@@ -289,31 +289,23 @@ class BoundedBudgetSampler(BaseSampler):
         assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
         assert max_tokens > 0 or max_sentences > 0, 'One of max_tokens and max_sentences must be larger than 0'
         self._lengths = np.array(lengths)
+        if self._lengths.ndim == 2:
+            self._lengths = self._lengths.max(axis=1)
         self._indices = np.array(range(len(lengths)))
         self._max_tokens = max_tokens
         self._max_sentences = max_sentences
         self._batches = []
-        if seed > 0:
-            # some sentences with same length may influence the sort result
-            rng = np.random.RandomState(seed)
-            rng.shuffle(self._indices)
+        self._rng = np.random.RandomState(seed) if seed > 0 else None
         # sort
-        array_to_argsort = self._lengths[self._indices] if self._lengths.ndim == 1 else \
-                           self._lengths[self._indices][-1]
-        self._indices = self._indices[
-            np.argsort(array_to_argsort, kind='mergesort')
-        ]
+        self._indices = self._indices[np.argsort(self._lengths[self._indices], kind='mergesort')]
         batch = []
         # max len in a batch
-        batch_max_sample_len = np.array([0] * self._lengths.ndim)
+        batch_max_sample_len = 0
         for index in self._indices:
-            batch_max_sample_len = np.max(
-                [batch_max_sample_len, self._lengths[index]],
-                axis=0
-            )
+            batch_max_sample_len = max(batch_max_sample_len, self._lengths[index])
             # try to insert new sample to the batch
             batch_num_sentences = len(batch) + 1
-            batch_num_tokens = batch_num_sentences * batch_max_sample_len.sum()
+            batch_num_tokens = batch_num_sentences * batch_max_sample_len
             if (self._max_sentences > 0 and batch_num_sentences > self._max_sentences) or \
                (self._max_tokens > 0 and batch_num_tokens > self._max_tokens):
                 self._batches.append(np.array(batch))
@@ -324,6 +316,8 @@ class BoundedBudgetSampler(BaseSampler):
             self._batches.append(np.array(batch))        
         
     def __iter__(self):
+        if self._rng:
+            self._rng.shuffle(self._batches)
         for batch in self._batches:
             yield self._indices[batch]
 
