@@ -70,6 +70,13 @@ python run_squad.py \
     --overwrite_cache \
 ```
 
+We support multi-GPU training via horovod:
+
+```bash
+mpirun -np 4 -H localhost:4 python run_squad.py \
+    --comm_backend horovod \
+    ...
+```
 As for ELECTRA model, we fine-tune it with layer-wise learning rate decay as
 
 ```bash

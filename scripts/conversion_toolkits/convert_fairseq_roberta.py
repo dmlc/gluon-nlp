@@ -1,23 +1,26 @@
 import os
-import argparse
+import sys
+import json
 import shutil
 import logging
-import json
-from numpy.testing import assert_allclose
+import argparse
+
 import mxnet as mx
 import numpy as np
+from numpy.testing import assert_allclose
+
 import torch
-from gluonnlp.utils.misc import sha1sum, logging_config
-from gluonnlp.models.roberta import RobertaModel as gluon_RobertaModel
-from gluonnlp.data.tokenizers import HuggingFaceByteBPETokenizer
 from gluonnlp.data.vocab import Vocab as gluon_Vocab
+from gluonnlp.utils.misc import sha1sum, logging_config
 from fairseq.models.roberta import RobertaModel as fairseq_RobertaModel
+from gluonnlp.models.roberta import RobertaModel, RobertaForMLM
+from gluonnlp.data.tokenizers import HuggingFaceByteBPETokenizer
 
 mx.npx.set_np()
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert the fairseq RoBERTa Model to Gluon.')
-    parser.add_argument('--fairseq_model_dir', type=str, required=True,
+    parser.add_argument('--fairseq_model_path', type=str, required=True,
                         help='Directory of the fairseq RoBERTa model.')
     parser.add_argument('--model_size', type=str, choices=['base', 'large'], default='base',
                         help='Size of RoBERTa model.')
@@ -31,13 +34,13 @@ def parse_args():
 
 def convert_vocab(args, fairseq_model):
     print('converting vocab')
-    fairseq_dict_path = os.path.join(args.fairseq_model_dir, 'dict.txt')
+    fairseq_dict_path = os.path.join(args.fairseq_model_path, 'dict.txt')
     merges_save_path = os.path.join(args.save_dir, 'gpt2.merges')
     vocab_save_path =os.path.join(args.save_dir, 'gpt2.vocab')
     fairseq_vocab = fairseq_model.task.dictionary
     # bos_word attr missing in fairseq_vocab
     fairseq_vocab.bos_word = fairseq_vocab[fairseq_vocab.bos_index]
-    
+
     assert os.path.exists(fairseq_dict_path), \
            '{} not found'.format(fairseq_dict_path)
     from mxnet.gluon.utils import download
@@ -63,7 +66,7 @@ def convert_vocab(args, fairseq_model):
     inter_vocab = list(inter_vocab.items())
     inter_vocab = sorted(inter_vocab, key=lambda x : x[1])
     tokens = [e[0] for e in inter_vocab]
-    
+
     tail = [fairseq_vocab[-4],
             fairseq_vocab[-3],
             fairseq_vocab[-2],
@@ -84,15 +87,15 @@ def convert_vocab(args, fairseq_model):
     gluon_vocab.save(vocab_save_path)
     os.remove(temp_vocab_file)
     os.remove(temp_merges_file)
-    
+
     gluon_tokenizer = HuggingFaceByteBPETokenizer(
         merges_save_path,
         vocab_save_path
     )
-    
+
     if args.test:
         test_vocab(fairseq_model, gluon_tokenizer)
-    
+
     vocab_size = len(fairseq_vocab)
     print('| converted dictionary: {} types'.format(vocab_size))
     return vocab_size
@@ -103,14 +106,14 @@ def test_vocab(fairseq_model, gluon_tokenizer, check_all_tokens=False):
     gluon_vocab = gluon_tokenizer.vocab
     assert len(fairseq_vocab) == \
            len(gluon_vocab)
-    
+
     # assert all_tokens
     # roberta with gpt2 bytebpe bpe does not provide all tokens directly
     if check_all_tokens:
         for i in range(len(fairseq_vocab)):
             assert fairseq_vocab[i] == gluon_vocab.all_tokens[i], \
                    '{}, {}, {}'.format(i, fairseq_vocab[i], gluon_vocab.all_tokens[i])
-    
+
     # assert special tokens
     for special_tokens in ['unk', 'pad', 'eos', 'bos']:
         assert getattr(fairseq_vocab, special_tokens + '_index') == \
@@ -121,7 +124,7 @@ def test_vocab(fairseq_model, gluon_tokenizer, check_all_tokens=False):
         assert fairseq_vocab[-1] == \
                gluon_vocab.all_tokens[-1] == \
                '<mask>'
-    
+
     sentence = "Hello, y'all! How are you Ⅷ 😁 😁 😁 ?" + \
                'GluonNLP is great！！！!!!' + \
                "GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# 'abc'"
@@ -131,7 +134,7 @@ def test_vocab(fairseq_model, gluon_tokenizer, check_all_tokens=False):
     # Notice: we may append bos and eos
     # manuually after tokenizing sentences
     assert fs_tokens.numpy().tolist()[1:-1] == gl_tokens
-    
+
     # assert decode
     fs_sentence = fairseq_model.decode(fs_tokens)
     gl_sentence = gluon_tokenizer.decode(gl_tokens)
@@ -162,17 +165,24 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
 
 def convert_params(fairseq_model,
                    gluon_cfg,
-                   gluon_model_cls,
                    ctx,
+                   is_mlm=True,
                    gluon_prefix='robert_'):
     print('converting params')
     fairseq_params = fairseq_model.state_dict()
     fairseq_prefix = 'model.decoder.'
-    gluon_model = gluon_model_cls.from_cfg(
-        gluon_cfg,
-        return_all_hiddens=True,
-        prefix=gluon_prefix
-    )
+    if is_mlm:
+        gluon_model = RobertaForMLM(backbone_cfg=gluon_cfg, prefix=gluon_prefix)
+        # output all hidden states for testing
+        gluon_model.backbone_model._output_all_encodings = True
+        gluon_model.backbone_model.encoder._output_all_encodings = True
+    else:
+        gluon_model = RobertaModel.from_cfg(
+            gluon_cfg,
+            use_pooler=True,
+            output_all_encodings=True,
+            prefix=gluon_prefix
+        )
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
     gluon_params = gluon_model.collect_params()
@@ -196,7 +206,7 @@ def convert_params(fairseq_model,
             np.concatenate([fs_q_weight, fs_k_weight, fs_v_weight], axis=0))
         gl_qkv_bias.set_data(
             np.concatenate([fs_q_bias, fs_k_bias, fs_v_bias], axis=0))
-        
+
         for k, v in [
             ('self_attn.out_proj.weight', 'proj_weight'),
             ('self_attn.out_proj.bias', 'proj_bias'),
@@ -217,34 +227,41 @@ def convert_params(fairseq_model,
                 fairseq_params[fs_name].cpu().numpy())
 
     for k, v in [
-        ('sentence_encoder.embed_tokens.weight', 'tokens_embed_weight'),
+        ('sentence_encoder.embed_tokens.weight', 'word_embed_weight'),
         ('sentence_encoder.emb_layer_norm.weight', 'embed_ln_gamma'),
         ('sentence_encoder.emb_layer_norm.bias', 'embed_ln_beta'),
-        ('lm_head.dense.weight', 'lm_dense1_weight'),
-        ('lm_head.dense.bias', 'lm_dense1_bias'),
-        ('lm_head.layer_norm.weight', 'lm_ln_gamma'),
-        ('lm_head.layer_norm.bias', 'lm_ln_beta'),
-        ('lm_head.bias', 'tokens_embed_bias')
     ]:
         fs_name = fairseq_prefix + k
         gl_name = gluon_prefix + v
         gluon_params[gl_name].set_data(
             fairseq_params[fs_name].cpu().numpy())
-    
+
     # position embed weight
     padding_idx = fairseq_model.task.dictionary.pad_index
     fs_pos_embed_name = fairseq_prefix + 'sentence_encoder.embed_positions.weight'
     gl_pos_embed_name = gluon_prefix + 'pos_embed_embed_weight'
     gluon_params[gl_pos_embed_name].set_data(
         fairseq_params[fs_pos_embed_name].cpu().numpy()[padding_idx + 1:,:])
-    
-    # assert untie=False
-    assert np.array_equal(
-        fairseq_params[fairseq_prefix + 'sentence_encoder.embed_tokens.weight'].cpu().numpy(),
-        fairseq_params[fairseq_prefix + 'lm_head.weight'].cpu().numpy()
-    )
-    
+
+    if is_mlm:
+        for k, v in [
+            ('lm_head.dense.weight', 'mlm_proj_weight'),
+            ('lm_head.dense.bias', 'mlm_proj_bias'),
+            ('lm_head.layer_norm.weight', 'mlm_ln_gamma'),
+            ('lm_head.layer_norm.bias', 'mlm_ln_beta'),
+            ('lm_head.bias', 'word_embed_bias')
+        ]:
+            fs_name = fairseq_prefix + k
+            gl_name = gluon_prefix + v
+            gluon_params[gl_name].set_data(
+                fairseq_params[fs_name].cpu().numpy())
+        # assert untie=False
+        assert np.array_equal(
+            fairseq_params[fairseq_prefix + 'sentence_encoder.embed_tokens.weight'].cpu().numpy(),
+            fairseq_params[fairseq_prefix + 'lm_head.weight'].cpu().numpy()
+        )
     return gluon_model
+
 
 def test_model(fairseq_model, gluon_model, gpu):
     print('testing model')
@@ -263,25 +280,30 @@ def test_model(fairseq_model, gluon_model, gpu):
         seq_length,
         (batch_size,)
     )
+
     for i in range(batch_size): # add padding, for fairseq padding mask
         input_ids[i,valid_length[i]:] = padding_id
 
     gl_input_ids = mx.np.array(input_ids, dtype=np.int32, ctx=ctx)
     gl_valid_length = mx.np.array(valid_length, dtype=np.int32, ctx=ctx)
+    # project the all tokens that is taking whole positions
+    gl_masked_positions = mx.npx.arange_like(gl_input_ids, axis=1)
+    gl_masked_positions = gl_masked_positions + mx.np.zeros_like(gl_input_ids)
 
     fs_input_ids = torch.from_numpy(input_ids).cuda(gpu)
-    if gpu is not None:
-        fs_input_ids = fs_input_ids.cuda(gpu)
-    
-    fairseq_model.model.eval()
-    
-    gl_x, gl_all_hiddens = \
-        gluon_model(gl_input_ids, gl_valid_length)
 
-    fs_x, fs_extra = \
-        fairseq_model.model.cuda(gpu)(fs_input_ids, return_all_hiddens=True)
+    fairseq_model.model.eval()
+
+    gl_all_hiddens, gl_pooled, gl_mlm_scores = \
+        gluon_model(gl_input_ids, gl_valid_length, gl_masked_positions)
+
+    fs_mlm_scores, fs_extra = \
+        fairseq_model.model.cuda(gpu)(
+                fs_input_ids,
+                return_all_hiddens=True)
     fs_all_hiddens = fs_extra['inner_states']
-    
+
+    # checking all_encodings_outputs
     num_layers = fairseq_model.args.encoder_layers
     for i in range(num_layers + 1):
         gl_hidden = gl_all_hiddens[i].asnumpy()
@@ -295,14 +317,14 @@ def test_model(fairseq_model, gluon_model, gpu):
                 1E-3,
                 1E-3
             )
-
-    gl_x = gl_x.asnumpy()
-    fs_x = fs_x.transpose(0, 1)
-    fs_x = fs_x.detach().cpu().numpy()
+    # checking masked_language_scores
+    gl_mlm_scores = gl_mlm_scores.asnumpy()
+    fs_mlm_scores = fs_mlm_scores.transpose(0, 1)
+    fs_mlm_scores = fs_mlm_scores.detach().cpu().numpy()
     for j in range(batch_size):
         assert_allclose(
-            gl_x[j, :valid_length[j], :],
-            fs_x[j, :valid_length[j], :],
+            gl_mlm_scores[j, :valid_length[j], :],
+            fs_mlm_scores[j, :valid_length[j], :],
             1E-3,
             1E-3
         )
@@ -317,7 +339,7 @@ def rename(save_dir):
         new_name = '{file_prefix}-{short_hash}.{file_sufix}'.format(
                 file_prefix=file_prefix,
                 short_hash=long_hash[:8],
-                file_sufix=file_sufix)   
+                file_sufix=file_sufix)
         new_path = os.path.join(save_dir, new_name)
         shutil.move(old_path, new_path)
         file_size = os.path.getsize(new_path)
@@ -325,32 +347,41 @@ def rename(save_dir):
 
 def convert_fairseq_model(args):
     if not args.save_dir:
-        args.save_dir = os.path.basename(args.fairseq_model_dir) + '_gluon'
+        args.save_dir = os.path.basename(args.fairseq_model_path) + '_gluon'
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
-    fairseq_roberta = fairseq_RobertaModel.from_pretrained(args.fairseq_model_dir,
+
+    fairseq_roberta = fairseq_RobertaModel.from_pretrained(args.fairseq_model_path,
                                                            checkpoint_file='model.pt')
     vocab_size = convert_vocab(args, fairseq_roberta)
 
     gluon_cfg = convert_config(fairseq_roberta.args, vocab_size,
-                               gluon_RobertaModel.get_cfg().clone())
+                               RobertaModel.get_cfg().clone())
     with open(os.path.join(args.save_dir, 'model.yml'), 'w') as of:
         of.write(gluon_cfg.dump())
 
     ctx = mx.gpu(args.gpu) if args.gpu is not None else mx.cpu()
-    gluon_roberta = convert_params(fairseq_roberta,
-                                   gluon_cfg,
-                                   gluon_RobertaModel,
-                                   ctx,
-                                   gluon_prefix='roberta_')
+    for is_mlm in [False, True]:
+        gluon_roberta = convert_params(fairseq_roberta,
+                                       gluon_cfg,
+                                       ctx,
+                                       is_mlm=is_mlm,
+                                       gluon_prefix='roberta_')
 
-    if args.test:
-        test_model(fairseq_roberta, gluon_roberta, args.gpu)
+        if is_mlm:
+            if args.test:
+                test_model(fairseq_roberta, gluon_roberta, args.gpu)
 
-    gluon_roberta.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
-    logging.info('Convert the RoBERTa model in {} to {}'.
-                 format(os.path.join(args.fairseq_model_dir, 'model.pt'), \
-                        os.path.join(args.save_dir, 'model.params')))
+            gluon_roberta.save_parameters(os.path.join(args.save_dir, 'model_mlm.params'), deduplicate=True)
+            logging.info('Convert the RoBERTa MLM model in {} to {}'.
+                         format(os.path.join(args.fairseq_model_path, 'model.pt'), \
+                                os.path.join(args.save_dir, 'model_mlm.params')))
+        else:
+            gluon_roberta.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
+            logging.info('Convert the RoBERTa backbone model in {} to {}'.
+                         format(os.path.join(args.fairseq_model_path, 'model.pt'), \
+                                os.path.join(args.save_dir, 'model.params')))
+
     logging.info('Conversion finished!')
     logging.info('Statistics:')
     rename(args.save_dir)

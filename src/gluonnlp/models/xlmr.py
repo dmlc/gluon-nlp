@@ -117,7 +117,7 @@ def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
     cfg
         Network configuration
     tokenizer
-        The SentencepieceTokenizer
+        The HuggingFaceByteBPETokenizer
     params_path
         Path to the parameters
     mlm_params_path

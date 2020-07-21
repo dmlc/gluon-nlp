@@ -570,7 +570,8 @@ def list_pretrained_bert():
 
 def get_pretrained_bert(model_name: str = 'google_en_cased_bert_base',
                         root: str = get_model_zoo_home_dir(),
-                        load_backbone=True, load_mlm=False)\
+                        load_backbone: str = True,
+                        load_mlm: str = False)\
         -> Tuple[CN, HuggingFaceWordPieceTokenizer, str, str]:
     """Get the pretrained bert weights
 

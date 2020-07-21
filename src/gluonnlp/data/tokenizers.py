@@ -21,18 +21,20 @@ __all__ = ['WhitespaceTokenizer', 'SpacyTokenizer', 'JiebaTokenizer', 'MosesToke
            'HuggingFaceWordPieceTokenizer',
            'create', 'create_with_json', 'list_all']
 
-from typing import List, Tuple, Union, Optional
 import os
-import json
-from collections import OrderedDict
 import abc
 import sys
+import json
 import warnings
 import itertools
-from typing import NewType
-import sacremoses
-import jieba
+import unicodedata
 from uuid import uuid4
+from typing import List, Tuple, Union, NewType, Optional
+from collections import OrderedDict
+
+import jieba
+import sacremoses
+
 from .vocab import Vocab
 from ..registry import TOKENIZER_REGISTRY
 from ..utils.lazy_imports import try_import_subword_nmt, \

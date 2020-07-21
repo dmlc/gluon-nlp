@@ -41,7 +41,6 @@ def tokenize_lines_to_ids(lines, tokenizer):
     """
     results = []
     # tag line delimiters or doc delimiters
-    line_delimiters = False
     for line in lines:
         if not line:
             break
@@ -49,9 +48,7 @@ def tokenize_lines_to_ids(lines, tokenizer):
         # Single empty lines are used as line delimiters
         # Double empty lines are used as document delimiters
         if not line:
-            if not line_delimiters:
-                results.append([])
-            line_delimiters = not line_delimiters
+            results.append([])
         else:
             token_ids = tokenizer.encode(line, int)
             if token_ids:
@@ -125,7 +122,7 @@ def process_a_text(text_file, tokenizer, max_seq_length, short_seq_prob=0.05):
         for tokenized_line in tokenized_lines:
             current_sentences.append(tokenized_line)
             current_length += len(tokenized_line)
-            # Create feature when meets the empty line or  reaches the target length
+            # Create feature when meets the empty line or reaches the target length
             if (not tokenized_line and current_length != 0) or (current_length >= target_seq_length):
                 first_segment, second_segment = \
                     sentenceize(current_sentences, max_seq_length, target_seq_length)
@@ -265,11 +262,11 @@ def prepare_pretrain_text_dataset(
     """Create dataset based on the raw text files"""
     if not isinstance(filenames, (list, tuple)):
         filenames = [filenames]
-    # generate a filename based on the input filename ensuring no crash.
-    # filename example: urlsf_subset00-130_data.txt
-    suffix = re.findall(r'\d+-\d+', filenames[0])[0]
     if cached_file_path:
-        output_file = os.path.join(cached_file_path, "owt-pretrain-record-{}.npz".format(suffix))
+        # generate a filename based on the input filename ensuring no crash.
+        # filename example: urlsf_subset00-130_data.txt
+        suffix = re.split(r'\.|/', filenames[0])[-2]
+        output_file = os.path.join(cached_file_path, "{}-pretrain-record.npz".format(suffix))
     else:
         output_file = None
     np_features = get_all_features(
@@ -496,13 +493,17 @@ class ElectraMasker(HybridBlock):
         valid_candidates = valid_candidates.astype(np.float32)
         num_masked_position = F.np.maximum(
             1, F.np.minimum(N, round(valid_lengths * self._mask_prob)))
-        # The categorical distribution takes normalized probabilities as input
-        # softmax is used here instead of log_softmax
+
+        # Get the masking probability of each position
         sample_probs = F.npx.softmax(
-            self._proposal_distribution * valid_candidates, axis=-1)  # (B, L)
-        # Top-k Sampling is an alternative solution to avoid duplicates positions
-        masked_positions = F.npx.random.categorical(
-            sample_probs, shape=N, dtype=np.int32)
+           self._proposal_distribution * valid_candidates, axis=-1)  # (B, L)
+        sample_probs = F.npx.stop_gradient(sample_probs)
+        gumbels = F.np.random.gumbel(F.np.zeros_like(sample_probs))
+        # Following the instruction of official repo to avoid deduplicate postions
+        # with Top_k Sampling as https://github.com/google-research/electra/issues/41
+        masked_positions = F.npx.topk(
+            sample_probs + gumbels, k=N, axis=-1, ret_typ='indices', dtype=np.int32)
+
         masked_weights = F.npx.sequence_mask(
             F.np.ones_like(masked_positions),
             sequence_length=num_masked_position,
@@ -511,21 +512,22 @@ class ElectraMasker(HybridBlock):
         length_masks = F.npx.sequence_mask(
             F.np.ones_like(input_ids, dtype=np.float32),
             sequence_length=valid_lengths,
-            use_sequence_length=True, axis=1, value=0).astype(np.float32)
+            use_sequence_length=True, axis=1, value=0)
         unmasked_tokens = select_vectors_by_position(
             F, input_ids, masked_positions) * masked_weights
         masked_weights = masked_weights.astype(np.float32)
-
         replaced_positions = (
             F.np.random.uniform(
                 F.np.zeros_like(masked_positions),
                 F.np.ones_like(masked_positions)) > self._mask_prob) * masked_positions
-        #  deal with multiple zeros
-        filled = F.np.where(
-            replaced_positions,
-            self.vocab.mask_id,
-            masked_positions).astype(np.int32)
-        masked_input_ids, _ = updated_vectors_by_position(F, input_ids, filled, replaced_positions)
+        # dealling with multiple zero values in replaced_positions which causes the [CLS] being replaced
+        filled = F.np.where(replaced_positions, self.vocab.mask_id, self.vocab.cls_id).astype(np.int32)
+        # Masking token by replacing with [MASK]
+        masked_input_ids = updated_vectors_by_position(F, input_ids, filled, replaced_positions)
+
+        # Note: It is likely have multiple zero values in masked_positions if number of masked of
+        # positions not reached the maximum. However, this example hardly exists since valid_length
+        # is almost always equal to max_seq_length
         masked_input = self.MaskedInput(input_ids=masked_input_ids,
                                         masks=length_masks,
                                         unmasked_tokens=unmasked_tokens,

@@ -36,7 +36,7 @@ import numpy as np
 from mxnet import use_np
 from mxnet.gluon import HybridBlock, nn
 from ..registry import BACKBONE_REGISTRY
-from ..op import gumbel_softmax, select_vectors_by_position, updated_vectors_by_position
+from ..op import gumbel_softmax, select_vectors_by_position, add_vectors_by_position, updated_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..layers import PositionalEmbedding, get_activation
 from .transformer import TransformerEncoderLayer
@@ -89,6 +89,14 @@ PRETRAINED_URL = {
         'params': 'google_electra_large/model-9baf9ff5.params',
         'disc_model': 'google_electra_large/disc_model-5b820c02.params',
         'gen_model': 'google_electra_large/gen_model-667121df.params',
+        'lowercase': True,
+    },
+    'gluon_electra_small_owt':{
+        'cfg': 'gluon_electra_small_owt/model-6e276d98.yml',
+        'vocab': 'gluon_electra_small_owt/vocab-e6d2b21d.json',
+        'params': 'gluon_electra_small_owt/model-e9636891.params',
+        'disc_model': 'gluon_electra_small_owt/disc_model-87836017.params',
+        'gen_model': 'gluon_electra_small_owt/gen_model-45a6fb67.params',
         'lowercase': True,
     }
 }
@@ -215,6 +223,8 @@ class ElectraModel(HybridBlock):
         self.pos_embed_type = pos_embed_type
         self.num_token_types = num_token_types
         self.vocab_size = vocab_size
+        self.num_layers = num_layers
+        self.num_heads = num_heads
         self.embed_size = embed_size
         self.units = units
         self.max_length = max_length
@@ -336,6 +346,36 @@ class ElectraModel(HybridBlock):
         embedding = self.embed_layer_norm(embedding)
         embedding = self.embed_dropout(embedding)
         return embedding
+
+
+    def apply_layerwise_decay(self, layerwise_decay, not_included=[]):
+        """Apply the layer-wise gradient decay
+
+        .. math::
+            lr = lr * layerwise_decay^(max_depth - layer_depth)
+
+        Parameters:
+        ----------
+        layerwise_decay: int
+            layer-wise decay power
+        not_included: list of str
+            A list or parameter names that not included in the layer-wise decay
+        """
+
+        # consider the task specific finetuning layer as the last layer, following with pooler
+        # In addition, the embedding parameters have the smaller learning rate based on this setting.
+        max_depth = self.num_layers
+        for _, value in self.collect_params('.*embed*').items():
+            value.lr_mult = layerwise_decay**(max_depth + 1)
+
+        for (layer_depth, layer) in enumerate(self.encoder.all_encoder_layers):
+            layer_params = layer.collect_params()
+            for key, value in layer_params.items():
+                for pn in not_included:
+                    if pn in key:
+                        continue
+                value.lr_mult = layerwise_decay**(max_depth - layer_depth)
+
 
     @staticmethod
     def get_cfg(key=None):
@@ -715,6 +755,8 @@ class ElectraForPretrain(HybridBlock):
 
         Returns
         -------
+        corrupted_tokens
+            Shape (batch_size, )
         fake_data
             Shape (batch_size, seq_length)
         labels
@@ -734,13 +776,15 @@ class ElectraForPretrain(HybridBlock):
             use_np_gumbel=False)
         corrupted_tokens = F.np.argmax(prob, axis=-1).astype(np.int32)
 
-        # Following the Official electra to deal with duplicate positions as
-        # https://github.com/google-research/electra/issues/41
-        original_data, updates_mask = updated_vectors_by_position(F,
+        original_data = updated_vectors_by_position(F,
             inputs, unmasked_tokens, masked_positions)
-        fake_data, _ = updated_vectors_by_position(F,
+        fake_data = updated_vectors_by_position(F,
             inputs, corrupted_tokens, masked_positions)
-
+        updates_mask = add_vectors_by_position(F, F.np.zeros_like(inputs),
+                F.np.ones_like(masked_positions), masked_positions)
+        # Dealing with multiple zeros in masked_positions which
+        # results in a non-zero value in the first index [CLS]
+        updates_mask = F.np.minimum(updates_mask, 1)
         labels = updates_mask * F.np.not_equal(fake_data, original_data)
         return corrupted_tokens, fake_data, labels
 

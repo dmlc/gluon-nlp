@@ -575,7 +575,8 @@ def list_pretrained_albert():
 
 def get_pretrained_albert(model_name: str = 'google_albert_base_v2',
                           root: str = get_model_zoo_home_dir(),
-                          load_backbone=True, load_mlm=False)\
+                          load_backbone: str = True,
+                          load_mlm: str = False)\
         -> Tuple[CN, SentencepieceTokenizer, str, str]:
     """Get the pretrained Albert weights
 
