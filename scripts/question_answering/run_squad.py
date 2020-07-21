@@ -171,6 +171,12 @@ class SquadDatasetProcessor:
         self._max_seq_length = max_seq_length
         self._max_query_length = max_query_length
 
+        vocab = tokenizer.vocab
+        self.pad_id = vocab.pad_id
+        # For roberta model, taking sepecial token <s> as [CLS] and </s> as [SEP]
+        self.cls_id = vocab.bos_id if 'cls_token' not in vocab.special_token_keys else vocab.cls_id
+        self.sep_id = vocab.eos_id if 'sep_token' not in vocab.special_token_keys else vocab.sep_id
+
     def process_sample(self, feature: SquadFeature):
         """Process the data to the following format.
 
@@ -220,10 +226,9 @@ class SquadDatasetProcessor:
             doc_stride=self._doc_stride,
             max_chunk_length=self._max_seq_length - len(truncated_query_ids) - 3)
         for chunk in chunks:
-            data = np.array([self._tokenizer.vocab.cls_id] + truncated_query_ids +
-                            [self._tokenizer.vocab.sep_id] +
+            data = np.array([self.cls_id] + truncated_query_ids + [self.sep_id] +
                             feature.context_token_ids[chunk.start:(chunk.start + chunk.length)] +
-                            [self._tokenizer.vocab.sep_id], dtype=np.int32)
+                            [self.sep_id], dtype=np.int32)
             valid_length = len(data)
             segment_ids = np.array([0] + [0] * len(truncated_query_ids) +
                                    [0] + [1] * chunk.length + [1], dtype=np.int32)
@@ -310,8 +315,10 @@ def get_network(model_name,
     cfg
     tokenizer
     qa_net
+    use_segmentation
     """
     # Create the network
+    use_segmentation = 'roberta' not in model_name and 'xlmr' not in model_name
     Model, cfg, tokenizer, download_params_path, _ = \
         get_backbone(model_name, load_backbone=not backbone_path)
     backbone = Model.from_cfg(cfg, use_pooler=False, dtype=dtype)
@@ -328,6 +335,7 @@ def get_network(model_name,
                 backbone_params_path, num_params, num_fixed_params))
     qa_net = ModelForQAConditionalV1(backbone=backbone,
                                      dropout_prob=dropout,
+                                     use_segmentation=use_segmentation,
                                      weight_initializer=TruncNorm(stdev=0.02))
     if checkpoint_path is None:
         # Ignore the UserWarning during initialization,
@@ -337,7 +345,7 @@ def get_network(model_name,
         qa_net.load_parameters(checkpoint_path, ctx=ctx_l, cast_dtype=True)
     qa_net.hybridize()
 
-    return cfg, tokenizer, qa_net
+    return cfg, tokenizer, qa_net, use_segmentation
 
 
 def untune_params(model, untunable_depth, not_included=[]):
@@ -407,10 +415,11 @@ def apply_layerwise_decay(model, layerwise_decay, not_included=[]):
 
 def train(args):
     ctx_l = parse_ctx(args.gpus)
-    cfg, tokenizer, qa_net = get_network(args.model_name, ctx_l,
-                                         args.classifier_dropout,
-                                         args.param_checkpoint,
-                                         args.backbone_path)
+    cfg, tokenizer, qa_net, use_segmentation \
+        = get_network(args.model_name, ctx_l,
+                      args.classifier_dropout,
+                      args.param_checkpoint,
+                      args.backbone_path)
     # Load the data
     train_examples = get_squad_examples(args.data_dir, segment='train', version=args.version)
     logging.info('Load data from {}, Version={}'.format(args.data_dir, args.version))
@@ -551,7 +560,7 @@ def train(args):
                 log_sample_num += len(tokens)
                 epoch_sample_num += len(tokens)
                 num_samples_per_update += len(tokens)
-                segment_ids = sample.segment_ids.as_in_ctx(ctx)
+                segment_ids = sample.segment_ids.as_in_ctx(ctx) if use_segmentation else None
                 valid_length = sample.valid_length.as_in_ctx(ctx)
                 p_mask = sample.masks.as_in_ctx(ctx)
                 gt_start = sample.gt_start.as_in_ctx(ctx)
@@ -779,7 +788,7 @@ def predict_extended(original_feature,
 
 def evaluate(args, last=True):
     ctx_l = parse_ctx(args.gpus)
-    cfg, tokenizer, qa_net = get_network(
+    cfg, tokenizer, qa_net, use_segmentation = get_network(
         args.model_name, ctx_l, args.classifier_dropout, dtype=args.eval_dtype)
     if args.eval_dtype == 'float16':
         qa_net.cast('float16')
@@ -847,13 +856,13 @@ def evaluate(args, last=True):
                 tokens = sample.data.as_in_ctx(ctx)
                 total_num += len(tokens)
                 log_num += len(tokens)
-                segment_ids = sample.segment_ids.as_in_ctx(ctx)
+                segment_ids = sample.segment_ids.as_in_ctx(ctx) if use_segmentation else None
                 valid_length = sample.valid_length.as_in_ctx(ctx)
                 p_mask = sample.masks.as_in_ctx(ctx)
                 p_mask = 1 - p_mask  # In the network, we use 1 --> no_mask, 0 --> mask
                 start_top_logits, start_top_index, end_top_logits, end_top_index, answerable_logits \
                  = qa_net.inference(tokens, segment_ids, valid_length, p_mask,
-                                                      args.start_top_n, args.end_top_n)
+                                    args.start_top_n, args.end_top_n)
                 for i, qas_id in enumerate(sample.qas_id):
                     result = RawResultExtended(qas_id=qas_id,
                                                start_top_logits=start_top_logits[i].asnumpy(),
