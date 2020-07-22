@@ -113,48 +113,42 @@ def convert_tf_assets(tf_assets_dir):
 
 CONVERT_MAP = [
     ('bert/', ''),
-    ('cls/', ''),
-    ('predictions/output_bias','word_embed_bias'),
-    ('seq_relationship/output_bias', 'nsp_bias'),
-    ('seq_relationship/output_weights', 'nsp_weight'),
-    ('predictions', 'mlm'),
-    ('extra_output_weights','extra_score_weight'),
-    ('transform/dense', 'proj'),
-    ('transform/', ''),
-    ('embeddings/word_embeddings', 'word_embed_weight'),
-    ('embeddings/token_type_embeddings', 'token_type_embed_weight'),
-    ('embeddings/position_embeddings', 'token_pos_embed_embed_weight'),
+    # backbone
+    ('layer_', 'all_layers.'),
+    ('attention/output/FakeLayerNorm', 'layer_norm'),
+    ('attention/output/dense', 'attention_proj'),
+    # inner ffn layer denoted by xxx
+    ('ffn_layers_xxx/intermediate/dense', 'stacked_ffn.xxx.ffn_1'),
+    ('ffn_layers_xxx/output/FakeLayerNorm', 'stacked_ffn.xxx.layer_norm'),
+    ('ffn_layers_xxx/output/dense', 'stacked_ffn.xxx.ffn_2'),
+    # last ffn layer denoted by xxy
+    ('intermediate/dense', 'stacked_ffn.xxy.ffn_1'),
+    ('output/FakeLayerNorm', 'stacked_ffn.xxy.layer_norm'),
+    ('output/dense', 'stacked_ffn.xxy.ffn_2'),
+    # embeddings
+    ('embeddings/word_embeddings', 'word_embed.weight'),
+    ('embeddings/token_type_embeddings', 'token_type_embed.weight'),
+    ('embeddings/position_embeddings', 'token_pos_embed._embed.weight'),
     ('embeddings/embedding_transformation', 'embed_factorized_proj'),
-    ('encoder', 'enc'),
-    ('layer', 'layers'),
-    ('embeddings', 'embed'),
-    ('attention/output/FakeLayerNorm', 'ln'),
+    ('embeddings/FakeLayerNorm', 'embed_layer_norm'),
     ('bottleneck/input/FakeLayerNorm', 'in_bottleneck_ln'),
     ('bottleneck/input/dense', 'in_bottleneck_proj'),
     ('bottleneck/attention/FakeLayerNorm', 'shared_qk_ln'),
     ('bottleneck/attention/dense', 'shared_qk'),
-    ('ffn_1/', ''),
-    ('attention/output/dense', 'proj'),
-    ('ffn_layers_xxx/intermediate/dense', 'stacked_ffns_xxx/ffn1'),
-    ('ffn_layers_xxx/output/FakeLayerNorm', 'stacked_ffns_xxx/ln'),
-    ('ffn_layers_xxx/output/dense', 'stacked_ffns_xxx_ffn2'),
-    # last ffn layer denoted by xxy
-    ('intermediate/dense', 'stacked_ffns_xxy/ffn1'),
-    ('output/FakeLayerNorm', 'stacked_ffns_xxy/ln'),
-    ('output/dense', 'stacked_ffns_xxy_ffn2'),
     ('output/bottleneck/FakeLayerNorm', 'out_bottleneck_ln'),
     ('output/bottleneck/dense', 'out_bottleneck_proj'),
-    ('attention/self', 'attn'),
+    ('attention/self/key', 'attn_key'),
+    ('attention/self/query', 'attn_query'),
+    ('attention/self/value', 'attn_value'),
     ('output/', ''),
-    ('pooler', 'pooler'),
     ('kernel', 'weight'),
-    ('FakeLayerNorm','ln'),
-    ('LayerNorm','ln'),
-    ('/', '_'),
+    ('FakeLayerNorm', 'layer_norm'),
+    ('LayerNorm', 'layer_norm'),
+    ('/', '.'),
 ]
 
 
-def get_name_map(tf_names, num_stacked_ffn, is_mlm=False):
+def get_name_map(tf_names, num_stacked_ffn, is_mlm):
     """
     Get the converting mapping between tensor names and mxnet names.
     The above mapping CONVERT_MAP is effectively adaptive to Bert and Albert,
@@ -177,18 +171,34 @@ def get_name_map(tf_names, num_stacked_ffn, is_mlm=False):
     name_map = {}
     for source_name in tf_names:
         target_name = source_name
-        if not is_mlm and 'cls' in source_name:
+        if 'cls' in target_name:
             continue
         ffn_idx = re.findall(r'ffn_layer_\d+', target_name)
         if ffn_idx:
-            target_name = target_name.replace(ffn_idx[0], 'ffn_layer_xxx')
+            target_name = target_name.replace(ffn_idx[0], 'ffn_layers_xxx')
         for old, new in CONVERT_MAP:
             target_name = target_name.replace(old, new)
         if ffn_idx:
-            target_name = target_name.replace('stacked_ffns_xxx', 'stacked_ffns_'+ffn_idx[0][10:])
-        if 'stacked_ffns_xxy' in target_name:
-            target_name = target_name.replace('stacked_ffns_xxy', 'stacked_ffns_'+str(num_stacked_ffn-1))
+            target_name = target_name.replace('stacked_ffn.xxx', 'stacked_ffn.' + ffn_idx[0][10:])
+        if 'stacked_ffn.xxy' in target_name:
+            target_name = target_name.replace('stacked_ffn.xxy', 'stacked_ffn.' + str(num_stacked_ffn-1))
+        if is_mlm:
+            target_name = 'backbone_model.' + target_name
         name_map[source_name] = target_name
+
+    if is_mlm:
+        name_map.update([
+             # for mlm models
+            ('cls/predictions/extra_output_weights', 'extra_table.weight'),
+            ('cls/predictions/output_bias', 'embedding_table.bias'),
+            # 'embedding_table.weight' is shared with word_embed
+            ('cls/predictions/transform/LayerNorm/beta', 'mlm_decoder.2.beta'),
+            ('cls/predictions/transform/LayerNorm/gamma', 'mlm_decoder.2.gamma'),
+            ('cls/predictions/transform/dense/bias', 'mlm_decoder.0.bias'),
+            ('cls/predictions/transform/dense/kernel', 'mlm_decoder.0.weight'),
+            ('cls/seq_relationship/output_bias', 'nsp_classifier.bias'),
+            ('cls/seq_relationship/output_weights', 'nsp_classifier.weight')
+        ])
     return name_map
 
 
@@ -264,8 +274,7 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
         assert_allclose(tf_params[k], backbone_params[k])
 
     # Build gluon model and initialize
-    gluon_model = MobileBertModel.from_cfg(cfg, prefix='',
-                                           use_pooler=True,
+    gluon_model = MobileBertModel.from_cfg(cfg, use_pooler=True,
                                            classifier_activation=False)
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
@@ -281,9 +290,8 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
     mx_masked_positions = mx.np.array(mlm_positions, dtype=np.int32, ctx=ctx)
 
     for is_mlm in [False, True]:
-        name_map = get_name_map(tf_names, cfg.MODEL.num_stacked_ffn, is_mlm=is_mlm)
+        name_map = get_name_map(tf_names, cfg.MODEL.num_stacked_ffn, is_mlm)
         # go through the gluon model to infer the shape of parameters
-
         if is_mlm:
             model = gluon_pretrain_model
             contextual_embedding, pooled_output, nsp_score, mlm_scores  = \
@@ -305,6 +313,7 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
                 mx_params[dst_name].set_data(tf_param_val.T)
             else:
                 mx_params[dst_name].set_data(tf_param_val)
+
         assert len(all_keys) == 0, 'parameters missing from tensorflow checkpoint'
 
         if not is_mlm:
