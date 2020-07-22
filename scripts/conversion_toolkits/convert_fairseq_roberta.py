@@ -167,7 +167,7 @@ def convert_params(fairseq_model,
                    gluon_cfg,
                    ctx,
                    is_mlm=True,
-                   gluon_prefix='roberta'):
+                   gluon_prefix=''):
     print('converting params')
     fairseq_params = fairseq_model.state_dict()
     fairseq_prefix = 'model.decoder.'
@@ -196,7 +196,7 @@ def convert_params(fairseq_model,
         fs_k_bias = fairseq_params[fs_atten_prefix + 'k_proj.bias'].cpu().numpy()
         fs_v_bias = fairseq_params[fs_atten_prefix + 'v_proj.bias'].cpu().numpy()
         gl_qkv_prefix = \
-            '{}encoder_layers_{}_attn_qkv_' \
+            '{}encoder.all_layers.{}.attn_qkv.' \
             .format(gluon_prefix, layer_id)
         gl_qkv_weight = gluon_params[gl_qkv_prefix + 'weight']
         gl_qkv_bias = gluon_params[gl_qkv_prefix + 'bias']
@@ -206,20 +206,20 @@ def convert_params(fairseq_model,
             np.concatenate([fs_q_bias, fs_k_bias, fs_v_bias], axis=0))
 
         for k, v in [
-            ('self_attn.out_proj.weight', 'proj.weight'),
-            ('self_attn.out_proj.bias', 'proj.bias'),
-            ('self_attn_layer_norm.weight', 'ln.gamma'),
-            ('self_attn_layer_norm.bias', 'ln.beta'),
+            ('self_attn.out_proj.weight', 'attention_proj.weight'),
+            ('self_attn.out_proj.bias', 'attention_proj.bias'),
+            ('self_attn_layer_norm.weight', 'layer_norm.gamma'),
+            ('self_attn_layer_norm.bias', 'layer_norm.beta'),
             ('fc1.weight', 'ffn.ffn1.weight'),
             ('fc1.bias', 'ffn.ffn1.bias'),
             ('fc2.weight', 'ffn.ffn2.weight'),
             ('fc2.bias', 'ffn.ffn2.bias'),
-            ('final_layer_norm.weight', 'ffn.ln.gamma'),
-            ('final_layer_norm.bias', 'ffn.ln.beta')
+            ('final_layer_norm.weight', 'ffn.layer_norm.gamma'),
+            ('final_layer_norm.bias', 'ffn.layer_norm.beta')
         ]:
             fs_name = '{}sentence_encoder.layers.{}.{}' \
                       .format(fairseq_prefix, layer_id, k)
-            gl_name = '{}encoder_layers_{}_{}' \
+            gl_name = '{}encoder.all_layers.{}.{}' \
                       .format(gluon_prefix, layer_id, v)
             gluon_params[gl_name].set_data(
                 fairseq_params[fs_name].cpu().numpy())
@@ -363,8 +363,7 @@ def convert_fairseq_model(args):
         gluon_roberta = convert_params(fairseq_roberta,
                                        gluon_cfg,
                                        ctx,
-                                       is_mlm=is_mlm,
-                                       gluon_prefix='roberta_')
+                                       is_mlm=is_mlm)
 
         if is_mlm:
             if args.test:
