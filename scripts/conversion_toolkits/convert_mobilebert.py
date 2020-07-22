@@ -112,8 +112,16 @@ def convert_tf_assets(tf_assets_dir):
 
 
 CONVERT_MAP = [
-    ('bert/', ''),
+    # mlm model
+    ('cls/', ''),
+    ('predictions/extra_output_weights', 'extra_table.weight'),
+    ('predictions/output_bias', 'embedding_table.bias'),
+    ('predictions/transform/LayerNorm', 'mlm_decoder.2'),
+    ('predictions/transform/dense', 'mlm_decoder.0'),
+    ('seq_relationship/output_bias', 'nsp_classifier.bias'),
+    ('seq_relationship/output_weights', 'nsp_classifier.weight'),
     # backbone
+    ('bert/', 'backbone_model.'),
     ('layer_', 'all_layers.'),
     ('attention/output/FakeLayerNorm', 'layer_norm'),
     ('attention/output/dense', 'attention_proj'),
@@ -148,7 +156,7 @@ CONVERT_MAP = [
 ]
 
 
-def get_name_map(tf_names, num_stacked_ffn, is_mlm):
+def get_name_map(tf_names, num_stacked_ffn):
     """
     Get the converting mapping between tensor names and mxnet names.
     The above mapping CONVERT_MAP is effectively adaptive to Bert and Albert,
@@ -161,8 +169,6 @@ def get_name_map(tf_names, num_stacked_ffn, is_mlm):
     ----------
     tf_names
         the parameters names of tensorflow model
-    is_mlm
-        wether a mask language model
     Returns
     -------
     A dictionary with the following format:
@@ -171,8 +177,6 @@ def get_name_map(tf_names, num_stacked_ffn, is_mlm):
     name_map = {}
     for source_name in tf_names:
         target_name = source_name
-        if 'cls' in target_name:
-            continue
         ffn_idx = re.findall(r'ffn_layer_\d+', target_name)
         if ffn_idx:
             target_name = target_name.replace(ffn_idx[0], 'ffn_layers_xxx')
@@ -182,22 +186,8 @@ def get_name_map(tf_names, num_stacked_ffn, is_mlm):
             target_name = target_name.replace('stacked_ffn.xxx', 'stacked_ffn.' + ffn_idx[0][10:])
         if 'stacked_ffn.xxy' in target_name:
             target_name = target_name.replace('stacked_ffn.xxy', 'stacked_ffn.' + str(num_stacked_ffn-1))
-        if is_mlm:
-            target_name = 'backbone_model.' + target_name
         name_map[source_name] = target_name
 
-    if is_mlm:
-        name_map.update([
-             # for mlm models
-            ('cls/predictions/extra_output_weights', 'extra_table.weight'),
-            ('cls/predictions/output_bias', 'embedding_table.bias'),
-            ('cls/predictions/transform/LayerNorm/beta', 'mlm_decoder.2.beta'),
-            ('cls/predictions/transform/LayerNorm/gamma', 'mlm_decoder.2.gamma'),
-            ('cls/predictions/transform/dense/bias', 'mlm_decoder.0.bias'),
-            ('cls/predictions/transform/dense/kernel', 'mlm_decoder.0.weight'),
-            ('cls/seq_relationship/output_bias', 'nsp_classifier.bias'),
-            ('cls/seq_relationship/output_weights', 'nsp_classifier.weight')
-        ])
     return name_map
 
 
@@ -273,11 +263,6 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
         assert_allclose(tf_params[k], backbone_params[k])
 
     # Build gluon model and initialize
-    gluon_model = MobileBertModel.from_cfg(cfg, use_pooler=True,
-                                           classifier_activation=False)
-    gluon_model.initialize(ctx=ctx)
-    gluon_model.hybridize()
-
     gluon_pretrain_model = MobileBertForPretrain(cfg)
     gluon_pretrain_model.initialize(ctx=ctx)
     gluon_pretrain_model.hybridize()
@@ -288,51 +273,44 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
     mx_token_types = mx.np.array(segment_ids, dtype=np.int32, ctx=ctx)
     mx_masked_positions = mx.np.array(mlm_positions, dtype=np.int32, ctx=ctx)
 
-    for is_mlm in [False, True]:
-        name_map = get_name_map(tf_names, cfg.MODEL.num_stacked_ffn, is_mlm)
-        # go through the gluon model to infer the shape of parameters
-        if is_mlm:
-            model = gluon_pretrain_model
-            contextual_embedding, pooled_output, nsp_score, mlm_scores  = \
-                model(mx_input_ids, mx_token_types, mx_valid_length, mx_masked_positions)
+    has_mlm = True
+    name_map = get_name_map(tf_names, cfg.MODEL.num_stacked_ffn)
+    # go through the gluon model to infer the shape of parameters
+    model = gluon_pretrain_model
+    contextual_embedding, pooled_output, nsp_score, mlm_scores  = \
+        model(mx_input_ids, mx_token_types, mx_valid_length, mx_masked_positions)
+    # replace tensorflow parameter names with gluon parameter names
+    mx_params = model.collect_params()
+    all_keys = set(mx_params.keys())
+    for (src_name, dst_name) in name_map.items():
+        tf_param_val = tf_params[src_name]
+        if dst_name is None:
+            continue
+        all_keys.remove(dst_name)
+        if src_name.endswith('kernel'):
+            mx_params[dst_name].set_data(tf_param_val.T)
         else:
-            model = gluon_model
-            contextual_embedding, pooled_output = model(mx_input_ids, mx_token_types,
-                                                        mx_valid_length)
+            mx_params[dst_name].set_data(tf_param_val)
 
-        # replace tensorflow parameter names with gluon parameter names
-        mx_params = model.collect_params()
-        all_keys = set(mx_params.keys())
-        for (src_name, dst_name) in name_map.items():
-            tf_param_val = tf_params[src_name]
-            if dst_name is None:
-                continue
-            all_keys.remove(dst_name)
-            if src_name.endswith('kernel'):
-                mx_params[dst_name].set_data(tf_param_val.T)
-            else:
-                mx_params[dst_name].set_data(tf_param_val)
-
+    if has_mlm:
         # 'embedding_table.weight' is shared with word_embed.weight
-        assert len(all_keys) == 0 or (is_mlm and all_keys == {'embedding_table.weight'}), \
-               'parameters missing from tensorflow checkpoint'
+        all_keys.remove('embedding_table.weight')
+    assert len(all_keys) == 0, 'parameters missing from tensorflow checkpoint'
 
-        if not is_mlm:
-            # test conversion results for backbone model
-            if test_conversion:
-                tf_contextual_embedding = tf_token_outputs_np['sequence_output']
-                tf_pooled_output = tf_token_outputs_np['pooled_output']
-                contextual_embedding, pooled_output = model(mx_input_ids, mx_token_types, mx_valid_length)
-                assert_allclose(pooled_output.asnumpy(), tf_pooled_output, 1E-3, 1E-3)
-                for i in range(batch_size):
-                    ele_valid_length = valid_length[i]
-                    assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
-                                    tf_contextual_embedding[i, :ele_valid_length, :], 1E-3, 1E-3)
-            model.save_parameters(os.path.join(save_dir, 'model.params'), deduplicate=True)
-            logging.info('Convert the backbone model in {} to {}/{}'.format(model_dir, save_dir, 'model.params'))
-        else:
-            model.save_parameters(os.path.join(save_dir, 'model_mlm.params'), deduplicate=True)
-            logging.info('Convert the MLM and NSP model in {} to {}/{}'.format(model_dir, save_dir, 'model_mlm.params'))
+    # test conversion results for backbone model
+    if test_conversion:
+        tf_contextual_embedding = tf_token_outputs_np['sequence_output']
+        tf_pooled_output = tf_token_outputs_np['pooled_output']
+        contextual_embedding, pooled_output = model.backbone_model(mx_input_ids, mx_token_types, mx_valid_length)
+        assert_allclose(pooled_output.asnumpy(), tf_pooled_output, 1E-3, 1E-3)
+        for i in range(batch_size):
+            ele_valid_length = valid_length[i]
+            assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
+                            tf_contextual_embedding[i, :ele_valid_length, :], 1E-3, 1E-3)
+    model.backbone_model.save_parameters(os.path.join(save_dir, 'model.params'), deduplicate=True)
+    logging.info('Convert the backbone model in {} to {}/{}'.format(model_dir, save_dir, 'model.params'))
+    model.save_parameters(os.path.join(save_dir, 'model_mlm.params'), deduplicate=True)
+    logging.info('Convert the MLM and NSP model in {} to {}/{}'.format(model_dir, save_dir, 'model_mlm.params'))
 
     logging.info('Conversion finished!')
     logging.info('Statistics:')
