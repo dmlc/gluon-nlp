@@ -118,28 +118,23 @@ def convert_tf_assets(tf_assets_dir, model_size, electra_dir):
 
 
 CONVERT_MAP = [
-    ('discriminator_predictions/dense_1', 'electra_disc_predctions'),
-    ('discriminator_predictions/dense', 'electra_disc_proj'),
-    ('generator_predictions/dense', 'generator_gen_proj'),
-    ('generator_predictions/LayerNorm', 'generator_gen_ln'),
-    ('generator_predictions/output_bias', 'electra_word_embed_bias'),  # reuse the embeeding from disc
     ('embeddings_project', 'embed_factorized_proj'),
-    ('embeddings/word_embeddings', 'word_embed_weight'),
-    ('embeddings/token_type_embeddings', 'token_type_embed_weight'),
-    ('embeddings/position_embeddings', 'token_pos_embed_embed_weight'),
+    ('embeddings/word_embeddings', 'word_embed.weight'),
+    ('embeddings/token_type_embeddings', 'token_type_embed.weight'),
+    ('embeddings/position_embeddings', 'token_pos_embed._embed.weight'),
     ('encoder', 'enc'),
     ('layer', 'layers'),
-    ('embeddings', 'embed'),
-    ('attention/output/LayerNorm', 'ln'),
-    ('output/LayerNorm', 'ffn_ln'),
-    ('LayerNorm', 'ln'),
-    ('attention/output/dense', 'proj'),
-    ('intermediate/dense', 'ffn_ffn1'),
-    ('output/dense', 'ffn_ffn2'),
+    ('embeddings/LayerNorm', 'embed_layer_norm'),
+    ('attention/output/LayerNorm', 'layer_norm'),
+    ('output/LayerNorm', 'ffn.layer_norm'),
+    ('LayerNorm', 'layer_norm'),
+    ('attention/', ''),
+    ('attention/output/dense', 'attention_proj'),
+    ('intermediate/dense', 'ffn.ffn_1'),
+    ('output/dense', 'ffn.ffn_2'),
     ('output/', ''),
     ('kernel', 'weight'),
-    ('attention/', ''),
-    ('/', '_'),
+    ('/', '.'),
 ]
 
 
@@ -171,9 +166,11 @@ def get_name_map(tf_names, convert_type='backbone'):
                 continue
         elif convert_type == 'disc':
             if 'generator' in source_name:
+                target_name = 'backbone_model.' + target_name
                 continue
         elif convert_type == 'gen':
             if 'generator' not in source_name:
+                target_name = 'backbone_model.' + target_name
                 continue
         else:
             raise NotImplementedError
@@ -184,6 +181,17 @@ def get_name_map(tf_names, convert_type='backbone'):
         for old, new in CONVERT_MAP:
             target_name = target_name.replace(old, new)
         name_map[source_name] = target_name
+
+    if convert_type == 'disc':
+        name_map.update({('discriminator_predictions/dense_1', 'rtd_encoder.0'),
+                         ('discriminator_predictions/dense', 'rtd_encoder.1')
+                        })
+    elif convert_type == 'gen':
+        name_map.update({('generator_predictions/dense', 'mlm_decoder.0'),
+                         ('generator_predictions/LayerNorm', 'mlm_decoder.2'),
+                         ('generator_predictions/output_bias', 'mlm_decoder.3')
+                          # reuse the embeeding from disc
+                        })
     return name_map
 
 
@@ -350,24 +358,29 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
                 np.concatenate([query_bias, key_bias, value_bias], axis=0))
 
         # The below parameters of the generator are already initialized in the discriminator, no need to reload.
-        disc_embed_params = set(['electra_embed_ln_beta',
-                                 'electra_embed_ln_gamma',
-                                 'electra_token_pos_embed_embed_weight',
+        disc_embed_params = set(['backbone_model.embed_layer_norm.beta',
+                                 'backbone_model.embed_layer_norm.gamma',
+                                 'backbone_model.token_pos_embed._embed.weight',
+                                 'backbone_model.token_type_embed.weight',
                                  'electra_token_pos_embed_weight',
-                                 'electra_word_embed_weight'])
+                                 'electra_word_embed.weight'])
         for key in all_keys:
             if key in disc_embed_params and convert_type == 'gen':
                 continue
-            assert re.match(r'^(generator|electra)_enc_layers_[\d]+_attn_qkv_(weight|bias)$', key) is not None
+            assert re.match(r'^(backbone_model){0,1}.all_encoder_layers.[\d]+.attn_qkv.(weight|bias)$', key) is not None
 
         tf_prefix = None
         for layer_id in range(cfg.MODEL.num_layers):
+            mx_prefix = 'encoder.all_encoder_layers.{}'.format(layer_id)
             if convert_type == 'gen':
-                mx_prefix = 'generator_enc_layers_{}'.format(layer_id)
+                mx_prefix = 'backbone_model.' + mx_prefix
                 tf_prefix = 'generator/encoder/layer_{}/attention/self'.format(layer_id)
-            else:
-                mx_prefix = 'electra_enc_layers_{}'.format(layer_id)
+            elif convert_type == 'disc':
+                mx_prefix = 'backbone_model.' + mx_prefix
                 tf_prefix = 'electra/encoder/layer_{}/attention/self'.format(layer_id)
+            else:
+                tf_prefix = 'electra/encoder/layer_{}/attention/self'.format(layer_id)
+
             convert_qkv_weights(tf_prefix, mx_prefix)
 
         if convert_type == 'backbone':
