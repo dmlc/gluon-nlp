@@ -145,7 +145,7 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
     cfg.defrost()
     cfg.MODEL.vocab_size = vocab_size
     cfg.MODEL.units = fairseq_cfg.encoder_embed_dim
-    cfg.MODEL.hidden_size = fairseq_cfg.encoder_ffn_embed_dim
+    cfg.MODEL.hidden_size = fairseq_cfg.encoder_ffn.embed_dim
     cfg.MODEL.max_length = fairseq_cfg.max_positions
     cfg.MODEL.num_heads = fairseq_cfg.encoder_attention_heads
     cfg.MODEL.num_layers = fairseq_cfg.encoder_layers
@@ -166,8 +166,7 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
 def convert_params(fairseq_model,
                    gluon_cfg,
                    ctx,
-                   is_mlm=True,
-                   gluon_prefix='robert_'):
+                   is_mlm=True):
     print('converting params')
     fairseq_params = fairseq_model.state_dict()
     fairseq_prefix = 'model.decoder.'
@@ -191,33 +190,33 @@ def convert_params(fairseq_model,
         fs_atten_prefix = \
             '{}sentence_encoder.layers.{}.self_attn.' \
             .format(fairseq_prefix, layer_id)
-        fs_q_weight = fairseq_params[fs_atten_prefix + 'q_proj.weight'].cpu().numpy()
-        fs_k_weight = fairseq_params[fs_atten_prefix + 'k_proj.weight'].cpu().numpy()
-        fs_v_weight = fairseq_params[fs_atten_prefix + 'v_proj.weight'].cpu().numpy()
-        fs_q_bias = fairseq_params[fs_atten_prefix + 'q_proj.bias'].cpu().numpy()
-        fs_k_bias = fairseq_params[fs_atten_prefix + 'k_proj.bias'].cpu().numpy()
-        fs_v_bias = fairseq_params[fs_atten_prefix + 'v_proj.bias'].cpu().numpy()
+        fs_q.weight = fairseq_params[fs_atten_prefix + 'q_proj.weight'].cpu().numpy()
+        fs_k.weight = fairseq_params[fs_atten_prefix + 'k_proj.weight'].cpu().numpy()
+        fs_v.weight = fairseq_params[fs_atten_prefix + 'v_proj.weight'].cpu().numpy()
+        fs_q.bias = fairseq_params[fs_atten_prefix + 'q_proj.bias'].cpu().numpy()
+        fs_k.bias = fairseq_params[fs_atten_prefix + 'k_proj.bias'].cpu().numpy()
+        fs_v.bias = fairseq_params[fs_atten_prefix + 'v_proj.bias'].cpu().numpy()
         gl_qkv_prefix = \
             '{}encoder_layers_{}_attn_qkv_' \
             .format(gluon_prefix, layer_id)
-        gl_qkv_weight = gluon_params[gl_qkv_prefix + 'weight']
-        gl_qkv_bias = gluon_params[gl_qkv_prefix + 'bias']
-        gl_qkv_weight.set_data(
-            np.concatenate([fs_q_weight, fs_k_weight, fs_v_weight], axis=0))
-        gl_qkv_bias.set_data(
-            np.concatenate([fs_q_bias, fs_k_bias, fs_v_bias], axis=0))
+        gl_qkv.weight = gluon_params[gl_qkv_prefix + 'weight']
+        gl_qkv.bias = gluon_params[gl_qkv_prefix + 'bias']
+        gl_qkv.weight.set_data(
+            np.concatenate([fs_q.weight, fs_k.weight, fs_v.weight], axis=0))
+        gl_qkv.bias.set_data(
+            np.concatenate([fs_q.bias, fs_k.bias, fs_v.bias], axis=0))
 
         for k, v in [
-            ('self_attn.out_proj.weight', 'proj_weight'),
-            ('self_attn.out_proj.bias', 'proj_bias'),
-            ('self_attn_layer_norm.weight', 'ln_gamma'),
-            ('self_attn_layer_norm.bias', 'ln_beta'),
-            ('fc1.weight', 'ffn_ffn1_weight'),
-            ('fc1.bias', 'ffn_ffn1_bias'),
-            ('fc2.weight', 'ffn_ffn2_weight'),
-            ('fc2.bias', 'ffn_ffn2_bias'),
-            ('final_layer_norm.weight', 'ffn_ln_gamma'),
-            ('final_layer_norm.bias', 'ffn_ln_beta')
+            ('self_attn.out_proj.weight', 'proj.weight'),
+            ('self_attn.out_proj.bias', 'proj.bias'),
+            ('self_attn_layer_norm.weight', 'ln.gamma'),
+            ('self_attn_layer_norm.bias', 'ln.beta'),
+            ('fc1.weight', 'ffn.ffn1.weight'),
+            ('fc1.bias', 'ffn.ffn1.bias'),
+            ('fc2.weight', 'ffn.ffn2.weight'),
+            ('fc2.bias', 'ffn.ffn2.bias'),
+            ('final_layer_norm.weight', 'ffn.ln.gamma'),
+            ('final_layer_norm.bias', 'ffn.ln.beta')
         ]:
             fs_name = '{}sentence_encoder.layers.{}.{}' \
                       .format(fairseq_prefix, layer_id, k)
@@ -227,9 +226,9 @@ def convert_params(fairseq_model,
                 fairseq_params[fs_name].cpu().numpy())
 
     for k, v in [
-        ('sentence_encoder.embed_tokens.weight', 'word_embed_weight'),
-        ('sentence_encoder.emb_layer_norm.weight', 'embed_ln_gamma'),
-        ('sentence_encoder.emb_layer_norm.bias', 'embed_ln_beta'),
+        ('sentence_encoder.embed_tokens.weight', 'word_embed.weight'),
+        ('sentence_encoder.emb_layer_norm.weight', 'embed_ln.gamma'),
+        ('sentence_encoder.emb_layer_norm.bias', 'embed_ln.beta'),
     ]:
         fs_name = fairseq_prefix + k
         gl_name = gluon_prefix + v
@@ -239,17 +238,17 @@ def convert_params(fairseq_model,
     # position embed weight
     padding_idx = fairseq_model.task.dictionary.pad_index
     fs_pos_embed_name = fairseq_prefix + 'sentence_encoder.embed_positions.weight'
-    gl_pos_embed_name = gluon_prefix + 'pos_embed_embed_weight'
+    gl_pos_embed_name = gluon_prefix + 'pos_embed_embed.weight'
     gluon_params[gl_pos_embed_name].set_data(
         fairseq_params[fs_pos_embed_name].cpu().numpy()[padding_idx + 1:,:])
 
     if is_mlm:
         for k, v in [
-            ('lm_head.dense.weight', 'mlm_proj_weight'),
-            ('lm_head.dense.bias', 'mlm_proj_bias'),
-            ('lm_head.layer_norm.weight', 'mlm_ln_gamma'),
-            ('lm_head.layer_norm.bias', 'mlm_ln_beta'),
-            ('lm_head.bias', 'word_embed_bias')
+            ('lm_head.dense.weight', 'mlm_proj.weight'),
+            ('lm_head.dense.bias', 'mlm_proj.bias'),
+            ('lm_head.layer_norm.weight', 'mlm_ln.gamma'),
+            ('lm_head.layer_norm.bias', 'mlm_ln.beta'),
+            ('lm_head.bias', 'word_embed.bias')
         ]:
             fs_name = fairseq_prefix + k
             gl_name = gluon_prefix + v
