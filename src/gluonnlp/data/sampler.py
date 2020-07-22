@@ -297,7 +297,7 @@ class BoundedBudgetSampler(BaseSampler):
         self._batches = []
         self._rng = np.random.RandomState(seed) if seed > 0 else None
         # sort
-        self._indices = self._indices[np.argsort(self._lengths[self._indices], kind='mergesort')]
+        self._indices = self._indices[np.argsort(self._lengths, kind='mergesort')]
         batch = []
         # max len in a batch
         batch_max_sample_len = 0
@@ -312,6 +312,7 @@ class BoundedBudgetSampler(BaseSampler):
                 batch = []
                 batch_max_sample_len = self._lengths[index]
             batch.append(index)
+            # TODO batch trouble
         if len(batch) > 0:
             self._batches.append(np.array(batch))        
         
@@ -319,7 +320,7 @@ class BoundedBudgetSampler(BaseSampler):
         if self._rng:
             self._rng.shuffle(self._batches)
         for batch in self._batches:
-            yield self._indices[batch]
+            yield batch
 
     def __len__(self):
         return len(self._batches)
