@@ -143,16 +143,18 @@ CONVERT_MAP_TF1 = [
     ('embeddings/token_type_embeddings', 'token_type_embed.weight'),
     ('embeddings/position_embeddings', 'token_pos_embed._embed.weight'),
     ('encoder/embedding_hidden_mapping_in', 'embed_factorized_proj'),
-    ('group_0/inner_group_0/', 'all_encoder_groups.0.'),
-    ('layer', 'all_layers'),
+    ('group_0/inner_group_0/', 'all_encoder_groups.0.'), # albert
+    ('layer_', 'all_layers.'), # bert
     ('embeddings/LayerNorm', 'embed_layer_norm'),
+    ('attention/output/LayerNorm', 'layer_norm'),  # bert
     ('output/LayerNorm', 'ffn.layer_norm'),  # bert
     ('LayerNorm_1', 'ffn.layer_norm'),  # albert
     ('LayerNorm', 'layer_norm'),  # albert
     ('attention_1', 'attention'),  # albert
     ('attention/output/dense', 'attention_proj'),
-    ('ffn_1/intermediate/dense', 'ffn.ffn_1'),
-    ('ffn_1/intermediate/output/dense', 'ffn.ffn_2'),  # albert
+    ('ffn_1', ''), #bert & albert
+    ('intermediate/dense', 'ffn.ffn_1'), # albert
+    ('intermediate/output/dense', 'ffn.ffn_2'),  # albert
     ('output/dense', 'ffn.ffn_2'),  # bert
     ('output/', ''),
     ('pooler/dense', 'pooler'),
@@ -175,7 +177,7 @@ CONVERT_MAP_TF2 = [
     ('type_embeddings/embeddings', 'token_type_embed.weight'),  # albert
     ('embeddings/layer_norm', 'embed_layer_norm'),  # albert
     ('embedding_projection', 'embed_factorized_proj'),
-    ('transformer', 'enc_groups_0'),
+    ('transformer', 'encoder.all_encoder_groups.0'), # albert
     ('self_attention_output', 'proj'),
     ('self_attention_layer_norm', 'ln'),
     ('intermediate', 'ffn.ffn_1'),
@@ -184,7 +186,7 @@ CONVERT_MAP_TF2 = [
     ("pooler_transform", "pooler"),
     ('layer', 'layers'),
     ('kernel', 'weight'),
-    ('/', '_'),
+    ('/', '.'),
 ]
 
 
@@ -440,7 +442,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
     if has_mlm:
         all_keys.remove('mlm_decoder.3.weight')
     if model_type == 'bert':
-        assert all([re.match(r'^encoder\.all_layers\.[\d]+\.attn_qkv\.(weight|bias)$', key)
+        assert all([re.match(r'^(backbone_model\.){0,1}encoder\.all_layers\.[\d]+\.attn_qkv\.(weight|bias)$', key)
                     is not None for key in all_keys])
         for layer_id in range(cfg.MODEL.num_layers):
             mx_prefix = 'all_layers.{}'.format(layer_id)
