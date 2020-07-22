@@ -142,15 +142,14 @@ CONVERT_MAP_TF1 = [
     ('embeddings/word_embeddings', 'word_embed.weight'),
     ('embeddings/token_type_embeddings', 'token_type_embed.weight'),
     ('embeddings/position_embeddings', 'token_pos_embed._embed.weight'),
+    ('embeddings/LayerNorm', 'embed_layer_norm'),
     ('encoder/embedding_hidden_mapping_in', 'embed_factorized_proj'),
-    ('encoder', 'enc'),
-    ('inner_group_0/', ''),
-    ('group', 'all_encoder_groups'),
+    ('inner_group_0/', 'all_encoder_groups.0.'),
     ('layer', 'all_layers'),
     ('attention/output/LayerNorm', 'layer_norm'),  # bert
     ('output/LayerNorm', 'ffn_ln'),  # bert
     ('LayerNorm_1', 'ffn_ln'),  # albert
-    ('LayerNorm', 'ln'),  # albert
+    ('LayerNorm', 'layer_norm'),  # albert
     ('attention_1', 'attention'),  # albert
     ('attention/output/dense', 'attention_proj'),
     ('intermediate/dense', 'ffn.ffn_1'),
