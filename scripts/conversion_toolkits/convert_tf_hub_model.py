@@ -12,7 +12,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 from gluonnlp.data.vocab import Vocab
-from gluonnlp.utils.misc import sha1sum, naming_convention, logging_config
+from gluonnlp.utils.misc import naming_convention, logging_config
 from gluonnlp.models.bert import BertModel, BertForMLM
 from gluonnlp.models.albert import AlbertModel, AlbertForMLM
 from gluonnlp.data.tokenizers import SentencepieceTokenizer, HuggingFaceWordPieceTokenizer
@@ -143,8 +143,8 @@ CONVERT_MAP_TF1 = [
     ('embeddings/token_type_embeddings', 'token_type_embed.weight'),
     ('embeddings/position_embeddings', 'token_pos_embed._embed.weight'),
     ('encoder/embedding_hidden_mapping_in', 'embed_factorized_proj'),
-    ('group_0/inner_group_0/', 'all_encoder_groups.0.'), # albert
-    ('layer_', 'all_layers.'), # bert
+    ('group_0/inner_group_0/', 'all_encoder_groups.0.'),  # albert
+    ('layer_', 'all_layers.'),  # bert
     ('embeddings/LayerNorm', 'embed_layer_norm'),
     ('attention/output/LayerNorm', 'layer_norm'),  # bert
     ('output/LayerNorm', 'ffn.layer_norm'),  # bert
@@ -152,8 +152,8 @@ CONVERT_MAP_TF1 = [
     ('LayerNorm', 'layer_norm'),  # albert
     ('attention_1', 'attention'),  # albert
     ('attention/output/dense', 'attention_proj'),
-    ('ffn_1', ''), #bert & albert
-    ('intermediate/dense', 'ffn.ffn_1'), # albert
+    ('ffn_1', ''),  # bert & albert
+    ('intermediate/dense', 'ffn.ffn_1'),  # albert
     ('intermediate/output/dense', 'ffn.ffn_2'),  # albert
     ('output/dense', 'ffn.ffn_2'),  # bert
     ('output/', ''),
@@ -255,17 +255,17 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
         # In this step, the vocabulary is converted with the help of the tokenizer,
         # so whether tokenzier is case-dependent does not matter.
         new_vocab = HuggingFaceWordPieceTokenizer(
-                        vocab_file=vocab_path,
-                        unk_token='[UNK]',
-                        pad_token='[PAD]',
-                        cls_token='[CLS]',
-                        sep_token='[SEP]',
-                        mask_token='[MASK]',
-                        lowercase=True).vocab
+            vocab_file=vocab_path,
+            unk_token='[UNK]',
+            pad_token='[PAD]',
+            cls_token='[CLS]',
+            sep_token='[SEP]',
+            mask_token='[MASK]',
+            lowercase=True).vocab
 
     new_vocab.save(os.path.join(save_dir, 'vocab.json'))
 
-    #test input data
+    # test input data
     batch_size = 2
     seq_length = 16
     num_mask = 5
@@ -437,8 +437,11 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
     if has_mlm:
         all_keys.remove('mlm_decoder.3.weight')
     if model_type == 'bert':
-        assert all([re.match(r'^(backbone_model\.){0,1}encoder\.all_layers\.[\d]+\.attn_qkv\.(weight|bias)$', key)
-                    is not None for key in all_keys])
+        assert all(
+            [
+                re.match(
+                    r'^(backbone_model\.){0,1}encoder\.all_layers\.[\d]+\.attn_qkv\.(weight|bias)$',
+                    key) is not None for key in all_keys])
         for layer_id in range(cfg.MODEL.num_layers):
             mx_prefix = 'all_layers.{}'.format(layer_id)
             if TF1_Hub_Modules:
@@ -447,7 +450,10 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
                 tf_prefix = 'transformer/layer_{}/self_attention'.format(layer_id)
             convert_qkv_weights(tf_prefix, mx_prefix, has_mlm)
     elif model_type == 'albert':
-        assert all([re.match(r'^(backbone_model\.){0,1}encoder\.all_encoder_groups\.0\.attn_qkv\.(weight|bias)$',
+        assert all(
+            [
+                re.match(
+                    r'^(backbone_model\.){0,1}encoder\.all_encoder_groups\.0\.attn_qkv\.(weight|bias)$',
                     key) is not None for key in all_keys])
         mx_prefix = 'all_encoder_groups.0'
         assert TF1_Hub_Modules, 'Please download thr alber model from TF1 Hub'
@@ -491,7 +497,8 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
                     ele_valid_length = valid_length[i]
                     assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
                                     tf_contextual_embedding[i, :ele_valid_length, :], 1E-3, 1E-3)
-        model.backbone_model.save_parameters(os.path.join(save_dir, 'model.params'), deduplicate=True)
+        model.backbone_model.save_parameters(os.path.join(
+            save_dir, 'model.params'), deduplicate=True)
         logging.info('Convert the backbone model in {} to {}/{}'.format(hub_model_dir,
                                                                         save_dir, 'model.params'))
         model.save_parameters(os.path.join(save_dir, 'model_mlm.params'), deduplicate=True)

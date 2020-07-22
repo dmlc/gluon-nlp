@@ -18,6 +18,7 @@ from gluonnlp.data.tokenizers import HuggingFaceByteBPETokenizer
 
 mx.npx.set_np()
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert the fairseq RoBERTa Model to Gluon.')
     parser.add_argument('--fairseq_model_path', type=str, required=True,
@@ -32,17 +33,18 @@ def parse_args():
                         help='Whether to test the conversion.')
     return parser.parse_args()
 
+
 def convert_vocab(args, fairseq_model):
     print('converting vocab')
     fairseq_dict_path = os.path.join(args.fairseq_model_path, 'dict.txt')
     merges_save_path = os.path.join(args.save_dir, 'gpt2.merges')
-    vocab_save_path =os.path.join(args.save_dir, 'gpt2.vocab')
+    vocab_save_path = os.path.join(args.save_dir, 'gpt2.vocab')
     fairseq_vocab = fairseq_model.task.dictionary
     # bos_word attr missing in fairseq_vocab
     fairseq_vocab.bos_word = fairseq_vocab[fairseq_vocab.bos_index]
 
     assert os.path.exists(fairseq_dict_path), \
-           '{} not found'.format(fairseq_dict_path)
+        '{} not found'.format(fairseq_dict_path)
     from mxnet.gluon.utils import download
     temp_vocab_file = download(
         'https://dl.fbaipublicfiles.com/fairseq/gpt2_bpe/encoder.json')
@@ -57,14 +59,14 @@ def convert_vocab(args, fairseq_model):
         for line in f_dict:
             word_id, count = line.split(' ', 1)
             transfer_dict.append(word_id)
-    transfer_dict = {transfer_dict[i] : i for i in range(len(transfer_dict))}
+    transfer_dict = {transfer_dict[i]: i for i in range(len(transfer_dict))}
     with open(temp_vocab_file, 'r', encoding='utf-8') as f_v:
         inter_vocab = json.load(f_v)
     # transfer by dict
     for k in inter_vocab:
         inter_vocab[k] = transfer_dict[str(inter_vocab[k])]
     inter_vocab = list(inter_vocab.items())
-    inter_vocab = sorted(inter_vocab, key=lambda x : x[1])
+    inter_vocab = sorted(inter_vocab, key=lambda x: x[1])
     tokens = [e[0] for e in inter_vocab]
 
     tail = [fairseq_vocab[-4],
@@ -76,14 +78,14 @@ def convert_vocab(args, fairseq_model):
                     'madeupword0002',
                     '<mask>']
     all_tokens = ['<s>', '<pad>', '</s>', '<unk>'] + \
-                 tokens + tail
+        tokens + tail
 
     gluon_vocab = gluon_Vocab(all_tokens,
-                        unk_token=fairseq_vocab.unk_word,
-                        pad_token=fairseq_vocab.pad_word,
-                        eos_token=fairseq_vocab.eos_word,
-                        bos_token=fairseq_vocab.bos_word,
-                        mask_token=fairseq_vocab[-1])
+                              unk_token=fairseq_vocab.unk_word,
+                              pad_token=fairseq_vocab.pad_word,
+                              eos_token=fairseq_vocab.eos_word,
+                              bos_token=fairseq_vocab.bos_word,
+                              mask_token=fairseq_vocab[-1])
     gluon_vocab.save(vocab_save_path)
     os.remove(temp_vocab_file)
     os.remove(temp_merges_file)
@@ -100,30 +102,31 @@ def convert_vocab(args, fairseq_model):
     print('| converted dictionary: {} types'.format(vocab_size))
     return vocab_size
 
+
 def test_vocab(fairseq_model, gluon_tokenizer, check_all_tokens=False):
     print('testing vocab')
     fairseq_vocab = fairseq_model.task.dictionary
     gluon_vocab = gluon_tokenizer.vocab
     assert len(fairseq_vocab) == \
-           len(gluon_vocab)
+        len(gluon_vocab)
 
     # assert all_tokens
     # roberta with gpt2 bytebpe bpe does not provide all tokens directly
     if check_all_tokens:
         for i in range(len(fairseq_vocab)):
             assert fairseq_vocab[i] == gluon_vocab.all_tokens[i], \
-                   '{}, {}, {}'.format(i, fairseq_vocab[i], gluon_vocab.all_tokens[i])
+                '{}, {}, {}'.format(i, fairseq_vocab[i], gluon_vocab.all_tokens[i])
 
     # assert special tokens
     for special_tokens in ['unk', 'pad', 'eos', 'bos']:
         assert getattr(fairseq_vocab, special_tokens + '_index') == \
-               getattr(gluon_vocab, special_tokens + '_id')
+            getattr(gluon_vocab, special_tokens + '_id')
         assert getattr(fairseq_vocab, special_tokens + '_word') == \
-               getattr(gluon_vocab, special_tokens + '_token')
+            getattr(gluon_vocab, special_tokens + '_token')
         # <mask> is the last one
         assert fairseq_vocab[-1] == \
-               gluon_vocab.all_tokens[-1] == \
-               '<mask>'
+            gluon_vocab.all_tokens[-1] == \
+            '<mask>'
 
     sentence = "Hello, y'all! How are you Ⅷ 😁 😁 😁 ?" + \
                'GluonNLP is great！！！!!!' + \
@@ -139,6 +142,7 @@ def test_vocab(fairseq_model, gluon_tokenizer, check_all_tokens=False):
     fs_sentence = fairseq_model.decode(fs_tokens)
     gl_sentence = gluon_tokenizer.decode(gl_tokens)
     assert fs_sentence == gl_sentence
+
 
 def convert_config(fairseq_cfg, vocab_size, cfg):
     print('converting config')
@@ -162,6 +166,7 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
     cfg.VERSION = 1
     cfg.freeze()
     return cfg
+
 
 def convert_params(fairseq_model,
                    gluon_cfg,
@@ -234,7 +239,7 @@ def convert_params(fairseq_model,
     fs_pos_embed_name = fairseq_prefix + 'sentence_encoder.embed_positions.weight'
     gl_pos_embed_name = gluon_prefix + 'pos_embed._embed.weight'
     gluon_params[gl_pos_embed_name].set_data(
-        fairseq_params[fs_pos_embed_name].cpu().numpy()[padding_idx + 1:,:])
+        fairseq_params[fs_pos_embed_name].cpu().numpy()[padding_idx + 1:, :])
 
     for k, v in [
         ('lm_head.dense.weight', 'mlm_decoder.0.weight'),
@@ -261,7 +266,7 @@ def test_model(fairseq_model, gluon_model, gpu):
     seq_length = 32
     vocab_size = len(fairseq_model.task.dictionary)
     padding_id = fairseq_model.model.decoder.sentence_encoder.padding_idx
-    input_ids = np.random.randint( # skip padding_id
+    input_ids = np.random.randint(  # skip padding_id
         padding_id + 1,
         vocab_size,
         (batch_size, seq_length)
@@ -272,8 +277,8 @@ def test_model(fairseq_model, gluon_model, gpu):
         (batch_size,)
     )
 
-    for i in range(batch_size): # add padding, for fairseq padding mask
-        input_ids[i,valid_length[i]:] = padding_id
+    for i in range(batch_size):  # add padding, for fairseq padding mask
+        input_ids[i, valid_length[i]:] = padding_id
 
     gl_input_ids = mx.np.array(input_ids, dtype=np.int32, ctx=ctx)
     gl_valid_length = mx.np.array(valid_length, dtype=np.int32, ctx=ctx)
@@ -290,8 +295,8 @@ def test_model(fairseq_model, gluon_model, gpu):
 
     fs_mlm_scores, fs_extra = \
         fairseq_model.model.cuda(gpu)(
-                fs_input_ids,
-                return_all_hiddens=True)
+            fs_input_ids,
+            return_all_hiddens=True)
     fs_all_hiddens = fs_extra['inner_states']
 
     # checking all_encodings_outputs
@@ -320,6 +325,7 @@ def test_model(fairseq_model, gluon_model, gpu):
             1E-3
         )
 
+
 def rename(save_dir):
     """Rename converted files with hash"""
     old_names = os.listdir(save_dir)
@@ -328,13 +334,14 @@ def rename(save_dir):
         long_hash = sha1sum(old_path)
         file_prefix, file_sufix = old_name.split('.')
         new_name = '{file_prefix}-{short_hash}.{file_sufix}'.format(
-                file_prefix=file_prefix,
-                short_hash=long_hash[:8],
-                file_sufix=file_sufix)
+            file_prefix=file_prefix,
+            short_hash=long_hash[:8],
+            file_sufix=file_sufix)
         new_path = os.path.join(save_dir, new_name)
         shutil.move(old_path, new_path)
         file_size = os.path.getsize(new_path)
         logging.info('\t{} {} {}'.format(new_path, long_hash, file_size))
+
 
 def convert_fairseq_model(args):
     if not args.save_dir:
@@ -360,11 +367,12 @@ def convert_fairseq_model(args):
 
     gluon_roberta.save_parameters(os.path.join(args.save_dir, 'model_mlm.params'), deduplicate=True)
     logging.info('Convert the RoBERTa MLM model in {} to {}'.
-                 format(os.path.join(args.fairseq_model_path, 'model.pt'), \
+                 format(os.path.join(args.fairseq_model_path, 'model.pt'),
                         os.path.join(args.save_dir, 'model_mlm.params')))
-    gluon_roberta.backbone_model.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
+    gluon_roberta.backbone_model.save_parameters(
+        os.path.join(args.save_dir, 'model.params'), deduplicate=True)
     logging.info('Convert the RoBERTa backbone model in {} to {}'.
-                 format(os.path.join(args.fairseq_model_path, 'model.pt'), \
+                 format(os.path.join(args.fairseq_model_path, 'model.pt'),
                         os.path.join(args.save_dir, 'model.params')))
 
     logging.info('Conversion finished!')

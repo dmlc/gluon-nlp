@@ -83,7 +83,8 @@ def convert_tf_config(config_dict_path, vocab_size):
     else:
         cfg.MODEL.bottleneck_strategy = 'from_input'
 
-    cfg.INITIALIZER.weight = ['truncnorm', 0, config_dict['initializer_range']]  # TruncNorm(0, 0.02)
+    cfg.INITIALIZER.weight = ['truncnorm', 0,
+                              config_dict['initializer_range']]  # TruncNorm(0, 0.02)
     cfg.INITIALIZER.bias = ['zeros']
     cfg.VERSION = 1
     cfg.freeze()
@@ -185,7 +186,8 @@ def get_name_map(tf_names, num_stacked_ffn):
         if ffn_idx:
             target_name = target_name.replace('stacked_ffn.xxx', 'stacked_ffn.' + ffn_idx[0][10:])
         if 'stacked_ffn.xxy' in target_name:
-            target_name = target_name.replace('stacked_ffn.xxy', 'stacked_ffn.' + str(num_stacked_ffn-1))
+            target_name = target_name.replace(
+                'stacked_ffn.xxy', 'stacked_ffn.' + str(num_stacked_ffn - 1))
         name_map[source_name] = target_name
 
     return name_map
@@ -200,23 +202,23 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
     with open(os.path.join(save_dir, 'model.yml'), 'w') as of:
         of.write(cfg.dump())
     new_vocab = HuggingFaceWordPieceTokenizer(
-                        vocab_file=vocab_path,
-                        unk_token='[UNK]',
-                        pad_token='[PAD]',
-                        cls_token='[CLS]',
-                        sep_token='[SEP]',
-                        mask_token='[MASK]',
-                        lowercase=True).vocab
+        vocab_file=vocab_path,
+        unk_token='[UNK]',
+        pad_token='[PAD]',
+        cls_token='[CLS]',
+        sep_token='[SEP]',
+        mask_token='[MASK]',
+        lowercase=True).vocab
     new_vocab.save(os.path.join(save_dir, 'vocab.json'))
 
-    #test input data
+    # test input data
     batch_size = 3
     seq_length = 32
     num_mask = 5
     input_ids = np.random.randint(0, cfg.MODEL.vocab_size, (batch_size, seq_length))
     valid_length = np.random.randint(seq_length // 2, seq_length, (batch_size,))
     input_mask = np.broadcast_to(np.arange(seq_length).reshape(1, -1), (batch_size, seq_length)) \
-                 < np.expand_dims(valid_length, 1)
+        < np.expand_dims(valid_length, 1)
     segment_ids = np.random.randint(0, 2, (batch_size, seq_length))
     mlm_positions = np.random.randint(0, seq_length // 2, (batch_size, num_mask))
 
@@ -238,19 +240,20 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
 
     tf_bert_config = modeling.BertConfig.from_json_file(json_cfg_path)
     bert_model = modeling.BertModel(
-            config=tf_bert_config,
-            is_training=False,
-            input_ids=tf_input_ids,
-            input_mask=tf_input_mask,
-            token_type_ids=tf_segment_ids,
-            use_one_hot_embeddings=False)
+        config=tf_bert_config,
+        is_training=False,
+        input_ids=tf_input_ids,
+        input_mask=tf_input_mask,
+        token_type_ids=tf_segment_ids,
+        use_one_hot_embeddings=False)
     tvars = tf.trainable_variables()
     assignment_map, _ = modeling.get_assignment_map_from_checkpoint(tvars, init_checkpoint)
     tf.train.init_from_checkpoint(init_checkpoint, assignment_map)
 
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        # the name of the parameters are ending with ':0' like 'Mobile Bert/embeddings/word_embeddings:0'
+        # the name of the parameters are ending with ':0' like 'Mobile
+        # Bert/embeddings/word_embeddings:0'
         backbone_params = {v.name.split(":")[0]: v.read_value() for v in tvars}
         backbone_params = sess.run(backbone_params)
         tf_token_outputs_np = {
@@ -277,7 +280,7 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
     name_map = get_name_map(tf_names, cfg.MODEL.num_stacked_ffn)
     # go through the gluon model to infer the shape of parameters
     model = gluon_pretrain_model
-    contextual_embedding, pooled_output, nsp_score, mlm_scores  = \
+    contextual_embedding, pooled_output, nsp_score, mlm_scores = \
         model(mx_input_ids, mx_token_types, mx_valid_length, mx_masked_positions)
     # replace tensorflow parameter names with gluon parameter names
     mx_params = model.collect_params()
@@ -301,7 +304,8 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
     if test_conversion:
         tf_contextual_embedding = tf_token_outputs_np['sequence_output']
         tf_pooled_output = tf_token_outputs_np['pooled_output']
-        contextual_embedding, pooled_output = model.backbone_model(mx_input_ids, mx_token_types, mx_valid_length)
+        contextual_embedding, pooled_output = model.backbone_model(
+            mx_input_ids, mx_token_types, mx_valid_length)
         assert_allclose(pooled_output.asnumpy(), tf_pooled_output, 1E-3, 1E-3)
         for i in range(batch_size):
             ele_valid_length = valid_length[i]
@@ -310,7 +314,8 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
     model.backbone_model.save_parameters(os.path.join(save_dir, 'model.params'), deduplicate=True)
     logging.info('Convert the backbone model in {} to {}/{}'.format(model_dir, save_dir, 'model.params'))
     model.save_parameters(os.path.join(save_dir, 'model_mlm.params'), deduplicate=True)
-    logging.info('Convert the MLM and NSP model in {} to {}/{}'.format(model_dir, save_dir, 'model_mlm.params'))
+    logging.info('Convert the MLM and NSP model in {} to {}/{}'.format(model_dir,
+                                                                       save_dir, 'model_mlm.params'))
 
     logging.info('Conversion finished!')
     logging.info('Statistics:')
@@ -328,6 +333,11 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
 if __name__ == '__main__':
     args = parse_args()
     logging_config()
-    save_dir = args.save_dir if args.save_dir is not None else os.path.basename(args.tf_model_path) + '_gluon'
-    mobilebert_dir = os.path.abspath(os.path.join(os.path.dirname(args.mobilebert_dir), os.path.pardir))
+    save_dir = args.save_dir if args.save_dir is not None else os.path.basename(
+        args.tf_model_path) + '_gluon'
+    mobilebert_dir = os.path.abspath(
+        os.path.join(
+            os.path.dirname(
+                args.mobilebert_dir),
+            os.path.pardir))
     convert_tf_model(args.tf_model_path, save_dir, args.test, args.gpu, mobilebert_dir)
