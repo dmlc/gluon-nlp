@@ -314,7 +314,7 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
                 mx_params[dst_name].set_data(tf_param_val)
 
         # 'embedding_table.weight' is shared with word_embed.weight
-        assert len(all_keys) == 0 or (is_mlm and all_keys =={'embedding_table.weight'}), \
+        assert len(all_keys) == 0 or (is_mlm and all_keys == {'embedding_table.weight'}), \
                'parameters missing from tensorflow checkpoint'
 
         if not is_mlm:

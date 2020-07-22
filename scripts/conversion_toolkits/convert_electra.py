@@ -118,18 +118,23 @@ def convert_tf_assets(tf_assets_dir, model_size, electra_dir):
 
 
 CONVERT_MAP = [
+    ('backbone_model.discriminator_predictions/dense_1', 'rtd_encoder.2'),
+    ('backbone_model.discriminator_predictions/dense', 'rtd_encoder.0'),
+    ('backbone_model.generator_predictions/dense', 'mlm_decoder.0'),
+    ('backbone_model.generator_predictions/LayerNorm', 'mlm_decoder.2'),
+    ('backbone_model.generator_predictions/output_bias', 'mlm_decoder.3.bias'),
+    ('electra/', ''),
+    ('generator/', ''),
     ('embeddings_project', 'embed_factorized_proj'),
     ('embeddings/word_embeddings', 'word_embed.weight'),
     ('embeddings/token_type_embeddings', 'token_type_embed.weight'),
     ('embeddings/position_embeddings', 'token_pos_embed._embed.weight'),
-    ('encoder', 'enc'),
-    ('layer', 'layers'),
+    ('layer_', 'all_encoder_layers.'),
     ('embeddings/LayerNorm', 'embed_layer_norm'),
     ('attention/output/LayerNorm', 'layer_norm'),
+    ('attention/output/dense', 'attention_proj'),
     ('output/LayerNorm', 'ffn.layer_norm'),
     ('LayerNorm', 'layer_norm'),
-    ('attention/', ''),
-    ('attention/output/dense', 'attention_proj'),
     ('intermediate/dense', 'ffn.ffn_1'),
     ('output/dense', 'ffn.ffn_2'),
     ('output/', ''),
@@ -152,7 +157,7 @@ def get_name_map(tf_names, convert_type='backbone'):
     tf_names
         the parameters names of tensorflow model
     convert_type
-        choices=['self', 'disc', 'gen']
+        choices=['backbone', 'disc', 'gen']
     Returns
     -------
     A dictionary with the following format:
@@ -165,12 +170,12 @@ def get_name_map(tf_names, convert_type='backbone'):
             if 'electra' not in source_name:
                 continue
         elif convert_type == 'disc':
+            target_name = 'backbone_model.' + target_name
             if 'generator' in source_name:
-                target_name = 'backbone_model.' + target_name
                 continue
         elif convert_type == 'gen':
+            target_name = 'backbone_model.' + target_name
             if 'generator' not in source_name:
-                target_name = 'backbone_model.' + target_name
                 continue
         else:
             raise NotImplementedError
@@ -181,17 +186,6 @@ def get_name_map(tf_names, convert_type='backbone'):
         for old, new in CONVERT_MAP:
             target_name = target_name.replace(old, new)
         name_map[source_name] = target_name
-
-    if convert_type == 'disc':
-        name_map.update({('discriminator_predictions/dense_1', 'rtd_encoder.0'),
-                         ('discriminator_predictions/dense', 'rtd_encoder.1')
-                        })
-    elif convert_type == 'gen':
-        name_map.update({('generator_predictions/dense', 'mlm_decoder.0'),
-                         ('generator_predictions/LayerNorm', 'mlm_decoder.2'),
-                         ('generator_predictions/output_bias', 'mlm_decoder.3')
-                          # reuse the embeeding from disc
-                        })
     return name_map
 
 
@@ -362,12 +356,13 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
                                  'backbone_model.embed_layer_norm.gamma',
                                  'backbone_model.token_pos_embed._embed.weight',
                                  'backbone_model.token_type_embed.weight',
-                                 'electra_token_pos_embed_weight',
-                                 'electra_word_embed.weight'])
+                                 'mlm_decoder.3.weight',
+                                 'backbone_model.word_embed.weight',])
         for key in all_keys:
-            if key in disc_embed_params and convert_type == 'gen':
+            if convert_type == 'gen' and key in disc_embed_params:
                 continue
-            assert re.match(r'^(backbone_model){0,1}.all_encoder_layers.[\d]+.attn_qkv.(weight|bias)$', key) is not None
+            assert re.match(r'^(backbone_model\.){0,1}encoder\.all_encoder_layers\.[\d]+\.attn_qkv\.(weight|bias)$',
+                        key) is not None, 'Parameter key {} mismatch'.format(key)
 
         tf_prefix = None
         for layer_id in range(cfg.MODEL.num_layers):
