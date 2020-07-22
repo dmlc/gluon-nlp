@@ -67,7 +67,6 @@ PRETRAINED_URL = {
         'vocab': 'google_en_cased_bert_large/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_large/model-7aa93704.params',
         'mlm_params': 'google_en_cased_bert_large/model_mlm-d6443fe9.params',
-        'lowercase': False,
     },
     'google_en_uncased_bert_large': {
         'cfg': 'google_en_uncased_bert_large/model-d0c37dcc.yml',

@@ -134,35 +134,33 @@ def convert_tf_assets(tf_assets_dir, model_type):
 CONVERT_MAP_TF1 = [
     ('bert/', ''),
     ('cls/', ''),
-    ('predictions/output_bias', 'word_embed_bias'),
+    ('predictions/output_bias', 'word_embed.bias'),
     ('predictions', 'mlm'),
     ('transform/dense', 'proj'),
     ('transformer/', ''),
     ('transform/', ''),
-    ('embeddings/word_embeddings', 'word_embed_weight'),
-    ('embeddings/token_type_embeddings', 'token_type_embed_weight'),
-    ('embeddings/position_embeddings', 'token_pos_embed_embed_weight'),
+    ('embeddings/word_embeddings', 'word_embed.weight'),
+    ('embeddings/token_type_embeddings', 'token_type_embed.weight'),
+    ('embeddings/position_embeddings', 'token_pos_embed._embed.weight'),
     ('encoder/embedding_hidden_mapping_in', 'embed_factorized_proj'),
     ('encoder', 'enc'),
     ('inner_group_0/', ''),
-    ('group', 'groups'),
-    ('layer', 'layers'),
-    ('embeddings', 'embed'),
-    ('attention/output/LayerNorm', 'ln'),  # bert
+    ('group', 'all_encoder_groups'),
+    ('layer', 'all_layers'),
+    ('attention/output/LayerNorm', 'layer_norm'),  # bert
     ('output/LayerNorm', 'ffn_ln'),  # bert
     ('LayerNorm_1', 'ffn_ln'),  # albert
     ('LayerNorm', 'ln'),  # albert
-    ('ffn_1/', ''),
     ('attention_1', 'attention'),  # albert
-    ('attention/output/dense', 'proj'),
-    ('intermediate/dense', 'ffn_ffn1'),
-    ('intermediate/output/dense', 'ffn_ffn2'),  # albert
-    ('output/dense', 'ffn_ffn2'),  # bert
+    ('attention/output/dense', 'attention_proj'),
+    ('intermediate/dense', 'ffn.ffn_1'),
+    ('intermediate/output/dense', 'ffn.ffn_2'),  # albert
+    ('output/dense', 'ffn.ffn_2'),  # bert
     ('output/', ''),
     ('pooler/dense', 'pooler'),
     ('kernel', 'weight'),
     ('attention/', ''),
-    ('/', '_'),
+    ('/', '.'),
 ]
 
 CONVERT_MAP_TF2 = [
@@ -172,21 +170,20 @@ CONVERT_MAP_TF2 = [
     ('predictions/output_bias', 'word_embed_bias'),
     ('predictions', 'mlm'),
     ('word_embeddings/embeddings', 'word_embed_weight'),
-    ('embedding_postprocessor/type_embeddings', 'token_type_embed_weight'),  # bert
-    ('embedding_postprocessor/position_embeddings', 'token_pos_embed_embed_weight'),  # bert
-    ('embedding_postprocessor/layer_norm', 'embed_ln'),  # bert
-    ('position_embedding/embeddings', 'token_pos_embed_embed_weight'),  # albert
-    ('type_embeddings/embeddings', 'token_type_embed_weight'),  # albert
-    ('embeddings/layer_norm', 'embed_ln'),  # albert
+    ('embedding_postprocessor/type_embeddings', 'token_type_embed.weight'),  # bert
+    ('embedding_postprocessor/position_embeddings', 'token_pos_embed._embed.weight'),  # bert
+    ('embedding_postprocessor/layer_norm', 'embed_layer_norm'),  # bert
+    ('position_embedding/embeddings', 'token_pos_embed._embed.weight'),  # albert
+    ('type_embeddings/embeddings', 'token_type_embed.weight'),  # albert
+    ('embeddings/layer_norm', 'embed_layer_norm'),  # albert
     ('embedding_projection', 'embed_factorized_proj'),
     ('transformer', 'enc_groups_0'),
     ('self_attention_output', 'proj'),
     ('self_attention_layer_norm', 'ln'),
-    ('intermediate', 'ffn_ffn1'),
+    ('intermediate', 'ffn.ffn_1'),
     ('output_layer_norm', 'ffn_ln'),
-    ('output', 'ffn_ffn2'),
+    ('output', 'ffn.ffn_2'),
     ("pooler_transform", "pooler"),
-    ('encoder', 'enc'),
     ('layer', 'layers'),
     ('kernel', 'weight'),
     ('/', '_'),
@@ -355,7 +352,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
     tf_names = list(tf_names)
 
     # Build gluon model and initialize
-    gluon_model = PretrainedModel.from_cfg(cfg, prefix='', use_pooler=True)
+    gluon_model = PretrainedModel.from_cfg(cfg, use_pooler=True)
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
     gluon_mlm_model = PretrainedMLMModel(backbone_cfg=cfg)
@@ -435,18 +432,18 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
                 key_bias = key_bias.reshape((-1,))
                 value_bias = value_bias.reshape((-1,))
             # Merge query_weight, key_weight, value_weight to mx_params
-            mx_params['enc_{}_attn_qkv_weight'.format(mx_prefix)].set_data(
+            mx_params['encoder.{}.attn_qkv.weight'.format(mx_prefix)].set_data(
                 np.concatenate([query_weight, key_weight, value_weight], axis=1).T)
             # Merge query_bias, key_bias, value_bias to mx_params
-            mx_params['enc_{}_attn_qkv_bias'.format(mx_prefix)].set_data(
+            mx_params['encoder.{}.attn_qkv.bias'.format(mx_prefix)].set_data(
                 np.concatenate([query_bias, key_bias, value_bias], axis=0))
 
         tf_prefix = None
         if model_type == 'bert':
-            assert all([re.match(r'^enc_layers_[\d]+_attn_qkv_(weight|bias)$', key)
+            assert all([re.match(r'^encoder_layers_[\d]+_attn_qkv_(weight|bias)$', key)
                         is not None for key in all_keys])
             for layer_id in range(cfg.MODEL.num_layers):
-                mx_prefix = 'layers_{}'.format(layer_id)
+                mx_prefix = 'all_layers.{}'.format(layer_id)
                 if TF1_Hub_Modules:
                     tf_prefix = 'bert/encoder/layer_{}/attention/self'.format(layer_id)
                 else:
@@ -454,7 +451,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
                 convert_qkv_weights(tf_prefix, mx_prefix)
         elif model_type == 'albert':
             assert all_keys == {'enc_groups_0_attn_qkv_weight', 'enc_groups_0_attn_qkv_bias'}
-            mx_prefix = 'groups_0'
+            mx_prefix = 'all_groups.0'
             if TF1_Hub_Modules:
                 tf_prefix = 'bert/encoder/transformer/group_0/inner_group_0/attention_1/self'
             else:
