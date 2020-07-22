@@ -166,9 +166,9 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
 def convert_params(fairseq_model,
                    gluon_cfg,
                    ctx,
-                   is_mlm=True,
-                   gluon_prefix=''):
-    print('converting params')
+                   is_mlm=True):
+    gluon_prefix = 'backbone_model' if is_mlm else ''
+    print('converting {} params'.format(gluon_prefix))
     fairseq_params = fairseq_model.state_dict()
     fairseq_prefix = 'model.decoder.'
     if is_mlm:
@@ -210,10 +210,10 @@ def convert_params(fairseq_model,
             ('self_attn.out_proj.bias', 'attention_proj.bias'),
             ('self_attn_layer_norm.weight', 'layer_norm.gamma'),
             ('self_attn_layer_norm.bias', 'layer_norm.beta'),
-            ('fc1.weight', 'ffn.ffn1.weight'),
-            ('fc1.bias', 'ffn.ffn1.bias'),
-            ('fc2.weight', 'ffn.ffn2.weight'),
-            ('fc2.bias', 'ffn.ffn2.bias'),
+            ('fc1.weight', 'ffn.ffn_1.weight'),
+            ('fc1.bias', 'ffn.ffn_1.bias'),
+            ('fc2.weight', 'ffn.ffn_2.weight'),
+            ('fc2.bias', 'ffn.ffn_2.bias'),
             ('final_layer_norm.weight', 'ffn.layer_norm.gamma'),
             ('final_layer_norm.bias', 'ffn.layer_norm.beta')
         ]:
@@ -237,7 +237,7 @@ def convert_params(fairseq_model,
     # position embed weight
     padding_idx = fairseq_model.task.dictionary.pad_index
     fs_pos_embed_name = fairseq_prefix + 'sentence_encoder.embed_positions.weight'
-    gl_pos_embed_name = gluon_prefix + 'pos_embed_embed.weight'
+    gl_pos_embed_name = gluon_prefix + 'pos_embed._embed.weight'
     gluon_params[gl_pos_embed_name].set_data(
         fairseq_params[fs_pos_embed_name].cpu().numpy()[padding_idx + 1:,:])
 
