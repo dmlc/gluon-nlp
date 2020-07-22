@@ -390,16 +390,17 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
         else:
             mx_params[dst_name].set_data(tf_param_val)
 
-    # Merge query/kernel, key/kernel, value/kernel to enc_groups_0_attn_qkv_weight
+    # Merge query/kernel, key/kernel, value/kernel to encoder.all_encoder_groups.0.attn_qkv.weight
     def convert_qkv_weights(tf_prefix, mx_prefix, is_mlm):
         """
         To convert the qkv weights with different prefix.
 
         In tensorflow framework, the prefix of query/key/value for the albert model is
         'bert/encoder/transformer/group_0/inner_group_0/attention_1/self/query/kernel',
-        and that for the albert model is 'bert/encoder/layer_{}/attention/self/key/bias'.
-        In gluonnlp framework, the prefix is slightly different as 'enc_groups_0_attn_qkv_weight'
-        for albert model and 'enc_layers_{}_attn_qkv_weight' for bert model, as the
+        and that for the bert model is 'bert/encoder/layer_{}/attention/self/key/bias'.
+        In gluonnlp framework, the prefix is slightly different as
+        'encoder.all_encoder_groups.0.attn_qkv.weight' for albert model and
+        'encoder.all_layers.{}.attn_qkv.weight' for bert model, as the
         curly braces {} can be filled with the layer number.
         """
         query_weight = tf_params[
