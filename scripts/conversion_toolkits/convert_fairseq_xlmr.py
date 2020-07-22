@@ -97,8 +97,7 @@ def convert_fairseq_model(args):
         gluon_xlmr = convert_params(fairseq_xlmr,
                                     gluon_cfg,
                                     ctx,
-                                    is_mlm=is_mlm,
-                                    gluon_prefix='roberta_')
+                                    is_mlm=is_mlm)
 
         if is_mlm:
             if args.test:

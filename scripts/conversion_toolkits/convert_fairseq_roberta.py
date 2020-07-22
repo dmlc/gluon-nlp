@@ -169,7 +169,7 @@ def convert_params(fairseq_model,
                    is_mlm=True):
     fairseq_params = fairseq_model.state_dict()
     fairseq_prefix = 'model.decoder.'
-    gluon_prefix = 'backbone_model' if is_mlm else ''
+    gluon_prefix = 'backbone_model.' if is_mlm else ''
     print('converting {} params'.format(gluon_prefix))
 
     if is_mlm:
@@ -251,8 +251,7 @@ def convert_params(fairseq_model,
             ('lm_head.bias', 'mlm_decoder.3.bias')
         ]:
             fs_name = fairseq_prefix + k
-            gl_name = gluon_prefix + v
-            gluon_params[gl_name].set_data(
+            gluon_params[v].set_data(
                 fairseq_params[fs_name].cpu().numpy())
         # assert untie=False
         assert np.array_equal(
