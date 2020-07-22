@@ -280,12 +280,15 @@ class BoundedBudgetSampler(BaseSampler):
         max sentences num of each batch
     required_batch_size_multiple
         require batch size to be a multiple of N (default: 1).
+    shuffle
+        Whether to shuffle the batches.
     seed
         The seed of the sampler
     """
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_tokens: int = -1, max_sentences: int = -1,
-                 required_batch_size_multiple: int = 1, seed: Optional[int] = -1):
+                 required_batch_size_multiple: int = 1,
+                 shuffle: bool = False, seed: Optional[int] = None):
         assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
         assert max_tokens > 0 or max_sentences > 0, 'One of max_tokens and max_sentences must be larger than 0'
         self._lengths = np.array(lengths)
@@ -295,7 +298,8 @@ class BoundedBudgetSampler(BaseSampler):
         self._max_tokens = max_tokens
         self._max_sentences = max_sentences
         self._batches = []
-        self._rng = np.random.RandomState(seed) if seed > 0 else None
+        self._shuffle = shuffle
+        self._rng = np.random.RandomState(seed)
         # sort
         self._indices = self._indices[np.argsort(self._lengths, kind='mergesort')]
         batch = []
@@ -323,7 +327,7 @@ class BoundedBudgetSampler(BaseSampler):
             self._batches.append(np.array(batch))        
         
     def __iter__(self):
-        if self._rng:
+        if self._shuffle:
             self._rng.shuffle(self._batches)
         for batch in self._batches:
             yield batch
