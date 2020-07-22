@@ -191,7 +191,6 @@ def get_name_map(tf_names, num_stacked_ffn, is_mlm):
              # for mlm models
             ('cls/predictions/extra_output_weights', 'extra_table.weight'),
             ('cls/predictions/output_bias', 'embedding_table.bias'),
-            # 'embedding_table.weight' is shared with word_embed
             ('cls/predictions/transform/LayerNorm/beta', 'mlm_decoder.2.beta'),
             ('cls/predictions/transform/LayerNorm/gamma', 'mlm_decoder.2.gamma'),
             ('cls/predictions/transform/dense/bias', 'mlm_decoder.0.bias'),
@@ -314,7 +313,9 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
             else:
                 mx_params[dst_name].set_data(tf_param_val)
 
-        assert len(all_keys) == 0, 'parameters missing from tensorflow checkpoint'
+        # 'embedding_table.weight' is shared with word_embed.weight
+        assert len(all_keys) == 0 or (is_mlm and all_keys =={'embedding_table.weight'}), \
+               'parameters missing from tensorflow checkpoint'
 
         if not is_mlm:
             # test conversion results for backbone model
