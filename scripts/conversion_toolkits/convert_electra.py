@@ -274,16 +274,12 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
     gluon_disc_model.hybridize()
 
     gen_cfg = get_generator_cfg(cfg)
-    word_embed_params = gluon_disc_model.backbone_model.word_embed.collect_params()
-    token_type_embed_params = gluon_disc_model.backbone_model.token_pos_embed.collect_params()
-    token_pos_embed_params = gluon_disc_model.backbone_model.token_pos_embed.collect_params()
-    embed_layer_norm_params = gluon_disc_model.backbone_model.embed_layer_norm.collect_params()
-    gluon_gen_model = ElectraGenerator(gen_cfg,
-                                       tied_embeddings=True,
-                                       word_embed_params=word_embed_params,
-                                       token_type_embed_params=token_type_embed_params,
-                                       token_pos_embed_params=token_pos_embed_params,
-                                       embed_layer_norm_params=embed_layer_norm_params)
+    disc_backbone = gluon_disc_model.backbone_model
+    gluon_gen_model = ElectraGenerator(gen_cfg)
+    gluon_gen_model.tie_embeddings(disc_backbone.word_embed.collect_params(),
+                                   disc_backbone.token_type_embed.collect_params(),
+                                   disc_backbone.token_pos_embed.collect_params(),
+                                   disc_backbone.embed_layer_norm.collect_params())
     gluon_gen_model.initialize(ctx=ctx)
     gluon_gen_model.hybridize()
 
@@ -341,7 +337,7 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
                 '{}/key/kernel'.format(tf_prefix)]
             value_weight = tf_params[
                 '{}/value/kernel'.format(tf_prefix)]
-            mx_params['{}_attn_qkv_weight'.format(mx_prefix)].set_data(
+            mx_params['{}.attn_qkv.weight'.format(mx_prefix)].set_data(
                 np.concatenate([query_weight, key_weight, value_weight], axis=1).T)
             # Merge query_bias, key_bias, value_bias to mx_params
             query_bias = tf_params[
@@ -350,7 +346,7 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
                 '{}/key/bias'.format(tf_prefix)]
             value_bias = tf_params[
                 '{}/value/bias'.format(tf_prefix)]
-            mx_params['{}_attn_qkv_bias'.format(mx_prefix)].set_data(
+            mx_params['{}.attn_qkv.bias'.format(mx_prefix)].set_data(
                 np.concatenate([query_bias, key_bias, value_bias], axis=0))
 
         # The below parameters of the generator are already initialized in the discriminator, no need to reload.
