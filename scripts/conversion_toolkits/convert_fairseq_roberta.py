@@ -145,7 +145,7 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
     cfg.defrost()
     cfg.MODEL.vocab_size = vocab_size
     cfg.MODEL.units = fairseq_cfg.encoder_embed_dim
-    cfg.MODEL.hidden_size = fairseq_cfg.encoder_ffn.embed_dim
+    cfg.MODEL.hidden_size = fairseq_cfg.encoder_ffn_embed_dim
     cfg.MODEL.max_length = fairseq_cfg.max_positions
     cfg.MODEL.num_heads = fairseq_cfg.encoder_attention_heads
     cfg.MODEL.num_layers = fairseq_cfg.encoder_layers
@@ -166,12 +166,13 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
 def convert_params(fairseq_model,
                    gluon_cfg,
                    ctx,
-                   is_mlm=True):
+                   is_mlm=True,
+                   gluon_prefix='roberta'):
     print('converting params')
     fairseq_params = fairseq_model.state_dict()
     fairseq_prefix = 'model.decoder.'
     if is_mlm:
-        gluon_model = RobertaForMLM(backbone_cfg=gluon_cfg, prefix=gluon_prefix)
+        gluon_model = RobertaForMLM(backbone_cfg=gluon_cfg)
         # output all hidden states for testing
         gluon_model.backbone_model._output_all_encodings = True
         gluon_model.backbone_model.encoder._output_all_encodings = True
@@ -179,9 +180,7 @@ def convert_params(fairseq_model,
         gluon_model = RobertaModel.from_cfg(
             gluon_cfg,
             use_pooler=True,
-            output_all_encodings=True,
-            prefix=gluon_prefix
-        )
+            output_all_encodings=True)
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
     gluon_params = gluon_model.collect_params()
@@ -190,21 +189,21 @@ def convert_params(fairseq_model,
         fs_atten_prefix = \
             '{}sentence_encoder.layers.{}.self_attn.' \
             .format(fairseq_prefix, layer_id)
-        fs_q.weight = fairseq_params[fs_atten_prefix + 'q_proj.weight'].cpu().numpy()
-        fs_k.weight = fairseq_params[fs_atten_prefix + 'k_proj.weight'].cpu().numpy()
-        fs_v.weight = fairseq_params[fs_atten_prefix + 'v_proj.weight'].cpu().numpy()
-        fs_q.bias = fairseq_params[fs_atten_prefix + 'q_proj.bias'].cpu().numpy()
-        fs_k.bias = fairseq_params[fs_atten_prefix + 'k_proj.bias'].cpu().numpy()
-        fs_v.bias = fairseq_params[fs_atten_prefix + 'v_proj.bias'].cpu().numpy()
+        fs_q_weight = fairseq_params[fs_atten_prefix + 'q_proj.weight'].cpu().numpy()
+        fs_k_weight = fairseq_params[fs_atten_prefix + 'k_proj.weight'].cpu().numpy()
+        fs_v_weight = fairseq_params[fs_atten_prefix + 'v_proj.weight'].cpu().numpy()
+        fs_q_bias = fairseq_params[fs_atten_prefix + 'q_proj.bias'].cpu().numpy()
+        fs_k_bias = fairseq_params[fs_atten_prefix + 'k_proj.bias'].cpu().numpy()
+        fs_v_bias = fairseq_params[fs_atten_prefix + 'v_proj.bias'].cpu().numpy()
         gl_qkv_prefix = \
             '{}encoder_layers_{}_attn_qkv_' \
             .format(gluon_prefix, layer_id)
-        gl_qkv.weight = gluon_params[gl_qkv_prefix + 'weight']
-        gl_qkv.bias = gluon_params[gl_qkv_prefix + 'bias']
-        gl_qkv.weight.set_data(
-            np.concatenate([fs_q.weight, fs_k.weight, fs_v.weight], axis=0))
-        gl_qkv.bias.set_data(
-            np.concatenate([fs_q.bias, fs_k.bias, fs_v.bias], axis=0))
+        gl_qkv_weight = gluon_params[gl_qkv_prefix + 'weight']
+        gl_qkv_bias = gluon_params[gl_qkv_prefix + 'bias']
+        gl_qkv_weight.set_data(
+            np.concatenate([fs_q_weight, fs_k_weight, fs_v_weight], axis=0))
+        gl_qkv_bias.set_data(
+            np.concatenate([fs_q_bias, fs_k_bias, fs_v_bias], axis=0))
 
         for k, v in [
             ('self_attn.out_proj.weight', 'proj.weight'),
