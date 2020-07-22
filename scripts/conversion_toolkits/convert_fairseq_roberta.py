@@ -165,23 +165,17 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
 
 def convert_params(fairseq_model,
                    gluon_cfg,
-                   ctx,
-                   is_mlm=True):
+                   ctx):
     fairseq_params = fairseq_model.state_dict()
     fairseq_prefix = 'model.decoder.'
-    gluon_prefix = 'backbone_model.' if is_mlm else ''
+    gluon_prefix = 'backbone_model.'
     print('converting {} params'.format(gluon_prefix))
 
-    if is_mlm:
-        gluon_model = RobertaForMLM(backbone_cfg=gluon_cfg)
-        # output all hidden states for testing
-        gluon_model.backbone_model._output_all_encodings = True
-        gluon_model.backbone_model.encoder._output_all_encodings = True
-    else:
-        gluon_model = RobertaModel.from_cfg(
-            gluon_cfg,
-            use_pooler=True,
-            output_all_encodings=True)
+    gluon_model = RobertaForMLM(backbone_cfg=gluon_cfg)
+    # output all hidden states for testing
+    gluon_model.backbone_model._output_all_encodings = True
+    gluon_model.backbone_model.encoder._output_all_encodings = True
+
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
     gluon_params = gluon_model.collect_params()
@@ -242,22 +236,21 @@ def convert_params(fairseq_model,
     gluon_params[gl_pos_embed_name].set_data(
         fairseq_params[fs_pos_embed_name].cpu().numpy()[padding_idx + 1:,:])
 
-    if is_mlm:
-        for k, v in [
-            ('lm_head.dense.weight', 'mlm_decoder.0.weight'),
-            ('lm_head.dense.bias', 'mlm_decoder.0.bias'),
-            ('lm_head.layer_norm.weight', 'mlm_decoder.2.gamma'),
-            ('lm_head.layer_norm.bias', 'mlm_decoder.2.beta'),
-            ('lm_head.bias', 'mlm_decoder.3.bias')
-        ]:
-            fs_name = fairseq_prefix + k
-            gluon_params[v].set_data(
-                fairseq_params[fs_name].cpu().numpy())
-        # assert untie=False
-        assert np.array_equal(
-            fairseq_params[fairseq_prefix + 'sentence_encoder.embed_tokens.weight'].cpu().numpy(),
-            fairseq_params[fairseq_prefix + 'lm_head.weight'].cpu().numpy()
-        )
+    for k, v in [
+        ('lm_head.dense.weight', 'mlm_decoder.0.weight'),
+        ('lm_head.dense.bias', 'mlm_decoder.0.bias'),
+        ('lm_head.layer_norm.weight', 'mlm_decoder.2.gamma'),
+        ('lm_head.layer_norm.bias', 'mlm_decoder.2.beta'),
+        ('lm_head.bias', 'mlm_decoder.3.bias')
+    ]:
+        fs_name = fairseq_prefix + k
+        gluon_params[v].set_data(
+            fairseq_params[fs_name].cpu().numpy())
+    # assert untie=False
+    assert np.array_equal(
+        fairseq_params[fairseq_prefix + 'sentence_encoder.embed_tokens.weight'].cpu().numpy(),
+        fairseq_params[fairseq_prefix + 'lm_head.weight'].cpu().numpy()
+    )
     return gluon_model
 
 
@@ -359,25 +352,20 @@ def convert_fairseq_model(args):
         of.write(gluon_cfg.dump())
 
     ctx = mx.gpu(args.gpu) if args.gpu is not None else mx.cpu()
-    for is_mlm in [False, True]:
-        gluon_roberta = convert_params(fairseq_roberta,
-                                       gluon_cfg,
-                                       ctx,
-                                       is_mlm=is_mlm)
+    gluon_roberta = convert_params(fairseq_roberta,
+                                   gluon_cfg,
+                                   ctx)
+    if args.test:
+        test_model(fairseq_roberta, gluon_roberta, args.gpu)
 
-        if is_mlm:
-            if args.test:
-                test_model(fairseq_roberta, gluon_roberta, args.gpu)
-
-            gluon_roberta.save_parameters(os.path.join(args.save_dir, 'model_mlm.params'), deduplicate=True)
-            logging.info('Convert the RoBERTa MLM model in {} to {}'.
-                         format(os.path.join(args.fairseq_model_path, 'model.pt'), \
-                                os.path.join(args.save_dir, 'model_mlm.params')))
-        else:
-            gluon_roberta.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
-            logging.info('Convert the RoBERTa backbone model in {} to {}'.
-                         format(os.path.join(args.fairseq_model_path, 'model.pt'), \
-                                os.path.join(args.save_dir, 'model.params')))
+    gluon_roberta.save_parameters(os.path.join(args.save_dir, 'model_mlm.params'), deduplicate=True)
+    logging.info('Convert the RoBERTa MLM model in {} to {}'.
+                 format(os.path.join(args.fairseq_model_path, 'model.pt'), \
+                        os.path.join(args.save_dir, 'model_mlm.params')))
+    gluon_roberta.backbone_model.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
+    logging.info('Convert the RoBERTa backbone model in {} to {}'.
+                 format(os.path.join(args.fairseq_model_path, 'model.pt'), \
+                        os.path.join(args.save_dir, 'model.params')))
 
     logging.info('Conversion finished!')
     logging.info('Statistics:')
