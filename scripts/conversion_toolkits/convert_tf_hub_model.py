@@ -132,11 +132,11 @@ def convert_tf_assets(tf_assets_dir, model_type):
 
 
 CONVERT_MAP_TF1 = [
-    ('bert/', 'backbone_model'),
+    ('bert/', 'backbone_model.'),
     ('cls/', ''),
     ('predictions/transform/dense', 'mlm_decoder.0'),
     ('predictions/transform/LayerNorm', 'mlm_decoder.2'),
-    ('/predictions/output_bias', 'mlm_decoder.3.bias'),
+    ('predictions/output_bias', 'mlm_decoder.3.bias'),
     ('transformer/', ''),
     ('transform/', ''),
     ('embeddings/word_embeddings', 'word_embed.weight'),
@@ -394,7 +394,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
             mx_params[dst_name].set_data(tf_param_val)
 
     # Merge query/kernel, key/kernel, value/kernel to enc_groups_0_attn_qkv_weight
-    def convert_qkv_weights(tf_prefix, mx_prefix):
+    def convert_qkv_weights(tf_prefix, mx_prefix, is_mlm):
         """
         To convert the qkv weights with different prefix.
 
@@ -425,13 +425,20 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
             key_bias = key_bias.reshape((-1,))
             value_bias = value_bias.reshape((-1,))
         # Merge query_weight, key_weight, value_weight to mx_params
-        mx_params['encoder.{}.attn_qkv.weight'.format(mx_prefix)].set_data(
+        mx_weight_name = 'encoder.{}.attn_qkv.weight'.format(mx_prefix)
+        mx_bias_name = 'encoder.{}.attn_qkv.bias'.format(mx_prefix)
+        if is_mlm:
+            mx_weight_name = 'backbone_model.' + mx_weight_name
+            mx_bias_name = 'backbone_model.' + mx_bias_name
+        mx_params[mx_weight_name].set_data(
             np.concatenate([query_weight, key_weight, value_weight], axis=1).T)
         # Merge query_bias, key_bias, value_bias to mx_params
-        mx_params['encoder.{}.attn_qkv.bias'.format(mx_prefix)].set_data(
+        mx_params[mx_bias_name].set_data(
             np.concatenate([query_bias, key_bias, value_bias], axis=0))
 
     tf_prefix = None
+    if has_mlm:
+        all_keys.remove('mlm_decoder.3.weight')
     if model_type == 'bert':
         assert all([re.match(r'^encoder\.all_layers\.[\d]+\.attn_qkv\.(weight|bias)$', key)
                     is not None for key in all_keys])
@@ -441,18 +448,16 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
                 tf_prefix = 'bert/encoder/layer_{}/attention/self'.format(layer_id)
             else:
                 tf_prefix = 'bert_model/encoder/layer_{}/self_attention'.format(layer_id)
-            convert_qkv_weights(tf_prefix, mx_prefix)
+            convert_qkv_weights(tf_prefix, mx_prefix, has_mlm)
     elif model_type == 'albert':
-        assert all_keys == {
-            'encoder.all_encoder_groups.0.attn_qkv.weight',
-            'encoder.all_encoder_groups.0.attn_qkv.bias'
-            }
+        assert all([re.match(r'^(backbone_model\.){0,1}encoder\.all_encoder_groups\.0\.attn_qkv\.(weight|bias)$',
+                    key) is not None for key in all_keys])
         mx_prefix = 'all_encoder_groups.0'
         if TF1_Hub_Modules:
             tf_prefix = 'bert/encoder/transformer/group_0/inner_group_0/attention_1/self'
         else:
             tf_prefix = 'transformer/self_attention'
-        convert_qkv_weights(tf_prefix, mx_prefix)
+        convert_qkv_weights(tf_prefix, mx_prefix, has_mlm)
     else:
         raise NotImplementedError
 
