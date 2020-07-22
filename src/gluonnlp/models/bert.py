@@ -51,7 +51,7 @@ PRETRAINED_URL = {
         'cfg': 'google_en_cased_bert_base/model-5620839a.yml',
         'vocab': 'google_en_cased_bert_base/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_base/model-c566c289.params',
-        'mlm_params': 'google_en_cased_bert_base/model_mlm-c3ff36a3.params',
+        'mlm_params': 'google_en_cased_bert_base/model_mlm-bde14bee.params',
         'lowercase': False,
     },
 

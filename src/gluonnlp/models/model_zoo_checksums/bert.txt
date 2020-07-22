@@ -1,6 +1,6 @@
 google_en_cased_bert_base/model-c566c289.params          c566c289e824e8b8b66bd3ee92c571bfd20b4280   433253136
 google_en_cased_bert_base/model-5620839a.yml             5620839ae19a0ab1aad2ef9e12e67459b155ff69   402
-google_en_cased_bert_base/model_mlm-c3ff36a3.params      c3ff36a35b74527e717f5dceae8fed61896e1200   524815978
+google_en_cased_bert_base/model_mlm-bde14bee.params      bde14bee070cbc634de8f73e17a2c824606b8c8a   435740186
 google_en_cased_bert_base/vocab-c1defaaa.json            c1defaaa483849fee9780586b66070d275ce8892   300599
 google_en_uncased_bert_base/model-3712e50a.params        3712e50af896412222415ceabc94b8d6750e7e79   437941008
 google_en_uncased_bert_base/model-4d8422ad.yml           4d8422ad3e6e81c140d9658d2d0341703ece7e33   402
