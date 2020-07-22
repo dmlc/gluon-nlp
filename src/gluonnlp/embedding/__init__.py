@@ -18,7 +18,7 @@
 # pylint: disable=wildcard-import
 """Word embeddings."""
 
-from . import evaluation, embed_loader
+from . import embed_loader
 from .embed_loader import *
 
-__all__ = (embed_loader.__all__ + ['evaluation'])
+__all__ = (embed_loader.__all__ )

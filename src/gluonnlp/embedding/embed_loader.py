@@ -19,13 +19,14 @@
 """Load token embedding"""
 
 __all__ = [
-    'list_sources', 'load_embeddings'
+    'list_sources', 'load_embeddings', 'get_fasttext_model'
 ]
 
 import io
 import logging
 import os
 import warnings
+import fasttext
 
 import numpy as np
 from mxnet.gluon.utils import download, check_sha1, _get_repo_file_url
@@ -57,6 +58,8 @@ def list_sources(embedding_name=None):
     """
     if embedding_name is not None:
         embedding_name = embedding_name.lower()
+        if embedding_name == 'fasttext.bin':
+            return list(C.FAST_TEXT_BIN_SHA1.keys())
         if embedding_name not in text_embedding_reg:
             raise KeyError('Cannot find `embedding_name` {}. Use '
                            '`list_sources(embedding_name=None).keys()` to get all the valid'
@@ -215,7 +218,7 @@ def load_embeddings(vocab=None, pretrained_name_or_dir='glove.6B.50d', unknown='
     pretrained_name_or_dir : str, default 'glove.6B.50d'
         A file path for a pretrained embedding file or the name of the pretrained token embedding file.
         This method would first check if it is a file path.
-        If not, the method will search it in the registry.
+        If not, the method will load from cache or download.
     unknown : str, default '<unk>'
         To specify the unknown token in the pretrained file.
     unk_method : Callable, default None
@@ -268,4 +271,39 @@ def load_embeddings(vocab=None, pretrained_name_or_dir='glove.6B.50d', unknown='
                 matrix[hit_flags == False] = unk_method(vocab.to_tokens(unk_idxs))
 
         return matrix
+
+def get_fasttext_model(model_name_or_dir='cc.en.300'):
+    """ Load fasttext model from the binaray file
+
+    This method will load fasttext model binaray file from a given file path or remote sources,
+    and return a `fasttext` model object. See `fasttext.cc` for more usage information.
+
+    Available sources:
+    ['wiki-news-300d-1M-subword', 'crawl-300d-2M-subword', \
+     'cc.af.300', ..., 'cc.en.300', ..., 'wiki.aa', ..., 'wiki.en', ..., 'wiki.zu']
+    Detailed sources can be founded by `gluonnlp.embedding.list_sources('FastText.bin')`
+
+    Parameters
+    ----------
+    model_name_or_dir : str, default 'cc.en.300'
+        A file path for a FastText binary file or the name of the FastText model.
+        This method would first check if it is a file path.
+        If not, the method will load from cache or download.
+
+    Returns
+    -------
+    fasttext.FastText._FastText:
+        A FastText model based on `fasttext` package.
+    """
+    if os.path.exists(model_name_or_dir):
+        file_path = model_name_or_dir
+    else:
+        source = model_name_or_dir
+        root_path = os.path.expanduser(os.path.join(get_home_dir(), 'embedding'))
+        embedding_dir = os.path.join(root_path, 'fasttext')
+        if source not in C.FAST_TEXT_BIN_SHA1:
+            raise ValueError('Cannot recognize {} for the bin file'.format(source))
+        file_name, file_hash = C.FAST_TEXT_BIN_SHA1[source]
+        file_path = _get_file_path('fasttext', file_name, file_hash)
+    return fasttext.load_model(file_path)
 
