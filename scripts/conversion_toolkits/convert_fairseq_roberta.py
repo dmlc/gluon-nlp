@@ -167,10 +167,11 @@ def convert_params(fairseq_model,
                    gluon_cfg,
                    ctx,
                    is_mlm=True):
-    gluon_prefix = 'backbone_model' if is_mlm else ''
-    print('converting {} params'.format(gluon_prefix))
     fairseq_params = fairseq_model.state_dict()
     fairseq_prefix = 'model.decoder.'
+    gluon_prefix = 'backbone_model' if is_mlm else ''
+    print('converting {} params'.format(gluon_prefix))
+
     if is_mlm:
         gluon_model = RobertaForMLM(backbone_cfg=gluon_cfg)
         # output all hidden states for testing
@@ -243,11 +244,11 @@ def convert_params(fairseq_model,
 
     if is_mlm:
         for k, v in [
-            ('lm_head.dense.weight', 'mlm_proj.weight'),
-            ('lm_head.dense.bias', 'mlm_proj.bias'),
-            ('lm_head.layer_norm.weight', 'mlm_ln.gamma'),
-            ('lm_head.layer_norm.bias', 'mlm_ln.beta'),
-            ('lm_head.bias', 'word_embed.bias')
+            ('lm_head.dense.weight', 'mlm_decoder.0.weight'),
+            ('lm_head.dense.bias', 'mlm_decoder.0.bias'),
+            ('lm_head.layer_norm.weight', 'mlm_decoder.2.gamma'),
+            ('lm_head.layer_norm.bias', 'mlm_decoder.2.beta'),
+            ('lm_head.bias', 'mlm_decoder.3.bias')
         ]:
             fs_name = fairseq_prefix + k
             gl_name = gluon_prefix + v
