@@ -166,25 +166,19 @@ CONVERT_MAP_TF1 = [
 CONVERT_MAP_TF2 = [
     (':0', ''),
     ('cls/', ''),
-    ('bert_model/', ''),
-    ('predictions/output_bias', 'word_embed_bias'),
-    ('predictions', 'mlm'),
-    ('word_embeddings/embeddings', 'word_embed_weight'),
-    ('embedding_postprocessor/type_embeddings', 'token_type_embed.weight'),  # bert
-    ('embedding_postprocessor/position_embeddings', 'token_pos_embed._embed.weight'),  # bert
-    ('embedding_postprocessor/layer_norm', 'embed_layer_norm'),  # bert
-    ('position_embedding/embeddings', 'token_pos_embed._embed.weight'),  # albert
-    ('type_embeddings/embeddings', 'token_type_embed.weight'),  # albert
-    ('embeddings/layer_norm', 'embed_layer_norm'),  # albert
+    ('predictions/output_bias', 'mlm_decoder.3.bias'),
+    ('transformer/layer_', 'encoder.all_layers.'),
+    ('word_embeddings/embeddings', 'word_embed.weight'),
+    ('embedding_postprocessor/type_embeddings', 'token_type_embed.weight'),
+    ('embedding_postprocessor/position_embeddings', 'token_pos_embed._embed.weight'),
+    ('embedding_postprocessor/layer_norm', 'embed_layer_norm'),
     ('embedding_projection', 'embed_factorized_proj'),
-    ('transformer', 'encoder.all_encoder_groups.0'), # albert
-    ('self_attention_output', 'proj'),
-    ('self_attention_layer_norm', 'ln'),
+    ('self_attention/attention_output', 'attention_proj'),
+    ('self_attention_layer_norm', 'layer_norm'),
     ('intermediate', 'ffn.ffn_1'),
     ('output_layer_norm', 'ffn.layer_norm'),
     ('output', 'ffn.ffn_2'),
     ("pooler_transform", "pooler"),
-    ('layer', 'layers'),
     ('kernel', 'weight'),
     ('/', '.'),
 ]
@@ -218,7 +212,8 @@ def get_name_map(tf_names, is_TF1=True):
         if 'self/' in source_name:
             name_map[source_name] = None
             continue
-        if 'self_attention/' in source_name:
+        if re.match(r'^transformer\/layer_[\d]+\/self_attention\/(key|value|query)\/(kernel|bias)$',
+                    source_name) is not None:
             name_map[source_name] = None
             continue
         for old, new in convert_map:
@@ -387,7 +382,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
         if dst_name is None:
             continue
         all_keys.remove(dst_name)
-        if 'self_attention_output/kernel' in src_name:
+        if 'self_attention/attention_output' in src_name:
             mx_params[dst_name].set_data(tf_param_val.reshape((cfg.MODEL.units, -1)).T)
             continue
         if src_name.endswith('kernel'):
@@ -449,16 +444,14 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
             if TF1_Hub_Modules:
                 tf_prefix = 'bert/encoder/layer_{}/attention/self'.format(layer_id)
             else:
-                tf_prefix = 'bert_model/encoder/layer_{}/self_attention'.format(layer_id)
+                tf_prefix = 'transformer/layer_{}/self_attention'.format(layer_id)
             convert_qkv_weights(tf_prefix, mx_prefix, has_mlm)
     elif model_type == 'albert':
         assert all([re.match(r'^(backbone_model\.){0,1}encoder\.all_encoder_groups\.0\.attn_qkv\.(weight|bias)$',
                     key) is not None for key in all_keys])
         mx_prefix = 'all_encoder_groups.0'
-        if TF1_Hub_Modules:
-            tf_prefix = 'bert/encoder/transformer/group_0/inner_group_0/attention_1/self'
-        else:
-            tf_prefix = 'transformer/self_attention'
+        assert TF1_Hub_Modules, 'Please download thr alber model from TF1 Hub'
+        tf_prefix = 'bert/encoder/transformer/group_0/inner_group_0/attention_1/self'
         convert_qkv_weights(tf_prefix, mx_prefix, has_mlm)
     else:
         raise NotImplementedError
