@@ -186,15 +186,6 @@ def get_name_map(tf_names, convert_type='backbone'):
         for old, new in CONVERT_MAP:
             target_name = target_name.replace(old, new)
         name_map[source_name] = target_name
-    if convert_type == 'gen':
-        # The below parameters of the generator are already initialized in the discriminator, no need to reload.
-        name_map.update({
-            'electra/embeddings/LayerNorm/beta': 'backbone_model.embed_layer_norm.beta',
-            'electra/embeddings/LayerNorm/gamma': 'backbone_model.embed_layer_norm.gamma',
-            'electra/embeddings/position_embeddings': 'backbone_model.token_pos_embed._embed.weight',
-            'electra/embeddings/token_type_embeddings': 'backbone_model.token_type_embed.weight',
-            'electra/embeddings/word_embeddings': 'backbone_model.word_embed.weight',
-            })
     return name_map
 
 
@@ -360,8 +351,16 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
             mx_params['{}.attn_qkv.bias'.format(mx_prefix)].set_data(
                 np.concatenate([query_bias, key_bias, value_bias], axis=0))
 
+        # The below parameters of the generator are already initialized in the discriminator, no need to reload.
+        disc_embed_params = set(['backbone_model.embed_layer_norm.beta',
+                         'backbone_model.embed_layer_norm.gamma',
+                         'backbone_model.token_pos_embed._embed.weight',
+                         'backbone_model.token_type_embed.weight',
+                         'mlm_decoder.3.weight',
+                         'backbone_model.word_embed.weight'])
+
         for key in all_keys:
-            if convert_type == 'gen' and key == 'mlm_decoder.3.weight':
+            if convert_type == 'gen' and key in disc_embed_params:
                 continue
             assert re.match(r'^(backbone_model\.){0,1}encoder\.all_encoder_layers\.[\d]+\.attn_qkv\.(weight|bias)$',
                         key) is not None, 'Parameter key {} mismatch'.format(key)
