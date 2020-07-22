@@ -308,11 +308,17 @@ class BoundedBudgetSampler(BaseSampler):
             batch_num_tokens = batch_num_sentences * batch_max_sample_len
             if (self._max_sentences > 0 and batch_num_sentences > self._max_sentences) or \
                (self._max_tokens > 0 and batch_num_tokens > self._max_tokens):
-                self._batches.append(np.array(batch))
-                batch = []
-                batch_max_sample_len = self._lengths[index]
+                moded_bs = max(
+                    required_batch_size_multiple * (len(batch) // required_batch_size_multiple),
+                    len(batch) % required_batch_size_multiple
+                )
+                self._batches.append(np.array(batch[:moded_bs]))
+                batch = batch[moded_bs:]
+                batch_max_sample_len = max(
+                    self._lengths[batch].max() if len(batch) > 0 else 0,
+                    self._lengths[index]
+                )
             batch.append(index)
-            # TODO batch trouble
         if len(batch) > 0:
             self._batches.append(np.array(batch))        
         
@@ -337,8 +343,6 @@ class BoundedBudgetSampler(BaseSampler):
 
 
 # TODO(?) Add rollover flag to BucketSampler, issue: https://github.com/dmlc/gluon-nlp/issues/982
-# TODO(Tao) sampler with bucket also need sort, https://github.com/pytorch/fairseq/blob/master/fairseq/data/language_pair_dataset.py#L370-L375
-# TODO(?) Add max_tokens option to BucketSampler and SortedSampler to make it similar to Fairseq: https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
 class FixedBucketSampler(BaseSampler):
     r"""Assign each data sample to a fixed bucket based on its length.
     The bucket keys are either given or generated from the input sequence lengths.
@@ -512,7 +516,6 @@ class FixedBucketSampler(BaseSampler):
         return ret
 
 
-#TODO(?) Add max_token option similar to Fairseq: https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
 class SortedBucketSampler(BaseSampler):
     r"""Batches are sampled from sorted buckets of data.
 
