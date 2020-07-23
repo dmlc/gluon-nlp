@@ -274,9 +274,9 @@ class BoundedBudgetSampler(BaseSampler):
     ----------
     lengths
         The length of the sequences in the input data sample.
-    max_tokens
+    max_num_tokens
         max tokens num of each batch
-    max_sentences
+    max_num_sentences
         max sentences num of each batch
     required_batch_size_multiple
         require batch size to be a multiple of N (default: 1).
@@ -287,17 +287,18 @@ class BoundedBudgetSampler(BaseSampler):
         The seed of the sampler
     """
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
-                 max_tokens: int = -1, max_sentences: int = -1,
+                 max_num_tokens: int = -1, max_num_sentences: int = -1,
                  required_batch_size_multiple: int = 1,
                  shuffle: bool = False, seed: Optional[int] = None):
         assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
-        assert max_tokens > 0 or max_sentences > 0, 'One of max_tokens and max_sentences must be larger than 0'
+        assert max_num_tokens > 0 or max_num_sentences > 0, \
+               'One of max_num_tokens and max_num_sentences must be larger than 0'
         self._lengths = np.array(lengths)
         if self._lengths.ndim == 2:
             self._lengths = self._lengths.max(axis=1)
         self._indices = np.array(range(len(lengths)))
-        self._max_tokens = max_tokens
-        self._max_sentences = max_sentences
+        self._max_num_tokens = max_num_tokens
+        self._max_num_sentences = max_num_sentences
         self._batches = []
         self._shuffle = shuffle
         self._rng = np.random.RandomState(seed)
@@ -311,8 +312,8 @@ class BoundedBudgetSampler(BaseSampler):
             # try to insert new sample to the batch
             batch_num_sentences = len(batch) + 1
             batch_num_tokens = batch_num_sentences * batch_max_sample_len
-            if (self._max_sentences > 0 and batch_num_sentences > self._max_sentences) or \
-               (self._max_tokens > 0 and batch_num_tokens > self._max_tokens):
+            if (self._max_num_sentences > 0 and batch_num_sentences > self._max_num_sentences) or \
+               (self._max_num_tokens > 0 and batch_num_tokens > self._max_num_tokens):
                 moded_bs = max(
                     required_batch_size_multiple * (len(batch) // required_batch_size_multiple),
                     len(batch) % required_batch_size_multiple

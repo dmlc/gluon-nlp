@@ -132,14 +132,14 @@ def test_split_sampler_even_size(num_samples, num_parts):
 
 @pytest.mark.parametrize('seq_lengths', [[np.random.randint(10, 100) for _ in range(N)],
                                          [(np.random.randint(10, 100), np.random.randint(10, 100)) for _ in range(N)]])
-@pytest.mark.parametrize('max_tokens', [200, 500])
-@pytest.mark.parametrize('max_sentences', [-1, 5])
+@pytest.mark.parametrize('max_num_tokens', [200, 500])
+@pytest.mark.parametrize('max_num_sentences', [-1, 5])
 @pytest.mark.parametrize('required_batch_size_multiple', [1, 5])
 @pytest.mark.parametrize('shuffle', [True, False])
 @pytest.mark.parametrize('seed', [100, None])
-def test_bounded_budget_sampler(seq_lengths, max_tokens, max_sentences,
+def test_bounded_budget_sampler(seq_lengths, max_num_tokens, max_num_sentences,
                                 required_batch_size_multiple, shuffle, seed):
-    sampler = s.BoundedBudgetSampler(seq_lengths, max_tokens, max_sentences,
+    sampler = s.BoundedBudgetSampler(seq_lengths, max_num_tokens, max_num_sentences,
                                      required_batch_size_multiple, shuffle, seed)
     print(sampler)
     total_sampled_ids = []
