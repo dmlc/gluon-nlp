@@ -33,7 +33,9 @@ requirements = [
     'sacrebleu',
     'flake8',
     'regex',
-    'contextvars'
+    'contextvars',
+    'pyarrow',
+    'pandas'
 ]
 
 setup(
