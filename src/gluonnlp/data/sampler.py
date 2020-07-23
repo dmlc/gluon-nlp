@@ -280,6 +280,7 @@ class BoundedBudgetSampler(BaseSampler):
         max sentences num of each batch
     required_batch_size_multiple
         require batch size to be a multiple of N (default: 1).
+        better throughput in GPU.
     shuffle
         Whether to shuffle the batches.
     seed

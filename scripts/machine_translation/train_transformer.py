@@ -315,7 +315,8 @@ def train(args):
     cfg.MODEL.src_vocab_size = len(src_vocab)
     cfg.MODEL.tgt_vocab_size = len(tgt_vocab)
     if args.fp16:
-        cfg.MODEL.dtype = 'float16'
+        raise NotImplementedError
+#        cfg.MODEL.dtype = 'float16'
     cfg.freeze()
     model = TransformerNMTModel.from_cfg(cfg)
     model.initialize(mx.init.Xavier(magnitude=args.magnitude),
