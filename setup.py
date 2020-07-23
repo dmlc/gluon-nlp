@@ -96,7 +96,7 @@ setup(
         'console_scripts': [
             'nlp_data = gluonnlp.cli.data.__main__:cli_main',
             'nlp_preprocess = gluonnlp.cli.preprocess.__main__:cli_main',
-            'gluon_average_checkpoint = gluonnlp.cli.gluon_average_checkpoint'
+            'gluon_average_checkpoint = gluonnlp.cli.average_checkpoint:cli_main'
         ],
     },
 )
