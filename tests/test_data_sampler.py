@@ -146,3 +146,4 @@ def test_bounded_budget_sampler(seq_lengths, max_num_tokens, max_num_sentences,
     for batch_sample_ids in sampler:
         total_sampled_ids.extend(batch_sample_ids)
     assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
+    assert sorted(total_sampled_ids) == list(range(len(total_sampled_ids)))
