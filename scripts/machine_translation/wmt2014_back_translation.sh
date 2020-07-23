@@ -21,8 +21,7 @@ nlp_preprocess clean_tok_mono_corpus \
                         --corpus train.raw.${TGT} \
                         --min-num-words 1 \
                         --max-num-words 100 \
-                        --save-path train.tok.${TGT} \
-                        --num-process 16
+                        --save-path train.tok.${TGT}
 
 cd ../../../machine_translation
 datapath=../datasets/machine_translation
@@ -94,8 +93,7 @@ nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
     --max-num-words 250 \
     --max-ratio 1.5 \
     --src-save-path ${datapath}/wmt2014_mono/syn.train.tok.${SRC} \
-    --tgt-save-path ${datapath}/wmt2014_mono/syn.train.tok.${TGT} \
-    --num-process 32
+    --tgt-save-path ${datapath}/wmt2014_mono/syn.train.tok.${TGT}
 
 # Combine the synthetic data with upsampled original data
 # TODO upsample
@@ -129,6 +127,7 @@ python train_transformer.py \
     --save_dir backtranslation_transformer_wmt2014_ende_${SUBWORD_ALGO} \
     --cfg transformer_nmt_base \
     --lr 0.002 \
+    --batch_size 2700 \
     --max_update 60000 \
     --save_interval_update 1000 \
     --warmup_steps 4000 \

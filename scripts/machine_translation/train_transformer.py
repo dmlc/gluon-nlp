@@ -45,7 +45,13 @@ from mxnet import gluon
 from gluonnlp.models.transformer import TransformerNMTModel
 from gluonnlp.utils.misc import logging_config, AverageSGDTracker, count_parameters,\
     md5sum, grouper
-from gluonnlp.data.sampler import *
+from gluonnlp.data.sampler import (
+    ConstWidthBucket,
+    LinearWidthBucket,
+    ExpWidthBucket,
+    FixedBucketSampler,
+    BoundedBudgetSampler
+)
 import gluonnlp.data.batchify as bf
 from gluonnlp.data import Vocab
 from gluonnlp.data import tokenizers
@@ -111,6 +117,8 @@ def parse_args():
                              'You may select a yml file or use the prebuild configurations.')
     parser.add_argument('--label_smooth_alpha', type=float, default=0.1,
                         help='Weight of label smoothing')
+    parser.add_argument('--sampler', type=str, choices=['BoundedBudgetSampler', 'FixedBucketSampler'],
+                        default='FixedBucketSampler', help='Type of sampler')
     parser.add_argument('--batch_size', type=int, default=2700,
                         help='Batch size. Number of tokens per gpu in a minibatch.')
     parser.add_argument('--val_batch_size', type=int, default=16,
@@ -123,6 +131,10 @@ def parse_args():
                              '"exp": the width of bucket increases exponentially')
     parser.add_argument('--bucket_ratio', type=float, default=0.0,
                         help='Ratio for increasing the throughput of the bucketing')
+    parser.add_argument('--max_tokens', type=int, default=-1,
+                        help='max tokens num of each batch, applicable while using BoundedBudgetSampler')
+    parser.add_argument('--max_sentences', type=int, default=-1,
+                        help='max sentences num of each batch, applicable while using BoundedBudgetSampler')
     parser.add_argument('--lr', type=float, default=0.002,
                         help='The learning rate at the end of the warmup stage. '
                              'If it is not given, we will use the formula suggested in the '
@@ -148,6 +160,8 @@ def parse_args():
     parser.add_argument('--save_dir', type=str, default='transformer_out',
                         help='directory path to save the final model and training log')
     parser.add_argument('--overwrite_cache', action='store_true')
+    parser.add_argument('--fp16', action='store_true',
+                        help='Whether to use dtype float16')
     parser.add_argument('--gpus', type=str,
                         help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
     args = parser.parse_args()
@@ -300,6 +314,9 @@ def train(args):
     cfg.defrost()
     cfg.MODEL.src_vocab_size = len(src_vocab)
     cfg.MODEL.tgt_vocab_size = len(tgt_vocab)
+    if args.fp16:
+        raise NotImplementedError
+#        cfg.MODEL.dtype = 'float16'
     cfg.freeze()
     model = TransformerNMTModel.from_cfg(cfg)
     model.initialize(mx.init.Xavier(magnitude=args.magnitude),
@@ -325,24 +342,33 @@ def train(args):
                             {'learning_rate': args.lr, 'beta1': 0.9,
                              'beta2': 0.98, 'epsilon': 1e-9, 'lr_scheduler': lr_scheduler})
     # Load Data
-    if args.bucket_scheme == 'constant':
-        bucket_scheme = ConstWidthBucket()
-    elif args.bucket_scheme == 'linear':
-        bucket_scheme = LinearWidthBucket()
-    elif args.bucket_scheme == 'exp':
-        bucket_scheme = ExpWidthBucket(bucket_len_step=1.2)
+    if args.sampler == 'BoundedBudgetSampler':
+        train_batch_sampler = BoundedBudgetSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
+                                                     max_tokens=args.max_tokens,
+                                                     max_sentences=args.max_sentences,
+                                                     seed=args.seed)
+    elif args.sampler == 'FixedBucketSampler':
+        if args.bucket_scheme == 'constant':
+            bucket_scheme = ConstWidthBucket()
+        elif args.bucket_scheme == 'linear':
+            bucket_scheme = LinearWidthBucket()
+        elif args.bucket_scheme == 'exp':
+            bucket_scheme = ExpWidthBucket(bucket_len_step=1.2)
+        else:
+            raise NotImplementedError
+        # TODO(sxjscience) Support auto-bucket-size tuning
+        train_batch_sampler = FixedBucketSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
+                                                 batch_size=args.batch_size,
+                                                 num_buckets=args.num_buckets,
+                                                 ratio=args.bucket_ratio,
+                                                 shuffle=True,
+                                                 use_average_length=True,
+                                                 bucket_scheme=bucket_scheme,
+                                                 seed=args.seed)
     else:
         raise NotImplementedError
+    
     batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
-    # TODO(sxjscience) Support auto-bucket-size tuning
-    train_batch_sampler = FixedBucketSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
-                                             batch_size=args.batch_size,
-                                             num_buckets=args.num_buckets,
-                                             ratio=args.bucket_ratio,
-                                             shuffle=True,
-                                             use_average_length=True,
-                                             bucket_scheme=bucket_scheme,
-                                             seed=args.seed)
     train_data_loader = gluon.data.DataLoader(data_train,
                                               batch_sampler=train_batch_sampler,
                                               batchify_fn=batchify_fn,
@@ -353,7 +379,6 @@ def train(args):
                                             batchify_fn=batchify_fn,
                                             num_workers=0,
                                             shuffle=False)
-    num_batches = len(train_data_loader)
     for v in model.collect_params().values():
         if v.grad_req != 'null':
             v.grad_req = 'add'
@@ -433,7 +458,7 @@ def train(args):
                     log_avg_loss = (log_avg_loss / log_loss_denom).asnumpy()
                     logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, '
                                  'throughput={:.2f}K wps, wc={:.2f}K, LR={}'
-                                 .format(epoch_id, processed_batch_num, num_batches,
+                                 .format(epoch_id, processed_batch_num, len(train_data_loader),
                                          log_avg_loss, np.exp(log_avg_loss),
                                          wps / 1000, log_wc / 1000, trainer.learning_rate))
                     log_start_time = time.time()

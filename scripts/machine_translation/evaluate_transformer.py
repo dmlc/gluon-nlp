@@ -76,6 +76,8 @@ def parse_args():
     parser.add_argument('--inference', action='store_true',
                         help='Whether to inference with your own data, '
                         'when applying inference, tgt_corpus is not needed and will be set to None.')
+    parser.add_argument('--fp16', action='store_true',
+                        help='Whether to use dtype float16')
     args = parser.parse_args()
     if args.save_dir is None:
         args.save_dir = os.path.splitext(args.param_path)[0] + '_evaluation'
@@ -148,6 +150,8 @@ def evaluate(args):
     cfg.defrost()
     cfg.MODEL.src_vocab_size = len(src_vocab)
     cfg.MODEL.tgt_vocab_size = len(tgt_vocab)
+    if args.fp16:
+        cfg.MODEL.dtype = 'float16'
     cfg.freeze()
     model = TransformerNMTModel.from_cfg(cfg)
     model.hybridize()

@@ -31,6 +31,7 @@ def transformer_nmt_base():
     cfg.MODEL.attention_dropout = 0.0
     cfg.MODEL.activation_dropout = 0.0
     cfg.MODEL.dropout = 0.1
+    cfg.MODEL.dtype = 'float32'
 
     # Parameters for the encoder
     cfg.MODEL.ENCODER = CN()
@@ -1104,7 +1105,8 @@ class TransformerNMTModel(HybridBlock):
                    dec_pre_norm=cfg.MODEL.DECODER.pre_norm,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
-                   bias_initializer=bias_initializer)
+                   bias_initializer=bias_initializer,
+                   dtype=cfg.MODEL.dtype)
 
 
 @use_np

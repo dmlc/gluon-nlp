@@ -269,7 +269,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         self._state_batch_axis = state_batch_axis
         self.stochastic = stochastic
         self.activation = get_activation('relu')
-        assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
+        assert eos_id is None or eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
     def gumbel_with_maximum(self, F, phi, T, dim=-1):
         """
@@ -406,8 +406,9 @@ class _BeamSearchStepUpdate(HybridBlock):
         # Update the alive mask.
         beam_alive_mask = F.np.take(beam_alive_mask.reshape((-1,)),
                                     batch_beam_indices.reshape((-1,)), axis=0)\
-                              .reshape((-1, beam_size))\
-                          * (chosen_word_ids != self._eos_id).astype(np.float32)
+                              .reshape((-1, beam_size))
+        if self._eos_id is not None:
+            beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(np.float32)
         return new_samples, new_valid_length, new_scores, chosen_word_ids,\
                beam_alive_mask, new_states
 
@@ -462,7 +463,7 @@ class BeamSearchSampler:
     """
     def __init__(self, beam_size: int,
                  decoder: BaseStepDecoder,
-                 eos_id: int,
+                 eos_id: Optional[int],
                  vocab_size: int,
                  scorer: Optional[Callable] = None,
                  max_length_a: int = 0,
@@ -479,7 +480,7 @@ class BeamSearchSampler:
             'beam_size must be larger than 0. Received beam_size={}'.format(beam_size)
         self._decoder = decoder
         self._eos_id = eos_id
-        assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
+        assert eos_id is None or eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
         self._max_length_a = max_length_a
         self._max_length_b = max_length_b
         self._min_length = min_length
@@ -592,15 +593,16 @@ class BeamSearchSampler:
                 if mx.np.sum(beam_alive_mask).asnumpy() == 0:
                     return samples, scores, valid_length
         beam_alive_mask = beam_alive_mask.astype(np.int32)
-        final_word = mx.np.where(beam_alive_mask,
-                                 mx.np.full((batch_size, beam_size), self._eos_id,
-                                            ctx=ctx, dtype=np.int32),
-                                 mx.np.full((batch_size, beam_size), -1, ctx=ctx, dtype=np.int32))
-        samples = mx.np.concatenate([samples,
-                                     final_word.reshape((final_word.shape[0],
-                                                         final_word.shape[1], 1))],
-                                    axis=2)
-        valid_length += beam_alive_mask
+        if self._eos_id is not None:
+            final_word = mx.np.where(beam_alive_mask,
+                                     mx.np.full((batch_size, beam_size), self._eos_id,
+                                                ctx=ctx, dtype=np.int32),
+                                     mx.np.full((batch_size, beam_size), -1, ctx=ctx, dtype=np.int32))
+            samples = mx.np.concatenate([samples,
+                                         final_word.reshape((final_word.shape[0],
+                                                             final_word.shape[1], 1))],
+                                        axis=2)
+            valid_length += beam_alive_mask
         return samples, scores, valid_length
 
     def __repr__(self):
@@ -639,7 +641,7 @@ class _MultinomialStepUpdate(HybridBlock):
         self._sampling_topk = sampling_topk
         self._temperature = temperature
         self.activation = get_activation('relu')
-        assert eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
+        assert eos_id is None or eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
         assert sampling_topp <= 0 or sampling_topk <= 0, 'sampling_topp conflicts with sampling_topk'
 
     def hybrid_forward(self, F, samples, valid_length, outputs, scores, step, beam_alive_mask,
@@ -737,7 +739,8 @@ class _MultinomialStepUpdate(HybridBlock):
             axis=2
         )
         new_states = states
-        beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(np.int32)
+        if self._eos_id is not None:
+            beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(np.int32)
         
         return new_samples, new_valid_length, new_scores, chosen_word_ids,\
                beam_alive_mask, new_states
