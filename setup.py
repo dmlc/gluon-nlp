@@ -32,7 +32,10 @@ requirements = [
     'yacs>=0.1.6',
     'sacrebleu',
     'flake8',
-    'regex'
+    'regex',
+    'contextvars',
+    'pyarrow',
+    'pandas'
 ]
 
 setup(
