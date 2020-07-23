@@ -314,6 +314,7 @@ class BoundedBudgetSampler(BaseSampler):
             batch_num_tokens = batch_num_sentences * batch_max_sample_len
             if (self._max_num_sentences > 0 and batch_num_sentences > self._max_num_sentences) or \
                (self._max_num_tokens > 0 and batch_num_tokens > self._max_num_tokens):
+                # moded_bs = len(batch) % required_batch_size_multiple when len(batch) < required_batch_size_multiple
                 moded_bs = max(
                     required_batch_size_multiple * (len(batch) // required_batch_size_multiple),
                     len(batch) % required_batch_size_multiple
