@@ -13,6 +13,7 @@ FROM nvidia/cuda:10.2-cudnn7-devel-ubuntu18.04
           libjpeg-dev \
           libpng-dev \
           libfreetype6-dev \
+          python3-dev \
           python3-pip \
           python3-setuptools \
           libxft-dev &&\

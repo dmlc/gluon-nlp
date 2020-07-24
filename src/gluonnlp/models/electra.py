@@ -72,7 +72,7 @@ PRETRAINED_URL = {
         'vocab': 'google_electra_small/vocab-e6d2b21d.json',
         'params': 'google_electra_small/model-2654c8b4.params',
         'disc_model': 'google_electra_small/disc_model-137714b6.params',
-        'gen_model': 'google_electra_small/gen_model-d11fd0b1.params',
+        'gen_model': 'google_electra_small/gen_model-0c30d1c5.params',
         'lowercase': True,
     },
     'google_electra_base': {
@@ -80,7 +80,7 @@ PRETRAINED_URL = {
         'vocab': 'google_electra_base/vocab-e6d2b21d.json',
         'params': 'google_electra_base/model-31c235cc.params',
         'disc_model': 'google_electra_base/disc_model-514bd353.params',
-        'gen_model': 'google_electra_base/gen_model-665ce594.params',
+        'gen_model': 'google_electra_base/gen_model-253a62c9.params',
         'lowercase': True,
     },
     'google_electra_large': {
@@ -88,7 +88,7 @@ PRETRAINED_URL = {
         'vocab': 'google_electra_large/vocab-e6d2b21d.json',
         'params': 'google_electra_large/model-9baf9ff5.params',
         'disc_model': 'google_electra_large/disc_model-5b820c02.params',
-        'gen_model': 'google_electra_large/gen_model-667121df.params',
+        'gen_model': 'google_electra_large/gen_model-82c1b17b.params',
         'lowercase': True,
     },
     'gluon_electra_small_owt':{
