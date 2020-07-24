@@ -48,4 +48,3 @@ def test_get_fasttext_model():
     with pytest.raises(ValueError):
         get_fasttext_model('wiki.multi.ar')
 
-    
