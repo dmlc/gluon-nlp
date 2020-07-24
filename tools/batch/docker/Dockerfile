@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
+FROM nvidia/cuda:10.2-cudnn7-devel-ubuntu18.04
 
  RUN apt-get update && apt-get install -y --no-install-recommends \
           build-essential \
@@ -13,15 +13,13 @@ FROM nvidia/cuda:10.1-cudnn7-devel-ubuntu18.04
           libjpeg-dev \
           libpng-dev \
           libfreetype6-dev \
+          python3-dev \
+          python3-pip \
+          python3-setuptools \
           libxft-dev &&\
       rm -rf /var/lib/apt/lists/*
 
- RUN curl -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh  && \
-      chmod +x ~/miniconda.sh && \
-      ~/miniconda.sh -b -p /opt/conda && \
-      rm ~/miniconda.sh && \
-      /opt/conda/bin/conda clean -ya
- ENV PATH /opt/conda/bin:$PATH
+ RUN pip3 install --upgrade pip && pip3 install awscli && pip3 install --pre 'mxnet-cu102' -f https://dist.mxnet.io/python
  RUN git clone https://github.com/dmlc/gluon-nlp
  WORKDIR gluon-nlp
  ADD gluon_nlp_job.sh .

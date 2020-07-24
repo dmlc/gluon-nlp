@@ -54,6 +54,7 @@ PRETRAINED_URL = {
         'vocab': 'google_uncased_mobilebert/vocab-e6d2b21d.json',
         'params': 'google_uncased_mobilebert/model-c8346cf2.params',
         'mlm_params': 'google_uncased_mobilebert/model_mlm-53948e82.params',
+        'lowercase': True,
     }
 }
 
@@ -614,10 +615,11 @@ class MobileBertModel(HybridBlock):
     @classmethod
     def from_cfg(cls,
                  cfg,
+                 use_pooler=True,
+                 dtype='float32',
                  use_bottleneck=True,
                  trigram_embed=True,
-                 use_pooler=True,
-                 classifier_activation=False):
+                 classifier_activation=False) -> 'MobileBertModel':
         cfg = MobileBertModel.get_cfg().clone_merge(cfg)
         assert cfg.VERSION == 1, 'Wrong version!'
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
@@ -640,7 +642,7 @@ class MobileBertModel(HybridBlock):
                    activation=cfg.MODEL.activation,
                    normalization=cfg.MODEL.normalization,
                    layer_norm_eps=cfg.MODEL.layer_norm_eps,
-                   dtype=cfg.MODEL.dtype,
+                   dtype=dtype,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
@@ -904,7 +906,6 @@ def get_pretrained_mobilebert(model_name: str = 'google_uncased_mobilebert',
         local_mlm_params_path = None
     do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
                        and PRETRAINED_URL[model_name]['lowercase'] else False
-    # TODO(sxjscience) Move do_lower to assets.
     tokenizer = HuggingFaceWordPieceTokenizer(
                     vocab_file=local_paths['vocab'],
                     unk_token='[UNK]',

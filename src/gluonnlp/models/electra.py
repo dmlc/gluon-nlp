@@ -72,21 +72,24 @@ PRETRAINED_URL = {
         'vocab': 'google_electra_small/vocab-e6d2b21d.json',
         'params': 'google_electra_small/model-2654c8b4.params',
         'disc_model': 'google_electra_small/disc_model-137714b6.params',
-        'gen_model': 'google_electra_small/gen_model-d11fd0b1.params',
+        'gen_model': 'google_electra_small/gen_model-0c30d1c5.params',
+        'lowercase': True,
     },
     'google_electra_base': {
         'cfg': 'google_electra_base/model-5b35ca0b.yml',
         'vocab': 'google_electra_base/vocab-e6d2b21d.json',
         'params': 'google_electra_base/model-31c235cc.params',
         'disc_model': 'google_electra_base/disc_model-514bd353.params',
-        'gen_model': 'google_electra_base/gen_model-665ce594.params',
+        'gen_model': 'google_electra_base/gen_model-253a62c9.params',
+        'lowercase': True,
     },
     'google_electra_large': {
         'cfg': 'google_electra_large/model-31b7dfdd.yml',
         'vocab': 'google_electra_large/vocab-e6d2b21d.json',
         'params': 'google_electra_large/model-9baf9ff5.params',
         'disc_model': 'google_electra_large/disc_model-5b820c02.params',
-        'gen_model': 'google_electra_large/gen_model-667121df.params',
+        'gen_model': 'google_electra_large/gen_model-82c1b17b.params',
+        'lowercase': True,
     }
 }
 
@@ -372,7 +375,7 @@ class ElectraModel(HybridBlock):
         return cfg
 
     @classmethod
-    def from_cfg(cls, cfg, use_pooler=True):
+    def from_cfg(cls, cfg, use_pooler=True, dtype='float32') -> 'ElectraModel':
         cfg = ElectraModel.get_cfg().clone_merge(cfg)
         assert cfg.VERSION == 1, 'Wrong version!'
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
@@ -391,7 +394,7 @@ class ElectraModel(HybridBlock):
                    pos_embed_type=cfg.MODEL.pos_embed_type,
                    activation=cfg.MODEL.activation,
                    layer_norm_eps=cfg.MODEL.layer_norm_eps,
-                   dtype=cfg.MODEL.dtype,
+                   dtype=dtype,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
@@ -813,7 +816,9 @@ def get_pretrained_electra(model_name: str = 'google_electra_small',
                                          sha1_hash=FILE_STATS[gen_params_path])
     else:
         local_gen_params_path = None
-    # TODO(sxjscience) Move do_lower to assets.
+
+    do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
+                       and PRETRAINED_URL[model_name]['lowercase'] else False
     tokenizer = HuggingFaceWordPieceTokenizer(
         vocab_file=local_paths['vocab'],
         unk_token='[UNK]',
@@ -821,7 +826,7 @@ def get_pretrained_electra(model_name: str = 'google_electra_small',
         cls_token='[CLS]',
         sep_token='[SEP]',
         mask_token='[MASK]',
-        lowercase=True)
+        lowercase=do_lower)
     cfg = ElectraModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, (local_disc_params_path, local_gen_params_path)
 
