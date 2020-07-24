@@ -596,7 +596,7 @@ def train(args):
         trainer.update(num_samples_per_update / loss_denom)
         if args.num_accumulated != 1:
             # set grad to zero for gradient accumulation
-            zero_grad.zero_grad()
+            qa_net.zero_grad()
 
         # saving
         if local_rank == 0 and (step_num + 1) % save_interval == 0 or (
