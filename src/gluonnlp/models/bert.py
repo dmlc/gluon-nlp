@@ -51,7 +51,7 @@ PRETRAINED_URL = {
         'cfg': 'google_en_cased_bert_base/model-5620839a.yml',
         'vocab': 'google_en_cased_bert_base/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_base/model-c566c289.params',
-        'mlm_params': 'google_en_cased_bert_base/model_mlm-c3ff36a3.params',
+        'mlm_params': 'google_en_cased_bert_base/model_mlm-bde14bee.params',
         'lowercase': False,
     },
 
@@ -59,21 +59,21 @@ PRETRAINED_URL = {
         'cfg': 'google_en_uncased_bert_base/model-4d8422ad.yml',
         'vocab': 'google_en_uncased_bert_base/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_base/model-3712e50a.params',
-        'mlm_params': 'google_en_uncased_bert_base/model_mlm-2a23a633.params',
+        'mlm_params': 'google_en_uncased_bert_base/model_mlm-04e88b58.params',
         'lowercase': True,
     },
     'google_en_cased_bert_large': {
         'cfg': 'google_en_cased_bert_large/model-9e127fee.yml',
         'vocab': 'google_en_cased_bert_large/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_large/model-7aa93704.params',
-        'mlm_params': 'google_en_cased_bert_large/model_mlm-d6443fe9.params',
+        'mlm_params': 'google_en_cased_bert_large/model_mlm-59ff3f6a.params',
         'lowercase': False,
     },
     'google_en_uncased_bert_large': {
         'cfg': 'google_en_uncased_bert_large/model-d0c37dcc.yml',
         'vocab': 'google_en_uncased_bert_large/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_large/model-e53bbc57.params',
-        'mlm_params': 'google_en_uncased_bert_large/model_mlm-f5cb8678.params',
+        'mlm_params': 'google_en_uncased_bert_large/model_mlm-44bc70c0.params',
         'lowercase': True,
     },
     'google_zh_bert_base': {
