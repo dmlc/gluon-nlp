@@ -14,6 +14,7 @@ from gluonnlp.data.tokenizers import HuggingFaceWordPieceTokenizer
 
 VOCAB_PATH = 'google_electra_small/vocab-e6d2b21d.json'
 
+
 def get_parser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("-i", "--input", required=True,

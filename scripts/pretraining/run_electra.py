@@ -1,7 +1,6 @@
 """Pretraining Example for Electra Model on the OpenWebText dataset"""
 
 import os
-import sys
 import time
 import shutil
 import logging
@@ -15,10 +14,11 @@ from mxnet.lr_scheduler import PolyScheduler
 
 from sklearn import metrics
 from pretraining_utils import ElectraMasker, get_pretrain_data_npz, get_pretrain_data_text
-from gluonnlp.utils.misc import grouper, repeat, set_seed, naming_convention, logging_config, init_comm
+from gluonnlp.utils.misc import repeat, grouper, set_seed, init_comm, logging_config, naming_convention
 from gluonnlp.initializer import TruncNorm
 from gluonnlp.models.electra import ElectraModel, ElectraForPretrain, get_pretrained_electra
 from gluonnlp.utils.parameter import clip_grad_global_norm
+
 try:
     import horovod.mxnet as hvd
 except ImportError:
@@ -461,7 +461,6 @@ def train(args):
 
         num_samples_per_update = 0
 
-
     logging.info('Finish training step: %d', step_num)
     if is_master_node:
         state_path = states_option(step_num, trainer, args.output_dir, local_rank, 'Saving')
@@ -479,6 +478,8 @@ def train(args):
     final_save(model, save_dir, tokenizer)
 
 # TODO(zheyuye), Directly implement a metric for weighted accuracy
+
+
 def accuracy(labels, predictions, weights=None):
     if weights is None:
         weights = mx.np.ones_like(labels)
@@ -487,6 +488,8 @@ def accuracy(labels, predictions, weights=None):
     return acc
 
 # TODO(zheyuye), Directly implement a metric for weighted AUC
+
+
 def auc(labels, probs, weights=None):
     if isinstance(labels, mx.np.ndarray):
         labels = labels.asnumpy()

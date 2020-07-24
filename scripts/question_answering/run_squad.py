@@ -174,30 +174,30 @@ class SquadDatasetProcessor:
         self.sep_id = vocab.eos_id if 'sep_token' not in vocab.special_token_keys else vocab.sep_id
 
         # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
-        self.ChunkFeature = collections.namedtuple('ChunkFeature',
-                                                   ['qas_id',
-                                                    'data',
-                                                    'valid_length',
-                                                    'segment_ids',
-                                                    'masks',
-                                                    'is_impossible',
-                                                    'gt_start',
-                                                    'gt_end',
-                                                    'context_offset',
-                                                    'chunk_start',
-                                                    'chunk_length'])
-        self.BatchifyFunction = bf.NamedTuple(self.ChunkFeature,
-                                              {'qas_id': bf.List(),
-                                               'data': bf.Pad(val=self.pad_id),
-                                               'valid_length': bf.Stack(),
-                                               'segment_ids': bf.Pad(),
-                                               'masks': bf.Pad(val=1),
-                                               'is_impossible': bf.Stack(),
-                                               'gt_start': bf.Stack(),
-                                               'gt_end': bf.Stack(),
-                                               'context_offset': bf.Stack(),
-                                               'chunk_start': bf.Stack(),
-                                               'chunk_length': bf.Stack()})
+        ChunkFeature = collections.namedtuple('ChunkFeature',
+                                              ['qas_id',
+                                               'data',
+                                               'valid_length',
+                                               'segment_ids',
+                                               'masks',
+                                               'is_impossible',
+                                               'gt_start',
+                                               'gt_end',
+                                               'context_offset',
+                                               'chunk_start',
+                                               'chunk_length'])
+        BatchifyFunction = bf.NamedTuple(ChunkFeature,
+                                         {'qas_id': bf.List(),
+                                          'data': bf.Pad(val=self.pad_id),
+                                          'valid_length': bf.Stack(),
+                                          'segment_ids': bf.Pad(),
+                                          'masks': bf.Pad(val=1),
+                                          'is_impossible': bf.Stack(),
+                                          'gt_start': bf.Stack(),
+                                          'gt_end': bf.Stack(),
+                                          'context_offset': bf.Stack(),
+                                          'chunk_start': bf.Stack(),
+                                          'chunk_length': bf.Stack()})
 
     def process_sample(self, feature: SquadFeature):
         """Process the data to the following format.
@@ -264,17 +264,17 @@ class SquadDatasetProcessor:
                 # Here, we increase the start and end because we put query before context
                 start_pos = chunk.gt_start_pos + context_offset
                 end_pos = chunk.gt_end_pos + context_offset
-            chunk_feature = self.ChunkFeature(qas_id=feature.qas_id,
-                                              data=data,
-                                              valid_length=valid_length,
-                                              segment_ids=segment_ids,
-                                              masks=masks,
-                                              is_impossible=chunk.is_impossible,
-                                              gt_start=start_pos,
-                                              gt_end=end_pos,
-                                              context_offset=context_offset,
-                                              chunk_start=chunk.start,
-                                              chunk_length=chunk.length)
+            chunk_feature = ChunkFeature(qas_id=feature.qas_id,
+                                         data=data,
+                                         valid_length=valid_length,
+                                         segment_ids=segment_ids,
+                                         masks=masks,
+                                         is_impossible=chunk.is_impossible,
+                                         gt_start=start_pos,
+                                         gt_end=end_pos,
+                                         context_offset=context_offset,
+                                         chunk_start=chunk.start,
+                                         chunk_length=chunk.length)
             ret.append(chunk_feature)
         return ret
 
@@ -328,8 +328,8 @@ def get_squad_features(args, tokenizer, segment):
         The list of processed data features
     """
     data_cache_path = os.path.join(CACHE_PATH,
-                                  '{}_{}_squad_{}.ndjson'.format(
-                                  segment, args.model_name, args.version))
+                                   '{}_{}_squad_{}.ndjson'.format(
+                                       segment, args.model_name, args.version))
     is_training = (segment == 'train')
     if os.path.exists(data_cache_path) and not args.overwrite_cache:
         data_features = []
@@ -344,8 +344,8 @@ def get_squad_features(args, tokenizer, segment):
         logging.info('Tokenize Data:')
         with Pool(num_process) as pool:
             data_features = pool.map(functools.partial(convert_squad_example_to_feature,
-                                                      tokenizer=tokenizer,
-                                                      is_training=is_training), data_examples)
+                                                       tokenizer=tokenizer,
+                                                       is_training=is_training), data_examples)
         logging.info('Done! Time spent:{:.2f} seconds'.format(time.time() - start))
         with open(data_cache_path, 'w') as f:
             for feature in data_features:
@@ -445,7 +445,7 @@ def train(args):
     logging.info('After Chunking, #Train Sample/Is Impossible = {}/{}'
                  .format(len(train_dataset), num_impossible))
     sampler = SplitSampler(len(train_dataset), num_parts=num_workers,
-                                    part_index=rank, even_size=True)
+                           part_index=rank, even_size=True)
     train_dataloader = mx.gluon.data.DataLoader(
         train_dataset,
         batchify_fn=dataset_processor.BatchifyFunction,
@@ -784,7 +784,9 @@ def evaluate(args, last=True):
         logging.info('Skipping node {}'.format(rank))
         return
     ctx_l = parse_ctx(args.gpus)
-    logging.info('Srarting inference without horovod on the first node on device {}'.format(str(ctx_l)))
+    logging.info(
+        'Srarting inference without horovod on the first node on device {}'.format(
+            str(ctx_l)))
 
     cfg, tokenizer, qa_net, use_segmentation = get_network(
         args.model_name, ctx_l, args.classifier_dropout)
@@ -836,7 +838,7 @@ def evaluate(args, last=True):
                 p_mask = 1 - p_mask  # In the network, we use 1 --> no_mask, 0 --> mask
                 start_top_logits, start_top_index, end_top_logits, end_top_index, answerable_logits \
                     = qa_net.inference(tokens, segment_ids, valid_length, p_mask,
-                                    args.start_top_n, args.end_top_n)
+                                       args.start_top_n, args.end_top_n)
                 for i, qas_id in enumerate(sample.qas_id):
                     result = RawResultExtended(qas_id=qas_id,
                                                start_top_logits=start_top_logits[i].asnumpy(),

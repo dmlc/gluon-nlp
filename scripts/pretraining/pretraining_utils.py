@@ -123,7 +123,8 @@ def process_a_text(text_file, tokenizer, max_seq_length, short_seq_prob=0.05):
             current_sentences.append(tokenized_line)
             current_length += len(tokenized_line)
             # Create feature when meets the empty line or reaches the target length
-            if (not tokenized_line and current_length != 0) or (current_length >= target_seq_length):
+            if (not tokenized_line and current_length != 0) or (
+                    current_length >= target_seq_length):
                 first_segment, second_segment = \
                     sentenceize(current_sentences, max_seq_length, target_seq_length)
 
@@ -496,7 +497,7 @@ class ElectraMasker(HybridBlock):
 
         # Get the masking probability of each position
         sample_probs = F.npx.softmax(
-           self._proposal_distribution * valid_candidates, axis=-1)  # (B, L)
+            self._proposal_distribution * valid_candidates, axis=-1)  # (B, L)
         sample_probs = F.npx.stop_gradient(sample_probs)
         gumbels = F.np.random.gumbel(F.np.zeros_like(sample_probs))
         # Following the instruction of official repo to avoid deduplicate postions
@@ -520,8 +521,13 @@ class ElectraMasker(HybridBlock):
             F.np.random.uniform(
                 F.np.zeros_like(masked_positions),
                 F.np.ones_like(masked_positions)) > self._mask_prob) * masked_positions
-        # dealling with multiple zero values in replaced_positions which causes the [CLS] being replaced
-        filled = F.np.where(replaced_positions, self.vocab.mask_id, self.vocab.cls_id).astype(np.int32)
+        # dealling with multiple zero values in replaced_positions which causes
+        # the [CLS] being replaced
+        filled = F.np.where(
+            replaced_positions,
+            self.vocab.mask_id,
+            self.vocab.cls_id).astype(
+            np.int32)
         # Masking token by replacing with [MASK]
         masked_input_ids = updated_vectors_by_position(F, input_ids, filled, replaced_positions)
 
