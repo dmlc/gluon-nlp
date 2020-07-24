@@ -69,6 +69,17 @@ def list_sources(embedding_name=None):
         return {embedding_name: list(embedding_cls.keys())
                 for embedding_name, embedding_cls in text_embedding_reg.items()}
 
+def _append_unk_vecs(matrix, vocab_size):
+    append_dim = vocab_size - len(matrix)
+    assert append_dim in [0, 1], "Error occurs in the embedding file."
+    if append_dim == 1:
+        # there is no unknown_token in the embedding file
+        mean = np.mean(found_vectors, axis=0, keepdims=True)
+        std = np.std(found_vectors, axis=0, keepdims=True)
+        vecs = np.random.randn(append_dim, dim).astype('float32') * std + mean
+        return np.concatenate([matrix, vecs], axis=0)
+    return matrix
+
 def _load_embedding_txt(file_path, vocab, unknown_token):
     if vocab is not None:
         result = np.zeros(len(vocab), dtype=bool)
@@ -107,9 +118,7 @@ def _load_embedding_txt(file_path, vocab, unknown_token):
                 raise e
     if vocab is None:
         result = Vocab(result, unk_token=unknown_token)
-        if result[unknown_token] == len(result) - 1:
-            matrix.append(np.zeros_like(matrix[-1]))
-        matrix = np.array(matrix)
+        matrix = _append_unk_vecs(np.array(matrix), len(result))
     return matrix, result
 
 def _load_embedding_npz(file_path, vocab, unknown):
@@ -135,10 +144,12 @@ def _load_embedding_npz(file_path, vocab, unknown):
     token2idx = {x : i for i, x in enumerate(idx_to_token)}
     idx_to_vec = npz_dict['idx_to_vec']
     if vocab is None:
-        return idx_to_vec, Vocab(idx_to_token, unk_token=unknown_token)
+        result = Vocab(idx_to_token, unk_token=unknown_token)
+        idx_to_vec = _append_unk_vecs(idx_to_vec, len(result))
+        return idx_to_vec, result
     else:
         matrix = np.random.randn(len(vocab), idx_to_vec.shape[-1]).astype('float32')
-        for token, i in vocab.token_to_idx.items():
+        for i, token in enumerate(vocab.all_tokens):
             if token == vocab.unk_token and unknown_token is not None:
                 word = unknown_token
             else:
