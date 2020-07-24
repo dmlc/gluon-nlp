@@ -350,9 +350,11 @@ def train(args):
         model.collect_params().zero_grad()
 
     # start training
-    for batch_data in grouper(repeat(data_train), len(ctx_l) * args.num_accumulated):
+    train_loop_dataloader = grouper(repeat(data_train), len(ctx_l))
+    while step_num < num_train_steps:
         tic = time.time()
-        for sample_l in grouper(batch_data, len(ctx_l)):
+        for accum_idx in range(args.num_accumulated):
+            sample_l = next(train_loop_dataloader)
             loss_l = []
             mlm_loss_l = []
             rtd_loss_l = []
@@ -459,10 +461,8 @@ def train(args):
 
         num_samples_per_update = 0
 
-        if step_num >= num_train_steps:
-            logging.info('Finish training step: %d', step_num)
-            break
 
+    logging.info('Finish training step: %d', step_num)
     if is_master_node:
         state_path = states_option(step_num, trainer, args.output_dir, local_rank, 'Saving')
         if local_rank == 0:
@@ -477,7 +477,6 @@ def train(args):
     model_name = args.model_name.replace('google', 'gluon')
     save_dir = os.path.join(args.output_dir, model_name)
     final_save(model, save_dir, tokenizer)
-    return param_path, state_path
 
 # TODO(zheyuye), Directly implement a metric for weighted accuracy
 def accuracy(labels, predictions, weights=None):
