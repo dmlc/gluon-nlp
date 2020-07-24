@@ -367,7 +367,7 @@ def train(args):
                                                  seed=args.seed)
     else:
         raise NotImplementedError
-    
+
     batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
     train_data_loader = gluon.data.DataLoader(data_train,
                                               batch_sampler=train_batch_sampler,
@@ -387,7 +387,6 @@ def train(args):
     log_start_time = time.time()
     num_params, num_fixed_params = None, None
     # TODO(sxjscience) Add a log metric class
-
     accum_count = 0
     loss_denom = 0
     n_train_iters = 0
@@ -471,12 +470,10 @@ def train(args):
                                           deduplicate=True)
                 if args.max_update > 0 and n_train_iters >= args.max_update:
                     break
-
         if args.epochs > 0:
             model.save_parameters(os.path.join(args.save_dir,
                                                'epoch{:d}.params'.format(epoch_id)),
                                   deduplicate=True)
-
         avg_valid_loss = validation(model, val_data_loader, ctx_l)
         logging.info('[Epoch {}] validation loss/ppl={:.4f}/{:.4f}'
                      .format(epoch_id, avg_valid_loss, np.exp(avg_valid_loss)))

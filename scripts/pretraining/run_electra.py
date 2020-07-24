@@ -329,7 +329,7 @@ def train(args):
 
     # prepare the records writer
     writer = None
-    if args.do_eval:
+    if args.do_eval and local_rank == 0:
         from tensorboardX import SummaryWriter
         record_path = os.path.join(args.output_dir, 'records')
         logging.info('Evaluation records saved in {}'.format(record_path))
@@ -414,7 +414,7 @@ def train(args):
         total_norm, ratio, is_finite = clip_grad_global_norm(
             params, args.max_grad_norm * num_samples_per_update / loss_denom)
         total_norm = total_norm / (num_samples_per_update / loss_denom)
-        trainer.update(num_samples_per_update / loss_denom)
+        trainer.update(num_samples_per_update / loss_denom, ignore_stale_grad=True)
         step_num += 1
         if args.num_accumulated != 1:
             # set grad to zero for gradient accumulation

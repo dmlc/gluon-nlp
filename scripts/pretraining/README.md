@@ -13,7 +13,7 @@ Following [Official Quickstart](https://github.com/google-research/electra#quick
 ```bash
 horovodrun -np 2 -H localhost:2 python -m run_electra \
     --model_name google_electra_small \
-    --data `preprocessed_owt/*.npz` \
+    --data 'preprocessed_owt/*.npz' \
     --generator_units_scale 0.25 \
     --gpus 0,1 \
     --do_train \
@@ -38,7 +38,7 @@ Alternatively, we could preprocessing the features on the fly and train this mod
 horovodrun -np 2 -H localhost:2 python -m run_electra \
     --model_name google_electra_small \
     --generator_units_scale 0.25 \
-    --data `prepared_owt/*.txt` \
+    --data 'prepared_owt/*.txt' \
     --from_raw \
     --gpus 0,1 \
     --do_train \
@@ -89,7 +89,7 @@ python run_squad.py \
     --warmup_ratio 0.1 \
     --max_saved_ckpt 6 \
     --all_evaluate \
-    --wd=0 \
+    --wd 0 \
     --max_seq_length 128 \
     --max_grad_norm 0.1 \
 ```
