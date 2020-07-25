@@ -1,7 +1,7 @@
 import numpy as np
 import mxnet as mx
 from mxnet import use_np
-from mxnet.gluon import nn, Block, HybridBlock
+from mxnet.gluon import nn, Block, HybridBlock, Parameter
 from ..attention_cell import multi_head_dot_attn, gen_self_attn_mask, gen_mem_attn_mask,\
     RelAttentionScoreCell, MultiHeadAttentionCell
 from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN,\
@@ -26,9 +26,8 @@ class TransformerXLDecoderLayer(HybridBlock):
                  bias_initializer='zeros',
                  pre_norm=False,
                  dtype='float32',
-                 layout='NT',
-                 prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
+                 layout='NT'):
+        super().__init__()
         self._pre_norm = pre_norm
         self._dtype = dtype
         self._num_heads = num_heads
@@ -41,54 +40,46 @@ class TransformerXLDecoderLayer(HybridBlock):
         else:
             raise NotImplementedError
         assert units % num_heads == 0
-        with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
-            self.attn_query = nn.Dense(units, in_units=units,
-                                       use_bias=False, flatten=False,
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       dtype=dtype,
-                                       prefix='attn_query_')
-            self.attn_kv = nn.Dense(2 * units, in_units=units,
-                                    use_bias=False, flatten=False,
-                                    weight_initializer=weight_initializer,
-                                    bias_initializer=bias_initializer,
-                                    dtype=dtype,
-                                    prefix='attn_kv_')
-            self.rel_pos_score_cell = RelAttentionScoreCell(query_units=units,
-                                                            num_heads=num_heads,
-                                                            bidirectional=False,
-                                                            method='transformer_xl',
-                                                            dropout=dropout,
-                                                            dtype=dtype,
-                                                            layout=self._cell_layout,
-                                                            prefix='rel_pos_score_cell_')
-            self.attn_cell = MultiHeadAttentionCell(query_units=units,
-                                                    num_heads=num_heads,
-                                                    attention_dropout=attention_dropout,
-                                                    dtype=dtype,
-                                                    layout=self._cell_layout,
-                                                    prefix='attn_cell_')
-            self.out_proj = nn.Dense(units, in_units=units,
-                                     use_bias=False, flatten=False,
-                                     weight_initializer=weight_initializer,
-                                     bias_initializer=bias_initializer,
-                                     dtype=dtype,
-                                     prefix='out_proj_')
-            self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps,
-                                           in_channels=units,
-                                           prefix='ln_')
-            self.ffn = PositionwiseFFN(units=units,
-                                       hidden_size=hidden_size,
-                                       activation=activation,
-                                       activation_dropout=activation_dropout,
-                                       dropout=dropout,
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       layer_norm_eps=layer_norm_eps,
-                                       pre_norm=pre_norm,
-                                       dtype=dtype,
-                                       prefix='ffn_')
+        self.dropout_layer = nn.Dropout(dropout)
+        self.attn_query = nn.Dense(units, in_units=units,
+                                   use_bias=False, flatten=False,
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer,
+                                   dtype=dtype)
+        self.attn_kv = nn.Dense(2 * units, in_units=units,
+                                use_bias=False, flatten=False,
+                                weight_initializer=weight_initializer,
+                                bias_initializer=bias_initializer,
+                                dtype=dtype)
+        self.rel_pos_score_cell = RelAttentionScoreCell(query_units=units,
+                                                        num_heads=num_heads,
+                                                        bidirectional=False,
+                                                        method='transformer_xl',
+                                                        dropout=dropout,
+                                                        dtype=dtype,
+                                                        layout=self._cell_layout)
+        self.attn_cell = MultiHeadAttentionCell(query_units=units,
+                                                num_heads=num_heads,
+                                                attention_dropout=attention_dropout,
+                                                dtype=dtype,
+                                                layout=self._cell_layout)
+        self.out_proj = nn.Dense(units, in_units=units,
+                                 use_bias=False, flatten=False,
+                                 weight_initializer=weight_initializer,
+                                 bias_initializer=bias_initializer,
+                                 dtype=dtype)
+        self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps,
+                                       in_channels=units)
+        self.ffn = PositionwiseFFN(units=units,
+                                   hidden_size=hidden_size,
+                                   activation=activation,
+                                   activation_dropout=activation_dropout,
+                                   dropout=dropout,
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer,
+                                   layer_norm_eps=layer_norm_eps,
+                                   pre_norm=pre_norm,
+                                   dtype=dtype)
 
     @property
     def layout(self):
@@ -180,36 +171,32 @@ class TransformerXLDecoder(HybridBlock):
                  layout='NT',
                  pre_norm=False,
                  weight_initializer=None,
-                 bias_initializer=None,
-                 prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.query_k_bias = self.params.get('query_k_bias',
-                                                shape=(num_heads, units // num_heads),
-                                                init=bias_initializer,
-                                                allow_deferred_init=True)
-            self.query_r_bias = self.params.get('query_r_bias',
-                                                shape=(num_heads, units // num_heads),
-                                                init=bias_initializer,
-                                                allow_deferred_init=True)
-            self.decoder_layers = nn.HybridSequential(prefix='l')
-            with self.decoder_layers.name_scope():
-                for i in range(num_layers):
-                    self.decoder_layers.add(
-                        TransformerXLDecoderLayer(units=units,
-                                                  hidden_size=hidden_size,
-                                                  num_heads=num_heads,
-                                                  activation_dropout=activation_dropout,
-                                                  dropout=dropout,
-                                                  attention_dropout=attention_dropout,
-                                                  layer_norm_eps=layernorm_eps,
-                                                  activation=activation,
-                                                  dtype=dtype,
-                                                  layout=layout,
-                                                  pre_norm=pre_norm,
-                                                  weight_initializer=weight_initializer,
-                                                  bias_initializer=bias_initializer,
-                                                  prefix='{}_'.format(i)))
+                 bias_initializer=None):
+        super().__init__()
+        self.query_k_bias = Parameter('query_k_bias',
+                                      shape=(num_heads, units // num_heads),
+                                      init=bias_initializer,
+                                      allow_deferred_init=True)
+        self.query_r_bias = Parameter('query_r_bias',
+                                      shape=(num_heads, units // num_heads),
+                                      init=bias_initializer,
+                                      allow_deferred_init=True)
+        self.decoder_layers = nn.HybridSequential()
+        for i in range(num_layers):
+            self.decoder_layers.add(
+                TransformerXLDecoderLayer(units=units,
+                                          hidden_size=hidden_size,
+                                          num_heads=num_heads,
+                                          activation_dropout=activation_dropout,
+                                          dropout=dropout,
+                                          attention_dropout=attention_dropout,
+                                          layer_norm_eps=layernorm_eps,
+                                          activation=activation,
+                                          dtype=dtype,
+                                          layout=layout,
+                                          pre_norm=pre_norm,
+                                          weight_initializer=weight_initializer,
+                                          bias_initializer=bias_initializer))
 
     def hybrid_forward(self, F, data, mem_l, rel_positions, mask, **params):
         """
@@ -256,8 +243,8 @@ class TransformerXLDecoder(HybridBlock):
 
 @use_np
 class TransformerXLForLM(Block):
-    def __init__(self, cfg=None, prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
+    def __init__(self, cfg=None):
+        super().__init__()
         if cfg is None:
             cfg = TransformerXLForLM.get_cfg()
         else:
@@ -272,53 +259,49 @@ class TransformerXLForLM(Block):
         self._units = cfg.MODEL.units
         self._dtype = cfg.MODEL.dtype
         assert cfg.MODEL.units % cfg.MODEL.num_heads == 0
-        with self.name_scope():
-            self.word_emb = AdaptiveEmbedding(vocab_size=cfg.MODEL.vocab_size,
-                                              embed_size=cfg.MODEL.embed_units,
-                                              units=cfg.MODEL.units,
-                                              cutoffs=cfg.MODEL.cutoffs,
-                                              div_val=cfg.MODEL.div_val,
-                                              scaled=True,
-                                              embedding_initializer=embed_initializer,
-                                              weight_initializer=weight_initializer,
-                                              dtype=cfg.MODEL.dtype,
-                                              prefix='word_emb_')
-            self.dropout_layer = nn.Dropout(cfg.MODEL.dropout)
-            self.decoder = TransformerXLDecoder(num_layers=cfg.MODEL.num_layers,
-                                                units=cfg.MODEL.units,
-                                                hidden_size=cfg.MODEL.hidden_size,
-                                                num_heads=cfg.MODEL.num_heads,
-                                                activation_dropout=cfg.MODEL.activation_dropout,
-                                                dropout=cfg.MODEL.dropout,
-                                                attention_dropout=cfg.MODEL.attention_dropout,
-                                                layernorm_eps=cfg.MODEL.layernorm_eps,
-                                                activation=cfg.MODEL.activation,
-                                                dtype=cfg.MODEL.dtype,
-                                                layout=cfg.MODEL.layout,
-                                                pre_norm=cfg.MODEL.pre_norm,
-                                                weight_initializer=weight_initializer,
-                                                bias_initializer=bias_initializer,
-                                                prefix='decoder_')
-            if cfg.MODEL.tie_weights and cfg.MODEL.tie_projs:
-                crit_params = self.word_emb.collect_params('(.*_embed|.*_inter_proj)')
-            elif cfg.MODEL.tie_weights and not cfg.MODEL.tie_projs:
-                crit_params = self.word_emb.collect_params('.*_embed')
-            elif not cfg.MODEL.tie_weights and cfg.MODEL.tie_projs:
-                crit_params = self.word_emb.collect_params('.*_inter_proj')
-            else:
-                crit_params = None
-            self.crit = ProjectedAdaptiveLogSoftmaxWithLoss(
-                vocab_size=cfg.MODEL.vocab_size,
-                embed_size=cfg.MODEL.embed_units,
-                in_units=cfg.MODEL.units,
-                cutoffs=cfg.MODEL.cutoffs,
-                div_val=cfg.MODEL.div_val,
-                dtype=cfg.MODEL.dtype,
-                use_bias=True,
-                weight_initializer=weight_initializer,
-                bias_initializer=bias_initializer,
-                params=crit_params,
-                prefix='crit_')
+        self.word_emb = AdaptiveEmbedding(vocab_size=cfg.MODEL.vocab_size,
+                                          embed_size=cfg.MODEL.embed_units,
+                                          units=cfg.MODEL.units,
+                                          cutoffs=cfg.MODEL.cutoffs,
+                                          div_val=cfg.MODEL.div_val,
+                                          scaled=True,
+                                          embedding_initializer=embed_initializer,
+                                          weight_initializer=weight_initializer,
+                                          dtype=cfg.MODEL.dtype)
+        self.dropout_layer = nn.Dropout(cfg.MODEL.dropout)
+        self.decoder = TransformerXLDecoder(num_layers=cfg.MODEL.num_layers,
+                                            units=cfg.MODEL.units,
+                                            hidden_size=cfg.MODEL.hidden_size,
+                                            num_heads=cfg.MODEL.num_heads,
+                                            activation_dropout=cfg.MODEL.activation_dropout,
+                                            dropout=cfg.MODEL.dropout,
+                                            attention_dropout=cfg.MODEL.attention_dropout,
+                                            layernorm_eps=cfg.MODEL.layernorm_eps,
+                                            activation=cfg.MODEL.activation,
+                                            dtype=cfg.MODEL.dtype,
+                                            layout=cfg.MODEL.layout,
+                                            pre_norm=cfg.MODEL.pre_norm,
+                                            weight_initializer=weight_initializer,
+                                            bias_initializer=bias_initializer)
+        if cfg.MODEL.tie_weights and cfg.MODEL.tie_projs:
+            crit_params = self.word_emb.collect_params('(embed|inter_proj)')
+        elif cfg.MODEL.tie_weights and not cfg.MODEL.tie_projs:
+            crit_params = self.word_emb.collect_params('embed')
+        elif not cfg.MODEL.tie_weights and cfg.MODEL.tie_projs:
+            crit_params = self.word_emb.collect_params('inter_proj')
+        else:
+            crit_params = None
+        self.crit = ProjectedAdaptiveLogSoftmaxWithLoss(
+            vocab_size=cfg.MODEL.vocab_size,
+            embed_size=cfg.MODEL.embed_units,
+            in_units=cfg.MODEL.units,
+            cutoffs=cfg.MODEL.cutoffs,
+            div_val=cfg.MODEL.div_val,
+            dtype=cfg.MODEL.dtype,
+            use_bias=True,
+            weight_initializer=weight_initializer,
+            bias_initializer=bias_initializer)
+        self.crit.share_parameters(crit_params)
 
     @property
     def cfg(self):
@@ -365,8 +348,8 @@ class TransformerXLForLM(Block):
         return config
 
     @classmethod
-    def from_cfg(cls, cfg, prefix=None, params=None):
-        return cls(cfg=cfg, prefix=prefix, params=params)
+    def from_cfg(cls, cfg):
+        return cls(cfg=cfg)
 
     @property
     def state_batch_axis(self):

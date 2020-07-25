@@ -34,6 +34,7 @@ def transformer_nmt_base():
     cfg.MODEL.activation_dropout = 0.0
     cfg.MODEL.dropout = 0.1
     cfg.MODEL.layout = 'NT'
+    cfg.MODEL.dtype = 'float32'
 
     # Parameters for the encoder
     cfg.MODEL.ENCODER = CN()
@@ -140,8 +141,7 @@ class TransformerEncoderLayer(HybridBlock):
                  bias_initializer: Optional[InitializerType] = 'zeros',
                  activation: str = 'relu',
                  dtype='float32',
-                 layout='NT',
-                 prefix=None, params=None):
+                 layout='NT'):
         """
 
         Parameters
@@ -166,10 +166,8 @@ class TransformerEncoderLayer(HybridBlock):
         activation
         dtype
         layout
-        prefix
-        params
         """
-        super().__init__(prefix=prefix, params=params)
+        super().__init__()
         self._units = units
         self._hidden_size = hidden_size
         self._num_heads = num_heads
@@ -182,49 +180,43 @@ class TransformerEncoderLayer(HybridBlock):
         assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
                                        'Only "TN" and "NT" are accepted!'.format(layout)
         assert self._units % self._num_heads == 0, 'units must be divisive by the number of heads'
-        with self.name_scope():
-            self.dropout_layer = nn.Dropout(hidden_dropout_prob)
-            self.attn_qkv = nn.Dense(3 * units,
-                                     flatten=False,
-                                     use_bias=use_qkv_bias,
-                                     in_units=units,
-                                     weight_initializer=weight_initializer,
-                                     bias_initializer=bias_initializer,
-                                     dtype=self._dtype,
-                                     prefix='attn_qkv_')
-            self.attention_proj = nn.Dense(units=units,
-                                           flatten=False,
-                                           in_units=units,
-                                           use_bias=True,
-                                           weight_initializer=weight_initializer,
-                                           bias_initializer=bias_initializer,
-                                           dtype=self._dtype,
-                                           prefix='proj_')
-            attention_layout = 'NTK' if self._layout == 'NT' else 'TNK'
-            self.attention_cell =\
-                MultiHeadAttentionCell(
-                    query_units=self._units,
-                    num_heads=self._num_heads,
-                    attention_dropout=self._attention_dropout_prob,
-                    scaled=True,
-                    prefix='attn_cell_',
-                    dtype=self._dtype,
-                    layout=attention_layout
-                )
-            self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps,
-                                           in_channels=units,
-                                           prefix='ln_')
-            self.ffn = PositionwiseFFN(units=units,
-                                       hidden_size=hidden_size,
-                                       dropout=hidden_dropout_prob,
-                                       activation_dropout=activation_dropout_prob,
+        self.dropout_layer = nn.Dropout(hidden_dropout_prob)
+        self.attn_qkv = nn.Dense(3 * units,
+                                 flatten=False,
+                                 use_bias=use_qkv_bias,
+                                 in_units=units,
+                                 weight_initializer=weight_initializer,
+                                 bias_initializer=bias_initializer,
+                                 dtype=self._dtype)
+        self.attention_proj = nn.Dense(units=units,
+                                       flatten=False,
+                                       in_units=units,
+                                       use_bias=True,
                                        weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer,
-                                       layer_norm_eps=layer_norm_eps,
-                                       activation=activation,
-                                       pre_norm=pre_norm,
-                                       dtype=self._dtype,
-                                       prefix='ffn_')
+                                       dtype=self._dtype)
+        attention_layout = 'NTK' if self._layout == 'NT' else 'TNK'
+        self.attention_cell =\
+            MultiHeadAttentionCell(
+                query_units=self._units,
+                num_heads=self._num_heads,
+                attention_dropout=self._attention_dropout_prob,
+                scaled=True,
+                dtype=self._dtype,
+                layout=attention_layout
+            )
+        self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps,
+                                       in_channels=units)
+        self.ffn = PositionwiseFFN(units=units,
+                                   hidden_size=hidden_size,
+                                   dropout=hidden_dropout_prob,
+                                   activation_dropout=activation_dropout_prob,
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer,
+                                   layer_norm_eps=layer_norm_eps,
+                                   activation=activation,
+                                   pre_norm=pre_norm,
+                                   dtype=self._dtype)
 
     @property
     def layout(self) -> str:
@@ -277,8 +269,7 @@ class TransformerEncoder(HybridBlock):
                  activation_dropout=0.0, dropout=0.1,
                  attention_dropout=0.1, layer_norm_eps=1E-5, data_norm=False,
                  pre_norm=False, weight_initializer=None, bias_initializer='zeros',
-                 activation='relu', dtype='float32', layout='NT',
-                 prefix=None, params=None):
+                 activation='relu', dtype='float32', layout='NT'):
         """
 
         Parameters
@@ -301,10 +292,8 @@ class TransformerEncoder(HybridBlock):
         activation
         dtype
         layout
-        prefix
-        params
         """
-        super(TransformerEncoder, self).__init__(prefix=prefix, params=params)
+        super().__init__()
         self._dtype = dtype
         self.num_layers = num_layers
         self._recurrent = recurrent
@@ -313,36 +302,31 @@ class TransformerEncoder(HybridBlock):
         self._layout = layout
         assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
                                        'Only "TN" and "NT" are accepted!'.format(layout)
-        with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
-            if self._pre_norm:
-                self.ln_final = nn.LayerNorm(epsilon=layer_norm_eps,
-                                             in_channels=units,
-                                             prefix='ln_final_')
-            if self._data_norm:
-                self.ln_data = nn.LayerNorm(epsilon=layer_norm_eps,
-                                            in_channels=units,
-                                            prefix='ln_data_')
-            # Construct the intermediate layers
-            self.layers = nn.HybridSequential(prefix='layers_')
-            real_num_layers = 1 if recurrent else num_layers
-            with self.layers.name_scope():
-                for i in range(real_num_layers):
-                    self.layers.add(TransformerEncoderLayer(
-                        units=units,
-                        hidden_size=hidden_size,
-                        num_heads=num_heads,
-                        hidden_dropout_prob=dropout,
-                        attention_dropout_prob=attention_dropout,
-                        activation_dropout_prob=activation_dropout,
-                        layer_norm_eps=layer_norm_eps,
-                        weight_initializer=weight_initializer,
-                        bias_initializer=bias_initializer,
-                        pre_norm=pre_norm,
-                        activation=activation,
-                        dtype=dtype,
-                        layout=self._layout,
-                        prefix='{}_'.format(i)))
+        self.dropout_layer = nn.Dropout(dropout)
+        if self._pre_norm:
+            self.ln_final = nn.LayerNorm(epsilon=layer_norm_eps,
+                                         in_channels=units)
+        if self._data_norm:
+            self.ln_data = nn.LayerNorm(epsilon=layer_norm_eps,
+                                        in_channels=units)
+        # Construct the intermediate layers
+        self.layers = nn.HybridSequential()
+        real_num_layers = 1 if recurrent else num_layers
+        for i in range(real_num_layers):
+            self.layers.add(TransformerEncoderLayer(
+                units=units,
+                hidden_size=hidden_size,
+                num_heads=num_heads,
+                hidden_dropout_prob=dropout,
+                attention_dropout_prob=attention_dropout,
+                activation_dropout_prob=activation_dropout,
+                layer_norm_eps=layer_norm_eps,
+                weight_initializer=weight_initializer,
+                bias_initializer=bias_initializer,
+                pre_norm=pre_norm,
+                activation=activation,
+                layout=self._layout,
+                dtype=dtype))
 
     @property
     def layout(self) -> str:
@@ -404,9 +388,7 @@ class TransformerDecoderLayer(HybridBlock):
                  weight_initializer=None,
                  bias_initializer='zeros',
                  dtype='float32',
-                 layout='NT',
-                 prefix=None,
-                 params=None):
+                 layout='NT'):
         """
 
         Parameters
@@ -429,10 +411,8 @@ class TransformerDecoderLayer(HybridBlock):
         dtype
         layout
             Layout of the input
-        prefix
-        params
         """
-        super(TransformerDecoderLayer, self).__init__(prefix=prefix, params=params)
+        super().__init__()
         self._dtype = dtype
         self._units = units
         if mem_units is None:
@@ -446,79 +426,66 @@ class TransformerDecoderLayer(HybridBlock):
         assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
                                        'Only "TN" and "NT" are accepted!'.format(layout)
         attention_layout = 'NTK' if layout == 'NT' else 'TNK'
-        with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
-            if units % num_heads:
-                raise ValueError('In Transformer, units should be divided exactly by the number of '
-                                 'heads. Received units={}, num_heads={}'.format(units, num_heads))
-            self.attn_in_qkv = nn.Dense(3 * units, in_units=units,
-                                        use_bias=False,
-                                        flatten=False,
-                                        weight_initializer=weight_initializer,
-                                        bias_initializer=bias_initializer,
-                                        dtype=dtype,
-                                        prefix='attn_in_qkv_')
-            self.self_attention = MultiHeadAttentionCell(query_units=units,
-                                                         num_heads=num_heads,
-                                                         attention_dropout=self._attention_dropout,
-                                                         dtype=dtype,
-                                                         layout=attention_layout,
-                                                         prefix='self_attn_')
-            self.proj_in = nn.Dense(units=units, in_units=units, flatten=False,
+        self.dropout_layer = nn.Dropout(dropout)
+        if units % num_heads:
+            raise ValueError('In Transformer, units should be divided exactly by the number of '
+                             'heads. Received units={}, num_heads={}'.format(units, num_heads))
+        self.attn_in_qkv = nn.Dense(3 * units, in_units=units,
                                     use_bias=False,
+                                    flatten=False,
                                     weight_initializer=weight_initializer,
                                     bias_initializer=bias_initializer,
-                                    dtype=dtype,
-                                    prefix='proj_in_')
-            self.attn_inter_q = nn.Dense(units,
-                                         in_units=units,
-                                         use_bias=False,
-                                         flatten=False,
-                                         weight_initializer=weight_initializer,
-                                         bias_initializer=bias_initializer,
-                                         dtype=dtype,
-                                         prefix='attn_inter_q_')
-            self.attn_inter_k = nn.Dense(units, in_units=mem_units,
-                                         use_bias=False,
-                                         flatten=False,
-                                         weight_initializer=weight_initializer,
-                                         bias_initializer=bias_initializer,
-                                         dtype=dtype,
-                                         prefix='attn_inter_k_')
-            self.attn_inter_v = nn.Dense(units, in_units=mem_units,
-                                         use_bias=False,
-                                         flatten=False,
-                                         weight_initializer=weight_initializer,
-                                         bias_initializer=bias_initializer,
-                                         dtype=dtype,
-                                         prefix='attn_inter_v_')
-            self.inter_attention = MultiHeadAttentionCell(query_units=units,
-                                                          num_heads=num_heads,
-                                                          attention_dropout=self._attention_dropout,
-                                                          dtype=dtype,
-                                                          layout=attention_layout,
-                                                          prefix='inter_attn_')
-            self.proj_inter = nn.Dense(units=units, in_units=units,
-                                       flatten=False, use_bias=False,
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       dtype=dtype,
-                                       prefix='proj_inter_')
-            # TODO(sxjscience) Add DType to LayerNorm
-            self.ln_in = nn.LayerNorm(epsilon=layer_norm_eps,
-                                      in_channels=units,
-                                      prefix='ln_in_')
-            self.ln_inter = nn.LayerNorm(epsilon=layer_norm_eps,
-                                         in_channels=units,
-                                         prefix='ln_inter_')
-            self.ffn = PositionwiseFFN(units=units,
-                                       hidden_size=hidden_size,
-                                       dropout=dropout,
-                                       activation_dropout=activation_dropout,
-                                       activation=activation,
-                                       pre_norm=pre_norm,
-                                       dtype=dtype,
-                                       prefix='ffn_')
+                                    dtype=dtype)
+        self.self_attention = MultiHeadAttentionCell(query_units=units,
+                                                     num_heads=num_heads,
+                                                     attention_dropout=self._attention_dropout,
+                                                     dtype=dtype,
+                                                     layout=attention_layout)
+        self.proj_in = nn.Dense(units=units, in_units=units, flatten=False,  use_bias=False,
+                                weight_initializer=weight_initializer,
+                                bias_initializer=bias_initializer,
+                                dtype=dtype)
+        self.attn_inter_q = nn.Dense(units,
+                                     in_units=units,
+                                     use_bias=False,
+                                     flatten=False,
+                                     weight_initializer=weight_initializer,
+                                     bias_initializer=bias_initializer,
+                                     dtype=dtype)
+        self.attn_inter_k = nn.Dense(units, in_units=mem_units,
+                                     use_bias=False,
+                                     flatten=False,
+                                     weight_initializer=weight_initializer,
+                                     bias_initializer=bias_initializer,
+                                     dtype=dtype)
+        self.attn_inter_v = nn.Dense(units, in_units=mem_units,
+                                     use_bias=False,
+                                     flatten=False,
+                                     weight_initializer=weight_initializer,
+                                     bias_initializer=bias_initializer,
+                                     dtype=dtype)
+        self.inter_attention = MultiHeadAttentionCell(query_units=units,
+                                                      num_heads=num_heads,
+                                                      attention_dropout=self._attention_dropout,
+                                                      dtype=dtype,
+                                                      layout='NTK')
+        self.proj_inter = nn.Dense(units=units, in_units=units,
+                                   flatten=False, use_bias=False,
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer,
+                                   dtype=dtype)
+        # TODO(sxjscience) Add DType to LayerNorm
+        self.ln_in = nn.LayerNorm(epsilon=layer_norm_eps,
+                                  in_channels=units)
+        self.ln_inter = nn.LayerNorm(epsilon=layer_norm_eps,
+                                     in_channels=units)
+        self.ffn = PositionwiseFFN(units=units,
+                                   hidden_size=hidden_size,
+                                   dropout=dropout,
+                                   activation_dropout=activation_dropout,
+                                   activation=activation,
+                                   pre_norm=pre_norm,
+                                   dtype=dtype)
 
     @property
     def layout(self) -> str:
@@ -742,9 +709,8 @@ class TransformerDecoder(HybridBlock):
                  dropout=0.1, attention_dropout=0.1, layer_norm_eps=1E-5, data_norm=False,
                  pre_norm=False, weight_initializer=None, bias_initializer=None,
                  activation='relu', dtype='float32',
-                 layout='NT',
-                 prefix=None, params=None):
-        super(TransformerDecoder, self).__init__(prefix=prefix, params=params)
+                 layout='NT'):
+        super().__init__()
         self._dtype = dtype
         self._units = units
         self._mem_units = mem_units
@@ -757,36 +723,31 @@ class TransformerDecoder(HybridBlock):
         self._layout = layout
         assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
                                        'Only "TN" and "NT" are accepted!'.format(layout)
-        with self.name_scope():
-            self.dropout_layer = nn.Dropout(dropout)
-            if self._data_norm:
-                self.ln_data = nn.LayerNorm(epsilon=layer_norm_eps,
-                                            in_channels=units,
-                                            prefix='ln_data_')
-            if self._pre_norm:
-                self.ln_final = nn.LayerNorm(epsilon=layer_norm_eps,
-                                             in_channels=units,
-                                             prefix='ln_final_')
-            # Construct the intermediate layers
-            self.layers = nn.HybridSequential(prefix='layers_')
-            real_num_layers = 1 if recurrent else num_layers
-            with self.layers.name_scope():
-                for i in range(real_num_layers):
-                    self.layers.add(TransformerDecoderLayer(units=units,
-                                                            mem_units=mem_units,
-                                                            hidden_size=hidden_size,
-                                                            num_heads=num_heads,
-                                                            activation_dropout=activation_dropout,
-                                                            dropout=dropout,
-                                                            attention_dropout=attention_dropout,
-                                                            layer_norm_eps=layer_norm_eps,
-                                                            weight_initializer=weight_initializer,
-                                                            bias_initializer=bias_initializer,
-                                                            activation=activation,
-                                                            pre_norm=pre_norm,
-                                                            dtype=dtype,
-                                                            layout=layout,
-                                                            prefix='{}_'.format(i)))
+        self.dropout_layer = nn.Dropout(dropout)
+        if self._data_norm:
+            self.ln_data = nn.LayerNorm(epsilon=layer_norm_eps,
+                                        in_channels=units)
+        if self._pre_norm:
+            self.ln_final = nn.LayerNorm(epsilon=layer_norm_eps,
+                                         in_channels=units)
+        # Construct the intermediate layers
+        self.layers = nn.HybridSequential()
+        real_num_layers = 1 if recurrent else num_layers
+        for i in range(real_num_layers):
+            self.layers.add(TransformerDecoderLayer(units=units,
+                                                    mem_units=mem_units,
+                                                    hidden_size=hidden_size,
+                                                    num_heads=num_heads,
+                                                    activation_dropout=activation_dropout,
+                                                    dropout=dropout,
+                                                    attention_dropout=attention_dropout,
+                                                    layer_norm_eps=layer_norm_eps,
+                                                    weight_initializer=weight_initializer,
+                                                    bias_initializer=bias_initializer,
+                                                    activation=activation,
+                                                    pre_norm=pre_norm,
+                                                    layout=layout,
+                                                    dtype=dtype))
 
     @property
     def layout(self) -> str:
@@ -979,8 +940,7 @@ class TransformerNMTModel(HybridBlock):
                  weight_initializer=mx.init.Xavier('uniform', 'avg', 3),
                  bias_initializer='zeros',
                  dtype='float32',
-                 layout='NT',
-                 prefix=None, params=None):
+                 layout='NT'):
         """
 
         Parameters
@@ -1051,10 +1011,8 @@ class TransformerNMTModel(HybridBlock):
             Data type of the weights
         layout
             The layout of the input + target
-        prefix
-        params
         """
-        super(TransformerNMTModel, self).__init__(prefix=prefix, params=params)
+        super().__init__()
         assert src_vocab_size > 0 and tgt_vocab_size > 0,\
             'Cannot set "src_vocab_size" and "tgt_vocab_size" to negative numbers. ' \
             'Are you creating ' \
@@ -1080,82 +1038,73 @@ class TransformerNMTModel(HybridBlock):
             assert shared_embed is False, 'Cannot share embedding when the enc_units and dec_units ' \
                                           'are different! enc_units={},' \
                                           ' dec_units={}'.format(enc_units, dec_units)
-        with self.name_scope():
-            self.src_embed_layer = nn.Embedding(input_dim=src_vocab_size,
-                                                output_dim=enc_units,
-                                                prefix='src_embed_',
-                                                weight_initializer=embed_initializer,
-                                                dtype=self._dtype)
-            self.tgt_embed_layer = nn.Embedding(input_dim=tgt_vocab_size,
-                                                output_dim=dec_units,
-                                                prefix='tgt_embed_',
-                                                params=self.src_embed_layer.params
-                                                if shared_embed else None,
-                                                weight_initializer=embed_initializer,
-                                                dtype=self._dtype)
-            if pos_embed_type is not None:
-                self.src_pos_embed_layer = PositionalEmbedding(units=enc_units,
-                                                               max_length=max_src_length,
-                                                               dtype=self._dtype,
-                                                               method=pos_embed_type,
-                                                               prefix='src_pos_embed_')
-                self.tgt_pos_embed_layer = PositionalEmbedding(units=dec_units,
-                                                               max_length=max_tgt_length,
-                                                               dtype=self._dtype,
-                                                               method=pos_embed_type,
-                                                               prefix='tgt_pos_embed_')
-            self.encoder = TransformerEncoder(num_layers=enc_num_layers,
-                                              recurrent=enc_recurrent,
-                                              units=enc_units,
-                                              hidden_size=enc_hidden_size,
-                                              num_heads=enc_num_heads,
-                                              activation_dropout=activation_dropout,
-                                              dropout=dropout,
-                                              attention_dropout=attention_dropout,
-                                              layer_norm_eps=layer_norm_eps,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              activation=enc_activation,
-                                              data_norm=data_norm,
-                                              pre_norm=enc_pre_norm,
-                                              dtype=self._dtype,
-                                              layout=layout,
-                                              prefix='enc_')
-            self.decoder = TransformerDecoder(num_layers=dec_num_layers,
-                                              recurrent=dec_recurrent,
-                                              units=dec_units,
-                                              mem_units=enc_units,
-                                              hidden_size=dec_hidden_size,
-                                              num_heads=dec_num_heads,
-                                              activation_dropout=activation_dropout,
-                                              dropout=dropout,
-                                              attention_dropout=attention_dropout,
-                                              layer_norm_eps=layer_norm_eps,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              activation=dec_activation,
-                                              data_norm=data_norm,
-                                              pre_norm=dec_pre_norm,
-                                              dtype=self._dtype,
-                                              layout=layout,
-                                              prefix='dec_')
-            if tie_weights:
-                self.tgt_final_layer =\
-                    nn.Dense(tgt_vocab_size, flatten=False,
-                             bias_initializer=bias_initializer,
-                             use_bias=False,
-                             dtype=self._dtype,
-                             params=self.tgt_embed_layer.collect_params(),
-                             prefix='tgt_final_')
-            else:
-                self.tgt_final_layer = \
-                    nn.Dense(tgt_vocab_size,
-                             flatten=False,
-                             weight_initializer=weight_initializer,
-                             bias_initializer=bias_initializer,
-                             use_bias=False,
-                             dtype=self._dtype,
-                             prefix='tgt_final_')
+        self.src_embed_layer = nn.Embedding(input_dim=src_vocab_size,
+                                            output_dim=enc_units,
+                                            weight_initializer=embed_initializer,
+                                            dtype=self._dtype)
+        self.tgt_embed_layer = nn.Embedding(input_dim=tgt_vocab_size,
+                                            output_dim=dec_units,
+                                            weight_initializer=embed_initializer,
+                                            dtype=self._dtype)
+        if shared_embed:
+            self.tgt_embed_layer.weight = self.src_embed_layer.weight
+        if pos_embed_type is not None:
+            self.src_pos_embed_layer = PositionalEmbedding(units=enc_units,
+                                                           max_length=max_src_length,
+                                                           dtype=self._dtype,
+                                                           method=pos_embed_type)
+            self.tgt_pos_embed_layer = PositionalEmbedding(units=dec_units,
+                                                           max_length=max_tgt_length,
+                                                           dtype=self._dtype,
+                                                           method=pos_embed_type)
+        self.encoder = TransformerEncoder(num_layers=enc_num_layers,
+                                          recurrent=enc_recurrent,
+                                          units=enc_units,
+                                          hidden_size=enc_hidden_size,
+                                          num_heads=enc_num_heads,
+                                          activation_dropout=activation_dropout,
+                                          dropout=dropout,
+                                          attention_dropout=attention_dropout,
+                                          layer_norm_eps=layer_norm_eps,
+                                          weight_initializer=weight_initializer,
+                                          bias_initializer=bias_initializer,
+                                          activation=enc_activation,
+                                          data_norm=data_norm,
+                                          pre_norm=enc_pre_norm,
+                                          dtype=self._dtype,
+                                          layout=layout)
+        self.decoder = TransformerDecoder(num_layers=dec_num_layers,
+                                          recurrent=dec_recurrent,
+                                          units=dec_units,
+                                          mem_units=enc_units,
+                                          hidden_size=dec_hidden_size,
+                                          num_heads=dec_num_heads,
+                                          activation_dropout=activation_dropout,
+                                          dropout=dropout,
+                                          attention_dropout=attention_dropout,
+                                          layer_norm_eps=layer_norm_eps,
+                                          weight_initializer=weight_initializer,
+                                          bias_initializer=bias_initializer,
+                                          activation=dec_activation,
+                                          data_norm=data_norm,
+                                          pre_norm=dec_pre_norm,
+                                          dtype=self._dtype,
+                                          layout=layout)
+        if tie_weights:
+            self.tgt_final_layer =\
+                nn.Dense(tgt_vocab_size, flatten=False,
+                         bias_initializer=bias_initializer,
+                         use_bias=False,
+                         dtype=self._dtype)
+            self.tgt_final_layer.weight = self.tgt_embed_layer.weight
+        else:
+            self.tgt_final_layer = \
+                nn.Dense(tgt_vocab_size,
+                         flatten=False,
+                         weight_initializer=weight_initializer,
+                         bias_initializer=bias_initializer,
+                         use_bias=False,
+                         dtype=self._dtype)
         self.encoder.hybridize()
         self.decoder.hybridize()
 
@@ -1292,7 +1241,7 @@ class TransformerNMTModel(HybridBlock):
             return transformer_nmt_cfg_reg.create(key)
 
     @classmethod
-    def from_cfg(cls, cfg, prefix=None, params=None):
+    def from_cfg(cls, cfg):
         cfg = cls.get_cfg().clone_merge(cfg)
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
@@ -1326,22 +1275,19 @@ class TransformerNMTModel(HybridBlock):
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
-                   prefix=prefix,
-                   params=params)
+                   dtype=cfg.MODEL.dtype)
 
 
 @use_np
 class TransformerNMTInference(HybridBlock, BaseStepDecoder):
-    def __init__(self, model, prefix=None, params=None):
+    def __init__(self, model):
         """
 
         Parameters
         ----------
         model
-        prefix
-        params
         """
-        super(TransformerNMTInference, self).__init__(prefix=prefix, params=params)
+        super().__init__()
         self.model = model
 
     def initialize(self, **kwargs):

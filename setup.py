@@ -32,7 +32,10 @@ requirements = [
     'yacs>=0.1.6',
     'sacrebleu',
     'flake8',
-    'regex'
+    'regex',
+    'contextvars',
+    'pyarrow',
+    'pandas'
 ]
 
 setup(
@@ -92,7 +95,8 @@ setup(
     entry_points={
         'console_scripts': [
             'nlp_data = gluonnlp.cli.data.__main__:cli_main',
-            'nlp_preprocess = gluonnlp.cli.preprocess.__main__:cli_main'
+            'nlp_preprocess = gluonnlp.cli.preprocess.__main__:cli_main',
+            'gluon_average_checkpoint = gluonnlp.cli.average_checkpoint:cli_main'
         ],
     },
 )

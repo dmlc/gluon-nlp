@@ -5,4 +5,4 @@ mkdir mobilebert_model
 url='https://storage.googleapis.com/cloud-tpu-checkpoints/mobilebert/uncased_L-24_H-128_B-512_A-4_F-4_OPT.tar.gz'
 wget ${url} -O "mobilebert.tar.gz"
 tar -xvf mobilebert.tar.gz --directory mobilebert_model
-python convert_mobilebert.py --tf_model_path mobilebert_model/mobilebert --mobilebert_dir=mobilebert --test
+python convert_mobilebert.py --tf_model_path mobilebert_model/mobilebert --mobilebert_dir mobilebert --test

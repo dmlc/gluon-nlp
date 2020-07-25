@@ -266,8 +266,90 @@ class SortedSampler(BaseSampler):
         return len(self._sorted_ids)
 
 
+class BoundedBudgetSampler(BaseSampler):
+    r"""Assign each data sample to bounded budget batches. Samples will be sorted by length before batchfy
+    see https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
+
+    Parameters
+    ----------
+    lengths
+        The length of the sequences in the input data sample.
+    max_num_tokens
+        max tokens num of each batch
+    max_num_sentences
+        max sentences num of each batch
+    required_batch_size_multiple
+        require batch size to be a multiple of N (default: 1).
+        better throughput in GPU.
+    shuffle
+        Whether to shuffle the batches.
+    seed
+        The seed of the sampler
+    """
+    def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
+                 max_num_tokens: int = -1, max_num_sentences: int = -1,
+                 required_batch_size_multiple: int = 1,
+                 shuffle: bool = False, seed: Optional[int] = None):
+        assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
+        assert max_num_tokens > 0 or max_num_sentences > 0, \
+               'One of max_num_tokens and max_num_sentences must be larger than 0'
+        self._lengths = np.array(lengths)
+        if self._lengths.ndim == 2:
+            self._lengths = self._lengths.max(axis=1)
+        self._indices = np.array(range(len(lengths)))
+        self._max_num_tokens = max_num_tokens
+        self._max_num_sentences = max_num_sentences
+        self._batches = []
+        self._shuffle = shuffle
+        self._rng = np.random.RandomState(seed)
+        # sort
+        self._indices = self._indices[np.argsort(self._lengths, kind='mergesort')]
+        batch = []
+        # max len in a batch
+        batch_max_sample_len = 0
+        for index in self._indices:
+            batch_max_sample_len = max(batch_max_sample_len, self._lengths[index])
+            # try to insert new sample to the batch
+            batch_num_sentences = len(batch) + 1
+            batch_num_tokens = batch_num_sentences * batch_max_sample_len
+            if (self._max_num_sentences > 0 and batch_num_sentences > self._max_num_sentences) or \
+               (self._max_num_tokens > 0 and batch_num_tokens > self._max_num_tokens):
+                # moded_bs = len(batch) % required_batch_size_multiple when len(batch) < required_batch_size_multiple
+                moded_bs = max(
+                    required_batch_size_multiple * (len(batch) // required_batch_size_multiple),
+                    len(batch) % required_batch_size_multiple
+                )
+                self._batches.append(np.array(batch[:moded_bs]))
+                batch = batch[moded_bs:]
+                batch_max_sample_len = max(
+                    self._lengths[batch].max() if len(batch) > 0 else 0,
+                    self._lengths[index]
+                )
+            batch.append(index)
+        if len(batch) > 0:
+            self._batches.append(np.array(batch))        
+        
+    def __iter__(self):
+        if self._shuffle:
+            self._rng.shuffle(self._batches)
+        for batch in self._batches:
+            yield batch
+
+    def __len__(self):
+        return len(self._batches)
+
+    def __repr__(self):
+        ret = '{name}(\n' \
+            '  sample_num={sample_num},\n' \
+            '  batch_num={batch_num}\n'\
+            ')'\
+            .format(name=self.__class__.__name__,
+                    sample_num=len(self._lengths),
+                    batch_num=len(self._batches))
+        return ret
+
+
 # TODO(?) Add rollover flag to BucketSampler, issue: https://github.com/dmlc/gluon-nlp/issues/982
-# TODO(?) Add max_tokens option to BucketSampler and SortedSampler to make it similar to Fairseq: https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
 class FixedBucketSampler(BaseSampler):
     r"""Assign each data sample to a fixed bucket based on its length.
     The bucket keys are either given or generated from the input sequence lengths.
@@ -441,7 +523,6 @@ class FixedBucketSampler(BaseSampler):
         return ret
 
 
-#TODO(?) Add max_token option similar to Fairseq: https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
 class SortedBucketSampler(BaseSampler):
     r"""Batches are sampled from sorted buckets of data.
 

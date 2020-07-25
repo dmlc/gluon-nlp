@@ -25,12 +25,12 @@ XLM-R Model
 }
 """
 
-__all__ = ['XLMRModel', 'list_pretrained_xlmr', 'get_pretrained_xlmr']
+__all__ = ['XLMRModel', 'XLMRForMLM', 'list_pretrained_xlmr', 'get_pretrained_xlmr']
 
 from typing import Tuple
 import os
 from mxnet import use_np
-from .roberta import RobertaModel, roberta_base, roberta_large
+from .roberta import RobertaModel, RobertaForMLM, roberta_base, roberta_large
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
 from ..utils.registry import Registry
@@ -43,12 +43,16 @@ PRETRAINED_URL = {
     'fairseq_xlmr_base': {
         'cfg': 'fairseq_xlmr_base/model-b893d178.yml',
         'sentencepiece.model': 'fairseq_xlmr_base/sentencepiece-18e17bae.model',
-        'params': 'fairseq_xlmr_base/model-340f4fa8.params'
+        'params': 'fairseq_xlmr_base/model-3fa134e9.params',
+        'mlm_params': 'fairseq_xlmr_base/model_mlm-86e37954.params',
+        'lowercase': False,
     },
     'fairseq_xlmr_large': {
         'cfg': 'fairseq_xlmr_large/model-01fc59fb.yml',
         'sentencepiece.model': 'fairseq_xlmr_large/sentencepiece-18e17bae.model',
-        'params': 'fairseq_xlmr_large/model-e4b11125.params'
+        'params': 'fairseq_xlmr_large/model-b62b074c.params',
+        'mlm_params': 'fairseq_xlmr_large/model_mlm-887506c2.params',
+        'lowercase': False,
     }
 }
 
@@ -82,14 +86,18 @@ class XLMRModel(RobertaModel):
             return xlmr_cfg_reg.create(key)
         else:
             return xlmr_base()
-
+@use_np
+class XLMRForMLM(RobertaForMLM):
+    pass
 
 def list_pretrained_xlmr():
     return sorted(list(PRETRAINED_URL.keys()))
 
 
 def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
-                        root: str = get_model_zoo_home_dir()) \
+                        root: str = get_model_zoo_home_dir(),
+                        load_backbone: bool = True,
+                        load_mlm: bool = False) \
         -> Tuple[CN, SentencepieceTokenizer, str]:
     """Get the pretrained XLM-R weights
 
@@ -99,6 +107,10 @@ def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
         The name of the xlmr model.
     root
         The downloading root
+    load_backbone
+        Whether to load the weights of the backbone network
+    load_mlm
+        Whether to load the weights of MLM
 
     Returns
     -------
@@ -108,21 +120,40 @@ def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
         The SentencepieceTokenizer
     params_path
         Path to the parameters
+    mlm_params_path
+        Path to the parameter that includes both the backbone and the MLM
     """
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_xlmr())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
     sp_model_path = PRETRAINED_URL[model_name]['sentencepiece.model']
     params_path = PRETRAINED_URL[model_name]['params']
+    mlm_params_path = PRETRAINED_URL[model_name]['mlm_params']
     local_paths = dict()
-    for k, path in [('cfg', cfg_path), ('sentencepiece.model', sp_model_path), \
-                    ('params', params_path)]:
+    for k, path in [('cfg', cfg_path), ('sentencepiece.model', sp_model_path)]:
         local_paths[k] = download(url=get_repo_model_zoo_url() + path,
                                   path=os.path.join(root, path),
                                   sha1_hash=FILE_STATS[path])
-    tokenizer = SentencepieceTokenizer(local_paths['sentencepiece.model'])
+    if load_backbone:
+        local_params_path = download(url=get_repo_model_zoo_url() + params_path,
+                                     path=os.path.join(root, params_path),
+                                     sha1_hash=FILE_STATS[params_path])
+    else:
+        local_params_path = None
+    if load_mlm and mlm_params_path is not None:
+        local_mlm_params_path = download(url=get_repo_model_zoo_url() + mlm_params_path,
+                                         path=os.path.join(root, mlm_params_path),
+                                         sha1_hash=FILE_STATS[mlm_params_path])
+    else:
+        local_mlm_params_path = None
+
+    do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
+                       and PRETRAINED_URL[model_name]['lowercase'] else False
+    tokenizer = SentencepieceTokenizer(
+                    model_path=local_paths['sentencepiece.model'],
+                    lowercase=do_lower)
     cfg = XLMRModel.get_cfg().clone_merge(local_paths['cfg'])
-    return cfg, tokenizer, local_paths['params']
+    return cfg, tokenizer, local_params_path, local_mlm_params_path
 
 
 BACKBONE_REGISTRY.register('xlmr', [XLMRModel,

@@ -173,8 +173,8 @@ def test_dot_product_attention(scaled, normalized):
 @pytest.mark.seed(123)
 def test_gen_attn_mask():
     class GenSelfAttnMask(HybridBlock):
-        def __init__(self, dtype, layout, attn_type, prefix=None, params=None):
-            super(GenSelfAttnMask, self).__init__(prefix=prefix, params=params)
+        def __init__(self, dtype, attn_type):
+            super().__init__()
             self._dtype = dtype
             self._layout = layout
             self._attn_type = attn_type
@@ -186,8 +186,8 @@ def test_gen_attn_mask():
                                       attn_type=self._attn_type)
 
     class GenMemAttnMask(HybridBlock):
-        def __init__(self, dtype, layout='NT', prefix=None, params=None):
-            super(GenMemAttnMask, self).__init__(prefix=prefix, params=params)
+        def __init__(self, dtype):
+            super().__init__()
             self._dtype = dtype
             self._layout = layout
 
@@ -367,9 +367,7 @@ def test_multi_head_rel_attn_score(num_heads, method, bidirectional, hybridize):
             score_cell.initialize()
             if hybridize:
                 score_cell.hybridize()
-            for k, param in score_cell.collect_params().items():
-                param_k = k[len(score_cell.prefix):]
-                param.set_data(base_score_cell.collect_params().get(param_k).data())
+            score_cell.load_dict({name: param.data() for name, param in base_score_cell.collect_params().items()})
             query.attach_grad()
             query.grad[:] = 0
             with mx.autograd.record():

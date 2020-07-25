@@ -79,7 +79,7 @@ class AdamW(optimizer.Optimizer):
     """
     def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-6,
                  correct_bias=True, use_fused_step=True, **kwargs):
-        super(AdamW, self).__init__(use_fused_step=use_fused_step,
+        super().__init__(use_fused_step=use_fused_step,
                                     learning_rate=learning_rate,
                                     **kwargs)
         self.beta1 = beta1

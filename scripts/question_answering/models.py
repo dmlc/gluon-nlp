@@ -13,16 +13,26 @@ class ModelForQABasic(HybridBlock):
     Here, we directly use the backbone network to extract the contextual embeddings and use
     another dense layer to map the contextual embeddings to the start scores and end scores.
 
+    use_segmentation is used to mark whether we segment the input sentence. In RoBERTa and XLMR,
+    this flag is set to True, then the QA model no longer accept `token_types` as valid input.
+
+    - use_segmentation=True:
+        tokens :      <CLS> Question <SEP> Context <SEP>
+        token_typess:  0       0       0      1      1
+
+    - use_segmentation=False:
+        tokens :      <CLS> Question <SEP> Context <SEP>
+        token_typess:  None
     """
     def __init__(self, backbone, weight_initializer=None, bias_initializer=None,
-                 prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone = backbone
-            self.qa_outputs = nn.Dense(units=2, flatten=False,
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       prefix='qa_outputs_')
+                 use_segmentation=True):
+        super().__init__()
+
+        self.backbone = backbone
+        self.use_segmentation = use_segmentation
+        self.qa_outputs = nn.Dense(units=2, flatten=False,
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer)
 
     def hybrid_forward(self, F, tokens, token_types, valid_length, p_mask):
         """
@@ -53,8 +63,11 @@ class ModelForQABasic(HybridBlock):
             The log-softmax scores that the position is the end position.
         """
         # Get contextual embedding with the shape (batch_size, sequence_length, C)
-        contextual_embedding = self.backbone(tokens, token_types, valid_length)
-        scores = self.qa_outputs(contextual_embedding)
+        if self.use_segmentation:
+            contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+        else:
+            contextual_embeddings = self.backbone(tokens, valid_length)
+        scores = self.qa_outputs(contextual_embeddings)
         start_scores = scores[:, :, 0]
         end_scores = scores[:, :, 1]
         start_logits = masked_logsoftmax(F, start_scores, mask=p_mask, axis=-1)
@@ -75,41 +88,44 @@ class ModelForQAConditionalV1(HybridBlock):
 
     In the inference phase, we are able to use beam search to do the inference.
 
+    use_segmentation is used to mark whether we segment the input sentence. In RoBERTa and XLMR,
+    this flag is set to True, then the QA model no longer accept `token_types` as valid input.
+
+    - use_segmentation=True:
+        tokens :      <CLS> Question <SEP> Context <SEP>
+        token_typess:  0       0       0      1      1
+
+    - use_segmentation=False:
+        tokens :      <CLS> Question <SEP> Context <SEP>
+        token_typess:  None
     """
     def __init__(self, backbone, units=768, layer_norm_eps=1E-12, dropout_prob=0.1,
                  activation='tanh', weight_initializer=None, bias_initializer=None,
-                 prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone = backbone
-            self.start_scores = nn.Dense(1, flatten=False,
-                                         weight_initializer=weight_initializer,
-                                         bias_initializer=bias_initializer,
-                                         prefix='start_scores_')
-            self.end_scores = nn.HybridSequential(prefix='end_scores_')
-            with self.end_scores.name_scope():
-                self.end_scores.add(nn.Dense(units, flatten=False,
-                                             weight_initializer=weight_initializer,
-                                             bias_initializer=bias_initializer,
-                                             prefix='mid_'))
-                self.end_scores.add(get_activation(activation))
-                self.end_scores.add(nn.LayerNorm(epsilon=layer_norm_eps))
-                self.end_scores.add(nn.Dense(1, flatten=False,
-                                             weight_initializer=weight_initializer,
-                                             bias_initializer=bias_initializer,
-                                             prefix='out_'))
-            self.answerable_scores = nn.HybridSequential(prefix='answerable_scores_')
-            with self.answerable_scores.name_scope():
-                self.answerable_scores.add(nn.Dense(units, flatten=False,
-                                                    weight_initializer=weight_initializer,
-                                                    bias_initializer=bias_initializer,
-                                                    prefix='mid_'))
-                self.answerable_scores.add(get_activation(activation))
-                self.answerable_scores.add(nn.Dropout(dropout_prob))
-                self.answerable_scores.add(nn.Dense(2, flatten=False,
-                                                    weight_initializer=weight_initializer,
-                                                    bias_initializer=bias_initializer,
-                                                    prefix='out_'))
+                 use_segmentation=True):
+        super().__init__()
+        self.backbone = backbone
+        self.use_segmentation = use_segmentation
+        self.start_scores = nn.Dense(1, flatten=False,
+                                     weight_initializer=weight_initializer,
+                                     bias_initializer=bias_initializer)
+        self.end_scores = nn.HybridSequential()
+        self.end_scores.add(nn.Dense(units, flatten=False,
+                                     weight_initializer=weight_initializer,
+                                     bias_initializer=bias_initializer))
+        self.end_scores.add(get_activation(activation))
+        self.end_scores.add(nn.LayerNorm(epsilon=layer_norm_eps))
+        self.end_scores.add(nn.Dense(1, flatten=False,
+                                     weight_initializer=weight_initializer,
+                                     bias_initializer=bias_initializer))
+        self.answerable_scores = nn.HybridSequential()
+        self.answerable_scores.add(nn.Dense(units, flatten=False,
+                                            weight_initializer=weight_initializer,
+                                            bias_initializer=bias_initializer))
+        self.answerable_scores.add(get_activation(activation))
+        self.answerable_scores.add(nn.Dropout(dropout_prob))
+        self.answerable_scores.add(nn.Dense(2, flatten=False,
+                                            weight_initializer=weight_initializer,
+                                            bias_initializer=bias_initializer))
 
     def get_start_logits(self, F, contextual_embedding, p_mask):
         """
@@ -221,7 +237,10 @@ class ModelForQAConditionalV1(HybridBlock):
             Shape (batch_size, sequence_length)
         answerable_logits
         """
-        contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+        if self.use_segmentation:
+            contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+        else:
+            contextual_embeddings = self.backbone(tokens, valid_length)
         start_logits = self.get_start_logits(F, contextual_embeddings, p_mask)
         end_logits = self.get_end_logits(F, contextual_embeddings,
                                          F.np.expand_dims(start_position, axis=1),
@@ -269,7 +288,10 @@ class ModelForQAConditionalV1(HybridBlock):
             Shape (batch_size, sequence_length, 2)
         """
         # Shape (batch_size, sequence_length, C)
-        contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+        if self.use_segmentation:
+            contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+        else:
+            contextual_embeddings = self.backbone(tokens, valid_length)
         start_logits = self.get_start_logits(mx.nd, contextual_embeddings, p_mask)
         # The shape of start_top_index will be (..., start_top_n)
         start_top_logits, start_top_index = mx.npx.topk(start_logits, k=start_top_n, axis=-1,

@@ -104,7 +104,7 @@ class AverageSGDTracker(object):
                 'All shapes of the tracked parameters must be given.' \
                 ' The shape of {} is {}, and it has not been fully initialized.' \
                 ' You should call step after the first forward of the model.'.format(k, v.shape)
-        ctx = self._track_params.list_ctx()[0]
+        ctx = next(iter(self._track_params.values())).list_ctx()[0]
         if self._average_params is None:
             self._average_params = OrderedDict([(k, v.data(ctx).copy()) for k, v in self._track_params.items()])
         self._n_steps += 1

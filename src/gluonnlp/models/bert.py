@@ -143,27 +143,29 @@ PRETRAINED_URL = {
         'cfg': google_en_cased_bert_base(),
         'vocab': 'google_en_cased_bert_base/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_base/model-c566c289.params',
-        'mlm_params': 'google_en_cased_bert_base/model_mlm-c3ff36a3.params',
+        'mlm_params': 'google_en_cased_bert_base/model_mlm-bde14bee.params',
+        'lowercase': False,
     },
 
     'google_en_uncased_bert_base': {
         'cfg': google_en_uncased_bert_base(),
         'vocab': 'google_en_uncased_bert_base/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_base/model-3712e50a.params',
-        'mlm_params': 'google_en_uncased_bert_base/model_mlm-2a23a633.params',
+        'mlm_params': 'google_en_uncased_bert_base/model_mlm-04e88b58.params',
         'lowercase': True,
     },
     'google_en_cased_bert_large': {
         'cfg': google_en_cased_bert_large(),
         'vocab': 'google_en_cased_bert_large/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_large/model-7aa93704.params',
-        'mlm_params': 'google_en_cased_bert_large/model_mlm-d6443fe9.params',
+        'mlm_params': 'google_en_cased_bert_large/model_mlm-59ff3f6a.params',
+        'lowercase': False,
     },
     'google_en_uncased_bert_large': {
         'cfg': google_en_uncased_bert_large(),
         'vocab': 'google_en_uncased_bert_large/vocab-e6d2b21d.json',
         'params': 'google_en_uncased_bert_large/model-e53bbc57.params',
-        'mlm_params': 'google_en_uncased_bert_large/model_mlm-f5cb8678.params',
+        'mlm_params': 'google_en_uncased_bert_large/model_mlm-44bc70c0.params',
         'lowercase': True,
     },
     'google_zh_bert_base': {
@@ -171,18 +173,21 @@ PRETRAINED_URL = {
         'vocab': 'google_zh_bert_base/vocab-711c13e4.json',
         'params': 'google_zh_bert_base/model-2efbff63.params',
         'mlm_params': 'google_zh_bert_base/model_mlm-75339658.params',
+        'lowercase': False,
     },
     'google_multi_cased_bert_base': {
         'cfg': google_multi_cased_bert_base(),
         'vocab': 'google_multi_cased_bert_base/vocab-016e1169.json',
         'params': 'google_multi_cased_bert_base/model-c2110078.params',
         'mlm_params': 'google_multi_cased_bert_base/model_mlm-4611e7a3.params',
+        'lowercase': False,
     },
     'google_en_cased_bert_wwm_large': {
         'cfg': google_en_cased_bert_large(),
         'vocab': 'google_en_cased_bert_wwm_large/vocab-c1defaaa.json',
         'params': 'google_en_cased_bert_wwm_large/model-0fe841cf.params',
         'mlm_params': None,
+        'lowercase': False,
     },
     'google_en_uncased_bert_wwm_large': {
         'cfg': google_en_uncased_bert_large(),
@@ -212,9 +217,8 @@ class BertTransformer(HybridBlock):
                  weight_initializer: InitializerType = TruncNorm(stdev=0.02),
                  bias_initializer: InitializerType = 'zeros',
                  activation='gelu',
-                 layout='NT',
-                 prefix=None, params=None):
-        super().__init__(prefix=prefix, params=params)
+                 layout='NT'):
+        super().__init__()
         assert units % num_heads == 0,\
             'In BertTransformer, The units should be divided exactly ' \
             'by the number of heads. Received units={}, num_heads={}' \
@@ -226,22 +230,20 @@ class BertTransformer(HybridBlock):
         self._output_all_encodings = output_all_encodings
         self._layout = layout
 
-        with self.name_scope():
-            self.all_layers = nn.HybridSequential(prefix='layers_')
-            with self.all_layers.name_scope():
-                for layer_idx in range(num_layers):
-                    self.all_layers.add(
-                      TransformerEncoderLayer(units=units,
-                                              hidden_size=hidden_size,
-                                              num_heads=num_heads,
-                                              attention_dropout_prob=attention_dropout_prob,
-                                              hidden_dropout_prob=hidden_dropout_prob,
-                                              layer_norm_eps=layer_norm_eps,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              activation=activation,
-                                              layout=layout,
-                                              prefix='{}_'.format(layer_idx)))
+        self.all_layers = nn.HybridSequential(prefix='layers_')
+        with self.all_layers.name_scope():
+            for layer_idx in range(num_layers):
+                self.all_layers.add(
+                  TransformerEncoderLayer(units=units,
+                                          hidden_size=hidden_size,
+                                          num_heads=num_heads,
+                                          attention_dropout_prob=attention_dropout_prob,
+                                          hidden_dropout_prob=hidden_dropout_prob,
+                                          layer_norm_eps=layer_norm_eps,
+                                          weight_initializer=weight_initializer,
+                                          bias_initializer=bias_initializer,
+                                          activation=activation,
+                                          layout=layout))
 
     @property
     def layout(self):
@@ -326,10 +328,8 @@ class BertModel(HybridBlock):
                  dtype='float32',
                  use_pooler=True,
                  layout='NT',
-                 compute_layout='auto',
-                 prefix=None,
-                 params=None):
-        super().__init__(prefix=prefix, params=params)
+                 compute_layout='auto'):
+        super().__init__()
         self._dtype = dtype
         self.use_pooler = use_pooler
         self.pos_embed_type = pos_embed_type
@@ -347,54 +347,47 @@ class BertModel(HybridBlock):
             self._compute_layout = layout
         else:
             self._compute_layout = compute_layout
-        with self.name_scope():
-            # Construct BertTransformer
-            self.encoder = BertTransformer(
-                units=units,
-                hidden_size=hidden_size,
-                num_layers=num_layers,
-                num_heads=num_heads,
-                attention_dropout_prob=attention_dropout_prob,
-                hidden_dropout_prob=hidden_dropout_prob,
-                output_attention=False,
-                output_all_encodings=False,
-                activation=activation,
-                layer_norm_eps=layer_norm_eps,
-                weight_initializer=weight_initializer,
-                bias_initializer=bias_initializer,
-                dtype=dtype,
-                layout=self._compute_layout,
-                prefix='enc_',
-            )
-            self.encoder.hybridize()
-            # Construct word embedding
-            self.word_embed = nn.Embedding(input_dim=vocab_size,
-                                           output_dim=units,
-                                           weight_initializer=embed_initializer,
-                                           dtype=dtype,
-                                           prefix='word_embed_')
-            self.embed_layer_norm = nn.LayerNorm(epsilon=self.layer_norm_eps,
-                                                 prefix='embed_ln_')
-            self.embed_dropout = nn.Dropout(hidden_dropout_prob)
-            # Construct token type embedding
-            self.token_type_embed = nn.Embedding(input_dim=num_token_types,
-                                                 output_dim=units,
-                                                 weight_initializer=weight_initializer,
-                                                 prefix='token_type_embed_')
-            self.token_pos_embed = PositionalEmbedding(units=units,
-                                                       max_length=max_length,
-                                                       dtype=self._dtype,
-                                                       method=pos_embed_type,
-                                                       prefix='token_pos_embed_')
-            if self.use_pooler:
-                # Construct pooler
-                self.pooler = nn.Dense(units=units,
-                                       in_units=units,
-                                       flatten=False,
-                                       activation='tanh',
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       prefix='pooler_')
+        # Construct BertTransformer
+        self.encoder = BertTransformer(
+            units=units,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            num_heads=num_heads,
+            attention_dropout_prob=attention_dropout_prob,
+            hidden_dropout_prob=hidden_dropout_prob,
+            output_attention=False,
+            output_all_encodings=False,
+            activation=activation,
+            layer_norm_eps=layer_norm_eps,
+            weight_initializer=weight_initializer,
+            bias_initializer=bias_initializer,
+            dtype=dtype,
+            layout=self._compute_layout
+        )
+        self.encoder.hybridize()
+        # Construct word embedding
+        self.word_embed = nn.Embedding(input_dim=vocab_size,
+                                       output_dim=units,
+                                       weight_initializer=embed_initializer,
+                                       dtype=dtype)
+        self.embed_layer_norm = nn.LayerNorm(epsilon=self.layer_norm_eps)
+        self.embed_dropout = nn.Dropout(hidden_dropout_prob)
+        # Construct token type embedding
+        self.token_type_embed = nn.Embedding(input_dim=num_token_types,
+                                             output_dim=units,
+                                             weight_initializer=weight_initializer)
+        self.token_pos_embed = PositionalEmbedding(units=units,
+                                                   max_length=max_length,
+                                                   dtype=self._dtype,
+                                                   method=pos_embed_type)
+        if self.use_pooler:
+            # Construct pooler
+            self.pooler = nn.Dense(units=units,
+                                   in_units=units,
+                                   flatten=False,
+                                   activation='tanh',
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer)
 
     @property
     def layout(self):
@@ -521,7 +514,7 @@ class BertModel(HybridBlock):
             return google_en_uncased_bert_base()
 
     @classmethod
-    def from_cfg(cls, cfg, use_pooler=True, prefix=None, params=None):
+    def from_cfg(cls, cfg, use_pooler=True, dtype='float32') -> 'BertModel':
         cfg = BertModel.get_cfg().clone_merge(cfg)
         assert cfg.VERSION == 1, 'Wrong version!'
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
@@ -539,24 +532,20 @@ class BertModel(HybridBlock):
                    pos_embed_type=cfg.MODEL.pos_embed_type,
                    activation=cfg.MODEL.activation,
                    layer_norm_eps=cfg.MODEL.layer_norm_eps,
-                   dtype=cfg.MODEL.dtype,
+                   dtype=dtype,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
                    use_pooler=use_pooler,
                    layout=cfg.MODEL.layout,
-                   compute_layout=cfg.MODEL.compute_layout,
-                   prefix=prefix,
-                   params=params)
+                   compute_layout=cfg.MODEL.compute_layout)
 
 
 @use_np
 class BertForMLM(HybridBlock):
     def __init__(self, backbone_cfg,
                  weight_initializer=None,
-                 bias_initializer=None,
-                 prefix=None,
-                 params=None):
+                 bias_initializer=None):
         """
 
         Parameters
@@ -564,36 +553,29 @@ class BertForMLM(HybridBlock):
         backbone_cfg
         weight_initializer
         bias_initializer
-        prefix
-        params
         """
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone_model = BertModel.from_cfg(backbone_cfg, prefix='')
-            if weight_initializer is None:
-                weight_initializer = self.backbone_model.weight_initializer
-            if bias_initializer is None:
-                bias_initializer = self.backbone_model.bias_initializer
-            self.mlm_decoder = nn.HybridSequential(prefix='mlm_')
-            with self.mlm_decoder.name_scope():
-                # Extra non-linear layer
-                self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
-                                              flatten=False,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              prefix='proj_'))
-                self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
-                                                  prefix='ln_'))
-                # only load the dense weights with a re-initialized bias
-                # parameters are stored in 'word_embed_bias' which is
-                # not used in original embedding
-                self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
-                                              flatten=False,
-                                              params=self.backbone_model.word_embed.collect_params('.*weight'),
-                                              bias_initializer=bias_initializer,
-                                              prefix='score_'))
-            self.mlm_decoder.hybridize()
+        super().__init__()
+        self.backbone_model = BertModel.from_cfg(backbone_cfg)
+        if weight_initializer is None:
+            weight_initializer = self.backbone_model.weight_initializer
+        if bias_initializer is None:
+            bias_initializer = self.backbone_model.bias_initializer
+        self.mlm_decoder = nn.HybridSequential()
+        # Extra non-linear layer
+        self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
+                                      flatten=False,
+                                      weight_initializer=weight_initializer,
+                                      bias_initializer=bias_initializer))
+        self.mlm_decoder.add(get_activation(self.backbone_model.activation))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        # only load the dense weights with a re-initialized bias
+        # parameters are stored in 'word_embed_bias' which is
+        # not used in original embedding
+        self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
+                                      flatten=False,
+                                      bias_initializer=bias_initializer))
+        self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
+        self.mlm_decoder.hybridize()
 
     @property
     def layout(self):
@@ -652,8 +634,7 @@ class BertForMLM(HybridBlock):
 class BertForPretrain(HybridBlock):
     def __init__(self, backbone_cfg,
                  weight_initializer=None,
-                 bias_initializer=None,
-                 prefix=None, params=None):
+                 bias_initializer=None):
         """
 
         Parameters
@@ -662,40 +643,32 @@ class BertForPretrain(HybridBlock):
             The cfg of the backbone model
         weight_initializer
         bias_initializer
-        prefix
-        params
         """
-        super().__init__(prefix=prefix, params=params)
-        with self.name_scope():
-            self.backbone_model = BertModel.from_cfg(backbone_cfg, prefix='')
-            if weight_initializer is None:
-                weight_initializer = self.backbone_model.weight_initializer
-            if bias_initializer is None:
-                bias_initializer = self.backbone_model.bias_initializer
-            # Construct nsp_classifier for next sentence prediction
-            self.nsp_classifier = nn.Dense(units=2,
-                                           weight_initializer=weight_initializer,
-                                           prefix='nsp_')
-            self.mlm_decoder = nn.HybridSequential(prefix='mlm_')
-            with self.mlm_decoder.name_scope():
-                # Extra non-linear layer
-                self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
-                                              flatten=False,
-                                              weight_initializer=weight_initializer,
-                                              bias_initializer=bias_initializer,
-                                              prefix='proj_'))
-                self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-                self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
-                                                  prefix='ln_'))
-                # only load the dense weights with a re-initialized bias
-                # parameters are stored in 'word_embed_bias' which is
-                # not used in original embedding
-                self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
-                                              flatten=False,
-                                              params=self.backbone_model.word_embed.collect_params('.*weight'),
-                                              bias_initializer=bias_initializer,
-                                              prefix='score_'))
-            self.mlm_decoder.hybridize()
+        super().__init__()
+        self.backbone_model = BertModel.from_cfg(backbone_cfg)
+        if weight_initializer is None:
+            weight_initializer = self.backbone_model.weight_initializer
+        if bias_initializer is None:
+            bias_initializer = self.backbone_model.bias_initializer
+        # Construct nsp_classifier for next sentence prediction
+        self.nsp_classifier = nn.Dense(units=2,
+                                       weight_initializer=weight_initializer)
+        self.mlm_decoder = nn.HybridSequential()
+        # Extra non-linear layer
+        self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
+                                      flatten=False,
+                                      weight_initializer=weight_initializer,
+                                      bias_initializer=bias_initializer))
+        self.mlm_decoder.add(get_activation(self.backbone_model.activation))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        # only load the dense weights with a re-initialized bias
+        # parameters are stored in 'word_embed_bias' which is
+        # not used in original embedding
+        self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
+                                      flatten=False,
+                                      bias_initializer=bias_initializer))
+        self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
+        self.mlm_decoder.hybridize()
 
     @property
     def layout(self):
@@ -819,7 +792,6 @@ def get_pretrained_bert(model_name: str = 'google_en_cased_bert_base',
         local_mlm_params_path = None
     do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
                        and PRETRAINED_URL[model_name]['lowercase'] else False
-    # TODO(sxjscience) Move do_lower to assets.
     tokenizer = HuggingFaceWordPieceTokenizer(
                     vocab_file=local_paths['vocab'],
                     unk_token='[UNK]',
