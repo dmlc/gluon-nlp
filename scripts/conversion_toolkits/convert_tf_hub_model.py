@@ -12,7 +12,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 from gluonnlp.data.vocab import Vocab
-from gluonnlp.utils.misc import sha1sum, naming_convention, logging_config
+from gluonnlp.utils.misc import naming_convention, logging_config
 from gluonnlp.models.bert import BertModel, BertForMLM
 from gluonnlp.models.albert import AlbertModel, AlbertForMLM
 from gluonnlp.data.tokenizers import SentencepieceTokenizer, HuggingFaceWordPieceTokenizer
@@ -132,68 +132,59 @@ def convert_tf_assets(tf_assets_dir, model_type):
 
 
 CONVERT_MAP_TF1 = [
-    ('bert/', ''),
+    ('bert/', 'backbone_model.'),
     ('cls/', ''),
-    ('predictions/output_bias', 'word_embed_bias'),
-    ('predictions', 'mlm'),
-    ('transform/dense', 'proj'),
+    ('predictions/transform/dense', 'mlm_decoder.0'),
+    ('predictions/transform/LayerNorm', 'mlm_decoder.2'),
+    ('predictions/output_bias', 'mlm_decoder.3.bias'),
     ('transformer/', ''),
     ('transform/', ''),
-    ('embeddings/word_embeddings', 'word_embed_weight'),
-    ('embeddings/token_type_embeddings', 'token_type_embed_weight'),
-    ('embeddings/position_embeddings', 'token_pos_embed_embed_weight'),
+    ('embeddings/word_embeddings', 'word_embed.weight'),
+    ('embeddings/token_type_embeddings', 'token_type_embed.weight'),
+    ('embeddings/position_embeddings', 'token_pos_embed._embed.weight'),
     ('encoder/embedding_hidden_mapping_in', 'embed_factorized_proj'),
-    ('encoder', 'enc'),
-    ('inner_group_0/', ''),
-    ('group', 'groups'),
-    ('layer', 'layers'),
-    ('embeddings', 'embed'),
-    ('attention/output/LayerNorm', 'ln'),  # bert
-    ('output/LayerNorm', 'ffn_ln'),  # bert
-    ('LayerNorm_1', 'ffn_ln'),  # albert
-    ('LayerNorm', 'ln'),  # albert
-    ('ffn_1/', ''),
+    ('group_0/inner_group_0/', 'all_encoder_groups.0.'),  # albert
+    ('layer_', 'all_layers.'),  # bert
+    ('embeddings/LayerNorm', 'embed_layer_norm'),
+    ('attention/output/LayerNorm', 'layer_norm'),  # bert
+    ('output/LayerNorm', 'ffn.layer_norm'),  # bert
+    ('LayerNorm_1', 'ffn.layer_norm'),  # albert
+    ('LayerNorm', 'layer_norm'),  # albert
     ('attention_1', 'attention'),  # albert
-    ('attention/output/dense', 'proj'),
-    ('intermediate/dense', 'ffn_ffn1'),
-    ('intermediate/output/dense', 'ffn_ffn2'),  # albert
-    ('output/dense', 'ffn_ffn2'),  # bert
+    ('attention/output/dense', 'attention_proj'),
+    ('ffn_1', ''),  # bert & albert
+    ('intermediate/dense', 'ffn.ffn_1'),  # albert
+    ('intermediate/output/dense', 'ffn.ffn_2'),  # albert
+    ('output/dense', 'ffn.ffn_2'),  # bert
     ('output/', ''),
     ('pooler/dense', 'pooler'),
     ('kernel', 'weight'),
     ('attention/', ''),
-    ('/', '_'),
+    ('/', '.'),
 ]
 
 CONVERT_MAP_TF2 = [
     (':0', ''),
     ('cls/', ''),
-    ('bert_model/', ''),
-    ('predictions/output_bias', 'word_embed_bias'),
-    ('predictions', 'mlm'),
-    ('word_embeddings/embeddings', 'word_embed_weight'),
-    ('embedding_postprocessor/type_embeddings', 'token_type_embed_weight'),  # bert
-    ('embedding_postprocessor/position_embeddings', 'token_pos_embed_embed_weight'),  # bert
-    ('embedding_postprocessor/layer_norm', 'embed_ln'),  # bert
-    ('position_embedding/embeddings', 'token_pos_embed_embed_weight'),  # albert
-    ('type_embeddings/embeddings', 'token_type_embed_weight'),  # albert
-    ('embeddings/layer_norm', 'embed_ln'),  # albert
+    ('predictions/output_bias', 'mlm_decoder.3.bias'),
+    ('transformer/layer_', 'encoder.all_layers.'),
+    ('word_embeddings/embeddings', 'word_embed.weight'),
+    ('embedding_postprocessor/type_embeddings', 'token_type_embed.weight'),
+    ('embedding_postprocessor/position_embeddings', 'token_pos_embed._embed.weight'),
+    ('embedding_postprocessor/layer_norm', 'embed_layer_norm'),
     ('embedding_projection', 'embed_factorized_proj'),
-    ('transformer', 'enc_groups_0'),
-    ('self_attention_output', 'proj'),
-    ('self_attention_layer_norm', 'ln'),
-    ('intermediate', 'ffn_ffn1'),
-    ('output_layer_norm', 'ffn_ln'),
-    ('output', 'ffn_ffn2'),
+    ('self_attention/attention_output', 'attention_proj'),
+    ('self_attention_layer_norm', 'layer_norm'),
+    ('intermediate', 'ffn.ffn_1'),
+    ('output_layer_norm', 'ffn.layer_norm'),
+    ('output', 'ffn.ffn_2'),
     ("pooler_transform", "pooler"),
-    ('encoder', 'enc'),
-    ('layer', 'layers'),
     ('kernel', 'weight'),
-    ('/', '_'),
+    ('/', '.'),
 ]
 
 
-def get_name_map(tf_names, is_mlm=False, is_TF1=True):
+def get_name_map(tf_names, is_TF1=True):
     """
     Get the converting mapping between tensor names and mxnet names.
     The above mapping CONVERT_MAP is effectively adaptive to Bert and Albert,
@@ -206,8 +197,6 @@ def get_name_map(tf_names, is_mlm=False, is_TF1=True):
     ----------
     tf_names
         the parameters names of tensorflow model
-    is_mlm
-        wether a mask language model
     is_TF1
         whether load from TF1 Hub Modules
     Returns
@@ -219,13 +208,12 @@ def get_name_map(tf_names, is_mlm=False, is_TF1=True):
     name_map = {}
     for source_name in tf_names:
         target_name = source_name
-        if not is_mlm and 'cls' in source_name:
-            continue
         # skip the qkv weights
         if 'self/' in source_name:
             name_map[source_name] = None
             continue
-        if 'self_attention/' in source_name:
+        if re.match(r'^transformer\/layer_[\d]+\/self_attention\/(key|value|query)\/(kernel|bias)$',
+                    source_name) is not None:
             name_map[source_name] = None
             continue
         for old, new in convert_map:
@@ -267,17 +255,17 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
         # In this step, the vocabulary is converted with the help of the tokenizer,
         # so whether tokenzier is case-dependent does not matter.
         new_vocab = HuggingFaceWordPieceTokenizer(
-                        vocab_file=vocab_path,
-                        unk_token='[UNK]',
-                        pad_token='[PAD]',
-                        cls_token='[CLS]',
-                        sep_token='[SEP]',
-                        mask_token='[MASK]',
-                        lowercase=True).vocab
+            vocab_file=vocab_path,
+            unk_token='[UNK]',
+            pad_token='[PAD]',
+            cls_token='[CLS]',
+            sep_token='[SEP]',
+            mask_token='[MASK]',
+            lowercase=True).vocab
 
     new_vocab.save(os.path.join(save_dir, 'vocab.json'))
 
-    #test input data
+    # test input data
     batch_size = 2
     seq_length = 16
     num_mask = 5
@@ -355,10 +343,10 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
     tf_names = list(tf_names)
 
     # Build gluon model and initialize
-    gluon_model = PretrainedModel.from_cfg(cfg, prefix='', use_pooler=True)
+    gluon_model = PretrainedModel.from_cfg(cfg, use_pooler=True)
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
-    gluon_mlm_model = PretrainedMLMModel(backbone_cfg=cfg, prefix='')
+    gluon_mlm_model = PretrainedMLMModel(backbone_cfg=cfg)
     gluon_mlm_model.initialize(ctx=ctx)
     gluon_mlm_model.hybridize()
 
@@ -371,118 +359,134 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
     # start converting for 'backbone' and 'mlm' model.
     # However sometimes there is no mlm parameter in Tf2 SavedModels like bert wmm large
     if any(['cls' in name for name in tf_names]):
-        is_mlms = [False, True]
+        has_mlm = True
     else:
-        is_mlms = [False]
+        has_mlm = False
         logging.info('There is no mask language model parameter in this pretrained model')
-    for is_mlm in is_mlms:
-        name_map = get_name_map(tf_names, is_mlm=is_mlm, is_TF1=TF1_Hub_Modules)
-        # go through the gluon model to infer the shape of parameters
+    name_map = get_name_map(tf_names, is_TF1=TF1_Hub_Modules)
+    # go through the gluon model to infer the shape of parameters
+    if has_mlm:
+        model = gluon_mlm_model
+        contextual_embedding, pooled_output, mlm_scores = \
+            model(mx_input_ids, mx_token_types, mx_valid_length, mx_masked_positions)
+    else:
+        model = gluon_model
+        contextual_embedding, pooled_output = model(mx_input_ids, mx_token_types,
+                                                    mx_valid_length)
+
+    # replace tensorflow parameter names with gluon parameter names
+    mx_params = model.collect_params()
+    all_keys = set(mx_params.keys())
+    for (src_name, dst_name) in name_map.items():
+        tf_param_val = tf_params[src_name]
+        if dst_name is None:
+            continue
+        all_keys.remove(dst_name)
+        if 'self_attention/attention_output' in src_name:
+            mx_params[dst_name].set_data(tf_param_val.reshape((cfg.MODEL.units, -1)).T)
+            continue
+        if src_name.endswith('kernel'):
+            mx_params[dst_name].set_data(tf_param_val.T)
+        else:
+            mx_params[dst_name].set_data(tf_param_val)
+
+    # Merge query/kernel, key/kernel, value/kernel to encoder.all_encoder_groups.0.attn_qkv.weight
+    def convert_qkv_weights(tf_prefix, mx_prefix, is_mlm):
+        """
+        To convert the qkv weights with different prefix.
+
+        In tensorflow framework, the prefix of query/key/value for the albert model is
+        'bert/encoder/transformer/group_0/inner_group_0/attention_1/self/query/kernel',
+        and that for the bert model is 'bert/encoder/layer_{}/attention/self/key/bias'.
+        In gluonnlp framework, the prefix is slightly different as
+        'encoder.all_encoder_groups.0.attn_qkv.weight' for albert model and
+        'encoder.all_layers.{}.attn_qkv.weight' for bert model, as the
+        curly braces {} can be filled with the layer number.
+        """
+        query_weight = tf_params[
+            '{}/query/kernel'.format(tf_prefix)]
+        key_weight = tf_params[
+            '{}/key/kernel'.format(tf_prefix)]
+        value_weight = tf_params[
+            '{}/value/kernel'.format(tf_prefix)]
+        query_bias = tf_params[
+            '{}/query/bias'.format(tf_prefix)]
+        key_bias = tf_params[
+            '{}/key/bias'.format(tf_prefix)]
+        value_bias = tf_params[
+            '{}/value/bias'.format(tf_prefix)]
+        if 'self_attention' in tf_prefix:
+            query_weight = query_weight.reshape((cfg.MODEL.units, -1))
+            key_weight = key_weight.reshape((cfg.MODEL.units, -1))
+            value_weight = value_weight.reshape((cfg.MODEL.units, -1))
+            query_bias = query_bias.reshape((-1,))
+            key_bias = key_bias.reshape((-1,))
+            value_bias = value_bias.reshape((-1,))
+        # Merge query_weight, key_weight, value_weight to mx_params
+        mx_weight_name = 'encoder.{}.attn_qkv.weight'.format(mx_prefix)
+        mx_bias_name = 'encoder.{}.attn_qkv.bias'.format(mx_prefix)
         if is_mlm:
-            model = gluon_mlm_model
-            contextual_embedding, pooled_output, mlm_scores = \
-                model(mx_input_ids, mx_token_types, mx_valid_length, mx_masked_positions)
-        else:
-            model = gluon_model
-            contextual_embedding, pooled_output = model(mx_input_ids, mx_token_types,
-                                                        mx_valid_length)
+            mx_weight_name = 'backbone_model.' + mx_weight_name
+            mx_bias_name = 'backbone_model.' + mx_bias_name
+        mx_params[mx_weight_name].set_data(
+            np.concatenate([query_weight, key_weight, value_weight], axis=1).T)
+        # Merge query_bias, key_bias, value_bias to mx_params
+        mx_params[mx_bias_name].set_data(
+            np.concatenate([query_bias, key_bias, value_bias], axis=0))
 
-        # replace tensorflow parameter names with gluon parameter names
-        mx_params = model.collect_params()
-        all_keys = set(mx_params.keys())
-        for (src_name, dst_name) in name_map.items():
-            tf_param_val = tf_params[src_name]
-            if dst_name is None:
-                continue
-            all_keys.remove(dst_name)
-            if 'self_attention_output/kernel' in src_name:
-                mx_params[dst_name].set_data(tf_param_val.reshape((cfg.MODEL.units, -1)).T)
-                continue
-            if src_name.endswith('kernel'):
-                mx_params[dst_name].set_data(tf_param_val.T)
-            else:
-                mx_params[dst_name].set_data(tf_param_val)
-
-        # Merge query/kernel, key/kernel, value/kernel to enc_groups_0_attn_qkv_weight
-        def convert_qkv_weights(tf_prefix, mx_prefix):
-            """
-            To convert the qkv weights with different prefix.
-
-            In tensorflow framework, the prefix of query/key/value for the albert model is
-            'bert/encoder/transformer/group_0/inner_group_0/attention_1/self/query/kernel',
-            and that for the albert model is 'bert/encoder/layer_{}/attention/self/key/bias'.
-            In gluonnlp framework, the prefix is slightly different as 'enc_groups_0_attn_qkv_weight'
-            for albert model and 'enc_layers_{}_attn_qkv_weight' for bert model, as the
-            curly braces {} can be filled with the layer number.
-            """
-            query_weight = tf_params[
-                '{}/query/kernel'.format(tf_prefix)]
-            key_weight = tf_params[
-                '{}/key/kernel'.format(tf_prefix)]
-            value_weight = tf_params[
-                '{}/value/kernel'.format(tf_prefix)]
-            query_bias = tf_params[
-                '{}/query/bias'.format(tf_prefix)]
-            key_bias = tf_params[
-                '{}/key/bias'.format(tf_prefix)]
-            value_bias = tf_params[
-                '{}/value/bias'.format(tf_prefix)]
-            if 'self_attention' in tf_prefix:
-                query_weight = query_weight.reshape((cfg.MODEL.units, -1))
-                key_weight = key_weight.reshape((cfg.MODEL.units, -1))
-                value_weight = value_weight.reshape((cfg.MODEL.units, -1))
-                query_bias = query_bias.reshape((-1,))
-                key_bias = key_bias.reshape((-1,))
-                value_bias = value_bias.reshape((-1,))
-            # Merge query_weight, key_weight, value_weight to mx_params
-            mx_params['enc_{}_attn_qkv_weight'.format(mx_prefix)].set_data(
-                np.concatenate([query_weight, key_weight, value_weight], axis=1).T)
-            # Merge query_bias, key_bias, value_bias to mx_params
-            mx_params['enc_{}_attn_qkv_bias'.format(mx_prefix)].set_data(
-                np.concatenate([query_bias, key_bias, value_bias], axis=0))
-
-        tf_prefix = None
-        if model_type == 'bert':
-            assert all([re.match(r'^enc_layers_[\d]+_attn_qkv_(weight|bias)$', key)
-                        is not None for key in all_keys])
-            for layer_id in range(cfg.MODEL.num_layers):
-                mx_prefix = 'layers_{}'.format(layer_id)
-                if TF1_Hub_Modules:
-                    tf_prefix = 'bert/encoder/layer_{}/attention/self'.format(layer_id)
-                else:
-                    tf_prefix = 'bert_model/encoder/layer_{}/self_attention'.format(layer_id)
-                convert_qkv_weights(tf_prefix, mx_prefix)
-        elif model_type == 'albert':
-            assert all_keys == {'enc_groups_0_attn_qkv_weight', 'enc_groups_0_attn_qkv_bias'}
-            mx_prefix = 'groups_0'
+    tf_prefix = None
+    if has_mlm:
+        all_keys.remove('mlm_decoder.3.weight')
+    if model_type == 'bert':
+        assert all(
+            [
+                re.match(
+                    r'^(backbone_model\.){0,1}encoder\.all_layers\.[\d]+\.attn_qkv\.(weight|bias)$',
+                    key) is not None for key in all_keys])
+        for layer_id in range(cfg.MODEL.num_layers):
+            mx_prefix = 'all_layers.{}'.format(layer_id)
             if TF1_Hub_Modules:
-                tf_prefix = 'bert/encoder/transformer/group_0/inner_group_0/attention_1/self'
+                tf_prefix = 'bert/encoder/layer_{}/attention/self'.format(layer_id)
             else:
-                tf_prefix = 'transformer/self_attention'
-            convert_qkv_weights(tf_prefix, mx_prefix)
+                tf_prefix = 'transformer/layer_{}/self_attention'.format(layer_id)
+            convert_qkv_weights(tf_prefix, mx_prefix, has_mlm)
+    elif model_type == 'albert':
+        assert all(
+            [
+                re.match(
+                    r'^(backbone_model\.){0,1}encoder\.all_encoder_groups\.0\.attn_qkv\.(weight|bias)$',
+                    key) is not None for key in all_keys])
+        mx_prefix = 'all_encoder_groups.0'
+        assert TF1_Hub_Modules, 'Please download thr alber model from TF1 Hub'
+        tf_prefix = 'bert/encoder/transformer/group_0/inner_group_0/attention_1/self'
+        convert_qkv_weights(tf_prefix, mx_prefix, has_mlm)
+    else:
+        raise NotImplementedError
 
-        else:
-            raise NotImplementedError
+    def check_backbone(tested_model, tf_token_outputs_np):
+        # test conversion results for backbone model
+        tf_contextual_embedding = tf_token_outputs_np['sequence_output']
+        tf_pooled_output = tf_token_outputs_np['pooled_output']
+        contextual_embedding, pooled_output = \
+            tested_model(mx_input_ids, mx_token_types, mx_valid_length)
+        assert_allclose(pooled_output.asnumpy(), tf_pooled_output, 1E-3, 1E-3)
+        for i in range(batch_size):
+            ele_valid_length = valid_length[i]
+            assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
+                            tf_contextual_embedding[i, :ele_valid_length, :], 1E-3, 1E-3)
 
-        if not is_mlm:
-            # test conversion results for backbone model
-            if test_conversion:
-                tf_contextual_embedding = tf_token_outputs_np['sequence_output']
-                tf_pooled_output = tf_token_outputs_np['pooled_output']
-                contextual_embedding, pooled_output = \
-                    model(mx_input_ids, mx_token_types, mx_valid_length)
-                assert_allclose(pooled_output.asnumpy(), tf_pooled_output, 1E-3, 1E-3)
-                for i in range(batch_size):
-                    ele_valid_length = valid_length[i]
-                    assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
-                                    tf_contextual_embedding[i, :ele_valid_length, :], 1E-3, 1E-3)
-            model.save_parameters(os.path.join(save_dir, 'model.params'), deduplicate=True)
-            logging.info('Convert the backbone model in {} to {}/{}'.format(hub_model_dir,
-                                                                            save_dir, 'model.params'))
-        elif is_mlm:
-            # test conversion results for mlm model
-            # TODO(zheyuye), figure out how to check the mlm model from TF2 SavedModel
-            if test_conversion and TF1_Hub_Modules:
+    if not has_mlm:
+        if test_conversion:
+            check_backbone(model, tf_token_outputs_np)
+        model.save_parameters(os.path.join(save_dir, 'model.params'), deduplicate=True)
+        logging.info('Convert the backbone model in {} to {}/{}'.format(hub_model_dir,
+                                                                        save_dir, 'model.params'))
+    else:
+        # test conversion results for mlm model
+        # TODO(zheyuye), figure out how to check the mlm model from TF2 SavedModel
+        if test_conversion:
+            check_backbone(model.backbone_model, tf_mlm_outputs_np)
+            if TF1_Hub_Modules:
                 tf_contextual_embedding = tf_mlm_outputs_np['sequence_output']
                 tf_pooled_output = tf_mlm_outputs_np['pooled_output']
                 tf_mlm_scores = tf_mlm_outputs_np['mlm_logits'].reshape((batch_size, num_mask, -1))
@@ -494,13 +498,15 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
                     ele_valid_length = valid_length[i]
                     assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
                                     tf_contextual_embedding[i, :ele_valid_length, :], 1E-3, 1E-3)
-            model.save_parameters(os.path.join(save_dir, 'model_mlm.params'), deduplicate=True)
-            logging.info('Convert the MLM model in {} to {}/{}'.format(hub_model_dir,
-                                                                       save_dir, 'model_mlm.params'))
-        else:
-            raise NotImplementedError
+        model.backbone_model.save_parameters(os.path.join(
+            save_dir, 'model.params'), deduplicate=True)
+        logging.info('Convert the backbone model in {} to {}/{}'.format(hub_model_dir,
+                                                                        save_dir, 'model.params'))
+        model.save_parameters(os.path.join(save_dir, 'model_mlm.params'), deduplicate=True)
+        logging.info('Convert the MLM model in {} to {}/{}'.format(hub_model_dir,
+                                                                   save_dir, 'model_mlm.params'))
 
-        # TODO(zheyuye) the gradient checking could be explored in further development
+    # TODO(zheyuye) the gradient checking could be explored in further development
 
     logging.info('Conversion finished!')
     logging.info('Statistics:')

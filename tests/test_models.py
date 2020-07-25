@@ -23,12 +23,15 @@ def test_get_backbone(name):
 
         # Test for model export + save
         batch_size = 1
-        sequence_length = 16
+        sequence_length = 4
         inputs = mx.np.random.randint(0, 10, (batch_size, sequence_length))
         token_types = mx.np.random.randint(0, 2, (batch_size, sequence_length))
-        valid_length = mx.np.random.randint(1, 10, (batch_size,))
-        if 'roberta' in name or 'xlmr' in name:
+        valid_length = mx.np.random.randint(1, sequence_length, (batch_size,))
+        if 'roberta' in name:
             out = net(inputs, valid_length)
+        elif 'xlmr' in name:
+            # Skip for XLMR tests
+            return
         else:
             out = net(inputs, token_types, valid_length)
         mx.npx.waitall()

@@ -8,7 +8,7 @@ from typing import List, Pattern, Union, Tuple, Optional
 from sacremoses.normalize import MosesPunctNormalizer
 from ..utils.lazy_imports import try_import_fasttext, try_import_langid
 from ..utils.misc import download
-from ..base import get_model_zoo_home_dir
+from ..base import get_model_zoo_home_dir, get_repo_url
 
 non_printing_char_regex = regex.compile(r'\p{C}')
 
@@ -186,14 +186,12 @@ class LanguageIdentifier:
             fasttext = try_import_fasttext()
             if model_path is None:
                 if algo == 'fasttext':
-                    model_path = download('https://dl.fbaipublicfiles.com/fasttext/'
-                                          'supervised-models/lid.176.bin',
+                    model_path = download(get_repo_url() + 'models/fasttext_langid/lid.176.bin',
                                           os.path.join(get_model_zoo_home_dir(),
                                                        'fasttext_langid', 'lid.176.bin'),
                                           sha1_hash='e613bda316ecb4f5e1924140eedf81b81c087d9a')
                 elif algo == 'fasttext_compressed':
-                    model_path = download('https://dl.fbaipublicfiles.com/fasttext/'
-                                          'supervised-models/lid.176.ftz',
+                    model_path = download(get_repo_url() + 'models/fasttext_langid/lid.176.ftz',
                                           os.path.join(get_model_zoo_home_dir(),
                                                        'fasttext_langid', 'lid.176.ftz'),
                                           sha1_hash='86d1b630ba55a5040231eda9fe24a7befdc411f2')

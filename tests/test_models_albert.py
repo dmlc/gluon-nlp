@@ -108,7 +108,7 @@ def test_albert_get_pretrained(model_name):
     assert len(list_pretrained_albert()) > 0
     with tempfile.TemporaryDirectory() as root:
         cfg, tokenizer, backbone_params_path, mlm_params_path =\
-            get_pretrained_albert(model_name, root=root, load_mlm=True)
+            get_pretrained_albert(model_name, load_backbone=True, load_mlm=True, root=root)
         assert cfg.MODEL.vocab_size == len(tokenizer.vocab)
         albert_model = AlbertModel.from_cfg(cfg)
         albert_model.load_parameters(backbone_params_path)

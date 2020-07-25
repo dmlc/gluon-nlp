@@ -27,17 +27,16 @@ def test_transformer_xl_for_lm(cutoffs, div_val, mem_length, query_length):
     cfg.MODEL.activation_dropout = 0.0
     cfg.MODEL.attention_dropout = 0.0
     cfg.freeze()
-    nt_model = TransformerXLForLM(cfg, prefix='transformer_xl_nt_')
+    nt_model = TransformerXLForLM(cfg)
     nt_model.initialize()
 
     tn_cfg = cfg.clone()
     tn_cfg.defrost()
     tn_cfg.MODEL.layout = 'TN'
-    tn_model = TransformerXLForLM(tn_cfg, prefix='transformer_xl_tn_')
+    tn_model = TransformerXLForLM(tn_cfg)
     tn_model.initialize()
-    for k, param in tn_model.collect_params().items():
-        param_k = k[len(tn_model.prefix):]
-        param.set_data(nt_model.collect_params().get(param_k).data())
+    for name, param in tn_model.collect_params().items():
+        param.set_data(nt_model.collect_params().get(name).data())
     assert_allclose(sum(
         mx.np.linalg.norm(param.data()).asnumpy() for param in nt_model.collect_params().values()),
                     sum(mx.np.linalg.norm(param.data()).asnumpy() for param in
@@ -66,8 +65,8 @@ def test_transformer_xl_for_lm(cutoffs, div_val, mem_length, query_length):
             loss = tn_logits.sum()
             loss.backward()
     assert_allclose(tn_logits.T.asnumpy(), nt_logits.asnumpy(), 1E-5, 1E-5)
-    for k, tn_param in tn_model.collect_params().items():
-        nt_param = nt_model.collect_params().get(k[len(tn_model.prefix):])
+    for name, tn_param in tn_model.collect_params().items():
+        nt_param = nt_model.collect_params().get(name)
         if nt_param.grad_req != 'null':
             assert_allclose(nt_param.grad().asnumpy(), tn_param.grad().asnumpy(), 1E-4, 1E-4)
 

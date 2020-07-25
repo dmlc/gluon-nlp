@@ -235,7 +235,7 @@ _PARA_URLS = {
     # For the CWMT dataset, you can also download them from the official location: http://nlp.nju.edu.cn/cwmt-wmt/
     # Currently, this version is processed via https://gist.github.com/sxjscience/54bedd68ce3fb69b3b1b264377efb5a5
     'cwmt': {
-        'url': 'https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/wmt/cwmt.tar.gz',
+        'url': 'https://gluonnlp-numpy-data.s3-accelerate.amazonaws.com/wmt/cwmt.tar.gz',
         'zh-en': {
             'en': 'cwmt/cwmt-zh-en.en',
             'zh': 'cwmt/cwmt-zh-en.zh'

@@ -2,5 +2,5 @@ https://s3.amazonaws.com/research.metamind.io/wikitext/wikitext-2-v1.zip 3c914d1
 https://s3.amazonaws.com/research.metamind.io/wikitext/wikitext-103-v1.zip 0aec09a7537b58d4bb65362fee27650eeaba625a 190229076
 http://mattmahoney.net/dc/enwik8.zip d856b1ccd937c51aeb9c342e47666fb8c38e7e72 36445475
 http://mattmahoney.net/dc/text8.zip 6c70299b93b7e1f927b42cd8f6ac1a31547c7a2e 31344016
-https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/datasets/language_modeling/1-billion-word-language-modeling-benchmark-r13output.tar.gz 4df859766482e12264a5a9d9fb7f0e276020447d 1792209805
-https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/datasets/language_modeling/1b_word_vocab.txt aa2322a3da82ef628011336c9b5c6059e4f56c3f 9507106
+https://gluonnlp-numpy-data.s3-accelerate.amazonaws.com/datasets/language_modeling/1-billion-word-language-modeling-benchmark-r13output.tar.gz 4df859766482e12264a5a9d9fb7f0e276020447d 1792209805
+https://gluonnlp-numpy-data.s3-accelerate.amazonaws.com/datasets/language_modeling/1b_word_vocab.txt aa2322a3da82ef628011336c9b5c6059e4f56c3f 9507106
