@@ -70,7 +70,7 @@ python run_squad.py \
     --overwrite_cache \
 ```
 
-We support multi-GPU training via horovod:
+We could speed up multi-GPU training via horovod. Compared to KVStore, training RoBERTa Large model on SQuAD 2.0 with 3 epochs will save roughly 1/4 training resources (8.48 vs 11.32 hours). Results may vary depending on the training instances.
 
 ```bash
 mpirun -np 4 -H localhost:4 python run_squad.py \
@@ -172,6 +172,3 @@ For reference, we have also included the results of original version from Google
 |Google ELECTRA base       |     - /86.8    |     - /83.7   |
 |Google ELECTRA large      |     - /89.7    |     - /88.1   |
 |Fairseq RoBERTa large     |   94.6/88.9    |	89.4/86.5   |
-
-
-All experiments done on AWS P3.8xlarge (4 x NVIDIA Tesla V100 16 GB)
