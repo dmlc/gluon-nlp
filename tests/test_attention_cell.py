@@ -173,7 +173,7 @@ def test_dot_product_attention(scaled, normalized):
 @pytest.mark.seed(123)
 def test_gen_attn_mask():
     class GenSelfAttnMask(HybridBlock):
-        def __init__(self, dtype, attn_type):
+        def __init__(self, dtype, layout, attn_type):
             super().__init__()
             self._dtype = dtype
             self._layout = layout
@@ -186,7 +186,7 @@ def test_gen_attn_mask():
                                       attn_type=self._attn_type)
 
     class GenMemAttnMask(HybridBlock):
-        def __init__(self, dtype):
+        def __init__(self, dtype, layout):
             super().__init__()
             self._dtype = dtype
             self._layout = layout
