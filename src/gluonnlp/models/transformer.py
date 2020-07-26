@@ -468,7 +468,7 @@ class TransformerDecoderLayer(HybridBlock):
                                                       num_heads=num_heads,
                                                       attention_dropout=self._attention_dropout,
                                                       dtype=dtype,
-                                                      layout='NTK')
+                                                      layout=attention_layout)
         self.proj_inter = nn.Dense(units=units, in_units=units,
                                    flatten=False, use_bias=False,
                                    weight_initializer=weight_initializer,
@@ -1241,11 +1241,13 @@ class TransformerNMTModel(HybridBlock):
             return transformer_nmt_cfg_reg.create(key)
 
     @classmethod
-    def from_cfg(cls, cfg):
+    def from_cfg(cls, cfg, dtype=None):
         cfg = cls.get_cfg().clone_merge(cfg)
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
         bias_initializer = mx.init.create(*cfg.INITIALIZER.bias)
+        if dtype is None:
+            dtype = cfg.MODEL.dtype
         return cls(src_vocab_size=cfg.MODEL.src_vocab_size,
                    tgt_vocab_size=cfg.MODEL.tgt_vocab_size,
                    max_src_length=cfg.MODEL.max_src_length,
@@ -1275,7 +1277,7 @@ class TransformerNMTModel(HybridBlock):
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
-                   dtype=cfg.MODEL.dtype)
+                   dtype=dtype)
 
 
 @use_np
