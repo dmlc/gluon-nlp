@@ -131,9 +131,9 @@ def parse_args():
                              '"exp": the width of bucket increases exponentially')
     parser.add_argument('--bucket_ratio', type=float, default=0.0,
                         help='Ratio for increasing the throughput of the bucketing')
-    parser.add_argument('--max_tokens', type=int, default=-1,
+    parser.add_argument('--max_num_tokens', type=int, default=-1,
                         help='max tokens num of each batch, applicable while using BoundedBudgetSampler')
-    parser.add_argument('--max_sentences', type=int, default=-1,
+    parser.add_argument('--max_num_sentences', type=int, default=-1,
                         help='max sentences num of each batch, applicable while using BoundedBudgetSampler')
     parser.add_argument('--lr', type=float, default=0.002,
                         help='The learning rate at the end of the warmup stage. '
@@ -344,8 +344,8 @@ def train(args):
     # Load Data
     if args.sampler == 'BoundedBudgetSampler':
         train_batch_sampler = BoundedBudgetSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
-                                                     max_tokens=args.max_tokens,
-                                                     max_sentences=args.max_sentences,
+                                                     max_num_tokens=args.max_num_tokens,
+                                                     max_num_sentences=args.max_num_sentences,
                                                      seed=args.seed)
     elif args.sampler == 'FixedBucketSampler':
         if args.bucket_scheme == 'constant':
