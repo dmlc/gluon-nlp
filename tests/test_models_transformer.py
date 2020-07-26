@@ -35,11 +35,11 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
 
     # Test for the TN layout
     enc_tn = TransformerEncoder(units=units, hidden_size=64, num_layers=num_enc_layers, num_heads=4,
-                                dropout=0.0, pre_norm=pre_norm, prefix='enc_', layout='TN',
-                                params=enc.collect_params())
+                                dropout=0.0, pre_norm=pre_norm, layout='TN')
+    enc_tn.share_parameters(enc.collect_params())
     dec_tn = TransformerDecoder(units=units, hidden_size=64, num_layers=num_dec_layers, num_heads=4,
-                                dropout=0.0, pre_norm=pre_norm, prefix='dec_', layout='TN',
-                                params=dec.collect_params())
+                                dropout=0.0, pre_norm=pre_norm, layout='TN')
+    dec_tn.share_parameters(dec.collect_params())
     enc_tn.hybridize()
     dec_tn.hybridize()
     encoded_mem_tn = enc_tn(mx.np.swapaxes(src_data, 0, 1), src_valid_length)
@@ -164,6 +164,7 @@ def test_transformer_cfg(cfg_key):
     cfg.defrost()
     cfg.MODEL.layout = 'TN'
     cfg.freeze()
-    model_tn = TransformerNMTModel.from_cfg(cfg, params=model.collect_params())
+    model_tn = TransformerNMTModel.from_cfg(cfg)
+    model_tn.share_parameters(model.collect_params())
     model_tn.hybridize()
     mx.npx.waitall()
