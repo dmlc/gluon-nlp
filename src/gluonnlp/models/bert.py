@@ -466,6 +466,10 @@ class BertModel(HybridBlock):
         -------
         embedding
             The initial embedding that will be fed into the encoder
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_emb)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_emb)
         """
         if self.layout == 'NT':
             time_axis, batch_axis = 1, 0
