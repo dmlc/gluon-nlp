@@ -72,8 +72,8 @@ def convert_vocab(args, fairseq_model):
         vocab for vocab in fairseq_vocab.indices.keys() if re.match(
             r'^madeupword[\d]{4}$',
             vocab) is not None]
-    all_tokens = ['<s>', '<pad>', '</s>', '<unk>', '<mask>'] + \
-        tokens + tail
+    all_tokens = ['<s>', '<pad>', '</s>', '<unk>'] + \
+        tokens + tail + ['<mask>']
 
     gluon_vocab = gluon_Vocab(all_tokens,
                               unk_token=fairseq_vocab.unk_word,
@@ -167,7 +167,7 @@ def convert_params(fairseq_model,
                    gluon_cfg,
                    ctx):
     fairseq_params = fairseq_model.state_dict()
-    fairseq_prefix = 'model.decoder.'
+    fairseq_prefix = 'model.encoder.'
     gluon_prefix = 'backbone_model.'
     print('converting {} params'.format(gluon_prefix))
 
@@ -260,7 +260,7 @@ def test_model(fairseq_model, gluon_model, gpu):
     batch_size = 3
     seq_length = 32
     vocab_size = len(fairseq_model.task.dictionary)
-    padding_id = fairseq_model.model.decoder.sentence_encoder.padding_idx
+    padding_id = fairseq_model.model.encoder.sentence_encoder.padding_idx
     input_ids = np.random.randint(  # skip padding_id
         padding_id + 1,
         vocab_size,
@@ -310,7 +310,6 @@ def test_model(fairseq_model, gluon_model, gpu):
             )
     # checking masked_language_scores
     gl_mlm_scores = gl_mlm_scores.asnumpy()
-    fs_mlm_scores = fs_mlm_scores.transpose(0, 1)
     fs_mlm_scores = fs_mlm_scores.detach().cpu().numpy()
     for j in range(batch_size):
         assert_allclose(

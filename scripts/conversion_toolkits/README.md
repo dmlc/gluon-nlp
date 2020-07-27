@@ -38,11 +38,9 @@ done
 ```
 
 ## RoBERTa
+Please instal the [fairseq](https://github.com/pytorch/fairseq#requirements-and-installation) package locally
 
 ```bash
-pip uninstall fairseq
-pip install fairseq==0.9.0
-
 for model in base large
 do
     mkdir roberta_${model}
@@ -55,9 +53,6 @@ done
 ## XLM-R
 
 ```bash
-pip uninstall fairseq
-pip install fairseq==0.9.0
-
 for model in base large
 do
     mkdir xlmr_${model}
