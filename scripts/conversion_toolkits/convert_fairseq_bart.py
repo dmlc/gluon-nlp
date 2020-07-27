@@ -144,7 +144,7 @@ def convert_params(fairseq_model,
         # position embed weight
         padding_idx = fairseq_model.task.dictionary.pad_index
         fs_pos_embed_name = fairseq_prefix + '.embed_positions.weight'
-        gl_pos_embed_name = short + 'pos_embed_layer_embed.weight'
+        gl_pos_embed_name = short + 'pos_embed_layer._embed.weight'
         all_keys.remove(gl_pos_embed_name)
         gluon_params[gl_pos_embed_name].set_data(
             fairseq_params[fs_pos_embed_name].cpu().numpy()[padding_idx + 1:, :])
@@ -263,9 +263,7 @@ def convert_fairseq_model(args):
 
     fairseq_bart = fairseq_BARTModel.from_pretrained(args.fairseq_model_path,
                                                            checkpoint_file='model.pt')
-    # vocab_size = convert_vocab(args, fairseq_bart)
-    vocab_size = 9999
-
+    vocab_size = convert_vocab(args, fairseq_bart)
     gluon_cfg = convert_config(fairseq_bart.args, vocab_size,
                                BartModel.get_cfg().clone())
     with open(os.path.join(args.save_dir, 'model.yml'), 'w') as of:
@@ -278,13 +276,8 @@ def convert_fairseq_model(args):
     # if args.test:
         # test_model(fairseq_bart, gluon_bart, args.gpu)
 
-    gluon_bart.save_parameters(os.path.join(args.save_dir, 'model_mlm.params'), deduplicate=True)
+    gluon_bart.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
     logging.info('Convert the BART MLM model in {} to {}'.
-                 format(os.path.join(args.fairseq_model_path, 'model.pt'),
-                        os.path.join(args.save_dir, 'model_mlm.params')))
-    gluon_bart.backbone_model.save_parameters(
-        os.path.join(args.save_dir, 'model.params'), deduplicate=True)
-    logging.info('Convert the BART backbone model in {} to {}'.
                  format(os.path.join(args.fairseq_model_path, 'model.pt'),
                         os.path.join(args.save_dir, 'model.params')))
 

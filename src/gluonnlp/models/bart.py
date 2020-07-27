@@ -55,7 +55,7 @@ def bart_base():
     cfg = CN()
     # Config for the bart base model
     cfg.MODEL = CN()
-    cfg.MODEL.vocab_size = 50265
+    cfg.MODEL.vocab_size = 51201
     cfg.MODEL.pos_embed_type = 'learned'
     cfg.MODEL.layernorm_embedding = True
     cfg.MODEL.scale_embed = False
@@ -121,18 +121,16 @@ def bart_large():
 PRETRAINED_URL = {
     'fairseq_bart_base': {
         'cfg': bart_base(),
-        'merges': 'fairseq_bart_base/',
+        'merges': 'fairseq_bart_base/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_bart_base/',
-        'encoder_params': 'fairseq_bart_base/',
-        'decoder_params': 'fairseq_bart_base/',
+        'params': 'fairseq_bart_base/',
         'lowercase': False,
     },
     'fairseq_bart_large': {
         'cfg': bart_large(),
-        'merges': 'fairseq_bart_large/',
+        'merges': 'fairseq_bart_base/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_bart_large/',
-        'encoder_params': 'fairseq_bart_large/',
-        'decoder_params': 'fairseq_bart_large/',
+        'params': 'fairseq_bart_large/',
         'lowercase': False,
     }
 }
