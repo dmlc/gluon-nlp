@@ -43,8 +43,11 @@ from .transformer import TransformerEncoderLayer
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
+from ..utils.registry import Registry
 from ..attention_cell import gen_self_attn_mask
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
+
+electra_cfg_reg = Registry('electra_cfg')
 
 
 def get_generator_cfg(model_config):
@@ -66,9 +69,72 @@ def get_generator_cfg(model_config):
     return generator_cfg
 
 
+@electra_cfg_reg.register()
+def google_electra_small():
+    cfg = CN()
+    # Model
+    cfg.MODEL = CN()
+    cfg.MODEL.vocab_size = 30522
+    cfg.MODEL.embed_size = 128
+    cfg.MODEL.units = 256
+    cfg.MODEL.hidden_size = 1024
+    cfg.MODEL.max_length = 512
+    cfg.MODEL.num_heads = 4
+    cfg.MODEL.num_layers = 12
+    cfg.MODEL.pos_embed_type = 'learned'
+    cfg.MODEL.activation = 'gelu'
+    cfg.MODEL.layer_norm_eps = 1E-12
+    cfg.MODEL.num_token_types = 2
+    # Dropout regularization
+    cfg.MODEL.hidden_dropout_prob = 0.1
+    cfg.MODEL.attention_dropout_prob = 0.1
+    cfg.MODEL.dtype = 'float32'
+    # Layout flags
+    cfg.MODEL.layout = 'NT'
+    cfg.MODEL.compute_layout = 'auto'
+    # Generator hyper-parameters
+    cfg.MODEL.generator_layers_scale = 1.0
+    cfg.MODEL.generator_units_scale = 1.0
+    # Initializer
+    cfg.INITIALIZER = CN()
+    cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
+    cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]  # TruncNorm(0, 0.02)
+    cfg.INITIALIZER.bias = ['zeros']
+    cfg.VERSION = 1
+    cfg.freeze()
+
+
+@electra_cfg_reg.register()
+def google_electra_base():
+    cfg = google_electra_small()
+    cfg.defrost()
+    cfg.MODEL.embed_size = 768
+    cfg.MODEL.units = 768
+    cfg.MODEL.hidden_size = 3072
+    cfg.MODEL.num_heads = 12
+    cfg.MODEL.num_layers = 12
+    cfg.MODEL.generator_units_scale = 0.33333
+    cfg.freeze()
+    return cfg
+
+
+@electra_cfg_reg.register()
+def google_electra_large():
+    cfg = google_electra_large()
+    cfg.defrost()
+    cfg.MODEL.embed_size = 1024
+    cfg.MODEL.units = 1024
+    cfg.MODEL.hidden_size = 4096
+    cfg.MODEL.num_heads = 16
+    cfg.MODEL.num_layers = 24
+    cfg.MODEL.generator_units_scale = 0.25
+    cfg.freeze()
+    return cfg
+
+
 PRETRAINED_URL = {
     'google_electra_small': {
-        'cfg': 'google_electra_small/model-9ffb21c8.yml',
+        'cfg': google_electra_small(),
         'vocab': 'google_electra_small/vocab-e6d2b21d.json',
         'params': 'google_electra_small/model-2654c8b4.params',
         'disc_model': 'google_electra_small/disc_model-137714b6.params',
@@ -76,7 +142,7 @@ PRETRAINED_URL = {
         'lowercase': True,
     },
     'google_electra_base': {
-        'cfg': 'google_electra_base/model-5b35ca0b.yml',
+        'cfg': google_electra_base(),
         'vocab': 'google_electra_base/vocab-e6d2b21d.json',
         'params': 'google_electra_base/model-31c235cc.params',
         'disc_model': 'google_electra_base/disc_model-514bd353.params',
@@ -84,7 +150,7 @@ PRETRAINED_URL = {
         'lowercase': True,
     },
     'google_electra_large': {
-        'cfg': 'google_electra_large/model-31b7dfdd.yml',
+        'cfg': google_electra_large(),
         'vocab': 'google_electra_large/vocab-e6d2b21d.json',
         'params': 'google_electra_large/model-9baf9ff5.params',
         'disc_model': 'google_electra_large/disc_model-5b820c02.params',
@@ -787,13 +853,21 @@ def get_pretrained_electra(model_name: str = 'google_electra_small',
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_electra())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
+    cfg_path = PRETRAINED_URL[model_name]['cfg']
+    if isinstance(cfg_path, CN):
+        cfg = cfg_path
+    else:
+        cfg = None
     vocab_path = PRETRAINED_URL[model_name]['vocab']
     params_path = PRETRAINED_URL[model_name]['params']
     disc_params_path = PRETRAINED_URL[model_name]['disc_model']
     gen_params_path = PRETRAINED_URL[model_name]['gen_model']
 
     local_paths = dict()
-    for k, path in [('cfg', cfg_path), ('vocab', vocab_path)]:
+    download_jobs = [('vocab', vocab_path)]
+    if cfg is None:
+        download_jobs.append(('cfg', cfg_path))
+    for k, path in download_jobs:
         local_paths[k] = download(url=get_repo_model_zoo_url() + path,
                                   path=os.path.join(root, path),
                                   sha1_hash=FILE_STATS[path])
@@ -827,7 +901,8 @@ def get_pretrained_electra(model_name: str = 'google_electra_small',
         sep_token='[SEP]',
         mask_token='[MASK]',
         lowercase=do_lower)
-    cfg = ElectraModel.get_cfg().clone_merge(local_paths['cfg'])
+    if cfg is None:
+        cfg = ElectraModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, (local_disc_params_path, local_gen_params_path)
 
 
