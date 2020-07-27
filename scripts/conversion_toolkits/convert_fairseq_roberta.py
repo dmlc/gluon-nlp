@@ -23,8 +23,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Convert the fairseq RoBERTa Model to Gluon.')
     parser.add_argument('--fairseq_model_path', type=str, required=True,
                         help='Directory of the fairseq RoBERTa model.')
-    parser.add_argument('--model_size', type=str, choices=['base', 'large'], default='base',
-                        help='Size of RoBERTa model.')
     parser.add_argument('--save_dir', type=str, default=None,
                         help='Directory path to save the converted RoBERTa model.')
     parser.add_argument('--gpu', type=int, default=None,
