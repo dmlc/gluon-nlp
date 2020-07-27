@@ -67,6 +67,24 @@ def test_bert_small_cfg(compute_layout):
     assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
     assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-4, 1E-4)
 
+    # Test for BertForPretrain
+    bert_pretrain_model = BertForPretrain(cfg)
+    bert_pretrain_model.initialize()
+    bert_pretrain_model.hybridize()
+    contextual_embedding, pooled_out, nsp_score, mlm_scores =\
+        bert_pretrain_model(inputs, token_types, valid_length, masked_positions)
+    bert_pretrain_model_tn = BertForPretrain(cfg_tn)
+    bert_pretrain_model_tn.initialize()
+    bert_pretrain_model_tn.hybridize()
+    contextual_embedding_tn, pooled_out_tn, nsp_score_tn, mlm_scores_tn = \
+        bert_pretrain_model_tn(inputs.T, token_types.T, valid_length, masked_positions)
+    assert_allclose(contextual_embedding.asnumpy(),
+                    mx.np.swapaxes(contextual_embedding_tn, 0, 1).asnumpy(),
+                    1E-4, 1E-4)
+    assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
+    assert_allclose(nsp_score.asnumpy(), nsp_score_tn.asnumpy(), 1E-4, 1E-4)
+    assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-4, 1E-4)
+
 
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_bert())

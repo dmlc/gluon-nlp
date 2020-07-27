@@ -70,6 +70,7 @@ def google_albert_base():
     cfg.MODEL.attention_dropout_prob = 0.0
     cfg.MODEL.dtype = 'float32'
     cfg.MODEL.layout = 'NT'
+    cfg.MODEL.compute_layout = 'auto'
     # Hyper-parameters of the Initializers
     cfg.INITIALIZER = CN()
     cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
@@ -288,7 +289,8 @@ class AlbertModel(HybridBlock):
                  bias_initializer='zeros',
                  dtype='float32',
                  use_pooler=True,
-                 layout='NT'):
+                 layout='NT',
+                 compute_layout='auto'):
         super().__init__()
         self._dtype = dtype
         self.use_pooler = use_pooler
@@ -304,6 +306,10 @@ class AlbertModel(HybridBlock):
         self.bias_initializer = bias_initializer
         self.layer_norm_eps = layer_norm_eps
         self._layout = layout
+        if compute_layout is None or compute_layout == 'auto':
+            self._compute_layout = layout
+        else:
+            self._compute_layout = compute_layout
         # Construct AlbertEncoder
         self.encoder = AlbertEncoder(
             units=units,
@@ -320,7 +326,7 @@ class AlbertModel(HybridBlock):
             weight_initializer=weight_initializer,
             bias_initializer=bias_initializer,
             dtype=dtype,
-            layout=layout
+            layout=compute_layout
         )
         self.encoder.hybridize()
         # Construct word embedding
@@ -398,7 +404,13 @@ class AlbertModel(HybridBlock):
         if self.embed_size != self.units:
             prev_out = self.embed_factorized_proj(prev_out)
         outputs = []
-        contextual_embeddings, additional_outputs = self.encoder(prev_out, valid_length)
+        if self._compute_layout != self._layout:
+            # Swap input to reflect the compute_layout
+            contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(prev_out, 0, 1),
+                                                                     valid_length)
+            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
+        else:
+            contextual_embeddings, additional_outputs = self.encoder(prev_out, valid_length)
         outputs.append(contextual_embeddings)
         if self.use_pooler:
             pooled_out = self.apply_pooling(contextual_embeddings)
@@ -482,7 +494,7 @@ class AlbertModel(HybridBlock):
             return google_albert_base()
 
     @classmethod
-    def from_cfg(cls, cfg, use_pooler=True, dtype='float32') -> 'AlbertModel':
+    def from_cfg(cls, cfg, use_pooler=True, dtype=None) -> 'AlbertModel':
         """
 
         Parameters
@@ -490,6 +502,8 @@ class AlbertModel(HybridBlock):
         cfg
         use_pooler
             Whether to use pooler
+        dtype
+            The dtype of the backbone model
 
         Returns
         -------
@@ -501,6 +515,8 @@ class AlbertModel(HybridBlock):
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
         bias_initializer = mx.init.create(*cfg.INITIALIZER.bias)
+        if dtype is None:
+            dtype = cfg.MODEL.dtype
         return cls(vocab_size=cfg.MODEL.vocab_size,
                    units=cfg.MODEL.units,
                    hidden_size=cfg.MODEL.hidden_size,
@@ -515,7 +531,7 @@ class AlbertModel(HybridBlock):
                    pos_embed_type=cfg.MODEL.pos_embed_type,
                    activation=cfg.MODEL.activation,
                    layer_norm_eps=cfg.MODEL.layer_norm_eps,
-                   dtype=cfg.MODEL.dtype,
+                   dtype=dtype,
                    layout=cfg.MODEL.layout,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,

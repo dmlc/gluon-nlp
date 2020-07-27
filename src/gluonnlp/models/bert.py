@@ -513,12 +513,30 @@ class BertModel(HybridBlock):
             return google_en_uncased_bert_base()
 
     @classmethod
-    def from_cfg(cls, cfg, use_pooler=True, dtype='float32') -> 'BertModel':
+    def from_cfg(cls, cfg, use_pooler=True, dtype=None) -> 'BertModel':
+        """
+
+        Parameters
+        ----------
+        cfg
+            Configuration
+        use_pooler
+            Whether to output the pooled feature
+        dtype
+            data type of the model
+
+        Returns
+        -------
+        ret
+            The constructed BertModel
+        """
         cfg = BertModel.get_cfg().clone_merge(cfg)
         assert cfg.VERSION == 1, 'Wrong version!'
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
         bias_initializer = mx.init.create(*cfg.INITIALIZER.bias)
+        if dtype is None:
+            dtype = cfg.MODEL.dtype
         return cls(vocab_size=cfg.MODEL.vocab_size,
                    units=cfg.MODEL.units,
                    hidden_size=cfg.MODEL.hidden_size,
@@ -614,7 +632,7 @@ class BertForMLM(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units)
-        pooled_out
+            cfg.MODEL.compute_layout = 'auto'
             Shape (batch_size, units)
         mlm_scores :
             Shape (batch_size, num_masked_positions, vocab_size)
