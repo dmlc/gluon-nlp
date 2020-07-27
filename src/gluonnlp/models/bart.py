@@ -91,8 +91,8 @@ def bart_base():
 
     # Parameters for the initializer
     cfg.INITIALIZER = CN()
-    cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
-    cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]
+    cfg.INITIALIZER.embed = ['norm', 0, 768**-0.5]
+    cfg.INITIALIZER.weight = ['xavier', 'uniform', 'avg', 1.0]
     cfg.INITIALIZER.bias = ['zeros']
     cfg.VERSION = 1
     cfg.freeze()
@@ -111,6 +111,8 @@ def bart_large():
     cfg.MODEL.DECODER.hidden_size = 4096
     cfg.MODEL.DECODER.num_heads = 16
     cfg.MODEL.DECODER.num_layers = 12
+
+    cfg.INITIALIZER.embed = ['norm', 0,  0.03125]
     cfg.freeze()
     return cfg
 
