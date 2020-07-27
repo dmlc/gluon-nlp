@@ -343,7 +343,10 @@ class ElectraModel(HybridBlock):
         self.bias_initializer = bias_initializer
         self.layer_norm_eps = layer_norm_eps
         self._layout = layout
-        self._compute_layout = compute_layout
+        if compute_layout is None or compute_layout == 'auto':
+            self._compute_layout = layout
+        else:
+            self._compute_layout = compute_layout
         # Construct ElectraEncoder
         self.encoder = ElectraEncoder(
             units=units,
@@ -359,7 +362,7 @@ class ElectraModel(HybridBlock):
             weight_initializer=weight_initializer,
             bias_initializer=bias_initializer,
             dtype=dtype,
-            layout=compute_layout,
+            layout=self._compute_layout,
         )
         self.encoder.hybridize()
 
