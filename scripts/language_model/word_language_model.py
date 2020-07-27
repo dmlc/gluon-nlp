@@ -426,7 +426,7 @@ def train():
             trainer.learning_rate))
 
         if args.ntasgd and avg_trigger == 0:
-            if t > n and val_L > min(valid_losses[-n:]):
+            if t > n and val_L > min(valid_losses[:-n]):
                 if param_dict_avg is None:
                     param_dict_avg = {k.split(model._prefix)[1]: v.data(context[0]).copy()
                                       for k, v in parameters.items()}
