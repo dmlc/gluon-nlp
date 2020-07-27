@@ -238,10 +238,10 @@ class BART(HybridBlock):
         assert src_vocab_size > 0 and tgt_vocab_size > 0,\
             'Cannot set "src_vocab_size" and "tgt_vocab_size" to negative numbers. ' \
             'Are you creating ' \
-            'the model with the config from TransformerNMTModel.get_cfg()? If that is ' \
+            'the model with the config from TransformerModel.get_cfg()? If that is ' \
             'the case, you will need to set the cfg.MODEL.src_vocab_size and ' \
             'cfg.MODEL.tgt_vocab_size manually before passing to ' \
-            'TransformerNMTModel.from_cfg().'
+            'TransformerModel.from_cfg().'
         self._dtype = dtype
         self._src_vocab_size = src_vocab_size
         self._tgt_vocab_size = tgt_vocab_size

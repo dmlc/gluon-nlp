@@ -3,8 +3,8 @@ import pytest
 from numpy.testing import assert_allclose
 from gluonnlp.models.transformer import\
     TransformerEncoder, TransformerDecoder, \
-    TransformerNMTModel, TransformerNMTInference,\
-    transformer_nmt_cfg_reg
+    TransformerModel, TransformerNMTInference,\
+    transformer_cfg_reg
 from gluonnlp.attention_cell import gen_mem_attn_mask, gen_self_attn_mask
 from gluonnlp.utils.testing import verify_nmt_model, verify_nmt_inference
 mx.npx.set_np()
@@ -86,7 +86,7 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
 @pytest.mark.parametrize('enc_recurrent', [False, True])
 @pytest.mark.parametrize('dec_recurrent', [False, True])
 @pytest.mark.parametrize('tie_weights', [False, True])
-def test_transformer_nmt_model(train_hybridize, inference_hybridize,
+def test_transformer_model(train_hybridize, inference_hybridize,
                                enc_pre_norm, dec_pre_norm,
                                enc_units, dec_units,
                                enc_num_layers, dec_num_layers,
@@ -99,7 +99,7 @@ def test_transformer_nmt_model(train_hybridize, inference_hybridize,
         shared_embed = False
     else:
         shared_embed = True
-    model = TransformerNMTModel(src_vocab_size=src_vocab_size,
+    model = TransformerModel(src_vocab_size=src_vocab_size,
                                 tgt_vocab_size=tgt_vocab_size,
                                 max_src_length=src_seq_length,
                                 max_tgt_length=tgt_seq_length,
@@ -129,17 +129,17 @@ def test_transformer_nmt_model(train_hybridize, inference_hybridize,
 
 
 def test_transformer_cfg_registry():
-    assert len(transformer_nmt_cfg_reg.list_keys()) > 0
+    assert len(transformer_cfg_reg.list_keys()) > 0
 
 
-@pytest.mark.parametrize('cfg_key', transformer_nmt_cfg_reg.list_keys())
+@pytest.mark.parametrize('cfg_key', transformer_cfg_reg.list_keys())
 def test_transformer_cfg(cfg_key):
-    cfg = TransformerNMTModel.get_cfg(cfg_key)
+    cfg = TransformerModel.get_cfg(cfg_key)
     cfg.defrost()
     cfg.MODEL.src_vocab_size = 1000
     cfg.MODEL.tgt_vocab_size = 1000
     cfg.freeze()
-    model = TransformerNMTModel.from_cfg(cfg)
+    model = TransformerModel.from_cfg(cfg)
     model.initialize()
     model.hybridize()
     mx.npx.waitall()

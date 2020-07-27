@@ -10,13 +10,13 @@ from ..utils.config import CfgNode as CN
 from ..sequence_sampler import BaseStepDecoder
 __all__ = ['TransformerEncoderLayer', 'TransformerDecoderLayer',
            'TransformerEncoder', 'TransformerDecoder',
-           'TransformerNMTModel', 'TransformerNMTInference']
+           'TransformerModel', 'TransformerNMTInference']
 
-transformer_nmt_cfg_reg = Registry('transformer_nmt_cfg')
+transformer_cfg_reg = Registry('transformer_cfg')
 
 
-@transformer_nmt_cfg_reg.register()
-def transformer_nmt_base():
+@transformer_cfg_reg.register()
+def transformer_base():
     """Configuration of Transformer WMT EN-DE Base"""
     cfg = CN()
     cfg.MODEL = CN()
@@ -67,9 +67,9 @@ def transformer_nmt_base():
     return cfg
 
 
-@transformer_nmt_cfg_reg.register()
-def transformer_nmt_base_prenorm():
-    cfg = transformer_nmt_base()
+@transformer_cfg_reg.register()
+def transformer_base_prenorm():
+    cfg = transformer_base()
     cfg.defrost()
     cfg.MODEL.ENCODER.pre_norm = True
     cfg.MODEL.DECODER.pre_norm = True
@@ -77,9 +77,9 @@ def transformer_nmt_base_prenorm():
     return cfg
 
 
-@transformer_nmt_cfg_reg.register()
+@transformer_cfg_reg.register()
 def transformer_iwslt_de_en():
-    cfg = TransformerNMTModel.get_cfg()
+    cfg = TransformerModel.get_cfg()
     cfg.defrost()
     cfg.MODEL.ENCODER.units = 512
     cfg.MODEL.ENCODER.hidden_size = 1024
@@ -93,10 +93,10 @@ def transformer_iwslt_de_en():
     return cfg
 
 
-@transformer_nmt_cfg_reg.register()
+@transformer_cfg_reg.register()
 def transformer_wmt_en_de_big():
     """Same wmt_en_de_big architecture as in FairSeq"""
-    cfg = TransformerNMTModel.get_cfg()
+    cfg = TransformerModel.get_cfg()
     cfg.defrost()
     cfg.MODEL.attention_dropout = 0.1
     cfg.MODEL.dropout = 0.3
@@ -112,7 +112,7 @@ def transformer_wmt_en_de_big():
     return cfg
 
 
-@transformer_nmt_cfg_reg.register()
+@transformer_cfg_reg.register()
 def transformer_wmt_en_de_big_t2t():
     """Parameter used in the T2T implementation"""
     cfg = transformer_wmt_en_de_big()
@@ -784,7 +784,7 @@ class TransformerDecoder(HybridBlock):
 
 
 @use_np
-class TransformerNMTModel(HybridBlock):
+class TransformerModel(HybridBlock):
     def __init__(self, src_vocab_size: int,
                  tgt_vocab_size: int,
                  max_src_length: Optional[int] = None,
@@ -889,10 +889,10 @@ class TransformerNMTModel(HybridBlock):
         assert src_vocab_size > 0 and tgt_vocab_size > 0,\
             'Cannot set "src_vocab_size" and "tgt_vocab_size" to negative numbers. ' \
             'Are you creating ' \
-            'the model with the config from TransformerNMTModel.get_cfg()? If that is ' \
+            'the model with the config from TransformerModel.get_cfg()? If that is ' \
             'the case, you will need to set the cfg.MODEL.src_vocab_size and ' \
             'cfg.MODEL.tgt_vocab_size manually before passing to ' \
-            'TransformerNMTModel.from_cfg().'
+            'TransformerModel.from_cfg().'
         self._dtype = dtype
         self._src_vocab_size = src_vocab_size
         self._tgt_vocab_size = tgt_vocab_size
@@ -1068,9 +1068,9 @@ class TransformerNMTModel(HybridBlock):
     def get_cfg(cls, key=None):
         if key is None:
             # Use Transformer WMT EN-DE Base
-            return transformer_nmt_base()
+            return transformer_base()
         else:
-            return transformer_nmt_cfg_reg.create(key)
+            return transformer_cfg_reg.create(key)
 
     @classmethod
     def from_cfg(cls, cfg):
@@ -1124,7 +1124,7 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
     def initialize(self, **kwargs):
         # Manually disable the initialize
         raise NotImplementedError('You can not initialize a TransformerNMTFastInference Model! '
-                                  'The correct approach is to create a TransformerNMTModel and '
+                                  'The correct approach is to create a TransformerModel and '
                                   'then build the TransformerNMTInference with the given model.')
 
     @property
