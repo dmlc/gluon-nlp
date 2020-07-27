@@ -10,7 +10,7 @@ mx.npx.set_np()
 
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_electra())
-def test_bert_get_pretrained(model_name):
+def test_electra_get_pretrained(model_name):
     assert len(list_pretrained_electra()) > 0
     with tempfile.TemporaryDirectory() as root:
         cfg, tokenizer, backbone_params_path, (disc_params_path, gen_params_path) =\
