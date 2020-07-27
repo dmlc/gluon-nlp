@@ -98,7 +98,7 @@ def test_albert_for_mlm_model(compute_layout):
     cfg_tn.defrost()
     cfg_tn.MODEL.layout = 'TN'
     cfg_tn.freeze()
-    albert_mlm_tn_model = AlbertModel.from_cfg(cfg_tn, use_pooler=True)
+    albert_mlm_tn_model = AlbertForMLM(backbone_cfg=cfg_tn)
     albert_mlm_tn_model.share_parameters(albert_mlm_model.collect_params())
     albert_mlm_tn_model.hybridize()
 
@@ -144,7 +144,7 @@ def test_albert_for_pretrain_model(compute_layout):
     contextual_embeddings, pooled_out, sop_score, mlm_scores =\
         albert_pretrain_model(inputs, token_types, valid_length, masked_positions)
     contextual_embeddings_tn, pooled_out_tn, sop_score_tn, mlm_scores_tn = \
-        albert_pretrain_model(inputs, token_types, valid_length, masked_positions)
+        albert_pretrain_model_tn(inputs.T, token_types.T, valid_length, masked_positions)
     assert_allclose(np.swapaxes(contextual_embeddings_tn.asnumpy(), 0, 1),
                     contextual_embeddings.asnumpy(), 1E-4, 1E-4)
     assert_allclose(pooled_out_tn.asnumpy(), pooled_out.asnumpy(), 1E-4, 1E-4)
