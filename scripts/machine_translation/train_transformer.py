@@ -346,6 +346,7 @@ def train(args):
         train_batch_sampler = BoundedBudgetSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
                                                      max_num_tokens=args.max_num_tokens,
                                                      max_num_sentences=args.max_num_sentences,
+                                                     shuffle=True,
                                                      seed=args.seed)
     elif args.sampler == 'FixedBucketSampler':
         if args.bucket_scheme == 'constant':
