@@ -40,6 +40,7 @@ done
 ## RoBERTa
 
 ```bash
+pip uninstall fairseq
 pip install fairseq==0.9.0
 
 for model in base large
@@ -54,6 +55,7 @@ done
 ## XLM-R
 
 ```bash
+pip uninstall fairseq
 pip install fairseq==0.9.0
 
 for model in base large

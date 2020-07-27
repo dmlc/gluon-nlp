@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import json
 import shutil
@@ -11,7 +12,7 @@ from numpy.testing import assert_allclose
 
 import torch
 from gluonnlp.data.vocab import Vocab as gluon_Vocab
-from gluonnlp.utils.misc import sha1sum, logging_config
+from gluonnlp.utils.misc import sha1sum, logging_config, naming_convention
 from fairseq.models.roberta import RobertaModel as fairseq_RobertaModel
 from gluonnlp.models.roberta import RobertaModel, RobertaForMLM
 from gluonnlp.data.tokenizers import HuggingFaceByteBPETokenizer
@@ -67,15 +68,11 @@ def convert_vocab(args, fairseq_model):
     inter_vocab = sorted(inter_vocab, key=lambda x: x[1])
     tokens = [e[0] for e in inter_vocab]
 
-    tail = [fairseq_vocab[-4],
-            fairseq_vocab[-3],
-            fairseq_vocab[-2],
-            fairseq_vocab[-1]]
-    assert tail == ['madeupword0000',
-                    'madeupword0001',
-                    'madeupword0002',
-                    '<mask>']
-    all_tokens = ['<s>', '<pad>', '</s>', '<unk>'] + \
+    tail = [
+        vocab for vocab in fairseq_vocab.indices.keys() if re.match(
+            r'^madeupword[\d]{4}$',
+            vocab) is not None]
+    all_tokens = ['<s>', '<pad>', '</s>', '<unk>', '<mask>'] + \
         tokens + tail
 
     gluon_vocab = gluon_Vocab(all_tokens,
@@ -375,7 +372,14 @@ def convert_fairseq_model(args):
 
     logging.info('Conversion finished!')
     logging.info('Statistics:')
-    rename(args.save_dir)
+    old_names = os.listdir(args.save_dir)
+    for old_name in old_names:
+        new_name, long_hash = naming_convention(args.save_dir, old_name)
+        old_path = os.path.join(args.save_dir, old_name)
+        new_path = os.path.join(args.save_dir, new_name)
+        shutil.move(old_path, new_path)
+        file_size = os.path.getsize(new_path)
+        logging.info('\t{}/{} {} {}'.format(args.save_dir, new_name, long_hash, file_size))
 
 
 if __name__ == '__main__':
