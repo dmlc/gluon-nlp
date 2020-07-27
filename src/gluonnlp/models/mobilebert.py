@@ -73,6 +73,8 @@ def google_uncased_mobilebert():
     cfg.MODEL.attention_dropout_prob = 0.1
     cfg.MODEL.normalization = 'no_norm'
     cfg.MODEL.dtype = 'float32'
+    cfg.MODEL.layout = 'NT'
+    cfg.MODEL.compute_layout = 'auto'
     # Initializer
     cfg.INITIALIZER = CN()
     cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
@@ -120,7 +122,8 @@ class MobileBertEncoderLayer(HybridBlock):
                  use_qkv_bias: bool = True,
                  weight_initializer: Optional[InitializerType] = None,
                  bias_initializer: Optional[InitializerType] = 'zeros',
-                 dtype='float32'):
+                 dtype='float32',
+                 layout='NT'):
         """
 
         Parameters
@@ -145,6 +148,8 @@ class MobileBertEncoderLayer(HybridBlock):
         weight_initializer
         bias_initializer
         dtype
+        layout
+            Layout of the input + output
         """
         super().__init__()
         self._use_bottleneck = use_bottleneck
@@ -154,6 +159,7 @@ class MobileBertEncoderLayer(HybridBlock):
         self._num_stacked_ffn = num_stacked_ffn
         self._bottleneck_strategy = bottleneck_strategy
         self._dtype = dtype
+        self._layout = layout
         assert real_units % num_heads == 0, 'units must be divisive by the number of heads'
         self.dropout_layer = nn.Dropout(hidden_dropout_prob)
         if use_bottleneck:
@@ -243,6 +249,10 @@ class MobileBertEncoderLayer(HybridBlock):
                                 normalization=normalization,
                                 layer_norm_eps=layer_norm_eps,
                                 dtype=self._dtype))
+
+    @property
+    def layout(self):
+        return self._layout
 
     def hybrid_forward(self, F, data, attn_mask):
         """
