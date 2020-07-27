@@ -121,7 +121,7 @@ def google_electra_base():
 
 @electra_cfg_reg.register()
 def google_electra_large():
-    cfg = google_electra_large()
+    cfg = google_electra_small()
     cfg.defrost()
     cfg.MODEL.embed_size = 1024
     cfg.MODEL.units = 1024
