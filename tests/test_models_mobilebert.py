@@ -12,7 +12,7 @@ def test_list_pretrained_mobilebert():
     assert len(list_pretrained_mobilebert()) > 0
 
 
-@pytest.mark.parametrize('compute_layout', [False, True])
+@pytest.mark.parametrize('compute_layout', ['auto', 'TN', 'NT'])
 def test_mobilebert_model_small_cfg(compute_layout):
     cfg = MobileBertModel.get_cfg()
     cfg.defrost()
