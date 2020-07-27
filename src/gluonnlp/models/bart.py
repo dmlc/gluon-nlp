@@ -44,9 +44,11 @@ from ..initializer import TruncNorm
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask
 from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN, InitializerType
 from ..op import select_vectors_by_position
+from ..utils.registry import Registry
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 
 bart_cfg_reg = Registry('bart_cfg')
+
 
 @bart_cfg_reg.register()
 def bart_base():
@@ -54,8 +56,8 @@ def bart_base():
     # Config for the bart base model
     cfg.MODEL = CN()
     cfg.MODEL.vocab_size = 50265
-    cfg.MODEL.max_length = 1024
     cfg.MODEL.pos_embed_type = 'learned'
+    cfg.MODEL.scale_embed = False
     cfg.MODEL.shared_embed = True
     cfg.MODEL.tie_weights = True
     cfg.MODEL.attention_dropout_prob = 0.0
@@ -67,6 +69,7 @@ def bart_base():
 
     # Parameters for the encoder
     cfg.MODEL.ENCODER = CN()
+    cfg.MODEL.max_src_length = 1024
     cfg.MODEL.ENCODER.num_layers = 6
     cfg.MODEL.ENCODER.units = 768
     cfg.MODEL.ENCODER.num_heads = 12
@@ -77,6 +80,7 @@ def bart_base():
 
     # Parameters for the decoder
     cfg.MODEL.DECODER = CN()
+    cfg.MODEL.max_tgt_length = 1024
     cfg.MODEL.DECODER.num_layers = 6
     cfg.MODEL.DECODER.units = 768
     cfg.MODEL.DECODER.num_heads = 12
@@ -110,6 +114,7 @@ def bart_large():
     cfg.freeze()
     return cfg
 
+
 PRETRAINED_URL = {
     'fairseq_bart_base': {
         'cfg': bart_base(),
@@ -132,94 +137,17 @@ PRETRAINED_URL = {
 
 FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'bart.txt'))
 
+
 @use_np
-class BART(TransformerModel):
+class BartModel(TransformerModel):
     def __init__(self, **kwargs):
-        super().__init__()
+        super().__init__(**kwargs)
+        assert  self._src_vocab_size == self._tgt_vocab_size, 'Vocab size mismatch between encoder and decoder'
+        self._vocab_size = self._src_vocab_size
 
     @property
     def vocab_size(self):
         return self._src_vocab_size
-
-    # TODO(sxjscience) We can actually try to hybridize this function via the
-    #  newly-introduced deferred compute.
-    def encode(self, F, src_data, src_valid_length):
-        """Encode the source data to memory
-
-        Parameters
-        ----------
-        F
-        src_data :
-            Shape (batch_size, src_length)
-        src_valid_length :
-            Shape (batch_size,)
-
-        Returns
-        -------
-        enc_out :
-            Shape (batch_size, src_length, C_out)
-        """
-        src_data = self.src_embed_layer(src_data)
-        if self.scaled_embed:
-            src_data = src_data * np.sqrt(self.enc_units)
-        if self.pos_embed_type is not None:
-            src_data = src_data + self.src_pos_embed_layer(F.npx.arange_like(src_data, axis=1))
-        enc_out = self.encoder(src_data, src_valid_length)
-        return enc_out
-
-    def decode_seq(self, F, tgt_data, tgt_valid_length, mem_data, mem_valid_length):
-        """Decode a sequence of inputs
-
-        Parameters
-        ----------
-        F
-        tgt_data :
-            Shape (batch_size, tgt_length)
-        tgt_valid_length :
-            Shape (batch_size,)
-        mem_data :
-            Shape (batch_size, src_length, C_out)
-        mem_valid_length :
-            Shape (batch_size,)
-
-        Returns
-        -------
-        dec_out :
-            Shape (batch_size, tgt_length, tgt_vocab_size)
-        """
-        tgt_data = self.tgt_embed_layer(tgt_data)
-        if self.scaled_embed:
-            tgt_data = tgt_data * np.sqrt(self.dec_units)
-        if self.pos_embed_type is not None:
-            tgt_data = tgt_data + self.tgt_pos_embed_layer(
-                F.npx.arange_like(tgt_data, axis=1))
-        dec_out = self.decoder(tgt_data, tgt_valid_length, mem_data, mem_valid_length)
-        dec_out = self.tgt_final_layer(dec_out)
-        return dec_out
-
-    def hybrid_forward(self, F, src_data, src_valid_length, tgt_data, tgt_valid_length):
-        """
-
-        Parameters
-        ----------
-        F
-        src_data :
-            Shape (batch_size, src_length)
-        src_valid_length :
-            Shape (batch_size,)
-        tgt_data :
-            Shape (batch_size, tgt_length)
-        tgt_valid_length :
-            Shape (batch_size,)
-
-        Returns
-        -------
-        out :
-            Shape (batch_size, tgt_length, tgt_vocab_size)
-        """
-        enc_out = self.encode(F, src_data, src_valid_length)
-        dec_out = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out, src_valid_length)
-        return dec_out
 
     @classmethod
     def get_cfg(cls, key=None):
@@ -236,15 +164,15 @@ class BART(TransformerModel):
         bias_initializer = mx.init.create(*cfg.INITIALIZER.bias)
         return cls(src_vocab_size=cfg.MODEL.vocab_size,
                    tgt_vocab_size=cfg.MODEL.vocab_size,
-                   max_src_length=cfg.MODEL.max_length,
-                   max_tgt_length=cfg.MODEL.max_length,
+                   max_src_length=cfg.MODEL.max_src_length,
+                   max_tgt_length=cfg.MODEL.max_tgt_length,
                    scale_embed=cfg.MODEL.scale_embed,
                    pos_embed_type=cfg.MODEL.pos_embed_type,
                    shared_embed=cfg.MODEL.shared_embed,
                    tie_weights=cfg.MODEL.tie_weights,
-                   attention_dropout=cfg.MODEL.attention_dropout,
+                   attention_dropout=cfg.MODEL.attention_dropout_prob,
                    activation_dropout=cfg.MODEL.activation_dropout,
-                   dropout=cfg.MODEL.dropout,
+                   dropout=cfg.MODEL.hidden_dropout_prob,
                    enc_num_layers=cfg.MODEL.ENCODER.num_layers,
                    enc_units=cfg.MODEL.ENCODER.units,
                    enc_num_heads=cfg.MODEL.ENCODER.num_heads,
@@ -264,6 +192,6 @@ class BART(TransformerModel):
                    bias_initializer=bias_initializer,
                    dtype=cfg.MODEL.dtype)
 
-BACKBONE_REGISTRY.register('bart', [BartModel,
-                                    get_pretrained_bart,
-                                    list_pretrained_bart])
+# BACKBONE_REGISTRY.register('bart', [BartModel,
+        # get_pretrained_bart,
+        # list_pretrained_bart])
