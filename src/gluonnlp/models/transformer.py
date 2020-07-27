@@ -791,6 +791,7 @@ class TransformerModel(HybridBlock):
                  max_tgt_length: Optional[int] = None,
                  scale_embed: bool = True,
                  pos_embed_type="sinusoidal",
+                 layernorm_embedding: bool = False,
                  shared_embed: bool = True,
                  tie_weights: bool = True,
                  activation_dropout: float = 0.0,
@@ -834,6 +835,8 @@ class TransformerModel(HybridBlock):
             Whether to multiply the src and dst embeddings by sqrt(units)
         pos_embed_type
             Type of the positional embedding
+        layernorm_embedding
+            Wether to layer normalize the embedding
         shared_embed
             Whether to share the embedding of the src and tgt language
         tie_weights
@@ -897,6 +900,7 @@ class TransformerModel(HybridBlock):
         self._src_vocab_size = src_vocab_size
         self._tgt_vocab_size = tgt_vocab_size
         self.pos_embed_type = pos_embed_type
+        self.layernorm_embedding = layernorm_embedding
         self.scaled_embed = scale_embed
         self.enc_units = enc_units
         self.dec_units = dec_units
@@ -927,6 +931,11 @@ class TransformerModel(HybridBlock):
                                                            max_length=max_tgt_length,
                                                            dtype=self._dtype,
                                                            method=pos_embed_type)
+        if layernorm_embedding:
+            self.src_embed_ln = nn.LayerNorm(epsilon=layer_norm_eps,
+                                             in_channels=enc_units)
+            self.tgt_embed_ln = nn.LayerNorm(epsilon=layer_norm_eps,
+                                             in_channels=dec_units)
         self.encoder = TransformerEncoder(num_layers=enc_num_layers,
                                           recurrent=enc_recurrent,
                                           units=enc_units,
@@ -1007,6 +1016,8 @@ class TransformerModel(HybridBlock):
             src_data = src_data * np.sqrt(self.enc_units)
         if self.pos_embed_type is not None:
             src_data = src_data + self.src_pos_embed_layer(F.npx.arange_like(src_data, axis=1))
+        if self.layernorm_embedding:
+            src_data = self.src_embed_ln(src_data)
         enc_out = self.encoder(src_data, src_valid_length)
         return enc_out
 
@@ -1036,6 +1047,8 @@ class TransformerModel(HybridBlock):
         if self.pos_embed_type is not None:
             tgt_data = tgt_data + self.tgt_pos_embed_layer(
                 F.npx.arange_like(tgt_data, axis=1))
+        if self.layernorm_embedding:
+            tgt_data = self.src_embed_ln(tgt_data)
         dec_out = self.decoder(tgt_data, tgt_valid_length, mem_data, mem_valid_length)
         dec_out = self.tgt_final_layer(dec_out)
         return dec_out

@@ -57,6 +57,7 @@ def bart_base():
     cfg.MODEL = CN()
     cfg.MODEL.vocab_size = 50265
     cfg.MODEL.pos_embed_type = 'learned'
+    cfg.MODEL.layernorm_embedding = True
     cfg.MODEL.scale_embed = False
     cfg.MODEL.shared_embed = True
     cfg.MODEL.tie_weights = True
@@ -69,7 +70,7 @@ def bart_base():
 
     # Parameters for the encoder
     cfg.MODEL.ENCODER = CN()
-    cfg.MODEL.max_src_length = 1024
+    cfg.MODEL.ENCODER.max_length = 1024
     cfg.MODEL.ENCODER.num_layers = 6
     cfg.MODEL.ENCODER.units = 768
     cfg.MODEL.ENCODER.num_heads = 12
@@ -80,7 +81,7 @@ def bart_base():
 
     # Parameters for the decoder
     cfg.MODEL.DECODER = CN()
-    cfg.MODEL.max_tgt_length = 1024
+    cfg.MODEL.DECODER.max_length = 1024
     cfg.MODEL.DECODER.num_layers = 6
     cfg.MODEL.DECODER.units = 768
     cfg.MODEL.DECODER.num_heads = 12
@@ -91,7 +92,7 @@ def bart_base():
 
     # Parameters for the initializer
     cfg.INITIALIZER = CN()
-    cfg.INITIALIZER.embed = ['norm', 0, 768**-0.5]
+    cfg.INITIALIZER.embed = ['normal', 768**-0.5]
     cfg.INITIALIZER.weight = ['xavier', 'uniform', 'avg', 1.0]
     cfg.INITIALIZER.bias = ['zeros']
     cfg.VERSION = 1
@@ -112,7 +113,7 @@ def bart_large():
     cfg.MODEL.DECODER.num_heads = 16
     cfg.MODEL.DECODER.num_layers = 12
 
-    cfg.INITIALIZER.embed = ['norm', 0,  0.03125]
+    cfg.INITIALIZER.embed = ['normal', 0.03125]
     cfg.freeze()
     return cfg
 
@@ -122,16 +123,16 @@ PRETRAINED_URL = {
         'cfg': bart_base(),
         'merges': 'fairseq_bart_base/',
         'vocab': 'fairseq_bart_base/',
-        'params': 'fairseq_bart_base/',
-        'mlm_params': 'fairseq_bart_base/',
+        'encoder_params': 'fairseq_bart_base/',
+        'decoder_params': 'fairseq_bart_base/',
         'lowercase': False,
     },
     'fairseq_bart_large': {
         'cfg': bart_large(),
         'merges': 'fairseq_bart_large/',
         'vocab': 'fairseq_bart_large/',
-        'params': 'fairseq_bart_large/',
-        'mlm_params': 'fairseq_bart_large/',
+        'encoder_params': 'fairseq_bart_large/',
+        'decoder_params': 'fairseq_bart_large/',
         'lowercase': False,
     }
 }
@@ -149,7 +150,7 @@ class BartModel(TransformerModel):
 
     @property
     def vocab_size(self):
-        return self._src_vocab_size
+        return self._vocab_size
 
     @classmethod
     def get_cfg(cls, key=None):
@@ -166,10 +167,11 @@ class BartModel(TransformerModel):
         bias_initializer = mx.init.create(*cfg.INITIALIZER.bias)
         return cls(src_vocab_size=cfg.MODEL.vocab_size,
                    tgt_vocab_size=cfg.MODEL.vocab_size,
-                   max_src_length=cfg.MODEL.max_src_length,
-                   max_tgt_length=cfg.MODEL.max_tgt_length,
+                   max_src_length=cfg.MODEL.ENCODER.max_length,
+                   max_tgt_length=cfg.MODEL.DECODER.max_length,
                    scale_embed=cfg.MODEL.scale_embed,
                    pos_embed_type=cfg.MODEL.pos_embed_type,
+                   layernorm_embedding=cfg.MODEL.layernorm_embedding,
                    shared_embed=cfg.MODEL.shared_embed,
                    tie_weights=cfg.MODEL.tie_weights,
                    attention_dropout=cfg.MODEL.attention_dropout_prob,
