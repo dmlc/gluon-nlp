@@ -102,6 +102,7 @@ def google_electra_small():
     cfg.INITIALIZER.bias = ['zeros']
     cfg.VERSION = 1
     cfg.freeze()
+    return cfg
 
 
 @electra_cfg_reg.register()
