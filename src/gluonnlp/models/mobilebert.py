@@ -272,8 +272,6 @@ class MobileBertEncoderLayer(HybridBlock):
         attn_weight :
             Shape (batch_size, seq_length, seq_length)
         """
-        # TODO(sxjscience) Cannot use negative axis due to
-        #  https://github.com/apache/incubator-mxnet/issues/18132
         if self._use_bottleneck:
             bn_proj = self.in_bottleneck_proj(data)
             bn_proj = self.in_bottleneck_ln(bn_proj)
