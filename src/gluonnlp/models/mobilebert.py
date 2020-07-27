@@ -41,6 +41,7 @@ from ..layers import InitializerType, PositionwiseFFN, PositionalEmbedding, get_
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
+from ..utils.registry import Registry
 from ..registry import BACKBONE_REGISTRY
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
@@ -48,9 +49,43 @@ from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 __all__ = ['MobileBertModel', 'MobileBertForMLM', 'MobileBertForPretrain',
            'list_pretrained_mobilebert', 'get_pretrained_mobilebert']
 
+mobilebert_cfg_reg = Registry('mobilebert_cfg')
+
+
+@mobilebert_cfg_reg.register()
+def google_uncased_mobilebert():
+    cfg = CN()
+    cfg.MODEL = CN()
+    cfg.MODEL.vocab_size = 30522
+    cfg.MODEL.units = 512
+    cfg.MODEL.embed_size = 128
+    cfg.MODEL.inner_size = 128
+    cfg.MODEL.hidden_size = 512
+    cfg.MODEL.max_length = 512
+    cfg.MODEL.num_heads = 4
+    cfg.MODEL.num_layers = 24
+    cfg.MODEL.bottleneck_strategy = 'qk_sharing'
+    cfg.MODEL.num_stacked_ffn = 4
+    cfg.MODEL.pos_embed_type = 'learned'
+    cfg.MODEL.activation = 'relu'
+    cfg.MODEL.num_token_types = 2
+    cfg.MODEL.hidden_dropout_prob = 0.0
+    cfg.MODEL.attention_dropout_prob = 0.1
+    cfg.MODEL.normalization = 'no_norm'
+    cfg.MODEL.dtype = 'float32'
+    # Initializer
+    cfg.INITIALIZER = CN()
+    cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
+    cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]  # TruncNorm(0, 0.02)
+    cfg.INITIALIZER.bias = ['zeros']
+    cfg.VERSION = 1
+    cfg.freeze()
+    return cfg
+
+
 PRETRAINED_URL = {
     'google_uncased_mobilebert': {
-        'cfg': 'google_uncased_mobilebert/model-1c33216b.yml',
+        'cfg': google_uncased_mobilebert(),
         'vocab': 'google_uncased_mobilebert/vocab-e6d2b21d.json',
         'params': 'google_uncased_mobilebert/model-c8346cf2.params',
         'mlm_params': 'google_uncased_mobilebert/model_mlm-53948e82.params',
@@ -884,11 +919,18 @@ def get_pretrained_mobilebert(model_name: str = 'google_uncased_mobilebert',
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_mobilebert())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
+    if isinstance(cfg_path, CN):
+        cfg = cfg_path
+    else:
+        cfg = None
     vocab_path = PRETRAINED_URL[model_name]['vocab']
     params_path = PRETRAINED_URL[model_name]['params']
     mlm_params_path = PRETRAINED_URL[model_name]['mlm_params']
     local_paths = dict()
-    for k, path in [('cfg', cfg_path), ('vocab', vocab_path)]:
+    download_jobs = [('vocab', vocab_path)]
+    if cfg is None:
+        download_jobs.append(('cfg', cfg_path))
+    for k, path in download_jobs:
         local_paths[k] = download(url=get_repo_model_zoo_url() + path,
                                   path=os.path.join(root, path),
                                   sha1_hash=FILE_STATS[path])
@@ -914,7 +956,8 @@ def get_pretrained_mobilebert(model_name: str = 'google_uncased_mobilebert',
                     sep_token='[SEP]',
                     mask_token='[MASK]',
                     lowercase=do_lower)
-    cfg = MobileBertModel.get_cfg().clone_merge(local_paths['cfg'])
+    if cfg is None:
+        cfg = MobileBertModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_mlm_params_path
 
 

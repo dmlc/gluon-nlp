@@ -996,7 +996,6 @@ def get_pretrained_electra(model_name: str = 'google_electra_small',
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_electra())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
-    cfg_path = PRETRAINED_URL[model_name]['cfg']
     if isinstance(cfg_path, CN):
         cfg = cfg_path
     else:
