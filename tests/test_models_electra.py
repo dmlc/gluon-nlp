@@ -3,7 +3,8 @@ import numpy as np
 from numpy.testing import assert_allclose
 import mxnet as mx
 import tempfile
-from gluonnlp.models.electra import ElectraModel, ElectraDiscriminator, ElectraGenerator,\
+from gluonnlp.models.electra import ElectraModel, ElectraDiscriminator,\
+    ElectraGenerator,\
     list_pretrained_electra, get_pretrained_electra, get_generator_cfg
 mx.npx.set_np()
 
@@ -12,13 +13,19 @@ def test_list_pretrained_electra():
     assert len(list_pretrained_electra()) > 0
 
 
-@pytest.mark.parametrize('compute_layout', ['auto', 'NT', 'TN'])
-def test_electra_model(compute_layout):
+def get_test_cfg():
     cfg = ElectraModel.get_cfg()
     cfg.defrost()
     cfg.MODEL.vocab_size = 100
     cfg.MODEL.units = 12 * 8
     cfg.MODEL.num_layers = 2
+    cfg.freeze()
+    return cfg
+
+
+@pytest.mark.parametrize('compute_layout', ['auto', 'NT', 'TN'])
+def test_electra_model(compute_layout):
+    cfg = get_test_cfg()
     cfg.MODEL.compute_layout = compute_layout
     cfg.freeze()
 

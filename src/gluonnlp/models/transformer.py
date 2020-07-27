@@ -409,6 +409,7 @@ class TransformerDecoderLayer(HybridBlock):
         weight_initializer
         bias_initializer
         dtype
+            Data type
         layout
             Layout of the input
         """

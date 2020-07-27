@@ -891,6 +891,7 @@ class ElectraForPretrain(HybridBlock):
     def get_corrupted_tokens(self, F, inputs, unmasked_tokens, masked_positions, logits):
         """
         Sample from the generator to create corrupted input.
+
         Parameters
         ----------
         F
