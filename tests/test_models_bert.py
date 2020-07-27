@@ -39,13 +39,15 @@ def test_bert_small_cfg(compute_layout):
     bert_model.initialize()
     bert_model.hybridize()
     contextual_embedding, pooled_out = bert_model(inputs, token_types, valid_length)
-    bert_model_tn = BertModel.from_cfg(cfg_tn, params=bert_model.collect_params())
+    bert_model_tn = BertModel.from_cfg(cfg_tn)
+    bert_model_tn.share_parameters(bert_model)
     bert_model_tn.hybridize()
     contextual_embedding_tn, pooled_out_tn = bert_model_tn(inputs.T, token_types.T, valid_length)
     assert_allclose(contextual_embedding.asnumpy(),
                     mx.np.swapaxes(contextual_embedding_tn, 0, 1).asnumpy(),
                     1E-4, 1E-4)
     assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
+
 
 
 @pytest.mark.remote_required
