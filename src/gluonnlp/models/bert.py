@@ -230,20 +230,19 @@ class BertTransformer(HybridBlock):
         self._output_all_encodings = output_all_encodings
         self._layout = layout
 
-        self.all_layers = nn.HybridSequential(prefix='layers_')
-        with self.all_layers.name_scope():
-            for layer_idx in range(num_layers):
-                self.all_layers.add(
-                  TransformerEncoderLayer(units=units,
-                                          hidden_size=hidden_size,
-                                          num_heads=num_heads,
-                                          attention_dropout_prob=attention_dropout_prob,
-                                          hidden_dropout_prob=hidden_dropout_prob,
-                                          layer_norm_eps=layer_norm_eps,
-                                          weight_initializer=weight_initializer,
-                                          bias_initializer=bias_initializer,
-                                          activation=activation,
-                                          layout=layout))
+        self.all_layers = nn.HybridSequential()
+        for layer_idx in range(num_layers):
+            self.all_layers.add(
+              TransformerEncoderLayer(units=units,
+                                      hidden_size=hidden_size,
+                                      num_heads=num_heads,
+                                      attention_dropout_prob=attention_dropout_prob,
+                                      hidden_dropout_prob=hidden_dropout_prob,
+                                      layer_norm_eps=layer_norm_eps,
+                                      weight_initializer=weight_initializer,
+                                      bias_initializer=bias_initializer,
+                                      activation=activation,
+                                      layout=layout))
 
     @property
     def layout(self):
