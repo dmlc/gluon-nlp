@@ -406,40 +406,10 @@ class ElectraModel(HybridBlock):
 
     @staticmethod
     def get_cfg(key=None):
-        if key is None:
-            cfg = CN()
-            # Model Parameters for the electra small
-            cfg.MODEL = CN()
-            cfg.MODEL.vocab_size = 30522
-            cfg.MODEL.embed_size = 128
-            cfg.MODEL.units = 256
-            cfg.MODEL.hidden_size = 1024
-            cfg.MODEL.max_length = 512
-            cfg.MODEL.num_heads = 4
-            cfg.MODEL.num_layers = 12
-            cfg.MODEL.pos_embed_type = 'learned'
-            # Unlike BERT and ALBERT, which ues gelu(tanh), the gelu(erf) is used in Electra.
-            cfg.MODEL.activation = 'gelu'
-            cfg.MODEL.layer_norm_eps = 1E-12
-            cfg.MODEL.num_token_types = 2
-            cfg.MODEL.hidden_dropout_prob = 0.1
-            cfg.MODEL.attention_dropout_prob = 0.1
-            cfg.MODEL.dtype = 'float32'
-            cfg.MODEL.generator_layers_scale = 1.0
-            # multiplier for units, hidden_size, and num_heads
-            cfg.MODEL.generator_units_scale = 1.0
-            # Hyper-parameters of the Initializers
-            cfg.INITIALIZER = CN()
-            cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
-            cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]  # TruncNorm(0, 0.02)
-            cfg.INITIALIZER.bias = ['zeros']
-            # Version of the model. This helps ensure backward compatibility.
-            # Also, we can not use string here due to https://github.com/rbgirshick/yacs/issues/26
-            cfg.VERSION = 1
-            cfg.freeze()
+        if key is not None:
+            return electra_cfg_reg.create(key)
         else:
-            raise NotImplementedError
-        return cfg
+            return google_electra_base()
 
     @classmethod
     def from_cfg(cls, cfg, use_pooler=True, dtype='float32') -> 'ElectraModel':
