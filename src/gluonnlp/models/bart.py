@@ -46,29 +46,7 @@ from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN, Initi
 from ..op import select_vectors_by_position
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 
-PRETRAINED_URL = {
-    'fairseq_bart_base': {
-        'cfg': bart_base(),
-        'merges': 'fairseq_bart_base/',
-        'vocab': 'fairseq_bart_base/',
-        'params': 'fairseq_bart_base/',
-        'mlm_params': 'fairseq_bart_base/',
-        'lowercase': False,
-    },
-    'fairseq_bart_large': {
-        'cfg': bart_large(),
-        'merges': 'fairseq_bart_large/',
-        'vocab': 'fairseq_bart_large/',
-        'params': 'fairseq_bart_large/',
-        'mlm_params': 'fairseq_bart_large/',
-        'lowercase': False,
-    }
-}
-
-
-FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'bart.txt'))
 bart_cfg_reg = Registry('bart_cfg')
-
 
 @bart_cfg_reg.register()
 def bart_base():
@@ -131,6 +109,28 @@ def bart_large():
     cfg.MODEL.DECODER.num_layers = 12
     cfg.freeze()
     return cfg
+
+PRETRAINED_URL = {
+    'fairseq_bart_base': {
+        'cfg': bart_base(),
+        'merges': 'fairseq_bart_base/',
+        'vocab': 'fairseq_bart_base/',
+        'params': 'fairseq_bart_base/',
+        'mlm_params': 'fairseq_bart_base/',
+        'lowercase': False,
+    },
+    'fairseq_bart_large': {
+        'cfg': bart_large(),
+        'merges': 'fairseq_bart_large/',
+        'vocab': 'fairseq_bart_large/',
+        'params': 'fairseq_bart_large/',
+        'mlm_params': 'fairseq_bart_large/',
+        'lowercase': False,
+    }
+}
+
+
+FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'bart.txt'))
 
 @use_np
 class BART(TransformerModel):
