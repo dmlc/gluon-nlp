@@ -347,7 +347,7 @@ class ElectraModel(HybridBlock):
         embedding = self.embed_dropout(embedding)
         return embedding
 
-    def apply_layerwise_decay(self, layerwise_decay, not_included=[]):
+    def apply_layerwise_decay(self, layerwise_decay, not_included=None):
         """Apply the layer-wise gradient decay
 
         .. math::
@@ -363,9 +363,9 @@ class ElectraModel(HybridBlock):
 
         # consider the task specific finetuning layer as the last layer, following with pooler
         # In addition, the embedding parameters have the smaller learning rate based on this setting.
-        max_depth = self.num_layers
+        max_depth = self.num_layers + 2
         for _, value in self.collect_params('.*embed*').items():
-            value.lr_mult = layerwise_decay**(max_depth + 1)
+            value.lr_mult = layerwise_decay**(max_depth)
 
         for (layer_depth, layer) in enumerate(self.encoder.all_encoder_layers):
             layer_params = layer.collect_params()
@@ -373,9 +373,9 @@ class ElectraModel(HybridBlock):
                 for pn in not_included:
                     if pn in key:
                         continue
-                value.lr_mult = layerwise_decay**(max_depth - layer_depth)
+                value.lr_mult = layerwise_decay**(max_depth - (layer_depth + 1))
 
-    def frozen_params(self, untunable_depth, not_included=[]):
+    def frozen_params(self, untunable_depth, not_included=None):
         """Froze part of parameters according to layer depth.
 
         That is, make all layer that shallower than `untunable_depth` untunable
