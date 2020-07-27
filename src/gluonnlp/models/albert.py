@@ -326,7 +326,7 @@ class AlbertModel(HybridBlock):
             weight_initializer=weight_initializer,
             bias_initializer=bias_initializer,
             dtype=dtype,
-            layout=compute_layout
+            layout=self._compute_layout
         )
         self.encoder.hybridize()
         # Construct word embedding
