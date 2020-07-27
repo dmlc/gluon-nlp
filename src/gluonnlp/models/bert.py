@@ -242,7 +242,8 @@ class BertTransformer(HybridBlock):
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer,
                                       activation=activation,
-                                      layout=layout))
+                                      layout=layout,
+                                      dtype=dtype))
 
     @property
     def layout(self):
