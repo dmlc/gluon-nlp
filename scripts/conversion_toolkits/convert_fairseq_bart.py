@@ -16,7 +16,7 @@ from fairseq.models.bart import BARTModel as fairseq_BARTModel
 from gluonnlp.models.bart import BartModel
 from gluonnlp.data.tokenizers import HuggingFaceByteBPETokenizer
 
-from convert_fairseq_bart import convert_vocab
+from convert_fairseq_roberta import convert_vocab
 
 mx.npx.set_np()
 
@@ -41,7 +41,6 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
     cfg.MODEL.pos_embed_type = 'learned'
     cfg.MODEL.scale_embed = not fairseq_cfg.no_scale_embedding
     cfg.MODEL.layernorm_embedding = fairseq_cfg.layernorm_embedding
-    cfg.MODEL.activation = fairseq_cfg.activation_fn
     cfg.MODEL.pooler_activation = fairseq_cfg.pooler_activation_fn
     cfg.MODEL.layer_norm_eps = 1E-5
     cfg.MODEL.hidden_dropout_prob = fairseq_cfg.dropout
@@ -50,8 +49,7 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
     cfg.MODEL.dtype = 'float32'
 
     # Parameters for the encoder
-    cfg.MODEL.ENCODER = CN()
-    cfg.MODEL.max_src_length = fairseq_cfg.max_source_positions
+    cfg.MODEL.ENCODER.max_length = fairseq_cfg.max_source_positions
     cfg.MODEL.ENCODER.num_layers = fairseq_cfg.encoder_layers
     cfg.MODEL.ENCODER.units = fairseq_cfg.encoder_embed_dim
     cfg.MODEL.ENCODER.num_heads = fairseq_cfg.encoder_attention_heads
@@ -59,8 +57,7 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
     cfg.MODEL.ENCODER.activation = fairseq_cfg.activation_fn
 
     # Parameters for the decoder
-    cfg.MODEL.DECODER = CN()
-    cfg.MODEL.max_tgt_length = fairseq_cfg.max_target_positions
+    cfg.MODEL.DECODER.max_length = fairseq_cfg.max_target_positions
     cfg.MODEL.DECODER.num_layers = fairseq_cfg.decoder_layers
     cfg.MODEL.DECODER.units = fairseq_cfg.decoder_embed_dim
     cfg.MODEL.DECODER.num_heads = fairseq_cfg.decoder_attention_heads
@@ -84,10 +81,9 @@ def convert_params(fairseq_model,
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
     gluon_params = gluon_model.collect_params()
-    for gluon_prefix in ['decoder','encoder']
-        fairseq_prefix = 'model.{}'.format(gluon_prefix)
-        print('converting {} params'.format(gluon_prefix))
-        num_layers = gluon_cfg.ENCODER.num_layers
+    all_keys = set(gluon_params.keys())
+
+    def convert_attention(fairseq_prefix, gluon_prefix, num_layers):
         for layer_id in range(num_layers):
             fs_atten_prefix = \
                 '{}.layers.{}.self_attn.' \
@@ -99,15 +95,20 @@ def convert_params(fairseq_model,
             fs_k_bias = fairseq_params[fs_atten_prefix + 'k_proj.bias'].cpu().numpy()
             fs_v_bias = fairseq_params[fs_atten_prefix + 'v_proj.bias'].cpu().numpy()
             gl_qkv_prefix = \
-                '{}all_layers.{}.attn_qkv.' \
+                '{}.layers.{}.attn_qkv.' \
                 .format(gluon_prefix, layer_id)
             gl_qkv_weight = gluon_params[gl_qkv_prefix + 'weight']
             gl_qkv_bias = gluon_params[gl_qkv_prefix + 'bias']
+            all_keys.remove(gl_qkv_prefix + 'weight')
+            all_keys.remove(gl_qkv_prefix + 'bias')
             gl_qkv_weight.set_data(
                 np.concatenate([fs_q_weight, fs_k_weight, fs_v_weight], axis=0))
             gl_qkv_bias.set_data(
                 np.concatenate([fs_q_bias, fs_k_bias, fs_v_bias], axis=0))
 
+
+    def convert_ffn(fairseq_prefix, gluon_prefix, num_layers):
+        for layer_id in range(num_layers):
             for k, v in [
                 ('self_attn.out_proj.weight', 'attention_proj.weight'),
                 ('self_attn.out_proj.bias', 'attention_proj.bias'),
@@ -122,42 +123,51 @@ def convert_params(fairseq_model,
             ]:
                 fs_name = '{}.layers.{}.{}' \
                           .format(fairseq_prefix, layer_id, k)
-                gl_name = '{}.all_layers.{}.{}' \
+                gl_name = '{}.layers.{}.{}' \
                           .format(gluon_prefix, layer_id, v)
+                all_keys.remove(gl_name)
                 gluon_params[gl_name].set_data(
                     fairseq_params[fs_name].cpu().numpy())
 
         short = 'src_' if gluon_prefix == 'encoder' else 'tgt_'
         for k, v in [
-            ('embed_tokens.weight', 'embed_layer.weight'),
-            ('embed_positions.weight', 'pos_embed_layer.weight'),
-            ('emb_layer_norm.weight', 'embed_ln.gamma'),
-            ('emb_layer_norm.bias', 'embed_ln.beta'),
+            ('.embed_tokens.weight', 'embed_layer.weight'),
+            ('.layernorm_embedding.weight', 'embed_ln.gamma'),
+            ('.layernorm_embedding.bias', 'embed_ln.beta'),
         ]:
             fs_name = fairseq_prefix + k
             gl_name = short + v
+            all_keys.remove(gl_name)
             gluon_params[gl_name].set_data(
                 fairseq_params[fs_name].cpu().numpy())
 
         # position embed weight
         padding_idx = fairseq_model.task.dictionary.pad_index
-        fs_pos_embed_name = fairseq_prefix + 'embed_positions.weight'
-        gl_pos_embed_name = short + 'pos_embed_layer'
+        fs_pos_embed_name = fairseq_prefix + '.embed_positions.weight'
+        gl_pos_embed_name = short + 'pos_embed_layer_embed.weight'
+        all_keys.remove(gl_pos_embed_name)
         gluon_params[gl_pos_embed_name].set_data(
             fairseq_params[fs_pos_embed_name].cpu().numpy()[padding_idx + 1:, :])
 
-        if gluon_prefix == 'decoder':
-            for k, v in [
-                ('output_projection', 'tgt_final_layer.weight'),
-            ]:
-                fs_name = fairseq_prefix + k
-                gluon_params[v].set_data(
-                    fairseq_params[fs_name].cpu().numpy())
+    gluon_prefix = 'encoder'
+    fairseq_prefix = 'model.encoder'
+    print('converting encoder params')
+    num_layers = gluon_cfg.MODEL.ENCODER.num_layers
+    convert_attention(fairseq_prefix, gluon_prefix, num_layers)
+    convert_ffn(fairseq_prefix, gluon_prefix, num_layers)
 
-            assert np.array_equal(
-                fairseq_params[fairseq_prefix + 'embed_tokens.weight'].cpu().numpy(),
-                fairseq_params[fairseq_prefix + 'output_projection.weight'].cpu().numpy()
-            )
+    if gluon_prefix == 'decoder':
+        for k, v in [
+            ('output_projection', 'tgt_final_layer.weight'),
+        ]:
+            fs_name = fairseq_prefix + k
+            gluon_params[v].set_data(
+                fairseq_params[fs_name].cpu().numpy())
+
+        assert np.array_equal(
+            fairseq_params[fairseq_prefix + 'embed_tokens.weight'].cpu().numpy(),
+            fairseq_params[fairseq_prefix + 'output_projection.weight'].cpu().numpy()
+        )
     return gluon_model
 
 
@@ -253,7 +263,8 @@ def convert_fairseq_model(args):
 
     fairseq_bart = fairseq_BARTModel.from_pretrained(args.fairseq_model_path,
                                                            checkpoint_file='model.pt')
-    vocab_size = convert_vocab(args, fairseq_bart)
+    # vocab_size = convert_vocab(args, fairseq_bart)
+    vocab_size = 9999
 
     gluon_cfg = convert_config(fairseq_bart.args, vocab_size,
                                BartModel.get_cfg().clone())
