@@ -26,6 +26,8 @@ def test_bert_small_cfg(compute_layout):
     cfg_tn.defrost()
     cfg_tn.MODEL.layout = 'TN'
     cfg_tn.freeze()
+
+    # Sample data
     batch_size = 4
     sequence_length = 16
     num_mask = 3
@@ -40,7 +42,7 @@ def test_bert_small_cfg(compute_layout):
     bert_model.hybridize()
     contextual_embedding, pooled_out = bert_model(inputs, token_types, valid_length)
     bert_model_tn = BertModel.from_cfg(cfg_tn)
-    bert_model_tn.share_parameters(bert_model)
+    bert_model_tn.share_parameters(bert_model.collect_params())
     bert_model_tn.hybridize()
     contextual_embedding_tn, pooled_out_tn = bert_model_tn(inputs.T, token_types.T, valid_length)
     assert_allclose(contextual_embedding.asnumpy(),
@@ -48,6 +50,22 @@ def test_bert_small_cfg(compute_layout):
                     1E-4, 1E-4)
     assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
 
+    # Test for BertForMLM
+    bert_mlm_model = BertForMLM(cfg)
+    bert_mlm_model.initialize()
+    bert_mlm_model.hybridize()
+    contextual_embedding, pooled_out, mlm_score = bert_mlm_model(inputs, token_types,
+                                                                 valid_length, masked_positions)
+    bert_mlm_model_tn = BertForMLM(cfg_tn)
+    bert_mlm_model_tn.share_parameters(bert_mlm_model.collect_params())
+    bert_mlm_model_tn.hybridize()
+    contextual_embedding_tn, pooled_out_tn, mlm_score_tn =\
+        bert_mlm_model(inputs.T, token_types.T, valid_length, masked_positions)
+    assert_allclose(contextual_embedding.asnumpy(),
+                    mx.np.swapaxes(contextual_embedding_tn, 0, 1).asnumpy(),
+                    1E-4, 1E-4)
+    assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
+    assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-4, 1E-4)
 
 
 @pytest.mark.remote_required
