@@ -11,6 +11,7 @@ mx.npx.set_np()
 def test_list_pretrained_electra():
     assert len(list_pretrained_electra()) > 0
 
+
 @pytest.mark.parametrize('compute_layout', ['auto', 'NT', 'TN'])
 def test_electra_model(compute_layout):
     cfg = ElectraModel.get_cfg()
