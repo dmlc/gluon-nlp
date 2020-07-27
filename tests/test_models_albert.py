@@ -30,17 +30,36 @@ def get_test_cfg():
     return cfg
 
 
-def test_albert_backbone():
+@pytest.mark.parametrize('static_alloc,static_shape', [(False, False),
+                                                       (True, True)])
+@pytest.mark.parametrize('compute_layout', ['auto', 'NT', 'TN'])
+def test_albert_backbone(static_alloc, static_shape, compute_layout):
     batch_size = 3
     cfg = get_test_cfg()
+    cfg.defrost()
+    cfg.MODEL.compute_layout = compute_layout
+    cfg.freeze()
     model = AlbertModel.from_cfg(cfg, use_pooler=True)
     model.initialize()
-    model.hybridize(static_alloc=True, static_shape=True)
+    model.hybridize(static_alloc=static_alloc, static_shape=static_shape)
+    cfg_tn = cfg.clone()
+    cfg_tn.defrost()
+    cfg_tn.MODEL.layout = 'TN'
+    cfg_tn.freeze()
+    model_tn = AlbertModel.from_cfg(cfg_tn, use_pooler=True)
+    model_tn.share_parameters(model.collect_params())
+    model_tn.hybridize(static_alloc=static_alloc, static_shape=static_shape)
+
     for seq_length in [64, 96]:
         valid_length = mx.np.random.randint(seq_length // 2, seq_length, (batch_size,))
         inputs = mx.np.random.randint(0, cfg.MODEL.vocab_size, (batch_size, seq_length))
         token_types = mx.np.random.randint(0, cfg.MODEL.num_token_types, (batch_size, seq_length))
         contextual_embedding, pooled_out = model(inputs, token_types, valid_length)
+        contextual_embedding_tn, pooled_out_tn = model_tn(inputs.T, token_types.T, valid_length)
+        # Verify layout
+        assert_allclose(np.swapaxes(contextual_embedding_tn.asnumpy(), 0, 1),
+                        contextual_embedding.asnumpy())
+        assert_allclose(pooled_out_tn.asnumpy(), pooled_out.asnumpy())
         assert contextual_embedding.shape == (batch_size, seq_length, cfg.MODEL.units)
         assert pooled_out.shape == (batch_size, cfg.MODEL.units)
         # Ensure the embeddings that exceed valid_length are masked
