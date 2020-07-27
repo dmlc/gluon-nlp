@@ -76,6 +76,7 @@ def google_uncased_mobilebert():
     cfg.MODEL.hidden_dropout_prob = 0.0
     cfg.MODEL.attention_dropout_prob = 0.1
     cfg.MODEL.normalization = 'no_norm'
+    cfg.MODEL.layer_norm_eps = 1E-12
     cfg.MODEL.dtype = 'float32'
     # Layout flags
     cfg.MODEL.layout = 'NT'
