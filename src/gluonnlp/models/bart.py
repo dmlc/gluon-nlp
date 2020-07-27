@@ -36,7 +36,7 @@ import mxnet as mx
 from mxnet import use_np
 from mxnet.gluon import HybridBlock, nn
 from ..registry import BACKBONE_REGISTRY
-from .transformer import TransformerEncoder, TransformerDecoder
+from .transformer import TransformerModel
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
@@ -133,205 +133,13 @@ def bart_large():
     return cfg
 
 @use_np
-class BART(HybridBlock):
-    def __init__(self, src_vocab_size: int,
-                 tgt_vocab_size: int,
-                 max_src_length: Optional[int] = None,
-                 max_tgt_length: Optional[int] = None,
-                 scale_embed: bool = True,
-                 pos_embed_type="sinusoidal",
-                 shared_embed: bool = True,
-                 tie_weights: bool = True,
-                 activation_dropout: float = 0.0,
-                 dropout: float = 0.1,
-                 attention_dropout: float = 0.1,
-                 layer_norm_eps: float = 1E-5,
-                 data_norm: bool = False,
-                 enc_units: int = 512,
-                 enc_hidden_size: int = 2048,
-                 enc_num_heads: int = 8,
-                 enc_num_layers: int = 6,
-                 enc_recurrent: bool = False,
-                 enc_activation='relu',
-                 enc_pre_norm: bool = False,
-                 dec_units: int = 512,
-                 dec_hidden_size: int = 2048,
-                 dec_num_heads: int = 8,
-                 dec_num_layers: int = 6,
-                 dec_recurrent: bool = False,
-                 dec_activation='relu',
-                 dec_pre_norm: bool = False,
-                 embed_initializer=TruncNorm(stdev=0.02),
-                 weight_initializer=TruncNorm(stdev=0.02),
-                 bias_initializer='zeros',
-                 dtype='float32'):
-        """
-
-        Parameters
-        ----------
-        src_vocab_size
-            The vocabulary size of the source language
-        tgt_vocab_size
-            The vocabulary size of the target language
-        max_src_length
-            The maximal length of the source sequence.
-            If it's negative, we will use treat it as not set.
-        max_tgt_length
-            The maximal length of the target sequence.
-            If it's negative, we will use treat it as not set.
-        scale_embed
-            Whether to multiply the src and dst embeddings by sqrt(units)
-        pos_embed_type
-            Type of the positional embedding
-        shared_embed
-            Whether to share the embedding of the src and tgt language
-        tie_weights
-            Whether to tie the weights of input + output.
-        activation_dropout
-            The ratio of the activation dropout in FFN
-        dropout
-            The default dropout ratio
-        attention_dropout
-            The ratio of the attention dropout
-        layer_norm_eps
-            The epsilon of the layer normalization
-        data_norm
-            Whether to add layer normalization layer after the input.
-        enc_units
-            Units of the encoder
-        enc_hidden_size
-            Hidden size of the encoder
-        enc_num_heads
-            Number of heads of the encoder
-        enc_num_layers
-            Number of layers of the encoder
-        enc_recurrent
-            Whether to use recurrent encoder (share weights)
-        enc_activation
-            Activation of the encoder layer
-        enc_pre_norm
-            Whether to add layer_norm before self-attention in the encoder
-        dec_units
-            Units of the decoder
-        dec_hidden_size
-            Hidden size of the decoder
-        dec_num_heads
-            Number of heads of the decoder
-        dec_num_layers
-            Number of layers of the decoder
-        dec_recurrent
-            Whether to use recurrent decoder (share weights)
-        dec_activation
-            Activation of the decoder layer
-        dec_pre_norm
-            Whether to add layer_norm before self-attention in the decoder
-        embed_initializer
-            Initializer of the embedding layer
-        weight_initializer
-            Initializer of the weight
-        bias_initializer
-            Initializer of the bias
-        dtype
-            Data type of the weights
-        """
+class BART(TransformerModel):
+    def __init__(self, **kwargs):
         super().__init__()
-        assert src_vocab_size > 0 and tgt_vocab_size > 0,\
-            'Cannot set "src_vocab_size" and "tgt_vocab_size" to negative numbers. ' \
-            'Are you creating ' \
-            'the model with the config from TransformerModel.get_cfg()? If that is ' \
-            'the case, you will need to set the cfg.MODEL.src_vocab_size and ' \
-            'cfg.MODEL.tgt_vocab_size manually before passing to ' \
-            'TransformerModel.from_cfg().'
-        self._dtype = dtype
-        self._src_vocab_size = src_vocab_size
-        self._tgt_vocab_size = tgt_vocab_size
-        self.pos_embed_type = pos_embed_type
-        self.scaled_embed = scale_embed
-        self.enc_units = enc_units
-        self.dec_units = dec_units
-        if max_src_length is not None and max_src_length < 0:
-            max_src_length = None
-        if max_tgt_length is not None and max_tgt_length < 0:
-            max_tgt_length = None
-        if enc_units != dec_units:
-            assert shared_embed is False, 'Cannot share embedding when the enc_units and dec_units ' \
-                                          'are different! enc_units={},' \
-                                          ' dec_units={}'.format(enc_units, dec_units)
-        self.src_embed_layer = nn.Embedding(input_dim=src_vocab_size,
-                                            output_dim=enc_units,
-                                            weight_initializer=embed_initializer,
-                                            dtype=self._dtype)
-        self.tgt_embed_layer = nn.Embedding(input_dim=tgt_vocab_size,
-                                            output_dim=dec_units,
-                                            weight_initializer=embed_initializer,
-                                            dtype=self._dtype)
-        if shared_embed:
-            self.tgt_embed_layer.weight = self.src_embed_layer.weight
-        if pos_embed_type is not None:
-            self.src_pos_embed_layer = PositionalEmbedding(units=enc_units,
-                                                           max_length=max_src_length,
-                                                           dtype=self._dtype,
-                                                           method=pos_embed_type)
-            self.tgt_pos_embed_layer = PositionalEmbedding(units=dec_units,
-                                                           max_length=max_tgt_length,
-                                                           dtype=self._dtype,
-                                                           method=pos_embed_type)
-        self.encoder = TransformerEncoder(num_layers=enc_num_layers,
-                                          recurrent=enc_recurrent,
-                                          units=enc_units,
-                                          hidden_size=enc_hidden_size,
-                                          num_heads=enc_num_heads,
-                                          activation_dropout=activation_dropout,
-                                          dropout=dropout,
-                                          attention_dropout=attention_dropout,
-                                          layer_norm_eps=layer_norm_eps,
-                                          weight_initializer=weight_initializer,
-                                          bias_initializer=bias_initializer,
-                                          activation=enc_activation,
-                                          data_norm=data_norm,
-                                          pre_norm=enc_pre_norm,
-                                          dtype=self._dtype)
-        self.decoder = TransformerDecoder(num_layers=dec_num_layers,
-                                          recurrent=dec_recurrent,
-                                          units=dec_units,
-                                          mem_units=enc_units,
-                                          hidden_size=dec_hidden_size,
-                                          num_heads=dec_num_heads,
-                                          activation_dropout=activation_dropout,
-                                          dropout=dropout,
-                                          attention_dropout=attention_dropout,
-                                          layer_norm_eps=layer_norm_eps,
-                                          weight_initializer=weight_initializer,
-                                          bias_initializer=bias_initializer,
-                                          activation=dec_activation,
-                                          data_norm=data_norm,
-                                          pre_norm=dec_pre_norm,
-                                          dtype=self._dtype)
-        if tie_weights:
-            self.tgt_final_layer =\
-                nn.Dense(tgt_vocab_size, flatten=False,
-                         bias_initializer=bias_initializer,
-                         use_bias=False,
-                         dtype=self._dtype)
-            self.tgt_final_layer.weight = self.tgt_embed_layer.weight
-        else:
-            self.tgt_final_layer = \
-                nn.Dense(tgt_vocab_size,
-                         flatten=False,
-                         weight_initializer=weight_initializer,
-                         bias_initializer=bias_initializer,
-                         use_bias=False,
-                         dtype=self._dtype)
-        self.encoder.hybridize()
-        self.decoder.hybridize()
 
     @property
-    def src_vocab_size(self):
+    def vocab_size(self):
         return self._src_vocab_size
-
-    @property
-    def tgt_vocab_size(self):
-        return self._tgt_vocab_size
 
     # TODO(sxjscience) We can actually try to hybridize this function via the
     #  newly-introduced deferred compute.
