@@ -623,7 +623,6 @@ class AlbertForMLM(HybridBlock):
         else:
             mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
                                                       masked_positions)
-            mlm_features = F.np.swapaxes(mlm_features, 0, 1)
         mlm_scores = self.mlm_decoder(mlm_features)
         return contextual_embeddings, pooled_out, mlm_scores
 
