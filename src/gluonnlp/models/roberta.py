@@ -170,6 +170,7 @@ class RobertaEncoder(HybridBlock):
 
     def hybrid_forward(self, F, x, valid_length):
         atten_mask = gen_self_attn_mask(F, x, valid_length,
+                                        layout=self._layout,
                                         dtype=self._dtype, attn_type='full')
         all_encodings_outputs = [x]
         additional_outputs = []
@@ -417,6 +418,8 @@ class RobertaModel(HybridBlock):
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
         bias_initializer = mx.init.create(*cfg.INITIALIZER.bias)
+        if dtype is None:
+            dtype = cfg.MODEL.dtype
         return cls(vocab_size=cfg.MODEL.vocab_size,
                    units=cfg.MODEL.units,
                    hidden_size=cfg.MODEL.hidden_size,
