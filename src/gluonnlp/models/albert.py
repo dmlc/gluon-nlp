@@ -444,9 +444,9 @@ class AlbertModel(HybridBlock):
                 Shape (seq_length, batch_size, C_embed)
         """
         if self.layout == 'NT':
-            time_axis, batch_axis = 1, 0
+            batch_axis, time_axis = 0, 1
         else:
-            time_axis, batch_axis = 0, 1
+            batch_axis, time_axis = 1, 0
         embedding = self.word_embed(inputs)
         if token_types is None:
             token_types = F.np.zeros_like(inputs)
