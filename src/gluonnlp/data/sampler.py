@@ -289,7 +289,7 @@ class BoundedBudgetSampler(BaseSampler):
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_num_tokens: int = -1, max_num_sentences: int = -1,
                  required_batch_size_multiple: int = 1,
-                 shuffle: bool = False, seed: Optional[int] = None):
+                 shuffle: bool = True, seed: Optional[int] = None):
         assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
         assert max_num_tokens > 0 or max_num_sentences > 0, \
                'One of max_num_tokens and max_num_sentences must be larger than 0'
