@@ -393,7 +393,7 @@ class TransformerDecoderLayer(HybridBlock):
             raise ValueError('In Transformer, units should be divided exactly by the number of '
                              'heads. Received units={}, num_heads={}'.format(units, num_heads))
         self.attn_in_qkv = nn.Dense(3 * units, in_units=units,
-                                    use_bias=False,
+                                    use_bias=True,
                                     flatten=False,
                                     weight_initializer=weight_initializer,
                                     bias_initializer=bias_initializer,
@@ -403,25 +403,25 @@ class TransformerDecoderLayer(HybridBlock):
                                                      attention_dropout=self._attention_dropout,
                                                      dtype=dtype,
                                                      layout='NTK')
-        self.proj_in = nn.Dense(units=units, in_units=units, flatten=False,  use_bias=False,
+        self.proj_in = nn.Dense(units=units, in_units=units, flatten=False,  use_bias=True,
                                 weight_initializer=weight_initializer,
                                 bias_initializer=bias_initializer,
                                 dtype=dtype)
         self.attn_inter_q = nn.Dense(units,
                                      in_units=units,
-                                     use_bias=False,
+                                     use_bias=True,
                                      flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer,
                                      dtype=dtype)
         self.attn_inter_k = nn.Dense(units, in_units=mem_units,
-                                     use_bias=False,
+                                     use_bias=True,
                                      flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer,
                                      dtype=dtype)
         self.attn_inter_v = nn.Dense(units, in_units=mem_units,
-                                     use_bias=False,
+                                     use_bias=True,
                                      flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer,
@@ -432,7 +432,7 @@ class TransformerDecoderLayer(HybridBlock):
                                                       dtype=dtype,
                                                       layout='NTK')
         self.proj_inter = nn.Dense(units=units, in_units=units,
-                                   flatten=False, use_bias=False,
+                                   flatten=False, use_bias=True,
                                    weight_initializer=weight_initializer,
                                    bias_initializer=bias_initializer,
                                    dtype=dtype)

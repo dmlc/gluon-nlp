@@ -170,7 +170,9 @@ def convert_params(fairseq_model,
                 fairseq_params[fs_name].cpu().numpy())
 
     decoder_num_layers = gluon_cfg.MODEL.DECODER.num_layers
-    convert_projection(decoder_num_layers, 'model.decoder', 'decoder')
+    convert_attention(decoder_num_layers, 'model.decoder', 'decoder',
+                      gluon_attn_prefix='attn_in_qkv')
+    # TODO: convert memory attention
     convert_ffn(decoder_num_layers, 'model.decoder', 'decoder')
     for layer_id in range(decoder_num_layers):
         for k, v in [
