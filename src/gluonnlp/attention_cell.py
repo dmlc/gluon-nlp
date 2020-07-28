@@ -153,7 +153,7 @@ def gen_self_attn_mask(F, data,
             mask = mask * F.np.expand_dims(batch_mask, axis=-1)
         else:
             batch_ones = F.np.ones_like(F.npx.arange_like(data, axis=batch_axis),
-                                        dtype=np.float32)  # (batch_size,)
+                                        dtype=dtype)  # (batch_size,)
             mask = mask * batch_ones.reshape((-1, 1, 1))
     else:
         raise NotImplementedError
