@@ -74,7 +74,7 @@ def test_bert_small_cfg(compute_layout):
     contextual_embedding, pooled_out, nsp_score, mlm_scores =\
         bert_pretrain_model(inputs, token_types, valid_length, masked_positions)
     bert_pretrain_model_tn = BertForPretrain(cfg_tn)
-    bert_pretrain_model_tn.initialize()
+    bert_pretrain_model_tn.share_parameters(bert_pretrain_model.collect_params())
     bert_pretrain_model_tn.hybridize()
     contextual_embedding_tn, pooled_out_tn, nsp_score_tn, mlm_scores_tn = \
         bert_pretrain_model_tn(inputs.T, token_types.T, valid_length, masked_positions)

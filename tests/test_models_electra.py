@@ -26,6 +26,7 @@ def get_test_cfg():
 @pytest.mark.parametrize('compute_layout', ['auto', 'NT', 'TN'])
 def test_electra_model(compute_layout):
     cfg = get_test_cfg()
+    cfg.defrost()
     cfg.MODEL.compute_layout = compute_layout
     cfg.freeze()
 
