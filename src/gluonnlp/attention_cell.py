@@ -20,6 +20,7 @@ import numpy as np
 import mxnet as mx
 from mxnet.gluon.block import HybridBlock
 from mxnet.gluon import nn
+from .op import l2_normalize
 from .layers import SinusoidalPositionalEmbedding,\
                     BucketPositionalEmbedding,\
                     LearnedPositionalEmbedding
@@ -298,24 +299,6 @@ def masked_logsoftmax(F, att_score, mask, dtype=np.float32, axis: int = -1):
     else:
         logits = F.npx.log_softmax(att_score, axis=axis)
     return logits
-
-
-def l2_normalize(F, data, axis=-1, eps=1E-6):
-    """Normalize the data by L2 normalization.
-
-    Parameters
-    ----------
-    F : mx.sym or mx.nd
-    data : symbol or ndarray
-    axis : int, default -1
-    eps : float, default 1E-6
-
-    Returns
-    -------
-    ret : mx.sym or mx.nd
-    """
-    ret = data / (F.np.linalg.norm(data, axis=axis, keepdims=True) + eps)
-    return ret
 
 
 # TODO(sxjscience) Default to einsum. Current it is not the default because
