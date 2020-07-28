@@ -48,6 +48,22 @@ def test_robert_small_config(compute_layout):
                     contextual_embeddings.asnumpy(), 1E-4, 1E-4)
     assert_allclose(pooled_out_tn.asnumpy(), pooled_out.asnumpy(), 1E-4, 1E-4)
 
+    # Test for RobertaForMLM
+    roberta_mlm_model = RobertaForMLM(cfg)
+    roberta_mlm_model.initialize()
+    roberta_mlm_model.hybridize()
+    contextual_embedding, pooled_out, mlm_scores = roberta_mlm_model(inputs, valid_length,
+                                                                     masked_positions)
+    roberta_mlm_model_tn = RobertaForMLM(cfg_tn)
+    roberta_mlm_model_tn.share_parameters(roberta_mlm_model.collect_params())
+    roberta_mlm_model_tn.hybridize()
+    contextual_embedding_tn, pooled_out_tn, mlm_scores_tn =\
+        roberta_mlm_model_tn(inputs.T, valid_length.T, masked_positions)
+    assert_allclose(np.swapaxes(contextual_embedding_tn.asnumpy(), 0, 1),
+                    contextual_embedding.asnumpy(), 1E-4, 1E-4)
+    assert_allclose(pooled_out_tn.asnumpy(), pooled_out.asnumpy(), 1E-4, 1E-4)
+    assert_allclose(mlm_scores_tn.asnumpy(), mlm_scores.asnumpy(), 1E-4, 1E-4)
+
 
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_roberta())

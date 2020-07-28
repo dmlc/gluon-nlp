@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import mxnet as mx
 import tempfile
-from gluonnlp.models.xlmr import XLMRModel, XLMRForMLM, \
+from gluonnlp.models.xlmr import XLMRModel, \
     list_pretrained_xlmr, get_pretrained_xlmr
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
 
