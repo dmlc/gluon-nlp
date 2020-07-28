@@ -20,6 +20,8 @@ def test_robert_small_config(compute_layout):
     cfg.defrost()
     cfg.MODEL.vocab_size = 1000
     cfg.MODEL.num_layers = 2
+    cfg.MODEL.hidden_size = 128
+    cfg.MODEL.num_heads = 2
     cfg.MODEL.compute_layout = compute_layout
     cfg.freeze()
 

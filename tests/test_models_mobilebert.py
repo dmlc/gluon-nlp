@@ -16,8 +16,10 @@ def test_list_pretrained_mobilebert():
 def test_mobilebert_model_small_cfg(compute_layout):
     cfg = MobileBertModel.get_cfg()
     cfg.defrost()
-    cfg.MODEL.vocab_size = 1000
+    cfg.MODEL.vocab_size = 100
     cfg.MODEL.num_layers = 2
+    cfg.MODEL.hidden_size = 128
+    cfg.MODEL.num_heads = 2
     cfg.MODEL.compute_layout = compute_layout
     cfg.freeze()
 

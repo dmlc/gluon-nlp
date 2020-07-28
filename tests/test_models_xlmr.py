@@ -29,7 +29,7 @@ def test_xlmr():
 
         # test forward
         batch_size = 1
-        seq_length = 8
+        seq_length = 4
         vocab_size = len(tokenizer.vocab)
         input_ids = mx.np.array(
             np.random.randint(

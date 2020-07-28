@@ -18,6 +18,8 @@ def get_test_cfg():
     cfg.defrost()
     cfg.MODEL.vocab_size = 100
     cfg.MODEL.units = 12 * 8
+    cfg.MODEL.hidden_size = 128
+    cfg.MODEL.num_heads = 2
     cfg.MODEL.num_layers = 2
     cfg.freeze()
     return cfg
