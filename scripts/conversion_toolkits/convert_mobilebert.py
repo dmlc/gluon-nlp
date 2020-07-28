@@ -306,11 +306,11 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
         tf_pooled_output = tf_token_outputs_np['pooled_output']
         contextual_embedding, pooled_output = model.backbone_model(
             mx_input_ids, mx_token_types, mx_valid_length)
-        assert_allclose(pooled_output.asnumpy(), tf_pooled_output, 1E-3, 1E-3)
+        assert_allclose(pooled_output.asnumpy(), tf_pooled_output, 1E-2, 1E-2)
         for i in range(batch_size):
             ele_valid_length = valid_length[i]
             assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
-                            tf_contextual_embedding[i, :ele_valid_length, :], 1E-3, 1E-3)
+                            tf_contextual_embedding[i, :ele_valid_length, :], 1E-2, 1E-2)
     model.backbone_model.save_parameters(os.path.join(save_dir, 'model.params'), deduplicate=True)
     logging.info('Convert the backbone model in {} to {}/{}'.format(model_dir, save_dir, 'model.params'))
     model.save_parameters(os.path.join(save_dir, 'model_mlm.params'), deduplicate=True)
