@@ -55,7 +55,7 @@ roberta_cfg_reg = Registry('roberta_cfg')
 
 
 @roberta_cfg_reg.register()
-def fairseq_roberta_base():
+def roberta_base():
     cfg = CN()
     # Config for the roberta base model
     cfg.MODEL = CN()
@@ -86,8 +86,8 @@ def fairseq_roberta_base():
 
 
 @roberta_cfg_reg.register()
-def fairseq_roberta_large():
-    cfg = fairseq_roberta_base()
+def roberta_large():
+    cfg = roberta_base()
     cfg.defrost()
     cfg.MODEL.units = 1024
     cfg.MODEL.hidden_size = 4096
@@ -99,7 +99,7 @@ def fairseq_roberta_large():
 
 PRETRAINED_URL = {
     'fairseq_roberta_base': {
-        'cfg': fairseq_roberta_base(),
+        'cfg': roberta_base(),
         'merges': 'fairseq_roberta_base/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_roberta_base/gpt2-f1335494.vocab',
         'params': 'fairseq_roberta_base/model-09a1520a.params',
@@ -107,7 +107,7 @@ PRETRAINED_URL = {
         'lowercase': False,
     },
     'fairseq_roberta_large': {
-        'cfg': fairseq_roberta_large(),
+        'cfg': roberta_large(),
         'merges': 'fairseq_roberta_large/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_roberta_large/gpt2-f1335494.vocab',
         'params': 'fairseq_roberta_large/model-6b043b91.params',
@@ -405,7 +405,7 @@ class RobertaModel(HybridBlock):
         if key is not None:
             return roberta_cfg_reg.create(key)
         else:
-            return fairseq_roberta_base()
+            return roberta_base()
 
     @classmethod
     def from_cfg(cls,
