@@ -68,7 +68,7 @@ Thus, you will need to clone the [electra repository](https://github.com/ZheyuYe
 and download the checkpoint. The parameters are converted from local checkpoints.
 By running the following command, you can convert + verify the ELECTRA model with both the discriminator and the generator.
 
-Notice: pleas set up the `--electra_path` with the cloned path or get this electra repository packaged by `pip install -e .`.
+Notice: pleas set up the `--electra_path` with the cloned path ~~or get this electra repository packaged by `pip install -e .`.~~
 
 ```bash
 # Need to use TF 1.13.2 to use contrib layer
