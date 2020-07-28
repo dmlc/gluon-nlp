@@ -1011,14 +1011,14 @@ class TransformerModel(HybridBlock):
         enc_out :
             Shape (batch_size, src_length, C_out)
         """
-        src_data = self.src_embed_layer(src_data)
+        embeddings = self.src_embed_layer(src_data)
         if self.scaled_embed:
-            src_data = src_data * np.sqrt(self.enc_units)
+            embeddings = embeddings * np.sqrt(self.enc_units)
         if self.pos_embed_type is not None:
-            src_data = src_data + self.src_pos_embed_layer(F.npx.arange_like(src_data, axis=1))
+            embeddings = embeddings + self.src_pos_embed_layer(src_data)
         if self.layernorm_embedding:
-            src_data = self.src_embed_ln(src_data)
-        enc_out = self.encoder(src_data, src_valid_length)
+            embeddings = self.src_embed_ln(embeddings)
+        enc_out = self.encoder(embeddings, src_valid_length)
         return enc_out
 
     def decode_seq(self, F, tgt_data, tgt_valid_length, mem_data, mem_valid_length):
@@ -1041,15 +1041,14 @@ class TransformerModel(HybridBlock):
         dec_out :
             Shape (batch_size, tgt_length, tgt_vocab_size)
         """
-        tgt_data = self.tgt_embed_layer(tgt_data)
+        embeddings = self.tgt_embed_layer(embeddings)
         if self.scaled_embed:
-            tgt_data = tgt_data * np.sqrt(self.dec_units)
+            embeddings = embeddings * np.sqrt(self.dec_units)
         if self.pos_embed_type is not None:
-            tgt_data = tgt_data + self.tgt_pos_embed_layer(
-                F.npx.arange_like(tgt_data, axis=1))
+            embeddings = embeddings + self.tgt_pos_embed_layer(tgt_data)
         if self.layernorm_embedding:
-            tgt_data = self.src_embed_ln(tgt_data)
-        dec_out = self.decoder(tgt_data, tgt_valid_length, mem_data, mem_valid_length)
+            embeddings = self.src_embed_ln(embeddings)
+        dec_out = self.decoder(embeddings, tgt_valid_length, mem_data, mem_valid_length)
         dec_out = self.tgt_final_layer(dec_out)
         return dec_out
 
