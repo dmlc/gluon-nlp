@@ -412,7 +412,8 @@ class MobileBertTransformer(HybridBlock):
                                        weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer,
                                        normalization=normalization,
-                                       activation=activation))
+                                       activation=activation,
+                                       layout=layout))
 
     @property
     def layout(self):
@@ -448,7 +449,8 @@ class MobileBertTransformer(HybridBlock):
         elif self._layout == 'TN':
             batch_axis, time_axis = 1, 0
         else:
-            raise NotImplementedError
+            raise NotImplementedError('Received layout="{}". '
+                                      'Only "NT" and "TN" are supported.'.format(self._layout))
         # 1. Embed the data
         attn_mask = gen_self_attn_mask(F, data, valid_length,
                                        dtype=self._dtype,
@@ -536,9 +538,10 @@ class MobileBertModel(HybridBlock):
         self.layer_norm_eps = layer_norm_eps
         self._layout = layout
         if compute_layout == 'auto' or compute_layout is None:
-            self._compute_layout = compute_layout
-        else:
             self._compute_layout = layout
+        else:
+            assert compute_layout in ['TN', 'NT']
+            self._compute_layout = compute_layout
         # Construct MobileBertTransformer
         self.encoder = MobileBertTransformer(
             units=units,
@@ -558,7 +561,7 @@ class MobileBertModel(HybridBlock):
             weight_initializer=weight_initializer,
             bias_initializer=bias_initializer,
             dtype=dtype,
-            layout=compute_layout,
+            layout=self._compute_layout,
         )
         self.encoder.hybridize()
         # Construct word embedding
@@ -584,7 +587,8 @@ class MobileBertModel(HybridBlock):
         # Construct token type embedding
         self.token_type_embed = nn.Embedding(input_dim=num_token_types,
                                              output_dim=units,
-                                             weight_initializer=weight_initializer)
+                                             weight_initializer=weight_initializer,
+                                             dtype=self._dtype)
         self.token_pos_embed = PositionalEmbedding(units=units,
                                                    max_length=max_length,
                                                    dtype=self._dtype,
@@ -595,6 +599,7 @@ class MobileBertModel(HybridBlock):
                                    in_units=units,
                                    flatten=False,
                                    activation='tanh',
+                                   dtype=self._dtype,
                                    weight_initializer=weight_initializer,
                                    bias_initializer=bias_initializer)
 
