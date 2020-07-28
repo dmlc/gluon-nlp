@@ -129,10 +129,9 @@ def convert_params(fairseq_model,
 
     print('converting encoder params')
     num_layers = gluon_cfg.MODEL.ENCODER.num_layers
-    convert_attention(num_layers, 'model.encoder', 'encoder')
+    convert_attention(num_layers, 'model.encoder.', 'encoder')
     convert_embeddings('model.encoder', 'src')
     convert_embeddings('model.decoder', 'tgt')
-
     # convert feed forward layer in encoder
     for layer_id in range(num_layers):
         for k, v in [
@@ -155,6 +154,7 @@ def convert_params(fairseq_model,
             gluon_params[gl_name].set_data(
                 fairseq_params[fs_name].cpu().numpy())
 
+    # TODO(zheyuye), convert the decoder
     for k, v in [
         ('output_projection', 'tgt_final_layer.weight'),
     ]:
