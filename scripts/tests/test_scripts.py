@@ -431,9 +431,10 @@ def test_xlnet_finetune_squad():
 @pytest.mark.parametrize('dtype', ['float32', 'float16'])
 def test_deploy_bert(bert_model, task, dtype):
     subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", "scripts/bert"])
+    print(os.listdir('scripts/bert'))
     arguments = ['--bert_model', bert_model, '--task', task, '--dtype', dtype,
                  '--gpu', '0', '--seq_length', '128', '--test_batch_size', '300',
-                 '--custom_pass', './scripts/bert/bertpass_lib.so', '--check_accuracy']
+                 '--custom_pass', 'scripts/bert/bertpass_lib.so', '--check_accuracy']
     if dtype == 'float16':
         os.environ['MXNET_FC_TRUE_FP16'] = '1'
         os.environ['MXNET_SAFE_ACCUMULATION'] = '1'
