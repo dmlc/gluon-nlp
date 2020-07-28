@@ -451,7 +451,7 @@ def train(args):
                 if (args.epochs > 0 and epoch_id >= args.epochs - args.num_averages) or \
                    (args.max_update > 0 and n_train_iters >= args.max_update - args.num_averages * args.save_interval_update):
                     model_averager.step()
-                if n_epoch_train_iters % args.log_interval == 0:
+                if n_epoch_train_iters % args.log_interval == 0 or is_last_batch:
                     log_end_time = time.time()
                     log_wc = log_wc.asnumpy()
                     wps = log_wc / (log_end_time - log_start_time)
