@@ -172,8 +172,8 @@ def convert_params(fairseq_model,
     decoder_num_layers = gluon_cfg.MODEL.DECODER.num_layers
     convert_attention(decoder_num_layers, 'model.decoder', 'decoder',
                       gluon_attn_prefix='attn_in_qkv')
-    # TODO: convert memory attention
     convert_ffn(decoder_num_layers, 'model.decoder', 'decoder')
+
     for layer_id in range(decoder_num_layers):
         for k, v in [
             ('self_attn.out_proj.weight', 'proj_in.weight'),
@@ -184,6 +184,13 @@ def convert_params(fairseq_model,
             ('encoder_attn.out_proj.bias', 'proj_inter.bias'),
             ('encoder_attn_layer_norm.weight', 'ln_inter.gamma'),
             ('encoder_attn_layer_norm.bias', 'ln_inter.beta'),
+            ('encoder_attn.q_proj.weight', 'attn_inter_q.weight'),
+            ('encoder_attn.q_proj.bias', 'attn_inter_q.bias'),
+            ('encoder_attn.k_proj.weight', 'attn_inter_k.weight'),
+            ('encoder_attn.k_proj.bias', 'attn_inter_k.bias'),
+            ('encoder_attn.v_proj.weight', 'attn_inter_v.weight'),
+            ('encoder_attn.v_proj.bias', 'attn_inter_v.bias'),
+
         ]:
             fs_name = 'model.decoder.layers.{}.{}' \
                       .format(layer_id, k)
@@ -193,14 +200,12 @@ def convert_params(fairseq_model,
             gluon_params[gl_name].set_data(
                 fairseq_params[fs_name].cpu().numpy())
     convert_embeddings('model.decoder', 'tgt')
-
     # final projection in decoder
-    for k, v in [
-        ('output_projection', 'tgt_final_layer.weight'),
+    for fs_name, gl_name in [
+        ('model.decoder.output_projection.weight', 'tgt_final_layer.weight'),
     ]:
-        fs_name = fairseq_prefix + k
-        all_keys.remove(v)
-        gluon_params[v].set_data(
+        all_keys.remove(gl_name)
+        gluon_params[gl_name].set_data(
             fairseq_params[fs_name].cpu().numpy())
     assert len(all_keys) == 0, 'parameters missing from tensorflow checkpoint'
     assert np.array_equal(
