@@ -39,6 +39,7 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
     # Config for the bart base model
     cfg.MODEL.vocab_size = vocab_size
     cfg.MODEL.pos_embed_type = 'learned'
+    cfg.MODEL.shared_embed = fairseq_cfg.share_all_embeddings
     cfg.MODEL.scale_embed = not fairseq_cfg.no_scale_embedding
     cfg.MODEL.layernorm_embedding = fairseq_cfg.layernorm_embedding
     cfg.MODEL.pooler_activation = fairseq_cfg.pooler_activation_fn
@@ -238,45 +239,25 @@ def test_model(fairseq_model, gluon_model, gpu):
 
     gl_input_ids = mx.np.array(input_ids, dtype=np.int32, ctx=ctx)
     gl_valid_length = mx.np.array(valid_length, dtype=np.int32, ctx=ctx)
-    # project the all tokens that is taking whole positions
-    gl_masked_positions = mx.npx.arange_like(gl_input_ids, axis=1)
-    gl_masked_positions = gl_masked_positions + mx.np.zeros_like(gl_input_ids)
+    gl_dec_out = \
+        gluon_model(gl_input_ids, gl_valid_length, gl_input_ids, gl_valid_length)
 
     fs_input_ids = torch.from_numpy(input_ids).cuda(gpu)
-
     fairseq_model.model.eval()
-
-    gl_all_hiddens, gl_pooled, gl_mlm_scores = \
-        gluon_model(gl_input_ids, gl_valid_length, gl_masked_positions)
-
-    fs_mlm_scores, fs_extra = \
+    fs_dec_out, fs_extra = \
         fairseq_model.model.cuda(gpu)(
             fs_input_ids,
+            valid_length,
+            fs_input_ids,
             return_all_hiddens=True)
-    fs_all_hiddens = fs_extra['inner_states']
 
-    # checking all_encodings_outputs
-    num_layers = fairseq_model.args.encoder_layers
-    for i in range(num_layers + 1):
-        gl_hidden = gl_all_hiddens[i].asnumpy()
-        fs_hidden = fs_all_hiddens[i]
-        fs_hidden = fs_hidden.transpose(0, 1)
-        fs_hidden = fs_hidden.detach().cpu().numpy()
-        for j in range(batch_size):
-            assert_allclose(
-                gl_hidden[j, :valid_length[j], :],
-                fs_hidden[j, :valid_length[j], :],
-                1E-3,
-                1E-3
-            )
-    # checking masked_language_scores
-    gl_mlm_scores = gl_mlm_scores.asnumpy()
-    fs_mlm_scores = fs_mlm_scores.transpose(0, 1)
-    fs_mlm_scores = fs_mlm_scores.detach().cpu().numpy()
+    # checking decoder output
+    gl_dec_out = gl_dec_out.asnumpy()
+    fs_dec_out = fs_dec_out.detach().cpu().numpy()
     for j in range(batch_size):
         assert_allclose(
-            gl_mlm_scores[j, :valid_length[j], :],
-            fs_mlm_scores[j, :valid_length[j], :],
+            gl_dec_out[j, :valid_length[j], :],
+            fs_dec_out[j, :valid_length[j], :],
             1E-3,
             1E-3
         )
@@ -317,8 +298,8 @@ def convert_fairseq_model(args):
     gluon_bart = convert_params(fairseq_bart,
                                 gluon_cfg,
                                 ctx)
-    # if args.test:
-        # test_model(fairseq_bart, gluon_bart, args.gpu)
+    if args.test:
+        test_model(fairseq_bart, gluon_bart, args.gpu)
 
     gluon_bart.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
     logging.info('Convert the BART MLM model in {} to {}'.

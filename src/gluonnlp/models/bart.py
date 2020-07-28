@@ -76,8 +76,8 @@ def bart_base():
     cfg.MODEL.ENCODER.num_heads = 12
     cfg.MODEL.ENCODER.hidden_size = 3072
     cfg.MODEL.ENCODER.recurrent = False
-    cfg.MODEL.ENCODER.activation = 'gelu'
     cfg.MODEL.ENCODER.pre_norm = False
+    cfg.MODEL.ENCODER.activation = 'gelu'
 
     # Parameters for the decoder
     cfg.MODEL.DECODER = CN()
@@ -87,8 +87,8 @@ def bart_base():
     cfg.MODEL.DECODER.num_heads = 12
     cfg.MODEL.DECODER.hidden_size = 3072
     cfg.MODEL.DECODER.recurrent = False
-    cfg.MODEL.DECODER.activation = 'gelu'
     cfg.MODEL.DECODER.pre_norm = False
+    cfg.MODEL.DECODER.activation = 'gelu'
 
     # Parameters for the initializer
     cfg.INITIALIZER = CN()
