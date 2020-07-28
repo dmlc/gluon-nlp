@@ -83,11 +83,14 @@ def convert_params(fairseq_model,
     gluon_params = gluon_model.collect_params()
     all_keys = set(gluon_params.keys())
 
-    def convert_attention(num_layers, fairseq_prefix, gluon_prefix,
-                          fairseq_attn_prefix='self_attn', gluon_attn_prefix='attn_qkv'):
+    def convert_attention(num_layers,
+                          fairseq_prefix,
+                          gluon_prefix,
+                          fairseq_attn_prefix='self_attn',
+                          gluon_attn_prefix='attn_qkv'):
         for layer_id in range(num_layers):
             fs_atten_prefix = \
-                '{}.layers.{}.{}' \
+                '{}.layers.{}.{}.' \
                 .format(fairseq_prefix, layer_id, fairseq_attn_prefix)
             fs_q_weight = fairseq_params[fs_atten_prefix + 'q_proj.weight'].cpu().numpy()
             fs_k_weight = fairseq_params[fs_atten_prefix + 'k_proj.weight'].cpu().numpy()
@@ -127,41 +130,77 @@ def convert_params(fairseq_model,
         gluon_params[gl_pos_embed_name].set_data(
             fairseq_params[fs_pos_embed_name].cpu().numpy()[padding_idx + 1:, :])
 
+    def convert_ffn(num_layers, fairseq_prefix, gluon_prefix):
+        # convert feed forward layer in encoder
+        for layer_id in range(num_layers):
+            for k, v in [
+                ('fc1.weight', 'ffn.ffn_1.weight'),
+                ('fc1.bias', 'ffn.ffn_1.bias'),
+                ('fc2.weight', 'ffn.ffn_2.weight'),
+                ('fc2.bias', 'ffn.ffn_2.bias'),
+                ('final_layer_norm.weight', 'ffn.layer_norm.gamma'),
+                ('final_layer_norm.bias', 'ffn.layer_norm.beta')
+            ]:
+                fs_name = '{}.layers.{}.{}' \
+                          .format(fairseq_prefix, layer_id, k)
+                gl_name = '{}.layers.{}.{}' \
+                          .format(gluon_prefix, layer_id, v)
+                all_keys.remove(gl_name)
+                gluon_params[gl_name].set_data(
+                    fairseq_params[fs_name].cpu().numpy())
+
     print('converting encoder params')
-    num_layers = gluon_cfg.MODEL.ENCODER.num_layers
-    convert_attention(num_layers, 'model.encoder.', 'encoder')
+    encoder_num_layers = gluon_cfg.MODEL.ENCODER.num_layers
+    convert_attention(encoder_num_layers, 'model.encoder', 'encoder')
+    convert_ffn(encoder_num_layers, 'model.encoder', 'encoder')
     convert_embeddings('model.encoder', 'src')
-    convert_embeddings('model.decoder', 'tgt')
-    # convert feed forward layer in encoder
-    for layer_id in range(num_layers):
+    for layer_id in range(encoder_num_layers):
         for k, v in [
             ('self_attn.out_proj.weight', 'attention_proj.weight'),
             ('self_attn.out_proj.bias', 'attention_proj.bias'),
             ('self_attn_layer_norm.weight', 'layer_norm.gamma'),
             ('self_attn_layer_norm.bias', 'layer_norm.beta'),
-            ('fc1.weight', 'ffn.ffn_1.weight'),
-            ('fc1.bias', 'ffn.ffn_1.bias'),
-            ('fc2.weight', 'ffn.ffn_2.weight'),
-            ('fc2.bias', 'ffn.ffn_2.bias'),
-            ('final_layer_norm.weight', 'ffn.layer_norm.gamma'),
-            ('final_layer_norm.bias', 'ffn.layer_norm.beta')
         ]:
             fs_name = 'model.encoder.layers.{}.{}' \
                       .format(layer_id, k)
             gl_name = 'encoder.layers.{}.{}' \
-                      .format(gluon_prefix, layer_id, v)
+                      .format(layer_id, v)
             all_keys.remove(gl_name)
             gluon_params[gl_name].set_data(
                 fairseq_params[fs_name].cpu().numpy())
 
-    # TODO(zheyuye), convert the decoder
+    decoder_num_layers = gluon_cfg.MODEL.DECODER.num_layers
+    convert_projection(decoder_num_layers, 'model.decoder', 'decoder')
+    convert_ffn(decoder_num_layers, 'model.decoder', 'decoder')
+    for layer_id in range(decoder_num_layers):
+        for k, v in [
+            ('self_attn.out_proj.weight', 'proj_in.weight'),
+            ('self_attn.out_proj.bias', 'proj_in.bias'),
+            ('self_attn_layer_norm.weight', 'ln_in.gamma'),
+            ('self_attn_layer_norm.bias', 'ln_in.beta'),
+            ('encoder_attn.out_proj.weight', 'proj_inter.weight'),
+            ('encoder_attn.out_proj.bias', 'proj_inter.bias'),
+            ('encoder_attn_layer_norm.weight', 'ln_inter.gamma'),
+            ('encoder_attn_layer_norm.bias', 'ln_inter.beta'),
+        ]:
+            fs_name = 'model.decoder.layers.{}.{}' \
+                      .format(layer_id, k)
+            gl_name = 'decoder.layers.{}.{}' \
+                      .format(layer_id, v)
+            all_keys.remove(gl_name)
+            gluon_params[gl_name].set_data(
+                fairseq_params[fs_name].cpu().numpy())
+    convert_embeddings('model.decoder', 'tgt')
+
+    # final projection in decoder
     for k, v in [
         ('output_projection', 'tgt_final_layer.weight'),
     ]:
         fs_name = fairseq_prefix + k
+        all_keys.remove(v)
         gluon_params[v].set_data(
             fairseq_params[fs_name].cpu().numpy())
-
+    assert len(all_keys) == 0, 'parameters missing from tensorflow checkpoint'
     assert np.array_equal(
         fairseq_params['model.decoder.embed_tokens.weight'].cpu().numpy(),
         fairseq_params['model.decoder.output_projection.weight'].cpu().numpy()
