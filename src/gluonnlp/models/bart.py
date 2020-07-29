@@ -61,6 +61,7 @@ def bart_base():
     cfg.MODEL.scale_embed = False
     cfg.MODEL.shared_embed = True
     cfg.MODEL.tie_weights = True
+    cfg.MODEL.cross_self_attention = False
     cfg.MODEL.attention_dropout_prob = 0.0
     cfg.MODEL.activation_dropout = 0.0
     cfg.MODEL.hidden_dropout_prob = 0.1
@@ -165,8 +166,8 @@ class BartModel(TransformerModel):
         bias_initializer = mx.init.create(*cfg.INITIALIZER.bias)
         return cls(src_vocab_size=cfg.MODEL.vocab_size,
                    tgt_vocab_size=cfg.MODEL.vocab_size,
-                   max_src_length=cfg.MODEL.ENCODER.max_length,
-                   max_tgt_length=cfg.MODEL.DECODER.max_length,
+                   max_src_length=cfg.MODEL.max_src_length,
+                   max_tgt_length=cfg.MODEL.max_tgt_length,
                    scale_embed=cfg.MODEL.scale_embed,
                    pos_embed_type=cfg.MODEL.pos_embed_type,
                    layernorm_embedding=cfg.MODEL.layernorm_embedding,

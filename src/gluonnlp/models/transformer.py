@@ -623,7 +623,7 @@ class TransformerDecoderLayer(HybridBlock):
 class TransformerDecoder(HybridBlock):
     def __init__(self, num_layers=6, recurrent=False,
                  units=512, mem_units=None, hidden_size=2048,
-                 num_heads=8, max_shift=None, rel_pos_embed=False, activation_dropout=0.0,
+                 num_heads=8, max_shift=None, activation_dropout=0.0,
                  dropout=0.1, attention_dropout=0.1, layer_norm_eps=1E-5, data_norm=False,
                  pre_norm=False, weight_initializer=None, bias_initializer=None,
                  activation='relu', dtype='float32'):
@@ -634,7 +634,6 @@ class TransformerDecoder(HybridBlock):
         self.num_layers = num_layers
         self.recurrent = recurrent
         self.max_shift = max_shift
-        self.rel_pos_embed = rel_pos_embed
         self._data_norm = data_norm
         self._pre_norm = pre_norm
         self.dropout_layer = nn.Dropout(dropout)
@@ -1015,7 +1014,8 @@ class TransformerModel(HybridBlock):
         if self.scaled_embed:
             embeddings = embeddings * np.sqrt(self.enc_units)
         if self.pos_embed_type is not None:
-            embeddings = embeddings + self.src_pos_embed_layer(src_data)
+            positional_embedding = self.src_pos_embed_layer(F.npx.arange_like(src_data, axis=1))
+            embeddings = embeddings + positional_embedding
         if self.layernorm_embedding:
             embeddings = self.src_embed_ln(embeddings)
         enc_out = self.encoder(embeddings, src_valid_length)
@@ -1041,13 +1041,14 @@ class TransformerModel(HybridBlock):
         dec_out :
             Shape (batch_size, tgt_length, tgt_vocab_size)
         """
-        embeddings = self.tgt_embed_layer(embeddings)
+        embeddings = self.tgt_embed_layer(tgt_data)
         if self.scaled_embed:
             embeddings = embeddings * np.sqrt(self.dec_units)
-        if self.pos_embed_type is not None:
-            embeddings = embeddings + self.tgt_pos_embed_layer(tgt_data)
+        if self.tgt_pos_embed_layer is not None:
+            positional_embedding = self.tgt_pos_embed_layer(F.npx.arange_like(src_data, axis=1))
+            embeddings = embeddings + positional_embedding
         if self.layernorm_embedding:
-            embeddings = self.src_embed_ln(embeddings)
+            embeddings = self.tgt_embed_ln(embeddings)
         dec_out = self.decoder(embeddings, tgt_valid_length, mem_data, mem_valid_length)
         dec_out = self.tgt_final_layer(dec_out)
         return dec_out

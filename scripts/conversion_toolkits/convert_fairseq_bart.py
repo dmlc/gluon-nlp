@@ -38,9 +38,13 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
     cfg.defrost()
     # Config for the bart base model
     cfg.MODEL.vocab_size = vocab_size
+    cff.MODEL.max_src_length = fairseq_cfg.max_source_positions
+    cff.MODEL.max_tgt_length = fairseq_cfg.max_target_positions
     cfg.MODEL.pos_embed_type = 'learned'
     cfg.MODEL.shared_embed = fairseq_cfg.share_all_embeddings
     cfg.MODEL.scale_embed = not fairseq_cfg.no_scale_embedding
+    cfg.MODEL.cross_self_attention = fairseq_cfg.cross_self_attention
+    cfg.MODEL.tie_weights = fairseq_cfg.share_decoder_input_output_embed
     cfg.MODEL.layernorm_embedding = fairseq_cfg.layernorm_embedding
     cfg.MODEL.pooler_activation = fairseq_cfg.pooler_activation_fn
     cfg.MODEL.layer_norm_eps = 1E-5
@@ -50,7 +54,7 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
     cfg.MODEL.dtype = 'float32'
 
     # Parameters for the encoder
-    cfg.MODEL.ENCODER.max_length = fairseq_cfg.max_source_positions
+    cfg.MODEL.ENCODER.pre_norm = fairseq_cfg.encoder_normalize_before
     cfg.MODEL.ENCODER.num_layers = fairseq_cfg.encoder_layers
     cfg.MODEL.ENCODER.units = fairseq_cfg.encoder_embed_dim
     cfg.MODEL.ENCODER.num_heads = fairseq_cfg.encoder_attention_heads
@@ -58,7 +62,7 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
     cfg.MODEL.ENCODER.activation = fairseq_cfg.activation_fn
 
     # Parameters for the decoder
-    cfg.MODEL.DECODER.max_length = fairseq_cfg.max_target_positions
+    cfg.MODEL.DECODER.pre_norm = fairseq_cfg.decoder_normalize_before
     cfg.MODEL.DECODER.num_layers = fairseq_cfg.decoder_layers
     cfg.MODEL.DECODER.units = fairseq_cfg.decoder_embed_dim
     cfg.MODEL.DECODER.num_heads = fairseq_cfg.decoder_attention_heads
@@ -200,6 +204,7 @@ def convert_params(fairseq_model,
             all_keys.remove(gl_name)
             gluon_params[gl_name].set_data(
                 fairseq_params[fs_name].cpu().numpy())
+
     convert_embeddings('model.decoder', 'tgt')
     # final projection in decoder
     for fs_name, gl_name in [
@@ -209,6 +214,8 @@ def convert_params(fairseq_model,
         gluon_params[gl_name].set_data(
             fairseq_params[fs_name].cpu().numpy())
     assert len(all_keys) == 0, 'parameters missing from tensorflow checkpoint'
+
+    # check parameters sharing if share_decoder_input_output_embed is true
     assert np.array_equal(
         fairseq_params['model.decoder.embed_tokens.weight'].cpu().numpy(),
         fairseq_params['model.decoder.output_projection.weight'].cpu().numpy()
