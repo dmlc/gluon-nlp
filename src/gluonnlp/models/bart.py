@@ -104,6 +104,7 @@ def bart_base():
 def bart_large():
     cfg = bart_base()
     cfg.defrost()
+    cfg.MODEL.vocab_size = 50265
     cfg.MODEL.ENCODER.units = 1024
     cfg.MODEL.ENCODER.hidden_size = 4096
     cfg.MODEL.ENCODER.num_heads = 16
@@ -122,15 +123,15 @@ PRETRAINED_URL = {
     'fairseq_bart_base': {
         'cfg': bart_base(),
         'merges': 'fairseq_bart_base/gpt2-396d4d8e.merges',
-        'vocab': 'fairseq_bart_base/',
-        'params': 'fairseq_bart_base/',
+        'vocab': 'fairseq_bart_base/gpt2-f4dedacb.vocab',
+        'params': 'fairseq_bart_base/model-6dea1e11.params',
         'lowercase': False,
     },
     'fairseq_bart_large': {
         'cfg': bart_large(),
-        'merges': 'fairseq_bart_base/gpt2-396d4d8e.merges',
-        'vocab': 'fairseq_bart_large/',
-        'params': 'fairseq_bart_large/',
+        'merges': 'fairseq_bart_large/gpt2-396d4d8e.merges',
+        'vocab': 'fairseq_bart_large/gpt2-f1335494.vocab',
+        'params': 'fairseq_bart_large/model-38f35552.params',
         'lowercase': False,
     }
 }
