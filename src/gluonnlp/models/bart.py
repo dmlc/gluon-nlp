@@ -144,7 +144,6 @@ class BartModel(TransformerModel):
     def __init__(self,
                  use_pooler: bool = False,
                  classifier_activation: bool = False,
-                 tie_weights: bool = True,
                  pooler_activation='tanh',
                  **kwargs):
         """
@@ -163,19 +162,17 @@ class BartModel(TransformerModel):
         self.use_pooler = use_pooler
         self.classifier_activation = classifier_activation
         if not use_pooler:
-            if tie_weights:
-                self.tgt_final_layer =\
-                    nn.Dense(tgt_vocab_size, flatten=False,
-                             bias_initializer=bias_initializer,
+            if self.tie_weights:
+                self.tgt_final_layer = \
+                    nn.Dense(self._tgt_vocab_size, flatten=False,
                              use_bias=False,
                              dtype=self._dtype)
                 self.tgt_final_layer.weight = self.tgt_embed_layer.weight
             else:
                 self.tgt_final_layer = \
-                    nn.Dense(tgt_vocab_size,
+                    nn.Dense(self._tgt_vocab_size,
                              flatten=False,
-                             weight_initializer=weight_initializer,
-                             bias_initializer=bias_initializer,
+                             weight_initializer=self.weight_initializer,
                              use_bias=False,
                              dtype=self._dtype)
         elif classifier_activation:

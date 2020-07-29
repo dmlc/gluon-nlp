@@ -897,11 +897,13 @@ class TransformerModel(HybridBlock):
         self._dtype = dtype
         self._src_vocab_size = src_vocab_size
         self._tgt_vocab_size = tgt_vocab_size
+        self.tie_weights = tie_weights
         self.pos_embed_type = pos_embed_type
         self.layernorm_embedding = layernorm_embedding
         self.scaled_embed = scale_embed
         self.enc_units = enc_units
         self.dec_units = dec_units
+        self.weight_initializer = weight_initializer
         if max_src_length is not None and max_src_length < 0:
             max_src_length = None
         if max_tgt_length is not None and max_tgt_length < 0:
@@ -966,7 +968,7 @@ class TransformerModel(HybridBlock):
                                           pre_norm=dec_pre_norm,
                                           dtype=self._dtype)
         if tie_weights:
-            self.tgt_final_layer =\
+            self.tgt_final_layer = \
                 nn.Dense(tgt_vocab_size, flatten=False,
                          bias_initializer=bias_initializer,
                          use_bias=False,
