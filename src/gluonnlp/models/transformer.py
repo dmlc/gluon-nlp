@@ -1049,7 +1049,6 @@ class TransformerModel(HybridBlock):
         if self.layernorm_embedding:
             embeddings = self.tgt_embed_ln(embeddings)
         dec_out = self.decoder(embeddings, tgt_valid_length, mem_data, mem_valid_length)
-        dec_out = self.tgt_final_layer(dec_out)
         return dec_out
 
     def hybrid_forward(self, F, src_data, src_valid_length, tgt_data, tgt_valid_length):
@@ -1074,6 +1073,7 @@ class TransformerModel(HybridBlock):
         """
         enc_out = self.encode(F, src_data, src_valid_length)
         dec_out = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out, src_valid_length)
+        dec_out = self.tgt_final_layer(dec_out)
         return dec_out
 
     @classmethod

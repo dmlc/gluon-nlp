@@ -29,19 +29,23 @@ Language Generation, Translation, and Comprehension},
 
 """
 
+__all__ = ['BartModel', 'list_pretrained_bart', 'get_pretrained_bart']
+
 import os
+from typing import Tuple
 
 import mxnet as mx
 from mxnet import use_np
+from mxnet.gluon import nn
 
-from ..base import (get_model_zoo_home_dir, get_repo_model_zoo_url,
-                    get_model_zoo_checksum_dir)
+from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, \
+                   get_model_zoo_checksum_dir
 from ..registry import BACKBONE_REGISTRY
 from ..utils.misc import download, load_checksum_stats
 from .transformer import TransformerModel
 from ..utils.config import CfgNode as CN
 from ..utils.registry import Registry
-from ..data.tokenizers import HuggingFaceWordPieceTokenizer
+from ..data.tokenizers import HuggingFaceByteBPETokenizer
 
 bart_cfg_reg = Registry('bart_cfg')
 
@@ -137,11 +141,97 @@ FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'bar
 
 @use_np
 class BartModel(TransformerModel):
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 use_pooler: bool = False,
+                 classifier_activation: bool = False,
+                 tie_weights: bool = True,
+                 pooler_activation='tanh',
+                 **kwargs):
+        """
+
+        Parameters
+        ----------
+        use_pooler
+        classifier_activation
+        pooler_activation
+        **kwargs
+        """
         super().__init__(**kwargs)
         assert self._src_vocab_size == self._tgt_vocab_size, \
-               'Vocab size mismatch between encoder and decoder'
+            'Vocab size mismatch between encoder and decoder'
         self._vocab_size = self._src_vocab_size
+        self.use_pooler = use_pooler
+        self.classifier_activation = classifier_activation
+        if not use_pooler:
+            if tie_weights:
+                self.tgt_final_layer =\
+                    nn.Dense(tgt_vocab_size, flatten=False,
+                             bias_initializer=bias_initializer,
+                             use_bias=False,
+                             dtype=self._dtype)
+                self.tgt_final_layer.weight = self.tgt_embed_layer.weight
+            else:
+                self.tgt_final_layer = \
+                    nn.Dense(tgt_vocab_size,
+                             flatten=False,
+                             weight_initializer=weight_initializer,
+                             bias_initializer=bias_initializer,
+                             use_bias=False,
+                             dtype=self._dtype)
+        elif classifier_activation:
+            # Construct pooler
+            self.pooler = nn.Dense(units=self.units,
+                                   in_units=self.units,
+                                   flatten=False,
+                                   activation=pooler_activation,
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer)
+
+    def hybrid_forward(self, F, src_data, src_valid_length, tgt_data, tgt_valid_length):
+        """
+
+        Parameters
+        ----------
+        F
+        src_data :
+            Shape (batch_size, src_length)
+        src_valid_length :
+            Shape (batch_size,)
+        tgt_data :
+            Shape (batch_size, tgt_length)
+        tgt_valid_length :
+            Shape (batch_size,)
+
+        Returns
+        -------
+        out :
+            Shape (batch_size, tgt_length, tgt_vocab_size)
+        """
+        enc_out = self.encode(F, src_data, src_valid_length)
+        dec_out = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out, src_valid_length)
+        if self.use_pooler:
+            pooled_out = self.apply_pooling(dec_out)
+            return pooled_out
+        else:
+            dec_out = self.tgt_final_layer(dec_out)
+            return dec_out
+
+    def apply_pooling(self, sequence):
+        """Generate the representation given the inputs.
+
+        This is used for pre-training or fine-tuning a mobile bert model.
+        Get the first token of the whole sequence which is [CLS]
+
+        sequence:
+            Shape (batch_size, sequence_length, units)
+        return:
+            Shape (batch_size, units)
+        """
+        outputs = sequence[:, 0, :]
+        if self.classifier_activation:
+            return self.pooler(outputs)
+        else:
+            return outputs
 
     @property
     def vocab_size(self):
@@ -155,7 +245,9 @@ class BartModel(TransformerModel):
             return bart_cfg_reg.create(key)
 
     @classmethod
-    def from_cfg(cls, cfg):
+    def from_cfg(cls, cfg,
+                 use_pooler=False,
+                 classifier_activation=False):
         cfg = cls.get_cfg().clone_merge(cfg)
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
@@ -166,12 +258,15 @@ class BartModel(TransformerModel):
                    max_tgt_length=cfg.MODEL.max_tgt_length,
                    scale_embed=cfg.MODEL.scale_embed,
                    pos_embed_type=cfg.MODEL.pos_embed_type,
-                   layernorm_embedding=cfg.MODEL.layernorm_embedding,
                    shared_embed=cfg.MODEL.shared_embed,
                    tie_weights=cfg.MODEL.tie_weights,
+                   use_pooler=use_pooler,
                    attention_dropout=cfg.MODEL.attention_dropout,
                    activation_dropout=cfg.MODEL.activation_dropout,
                    dropout=cfg.MODEL.dropout,
+                   pooler_activation=cfg.MODEL.pooler_activation,
+                   layer_norm_eps=cfg.MODEL.layer_norm_eps,
+                   layernorm_embedding=cfg.MODEL.layernorm_embedding,
                    enc_num_layers=cfg.MODEL.ENCODER.num_layers,
                    enc_units=cfg.MODEL.ENCODER.units,
                    enc_num_heads=cfg.MODEL.ENCODER.num_heads,
@@ -191,6 +286,65 @@ class BartModel(TransformerModel):
                    bias_initializer=bias_initializer,
                    dtype=cfg.MODEL.dtype)
 
-# BACKBONE_REGISTRY.register('bart', [BartModel,
-        # get_pretrained_bart,
-        # list_pretrained_bart])
+
+def list_pretrained_bart():
+    return sorted(list(PRETRAINED_URL.keys()))
+
+
+def get_pretrained_bart(model_name: str = 'fairseq_roberta_base',
+                        root: str = get_model_zoo_home_dir(),
+                        load_backbone: bool = True) \
+        -> Tuple[CN, HuggingFaceByteBPETokenizer, str]:
+    """Get the pretrained RoBERTa weights
+
+    Parameters
+    ----------
+    model_name
+        The name of the RoBERTa model.
+    root
+        The downloading root
+    load_backbone
+        Whether to load the weights of the backbone network
+    Returns
+    -------
+    cfg
+        Network configuration
+    tokenizer
+        The HuggingFaceByteBPETokenizer
+    params_path
+        Path to the parameters
+    """
+    assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
+        model_name, list_pretrained_bart())
+    cfg_path = PRETRAINED_URL[model_name]['cfg']
+    merges_path = PRETRAINED_URL[model_name]['merges']
+    vocab_path = PRETRAINED_URL[model_name]['vocab']
+    params_path = PRETRAINED_URL[model_name]['params']
+
+    local_paths = dict()
+    for k, path in [('cfg', cfg_path), ('vocab', vocab_path),
+                    ('merges', merges_path)]:
+        local_paths[k] = download(url=get_repo_model_zoo_url() + path,
+                                  path=os.path.join(root, path),
+                                  sha1_hash=FILE_STATS[path])
+    if load_backbone:
+        local_params_path = download(url=get_repo_model_zoo_url() + params_path,
+                                     path=os.path.join(root, params_path),
+                                     sha1_hash=FILE_STATS[params_path])
+    else:
+        local_params_path = None
+
+    local_mlm_params_path = None
+    do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
+                       and PRETRAINED_URL[model_name]['lowercase'] else False
+    tokenizer = HuggingFaceByteBPETokenizer(
+        merges_file=local_paths['merges'],
+        vocab_file=local_paths['vocab'],
+        lowercase=do_lower)
+    cfg = BartModel.get_cfg().clone_merge(local_paths['cfg'])
+    return cfg, tokenizer, local_params_path, local_mlm_params_path
+
+
+BACKBONE_REGISTRY.register('bart', [BartModel,
+                                    get_pretrained_bart,
+                                    list_pretrained_bart])

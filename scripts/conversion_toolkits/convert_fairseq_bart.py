@@ -77,7 +77,8 @@ def convert_params(fairseq_model,
                    gluon_cfg,
                    ctx):
     fairseq_params = fairseq_model.state_dict()
-    gluon_model = BartModel.from_cfg(gluon_cfg)
+    # apply a linear mapping to vocab dictionary
+    gluon_model = BartModel.from_cfg(gluon_cfg, use_pooler=False)
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
     gluon_params = gluon_model.collect_params()
