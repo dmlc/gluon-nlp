@@ -164,7 +164,7 @@ def simple(words):
 matrix = nlp.embedding.load_embeddings(vocab, 'wiki.simple', unk_method=simple)
 ```
 
-We can access the first five elements of the embedding of 'hello' and see that they are ones.
+We can access the first five elements of the embedding of 'goodgod' and see that they are ones.
 
 ```{.python .input}
 matrix[vocab['goodgod']][:5]
