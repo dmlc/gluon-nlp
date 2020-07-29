@@ -196,7 +196,7 @@ class TransformerEncoderLayer(HybridBlock):
                                        bias_initializer=bias_initializer,
                                        dtype=self._dtype)
         attention_layout = 'NTK' if self._layout == 'NT' else 'TNK'
-        self.attention_cell =\
+        self.self_attention =\
             MultiHeadAttentionCell(
                 query_units=self._units,
                 num_heads=self._num_heads,
