@@ -1,6 +1,4 @@
 import os
-import sys
-import json
 import shutil
 import logging
 import argparse
@@ -10,12 +8,9 @@ import numpy as np
 from numpy.testing import assert_allclose
 
 import torch
-from gluonnlp.data.vocab import Vocab as gluon_Vocab
-from gluonnlp.utils.misc import sha1sum, logging_config, naming_convention
 from fairseq.models.bart import BARTModel as fairseq_BARTModel
+from gluonnlp.utils.misc import sha1sum, logging_config, naming_convention
 from gluonnlp.models.bart import BartModel
-from gluonnlp.data.tokenizers import HuggingFaceByteBPETokenizer
-
 from convert_fairseq_roberta import convert_vocab
 
 mx.npx.set_np()
@@ -33,24 +28,24 @@ def parse_args():
                         help='Whether to test the conversion.')
     return parser.parse_args()
 
+
 def convert_config(fairseq_cfg, vocab_size, cfg):
     print('converting config')
     cfg.defrost()
     # Config for the bart base model
     cfg.MODEL.vocab_size = vocab_size
-    cff.MODEL.max_src_length = fairseq_cfg.max_source_positions
-    cff.MODEL.max_tgt_length = fairseq_cfg.max_target_positions
+    cfg.MODEL.max_src_length = fairseq_cfg.max_source_positions
+    cfg.MODEL.max_tgt_length = fairseq_cfg.max_target_positions
     cfg.MODEL.pos_embed_type = 'learned'
     cfg.MODEL.shared_embed = fairseq_cfg.share_all_embeddings
     cfg.MODEL.scale_embed = not fairseq_cfg.no_scale_embedding
-    cfg.MODEL.cross_self_attention = fairseq_cfg.cross_self_attention
     cfg.MODEL.tie_weights = fairseq_cfg.share_decoder_input_output_embed
     cfg.MODEL.layernorm_embedding = fairseq_cfg.layernorm_embedding
     cfg.MODEL.pooler_activation = fairseq_cfg.pooler_activation_fn
     cfg.MODEL.layer_norm_eps = 1E-5
-    cfg.MODEL.hidden_dropout_prob = fairseq_cfg.dropout
+    cfg.MODEL.dropout = fairseq_cfg.dropout
     cfg.MODEL.activation_dropout = fairseq_cfg.activation_dropout
-    cfg.MODEL.attention_dropout_prob = fairseq_cfg.attention_dropout
+    cfg.MODEL.attention_dropout = fairseq_cfg.attention_dropout
     cfg.MODEL.dtype = 'float32'
 
     # Parameters for the encoder
@@ -294,7 +289,7 @@ def convert_fairseq_model(args):
         os.makedirs(args.save_dir)
 
     fairseq_bart = fairseq_BARTModel.from_pretrained(args.fairseq_model_path,
-                                                           checkpoint_file='model.pt')
+                                                     checkpoint_file='model.pt')
     vocab_size = convert_vocab(args, fairseq_bart)
     gluon_cfg = convert_config(fairseq_bart.args, vocab_size,
                                BartModel.get_cfg().clone())

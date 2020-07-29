@@ -30,20 +30,16 @@ Language Generation, Translation, and Comprehension},
 """
 
 import os
-from typing import Tuple
 
 import mxnet as mx
 from mxnet import use_np
-from mxnet.gluon import HybridBlock, nn
+
+from ..base import (get_model_zoo_home_dir, get_repo_model_zoo_url,
+                    get_model_zoo_checksum_dir)
 from ..registry import BACKBONE_REGISTRY
+from ..utils.misc import download, load_checksum_stats
 from .transformer import TransformerModel
-from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
-from ..utils.misc import load_checksum_stats, download
-from ..initializer import TruncNorm
-from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask
-from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN, InitializerType
-from ..op import select_vectors_by_position
 from ..utils.registry import Registry
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 
@@ -56,22 +52,22 @@ def bart_base():
     # Config for the bart base model
     cfg.MODEL = CN()
     cfg.MODEL.vocab_size = 51201
-    cfg.MODEL.pos_embed_type = 'learned'
-    cfg.MODEL.layernorm_embedding = True
+    cfg.MODEL.max_src_length = 1024
+    cfg.MODEL.max_tgt_length = 1024
     cfg.MODEL.scale_embed = False
+    cfg.MODEL.pos_embed_type = 'learned'
     cfg.MODEL.shared_embed = True
     cfg.MODEL.tie_weights = True
-    cfg.MODEL.cross_self_attention = False
-    cfg.MODEL.attention_dropout_prob = 0.0
+    cfg.MODEL.attention_dropout = 0.1
     cfg.MODEL.activation_dropout = 0.0
-    cfg.MODEL.hidden_dropout_prob = 0.1
+    cfg.MODEL.dropout = 0.0
     cfg.MODEL.layer_norm_eps = 1E-5
     cfg.MODEL.pooler_activation = 'tanh'
+    cfg.MODEL.layernorm_embedding = True
     cfg.MODEL.dtype = 'float32'
 
     # Parameters for the encoder
     cfg.MODEL.ENCODER = CN()
-    cfg.MODEL.ENCODER.max_length = 1024
     cfg.MODEL.ENCODER.num_layers = 6
     cfg.MODEL.ENCODER.units = 768
     cfg.MODEL.ENCODER.num_heads = 12
@@ -82,7 +78,6 @@ def bart_base():
 
     # Parameters for the decoder
     cfg.MODEL.DECODER = CN()
-    cfg.MODEL.DECODER.max_length = 1024
     cfg.MODEL.DECODER.num_layers = 6
     cfg.MODEL.DECODER.units = 768
     cfg.MODEL.DECODER.num_heads = 12
@@ -144,7 +139,8 @@ FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'bar
 class BartModel(TransformerModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        assert  self._src_vocab_size == self._tgt_vocab_size, 'Vocab size mismatch between encoder and decoder'
+        assert self._src_vocab_size == self._tgt_vocab_size, \
+               'Vocab size mismatch between encoder and decoder'
         self._vocab_size = self._src_vocab_size
 
     @property
@@ -173,9 +169,9 @@ class BartModel(TransformerModel):
                    layernorm_embedding=cfg.MODEL.layernorm_embedding,
                    shared_embed=cfg.MODEL.shared_embed,
                    tie_weights=cfg.MODEL.tie_weights,
-                   attention_dropout=cfg.MODEL.attention_dropout_prob,
+                   attention_dropout=cfg.MODEL.attention_dropout,
                    activation_dropout=cfg.MODEL.activation_dropout,
-                   dropout=cfg.MODEL.hidden_dropout_prob,
+                   dropout=cfg.MODEL.dropout,
                    enc_num_layers=cfg.MODEL.ENCODER.num_layers,
                    enc_units=cfg.MODEL.ENCODER.units,
                    enc_num_heads=cfg.MODEL.ENCODER.num_heads,

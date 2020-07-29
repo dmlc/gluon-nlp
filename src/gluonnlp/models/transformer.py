@@ -191,7 +191,7 @@ class TransformerEncoderLayer(HybridBlock):
                                        weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer,
                                        dtype=self._dtype)
-        self.attention_cell =\
+        self.self_attention =\
             MultiHeadAttentionCell(
                 query_units=self._units,
                 num_heads=self._num_heads,
@@ -239,7 +239,7 @@ class TransformerEncoderLayer(HybridBlock):
         query = F.npx.reshape(query, (-2, -2, self._num_heads, -1))
         key = F.npx.reshape(key, (-2, -2, self._num_heads, -1))
         value = F.npx.reshape(value, (-2, -2, self._num_heads, -1))
-        out, [_, attn_weight] = self.attention_cell(query, key, value, attn_mask)
+        out, [_, attn_weight] = self.self_attention(query, key, value, attn_mask)
         out = self.attention_proj(out)
         out = self.dropout_layer(out)
         out = out + data
@@ -494,10 +494,11 @@ class TransformerDecoderLayer(HybridBlock):
         if self._pre_norm:
             data = self.ln_in(data)
         self_query, self_key, self_value = F.np.split(self.attn_in_qkv(data), 3, axis=-1)
-        out, _ = self.self_attention(F.npx.reshape(self_query, (-2, -2, self._num_heads, -1)),
-                                     F.npx.reshape(self_key, (-2, -2, self._num_heads, -1)),
-                                     F.npx.reshape(self_value, (-2, -2, self._num_heads, -1)),
-                                     self_causal_mask)
+        out, [_, self_attn_weight] = self.self_attention(
+                F.npx.reshape(self_query, (-2, -2, self._num_heads, -1)),
+                F.npx.reshape(self_key, (-2, -2, self._num_heads, -1)),
+                F.npx.reshape(self_value, (-2, -2, self._num_heads, -1)),
+                self_causal_mask)
         out = self.proj_in(out)
         out = self.dropout_layer(out)
         out = out + data
@@ -507,13 +508,11 @@ class TransformerDecoderLayer(HybridBlock):
         data = out
         if self._pre_norm:
             data = self.ln_inter(data)
-        out, _ = self.inter_attention(F.npx.reshape(self.attn_inter_q(data),
-                                                    (-2, -2, self._num_heads, -1)),
-                                      F.npx.reshape(self.attn_inter_k(mem),
-                                                    (-2, -2, self._num_heads, -1)),
-                                      F.npx.reshape(self.attn_inter_v(mem),
-                                                    (-2, -2, self._num_heads, -1)),
-                                      mem_attn_mask)
+        out, [_, context_attn_weight] = self.inter_attention(
+                F.npx.reshape(self.attn_inter_q(data), (-2, -2, self._num_heads, -1)),
+                F.npx.reshape(self.attn_inter_k(mem), (-2, -2, self._num_heads, -1)),
+                F.npx.reshape(self.attn_inter_v(mem), (-2, -2, self._num_heads, -1)),
+                mem_attn_mask)
         out = self.proj_inter(out)
         out = self.dropout_layer(out)
         out = out + data
@@ -592,7 +591,7 @@ class TransformerDecoderLayer(HybridBlock):
         step_value = F.npx.reshape(step_value, (-2, -2, self._num_heads, -1))
         new_key = F.np.concatenate([prev_key, step_key], axis=1)
         new_value = F.np.concatenate([prev_value, step_value], axis=1)
-        out, _ = self.self_attention(step_query, new_key, new_value, None)
+        out, [_, attn_weight] = self.self_attention(step_query, new_key, new_value, None)
         out = self.proj_in(out)
         out = self.dropout_layer(out)
         out = out + data
@@ -1045,7 +1044,7 @@ class TransformerModel(HybridBlock):
         if self.scaled_embed:
             embeddings = embeddings * np.sqrt(self.dec_units)
         if self.tgt_pos_embed_layer is not None:
-            positional_embedding = self.tgt_pos_embed_layer(F.npx.arange_like(src_data, axis=1))
+            positional_embedding = self.tgt_pos_embed_layer(F.npx.arange_like(tgt_data, axis=1))
             embeddings = embeddings + positional_embedding
         if self.layernorm_embedding:
             embeddings = self.tgt_embed_ln(embeddings)
