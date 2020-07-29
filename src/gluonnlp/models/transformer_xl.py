@@ -81,6 +81,10 @@ class TransformerXLDecoderLayer(HybridBlock):
                                    pre_norm=pre_norm,
                                    dtype=dtype)
 
+    @property
+    def layout(self):
+        return self._layout
+
     def hybrid_forward(self, F, data, mem, rel_positions, mask, query_r_bias, query_k_bias):
         """
 
@@ -118,7 +122,10 @@ class TransformerXLDecoderLayer(HybridBlock):
         Returns
         -------
         out
-            Shape (batch_size, query_length, units)
+            - layout = 'NT'
+                Shape (batch_size, query_length, units)
+            - layout = 'TN'
+                Shape (query_length, batch_size, units)
         """
         if self._layout == 'NT':
             context = F.np.concatenate([mem, data], axis=1)

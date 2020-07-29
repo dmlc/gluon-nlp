@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import mxnet as mx
 import tempfile
-from gluonnlp.models.xlmr import XLMRModel, XLMRForMLM, \
+from gluonnlp.models.xlmr import XLMRModel, \
     list_pretrained_xlmr, get_pretrained_xlmr
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
 
@@ -29,7 +29,7 @@ def test_xlmr():
 
         # test forward
         batch_size = 1
-        seq_length = 8
+        seq_length = 4
         vocab_size = len(tokenizer.vocab)
         input_ids = mx.np.array(
             np.random.randint(
