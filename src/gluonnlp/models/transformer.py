@@ -1206,7 +1206,6 @@ class TransformerModel(HybridBlock):
                 tgt_data = tgt_data + F.np.expand_dims(self.tgt_pos_embed_layer(
                     F.npx.arange_like(tgt_data, axis=0)), axis=1)
         dec_out = self.decoder(tgt_data, tgt_valid_length, mem_data, mem_valid_length)
-        dec_out = self.tgt_final_layer(dec_out)
         return dec_out
 
     def hybrid_forward(self, F, src_data, src_valid_length, tgt_data, tgt_valid_length):

@@ -68,6 +68,7 @@ def fair_bart_base():
     cfg.MODEL.layer_norm_eps = 1E-5
     cfg.MODEL.pooler_activation = 'tanh'
     cfg.MODEL.layernorm_embedding = True
+    cfg.MODEL.layout = 'NT'
     cfg.MODEL.dtype = 'float32'
 
     # Parameters for the encoder
@@ -191,27 +192,43 @@ class BartModel(TransformerModel):
         Parameters
         ----------
         F
-        src_data :
-            Shape (batch_size, src_length)
-        src_valid_length :
+        src_data
+            - layout = 'NT'
+                Shape (batch_size, src_length)
+            - layout = 'TN'
+                Shape (src_length, batch_size)
+        src_valid_length
             Shape (batch_size,)
-        tgt_data :
-            Shape (batch_size, tgt_length)
-        tgt_valid_length :
+        tgt_data
+            - layout = 'NT'
+                Shape (batch_size, tgt_length)
+            - layout = 'TN'
+                Shape (tgt_length, batch_size)
+        tgt_valid_length
             Shape (batch_size,)
 
         Returns
         -------
-        out :
-            Shape (batch_size, tgt_length, tgt_vocab_size)
+        (contextual_embedding)
+            - layout = 'NT'
+                Shape (batch_size, tgt_length, units)
+            - layout = 'TN'
+                Shape (tgt_length, batch_size, units)
+        (pooled_output)
+            This is optional. Shape (batch_size, units)
+        (dec_out)
+            - layout = 'NT'
+                Shape (batch_size, tgt_length, tgt_vocab_size)
+            - layout = 'TN'
+                Shape (tgt_length, batch_size, tgt_vocab_size)
         """
         enc_out = self.encode(F, src_data, src_valid_length)
-        dec_out = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out, src_valid_length)
+        contextual_embedding = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out, src_valid_length)
         if self.use_pooler:
-            pooled_out = self.apply_pooling(dec_out)
-            return dec_out, pooled_out
+            pooled_output = self.apply_pooling(contextual_embedding)
+            return contextual_embedding, pooled_output
         else:
-            dec_out = self.tgt_final_layer(dec_out)
+            dec_out = self.tgt_final_layer(contextual_embedding)
             return dec_out
 
     def apply_pooling(self, sequence):
@@ -230,6 +247,10 @@ class BartModel(TransformerModel):
             return self.pooler(outputs)
         else:
             return outputs
+
+    @property
+    def layout(self) -> str:
+        return self._layout
 
     @property
     def vocab_size(self):
