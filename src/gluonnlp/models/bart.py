@@ -51,7 +51,7 @@ bart_cfg_reg = Registry('bart_cfg')
 
 
 @bart_cfg_reg.register()
-def bart_base():
+def fair_bart_base():
     cfg = CN()
     # Config for the bart base model
     cfg.MODEL = CN()
@@ -101,8 +101,8 @@ def bart_base():
 
 
 @bart_cfg_reg.register()
-def bart_large():
-    cfg = bart_base()
+def fair_bart_large():
+    cfg = fair_bart_base()
     cfg.defrost()
     cfg.MODEL.vocab_size = 50265
     cfg.MODEL.ENCODER.units = 1024
@@ -121,14 +121,14 @@ def bart_large():
 
 PRETRAINED_URL = {
     'fairseq_bart_base': {
-        'cfg': bart_base(),
+        'cfg': fair_bart_base(),
         'merges': 'fairseq_bart_base/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_bart_base/gpt2-f4dedacb.vocab',
         'params': 'fairseq_bart_base/model-6dea1e11.params',
         'lowercase': False,
     },
     'fairseq_bart_large': {
-        'cfg': bart_large(),
+        'cfg': fair_bart_large(),
         'merges': 'fairseq_bart_large/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_bart_large/gpt2-f1335494.vocab',
         'params': 'fairseq_bart_large/model-38f35552.params',
@@ -209,7 +209,7 @@ class BartModel(TransformerModel):
         dec_out = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out, src_valid_length)
         if self.use_pooler:
             pooled_out = self.apply_pooling(dec_out)
-            return pooled_out
+            return dec_out, pooled_out
         else:
             dec_out = self.tgt_final_layer(dec_out)
             return dec_out
@@ -238,7 +238,7 @@ class BartModel(TransformerModel):
     @classmethod
     def get_cfg(cls, key=None):
         if key is None:
-            return bart_base()
+            return fair_bart_base()
         else:
             return bart_cfg_reg.create(key)
 
