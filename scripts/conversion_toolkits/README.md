@@ -75,8 +75,7 @@ Notice: pleas set up the `--electra_path` with the cloned path or get this elect
 
 ```bash
 # Need to use TF 1.13.2 to use contrib layer
-pip uninstall tensorflow
-pip install tensorflow==1.13.2
+pip install tensorflow==1.13.2 --upgrade --force-reinstall
 
 # Actual conversion
 bash convert_electra.sh

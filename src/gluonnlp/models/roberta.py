@@ -42,31 +42,13 @@ from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, \
 from ..layers import PositionalEmbedding, get_activation
 from ..registry import BACKBONE_REGISTRY
 from ..utils.misc import download, load_checksum_stats
+from ..utils.registry import Registry
 from .transformer import TransformerEncoderLayer
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..attention_cell import gen_self_attn_mask
-from ..utils.registry import Registry
 from ..data.tokenizers import HuggingFaceByteBPETokenizer
 
-PRETRAINED_URL = {
-    'fairseq_roberta_base': {
-        'cfg': 'fairseq_roberta_base/model-565d1db7.yml',
-        'merges': 'fairseq_roberta_base/gpt2-396d4d8e.merges',
-        'vocab': 'fairseq_roberta_base/gpt2-f1335494.vocab',
-        'params': 'fairseq_roberta_base/model-09a1520a.params',
-        'mlm_params': 'fairseq_roberta_base/model_mlm-29889e2b.params',
-        'lowercase': False,
-    },
-    'fairseq_roberta_large': {
-        'cfg': 'fairseq_roberta_large/model-6e66dc4a.yml',
-        'merges': 'fairseq_roberta_large/gpt2-396d4d8e.merges',
-        'vocab': 'fairseq_roberta_large/gpt2-f1335494.vocab',
-        'params': 'fairseq_roberta_large/model-6b043b91.params',
-        'mlm_params': 'fairseq_roberta_large/model_mlm-119f38e1.params',
-        'lowercase': False,
-    }
-}
 
 FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'roberta.txt'))
 roberta_cfg_reg = Registry('roberta_cfg')
@@ -90,6 +72,10 @@ def roberta_base():
     cfg.MODEL.hidden_dropout_prob = 0.1
     cfg.MODEL.attention_dropout_prob = 0.1
     cfg.MODEL.dtype = 'float32'
+    # Layout
+    cfg.MODEL.layout = 'NT'
+    cfg.MODEL.compute_layout = 'auto'
+    # Initialization method
     cfg.INITIALIZER = CN()
     cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
     cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]
@@ -109,6 +95,97 @@ def roberta_large():
     cfg.MODEL.num_layers = 24
     cfg.freeze()
     return cfg
+
+
+PRETRAINED_URL = {
+    'fairseq_roberta_base': {
+        'cfg': roberta_base(),
+        'merges': 'fairseq_roberta_base/gpt2-396d4d8e.merges',
+        'vocab': 'fairseq_roberta_base/gpt2-f1335494.vocab',
+        'params': 'fairseq_roberta_base/model-09a1520a.params',
+        'mlm_params': 'fairseq_roberta_base/model_mlm-29889e2b.params',
+        'lowercase': False,
+    },
+    'fairseq_roberta_large': {
+        'cfg': roberta_large(),
+        'merges': 'fairseq_roberta_large/gpt2-396d4d8e.merges',
+        'vocab': 'fairseq_roberta_large/gpt2-f1335494.vocab',
+        'params': 'fairseq_roberta_large/model-6b043b91.params',
+        'mlm_params': 'fairseq_roberta_large/model_mlm-119f38e1.params',
+        'lowercase': False,
+    }
+}
+
+
+@use_np
+class RobertaEncoder(HybridBlock):
+    def __init__(self,
+                 units=768,
+                 hidden_size=3072,
+                 num_layers=12,
+                 num_heads=12,
+                 attention_dropout_prob=0.1,
+                 hidden_dropout_prob=0.1,
+                 layer_norm_eps=1E-5,
+                 weight_initializer=TruncNorm(stdev=0.02),
+                 bias_initializer='zeros',
+                 activation='gelu',
+                 dtype='float32',
+                 output_all_encodings=False,
+                 output_attention=False,
+                 layout='NT'):
+        super().__init__()
+        self.units = units
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.num_heads = num_heads
+        self.attention_dropout_prob = attention_dropout_prob
+        self.hidden_dropout_prob = hidden_dropout_prob
+        self.layer_norm_eps = layer_norm_eps
+        self.activation = activation
+        self._dtype = dtype
+        self._layout = layout
+        self._output_all_encodings = output_all_encodings
+        self._output_attention = output_attention
+        self.all_layers = nn.HybridSequential()
+        for layer_idx in range(self.num_layers):
+            self.all_layers.add(
+                TransformerEncoderLayer(
+                    units=self.units,
+                    hidden_size=self.hidden_size,
+                    num_heads=self.num_heads,
+                    attention_dropout_prob=self.attention_dropout_prob,
+                    hidden_dropout_prob=self.hidden_dropout_prob,
+                    layer_norm_eps=self.layer_norm_eps,
+                    weight_initializer=weight_initializer,
+                    bias_initializer=bias_initializer,
+                    activation=self.activation,
+                    dtype=self._dtype,
+                    layout=layout)
+            )
+
+    @property
+    def layout(self):
+        return self._layout
+
+    def hybrid_forward(self, F, x, valid_length):
+        atten_mask = gen_self_attn_mask(F, x, valid_length,
+                                        layout=self._layout,
+                                        dtype=self._dtype, attn_type='full')
+        all_encodings_outputs = [x]
+        additional_outputs = []
+        for layer_idx in range(self.num_layers):
+            layer = self.all_layers[layer_idx]
+            x, attention_weights = layer(x, atten_mask)
+            if self._output_all_encodings:
+                all_encodings_outputs.append(x)
+            if self._output_attention:
+                additional_outputs.append(attention_weights)
+        # sequence_mask is not necessary here because masking could be performed in downstream tasks
+        if self._output_all_encodings:
+            return all_encodings_outputs, additional_outputs
+        else:
+            return x, additional_outputs
 
 
 @use_np
@@ -133,7 +210,9 @@ class RobertaModel(HybridBlock):
                  use_pooler=True,
                  classifier_activation=False,
                  encoder_normalize_before=True,
-                 output_all_encodings=False):
+                 output_all_encodings=False,
+                 layout='NT',
+                 compute_layout='auto'):
         """
 
         Parameters
@@ -159,7 +238,13 @@ class RobertaModel(HybridBlock):
         classifier_activation
             Whether to use classification head
         encoder_normalize_before
+            Whether to normalize before the
         output_all_encodings
+            Whether to output all encodings
+        layout
+            The layout
+        compute_layout
+            The computation layout
         """
         super().__init__()
         self._dtype = dtype
@@ -181,7 +266,11 @@ class RobertaModel(HybridBlock):
         self.encoder_normalize_before = encoder_normalize_before
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
-
+        self._layout = layout
+        if compute_layout == 'auto' or compute_layout is None:
+            self._compute_layout = layout
+        else:
+            self._compute_layout = compute_layout
         self.word_embed = nn.Embedding(
             input_dim=self.vocab_size,
             output_dim=self.units,
@@ -211,7 +300,8 @@ class RobertaModel(HybridBlock):
             bias_initializer=bias_initializer,
             activation=self.activation,
             dtype=self._dtype,
-            output_all_encodings=self._output_all_encodings
+            output_all_encodings=self._output_all_encodings,
+            layout=self._compute_layout,
         )
         self.encoder.hybridize()
 
@@ -224,20 +314,26 @@ class RobertaModel(HybridBlock):
                                    weight_initializer=weight_initializer,
                                    bias_initializer=bias_initializer)
 
+    @property
+    def layout(self):
+        return self._layout
+
     def hybrid_forward(self, F, tokens, valid_length):
-        outputs = []
         embedding = self.get_initial_embedding(F, tokens)
-
-        contextual_embeddings, additional_outputs = self.encoder(embedding, valid_length)
-        outputs.append(contextual_embeddings)
-        if self._output_all_encodings:
-            contextual_embeddings = contextual_embeddings[-1]
-
+        if self._layout != self._compute_layout:
+            contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(embedding, 0, 1),
+                                                                     valid_length)
+            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
+        else:
+            contextual_embeddings, additional_outputs = self.encoder(embedding, valid_length)
         if self.use_pooler:
-            pooled_out = self.apply_pooling(contextual_embeddings)
-            outputs.append(pooled_out)
-
-        return tuple(outputs) if len(outputs) > 1 else outputs[0]
+            if isinstance(contextual_embeddings, list):
+                pooled_out = self.apply_pooling(contextual_embeddings[-1])
+            else:
+                pooled_out = self.apply_pooling(contextual_embeddings)
+            return contextual_embeddings, pooled_out
+        else:
+            return contextual_embeddings
 
     def get_initial_embedding(self, F, inputs):
         """Get the initial token embeddings that considers the token type and positional embeddings
@@ -246,17 +342,28 @@ class RobertaModel(HybridBlock):
         ----------
         F
         inputs
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
 
         Returns
         -------
         embedding
             The initial embedding that will be fed into the encoder
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C)
         """
+        if self._layout == 'NT':
+            batch_axis, time_axis = 0, 1
+        else:
+            batch_axis, time_axis = 1, 0
         embedding = self.word_embed(inputs)
         if self.pos_embed_type:
-            positional_embedding = self.pos_embed(F.npx.arange_like(inputs, axis=1))
-            positional_embedding = F.np.expand_dims(positional_embedding, axis=0)
+            positional_embedding = self.pos_embed(F.npx.arange_like(inputs, axis=time_axis))
+            positional_embedding = F.np.expand_dims(positional_embedding, axis=batch_axis)
             embedding = embedding + positional_embedding
         if self.encoder_normalize_before:
             embedding = self.embed_ln(embedding)
@@ -270,12 +377,25 @@ class RobertaModel(HybridBlock):
         This is used for pre-training or fine-tuning a mobile bert model.
         Get the first token of the whole sequence which is [CLS]
 
-        sequence:
-            Shape (batch_size, sequence_length, units)
-        return:
+        Parameters
+        ----------
+        sequence
+            - layout = 'NT'
+                Shape (batch_size, sequence_length, units)
+            - layout = 'TN'
+                Shape (sequence_length, batch_size, units)
+
+        Returns
+        -------
+        ret
             Shape (batch_size, units)
         """
-        outputs = sequence[:, 0, :]
+        if self._layout == 'NT':
+            outputs = sequence[:, 0, :]
+        elif self._layout == 'TN':
+            outputs = sequence[0, :, :]
+        else:
+            raise NotImplementedError
         if self.classifier_activation:
             return self.pooler(outputs)
         else:
@@ -283,7 +403,7 @@ class RobertaModel(HybridBlock):
 
     @staticmethod
     def get_cfg(key=None):
-        if key:
+        if key is not None:
             return roberta_cfg_reg.create(key)
         else:
             return roberta_base()
@@ -292,14 +412,14 @@ class RobertaModel(HybridBlock):
     def from_cfg(cls,
                  cfg,
                  use_pooler=True,
-                 dtype='float32',
-                 classifier_activation=False,
-                 encoder_normalize_before=True,
+                 dtype=None,
                  output_all_encodings=False) -> 'RobertaModel':
         cfg = RobertaModel.get_cfg().clone_merge(cfg)
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
         bias_initializer = mx.init.create(*cfg.INITIALIZER.bias)
+        if dtype is None:
+            dtype = cfg.MODEL.dtype
         return cls(vocab_size=cfg.MODEL.vocab_size,
                    units=cfg.MODEL.units,
                    hidden_size=cfg.MODEL.hidden_size,
@@ -317,71 +437,9 @@ class RobertaModel(HybridBlock):
                    bias_initializer=bias_initializer,
                    dtype=dtype,
                    use_pooler=use_pooler,
-                   encoder_normalize_before=encoder_normalize_before,
-                   output_all_encodings=output_all_encodings)
-
-
-@use_np
-class RobertaEncoder(HybridBlock):
-    def __init__(self,
-                 units=768,
-                 hidden_size=3072,
-                 num_layers=12,
-                 num_heads=12,
-                 attention_dropout_prob=0.1,
-                 hidden_dropout_prob=0.1,
-                 layer_norm_eps=1E-5,
-                 weight_initializer=TruncNorm(stdev=0.02),
-                 bias_initializer='zeros',
-                 activation='gelu',
-                 dtype='float32',
-                 output_all_encodings=False,
-                 output_attention=False):
-        super().__init__()
-        self.units = units
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        self.num_heads = num_heads
-        self.attention_dropout_prob = attention_dropout_prob
-        self.hidden_dropout_prob = hidden_dropout_prob
-        self.layer_norm_eps = layer_norm_eps
-        self.activation = activation
-        self._dtype = dtype
-        self._output_all_encodings = output_all_encodings
-        self._output_attention = output_attention
-        self.all_layers = nn.HybridSequential()
-        for layer_idx in range(self.num_layers):
-            self.all_layers.add(
-                TransformerEncoderLayer(
-                    units=self.units,
-                    hidden_size=self.hidden_size,
-                    num_heads=self.num_heads,
-                    attention_dropout_prob=self.attention_dropout_prob,
-                    hidden_dropout_prob=self.hidden_dropout_prob,
-                    layer_norm_eps=self.layer_norm_eps,
-                    weight_initializer=weight_initializer,
-                    bias_initializer=bias_initializer,
-                    activation=self.activation,
-                    dtype=self._dtype)
-            )
-
-    def hybrid_forward(self, F, x, valid_length):
-        atten_mask = gen_self_attn_mask(F, x, valid_length,
-                                        dtype=self._dtype, attn_type='full')
-        all_encodings_outputs = [x]
-        additional_outputs = []
-        for layer_idx in range(self.num_layers):
-            layer = self.all_layers[layer_idx]
-            x, attention_weights = layer(x, atten_mask)
-            if self._output_all_encodings:
-                all_encodings_outputs.append(x)
-            if self._output_attention:
-                additional_outputs.append(attention_weights)
-        # sequence_mask is not necessary here because masking could be performed in downstream tasks
-        if self._output_all_encodings:
-            return all_encodings_outputs, additional_outputs
-        else:
-            return x, additional_outputs
+                   output_all_encodings=output_all_encodings,
+                   layout=cfg.MODEL.layout,
+                   compute_layout=cfg.MODEL.compute_layout)
 
 
 @use_np
@@ -432,19 +490,25 @@ class RobertaForMLM(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
-        valid_length :
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        valid_length
             The valid length of each sequence
             Shape (batch_size,)
-        masked_positions :
+        masked_positions
             The masked position of the sequence
             Shape (batch_size, num_masked_positions).
 
         Returns
         -------
         contextual_embedding
-            Shape (batch_size, seq_length, units).
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units).
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units).
         pooled_out
             Shape (batch_size, units)
         mlm_scores :
@@ -456,6 +520,8 @@ class RobertaForMLM(HybridBlock):
             contextual_embeddings = all_encodings_outputs[-1]
         else:
             contextual_embeddings = all_encodings_outputs
+        if self.backbone_model.layout == 'TN':
+            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
         mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
         mlm_scores = self.mlm_decoder(mlm_features)
         return all_encodings_outputs, pooled_out, mlm_scores
@@ -469,7 +535,7 @@ def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
                            root: str = get_model_zoo_home_dir(),
                            load_backbone: bool = True,
                            load_mlm: bool = False) \
-        -> Tuple[CN, HuggingFaceByteBPETokenizer, str]:
+        -> Tuple[CN, HuggingFaceByteBPETokenizer, str, str]:
     """Get the pretrained RoBERTa weights
 
     Parameters
@@ -497,14 +563,20 @@ def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_roberta())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
+    if isinstance(cfg_path, CN):
+        cfg = cfg_path
+    else:
+        cfg = None
     merges_path = PRETRAINED_URL[model_name]['merges']
     vocab_path = PRETRAINED_URL[model_name]['vocab']
     params_path = PRETRAINED_URL[model_name]['params']
     mlm_params_path = PRETRAINED_URL[model_name]['mlm_params']
 
     local_paths = dict()
-    for k, path in [('cfg', cfg_path), ('vocab', vocab_path),
-                    ('merges', merges_path)]:
+    download_jobs = [('vocab', vocab_path), ('merges', merges_path)]
+    if cfg is None:
+        download_jobs.append(('cfg', cfg_path))
+    for k, path in download_jobs:
         local_paths[k] = download(url=get_repo_model_zoo_url() + path,
                                   path=os.path.join(root, path),
                                   sha1_hash=FILE_STATS[path])
@@ -526,7 +598,8 @@ def get_pretrained_roberta(model_name: str = 'fairseq_roberta_base',
                     merges_file=local_paths['merges'],
                     vocab_file=local_paths['vocab'],
                     lowercase=do_lower)
-    cfg = RobertaModel.get_cfg().clone_merge(local_paths['cfg'])
+    if cfg is None:
+        cfg = RobertaModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_mlm_params_path
 
 

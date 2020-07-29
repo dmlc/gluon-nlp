@@ -19,12 +19,17 @@ This is a work-in-progress.
 First of all, install the latest MXNet. You may use the following commands:
 
 ```bash
+# Install the version with CUDA 10.0
+pip install -U --pre "mxnet-cu100>=2.0.0b20200716" -f https://dist.mxnet.io/python
 
 # Install the version with CUDA 10.1
-pip install -U --pre mxnet-cu101>=2.0.0b20200716 -f https://dist.mxnet.io/python
+pip install -U --pre "mxnet-cu101>=2.0.0b20200716" -f https://dist.mxnet.io/python
+
+# Install the version with CUDA 10.2
+pip install -U --pre "mxnet-cu102>=2.0.0b20200716" -f https://dist.mxnet.io/python
 
 # Install the cpu-only version
-pip install -U --pre mxnet>=2.0.0b20200716 -f https://dist.mxnet.io/python
+pip install -U --pre "mxnet>=2.0.0b20200716" -f https://dist.mxnet.io/python
 ```
 
 

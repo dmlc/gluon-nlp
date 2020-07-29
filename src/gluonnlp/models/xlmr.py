@@ -39,23 +39,6 @@ from ..registry import BACKBONE_REGISTRY
 from ..data.tokenizers import SentencepieceTokenizer
 
 
-PRETRAINED_URL = {
-    'fairseq_xlmr_base': {
-        'cfg': 'fairseq_xlmr_base/model-b893d178.yml',
-        'sentencepiece.model': 'fairseq_xlmr_base/sentencepiece-18e17bae.model',
-        'params': 'fairseq_xlmr_base/model-3fa134e9.params',
-        'mlm_params': 'fairseq_xlmr_base/model_mlm-86e37954.params',
-        'lowercase': False,
-    },
-    'fairseq_xlmr_large': {
-        'cfg': 'fairseq_xlmr_large/model-01fc59fb.yml',
-        'sentencepiece.model': 'fairseq_xlmr_large/sentencepiece-18e17bae.model',
-        'params': 'fairseq_xlmr_large/model-b62b074c.params',
-        'mlm_params': 'fairseq_xlmr_large/model_mlm-887506c2.params',
-        'lowercase': False,
-    }
-}
-
 FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'xlmr.txt'))
 xlmr_cfg_reg = Registry('xlmr_cfg')
 
@@ -86,9 +69,30 @@ class XLMRModel(RobertaModel):
             return xlmr_cfg_reg.create(key)
         else:
             return xlmr_base()
+
+
+PRETRAINED_URL = {
+    'fairseq_xlmr_base': {
+        'cfg': xlmr_base(),
+        'sentencepiece.model': 'fairseq_xlmr_base/sentencepiece-18e17bae.model',
+        'params': 'fairseq_xlmr_base/model-3fa134e9.params',
+        'mlm_params': 'fairseq_xlmr_base/model_mlm-86e37954.params',
+        'lowercase': False,
+    },
+    'fairseq_xlmr_large': {
+        'cfg': xlmr_large(),
+        'sentencepiece.model': 'fairseq_xlmr_large/sentencepiece-18e17bae.model',
+        'params': 'fairseq_xlmr_large/model-b62b074c.params',
+        'mlm_params': 'fairseq_xlmr_large/model_mlm-887506c2.params',
+        'lowercase': False,
+    }
+}
+
+
 @use_np
 class XLMRForMLM(RobertaForMLM):
     pass
+
 
 def list_pretrained_xlmr():
     return sorted(list(PRETRAINED_URL.keys()))
@@ -98,7 +102,7 @@ def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
                         root: str = get_model_zoo_home_dir(),
                         load_backbone: bool = True,
                         load_mlm: bool = False) \
-        -> Tuple[CN, SentencepieceTokenizer, str]:
+        -> Tuple[CN, SentencepieceTokenizer, str, str]:
     """Get the pretrained XLM-R weights
 
     Parameters
@@ -126,11 +130,18 @@ def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_xlmr())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
+    if isinstance(cfg_path, CN):
+        cfg = cfg_path
+    else:
+        cfg = None
     sp_model_path = PRETRAINED_URL[model_name]['sentencepiece.model']
     params_path = PRETRAINED_URL[model_name]['params']
     mlm_params_path = PRETRAINED_URL[model_name]['mlm_params']
     local_paths = dict()
-    for k, path in [('cfg', cfg_path), ('sentencepiece.model', sp_model_path)]:
+    download_jobs = [('sentencepiece.model', sp_model_path)]
+    if cfg is None:
+        download_jobs.append(('cfg', cfg_path))
+    for k, path in download_jobs:
         local_paths[k] = download(url=get_repo_model_zoo_url() + path,
                                   path=os.path.join(root, path),
                                   sha1_hash=FILE_STATS[path])
@@ -152,7 +163,8 @@ def get_pretrained_xlmr(model_name: str = 'fairseq_xlmr_base',
     tokenizer = SentencepieceTokenizer(
                     model_path=local_paths['sentencepiece.model'],
                     lowercase=do_lower)
-    cfg = XLMRModel.get_cfg().clone_merge(local_paths['cfg'])
+    if cfg is None:
+        cfg = XLMRModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_mlm_params_path
 
 

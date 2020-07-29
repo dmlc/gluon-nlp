@@ -43,8 +43,11 @@ from .transformer import TransformerEncoderLayer
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
+from ..utils.registry import Registry
 from ..attention_cell import gen_self_attn_mask
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
+
+electra_cfg_reg = Registry('electra_cfg')
 
 
 def get_generator_cfg(model_config):
@@ -66,9 +69,73 @@ def get_generator_cfg(model_config):
     return generator_cfg
 
 
+@electra_cfg_reg.register()
+def google_electra_small():
+    cfg = CN()
+    # Model
+    cfg.MODEL = CN()
+    cfg.MODEL.vocab_size = 30522
+    cfg.MODEL.embed_size = 128
+    cfg.MODEL.units = 256
+    cfg.MODEL.hidden_size = 1024
+    cfg.MODEL.max_length = 512
+    cfg.MODEL.num_heads = 4
+    cfg.MODEL.num_layers = 12
+    cfg.MODEL.pos_embed_type = 'learned'
+    cfg.MODEL.activation = 'gelu'
+    cfg.MODEL.layer_norm_eps = 1E-12
+    cfg.MODEL.num_token_types = 2
+    # Dropout regularization
+    cfg.MODEL.hidden_dropout_prob = 0.1
+    cfg.MODEL.attention_dropout_prob = 0.1
+    cfg.MODEL.dtype = 'float32'
+    # Layout flags
+    cfg.MODEL.layout = 'NT'
+    cfg.MODEL.compute_layout = 'auto'
+    # Generator hyper-parameters
+    cfg.MODEL.generator_layers_scale = 1.0
+    cfg.MODEL.generator_units_scale = 1.0
+    # Initializer
+    cfg.INITIALIZER = CN()
+    cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
+    cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]  # TruncNorm(0, 0.02)
+    cfg.INITIALIZER.bias = ['zeros']
+    cfg.VERSION = 1
+    cfg.freeze()
+    return cfg
+
+
+@electra_cfg_reg.register()
+def google_electra_base():
+    cfg = google_electra_small()
+    cfg.defrost()
+    cfg.MODEL.embed_size = 768
+    cfg.MODEL.units = 768
+    cfg.MODEL.hidden_size = 3072
+    cfg.MODEL.num_heads = 12
+    cfg.MODEL.num_layers = 12
+    cfg.MODEL.generator_units_scale = 0.33333
+    cfg.freeze()
+    return cfg
+
+
+@electra_cfg_reg.register()
+def google_electra_large():
+    cfg = google_electra_small()
+    cfg.defrost()
+    cfg.MODEL.embed_size = 1024
+    cfg.MODEL.units = 1024
+    cfg.MODEL.hidden_size = 4096
+    cfg.MODEL.num_heads = 16
+    cfg.MODEL.num_layers = 24
+    cfg.MODEL.generator_units_scale = 0.25
+    cfg.freeze()
+    return cfg
+
+
 PRETRAINED_URL = {
     'google_electra_small': {
-        'cfg': 'google_electra_small/model-9ffb21c8.yml',
+        'cfg': google_electra_small(),
         'vocab': 'google_electra_small/vocab-e6d2b21d.json',
         'params': 'google_electra_small/model-2654c8b4.params',
         'disc_model': 'google_electra_small/disc_model-137714b6.params',
@@ -76,7 +143,7 @@ PRETRAINED_URL = {
         'lowercase': True,
     },
     'google_electra_base': {
-        'cfg': 'google_electra_base/model-5b35ca0b.yml',
+        'cfg': google_electra_base(),
         'vocab': 'google_electra_base/vocab-e6d2b21d.json',
         'params': 'google_electra_base/model-31c235cc.params',
         'disc_model': 'google_electra_base/disc_model-514bd353.params',
@@ -84,7 +151,7 @@ PRETRAINED_URL = {
         'lowercase': True,
     },
     'google_electra_large': {
-        'cfg': 'google_electra_large/model-31b7dfdd.yml',
+        'cfg': google_electra_large(),
         'vocab': 'google_electra_large/vocab-e6d2b21d.json',
         'params': 'google_electra_large/model-9baf9ff5.params',
         'disc_model': 'google_electra_large/disc_model-5b820c02.params',
@@ -96,6 +163,7 @@ PRETRAINED_URL = {
 FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'electra.txt'))
 
 
+# TODO(sxjscience) Use BertTransformer
 @use_np
 class ElectraEncoder(HybridBlock):
     def __init__(self, units=512,
@@ -110,7 +178,35 @@ class ElectraEncoder(HybridBlock):
                  layer_norm_eps=1E-12,
                  weight_initializer=TruncNorm(stdev=0.02),
                  bias_initializer='zeros',
-                 activation='gelu'):
+                 activation='gelu',
+                 layout='NT'):
+        """
+
+        Parameters
+        ----------
+        units
+            The number of units
+        hidden_size
+            The hidden size
+        num_layers
+            Number of layers
+        num_heads
+            Number of heads
+        attention_dropout_prob
+            Dropout probability of the attention layer
+        hidden_dropout_prob
+            Dropout probability
+        output_attention
+            Whether to output the attention weights
+        dtype
+            Data type of the weights
+        output_all_encodings
+        layer_norm_eps
+        weight_initializer
+        bias_initializer
+        activation
+        layout
+        """
         super().__init__()
         assert units % num_heads == 0, \
             'In ElectraEncoder, The units should be divisible ' \
@@ -118,6 +214,7 @@ class ElectraEncoder(HybridBlock):
             .format(units, num_heads)
 
         self._dtype = dtype
+        self._layout = layout
         self._num_layers = num_layers
 
         self._output_attention = output_attention
@@ -134,7 +231,13 @@ class ElectraEncoder(HybridBlock):
                                         layer_norm_eps=layer_norm_eps,
                                         weight_initializer=weight_initializer,
                                         bias_initializer=bias_initializer,
-                                        activation=activation))
+                                        activation=activation,
+                                        dtype=dtype,
+                                        layout=layout))
+
+    @property
+    def layout(self):
+        return self._layout
 
     def hybrid_forward(self, F, data, valid_length):
         """
@@ -145,18 +248,31 @@ class ElectraEncoder(HybridBlock):
         Parameters
         ----------
         F
-        data :
-            Shape (batch_size, seq_length, C)
-        valid_length :
+        data
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C)
+        valid_length
             Shape (batch_size,)
 
         Returns
         -------
-        out :
-            Shape (batch_size, seq_length, C_out)
+        out
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_out)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_out)
         """
+        if self.layout == 'NT':
+            time_axis, batch_axis = 1, 0
+        else:
+            time_axis, batch_axis = 0, 1
         # 1. Embed the data
-        attn_mask = gen_self_attn_mask(F, data, valid_length, dtype=self._dtype, attn_type='full')
+        attn_mask = gen_self_attn_mask(F, data, valid_length,
+                                       dtype=self._dtype,
+                                       layout=self._layout,
+                                       attn_type='full')
         out = data
         all_encodings_outputs = []
         additional_outputs = []
@@ -168,7 +284,8 @@ class ElectraEncoder(HybridBlock):
             if self._output_all_encodings:
                 out = F.npx.sequence_mask(out,
                                           sequence_length=valid_length,
-                                          use_sequence_length=True, axis=1)
+                                          use_sequence_length=True,
+                                          axis=time_axis)
                 all_encodings_outputs.append(out)
 
             if self._output_attention:
@@ -177,7 +294,7 @@ class ElectraEncoder(HybridBlock):
         if not self._output_all_encodings:
             # if self._output_all_encodings, SequenceMask is already applied above
             out = F.npx.sequence_mask(out, sequence_length=valid_length,
-                                      use_sequence_length=True, axis=1)
+                                      use_sequence_length=True, axis=time_axis)
             return out, additional_outputs
         else:
             return all_encodings_outputs, additional_outputs
@@ -208,7 +325,9 @@ class ElectraModel(HybridBlock):
                  weight_initializer=TruncNorm(stdev=0.02),
                  bias_initializer='zeros',
                  dtype='float32',
-                 use_pooler=True):
+                 use_pooler=True,
+                 layout='NT',
+                 compute_layout='auto'):
         super().__init__()
         self._dtype = dtype
         self.use_pooler = use_pooler
@@ -223,6 +342,11 @@ class ElectraModel(HybridBlock):
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
         self.layer_norm_eps = layer_norm_eps
+        self._layout = layout
+        if compute_layout is None or compute_layout == 'auto':
+            self._compute_layout = layout
+        else:
+            self._compute_layout = compute_layout
         # Construct ElectraEncoder
         self.encoder = ElectraEncoder(
             units=units,
@@ -238,6 +362,7 @@ class ElectraModel(HybridBlock):
             weight_initializer=weight_initializer,
             bias_initializer=bias_initializer,
             dtype=dtype,
+            layout=self._compute_layout,
         )
         self.encoder.hybridize()
 
@@ -262,6 +387,10 @@ class ElectraModel(HybridBlock):
                                                   weight_initializer=weight_initializer,
                                                   bias_initializer=bias_initializer)
 
+    @property
+    def layout(self):
+        return self._layout
+
     def hybrid_forward(self, F, inputs, token_types, valid_length=None):
         # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
@@ -271,22 +400,31 @@ class ElectraModel(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
-        token_types :
-            Shape (batch_size, seq_length)
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
 
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
-        valid_length :
+        valid_length
             The valid length of each sequence
             Shape (batch_size,)
 
         Returns
         -------
-        contextual_embedding :
-            Shape (batch_size, seq_length, units).
-        pooled_output :
+        contextual_embedding
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units).
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units).
+        pooled_output
             This is optional. Shape (batch_size, units)
         """
         initial_embedding = self.get_initial_embedding(F, inputs, token_types)
@@ -295,17 +433,27 @@ class ElectraModel(HybridBlock):
         if self.embed_size != self.units:
             prev_out = self.embed_factorized_proj(prev_out)
         outputs = []
-        contextual_embeddings, additional_outputs = self.encoder(prev_out, valid_length)
+        if self._compute_layout != self._layout:
+            # Swap the axes if the compute_layout and layout mismatch
+            contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(prev_out, 0, 1),
+                                                                     valid_length)
+            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
+        else:
+            contextual_embeddings, additional_outputs = self.encoder(prev_out, valid_length)
         outputs.append(contextual_embeddings)
         if self.use_pooler:
             # Here we just get the first token ([CLS]) without any pooling strategy,
-            # which is slightly different between bert model with the pooled_out
+            # which is slightly different from bert model with the pooled_out
             # the attribute name is keeping the same as bert and albert model with defualt
             # use_pooler=True
-            pooled_out = contextual_embeddings[:, 0, :]
+            if self._layout == 'NT':
+                pooled_out = contextual_embeddings[:, 0, :]
+            else:
+                pooled_out = contextual_embeddings[0, :, :]
             outputs.append(pooled_out)
         return tuple(outputs) if len(outputs) > 1 else outputs[0]
 
+    #TODO(sxjscience) Move to a `common.py`
     def get_initial_embedding(self, F, inputs, token_types=None):
         """Get the initial token embeddings that considers the token type and positional embeddings
 
@@ -313,24 +461,38 @@ class ElectraModel(HybridBlock):
         ----------
         F
         inputs
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
         token_types
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
             If None, it will be initialized as all zero
 
         Returns
         -------
         embedding
             The initial embedding that will be fed into the encoder
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_embed)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_embed)
         """
+        if self.layout == 'NT':
+            time_axis, batch_axis = 1, 0
+        else:
+            time_axis, batch_axis = 0, 1
         embedding = self.word_embed(inputs)
         if token_types is None:
             token_types = F.np.zeros_like(inputs)
         type_embedding = self.token_type_embed(token_types)
         embedding = embedding + type_embedding
         if self.pos_embed_type is not None:
-            positional_embedding = self.token_pos_embed(F.npx.arange_like(inputs, axis=1))
-            positional_embedding = F.np.expand_dims(positional_embedding, axis=0)
+            positional_embedding = self.token_pos_embed(F.npx.arange_like(inputs, axis=time_axis))
+            positional_embedding = F.np.expand_dims(positional_embedding, axis=batch_axis)
             embedding = embedding + positional_embedding
         # Extra layer normalization plus dropout
         embedding = self.embed_layer_norm(embedding)
@@ -339,48 +501,20 @@ class ElectraModel(HybridBlock):
 
     @staticmethod
     def get_cfg(key=None):
-        if key is None:
-            cfg = CN()
-            # Model Parameters for the electra small
-            cfg.MODEL = CN()
-            cfg.MODEL.vocab_size = 30522
-            cfg.MODEL.embed_size = 128
-            cfg.MODEL.units = 256
-            cfg.MODEL.hidden_size = 1024
-            cfg.MODEL.max_length = 512
-            cfg.MODEL.num_heads = 4
-            cfg.MODEL.num_layers = 12
-            cfg.MODEL.pos_embed_type = 'learned'
-            # Unlike BERT and ALBERT, which ues gelu(tanh), the gelu(erf) is used in Electra.
-            cfg.MODEL.activation = 'gelu'
-            cfg.MODEL.layer_norm_eps = 1E-12
-            cfg.MODEL.num_token_types = 2
-            cfg.MODEL.hidden_dropout_prob = 0.1
-            cfg.MODEL.attention_dropout_prob = 0.1
-            cfg.MODEL.dtype = 'float32'
-            cfg.MODEL.generator_layers_scale = 1.0
-            # multiplier for units, hidden_size, and num_heads
-            cfg.MODEL.generator_units_scale = 1.0
-            # Hyper-parameters of the Initializers
-            cfg.INITIALIZER = CN()
-            cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
-            cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]  # TruncNorm(0, 0.02)
-            cfg.INITIALIZER.bias = ['zeros']
-            # Version of the model. This helps ensure backward compatibility.
-            # Also, we can not use string here due to https://github.com/rbgirshick/yacs/issues/26
-            cfg.VERSION = 1
-            cfg.freeze()
+        if key is not None:
+            return electra_cfg_reg.create(key)
         else:
-            raise NotImplementedError
-        return cfg
+            return google_electra_base()
 
     @classmethod
-    def from_cfg(cls, cfg, use_pooler=True, dtype='float32') -> 'ElectraModel':
+    def from_cfg(cls, cfg, use_pooler=True, dtype=None) -> 'ElectraModel':
         cfg = ElectraModel.get_cfg().clone_merge(cfg)
         assert cfg.VERSION == 1, 'Wrong version!'
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
         bias_initializer = mx.init.create(*cfg.INITIALIZER.bias)
+        if dtype is None:
+            dtype = cfg.MODEL.dtype
         return cls(vocab_size=cfg.MODEL.vocab_size,
                    units=cfg.MODEL.units,
                    hidden_size=cfg.MODEL.hidden_size,
@@ -398,7 +532,9 @@ class ElectraModel(HybridBlock):
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
-                   use_pooler=use_pooler)
+                   use_pooler=use_pooler,
+                   layout=cfg.MODEL.layout,
+                   compute_layout=cfg.MODEL.compute_layout)
 
 
 @use_np
@@ -447,25 +583,37 @@ class ElectraDiscriminator(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
-        token_types :
-            Shape (batch_size, seq_length)
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
 
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
-        valid_length :
+        valid_length
             The valid length of each sequence
             Shape (batch_size,)
 
         Returns
         -------
         contextual_embedding
-            Shape (batch_size, seq_length, units).
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units).
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units).
         pooled_out
             Shape (batch_size, units)
         rtd_scores
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
         rtd_scores = self.rtd_encoder(contextual_embeddings).squeeze(-1)
@@ -515,8 +663,21 @@ class ElectraGenerator(HybridBlock):
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
         self.mlm_decoder.hybridize()
 
-    def tie_embeddings(self, word_embed_params=None, token_type_embed_params=None,
-                       token_pos_embed_params=None, embed_layer_norm_params=None):
+    # TODO(sxjscience,zheyu) Should design a better API
+    def tie_embeddings(self, word_embed_params=None,
+                       token_type_embed_params=None,
+                       token_pos_embed_params=None,
+                       embed_layer_norm_params=None):
+        """Tie the embedding layers between the backbone and the MLM decoder
+
+        Parameters
+        ----------
+        word_embed_params
+        token_type_embed_params
+        token_pos_embed_params
+        embed_layer_norm_params
+
+        """
         self.backbone_model.word_embed.share_parameters(word_embed_params)
         self.mlm_decoder[-1].share_parameters(word_embed_params)
         self.backbone_model.token_type_embed.share_parameters(token_type_embed_params)
@@ -529,10 +690,16 @@ class ElectraGenerator(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
-        token_types :
-            Shape (batch_size, seq_length)
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
 
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
@@ -546,14 +713,21 @@ class ElectraGenerator(HybridBlock):
         Returns
         -------
         contextual_embedding
-            Shape (batch_size, seq_length, units).
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units).
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units).
         pooled_out
             Shape (batch_size, units)
         mlm_scores :
             Shape (batch_size, num_masked_positions, vocab_size)
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
-        mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        if self.backbone_model.layout == 'NT':
+            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        else:
+            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+                                                      masked_positions)
         mlm_scores = self.mlm_decoder(mlm_features)
         return contextual_embeddings, pooled_out, mlm_scores
 
@@ -561,7 +735,7 @@ class ElectraGenerator(HybridBlock):
 @use_np
 class ElectraForPretrain(HybridBlock):
     """
-    A integrated model combined with a generator and a discriminator.  Generator here
+    An integrated model combined with a generator and a discriminator.  Generator here
     produces a corrupted tokens playing as fake data to fool a discriminator whose
     objective is to distinguish whether each token in the input sentence it accepts
     is the same as the original. It is a classification task instead of prediction
@@ -612,11 +786,15 @@ class ElectraForPretrain(HybridBlock):
         self.disc_cfg = disc_cfg
         self.vocab_size = disc_cfg.MODEL.vocab_size
         self.gen_cfg = get_generator_cfg(disc_cfg)
-        self.discriminator = ElectraDiscriminator(disc_cfg)
+        self.discriminator = ElectraDiscriminator(disc_cfg,
+                                                  weight_initializer=weight_initializer,
+                                                  bias_initializer=bias_initializer)
         self.disc_backbone = self.discriminator.backbone_model
 
         if not uniform_generator and not tied_generator:
-            self.generator = ElectraGenerator(self.gen_cfg)
+            self.generator = ElectraGenerator(self.gen_cfg,
+                                              weight_initializer=weight_initializer,
+                                              bias_initializer=bias_initializer)
             if tied_embeddings:
                 self.generator.tie_embeddings(self.disc_backbone.word_embed.collect_params(),
                                               self.disc_backbone.token_type_embed.collect_params(),
@@ -626,7 +804,10 @@ class ElectraForPretrain(HybridBlock):
 
         elif tied_generator:
             # Reuse the weight of the discriminator backbone model
-            self.generator = ElectraGenerator(self.gen_cfg)
+            self.generator = ElectraGenerator(self.gen_cfg,
+                                              weight_initializer=weight_initializer,
+                                              bias_initializer=bias_initializer)
+            # TODO(sxjscience, zheyu) Verify
             self.generator.backbone_model = self.disc_backbone
             self.generator.hybridize()
         elif uniform_generator:
@@ -650,18 +831,24 @@ class ElectraForPretrain(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
+        inputs
             The masked input
-            Shape (batch_size, seq_length)
-        token_types :
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
 
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
-        valid_length :
+        valid_length
             The valid length of each sequence
             Shape (batch_size,)
-        unmasked_tokens :
+        unmasked_tokens
             The original tokens that appear in the unmasked input sequence
             Shape (batch_size, num_masked_positions).
         masked_positions :
@@ -670,20 +857,26 @@ class ElectraForPretrain(HybridBlock):
 
         Returns
         -------
-        mlm_scores :
+        mlm_scores
             Shape (batch_size, num_masked_positions, vocab_size)
-        rtd_scores :
-            Shape (batch_size, seq_length)
+        rtd_scores
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
         replaced_inputs :
             Shape (batch_size, num_masked_positions)
-        labels :
-            Shape (batch_size, seq_length)
+        labels
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
         """
         if self._uniform_generator:
             # generate the corrupt tokens randomly with a mlm_scores vector whose value is all 0
-            zero_logits = F.np.zeros(self.vocab_size)
-            zero_logits = F.np.expand_dims(F.np.expand_dims(zero_logits, axis=0), axis=0)
-            mlm_scores = F.np.expand_dims(F.np.zeros_like(masked_positions), axis=-1)
+            zero_logits = F.np.zeros((1, 1, self.vocab_size), dtype=self._dtype)
+            mlm_scores = F.np.expand_dims(F.np.zeros_like(masked_positions, dtype=self._dtype),
+                                          axis=-1)
             mlm_scores = mlm_scores + zero_logits
         else:
             _, _, mlm_scores = self.generator(inputs, token_types, valid_length, masked_positions)
@@ -698,12 +891,16 @@ class ElectraForPretrain(HybridBlock):
     def get_corrupted_tokens(self, F, inputs, unmasked_tokens, masked_positions, logits):
         """
         Sample from the generator to create corrupted input.
+
         Parameters
         ----------
         F
         inputs
             The masked input
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
         unmasked_tokens
             The original tokens that appear in the unmasked input sequence
             Shape (batch_size, num_masked_positions).
@@ -715,10 +912,18 @@ class ElectraForPretrain(HybridBlock):
 
         Returns
         -------
+        corrupted_tokens
+            The corrupted tokens
         fake_data
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
         labels
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
         """
 
         if self._disallow_correct:
@@ -734,6 +939,8 @@ class ElectraForPretrain(HybridBlock):
             use_np_gumbel=False)
         corrupted_tokens = F.np.argmax(prob, axis=-1).astype(np.int32)
 
+        if self.disc_backbone.layout == 'TN':
+            inputs = inputs.T
         # Following the Official electra to deal with duplicate positions as
         # https://github.com/google-research/electra/issues/41
         original_data, updates_mask = updated_vectors_by_position(F,
@@ -742,7 +949,10 @@ class ElectraForPretrain(HybridBlock):
             inputs, corrupted_tokens, masked_positions)
 
         labels = updates_mask * F.np.not_equal(fake_data, original_data)
-        return corrupted_tokens, fake_data, labels
+        if self.disc_backbone.layout == 'TN':
+            return corrupted_tokens, fake_data.T, labels.T
+        else:
+            return corrupted_tokens, fake_data, labels
 
 
 def list_pretrained_electra():
@@ -787,13 +997,20 @@ def get_pretrained_electra(model_name: str = 'google_electra_small',
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_electra())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
+    if isinstance(cfg_path, CN):
+        cfg = cfg_path
+    else:
+        cfg = None
     vocab_path = PRETRAINED_URL[model_name]['vocab']
     params_path = PRETRAINED_URL[model_name]['params']
     disc_params_path = PRETRAINED_URL[model_name]['disc_model']
     gen_params_path = PRETRAINED_URL[model_name]['gen_model']
 
     local_paths = dict()
-    for k, path in [('cfg', cfg_path), ('vocab', vocab_path)]:
+    download_jobs = [('vocab', vocab_path)]
+    if cfg is None:
+        download_jobs.append(('cfg', cfg_path))
+    for k, path in download_jobs:
         local_paths[k] = download(url=get_repo_model_zoo_url() + path,
                                   path=os.path.join(root, path),
                                   sha1_hash=FILE_STATS[path])
@@ -827,7 +1044,8 @@ def get_pretrained_electra(model_name: str = 'google_electra_small',
         sep_token='[SEP]',
         mask_token='[MASK]',
         lowercase=do_lower)
-    cfg = ElectraModel.get_cfg().clone_merge(local_paths['cfg'])
+    if cfg is None:
+        cfg = ElectraModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, (local_disc_params_path, local_gen_params_path)
 
 
