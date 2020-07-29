@@ -51,7 +51,7 @@ bart_cfg_reg = Registry('bart_cfg')
 
 
 @bart_cfg_reg.register()
-def fair_bart_base():
+def bart_base():
     cfg = CN()
     # Config for the bart base model
     cfg.MODEL = CN()
@@ -64,10 +64,10 @@ def fair_bart_base():
     cfg.MODEL.tie_weights = True
     cfg.MODEL.attention_dropout = 0.1
     cfg.MODEL.activation_dropout = 0.0
-    cfg.MODEL.dropout = 0.0
+    cfg.MODEL.dropout = 0.1
     cfg.MODEL.layer_norm_eps = 1E-5
     cfg.MODEL.pooler_activation = 'tanh'
-    cfg.MODEL.layernorm_embedding = True
+    cfg.MODEL.data_norm = True
     cfg.MODEL.layout = 'NT'
     cfg.MODEL.dtype = 'float32'
 
@@ -102,8 +102,8 @@ def fair_bart_base():
 
 
 @bart_cfg_reg.register()
-def fair_bart_large():
-    cfg = fair_bart_base()
+def bart_large():
+    cfg = bart_base()
     cfg.defrost()
     cfg.MODEL.vocab_size = 50265
     cfg.MODEL.ENCODER.units = 1024
@@ -122,14 +122,14 @@ def fair_bart_large():
 
 PRETRAINED_URL = {
     'fairseq_bart_base': {
-        'cfg': fair_bart_base(),
+        'cfg': bart_base(),
         'merges': 'fairseq_bart_base/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_bart_base/gpt2-f4dedacb.vocab',
         'params': 'fairseq_bart_base/model-6dea1e11.params',
         'lowercase': False,
     },
     'fairseq_bart_large': {
-        'cfg': fair_bart_large(),
+        'cfg': bart_large(),
         'merges': 'fairseq_bart_large/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_bart_large/gpt2-f1335494.vocab',
         'params': 'fairseq_bart_large/model-38f35552.params',
@@ -183,8 +183,9 @@ class BartModel(TransformerModel):
                                    in_units=self.units,
                                    flatten=False,
                                    activation=pooler_activation,
-                                   weight_initializer=weight_initializer,
-                                   bias_initializer=bias_initializer)
+                                   weight_initializer=self.weight_initializer,
+                                   bias_initializer=self.bias_initializer,
+                                   dtype=self._dtype)
 
     def hybrid_forward(self, F, src_data, src_valid_length, tgt_data, tgt_valid_length):
         """
@@ -242,7 +243,12 @@ class BartModel(TransformerModel):
         return:
             Shape (batch_size, units)
         """
-        outputs = sequence[:, 0, :]
+        if self._layout == 'NT':
+            outputs = sequence[:, 0, :]
+        elif self._layout == 'TN':
+            outputs = sequence[0, :, :]
+        else:
+            raise NotImplementedError
         if self.classifier_activation:
             return self.pooler(outputs)
         else:
@@ -259,18 +265,20 @@ class BartModel(TransformerModel):
     @classmethod
     def get_cfg(cls, key=None):
         if key is None:
-            return fair_bart_base()
+            return bart_base()
         else:
             return bart_cfg_reg.create(key)
 
     @classmethod
-    def from_cfg(cls, cfg,
+    def from_cfg(cls, cfg, dtype=None,
                  use_pooler=False,
                  classifier_activation=False):
         cfg = cls.get_cfg().clone_merge(cfg)
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
         bias_initializer = mx.init.create(*cfg.INITIALIZER.bias)
+        if dtype is None:
+            dtype = cfg.MODEL.dtype
         return cls(src_vocab_size=cfg.MODEL.vocab_size,
                    tgt_vocab_size=cfg.MODEL.vocab_size,
                    max_src_length=cfg.MODEL.max_src_length,
@@ -279,13 +287,13 @@ class BartModel(TransformerModel):
                    pos_embed_type=cfg.MODEL.pos_embed_type,
                    shared_embed=cfg.MODEL.shared_embed,
                    tie_weights=cfg.MODEL.tie_weights,
+                   data_norm=cfg.MODEL.data_norm,
                    use_pooler=use_pooler,
                    attention_dropout=cfg.MODEL.attention_dropout,
                    activation_dropout=cfg.MODEL.activation_dropout,
                    dropout=cfg.MODEL.dropout,
                    pooler_activation=cfg.MODEL.pooler_activation,
                    layer_norm_eps=cfg.MODEL.layer_norm_eps,
-                   layernorm_embedding=cfg.MODEL.layernorm_embedding,
                    enc_num_layers=cfg.MODEL.ENCODER.num_layers,
                    enc_units=cfg.MODEL.ENCODER.units,
                    enc_num_heads=cfg.MODEL.ENCODER.num_heads,
@@ -300,17 +308,18 @@ class BartModel(TransformerModel):
                    dec_recurrent=cfg.MODEL.DECODER.recurrent,
                    dec_activation=cfg.MODEL.DECODER.activation,
                    dec_pre_norm=cfg.MODEL.DECODER.pre_norm,
+                   layout=cfg.MODEL.layout,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
-                   dtype=cfg.MODEL.dtype)
+                   dtype=dtype)
 
 
 def list_pretrained_bart():
     return sorted(list(PRETRAINED_URL.keys()))
 
 
-def get_pretrained_bart(model_name: str = 'fairseq_roberta_base',
+def get_pretrained_bart(model_name: str = 'fairseq_bart_base',
                         root: str = get_model_zoo_home_dir(),
                         load_backbone: bool = True) \
         -> Tuple[CN, HuggingFaceByteBPETokenizer, str]:

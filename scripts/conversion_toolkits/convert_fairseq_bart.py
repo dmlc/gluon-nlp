@@ -40,7 +40,7 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
     cfg.MODEL.shared_embed = fairseq_cfg.share_all_embeddings
     cfg.MODEL.scale_embed = not fairseq_cfg.no_scale_embedding
     cfg.MODEL.tie_weights = fairseq_cfg.share_decoder_input_output_embed
-    cfg.MODEL.layernorm_embedding = fairseq_cfg.layernorm_embedding
+    cfg.MODEL.data_norm = fairseq_cfg.layernorm_embedding
     cfg.MODEL.pooler_activation = fairseq_cfg.pooler_activation_fn
     cfg.MODEL.layer_norm_eps = 1E-5
     cfg.MODEL.dropout = fairseq_cfg.dropout
@@ -111,26 +111,6 @@ def convert_params(fairseq_model,
             gl_qkv_bias.set_data(
                 np.concatenate([fs_q_bias, fs_k_bias, fs_v_bias], axis=0))
 
-    def convert_embeddings(fairseq_prefix, gluon_prefix):
-        for k, v in [
-            ('.embed_tokens.weight', '_embed_layer.weight'),
-            ('.layernorm_embedding.weight', '_embed_ln.gamma'),
-            ('.layernorm_embedding.bias', '_embed_ln.beta'),
-        ]:
-            fs_name = fairseq_prefix + k
-            gl_name = gluon_prefix + v
-            all_keys.remove(gl_name)
-            gluon_params[gl_name].set_data(
-                fairseq_params[fs_name].cpu().numpy())
-
-        # position embed weight
-        padding_idx = fairseq_model.task.dictionary.pad_index
-        fs_pos_embed_name = fairseq_prefix + '.embed_positions.weight'
-        gl_pos_embed_name = gluon_prefix + '_pos_embed_layer._embed.weight'
-        all_keys.remove(gl_pos_embed_name)
-        gluon_params[gl_pos_embed_name].set_data(
-            fairseq_params[fs_pos_embed_name].cpu().numpy()[padding_idx + 1:, :])
-
     def convert_ffn(num_layers, fairseq_prefix, gluon_prefix):
         # convert feed forward layer in encoder
         for layer_id in range(num_layers):
@@ -150,11 +130,33 @@ def convert_params(fairseq_model,
                 gluon_params[gl_name].set_data(
                     fairseq_params[fs_name].cpu().numpy())
 
+    print('converting embedding params')
+    padding_idx = fairseq_model.task.dictionary.pad_index
+    for fs_name, gl_name in [
+        ('model.encoder.embed_tokens.weight', 'src_embed_layer.weight'),
+        ('model.encoder.embed_positions.weight', 'src_pos_embed_layer._embed.weight'),
+        ('model.encoder.layernorm_embedding.weight', 'encoder.ln_data.gamma'),
+        ('model.encoder.layernorm_embedding.bias', 'encoder.ln_data.beta'),
+        ('model.decoder.embed_tokens.weight', 'tgt_embed_layer.weight'),
+        ('model.decoder.embed_positions.weight', 'tgt_pos_embed_layer._embed.weight'),
+        ('model.decoder.layernorm_embedding.weight', 'decoder.ln_data.gamma'),
+        ('model.decoder.layernorm_embedding.bias', 'decoder.ln_data.beta'),
+        # final projection in decoder
+        ('model.decoder.output_projection.weight', 'tgt_final_layer.weight'),
+    ]:
+        all_keys.remove(gl_name)
+        if 'embed_positions' in fs_name:
+            # position embed weight
+            gluon_params[gl_name].set_data(
+                fairseq_params[fs_name].cpu().numpy()[padding_idx + 1:, :])
+        else:
+            gluon_params[gl_name].set_data(
+                fairseq_params[fs_name].cpu().numpy())
+
     print('converting encoder params')
     encoder_num_layers = gluon_cfg.MODEL.ENCODER.num_layers
     convert_attention(encoder_num_layers, 'model.encoder', 'encoder')
     convert_ffn(encoder_num_layers, 'model.encoder', 'encoder')
-    convert_embeddings('model.encoder', 'src')
     for layer_id in range(encoder_num_layers):
         for k, v in [
             ('self_attn.out_proj.weight', 'attention_proj.weight'),
@@ -170,6 +172,7 @@ def convert_params(fairseq_model,
             gluon_params[gl_name].set_data(
                 fairseq_params[fs_name].cpu().numpy())
 
+    print('converting decoder params')
     decoder_num_layers = gluon_cfg.MODEL.DECODER.num_layers
     convert_attention(decoder_num_layers, 'model.decoder', 'decoder',
                       gluon_attn_prefix='attn_in_qkv')
@@ -201,14 +204,6 @@ def convert_params(fairseq_model,
             gluon_params[gl_name].set_data(
                 fairseq_params[fs_name].cpu().numpy())
 
-    convert_embeddings('model.decoder', 'tgt')
-    # final projection in decoder
-    for fs_name, gl_name in [
-        ('model.decoder.output_projection.weight', 'tgt_final_layer.weight'),
-    ]:
-        all_keys.remove(gl_name)
-        gluon_params[gl_name].set_data(
-            fairseq_params[fs_name].cpu().numpy())
     assert len(all_keys) == 0, 'parameters missing from tensorflow checkpoint'
 
     # check parameters sharing if share_decoder_input_output_embed is true

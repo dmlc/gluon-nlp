@@ -196,7 +196,7 @@ class TransformerEncoderLayer(HybridBlock):
                                        bias_initializer=bias_initializer,
                                        dtype=self._dtype)
         attention_layout = 'NTK' if self._layout == 'NT' else 'TNK'
-        self.self_attention =\
+        self.attention_cell = \
             MultiHeadAttentionCell(
                 query_units=self._units,
                 num_heads=self._num_heads,
@@ -252,7 +252,7 @@ class TransformerEncoderLayer(HybridBlock):
         query = F.npx.reshape(query, (-2, -2, self._num_heads, -1))
         key = F.npx.reshape(key, (-2, -2, self._num_heads, -1))
         value = F.npx.reshape(value, (-2, -2, self._num_heads, -1))
-        out, [_, attn_weight] = self.self_attention(query, key, value, attn_mask)
+        out, [_, attn_weight] = self.attention_cell(query, key, value, attn_mask)
         out = self.attention_proj(out)
         out = self.dropout_layer(out)
         out = out + data
@@ -260,7 +260,6 @@ class TransformerEncoderLayer(HybridBlock):
             out = self.layer_norm(out)
         out = self.ffn(out)
         return out, attn_weight
-
 
 @use_np
 class TransformerEncoder(HybridBlock):
@@ -441,7 +440,7 @@ class TransformerDecoderLayer(HybridBlock):
                                                      num_heads=num_heads,
                                                      attention_dropout=self._attention_dropout,
                                                      dtype=dtype,
-                                                     layout='NTK')
+                                                     layout=attention_layout)
         self.proj_in = nn.Dense(units=units, in_units=units, flatten=False,  use_bias=True,
                                 weight_initializer=weight_initializer,
                                 bias_initializer=bias_initializer,
@@ -484,6 +483,9 @@ class TransformerDecoderLayer(HybridBlock):
                                    hidden_size=hidden_size,
                                    dropout=dropout,
                                    activation_dropout=activation_dropout,
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer,
+                                   layer_norm_eps=layer_norm_eps,
                                    activation=activation,
                                    pre_norm=pre_norm,
                                    dtype=dtype)
@@ -673,7 +675,7 @@ class TransformerDecoderLayer(HybridBlock):
         step_value = F.npx.reshape(step_value, (-2, -2, self._num_heads, -1))
         new_key = F.np.concatenate([prev_key, step_key], axis=time_axis)
         new_value = F.np.concatenate([prev_value, step_value], axis=time_axis)
-        out, _ = self.self_attention(step_query, new_key, new_value, None)
+        out, [_, attn_weight] = self.self_attention(step_query, new_key, new_value, None)
         out = self.proj_in(out)
         out = self.dropout_layer(out)
         out = out + data
@@ -914,7 +916,6 @@ class TransformerModel(HybridBlock):
                  max_tgt_length: Optional[int] = None,
                  scale_embed: bool = True,
                  pos_embed_type="sinusoidal",
-                 layernorm_embedding: bool = False,
                  shared_embed: bool = True,
                  tie_weights: bool = True,
                  activation_dropout: float = 0.0,
@@ -959,8 +960,6 @@ class TransformerModel(HybridBlock):
             Whether to multiply the src and dst embeddings by sqrt(units)
         pos_embed_type
             Type of the positional embedding
-        layernorm_embedding
-            Wether to layer normalize the embedding
         shared_embed
             Whether to share the embedding of the src and tgt language
         tie_weights
@@ -1027,11 +1026,11 @@ class TransformerModel(HybridBlock):
         self._tgt_vocab_size = tgt_vocab_size
         self.tie_weights = tie_weights
         self.pos_embed_type = pos_embed_type
-        self.layernorm_embedding = layernorm_embedding
         self.scaled_embed = scale_embed
         self.enc_units = enc_units
         self.dec_units = dec_units
         self.weight_initializer = weight_initializer
+        self.bias_initializer = bias_initializer
         self._layout = layout
         assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
                                        'Only "TN" and "NT" are accepted!'.format(layout)
@@ -1062,11 +1061,6 @@ class TransformerModel(HybridBlock):
                                                            max_length=max_tgt_length,
                                                            dtype=self._dtype,
                                                            method=pos_embed_type)
-        if layernorm_embedding:
-            self.src_embed_ln = nn.LayerNorm(epsilon=layer_norm_eps,
-                                             in_channels=enc_units)
-            self.tgt_embed_ln = nn.LayerNorm(epsilon=layer_norm_eps,
-                                             in_channels=dec_units)
         self.encoder = TransformerEncoder(num_layers=enc_num_layers,
                                           recurrent=enc_recurrent,
                                           units=enc_units,
@@ -1163,6 +1157,7 @@ class TransformerModel(HybridBlock):
             else:
                 src_data = src_data + F.np.expand_dims(self.src_pos_embed_layer(
                     F.npx.arange_like(src_data, axis=0)), axis=1)
+
         enc_out = self.encoder(src_data, src_valid_length)
         return enc_out
 
@@ -1205,6 +1200,7 @@ class TransformerModel(HybridBlock):
             else:
                 tgt_data = tgt_data + F.np.expand_dims(self.tgt_pos_embed_layer(
                     F.npx.arange_like(tgt_data, axis=0)), axis=1)
+
         dec_out = self.decoder(tgt_data, tgt_valid_length, mem_data, mem_valid_length)
         return dec_out
 
