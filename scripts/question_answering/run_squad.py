@@ -563,7 +563,7 @@ def train(args):
                 segment_ids = sample.segment_ids.as_in_ctx(ctx) if use_segmentation else None
                 valid_length = sample.valid_length.as_in_ctx(ctx)
                 p_mask = sample.masks.as_in_ctx(ctx)
-                gt_start = sample.gt_start.as_in_ctx(ctx)
+                gt_start = sample.gt_start.as_in_ctx(ctx).astype(np.int32)
                 gt_end = sample.gt_end.as_in_ctx(ctx)
                 is_impossible = sample.is_impossible.as_in_ctx(ctx).astype(np.int32)
                 batch_idx = mx.np.arange(tokens.shape[0], dtype=np.int32, ctx=ctx)
