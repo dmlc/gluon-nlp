@@ -1154,9 +1154,9 @@ class TransformerModel(HybridBlock):
             - layout = 'TN'
                 Shape (src_length, batch_size, C_out)
         """
-        embeddings = self.src_embed_layer(src_data)
+        src_data = self.src_embed_layer(src_data)
         if self.scaled_embed:
-            embeddings = embeddings * np.sqrt(self.enc_units)
+            src_data = src_data * np.sqrt(self.enc_units)
         if self.pos_embed_type is not None:
             if self.layout == 'NT':
                 src_data = src_data + self.src_pos_embed_layer(F.npx.arange_like(src_data, axis=1))
@@ -1195,7 +1195,7 @@ class TransformerModel(HybridBlock):
             - layout = 'TN'
                 Shape (tgt_length, batch_size, tgt_vocab_size)
         """
-        embeddings = self.tgt_embed_layer(tgt_data)
+        tgt_data = self.tgt_embed_layer(tgt_data)
         if self.scaled_embed:
             tgt_data = tgt_data * np.sqrt(self.dec_units)
         if self.pos_embed_type is not None:
