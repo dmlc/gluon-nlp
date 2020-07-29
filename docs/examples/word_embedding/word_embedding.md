@@ -33,10 +33,11 @@ To begin, let's first import a few packages that we'll need for this example:
 import warnings
 warnings.filterwarnings('ignore')
 
-from mxnet import gluon
+from mxnet import gluon, nd
 import gluonnlp as nlp
 import re
 import collections
+import numpy as np
 
 ```
 
@@ -216,7 +217,7 @@ input_dim, output_dim = matrix.shape
 layer = gluon.nn.Embedding(input_dim, output_dim)
 layer.initialize()
 layer.weight.set_data(matrix)
-layer(np.array([5, 4]))[:, :5]
+layer(nd.array([5, 4]))[:, :5]
 ```
 
 ### Creating Vocabulary from Pre-trained Word Embeddings
@@ -258,7 +259,7 @@ cosine similarity. Cosine similarity determines the similarity between two vecto
 ```{.python .input}
 import numpy as np
 def cos_sim(x, y):
-    return np.dot(x, y) / (np.norm(x) * np.norm(y))
+    return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
 ```
 
 The range of cosine similarity between two vectors can be between -1 and 1. The
@@ -351,7 +352,7 @@ def get_top_k_by_analogy(vocab, matrix, k, word1, word2, word3):
     word_diff = (word_vecs[1] - word_vecs[0] + word_vecs[2]).reshape((-1, 1))
     vocab_vecs = norm_vecs_by_row(matrix)
     dot_prod = np.dot(vocab_vecs, word_diff)
-    indices = topk(dot_prod.reshape((len(vocab), )), k=k, ret_typ='indices')
+    indices = topk(dot_prod.reshape((len(vocab), )), k=k)
     return vocab.to_tokens(indices)
 ```
 
