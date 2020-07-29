@@ -44,7 +44,7 @@ import mxnet as mx
 from mxnet import gluon
 from gluonnlp.models.transformer import TransformerNMTModel
 from gluonnlp.utils.misc import logging_config, AverageSGDTracker, count_parameters,\
-    md5sum, grouper
+    md5sum, grouper, init_comm
 from gluonnlp.data.sampler import (
     ConstWidthBucket,
     LinearWidthBucket,
@@ -58,6 +58,11 @@ from gluonnlp.data import tokenizers
 from gluonnlp.data.tokenizers import BaseTokenizerWithVocab
 from gluonnlp.lr_scheduler import InverseSquareRootScheduler
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
+try:
+    import horovod.mxnet as hvd
+except ImportError:
+    pass
+
 mx.npx.set_np()
 
 
@@ -162,6 +167,9 @@ def parse_args():
     parser.add_argument('--overwrite_cache', action='store_true')
     parser.add_argument('--fp16', action='store_true',
                         help='Whether to use dtype float16')
+    parser.add_argument('--comm_backend', type=str, default='device',
+                        choices=['horovod', 'dist_sync_device', 'device'],
+                        help='Communication backend.')
     parser.add_argument('--gpus', type=str,
                         help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
     args = parser.parse_args()
@@ -280,6 +288,8 @@ def create_tokenizer(tokenizer_type, model_path, vocab_path):
 
 
 def train(args):
+    store, num_parts, rank, local_rank, is_master_node, ctx_l = init_comm(
+        args.comm_backend, args.gpus)
     src_tokenizer = create_tokenizer(args.src_tokenizer,
                                      args.src_subword_model_path,
                                      args.src_vocab_path)
@@ -304,8 +314,6 @@ def train(args):
     data_val = gluon.data.SimpleDataset(
         [(src_tokens, tgt_tokens, len(src_tokens), len(tgt_tokens), i)
          for i, (src_tokens, tgt_tokens) in enumerate(zip(dev_src_data, dev_tgt_data))])
-    ctx_l = [mx.cpu()] if args.gpus is None or args.gpus == ''\
-        else [mx.gpu(int(x)) for x in args.gpus.split(',')]
     # Construct the model + loss function
     if args.cfg.endswith('.yml'):
         cfg = TransformerNMTModel.get_cfg().clone_merge(args.cfg)
@@ -330,6 +338,10 @@ def train(args):
                                                     from_logits=False)
     label_smooth_loss.hybridize()
     rescale_loss = 100.0
+    
+    if args.comm_backend == 'horovod':
+        hvd.broadcast_parameters(model.collect_params(), root_rank=0)
+    
     # Construct the trainer
     # TODO(sxjscience) Support AMP
     if args.lr is None:
@@ -338,16 +350,25 @@ def train(args):
         base_lr = args.lr
     lr_scheduler = InverseSquareRootScheduler(warmup_steps=args.warmup_steps, base_lr=base_lr,
                                               warmup_init_lr=args.warmup_init_lr)
-    trainer = gluon.Trainer(model.collect_params(), 'adam',
+    trainer_settings = (model.collect_params(), 'adam',
                             {'learning_rate': args.lr, 'beta1': 0.9,
                              'beta2': 0.98, 'epsilon': 1e-9, 'lr_scheduler': lr_scheduler})
+    if args.comm_backend == 'horovod':
+        trainer = hvd.DistributedTrainer(*trainer_settings)
+    else:
+        trainer = gluon.Trainer(*trainer_settings)
     # Load Data
     if args.sampler == 'BoundedBudgetSampler':
         train_batch_sampler = BoundedBudgetSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
                                                      max_tokens=args.max_tokens,
                                                      max_sentences=args.max_sentences,
-                                                     seed=args.seed)
+                                                     seed=args.seed,
+                                                     num_parts=num_parts,
+                                                     part_index=rank)
     elif args.sampler == 'FixedBucketSampler':
+        if args.comm_backend == 'horovod':
+            raise NotImplementedError
+
         if args.bucket_scheme == 'constant':
             bucket_scheme = ConstWidthBucket()
         elif args.bucket_scheme == 'linear':
@@ -451,7 +472,8 @@ def train(args):
                 if (args.epochs > 0 and epoch_id >= args.epochs - args.num_averages) or \
                    (args.max_update > 0 and n_train_iters >= args.max_update - args.num_averages * args.save_interval_update):
                     model_averager.step()
-                if n_epoch_train_iters % args.log_interval == 0 or is_last_batch:
+                if local_rank == 0 and \
+                   (n_epoch_train_iters % args.log_interval == 0 or is_last_batch):
                     log_end_time = time.time()
                     log_wc = log_wc.asnumpy()
                     wps = log_wc / (log_end_time - log_start_time)
@@ -465,7 +487,8 @@ def train(args):
                     log_avg_loss = 0
                     log_loss_denom = 0
                     log_wc = 0
-                if args.max_update > 0 and n_train_iters % args.save_interval_update == 0:
+                if local_rank == 0 and \
+                   (args.max_update > 0 and n_train_iters % args.save_interval_update == 0):
                     model.save_parameters(os.path.join(args.save_dir,
                                                        '{:d}.params'.format(n_train_iters // args.save_interval_update)),
                                           deduplicate=True)
