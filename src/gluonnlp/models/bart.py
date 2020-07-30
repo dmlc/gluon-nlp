@@ -95,7 +95,7 @@ def bart_base():
 
     # Parameters for the initializer
     cfg.INITIALIZER = CN()
-    cfg.INITIALIZER.embed = ['normal', 768**-0.5]
+    cfg.INITIALIZER.embed = ['xavier', 'gaussian', 'in', 1.0]
     cfg.INITIALIZER.weight = ['xavier', 'uniform', 'avg', 1.0]
     cfg.INITIALIZER.bias = ['zeros']
     cfg.VERSION = 1
@@ -116,8 +116,6 @@ def bart_large():
     cfg.MODEL.DECODER.hidden_size = 4096
     cfg.MODEL.DECODER.num_heads = 16
     cfg.MODEL.DECODER.num_layers = 12
-
-    cfg.INITIALIZER.embed = ['normal', 0.03125]
     cfg.freeze()
     return cfg
 
