@@ -337,7 +337,7 @@ _MONOLINGUAL_URLS = {
     }
 }
 
-with open('../../url_checksums/mirror/wmt.txt') as wmt_mirror_map_f:
+with open(os.path.join(_CURR_DIR, '..', 'url_checksums', 'mirror', 'wmt.txt')) as wmt_mirror_map_f:
     _WMT_MIRROR_URL_MAP = json.load(wmt_mirror_map_f)
 
 def _clean_space(s: str):
