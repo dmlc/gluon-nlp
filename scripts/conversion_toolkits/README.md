@@ -12,7 +12,7 @@ The testing step mentioned above are controlled by the flag `--test`, in which t
 tolerance of 1e-3 between gluon model with converted weights and original tensorflow model.
 In addition, we can use GPU in all converting scripts by adding `--gpu 0`.
 
-For RoBERTa XLM-R and BART model, please instal the [fairseq](https://github.com/pytorch/fairseq#requirements-and-installation) package locally before conversion.
+For RoBERTa XLM-R and BART model, please instal the [fairseq](https://github.com/pytorch/fairseq#requirements-and-installation) package locally as `pip install git+https://github.com/pytorch/fairseq.git@master`.
 
 ## BERT
 Convert model from [BERT LIST](https://tfhub.dev/google/collections/bert/1).

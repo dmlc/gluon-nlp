@@ -80,6 +80,7 @@ def bart_base():
     cfg.MODEL.ENCODER.recurrent = False
     cfg.MODEL.ENCODER.pre_norm = False
     cfg.MODEL.ENCODER.activation = 'gelu'
+    cfg.MODEL.ENCODER.use_qkv_bias = True
 
     # Parameters for the decoder
     cfg.MODEL.DECODER = CN()
@@ -90,6 +91,7 @@ def bart_base():
     cfg.MODEL.DECODER.recurrent = False
     cfg.MODEL.DECODER.pre_norm = False
     cfg.MODEL.DECODER.activation = 'gelu'
+    cfg.MODEL.DECODER.use_qkv_bias = True
 
     # Parameters for the initializer
     cfg.INITIALIZER = CN()
@@ -125,14 +127,14 @@ PRETRAINED_URL = {
         'cfg': bart_base(),
         'merges': 'fairseq_bart_base/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_bart_base/gpt2-f4dedacb.vocab',
-        'params': 'fairseq_bart_base/model-6dea1e11.params',
+        'params': 'fairseq_bart_base/model-8f4929b5.params',
         'lowercase': False,
     },
     'fairseq_bart_large': {
         'cfg': bart_large(),
         'merges': 'fairseq_bart_large/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_bart_large/gpt2-f1335494.vocab',
-        'params': 'fairseq_bart_large/model-38f35552.params',
+        'params': 'fairseq_bart_large/model-862277b1.params',
         'lowercase': False,
     }
 }
@@ -289,6 +291,7 @@ class BartModel(TransformerModel):
                    tie_weights=cfg.MODEL.tie_weights,
                    data_norm=cfg.MODEL.data_norm,
                    use_pooler=use_pooler,
+                   classifier_activation=classifier_activation,
                    attention_dropout=cfg.MODEL.attention_dropout,
                    activation_dropout=cfg.MODEL.activation_dropout,
                    dropout=cfg.MODEL.dropout,
