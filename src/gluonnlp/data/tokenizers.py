@@ -26,21 +26,20 @@ import os
 import json
 from collections import OrderedDict
 import abc
-import sys
 import warnings
 import itertools
 from typing import NewType
 import sacremoses
-import jieba
 from uuid import uuid4
 from .vocab import Vocab
 from ..registry import TOKENIZER_REGISTRY
-from ..utils.lazy_imports import try_import_subword_nmt, \
-    try_import_sentencepiece, \
-    try_import_huggingface_tokenizers, \
-    try_import_yttm, \
-    try_import_spacy, \
-    try_import_jieba
+from ..utils.lazy_imports import try_import_subword_nmt,\
+                                 try_import_sentencepiece,\
+                                 try_import_huggingface_tokenizers,\
+                                 try_import_yttm,\
+                                 try_import_spacy,\
+                                 try_import_jieba
+
 
 SentencesType = NewType('SentencesType', Union[str, List[str]])
 TokensType = NewType('TokensType', Union[List[str], List[List[str]]])
@@ -553,10 +552,10 @@ class JiebaTokenizer(BaseTokenizerWithVocab):
 
     """
 
-    def __init__(self, ditionary=None, vocab: Optional[Vocab] = None):
+    def __init__(self, dictionary=None, vocab: Optional[Vocab] = None):
         self._vocab = vocab
         jieba = try_import_jieba()
-        self._tokenizer = jieba.Tokenizer(ditionary)
+        self._tokenizer = jieba.Tokenizer(dictionary)
         self._tokenizer.initialize(self._tokenizer.dictionary)
 
     def encode(self, sentences, output_type=str):
@@ -626,6 +625,7 @@ class JiebaTokenizer(BaseTokenizerWithVocab):
         return d
 
     def __setstate__(self, state):
+        jieba = try_import_jieba()
         self._tokenizer = jieba.Tokenizer()
         for k, v in state.items():
             setattr(self._tokenizer, k, v)
