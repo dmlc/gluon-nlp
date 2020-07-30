@@ -3,7 +3,7 @@
 Following the instruction of [Prepare OpenWebTextCorpus](../datasets/pretrain_corpus#openwebtext), download and prepare the dataset, obtaining a total of 20610 text files in the folder `prepared_owt`.
 
 ```bash
-python data_preprocessing.py --input prepared_owt --output preprocessed_owt --max_seq_length 128
+python data_preprocessing.py --input prepared_owt --output preprocessed_owt --max_seq_length 128 --shuffle
 ```
 The above command allows us to generate the preprocessed Numpy features saved in `.npz`.
 # Pretrain Model

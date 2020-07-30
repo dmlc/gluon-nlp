@@ -77,7 +77,7 @@ def main(args):
     fnames = sorted(os.listdir(args.input))
     fnames = [os.path.join(args.input, fname) for fname in fnames]
     if args.shuffle:
-        fnames = random.shuffle(fnames)
+        random.shuffle(fnames)
     print('Start extracting {} files with {} cores'.format(len(fnames), num_process))
     start_time = time.time()
     with multiprocessing.Pool(num_process) as pool:

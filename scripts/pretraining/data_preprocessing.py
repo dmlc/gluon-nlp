@@ -4,8 +4,11 @@ Prepare the feature for openwebtext dataset
 import os
 import time
 import math
+import random
 import argparse
 import multiprocessing
+
+import numpy as np
 
 from pretraining_utils import get_all_features
 from gluonnlp.base import get_repo_model_zoo_url
@@ -28,6 +31,8 @@ def get_parser():
     parser.add_argument("--num_out_files", type=int, default=1000,
                         help="Number of desired output files, where each is processed"
                              " independently by a worker.")
+    parser.add_argument("--shuffle", action="store_true",
+                        help="Wether to shuffle the data order")
     parser.add_argument("--do_lower_case", dest='do_lower_case',
                         action="store_true", help="Lower case input text.")
     parser.add_argument("--no_lower_case", dest='do_lower_case',
@@ -55,10 +60,12 @@ def main(args):
 
     fnames = sorted(os.listdir(args.input))
     fnames = [os.path.join(args.input, fname) for fname in fnames]
+    if args.shuffle:
+        random.shuffle(fnames)
     num_files = len(fnames)
     num_out_files = min(args.num_out_files, num_files)
     file_volume = math.ceil(num_files / num_out_files)
-    splited_files = [fnames[i: i + file_volume] for i in range(0, num_files, file_volume)]
+    splited_files = np.array_split(fnames, file_volume)
     num_out_files = len(splited_files)
     output_files = [os.path.join(
         args.output, "owt-pretrain-record-{}.npz".format(str(i).zfill(4))) for i in range(num_out_files)]
@@ -85,7 +92,7 @@ def main(args):
             fea_written += len(np_features[0])
             f_read += len(splited_files[i])
             print("Processed {:} files, Elapsed: {:.2f}s, ETA: {:.2f}s, ".format(
-                fea_written, elapsed, (num_files - f_read) / (num_files / elapsed)))
+                fea_written, elapsed, (num_files - f_read) / (f_read / elapsed)))
     print("Done processing within {:.2f} seconds".format(elapsed))
 
 
