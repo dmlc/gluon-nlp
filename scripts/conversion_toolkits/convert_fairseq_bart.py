@@ -64,8 +64,8 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
     cfg.MODEL.DECODER.hidden_size = fairseq_cfg.decoder_ffn_embed_dim
     cfg.MODEL.DECODER.activation = fairseq_cfg.activation_fn
 
-    embed_din = fairseq_cfg.encoder_embed_dim
-    cfg.INITIALIZER.embed = ['normal', embed_din**-0.5]
+    embed_dim = fairseq_cfg.encoder_embed_dim
+    cfg.INITIALIZER.embed = ['normal', embed_dim**-0.5]
     cfg.INITIALIZER.weight = ['xavier', 'uniform', 'avg', 1.0]
     cfg.INITIALIZER.bias = ['zeros']
     cfg.VERSION = 1
