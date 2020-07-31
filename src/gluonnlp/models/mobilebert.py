@@ -641,7 +641,7 @@ class MobileBertModel(HybridBlock):
         pooled_output :
             This is optional. Shape (batch_size, units)
         """
-        embedding = self.get_initial_embedding(F, inputs, token_types, self.trigram_embed)
+        embedding = self.get_initial_embedding(F, inputs, token_types)
 
         if self._compute_layout != self._layout:
             contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(embedding, 0, 1),
