@@ -128,7 +128,7 @@ For all the above model settings, we set lambdas = 0.1279, theta = 0.662, window
 
    $ python cache_language_model.py --gpus 0 --model_name standard_lstm_lm_650
 
-[5] cache_standard_lstm_lm_200_wikitext-2 (Val PPL 81.68 Test PPL 73.74)
+[5] cache_standard_lstm_lm_200_wikitext-2 (Val PPL 81.68 Test PPL 77.83)
 
 .. code-block:: console
 
