@@ -55,6 +55,8 @@ setup(
         'scripts',
     )),
     package_dir={"": "src"},
+    package_data={'': [os.path.join('models', 'model_zoo_checksums', '*.txt'),
+                       os.path.join('cli', 'data', 'url_checksums', '*.txt')]},
     zip_safe=True,
     include_package_data=True,
     install_requires=requirements,

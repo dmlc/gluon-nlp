@@ -7,7 +7,7 @@ import argparse
 import logging
 import time
 from gluonnlp.utils.misc import logging_config
-from gluonnlp.models.transformer import TransformerNMTModel,\
+from gluonnlp.models.transformer import TransformerModel,\
     TransformerNMTInference
 from gluonnlp.data.batchify import Tuple, Pad, Stack
 from gluonnlp.data.filtering import MosesNormalizer
@@ -144,16 +144,16 @@ def evaluate(args):
     src_vocab = src_tokenizer.vocab
     tgt_vocab = tgt_tokenizer.vocab
     if args.cfg.endswith('.yml'):
-        cfg = TransformerNMTModel.get_cfg().clone_merge(args.cfg)
+        cfg = TransformerModel.get_cfg().clone_merge(args.cfg)
     else:
-        cfg = TransformerNMTModel.get_cfg(args.cfg)
+        cfg = TransformerModel.get_cfg(args.cfg)
     cfg.defrost()
     cfg.MODEL.src_vocab_size = len(src_vocab)
     cfg.MODEL.tgt_vocab_size = len(tgt_vocab)
     if args.fp16:
         cfg.MODEL.dtype = 'float16'
     cfg.freeze()
-    model = TransformerNMTModel.from_cfg(cfg)
+    model = TransformerModel.from_cfg(cfg)
     model.hybridize()
     model.load_parameters(args.param_path, ctx=ctx_l)
     inference_model = TransformerNMTInference(model=model)

@@ -284,3 +284,22 @@ def relative_position_bucket(F, relative_position,
     val_if_large = F.np.minimum(val_if_large, num_buckets - 1)
     ret = ret + F.np.where(is_small, relative_position, val_if_large)
     return ret
+
+
+def l2_normalize(F, data, axis=-1, eps=1e-6):
+    """Normalize the data by L2 normalization.
+    
+    Parameters
+    ----------
+    F : mx.sym or mx.nd
+    data : symbol or ndarray
+    axis : int, default -1
+    eps : float, default 1e-6
+    
+    Returns
+    -------
+    ret : mx.sym or mx.nd
+    """
+    ret = data / (F.np.linalg.norm(data, axis=axis, keepdims=True) + eps)
+    return ret
+

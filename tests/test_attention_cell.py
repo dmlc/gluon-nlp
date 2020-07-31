@@ -173,23 +173,27 @@ def test_dot_product_attention(scaled, normalized):
 @pytest.mark.seed(123)
 def test_gen_attn_mask():
     class GenSelfAttnMask(HybridBlock):
-        def __init__(self, dtype, attn_type):
+        def __init__(self, dtype, layout, attn_type):
             super().__init__()
             self._dtype = dtype
+            self._layout = layout
             self._attn_type = attn_type
 
         def hybrid_forward(self, F, data, valid_length):
             return gen_self_attn_mask(F, data, valid_length,
-                                      dtype=self._dtype, attn_type=self._attn_type)
+                                      dtype=self._dtype,
+                                      layout=self._layout,
+                                      attn_type=self._attn_type)
 
     class GenMemAttnMask(HybridBlock):
-        def __init__(self, dtype):
+        def __init__(self, dtype, layout):
             super().__init__()
             self._dtype = dtype
+            self._layout = layout
 
         def hybrid_forward(self, F, mem, mem_valid_length, data, valid_length):
             return gen_mem_attn_mask(F, mem, mem_valid_length, data, valid_length,
-                                     dtype=self._dtype)
+                                     dtype=self._dtype, layout=self._layout)
 
     batch_size = 4
     query_length = 8
@@ -203,11 +207,17 @@ def test_gen_attn_mask():
 
     for hybridize in [False, True]:
         # Test Full Attention Mask
-        mask_gen = GenSelfAttnMask(dtype=np.float32, attn_type='full')
+        mask_gen_nt = GenSelfAttnMask(dtype=np.float32, layout='NT', attn_type='full')
+        mask_gen_tn = GenSelfAttnMask(dtype=np.float32, layout='TN', attn_type='full')
         if hybridize:
-            mask_gen.hybridize()
-        mask = mask_gen(data, valid_length)
-        mask = mask.asnumpy()
+            mask_gen_nt.hybridize()
+            mask_gen_tn.hybridize()
+        mask_nt = mask_gen_nt(data, valid_length)
+        mask_nt = mask_nt.asnumpy()
+        mask_tn = mask_gen_tn(mx.np.swapaxes(data, 0, 1), valid_length)
+        mask_tn = mask_tn.asnumpy()
+        mask = mask_nt
+        assert_allclose(mask_nt, mask_tn)
         for b in range(batch_size):
             v_l = valid_length.asnumpy()[b]
             for i in range(v_l):
@@ -217,11 +227,15 @@ def test_gen_attn_mask():
                 assert (mask[b, i, :] == 0).all()
 
         # Test Causal Attention Mask
-        mask_gen = GenSelfAttnMask(dtype=np.float32, attn_type='causal')
+        mask_gen_nt = GenSelfAttnMask(dtype=np.float32, layout='NT', attn_type='causal')
+        mask_gen_tn = GenSelfAttnMask(dtype=np.float32, layout='TN', attn_type='causal')
         if hybridize:
-            mask_gen.hybridize()
-        mask = mask_gen(data, valid_length)
-        mask = mask.asnumpy()
+            mask_gen_nt.hybridize()
+            mask_gen_tn.hybridize()
+        mask_nt = mask_gen_nt(data, valid_length)
+        mask_tn = mask_gen_tn(mx.np.swapaxes(data, 0, 1), valid_length)
+        assert_allclose(mask_nt.asnumpy(), mask_tn.asnumpy())
+        mask = mask_nt.asnumpy()
         for b in range(batch_size):
             v_l = valid_length.asnumpy()[b]
             for i in range(v_l):
@@ -231,11 +245,16 @@ def test_gen_attn_mask():
                 assert (mask[b, i, :] == 0).all()
 
         # Test Mem Attention Mask
-        mask_gen = GenMemAttnMask(dtype=np.float32)
+        mask_gen_nt = GenMemAttnMask(dtype=np.float32, layout='NT')
+        mask_gen_tn = GenMemAttnMask(dtype=np.float32, layout='TN')
         if hybridize:
-            mask_gen.hybridize()
-        mask = mask_gen(mem, mem_valid_length, data, valid_length)
-        mask = mask.asnumpy()
+            mask_gen_nt.hybridize()
+            mask_gen_tn.hybridize()
+        mask_nt = mask_gen_nt(mem, mem_valid_length, data, valid_length)
+        mask_tn = mask_gen_tn(mx.np.swapaxes(mem, 0, 1), mem_valid_length,
+                              mx.np.swapaxes(data, 0, 1), valid_length)
+        mask = mask_nt.asnumpy()
+        assert_allclose(mask_nt.asnumpy(), mask_tn.asnumpy())
         for b in range(batch_size):
             data_v_l = valid_length.asnumpy()[b]
             mem_v_l = mem_valid_length.asnumpy()[b]

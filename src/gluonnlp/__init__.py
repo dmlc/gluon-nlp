@@ -12,3 +12,4 @@ from . import op
 from . import optimizer
 from . import registry
 from . import sequence_sampler
+from . import embedding

@@ -25,7 +25,8 @@
 
 """
 __all__ = ['AlbertModel', 'AlbertForMLM', 'AlbertForPretrain',
-           'list_pretrained_albert', 'get_pretrained_albert']
+           'list_pretrained_albert', 'get_pretrained_albert',
+           'albert_cfg_reg']
 
 import os
 from typing import Tuple
@@ -38,16 +39,89 @@ from ..registry import BACKBONE_REGISTRY
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
+from ..utils.registry import Registry
 from ..initializer import TruncNorm
 from ..attention_cell import gen_self_attn_mask
 from ..layers import get_activation, PositionalEmbedding
 from ..op import select_vectors_by_position
 from ..data.tokenizers import SentencepieceTokenizer
 
+albert_cfg_reg = Registry('albert_cfg')
+
+
+@albert_cfg_reg.register()
+def google_albert_base():
+    cfg = CN()
+    # Model Parameters
+    cfg.MODEL = CN()
+    cfg.MODEL.vocab_size = 30000
+    cfg.MODEL.embed_size = 128
+    cfg.MODEL.units = 768
+    cfg.MODEL.hidden_size = 3072
+    cfg.MODEL.max_length = 512
+    cfg.MODEL.num_heads = 12
+    cfg.MODEL.num_layers = 12
+    cfg.MODEL.pos_embed_type = 'learned'
+    cfg.MODEL.activation = 'gelu(tanh)'
+    cfg.MODEL.layer_norm_eps = 1E-12
+    cfg.MODEL.num_groups = 1
+    cfg.MODEL.num_token_types = 2
+    cfg.MODEL.hidden_dropout_prob = 0.0
+    cfg.MODEL.attention_dropout_prob = 0.0
+    cfg.MODEL.dtype = 'float32'
+    cfg.MODEL.layout = 'NT'
+    cfg.MODEL.compute_layout = 'auto'
+    # Hyper-parameters of the Initializers
+    cfg.INITIALIZER = CN()
+    cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
+    cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]  # TruncNorm(0, 0.02)
+    cfg.INITIALIZER.bias = ['zeros']
+    # Version of the model. This helps ensure backward compatibility.
+    # Also, we can not use string here due to https://github.com/rbgirshick/yacs/issues/26
+    cfg.VERSION = 1
+    cfg.freeze()
+    return cfg
+
+
+@albert_cfg_reg.register()
+def google_albert_large():
+    cfg = google_albert_base()
+    cfg.defrost()
+    cfg.MODEL.hidden_size = 4096
+    cfg.MODEL.num_heads = 16
+    cfg.MODEL.num_layers = 24
+    cfg.MODEL.units = 1024
+    cfg.freeze()
+    return cfg
+
+
+@albert_cfg_reg.register()
+def google_albert_xlarge():
+    cfg = google_albert_base()
+    cfg.defrost()
+    cfg.MODEL.hidden_size = 8192
+    cfg.MODEL.num_heads = 32
+    cfg.MODEL.num_layers = 24
+    cfg.MODEL.units = 2048
+    cfg.freeze()
+    return cfg
+
+
+@albert_cfg_reg.register()
+def google_albert_xxlarge():
+    cfg = google_albert_base()
+    cfg.defrost()
+    cfg.MODEL.hidden_size = 16384
+    cfg.MODEL.num_heads = 64
+    cfg.MODEL.num_layers = 12
+    cfg.MODEL.units = 4096
+    cfg.freeze()
+    return cfg
+
 
 PRETRAINED_URL = {
     'google_albert_base_v2': {
-        'cfg': 'google_albert_base_v2/model-8767fdc9.yml',
+        'cfg': google_albert_base(),
         'spm_model': 'google_albert_base_v2/spm-65999e5d.model',
         'vocab': 'google_albert_base_v2/vocab-2ee53ae7.json',
         'params': 'google_albert_base_v2/model-125be477.params',
@@ -55,7 +129,7 @@ PRETRAINED_URL = {
         'lowercase': True,
     },
     'google_albert_large_v2': {
-        'cfg': 'google_albert_large_v2/model-e2e9b974.yml',
+        'cfg': google_albert_large(),
         'spm_model': 'google_albert_large_v2/spm-65999e5d.model',
         'vocab': 'google_albert_large_v2/vocab-2ee53ae7.json',
         'params': 'google_albert_large_v2/model-ad60bcd5.params',
@@ -63,7 +137,7 @@ PRETRAINED_URL = {
         'lowercase': True,
     },
     'google_albert_xlarge_v2': {
-        'cfg': 'google_albert_xlarge_v2/model-8123bffd.yml',
+        'cfg': google_albert_xlarge(),
         'spm_model': 'google_albert_xlarge_v2/spm-65999e5d.model',
         'vocab': 'google_albert_xlarge_v2/vocab-2ee53ae7.json',
         'params': 'google_albert_xlarge_v2/model-4149c9e2.params',
@@ -71,7 +145,7 @@ PRETRAINED_URL = {
         'lowercase': True,
     },
     'google_albert_xxlarge_v2': {
-        'cfg': 'google_albert_xxlarge_v2/model-07fbeebc.yml',
+        'cfg': google_albert_xxlarge(),
         'spm_model': 'google_albert_xxlarge_v2/spm-65999e5d.model',
         'vocab': 'google_albert_xxlarge_v2/vocab-2ee53ae7.json',
         'params': 'google_albert_xxlarge_v2/model-5601a0ed.params',
@@ -97,7 +171,8 @@ class AlbertEncoder(HybridBlock):
                  layer_norm_eps=1E-12,
                  weight_initializer=TruncNorm(stdev=0.02),
                  bias_initializer='zeros',
-                 activation='gelu'):
+                 activation='gelu',
+                 layout='NT'):
         super().__init__()
         assert units % num_heads == 0,\
             'In AlbertEncoder, The units should be divided exactly ' \
@@ -112,6 +187,8 @@ class AlbertEncoder(HybridBlock):
 
         self._output_attention = output_attention
         self._output_all_encodings = output_all_encodings
+        self._layout = layout
+
 
         self.all_encoder_groups = nn.HybridSequential()
         for group_idx in range(num_groups):
@@ -124,7 +201,13 @@ class AlbertEncoder(HybridBlock):
                                         layer_norm_eps=layer_norm_eps,
                                         weight_initializer=weight_initializer,
                                         bias_initializer=bias_initializer,
-                                        activation=activation))
+                                        activation=activation,
+                                        dtype=dtype,
+                                        layout=layout))
+
+    @property
+    def layout(self):
+        return self._layout
 
     def hybrid_forward(self, F, data, valid_length):
         """
@@ -135,18 +218,26 @@ class AlbertEncoder(HybridBlock):
         Parameters
         ----------
         F
-        data :
-            Shape (batch_size, seq_length, C)
+        data
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C)
         valid_length :
             Shape (batch_size,)
 
         Returns
         -------
-        out :
-            Shape (batch_size, seq_length, C_out)
+        out
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_out)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C)
         """
         # 1. Embed the data
-        attn_mask = gen_self_attn_mask(F, data, valid_length, dtype=self._dtype, attn_type='full')
+        time_axis = 1 if self.layout == 'NT' else 0
+        attn_mask = gen_self_attn_mask(F, data, valid_length, dtype=self._dtype,
+                                       attn_type='full', layout=self.layout)
         out = data
         all_encodings_outputs = []
         additional_outputs = []
@@ -159,7 +250,8 @@ class AlbertEncoder(HybridBlock):
             if self._output_all_encodings:
                 out = F.npx.sequence_mask(out,
                                           sequence_length=valid_length,
-                                          use_sequence_length=True, axis=1)
+                                          use_sequence_length=True,
+                                          axis=time_axis)
                 all_encodings_outputs.append(out)
 
             if self._output_attention:
@@ -168,7 +260,8 @@ class AlbertEncoder(HybridBlock):
         if not self._output_all_encodings:
             # if self._output_all_encodings, SequenceMask is already applied above
             out = F.npx.sequence_mask(out, sequence_length=valid_length,
-                                      use_sequence_length=True, axis=1)
+                                      use_sequence_length=True,
+                                      axis=time_axis)
             return out, additional_outputs
         else:
             return all_encodings_outputs, additional_outputs
@@ -195,7 +288,9 @@ class AlbertModel(HybridBlock):
                  weight_initializer=TruncNorm(stdev=0.02),
                  bias_initializer='zeros',
                  dtype='float32',
-                 use_pooler=True):
+                 use_pooler=True,
+                 layout='NT',
+                 compute_layout='auto'):
         super().__init__()
         self._dtype = dtype
         self.use_pooler = use_pooler
@@ -210,6 +305,11 @@ class AlbertModel(HybridBlock):
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
         self.layer_norm_eps = layer_norm_eps
+        self._layout = layout
+        if compute_layout is None or compute_layout == 'auto':
+            self._compute_layout = layout
+        else:
+            self._compute_layout = compute_layout
         # Construct AlbertEncoder
         self.encoder = AlbertEncoder(
             units=units,
@@ -226,6 +326,7 @@ class AlbertModel(HybridBlock):
             weight_initializer=weight_initializer,
             bias_initializer=bias_initializer,
             dtype=dtype,
+            layout=self._compute_layout
         )
         self.encoder.hybridize()
         # Construct word embedding
@@ -257,6 +358,10 @@ class AlbertModel(HybridBlock):
                                    weight_initializer=weight_initializer,
                                    bias_initializer=bias_initializer)
 
+    @property
+    def layout(self):
+        return self._layout
+
     def hybrid_forward(self, F, inputs, token_types, valid_length=None):
         # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
@@ -266,10 +371,16 @@ class AlbertModel(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
-        token_types :
-            Shape (batch_size, seq_length)
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
 
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
@@ -279,8 +390,11 @@ class AlbertModel(HybridBlock):
 
         Returns
         -------
-        contextual_embedding :
-            Shape (batch_size, seq_length, units).
+        contextual_embedding
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units)
         pooled_output :
             This is optional. Shape (batch_size, units)
         """
@@ -290,7 +404,13 @@ class AlbertModel(HybridBlock):
         if self.embed_size != self.units:
             prev_out = self.embed_factorized_proj(prev_out)
         outputs = []
-        contextual_embeddings, additional_outputs = self.encoder(prev_out, valid_length)
+        if self._compute_layout != self._layout:
+            # Swap input to reflect the compute_layout
+            contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(prev_out, 0, 1),
+                                                                     valid_length)
+            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
+        else:
+            contextual_embeddings, additional_outputs = self.encoder(prev_out, valid_length)
         outputs.append(contextual_embeddings)
         if self.use_pooler:
             pooled_out = self.apply_pooling(contextual_embeddings)
@@ -304,24 +424,37 @@ class AlbertModel(HybridBlock):
         ----------
         F
         inputs
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
         token_types
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
             If None, it will be initialized as all zero
 
         Returns
         -------
         embedding
             The initial embedding that will be fed into the encoder
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_embed)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_embed)
         """
+        if self.layout == 'NT':
+            batch_axis, time_axis = 0, 1
+        else:
+            batch_axis, time_axis = 1, 0
         embedding = self.word_embed(inputs)
         if token_types is None:
             token_types = F.np.zeros_like(inputs)
         type_embedding = self.token_type_embed(token_types)
         embedding = embedding + type_embedding
         if self.pos_embed_type is not None:
-            positional_embedding = self.token_pos_embed(F.npx.arange_like(inputs, axis=1))
-            positional_embedding = F.np.expand_dims(positional_embedding, axis=0)
+            positional_embedding = self.token_pos_embed(F.npx.arange_like(inputs, axis=time_axis))
+            positional_embedding = F.np.expand_dims(positional_embedding, axis=batch_axis)
             embedding = embedding + positional_embedding
         # Extra layer normalization plus dropout
         embedding = self.embed_layer_norm(embedding)
@@ -334,50 +467,34 @@ class AlbertModel(HybridBlock):
         This is used for pre-training or fine-tuning a Bert model.
         Get the first token of the whole sequence which is [CLS]
 
-        sequence:
-            Shape (batch_size, sequence_length, units)
-        return:
+        Parameters
+        ----------
+        sequence
+            - layout = 'NT'
+                Shape (batch_size, sequence_length, units)
+            - layout = 'TN'
+                Shape (sequence_length, batch_size, units)
+
+        Returns
+        -------
+        pooled_out
             Shape (batch_size, units)
         """
-        outputs = sequence[:, 0, :]
+        if self.layout == 'NT':
+            outputs = sequence[:, 0, :]
+        else:
+            outputs = sequence[0, :, :]
         return self.pooler(outputs)
 
     @staticmethod
     def get_cfg(key=None):
-        if key is None:
-            cfg = CN()
-            # Model Parameters
-            cfg.MODEL = CN()
-            cfg.MODEL.vocab_size = 30000
-            cfg.MODEL.embed_size = 128
-            cfg.MODEL.units = 768
-            cfg.MODEL.hidden_size = 3072
-            cfg.MODEL.max_length = 512
-            cfg.MODEL.num_heads = 12
-            cfg.MODEL.num_layers = 12
-            cfg.MODEL.pos_embed_type = 'learned'
-            cfg.MODEL.activation = 'gelu'
-            cfg.MODEL.layer_norm_eps = 1E-12
-            cfg.MODEL.num_groups = 1
-            cfg.MODEL.num_token_types = 2
-            cfg.MODEL.hidden_dropout_prob = 0.0
-            cfg.MODEL.attention_dropout_prob = 0.0
-            cfg.MODEL.dtype = 'float32'
-            # Hyper-parameters of the Initializers
-            cfg.INITIALIZER = CN()
-            cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
-            cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]  # TruncNorm(0, 0.02)
-            cfg.INITIALIZER.bias = ['zeros']
-            # Version of the model. This helps ensure backward compatibility.
-            # Also, we can not use string here due to https://github.com/rbgirshick/yacs/issues/26
-            cfg.VERSION = 1
+        if key is not None:
+            return albert_cfg_reg.create(key)
         else:
-            raise NotImplementedError
-        cfg.freeze()
-        return cfg
+            return google_albert_base()
 
     @classmethod
-    def from_cfg(cls, cfg, use_pooler=True, dtype='float32') -> 'AlbertModel':
+    def from_cfg(cls, cfg, use_pooler=True, dtype=None) -> 'AlbertModel':
         """
 
         Parameters
@@ -385,6 +502,8 @@ class AlbertModel(HybridBlock):
         cfg
         use_pooler
             Whether to use pooler
+        dtype
+            The dtype of the backbone model
 
         Returns
         -------
@@ -396,6 +515,8 @@ class AlbertModel(HybridBlock):
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
         bias_initializer = mx.init.create(*cfg.INITIALIZER.bias)
+        if dtype is None:
+            dtype = cfg.MODEL.dtype
         return cls(vocab_size=cfg.MODEL.vocab_size,
                    units=cfg.MODEL.units,
                    hidden_size=cfg.MODEL.hidden_size,
@@ -411,6 +532,7 @@ class AlbertModel(HybridBlock):
                    activation=cfg.MODEL.activation,
                    layer_norm_eps=cfg.MODEL.layer_norm_eps,
                    dtype=dtype,
+                   layout=cfg.MODEL.layout,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
@@ -453,6 +575,10 @@ class AlbertForMLM(HybridBlock):
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
         self.mlm_decoder.hybridize()
 
+    @property
+    def layout(self):
+        return self.backbone_model.layout
+
     def hybrid_forward(self, F, inputs, token_types, valid_length,
                        masked_positions):
         """Getting the scores of the masked positions.
@@ -460,10 +586,16 @@ class AlbertForMLM(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
-        token_types :
-            Shape (batch_size, seq_length)
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
             The type of the token. For example, if the inputs contain two sequences,
             we will set different token types for the first sentence and the second sentence.
         valid_length :
@@ -476,14 +608,21 @@ class AlbertForMLM(HybridBlock):
         Returns
         -------
         contextual_embedding
-            Shape (batch_size, seq_length, units).
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units)
         pooled_out
             Shape (batch_size, units)
         mlm_scores :
             Shape (batch_size, num_masked_positions, vocab_size)
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
-        mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        if self.layout == 'NT':
+            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        else:
+            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+                                                      masked_positions)
         mlm_scores = self.mlm_decoder(mlm_features)
         return contextual_embeddings, pooled_out, mlm_scores
 
@@ -528,6 +667,10 @@ class AlbertForPretrain(HybridBlock):
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
         self.mlm_decoder.hybridize()
 
+    @property
+    def layout(self):
+        return self.backbone_model.layout
+
     def hybrid_forward(self, F, inputs, token_types, valid_length,
                        masked_positions):
         """Generate the representation given the inputs.
@@ -537,10 +680,16 @@ class AlbertForPretrain(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
         token_types :
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
 
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
@@ -554,7 +703,10 @@ class AlbertForPretrain(HybridBlock):
         Returns
         -------
         contextual_embedding
-            Shape (batch_size, seq_length, units).
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units).
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units).
         pooled_out
             Shape (batch_size, units)
         sop_score :
@@ -564,7 +716,11 @@ class AlbertForPretrain(HybridBlock):
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
         sop_score = self.sop_classifier(pooled_out)
-        mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        if self.layout == 'NT':
+            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        else:
+            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+                                                      masked_positions)
         mlm_scores = self.mlm_decoder(mlm_features)
         return contextual_embeddings, pooled_out, sop_score, mlm_scores
 
@@ -605,15 +761,22 @@ def get_pretrained_albert(model_name: str = 'google_albert_base_v2',
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_albert())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
+    if isinstance(cfg_path, CN):
+        cfg = cfg_path
+    else:
+        cfg = None
     spm_model_path = PRETRAINED_URL[model_name]['spm_model']
     vocab_path = PRETRAINED_URL[model_name]['vocab']
     params_path = PRETRAINED_URL[model_name]['params']
     mlm_params_path = PRETRAINED_URL[model_name]['mlm_params']
     local_paths = dict()
-    for k, path in [('cfg', cfg_path), ('spm_model', spm_model_path), ('vocab', vocab_path)]:
-        local_paths[k] = download(url=get_repo_model_zoo_url() + path,
-                                  path=os.path.join(root, path),
-                                  sha1_hash=FILE_STATS[path])
+    download_jobs = [('spm_model', spm_model_path), ('vocab', vocab_path)]
+    if cfg is None:
+        download_jobs.append(('cfg', cfg_path))
+    for key, path in download_jobs:
+        local_paths[key] = download(url=get_repo_model_zoo_url() + path,
+                                    path=os.path.join(root, path),
+                                    sha1_hash=FILE_STATS[path])
     if load_backbone:
         local_params_path = download(url=get_repo_model_zoo_url() + params_path,
                                      path=os.path.join(root, params_path),
@@ -631,7 +794,8 @@ def get_pretrained_albert(model_name: str = 'google_albert_base_v2',
     tokenizer = SentencepieceTokenizer(local_paths['spm_model'],
                                        vocab=local_paths['vocab'],
                                        lowercase=do_lower)
-    cfg = AlbertModel.get_cfg().clone_merge(local_paths['cfg'])
+    if cfg is None:
+        cfg = AlbertModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_mlm_params_path
 
 

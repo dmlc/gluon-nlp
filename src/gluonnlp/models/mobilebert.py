@@ -41,6 +41,7 @@ from ..layers import InitializerType, PositionwiseFFN, PositionalEmbedding, get_
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
+from ..utils.registry import Registry
 from ..registry import BACKBONE_REGISTRY
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
@@ -48,9 +49,51 @@ from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 __all__ = ['MobileBertModel', 'MobileBertForMLM', 'MobileBertForPretrain',
            'list_pretrained_mobilebert', 'get_pretrained_mobilebert']
 
+mobilebert_cfg_reg = Registry('mobilebert_cfg')
+
+
+@mobilebert_cfg_reg.register()
+def google_uncased_mobilebert():
+    cfg = CN()
+    cfg.MODEL = CN()
+    cfg.MODEL.vocab_size = 30522
+    cfg.MODEL.units = 512
+    cfg.MODEL.embed_size = 128
+    cfg.MODEL.inner_size = 128
+    cfg.MODEL.hidden_size = 512
+    cfg.MODEL.max_length = 512
+    cfg.MODEL.num_heads = 4
+    cfg.MODEL.num_layers = 24
+
+    cfg.MODEL.use_bottleneck = True  # Whether to use bottleneck
+    cfg.MODEL.trigram_embed = True  # Trigram embedding
+    cfg.MODEL.classifier_activation = False  # Whether to use an additional pooling layer
+    cfg.MODEL.bottleneck_strategy = 'qk_sharing'
+    cfg.MODEL.num_stacked_ffn = 4
+    cfg.MODEL.pos_embed_type = 'learned'
+    cfg.MODEL.activation = 'relu'
+    cfg.MODEL.num_token_types = 2
+    cfg.MODEL.hidden_dropout_prob = 0.0
+    cfg.MODEL.attention_dropout_prob = 0.1
+    cfg.MODEL.normalization = 'no_norm'
+    cfg.MODEL.layer_norm_eps = 1E-12
+    cfg.MODEL.dtype = 'float32'
+    # Layout flags
+    cfg.MODEL.layout = 'NT'
+    cfg.MODEL.compute_layout = 'auto'
+    # Initializer
+    cfg.INITIALIZER = CN()
+    cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
+    cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]  # TruncNorm(0, 0.02)
+    cfg.INITIALIZER.bias = ['zeros']
+    cfg.VERSION = 1
+    cfg.freeze()
+    return cfg
+
+
 PRETRAINED_URL = {
     'google_uncased_mobilebert': {
-        'cfg': 'google_uncased_mobilebert/model-1c33216b.yml',
+        'cfg': google_uncased_mobilebert(),
         'vocab': 'google_uncased_mobilebert/vocab-e6d2b21d.json',
         'params': 'google_uncased_mobilebert/model-c8346cf2.params',
         'mlm_params': 'google_uncased_mobilebert/model_mlm-53948e82.params',
@@ -85,12 +128,14 @@ class MobileBertEncoderLayer(HybridBlock):
                  use_qkv_bias: bool = True,
                  weight_initializer: Optional[InitializerType] = None,
                  bias_initializer: Optional[InitializerType] = 'zeros',
-                 dtype='float32'):
+                 dtype='float32',
+                 layout='NT'):
         """
 
         Parameters
         ----------
         use_bottleneck
+            Whether to use the bottleneck layer.
         units
             size of inter-bottleneck
         real_units
@@ -110,6 +155,9 @@ class MobileBertEncoderLayer(HybridBlock):
         weight_initializer
         bias_initializer
         dtype
+            Data type of the block
+        layout
+            Layout of the input + output
         """
         super().__init__()
         self._use_bottleneck = use_bottleneck
@@ -119,6 +167,7 @@ class MobileBertEncoderLayer(HybridBlock):
         self._num_stacked_ffn = num_stacked_ffn
         self._bottleneck_strategy = bottleneck_strategy
         self._dtype = dtype
+        self._layout = layout
         assert real_units % num_heads == 0, 'units must be divisive by the number of heads'
         self.dropout_layer = nn.Dropout(hidden_dropout_prob)
         if use_bottleneck:
@@ -159,24 +208,47 @@ class MobileBertEncoderLayer(HybridBlock):
                                        bias_initializer=bias_initializer,
                                        dtype=self._dtype)
         # The in_units of qkv varies according to the sharing strategy
+        if self._use_bottleneck:
+            if self._bottleneck_strategy == 'qk_sharing':
+                attn_query_in_units = real_units
+                attn_key_in_units = real_units
+                attn_value_in_units = units
+            elif self._bottleneck_strategy == 'from_bottleneck':
+                attn_query_in_units = real_units
+                attn_key_in_units = real_units
+                attn_value_in_units = real_units
+            elif self._bottleneck_strategy == 'from_input':
+                attn_query_in_units = units
+                attn_key_in_units = units
+                attn_value_in_units = units
+            else:
+                raise NotImplementedError
+        else:
+            attn_query_in_units = units
+            attn_key_in_units = units
+            attn_value_in_units = units
         self.attn_query = nn.Dense(units=real_units,
+                                   in_units=attn_query_in_units,
                                    flatten=False,
                                    use_bias=use_qkv_bias,
                                    weight_initializer=weight_initializer,
                                    bias_initializer=bias_initializer,
                                    dtype=self._dtype)
         self.attn_key = nn.Dense(units=real_units,
+                                 in_units=attn_key_in_units,
                                  flatten=False,
                                  use_bias=use_qkv_bias,
                                  weight_initializer=weight_initializer,
                                  bias_initializer=bias_initializer,
                                  dtype=self._dtype)
         self.attn_value = nn.Dense(units=real_units,
+                                   in_units=attn_value_in_units,
                                    flatten=False,
                                    use_bias=use_qkv_bias,
                                    weight_initializer=weight_initializer,
                                    bias_initializer=bias_initializer,
                                    dtype=self._dtype)
+        attention_layout = 'NTK' if self._layout == 'NT' else 'TNK'
         self.attention_cell = \
             MultiHeadAttentionCell(
                 query_units=real_units,
@@ -184,7 +256,7 @@ class MobileBertEncoderLayer(HybridBlock):
                 attention_dropout=attention_dropout_prob,
                 scaled=True,
                 dtype=self._dtype,
-                layout='NTK'
+                layout=attention_layout
             )
         self.layer_norm = get_layer_norm(normalization=normalization,
                                          in_channels=real_units,
@@ -207,26 +279,35 @@ class MobileBertEncoderLayer(HybridBlock):
                                 layer_norm_eps=layer_norm_eps,
                                 dtype=self._dtype))
 
+    @property
+    def layout(self):
+        return self._layout
+
     def hybrid_forward(self, F, data, attn_mask):
         """
 
         Parameters
         ----------
         F
-        data :
-            Shape (batch_size, seq_length, C_in)
-        attn_mask :
+        data
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_in)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_in)
+        attn_mask
+            The attention mask
             Shape (batch_size, seq_length, seq_length)
 
         Returns
         -------
-        out :
-            Shape (batch_size, seq_length, C_out)
-        attn_weight :
+        out
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_out)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_out)
+        attn_weight
             Shape (batch_size, seq_length, seq_length)
         """
-        # TODO(sxjscience) Cannot use negative axis due to
-        #  https://github.com/apache/incubator-mxnet/issues/18132
         if self._use_bottleneck:
             bn_proj = self.in_bottleneck_proj(data)
             bn_proj = self.in_bottleneck_ln(bn_proj)
@@ -239,7 +320,7 @@ class MobileBertEncoderLayer(HybridBlock):
                 key = qk_shared
                 value = data
             elif self._bottleneck_strategy == 'from_bottleneck':
-                # for Mobile mobile bert Tiny
+                # for Mobile Bert Tiny
                 query = bn_proj
                 key = bn_proj
                 value = bn_proj
@@ -296,12 +377,14 @@ class MobileBertTransformer(HybridBlock):
                  layer_norm_eps: float = 1E-12,
                  weight_initializer: InitializerType = TruncNorm(stdev=0.02),
                  bias_initializer: InitializerType = 'zeros',
-                 dtype='float32'):
+                 dtype='float32',
+                 layout='NT'):
         super().__init__()
         self._dtype = dtype
         self._num_layers = num_layers
         self._output_attention = output_attention
         self._output_all_encodings = output_all_encodings
+        self._layout = layout
 
         assert bottleneck_strategy in ['qk_sharing', 'from_bottleneck', 'from_input'], \
             'The bottleneck strategy={} is not supported.'.format(bottleneck_strategy)
@@ -327,7 +410,12 @@ class MobileBertTransformer(HybridBlock):
                                        weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer,
                                        normalization=normalization,
-                                       activation=activation))
+                                       activation=activation,
+                                       layout=layout))
+
+    @property
+    def layout(self):
+        return self._layout
 
     def hybrid_forward(self, F, data, valid_length):
         """
@@ -338,18 +426,34 @@ class MobileBertTransformer(HybridBlock):
         Parameters
         ----------
         F
-        data :
-            Shape (batch_size, seq_length, C)
-        valid_length :
+        data
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C)
+        valid_length
             Shape (batch_size,)
 
         Returns
         -------
-        out :
-            Shape (batch_size, seq_length, C_out)
+        out
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_out)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_out)
         """
+        if self._layout == 'NT':
+            batch_axis, time_axis = 0, 1
+        elif self._layout == 'TN':
+            batch_axis, time_axis = 1, 0
+        else:
+            raise NotImplementedError('Received layout="{}". '
+                                      'Only "NT" and "TN" are supported.'.format(self._layout))
         # 1. Embed the data
-        attn_mask = gen_self_attn_mask(F, data, valid_length, dtype=self._dtype, attn_type='full')
+        attn_mask = gen_self_attn_mask(F, data, valid_length,
+                                       dtype=self._dtype,
+                                       layout=self._layout,
+                                       attn_type='full')
         out = data
         all_encodings_outputs = []
         additional_outputs = []
@@ -362,7 +466,8 @@ class MobileBertTransformer(HybridBlock):
             if self._output_all_encodings:
                 out = F.npx.sequence_mask(out,
                                           sequence_length=valid_length,
-                                          use_sequence_length=True, axis=1)
+                                          use_sequence_length=True,
+                                          axis=time_axis)
                 all_encodings_outputs.append(out)
 
             if self._output_attention:
@@ -371,7 +476,8 @@ class MobileBertTransformer(HybridBlock):
         if not self._output_all_encodings:
             # if self._output_all_encodings, SequenceMask is already applied above
             out = F.npx.sequence_mask(out, sequence_length=valid_length,
-                                      use_sequence_length=True, axis=1)
+                                      use_sequence_length=True,
+                                      axis=time_axis)
             return out, additional_outputs
         else:
             return all_encodings_outputs, additional_outputs
@@ -404,7 +510,9 @@ class MobileBertModel(HybridBlock):
                  trigram_embed=True,
                  use_pooler=True,
                  classifier_activation=False,
-                 dtype='float32'):
+                 dtype='float32',
+                 layout='NT',
+                 compute_layout='auto'):
         super().__init__()
         self._dtype = dtype
         self.use_bottleneck = use_bottleneck
@@ -426,6 +534,12 @@ class MobileBertModel(HybridBlock):
         self.weight_initializer = weight_initializer
         self.bias_initializer = bias_initializer
         self.layer_norm_eps = layer_norm_eps
+        self._layout = layout
+        if compute_layout == 'auto' or compute_layout is None:
+            self._compute_layout = layout
+        else:
+            assert compute_layout in ['TN', 'NT']
+            self._compute_layout = compute_layout
         # Construct MobileBertTransformer
         self.encoder = MobileBertTransformer(
             units=units,
@@ -445,6 +559,7 @@ class MobileBertModel(HybridBlock):
             weight_initializer=weight_initializer,
             bias_initializer=bias_initializer,
             dtype=dtype,
+            layout=self._compute_layout,
         )
         self.encoder.hybridize()
         # Construct word embedding
@@ -453,7 +568,12 @@ class MobileBertModel(HybridBlock):
                                        weight_initializer=embed_initializer,
                                        dtype=dtype)
         if trigram_embed or embed_size != units:
+            if trigram_embed:
+                in_units = 3 * embed_size
+            else:
+                in_units = embed_size
             self.embed_factorized_proj = nn.Dense(units=units,
+                                                  in_units=in_units,
                                                   flatten=False,
                                                   weight_initializer=weight_initializer,
                                                   bias_initializer=bias_initializer)
@@ -465,7 +585,8 @@ class MobileBertModel(HybridBlock):
         # Construct token type embedding
         self.token_type_embed = nn.Embedding(input_dim=num_token_types,
                                              output_dim=units,
-                                             weight_initializer=weight_initializer)
+                                             weight_initializer=weight_initializer,
+                                             dtype=self._dtype)
         self.token_pos_embed = PositionalEmbedding(units=units,
                                                    max_length=max_length,
                                                    dtype=self._dtype,
@@ -476,8 +597,17 @@ class MobileBertModel(HybridBlock):
                                    in_units=units,
                                    flatten=False,
                                    activation='tanh',
+                                   dtype=self._dtype,
                                    weight_initializer=weight_initializer,
                                    bias_initializer=bias_initializer)
+
+    @property
+    def layout(self):
+        return self._layout
+
+    @property
+    def dtype(self):
+        return self._dtype
 
     def hybrid_forward(self, F, inputs, token_types, valid_length):
         # pylint: disable=arguments-differ
@@ -488,11 +618,16 @@ class MobileBertModel(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
-        token_types :
-            Shape (batch_size, seq_length)
-
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
         valid_length :
@@ -508,24 +643,34 @@ class MobileBertModel(HybridBlock):
         """
         embedding = self.get_initial_embedding(F, inputs, token_types, self.trigram_embed)
 
-        contextual_embeddings, additional_outputs = self.encoder(embedding, valid_length)
-        outputs = []
-        outputs.append(contextual_embeddings)
+        if self._compute_layout != self._layout:
+            contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(embedding, 0, 1),
+                                                                     valid_length)
+            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
+        else:
+            contextual_embeddings, additional_outputs = self.encoder(embedding, valid_length)
         if self.use_pooler:
             pooled_out = self.apply_pooling(contextual_embeddings)
-            outputs.append(pooled_out)
-        return tuple(outputs) if len(outputs) > 1 else outputs[0]
+            return contextual_embeddings, pooled_out
+        else:
+            return contextual_embeddings
 
-    def get_initial_embedding(self, F, inputs, token_types=None, trigram_embed=True):
+    def get_initial_embedding(self, F, inputs, token_types=None):
         """Get the initial token embeddings that considers the token type and positional embeddings
 
         Parameters
         ----------
         F
         inputs
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
         token_types
-            Shape (batch_size, seq_length)
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
             If None, it will be initialized as all zero
 
         Returns
@@ -533,24 +678,39 @@ class MobileBertModel(HybridBlock):
         embedding
             The initial embedding that will be fed into the encoder
         """
+        if self._layout == 'NT':
+            batch_axis, time_axis = 0, 1
+        elif self._layout == 'TN':
+            batch_axis, time_axis = 1, 0
+        else:
+            raise NotImplementedError
         word_embedding = self.word_embed(inputs)
 
-        if trigram_embed:
-            word_embedding = F.np.concatenate(
-                [F.np.pad(word_embedding[:, 1:], ((0, 0), (0, 1), (0, 0))),
-                 word_embedding,
-                 F.np.pad(word_embedding[:, :-1], ((0, 0), (1, 0), (0, 0)))], axis=-1)
+        if self.trigram_embed:
+            if self._layout == 'NT':
+                word_embedding = F.np.concatenate(
+                    [F.np.pad(word_embedding[:, 1:], ((0, 0), (0, 1), (0, 0))),
+                     word_embedding,
+                     F.np.pad(word_embedding[:, :-1], ((0, 0), (1, 0), (0, 0)))], axis=-1)
+            elif self._layout == 'TN':
+                word_embedding = F.np.concatenate(
+                    [F.np.pad(word_embedding[1:, :], ((0, 1), (0, 0), (0, 0))),
+                     word_embedding,
+                     F.np.pad(word_embedding[:-1, :], ((1, 0), (0, 0), (0, 0)))], axis=-1)
+            else:
+                raise NotImplementedError
         # Projecting the embedding into units only for word embedding
-        if trigram_embed or self.embed_size != self.units:
-            embedding = self.embed_factorized_proj(word_embedding)
+        if self.trigram_embed or self.embed_size != self.units:
+            word_embedding = self.embed_factorized_proj(word_embedding)
 
         if token_types is None:
-            token_types = F.np.zeros_like(embedding)
+            token_types = F.np.zeros_like(inputs)
         type_embedding = self.token_type_embed(token_types)
-        embedding = embedding + type_embedding
+        embedding = word_embedding + type_embedding
         if self.pos_embed_type is not None:
-            positional_embedding = self.token_pos_embed(F.npx.arange_like(embedding, axis=1))
-            positional_embedding = F.np.expand_dims(positional_embedding, axis=0)
+            positional_embedding =\
+                self.token_pos_embed(F.npx.arange_like(embedding, axis=time_axis))
+            positional_embedding = F.np.expand_dims(positional_embedding, axis=batch_axis)
             embedding = embedding + positional_embedding
         # Extra layer normalization plus dropout
         embedding = self.embed_layer_norm(embedding)
@@ -563,12 +723,23 @@ class MobileBertModel(HybridBlock):
         This is used for pre-training or fine-tuning a mobile bert model.
         Get the first token of the whole sequence which is [CLS]
 
-        sequence:
-            Shape (batch_size, sequence_length, units)
-        return:
+        Parameters
+        ----------
+        sequence
+            - layout = 'NT'
+                Shape (batch_size, sequence_length, units)
+            - layout = 'TN'
+                Shape (sequence_length, batch_size, units)
+
+        Returns
+        -------
+        outputs
             Shape (batch_size, units)
         """
-        outputs = sequence[:, 0, :]
+        if self._layout == 'NT':
+            outputs = sequence[:, 0, :]
+        else:
+            outputs = sequence[0, :, :]
         if self.classifier_activation:
             return self.pooler(outputs)
         else:
@@ -576,53 +747,23 @@ class MobileBertModel(HybridBlock):
 
     @staticmethod
     def get_cfg(key=None):
-        if key is None:
-            cfg = CN()
-            cfg.MODEL = CN()
-            cfg.MODEL.vocab_size = 30522
-            cfg.MODEL.embed_size = 128
-            cfg.MODEL.units = 512
-            cfg.MODEL.hidden_size = 512
-            cfg.MODEL.inner_size = 128
-            cfg.MODEL.max_length = 512
-            cfg.MODEL.num_heads = 4
-            cfg.MODEL.num_layers = 12
-            cfg.MODEL.num_stacked_ffn = 4
-            cfg.MODEL.pos_embed_type = 'learned'
-            cfg.MODEL.activation = 'relu'
-            cfg.MODEL.normalization = 'no_norm'
-            cfg.MODEL.layer_norm_eps = 1E-12
-            cfg.MODEL.bottleneck_strategy = 'qk_sharing'
-            cfg.MODEL.num_token_types = 2
-            cfg.MODEL.hidden_dropout_prob = 0.0
-            cfg.MODEL.attention_dropout_prob = 0.1
-            cfg.MODEL.dtype = 'float32'
-            # Hyper-parameters of the Initializers
-            cfg.INITIALIZER = CN()
-            cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
-            cfg.INITIALIZER.weight = ['truncnorm', 0, 0.02]  # TruncNorm(0, 0.02)
-            cfg.INITIALIZER.bias = ['zeros']
-            # Version of the model. This helps ensure backward compatibility.
-            # Also, we can not use string here due to https://github.com/rbgirshick/yacs/issues/26
-            cfg.VERSION = 1
+        if key is not None:
+            return mobilebert_cfg_reg.create(key)
         else:
-            raise NotImplementedError
-        cfg.freeze()
-        return cfg
+            return google_uncased_mobilebert()
 
     @classmethod
     def from_cfg(cls,
                  cfg,
                  use_pooler=True,
-                 dtype='float32',
-                 use_bottleneck=True,
-                 trigram_embed=True,
-                 classifier_activation=False) -> 'MobileBertModel':
+                 dtype=None) -> 'MobileBertModel':
         cfg = MobileBertModel.get_cfg().clone_merge(cfg)
         assert cfg.VERSION == 1, 'Wrong version!'
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
         bias_initializer = mx.init.create(*cfg.INITIALIZER.bias)
+        if dtype is None:
+            dtype = cfg.MODEL.dtype
         return cls(vocab_size=cfg.MODEL.vocab_size,
                    units=cfg.MODEL.units,
                    hidden_size=cfg.MODEL.hidden_size,
@@ -644,17 +785,17 @@ class MobileBertModel(HybridBlock):
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
                    bias_initializer=bias_initializer,
-                   use_bottleneck=use_bottleneck,
-                   trigram_embed=trigram_embed,
+                   use_bottleneck=cfg.MODEL.use_bottleneck,
+                   trigram_embed=cfg.MODEL.trigram_embed,
                    use_pooler=use_pooler,
-                   classifier_activation=classifier_activation)
+                   classifier_activation=cfg.MODEL.classifier_activation,
+                   layout=cfg.MODEL.layout,
+                   compute_layout=cfg.MODEL.compute_layout)
 
 
 @use_np
 class MobileBertForMLM(HybridBlock):
     def __init__(self, backbone_cfg,
-                 use_bottleneck=True,
-                 trigram_embed=True,
                  weight_initializer=None,
                  bias_initializer=None):
         """
@@ -666,9 +807,7 @@ class MobileBertForMLM(HybridBlock):
         bias_initializer
         """
         super().__init__()
-        self.backbone_model = MobileBertModel.from_cfg(backbone_cfg,
-                                                       use_bottleneck=use_bottleneck,
-                                                       trigram_embed=trigram_embed)
+        self.backbone_model = MobileBertModel.from_cfg(backbone_cfg)
         if weight_initializer is None:
             weight_initializer = self.backbone_model.weight_initializer
         if bias_initializer is None:
@@ -678,7 +817,8 @@ class MobileBertForMLM(HybridBlock):
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
-                                      bias_initializer=bias_initializer))
+                                      bias_initializer=bias_initializer,
+                                      dtype=self.backbone_model.dtype))
         self.mlm_decoder.add(get_activation(self.backbone_model.activation))
         # use basic layer normalization for pretaining
         self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
@@ -690,14 +830,14 @@ class MobileBertForMLM(HybridBlock):
             units=self.backbone_model.vocab_size,
             in_units=self.backbone_model.embed_size,
             flatten=False,
+            dtype=self.backbone_model.dtype,
             bias_initializer=bias_initializer)
         self.embedding_table.weight = self.backbone_model.word_embed.weight
         if self.backbone_model.embed_size != self.backbone_model.units:
             self.extra_table = nn.Dense(
                 units=self.backbone_model.vocab_size,
                 use_bias=False,
-                in_units=self.backbone_model.units -
-                self.backbone_model.embed_size,
+                in_units=self.backbone_model.units - self.backbone_model.embed_size,
                 flatten=False)
 
     def hybrid_forward(self, F, inputs, token_types, valid_length,
@@ -707,30 +847,43 @@ class MobileBertForMLM(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
-        token_types :
-            Shape (batch_size, seq_length)
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
             The type of the token. For example, if the inputs contain two sequences,
             we will set different token types for the first sentence and the second sentence.
-        valid_length :
+        valid_length
             The valid length of each sequence
             Shape (batch_size,)
-        masked_positions :
+        masked_positions
             The masked position of the sequence
             Shape (batch_size, num_masked_positions).
 
         Returns
         -------
         contextual_embedding
-            Shape (batch_size, seq_length, units).
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units).
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units).
         pooled_out
             Shape (batch_size, units)
-        mlm_scores :
+        mlm_scores
             Shape (batch_size, num_masked_positions, vocab_size)
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
-        mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        if self.backbone_model.layout == 'TN':
+            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+                                                      masked_positions)
+        else:
+            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
         intermediate_output = self.mlm_decoder(mlm_features)
         if self.backbone_model.embed_size != self.backbone_model.units:
             scores = self.embedding_table(
@@ -746,8 +899,6 @@ class MobileBertForMLM(HybridBlock):
 @use_np
 class MobileBertForPretrain(HybridBlock):
     def __init__(self, backbone_cfg,
-                 use_bottleneck=True,
-                 trigram_embed=True,
                  weight_initializer=None,
                  bias_initializer=None):
         """
@@ -760,22 +911,22 @@ class MobileBertForPretrain(HybridBlock):
         bias_initializer
         """
         super().__init__()
-        self.backbone_model = MobileBertModel.from_cfg(backbone_cfg,
-                                                       use_bottleneck=use_bottleneck,
-                                                       trigram_embed=trigram_embed)
+        self.backbone_model = MobileBertModel.from_cfg(backbone_cfg)
         if weight_initializer is None:
             weight_initializer = self.backbone_model.weight_initializer
         if bias_initializer is None:
             bias_initializer = self.backbone_model.bias_initializer
         # Construct nsp_classifier for next sentence prediction
         self.nsp_classifier = nn.Dense(units=2,
-                                       weight_initializer=weight_initializer)
+                                       weight_initializer=weight_initializer,
+                                       dtype=self.backbone_model.dtype)
         self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
-                                      bias_initializer=bias_initializer))
+                                      bias_initializer=bias_initializer,
+                                      dtype=self.backbone_model.dtype))
         self.mlm_decoder.add(get_activation(self.backbone_model.activation))
         # use basic layer normalization for pretaining
         self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
@@ -787,7 +938,8 @@ class MobileBertForPretrain(HybridBlock):
             units=self.backbone_model.vocab_size,
             in_units=self.backbone_model.embed_size,
             flatten=False,
-            bias_initializer=bias_initializer)
+            bias_initializer=bias_initializer,
+            dtype=self.backbone_model.dtype)
         self.embedding_table.weight = self.backbone_model.word_embed.weight
         if self.backbone_model.embed_size != self.backbone_model.units:
             self.extra_table = nn.Dense(
@@ -796,7 +948,8 @@ class MobileBertForPretrain(HybridBlock):
                 self.backbone_model.embed_size,
                 flatten=False,
                 use_bias=False,
-                bias_initializer=bias_initializer)
+                bias_initializer=bias_initializer,
+                dtype=self.backbone_model.dtype)
 
     def hybrid_forward(self, F, inputs, token_types, valid_length,
                        masked_positions):
@@ -807,34 +960,47 @@ class MobileBertForPretrain(HybridBlock):
         Parameters
         ----------
         F
-        inputs :
-            Shape (batch_size, seq_length)
-        token_types :
-            Shape (batch_size, seq_length)
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
 
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
-        valid_length :
+        valid_length
             The valid length of each sequence
             Shape (batch_size,)
-        masked_positions :
+        masked_positions
             The masked position of the sequence
             Shape (batch_size, num_masked_positions).
 
         Returns
         -------
         contextual_embedding
-            Shape (batch_size, seq_length, units).
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units).
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units).
         pooled_out
             Shape (batch_size, units)
-        nsp_score :
+        nsp_score
             Shape (batch_size, 2)
-        mlm_scores :
+        mlm_scores
             Shape (batch_size, num_masked_positions, vocab_size)
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
         nsp_score = self.nsp_classifier(pooled_out)
-        mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        if self.backbone_model.layout == 'NT':
+            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+        else:
+            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+                                                      masked_positions)
         intermediate_output = self.mlm_decoder(mlm_features)
         if self.backbone_model.embed_size != self.backbone_model.units:
             scores = self.embedding_table(
@@ -883,11 +1049,18 @@ def get_pretrained_mobilebert(model_name: str = 'google_uncased_mobilebert',
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_mobilebert())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
+    if isinstance(cfg_path, CN):
+        cfg = cfg_path
+    else:
+        cfg = None
     vocab_path = PRETRAINED_URL[model_name]['vocab']
     params_path = PRETRAINED_URL[model_name]['params']
     mlm_params_path = PRETRAINED_URL[model_name]['mlm_params']
     local_paths = dict()
-    for k, path in [('cfg', cfg_path), ('vocab', vocab_path)]:
+    download_jobs = [('vocab', vocab_path)]
+    if cfg is None:
+        download_jobs.append(('cfg', cfg_path))
+    for k, path in download_jobs:
         local_paths[k] = download(url=get_repo_model_zoo_url() + path,
                                   path=os.path.join(root, path),
                                   sha1_hash=FILE_STATS[path])
@@ -914,7 +1087,8 @@ def get_pretrained_mobilebert(model_name: str = 'google_uncased_mobilebert',
                     sep_token='[SEP]',
                     mask_token='[MASK]',
                     lowercase=do_lower)
-    cfg = MobileBertModel.get_cfg().clone_merge(local_paths['cfg'])
+    if cfg is None:
+        cfg = MobileBertModel.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_mlm_params_path
 
 
