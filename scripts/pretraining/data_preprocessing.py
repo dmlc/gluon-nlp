@@ -11,11 +11,7 @@ import multiprocessing
 import numpy as np
 
 from pretraining_utils import get_all_features
-from gluonnlp.base import get_repo_model_zoo_url
-from gluonnlp.utils.misc import download
-from gluonnlp.data.tokenizers import HuggingFaceWordPieceTokenizer
-
-VOCAB_PATH = 'google_electra_small/vocab-e6d2b21d.json'
+from gluonnlp.models import get_backbone
 
 
 def get_parser():
@@ -31,6 +27,8 @@ def get_parser():
     parser.add_argument("--num_out_files", type=int, default=1000,
                         help="Number of desired output files, where each is processed"
                              " independently by a worker.")
+    parser.add_argument('--model_name', type=str, default='google_electra_small',
+                        help='Name of the pretrained model.')
     parser.add_argument("--shuffle", action="store_true",
                         help="Wether to shuffle the data order")
     parser.add_argument("--do_lower_case", dest='do_lower_case',
@@ -46,17 +44,8 @@ def get_parser():
 
 def main(args):
     num_process = min(multiprocessing.cpu_count(), args.num_process)
-    vocab_file = os.path.join(os.getcwd(), 'vocab-e6d2b21d.json')
-    download(get_repo_model_zoo_url() + VOCAB_PATH, vocab_file,
-             sha1_hash='e6d2b21d910ccb356aa18f27a1c7d70660edc058')
-    tokenizer = HuggingFaceWordPieceTokenizer(
-        vocab_file=vocab_file,
-        unk_token='[UNK]',
-        pad_token='[PAD]',
-        cls_token='[CLS]',
-        sep_token='[SEP]',
-        mask_token='[MASK]',
-        lowercase=args.do_lower_case)
+    _, cfg, tokenizer, _, _ = \
+        get_backbone(args.model_name, load_backbone=False)
 
     fnames = sorted(os.listdir(args.input))
     fnames = [os.path.join(args.input, fname) for fname in fnames]

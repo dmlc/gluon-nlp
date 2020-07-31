@@ -18,7 +18,6 @@ from gluonnlp.utils.misc import repeat, grouper, set_seed, init_comm, logging_co
 from gluonnlp.initializer import TruncNorm
 from gluonnlp.models.electra import ElectraModel, ElectraForPretrain, get_pretrained_electra
 from gluonnlp.utils.parameter import clip_grad_global_norm
-
 try:
     import horovod.mxnet as hvd
 except ImportError:
