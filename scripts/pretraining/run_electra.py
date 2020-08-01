@@ -1,7 +1,6 @@
 """Pretraining Example for Electra Model on the OpenWebText dataset"""
 
 import os
-import sys
 import time
 import shutil
 import logging
@@ -15,7 +14,7 @@ from mxnet.lr_scheduler import PolyScheduler
 
 from sklearn import metrics
 from pretraining_utils import ElectraMasker, get_pretrain_data_npz, get_pretrain_data_text
-from gluonnlp.utils.misc import grouper, set_seed, naming_convention, logging_config
+from gluonnlp.utils.misc import repeat, grouper, set_seed, init_comm, logging_config, naming_convention
 from gluonnlp.initializer import TruncNorm
 from gluonnlp.models.electra import ElectraModel, ElectraForPretrain, get_pretrained_electra
 from gluonnlp.utils.parameter import clip_grad_global_norm
@@ -72,9 +71,10 @@ def parse_args():
                         help='If set, both training and dev samples are generated on-the-fly '
                              'from raw texts instead of pre-processed npz files. ')
     parser.add_argument("--short_seq_prob", type=float, default=0.05,
-                        help="The probability of sampling sequences shorter than the max_seq_length.")
+                        help='The probability of sampling sequences '
+                             'shorter than the max_seq_length.')
     parser.add_argument("--cached_file_path", default=None,
-                        help="Directory for saving preprocessed features")
+                        help='Directory for saving preprocessed features')
     parser.add_argument('--circle_length', type=int, default=2,
                         help='Number of files to be read for a single GPU at the same time.')
     parser.add_argument('--repeat', type=int, default=8,
@@ -168,38 +168,6 @@ ElectraOutput = collections.namedtuple('ElectraOutput',
                                         'corrupted_tokens'])
 
 
-def init_comm(backend, gpus):
-    """Init communication backend"""
-    # backend specific implementation
-    if backend == 'horovod':
-        try:
-            import horovod.mxnet as hvd  # pylint: disable=import-outside-toplevel
-        except ImportError:
-            logging.info('horovod must be installed.')
-            sys.exit(1)
-        hvd.init()
-        store = None
-        num_workers = hvd.size()
-        rank = hvd.rank()
-        local_rank = hvd.local_rank()
-        is_master_node = rank == local_rank
-        ctx_l = [mx.gpu(local_rank)]
-        logging.info('GPU communication supported by horovod')
-    else:
-        store = mx.kv.create(backend)
-        num_workers = store.num_workers
-        rank = store.rank
-        local_rank = 0
-        is_master_node = rank == local_rank
-        if gpus == '-1' or gpus == '':
-            ctx_l = [mx.cpu()]
-            logging.info('Runing on CPU')
-        else:
-            ctx_l = [mx.gpu(int(x)) for x in gpus.split(',')]
-            logging.info('GPU communication supported by KVStore')
-
-    return store, num_workers, rank, local_rank, is_master_node, ctx_l
-
 def final_save(model, save_dir, tokenizer):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -258,6 +226,9 @@ def states_option(step_num, trainer, ckpt_dir, local_rank=0, option='Saving'):
 def train(args):
     store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
         args.comm_backend, args.gpus)
+    logging.info('Training info: num_buckets: {}, '
+                 'num_workers: {}, rank: {}'.format(
+                     args.num_buckets, num_workers, rank))
     cfg, tokenizer, model = get_pretraining_model(args.model_name, ctx_l,
                                                   args.max_seq_length,
                                                   args.hidden_dropout_prob,
@@ -266,11 +237,8 @@ def train(args):
                                                   args.generator_layers_scale)
     data_masker = ElectraMasker(
         tokenizer, args.max_seq_length, args.mask_prob)
-    logging.info('Training info: num_buckets: {}, '
-                 'num_workers: {}, rank: {}'.format(
-                     args.num_buckets, num_workers, rank))
     if args.from_raw_text:
-        if not os.path.exists(args.cached_file_path):
+        if args.cached_file_path and not os.path.exists(args.cached_file_path):
             os.mkdir(args.cached_file_path)
         get_dataset_fn = functools.partial(get_pretrain_data_text,
                                            max_seq_length=args.max_seq_length,
@@ -339,8 +307,6 @@ def train(args):
                                  'epsilon': 1e-6,
                                  'correct_bias': False,
                                  })
-    # TODO(zheyuye), absentance of layer-wise decay, although the decay power
-    # is 1.0 in electra model
     if args.comm_backend == 'horovod':
         trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optimizer_params)
     else:
@@ -362,7 +328,7 @@ def train(args):
 
     # prepare the records writer
     writer = None
-    if args.do_eval:
+    if args.do_eval and local_rank == 0:
         from tensorboardX import SummaryWriter
         record_path = os.path.join(args.output_dir, 'records')
         logging.info('Evaluation records saved in {}'.format(record_path))
@@ -381,13 +347,13 @@ def train(args):
     if args.num_accumulated != 1:
         # set grad to zero for gradient accumulation
         model.collect_params().zero_grad()
-    while not finish_flag:
+
+    # start training
+    train_loop_dataloader = grouper(repeat(data_train), len(ctx_l))
+    while step_num < num_train_steps:
         tic = time.time()
-        batch_id = 0
-        is_last_batch = False
-        train_dataloader = grouper(data_train, len(ctx_l))
-        sample_l = next(train_dataloader)
-        while not is_last_batch:
+        for accum_idx in range(args.num_accumulated):
+            sample_l = next(train_loop_dataloader)
             loss_l = []
             mlm_loss_l = []
             rtd_loss_l = []
@@ -437,77 +403,64 @@ def train(args):
                                  for ele in rtd_loss_l]).asnumpy()
             log_total_loss += sum([ele.as_in_ctx(ctx_l[0])
                                    for ele in loss_l]).asnumpy() * loss_denom
-            # pre fetch next batch
-            try:
-                sample_l = next(train_dataloader)
-            except StopIteration:
-                is_last_batch = True
 
-            # update
-            if (batch_id + 1) % args.num_accumulated == 0 or is_last_batch:
-                trainer.allreduce_grads()
-                # Here, the accumulated gradients are
-                # \sum_{n=1}^N g_n / loss_denom
-                # Thus, in order to clip the average gradient
-                #   \frac{1}{N} \sum_{n=1}^N      -->  clip to args.max_grad_norm
-                # We need to change the ratio to be
-                #  \sum_{n=1}^N g_n / loss_denom  -->  clip to args.max_grad_norm  * N / loss_denom
-                total_norm, ratio, is_finite = clip_grad_global_norm(
-                    params, args.max_grad_norm * num_samples_per_update / loss_denom)
-                total_norm = total_norm / (num_samples_per_update / loss_denom)
-                trainer.update(num_samples_per_update / loss_denom, ignore_stale_grad=True)
-                step_num += 1
-                if args.num_accumulated != 1:
-                    # set grad to zero for gradient accumulation
-                    model.collect_params().zero_grad()
+        # update
+        trainer.allreduce_grads()
+        # Here, the accumulated gradients are
+        # \sum_{n=1}^N g_n / loss_denom
+        # Thus, in order to clip the average gradient
+        #   \frac{1}{N} \sum_{n=1}^N      -->  clip to args.max_grad_norm
+        # We need to change the ratio to be
+        #  \sum_{n=1}^N g_n / loss_denom  -->  clip to args.max_grad_norm  * N / loss_denom
+        total_norm, ratio, is_finite = clip_grad_global_norm(
+            params, args.max_grad_norm * num_samples_per_update / loss_denom)
+        total_norm = total_norm / (num_samples_per_update / loss_denom)
+        trainer.update(num_samples_per_update / loss_denom, ignore_stale_grad=True)
+        step_num += 1
+        if args.num_accumulated != 1:
+            # set grad to zero for gradient accumulation
+            model.collect_params().zero_grad()
 
-                # saving
-                if step_num % save_interval == 0 or step_num >= num_train_steps:
-                    if is_master_node:
-                        states_option(
-                            step_num, trainer, args.output_dir, local_rank, 'Saving')
-                        if local_rank == 0:
-                            param_path = parameters_option(
-                                step_num, model, args.output_dir, 'Saving')
+        # saving
+        if step_num % save_interval == 0 or step_num >= num_train_steps:
+            if is_master_node:
+                states_option(
+                    step_num, trainer, args.output_dir, local_rank, 'Saving')
+                if local_rank == 0:
+                    param_path = parameters_option(
+                        step_num, model, args.output_dir, 'Saving')
 
-                # logging
-                if step_num % log_interval == 0 and local_rank == 0:
-                    # Output the loss of per step
-                    log_mlm_loss /= log_interval
-                    log_rtd_loss /= log_interval
-                    log_total_loss /= log_interval
-                    toc = time.time()
-                    logging.info(
-                        '[step {}], Loss mlm/rtd/total={:.4f}/{:.4f}/{:.4f},'
-                        ' LR={:.6f}, grad_norm={:.4f}. Time cost={:.2f},'
-                        ' Throughput={:.2f} samples/s, ETA={:.2f}h'.format(
-                            step_num, log_mlm_loss, log_rtd_loss, log_total_loss,
-                            trainer.learning_rate, total_norm, toc - tic, log_sample_num / (toc - tic),
-                            (num_train_steps - step_num) / (step_num / (toc - train_start_time)) / 3600))
-                    tic = time.time()
+        # logging
+        if step_num % log_interval == 0 and local_rank == 0:
+            # Output the loss of per step
+            log_mlm_loss /= log_interval
+            log_rtd_loss /= log_interval
+            log_total_loss /= log_interval
+            toc = time.time()
+            logging.info(
+                '[step {}], Loss mlm/rtd/total={:.4f}/{:.4f}/{:.4f},'
+                ' LR={:.6f}, grad_norm={:.4f}. Time cost={:.2f},'
+                ' Throughput={:.2f} samples/s, ETA={:.2f}h'.format(
+                    step_num, log_mlm_loss, log_rtd_loss, log_total_loss,
+                    trainer.learning_rate, total_norm, toc - tic, log_sample_num / (toc - tic),
+                    (num_train_steps - step_num) / (step_num / (toc - train_start_time)) / 3600))
+            tic = time.time()
 
-                    if args.do_eval:
-                        evaluation(writer, step_num, masked_input, output)
-                        writer.add_scalars('loss',
-                                        {'total_loss': log_total_loss,
-                                         'mlm_loss': log_mlm_loss,
-                                         'rtd_loss': log_rtd_loss},
-                                         step_num)
-                    log_mlm_loss = 0
-                    log_rtd_loss = 0
-                    log_total_loss = 0
-                    log_sample_num = 0
+            if args.do_eval:
+                evaluation(writer, step_num, masked_input, output)
+                writer.add_scalars('loss',
+                                   {'total_loss': log_total_loss,
+                                    'mlm_loss': log_mlm_loss,
+                                    'rtd_loss': log_rtd_loss},
+                                   step_num)
+            log_mlm_loss = 0
+            log_rtd_loss = 0
+            log_total_loss = 0
+            log_sample_num = 0
 
-                num_samples_per_update = 0
+        num_samples_per_update = 0
 
-            if step_num >= num_train_steps:
-                logging.info('Finish training step: %d', step_num)
-                finish_flag = True
-                break
-
-            batch_id += 1
-
-
+    logging.info('Finish training step: %d', step_num)
     if is_master_node:
         state_path = states_option(step_num, trainer, args.output_dir, local_rank, 'Saving')
         if local_rank == 0:
@@ -522,7 +475,8 @@ def train(args):
     model_name = args.model_name.replace('google', 'gluon')
     save_dir = os.path.join(args.output_dir, model_name)
     final_save(model, save_dir, tokenizer)
-    return param_path, state_path
+
+# TODO(zheyuye), Directly implement a metric for weighted accuracy
 
 
 def accuracy(labels, predictions, weights=None):
@@ -532,19 +486,21 @@ def accuracy(labels, predictions, weights=None):
     acc = (is_correct * weights).sum() / (weights.sum() + 1e-6)
     return acc
 
+# TODO(zheyuye), Directly implement a metric for weighted AUC
 
-def auc(labels, probs, wights=None):
+
+def auc(labels, probs, weights=None):
     if isinstance(labels, mx.np.ndarray):
         labels = labels.asnumpy()
     if isinstance(probs, mx.np.ndarray):
         probs = probs.asnumpy()
-    if isinstance(wights, mx.np.ndarray):
-        wights = wights.asnumpy()
+    if isinstance(weights, mx.np.ndarray):
+        weights = weights.asnumpy()
     labels = labels.reshape(-1)
     probs = probs.reshape(-1)
-    wights = wights.reshape(-1)
+    weights = weights.reshape(-1)
 
-    fpr, tpr, thresholds = metrics.roc_curve(labels, probs, sample_weight=wights)
+    fpr, tpr, thresholds = metrics.roc_curve(labels, probs, sample_weight=weights)
     return metrics.auc(fpr, tpr)
 
 
@@ -569,13 +525,14 @@ def evaluation(writer, step_num, masked_input, eval_input):
     rtd_recall = accuracy(rtd_labels, rtd_preds, rtd_labels * rtd_preds)
     rtd_auc = auc(rtd_labels, rtd_probs, length_masks)
     writer.add_scalars('results',
-                    {'mlm_accuracy': mlm_accuracy.asnumpy().item(),
-                     'corrupted_mlm_accuracy': corrupted_mlm_accuracy.asnumpy().item(),
-                     'rtd_accuracy': rtd_accuracy.asnumpy().item(),
-                     'rtd_precision': rtd_precision.asnumpy().item(),
-                     'rtd_recall': rtd_recall.asnumpy().item(),
-                     'rtd_auc':rtd_auc},
-                     step_num)
+                       {'mlm_accuracy': mlm_accuracy.asnumpy().item(),
+                        'corrupted_mlm_accuracy': corrupted_mlm_accuracy.asnumpy().item(),
+                        'rtd_accuracy': rtd_accuracy.asnumpy().item(),
+                        'rtd_precision': rtd_precision.asnumpy().item(),
+                        'rtd_recall': rtd_recall.asnumpy().item(),
+                        'rtd_auc': rtd_auc},
+                       step_num)
+
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
