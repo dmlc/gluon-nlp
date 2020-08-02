@@ -61,7 +61,7 @@ from gluonnlp.loss import LabelSmoothCrossEntropyLoss
 try:
     import horovod.mxnet as hvd
 except ImportError:
-    pass
+    hvd = None
 
 mx.npx.set_np()
 
@@ -156,10 +156,10 @@ def parse_args():
                              'This is useful to mimic large batch training with limited gpu memory')
     parser.add_argument('--magnitude', type=float, default=3.0,
                         help='Magnitude of Xavier initialization')
-    parser.add_argument('--num_averages', type=int, default=5,
+    parser.add_argument('--num_averages', type=int, default=-1,
                         help='Perform final testing based on the '
                              'average of last num_averages checkpoints. '
-                             'This is only used if average_checkpoint is True')
+                             'Use num_average will cause extra gpu memory usage.')
     parser.add_argument('--log_interval', type=int, default=10, metavar='N',
                         help='report interval')
     parser.add_argument('--save_dir', type=str, default='transformer_out',
@@ -367,7 +367,7 @@ def train(args):
                                                      part_index=rank)
     elif args.sampler == 'FixedBucketSampler':
         if args.comm_backend == 'horovod':
-            raise NotImplementedError
+            raise NotImplementedError('FixedBucketSampler does not support horovod at present')
 
         if args.bucket_scheme == 'constant':
             bucket_scheme = ConstWidthBucket()
