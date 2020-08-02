@@ -12,13 +12,13 @@ from ..utils.config import CfgNode as CN
 from ..sequence_sampler import BaseStepDecoder
 __all__ = ['TransformerEncoderLayer', 'TransformerDecoderLayer',
            'TransformerEncoder', 'TransformerDecoder',
-           'TransformerNMTModel', 'TransformerNMTInference']
+           'TransformerModel', 'TransformerNMTInference']
 
-transformer_nmt_cfg_reg = Registry('transformer_nmt_cfg')
+transformer_cfg_reg = Registry('transformer_cfg')
 
 
-@transformer_nmt_cfg_reg.register()
-def transformer_nmt_base():
+@transformer_cfg_reg.register()
+def transformer_base():
     """Configuration of Transformer WMT EN-DE Base"""
     cfg = CN()
     cfg.MODEL = CN()
@@ -45,6 +45,7 @@ def transformer_nmt_base():
     cfg.MODEL.ENCODER.recurrent = False
     cfg.MODEL.ENCODER.activation = 'relu'
     cfg.MODEL.ENCODER.pre_norm = False
+    cfg.MODEL.ENCODER.use_qkv_bias = True
 
     # Parameters for the decoder
     cfg.MODEL.DECODER = CN()
@@ -55,6 +56,7 @@ def transformer_nmt_base():
     cfg.MODEL.DECODER.recurrent = False
     cfg.MODEL.DECODER.activation = 'relu'
     cfg.MODEL.DECODER.pre_norm = False
+    cfg.MODEL.DECODER.use_qkv_bias = False
 
     # Parameters for the initializer
     cfg.INITIALIZER = CN()
@@ -66,9 +68,9 @@ def transformer_nmt_base():
     return cfg
 
 
-@transformer_nmt_cfg_reg.register()
-def transformer_nmt_base_prenorm():
-    cfg = transformer_nmt_base()
+@transformer_cfg_reg.register()
+def transformer_base_prenorm():
+    cfg = transformer_base()
     cfg.defrost()
     cfg.MODEL.ENCODER.pre_norm = True
     cfg.MODEL.DECODER.pre_norm = True
@@ -76,9 +78,9 @@ def transformer_nmt_base_prenorm():
     return cfg
 
 
-@transformer_nmt_cfg_reg.register()
+@transformer_cfg_reg.register()
 def transformer_iwslt_de_en():
-    cfg = TransformerNMTModel.get_cfg()
+    cfg = TransformerModel.get_cfg()
     cfg.defrost()
     cfg.MODEL.ENCODER.units = 512
     cfg.MODEL.ENCODER.hidden_size = 1024
@@ -92,10 +94,10 @@ def transformer_iwslt_de_en():
     return cfg
 
 
-@transformer_nmt_cfg_reg.register()
+@transformer_cfg_reg.register()
 def transformer_wmt_en_de_big():
     """Same wmt_en_de_big architecture as in FairSeq"""
-    cfg = TransformerNMTModel.get_cfg()
+    cfg = TransformerModel.get_cfg()
     cfg.defrost()
     cfg.MODEL.attention_dropout = 0.1
     cfg.MODEL.dropout = 0.3
@@ -111,7 +113,7 @@ def transformer_wmt_en_de_big():
     return cfg
 
 
-@transformer_nmt_cfg_reg.register()
+@transformer_cfg_reg.register()
 def transformer_wmt_en_de_big_t2t():
     """Parameter used in the T2T implementation"""
     cfg = transformer_wmt_en_de_big()
@@ -161,6 +163,7 @@ class TransformerEncoderLayer(HybridBlock):
                 data -> attn -> norm(res(+data)) -> ffn
 
         use_qkv_bias
+            Wether to use bias for self attention
         weight_initializer
         bias_initializer
         activation
@@ -196,7 +199,7 @@ class TransformerEncoderLayer(HybridBlock):
                                        bias_initializer=bias_initializer,
                                        dtype=self._dtype)
         attention_layout = 'NTK' if self._layout == 'NT' else 'TNK'
-        self.attention_cell =\
+        self.attention_cell = \
             MultiHeadAttentionCell(
                 query_units=self._units,
                 num_heads=self._num_heads,
@@ -261,12 +264,11 @@ class TransformerEncoderLayer(HybridBlock):
         out = self.ffn(out)
         return out, attn_weight
 
-
 @use_np
 class TransformerEncoder(HybridBlock):
     def __init__(self, num_layers=6, recurrent=False,
                  units=512, hidden_size=2048, num_heads=8,
-                 activation_dropout=0.0, dropout=0.1,
+                 activation_dropout=0.0, dropout=0.1, use_qkv_bias=True,
                  attention_dropout=0.1, layer_norm_eps=1E-5, data_norm=False,
                  pre_norm=False, weight_initializer=None, bias_initializer='zeros',
                  activation='relu', dtype='float32', layout='NT'):
@@ -320,6 +322,7 @@ class TransformerEncoder(HybridBlock):
                 hidden_dropout_prob=dropout,
                 attention_dropout_prob=attention_dropout,
                 activation_dropout_prob=activation_dropout,
+                use_qkv_bias=use_qkv_bias,
                 layer_norm_eps=layer_norm_eps,
                 weight_initializer=weight_initializer,
                 bias_initializer=bias_initializer,
@@ -385,6 +388,7 @@ class TransformerDecoderLayer(HybridBlock):
                  layer_norm_eps: float = 1E-5,
                  activation: str = 'relu',
                  pre_norm: bool = False,
+                 use_qkv_bias: bool = True,
                  weight_initializer=None,
                  bias_initializer='zeros',
                  dtype='float32',
@@ -406,6 +410,8 @@ class TransformerDecoderLayer(HybridBlock):
         activation
         pre_norm
             Whether to apply normalization before the attention layer
+        use_qkv_bias
+            Wether to use bias for both self attention and contextual attention
         weight_initializer
         bias_initializer
         dtype
@@ -432,7 +438,7 @@ class TransformerDecoderLayer(HybridBlock):
             raise ValueError('In Transformer, units should be divided exactly by the number of '
                              'heads. Received units={}, num_heads={}'.format(units, num_heads))
         self.attn_in_qkv = nn.Dense(3 * units, in_units=units,
-                                    use_bias=False,
+                                    use_bias=use_qkv_bias,
                                     flatten=False,
                                     weight_initializer=weight_initializer,
                                     bias_initializer=bias_initializer,
@@ -442,25 +448,25 @@ class TransformerDecoderLayer(HybridBlock):
                                                      attention_dropout=self._attention_dropout,
                                                      dtype=dtype,
                                                      layout=attention_layout)
-        self.proj_in = nn.Dense(units=units, in_units=units, flatten=False,  use_bias=False,
+        self.proj_in = nn.Dense(units=units, in_units=units, flatten=False,  use_bias=True,
                                 weight_initializer=weight_initializer,
                                 bias_initializer=bias_initializer,
                                 dtype=dtype)
         self.attn_inter_q = nn.Dense(units,
                                      in_units=units,
-                                     use_bias=False,
+                                     use_bias=use_qkv_bias,
                                      flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer,
                                      dtype=dtype)
         self.attn_inter_k = nn.Dense(units, in_units=mem_units,
-                                     use_bias=False,
+                                     use_bias=use_qkv_bias,
                                      flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer,
                                      dtype=dtype)
         self.attn_inter_v = nn.Dense(units, in_units=mem_units,
-                                     use_bias=False,
+                                     use_bias=use_qkv_bias,
                                      flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer,
@@ -471,7 +477,7 @@ class TransformerDecoderLayer(HybridBlock):
                                                       dtype=dtype,
                                                       layout=attention_layout)
         self.proj_inter = nn.Dense(units=units, in_units=units,
-                                   flatten=False, use_bias=False,
+                                   flatten=False, use_bias=True,
                                    weight_initializer=weight_initializer,
                                    bias_initializer=bias_initializer,
                                    dtype=dtype)
@@ -484,6 +490,9 @@ class TransformerDecoderLayer(HybridBlock):
                                    hidden_size=hidden_size,
                                    dropout=dropout,
                                    activation_dropout=activation_dropout,
+                                   weight_initializer=weight_initializer,
+                                   bias_initializer=bias_initializer,
+                                   layer_norm_eps=layer_norm_eps,
                                    activation=activation,
                                    pre_norm=pre_norm,
                                    dtype=dtype)
@@ -543,10 +552,11 @@ class TransformerDecoderLayer(HybridBlock):
         if self._pre_norm:
             data = self.ln_in(data)
         self_query, self_key, self_value = F.np.split(self.attn_in_qkv(data), 3, axis=-1)
-        out, _ = self.self_attention(F.npx.reshape(self_query, (-2, -2, self._num_heads, -1)),
-                                     F.npx.reshape(self_key, (-2, -2, self._num_heads, -1)),
-                                     F.npx.reshape(self_value, (-2, -2, self._num_heads, -1)),
-                                     self_causal_mask)
+        out, [_, self_attn_weight] = self.self_attention(
+                F.npx.reshape(self_query, (-2, -2, self._num_heads, -1)),
+                F.npx.reshape(self_key, (-2, -2, self._num_heads, -1)),
+                F.npx.reshape(self_value, (-2, -2, self._num_heads, -1)),
+                self_causal_mask)
         out = self.proj_in(out)
         out = self.dropout_layer(out)
         out = out + data
@@ -556,13 +566,11 @@ class TransformerDecoderLayer(HybridBlock):
         data = out
         if self._pre_norm:
             data = self.ln_inter(data)
-        out, _ = self.inter_attention(F.npx.reshape(self.attn_inter_q(data),
-                                                    (-2, -2, self._num_heads, -1)),
-                                      F.npx.reshape(self.attn_inter_k(mem),
-                                                    (-2, -2, self._num_heads, -1)),
-                                      F.npx.reshape(self.attn_inter_v(mem),
-                                                    (-2, -2, self._num_heads, -1)),
-                                      mem_attn_mask)
+        out, [_, context_attn_weight] = self.inter_attention(
+                F.npx.reshape(self.attn_inter_q(data), (-2, -2, self._num_heads, -1)),
+                F.npx.reshape(self.attn_inter_k(mem), (-2, -2, self._num_heads, -1)),
+                F.npx.reshape(self.attn_inter_v(mem), (-2, -2, self._num_heads, -1)),
+                mem_attn_mask)
         out = self.proj_inter(out)
         out = self.dropout_layer(out)
         out = out + data
@@ -674,7 +682,7 @@ class TransformerDecoderLayer(HybridBlock):
         step_value = F.npx.reshape(step_value, (-2, -2, self._num_heads, -1))
         new_key = F.np.concatenate([prev_key, step_key], axis=time_axis)
         new_value = F.np.concatenate([prev_value, step_value], axis=time_axis)
-        out, _ = self.self_attention(step_query, new_key, new_value, None)
+        out, [_, attn_weight] = self.self_attention(step_query, new_key, new_value, None)
         out = self.proj_in(out)
         out = self.dropout_layer(out)
         out = out + data
@@ -705,8 +713,8 @@ class TransformerDecoderLayer(HybridBlock):
 @use_np
 class TransformerDecoder(HybridBlock):
     def __init__(self, num_layers=6, recurrent=False,
-                 units=512, mem_units=None, hidden_size=2048,
-                 num_heads=8, max_shift=None, rel_pos_embed=False, activation_dropout=0.0,
+                 units=512, mem_units=None, hidden_size=2048, use_qkv_bias=True,
+                 num_heads=8, max_shift=None, activation_dropout=0.0,
                  dropout=0.1, attention_dropout=0.1, layer_norm_eps=1E-5, data_norm=False,
                  pre_norm=False, weight_initializer=None, bias_initializer=None,
                  activation='relu', dtype='float32',
@@ -718,7 +726,6 @@ class TransformerDecoder(HybridBlock):
         self.num_layers = num_layers
         self.recurrent = recurrent
         self.max_shift = max_shift
-        self.rel_pos_embed = rel_pos_embed
         self._data_norm = data_norm
         self._pre_norm = pre_norm
         self._layout = layout
@@ -740,6 +747,7 @@ class TransformerDecoder(HybridBlock):
                                                     hidden_size=hidden_size,
                                                     num_heads=num_heads,
                                                     activation_dropout=activation_dropout,
+                                                    use_qkv_bias=use_qkv_bias,
                                                     dropout=dropout,
                                                     attention_dropout=attention_dropout,
                                                     layer_norm_eps=layer_norm_eps,
@@ -909,7 +917,7 @@ class TransformerDecoder(HybridBlock):
 
 
 @use_np
-class TransformerNMTModel(HybridBlock):
+class TransformerModel(HybridBlock):
     def __init__(self, src_vocab_size: int,
                  tgt_vocab_size: int,
                  max_src_length: Optional[int] = None,
@@ -930,6 +938,7 @@ class TransformerNMTModel(HybridBlock):
                  enc_recurrent: bool = False,
                  enc_activation='relu',
                  enc_pre_norm: bool = False,
+                 enc_use_qkv_bias: bool = True,
                  dec_units: int = 512,
                  dec_hidden_size: int = 2048,
                  dec_num_heads: int = 8,
@@ -937,6 +946,7 @@ class TransformerNMTModel(HybridBlock):
                  dec_recurrent: bool = False,
                  dec_activation='relu',
                  dec_pre_norm: bool = False,
+                 dec_use_qkv_bias: bool = True,
                  embed_initializer=mx.init.Xavier('gaussian', 'in', 1),
                  weight_initializer=mx.init.Xavier('uniform', 'avg', 3),
                  bias_initializer='zeros',
@@ -988,6 +998,8 @@ class TransformerNMTModel(HybridBlock):
             Activation of the encoder layer
         enc_pre_norm
             Whether to add layer_norm before self-attention in the encoder
+        enc_use_qkv_bias
+            Wether to use bias for attention layer in the encoder
         dec_units
             Units of the decoder
         dec_hidden_size
@@ -1002,6 +1014,8 @@ class TransformerNMTModel(HybridBlock):
             Activation of the decoder layer
         dec_pre_norm
             Whether to add layer_norm before self-attention in the decoder
+        dec_use_qkv_bias
+            Wether to use bias for attention layer in the decoder
         embed_initializer
             Initializer of the embedding layer
         weight_initializer
@@ -1017,17 +1031,20 @@ class TransformerNMTModel(HybridBlock):
         assert src_vocab_size > 0 and tgt_vocab_size > 0,\
             'Cannot set "src_vocab_size" and "tgt_vocab_size" to negative numbers. ' \
             'Are you creating ' \
-            'the model with the config from TransformerNMTModel.get_cfg()? If that is ' \
+            'the model with the config from TransformerModel.get_cfg()? If that is ' \
             'the case, you will need to set the cfg.MODEL.src_vocab_size and ' \
             'cfg.MODEL.tgt_vocab_size manually before passing to ' \
-            'TransformerNMTModel.from_cfg().'
+            'TransformerModel.from_cfg().'
         self._dtype = dtype
         self._src_vocab_size = src_vocab_size
         self._tgt_vocab_size = tgt_vocab_size
+        self.tie_weights = tie_weights
         self.pos_embed_type = pos_embed_type
         self.scaled_embed = scale_embed
         self.enc_units = enc_units
         self.dec_units = dec_units
+        self.weight_initializer = weight_initializer
+        self.bias_initializer = bias_initializer
         self._layout = layout
         assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
                                        'Only "TN" and "NT" are accepted!'.format(layout)
@@ -1064,6 +1081,7 @@ class TransformerNMTModel(HybridBlock):
                                           hidden_size=enc_hidden_size,
                                           num_heads=enc_num_heads,
                                           activation_dropout=activation_dropout,
+                                          use_qkv_bias=enc_use_qkv_bias,
                                           dropout=dropout,
                                           attention_dropout=attention_dropout,
                                           layer_norm_eps=layer_norm_eps,
@@ -1081,6 +1099,7 @@ class TransformerNMTModel(HybridBlock):
                                           hidden_size=dec_hidden_size,
                                           num_heads=dec_num_heads,
                                           activation_dropout=activation_dropout,
+                                          use_qkv_bias=dec_use_qkv_bias,
                                           dropout=dropout,
                                           attention_dropout=attention_dropout,
                                           layer_norm_eps=layer_norm_eps,
@@ -1092,7 +1111,7 @@ class TransformerNMTModel(HybridBlock):
                                           dtype=self._dtype,
                                           layout=layout)
         if tie_weights:
-            self.tgt_final_layer =\
+            self.tgt_final_layer = \
                 nn.Dense(tgt_vocab_size, flatten=False,
                          bias_initializer=bias_initializer,
                          use_bias=False,
@@ -1154,6 +1173,7 @@ class TransformerNMTModel(HybridBlock):
             else:
                 src_data = src_data + F.np.expand_dims(self.src_pos_embed_layer(
                     F.npx.arange_like(src_data, axis=0)), axis=1)
+
         enc_out = self.encoder(src_data, src_valid_length)
         return enc_out
 
@@ -1196,8 +1216,8 @@ class TransformerNMTModel(HybridBlock):
             else:
                 tgt_data = tgt_data + F.np.expand_dims(self.tgt_pos_embed_layer(
                     F.npx.arange_like(tgt_data, axis=0)), axis=1)
+
         dec_out = self.decoder(tgt_data, tgt_valid_length, mem_data, mem_valid_length)
-        dec_out = self.tgt_final_layer(dec_out)
         return dec_out
 
     def hybrid_forward(self, F, src_data, src_valid_length, tgt_data, tgt_valid_length):
@@ -1231,15 +1251,16 @@ class TransformerNMTModel(HybridBlock):
         """
         enc_out = self.encode(F, src_data, src_valid_length)
         dec_out = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out, src_valid_length)
+        dec_out = self.tgt_final_layer(dec_out)
         return dec_out
 
     @classmethod
     def get_cfg(cls, key=None):
         if key is None:
             # Use Transformer WMT EN-DE Base
-            return transformer_nmt_base()
+            return transformer_base()
         else:
-            return transformer_nmt_cfg_reg.create(key)
+            return transformer_cfg_reg.create(key)
 
     @classmethod
     def from_cfg(cls, cfg, dtype=None):
@@ -1267,6 +1288,7 @@ class TransformerNMTModel(HybridBlock):
                    enc_recurrent=cfg.MODEL.ENCODER.recurrent,
                    enc_activation=cfg.MODEL.ENCODER.activation,
                    enc_pre_norm=cfg.MODEL.ENCODER.pre_norm,
+                   enc_use_qkv_bias=cfg.MODEL.ENCODER.use_qkv_bias,
                    dec_num_layers=cfg.MODEL.DECODER.num_layers,
                    dec_units=cfg.MODEL.DECODER.units,
                    dec_num_heads=cfg.MODEL.DECODER.num_heads,
@@ -1274,6 +1296,7 @@ class TransformerNMTModel(HybridBlock):
                    dec_recurrent=cfg.MODEL.DECODER.recurrent,
                    dec_activation=cfg.MODEL.DECODER.activation,
                    dec_pre_norm=cfg.MODEL.DECODER.pre_norm,
+                   dec_use_qkv_bias=cfg.MODEL.DECODER.use_qkv_bias,
                    layout=cfg.MODEL.layout,
                    embed_initializer=embed_initializer,
                    weight_initializer=weight_initializer,
@@ -1296,7 +1319,7 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
     def initialize(self, **kwargs):
         # Manually disable the initialize
         raise NotImplementedError('You can not initialize a TransformerNMTFastInference Model! '
-                                  'The correct approach is to create a TransformerNMTModel and '
+                                  'The correct approach is to create a TransformerModel and '
                                   'then build the TransformerNMTInference with the given model.')
 
     @property

@@ -42,7 +42,7 @@ import math
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
-from gluonnlp.models.transformer import TransformerNMTModel
+from gluonnlp.models.transformer import TransformerModel
 from gluonnlp.utils.misc import logging_config, AverageSGDTracker, count_parameters,\
     md5sum, grouper, init_comm
 from gluonnlp.data.sampler import (
@@ -117,7 +117,7 @@ def parse_args():
                              'each update step contains gpu_num * num_accumulated batches.')
     parser.add_argument('--save_interval_update', type=int, default=500,
                          help='Update interval of saving checkpoints while using max_update.')
-    parser.add_argument('--cfg', type=str, default='transformer_nmt_base',
+    parser.add_argument('--cfg', type=str, default='transformer_base',
                         help='Configuration of the transformer model. '
                              'You may select a yml file or use the prebuild configurations.')
     parser.add_argument('--label_smooth_alpha', type=float, default=0.1,
@@ -184,7 +184,7 @@ def validation(model, data_loader, ctx_l):
 
     Parameters
     ----------
-    model : TransformerNMTModel
+    model : TransformerModel
         The transformer model
     data_loader : DataLoader
         DataLoader
@@ -316,9 +316,9 @@ def train(args):
          for i, (src_tokens, tgt_tokens) in enumerate(zip(dev_src_data, dev_tgt_data))])
     # Construct the model + loss function
     if args.cfg.endswith('.yml'):
-        cfg = TransformerNMTModel.get_cfg().clone_merge(args.cfg)
+        cfg = TransformerModel.get_cfg().clone_merge(args.cfg)
     else:
-        cfg = TransformerNMTModel.get_cfg(args.cfg)
+        cfg = TransformerModel.get_cfg(args.cfg)
     cfg.defrost()
     cfg.MODEL.src_vocab_size = len(src_vocab)
     cfg.MODEL.tgt_vocab_size = len(tgt_vocab)
@@ -326,7 +326,7 @@ def train(args):
         raise NotImplementedError
 #        cfg.MODEL.dtype = 'float16'
     cfg.freeze()
-    model = TransformerNMTModel.from_cfg(cfg)
+    model = TransformerModel.from_cfg(cfg)
     model.initialize(mx.init.Xavier(magnitude=args.magnitude),
                      ctx=ctx_l)
     model.hybridize()
@@ -388,7 +388,7 @@ def train(args):
                                                  seed=args.seed)
     else:
         raise NotImplementedError
-    
+
     batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
     train_data_loader = gluon.data.DataLoader(data_train,
                                               batch_sampler=train_batch_sampler,
@@ -408,7 +408,6 @@ def train(args):
     log_start_time = time.time()
     num_params, num_fixed_params = None, None
     # TODO(sxjscience) Add a log metric class
-    
     accum_count = 0
     loss_denom = 0
     n_train_iters = 0
@@ -494,12 +493,10 @@ def train(args):
                                           deduplicate=True)
                 if args.max_update > 0 and n_train_iters >= args.max_update:
                     break
-                    
         if args.epochs > 0:
             model.save_parameters(os.path.join(args.save_dir,
                                                'epoch{:d}.params'.format(epoch_id)),
                                   deduplicate=True)
-            
         avg_valid_loss = validation(model, val_data_loader, ctx_l)
         logging.info('[Epoch {}] validation loss/ppl={:.4f}/{:.4f}'
                      .format(epoch_id, avg_valid_loss, np.exp(avg_valid_loss)))

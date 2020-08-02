@@ -169,7 +169,8 @@ def test_albert_get_pretrained(model_name):
         albert_model = AlbertModel.from_cfg(cfg)
         albert_model.load_parameters(backbone_params_path)
         albert_mlm_model = AlbertForMLM(cfg)
-        albert_mlm_model.load_parameters(mlm_params_path)
+        if mlm_params_path is not None:
+            albert_mlm_model.load_parameters(mlm_params_path)
         # Just load the backbone
         albert_mlm_model = AlbertForMLM(cfg)
         albert_mlm_model.backbone_model.load_parameters(backbone_params_path)

@@ -53,7 +53,9 @@ def read_tf_checkpoint(path):
     return tensors
 
 
-def get_dict_config(model_size, electra_dir):
+def get_dict_config(model_size, electra_path):
+    sys.path.append(electra_path)
+    electra_dir = os.path.abspath(os.path.join(os.path.dirname(electra_path), os.path.pardir))
     sys.path.append(electra_dir)
     from electra.util.training_utils import get_bert_config
     from electra.configure_pretraining import PretrainingConfig
@@ -100,7 +102,7 @@ def convert_tf_config(config_dict, vocab_size):
     return cfg
 
 
-def convert_tf_assets(tf_assets_dir, model_size, electra_dir):
+def convert_tf_assets(tf_assets_dir, model_size, electra_path):
     """Convert the assets file including config, vocab and tokenizer model"""
     file_names = os.listdir(tf_assets_dir)
     vocab_path = None
@@ -113,7 +115,7 @@ def convert_tf_assets(tf_assets_dir, model_size, electra_dir):
     if vocab_path:
         vocab_path = os.path.join(tf_assets_dir, vocab_path)
         vocab_size = len(open(vocab_path, 'rU').readlines())
-    config_dict = get_dict_config(model_size, electra_dir)
+    config_dict = get_dict_config(model_size, electra_path)
     cfg = convert_tf_config(config_dict, vocab_size)
     return cfg, vocab_path
 
@@ -190,12 +192,12 @@ def get_name_map(tf_names, convert_type='backbone'):
     return name_map
 
 
-def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, electra_dir):
+def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, electra_path):
     ctx = mx.gpu(gpu) if gpu is not None else mx.cpu()
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    cfg, vocab_path = convert_tf_assets(model_dir, model_size, electra_dir)
+    cfg, vocab_path = convert_tf_assets(model_dir, model_size, electra_path)
     with open(os.path.join(save_dir, 'model.yml'), 'w') as of:
         of.write(cfg.dump())
     new_vocab = HuggingFaceWordPieceTokenizer(
@@ -234,6 +236,8 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
     tf_names = list(tf_names)
 
     # reload the electra module for this local scope
+    sys.path.append(electra_path)
+    electra_dir = os.path.abspath(os.path.join(os.path.dirname(electra_path), os.path.pardir))
     sys.path.append(electra_dir)
     from electra.util.training_utils import get_bert_config
     from electra.configure_pretraining import PretrainingConfig
@@ -426,11 +430,10 @@ if __name__ == '__main__':
     logging_config()
     save_dir = args.save_dir if args.save_dir is not None else os.path.basename(
         args.tf_model_path) + '_gluon'
-    electra_dir = os.path.abspath(os.path.join(os.path.dirname(args.electra_path), os.path.pardir))
     convert_tf_model(
         args.tf_model_path,
         save_dir,
         args.test,
         args.model_size,
         args.gpu,
-        electra_dir)
+        args.electra_path)

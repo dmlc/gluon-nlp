@@ -127,7 +127,6 @@ def clip_grad_global_norm(parameters: Iterable[Parameter],
         If the gradient norm is larger than max_norm, it will be clipped to have max_norm
     check_isfinite
          If True, check whether the total_norm is finite (not nan or inf).
-
     Returns
     -------
     total_norm

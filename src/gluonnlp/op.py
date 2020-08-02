@@ -100,7 +100,7 @@ def updated_vectors_by_position(F, base, data, positions):
     """
     Update each batch with the given positions. Considered as a reversed process of
     "select_vectors_by_position", this is an advanced operator of add_vectors_by_position
-    that updates the results instead of add and avoids duplicate positions.
+    that updates the results instead of adding.
     Once advanced indexing can be hybridized, we can revise the implementation.
 
     updates[i, positions[i, j], :] = data[i, j, :]
@@ -127,22 +127,16 @@ def updated_vectors_by_position(F, base, data, positions):
     out
         The updated result.
         Shape (batch_size, seq_length)
-    updates_mask
-        The state of the updated  for the whole sequence
-        1 -> updated, 0 -> not updated.
-        Shape (batch_size, seq_length)
     """
-    # TODO(zheyuye), update when npx.index_update implemented
-    updates = add_vectors_by_position(F, F.np.zeros_like(base), data, positions)
-    updates_mask = add_vectors_by_position(F, F.np.zeros_like(base),
-            F.np.ones_like(positions), positions)
-    updates = (updates / F.np.maximum(1, updates_mask)).astype(np.int32)
+    positions = positions.astype(np.int32)
+    # batch_idx.shape = (batch_size, 1) as [[0], [1], [2], ...]
+    batch_idx = F.np.expand_dims(F.npx.arange_like(positions, axis=0),
+                                 axis=1).astype(np.int32)
+    batch_idx = batch_idx + F.np.zeros_like(positions)
+    indices = F.np.stack([batch_idx.reshape(-1), positions.reshape(-1)])
 
-    out = F.np.where(updates, updates, base)
-    updates_mask = F.np.minimum(updates_mask, 1)
-
-    return out, updates_mask
-
+    out = F.npx.index_update(base, indices, data.reshape(-1))
+    return out
 
 @use_np
 def gumbel_softmax(F, logits, temperature: float = 1.0, eps: float = 1E-10,
