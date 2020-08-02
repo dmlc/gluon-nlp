@@ -11,7 +11,7 @@ bash wmt2014_ende.sh yttm
 ```
 
 Then, you can run the experiment, we use the
-"transformer_nmt_base" configuration.
+"transformer_base" configuration.
 
 ```bash
 SUBWORD_MODEL=yttm
@@ -25,7 +25,7 @@ python train_transformer.py \
     --tgt_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
     --tgt_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
     --save_dir transformer_wmt2014_ende_${SUBWORD_MODEL} \
-    --cfg transformer_nmt_base \
+    --cfg transformer_base \
     --lr 0.002 \
     --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
@@ -55,7 +55,7 @@ python evaluate_transformer.py \
 
 Test BLEU score with 3 seeds (evaluated via sacre BLEU):
 
-- transformer_nmt_base
+- transformer_base
 
 | Subword Model | #Params    | Seed = 123  | Seed = 1234 | Seed = 12345 |  Mean±std   |
 |---------------|------------|-------------|-------------|--------------|-------------|

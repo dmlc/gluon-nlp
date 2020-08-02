@@ -37,7 +37,7 @@ python train_transformer.py \
     --tgt_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
     --tgt_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --save_dir transformer_wmt2014_de_en_${SUBWORD_ALGO} \
-    --cfg transformer_nmt_base \
+    --cfg transformer_base \
     --lr 0.002 \
     --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
@@ -63,7 +63,7 @@ for NUM in ` seq -f %03g 0 193 `; do
             --param_path transformer_wmt2014_de_en_${SUBWORD_ALGO}/average.params \
             --src_lang ${TGT} \
             --tgt_lang ${SRC} \
-            --cfg transformer_nmt_base \
+            --cfg transformer_base \
             --src_tokenizer ${SUBWORD_ALGO} \
             --tgt_tokenizer ${SUBWORD_ALGO} \
             --src_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
@@ -125,7 +125,7 @@ python train_transformer.py \
     --tgt_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
     --tgt_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --save_dir backtranslation_transformer_wmt2014_ende_${SUBWORD_ALGO} \
-    --cfg transformer_nmt_base \
+    --cfg transformer_base \
     --lr 0.003 \
     --max_num_tokens 4096 \
     --sampler BoundedBudgetSampler \
@@ -148,7 +148,7 @@ python evaluate_transformer.py \
     --param_path backtranslation_transformer_wmt2014_ende_${SUBWORD_ALGO}/avg_20_29.params \
     --src_lang ${SRC} \
     --tgt_lang ${TGT} \
-    --cfg transformer_nmt_base \
+    --cfg transformer_base \
     --src_tokenizer ${SUBWORD_ALGO} \
     --tgt_tokenizer ${SUBWORD_ALGO} \
     --src_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \

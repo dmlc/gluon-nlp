@@ -3,8 +3,8 @@ import pytest
 from numpy.testing import assert_allclose
 from gluonnlp.models.transformer import\
     TransformerEncoder, TransformerDecoder, \
-    TransformerNMTModel, TransformerNMTInference,\
-    transformer_nmt_cfg_reg
+    TransformerModel, TransformerNMTInference,\
+    transformer_cfg_reg
 from gluonnlp.attention_cell import gen_mem_attn_mask, gen_self_attn_mask
 from gluonnlp.utils.testing import verify_nmt_model, verify_nmt_inference
 mx.npx.set_np()
@@ -117,26 +117,26 @@ def test_transformer_nmt_model(train_hybridize, inference_hybridize,
         shared_embed = False
     else:
         shared_embed = True
-    model = TransformerNMTModel(src_vocab_size=src_vocab_size,
-                                tgt_vocab_size=tgt_vocab_size,
-                                max_src_length=src_seq_length,
-                                max_tgt_length=tgt_seq_length,
-                                enc_units=enc_units,
-                                enc_hidden_size=64,
-                                enc_num_heads=4,
-                                enc_num_layers=enc_num_layers,
-                                enc_pre_norm=enc_pre_norm,
-                                enc_recurrent=enc_recurrent,
-                                dec_units=dec_units,
-                                dec_hidden_size=64,
-                                dec_num_heads=4,
-                                dec_num_layers=dec_num_layers,
-                                dec_pre_norm=dec_pre_norm,
-                                dec_recurrent=dec_recurrent,
-                                shared_embed=shared_embed,
-                                tie_weights=tie_weights,
-                                dropout=0.0,
-                                layout=layout)
+    model = TransformerModel(src_vocab_size=src_vocab_size,
+                             tgt_vocab_size=tgt_vocab_size,
+                             max_src_length=src_seq_length,
+                             max_tgt_length=tgt_seq_length,
+                             enc_units=enc_units,
+                             enc_hidden_size=64,
+                             enc_num_heads=4,
+                             enc_num_layers=enc_num_layers,
+                             enc_pre_norm=enc_pre_norm,
+                             enc_recurrent=enc_recurrent,
+                             dec_units=dec_units,
+                             dec_hidden_size=64,
+                             dec_num_heads=4,
+                             dec_num_layers=dec_num_layers,
+                             dec_pre_norm=dec_pre_norm,
+                             dec_recurrent=dec_recurrent,
+                             shared_embed=shared_embed,
+                             tie_weights=tie_weights,
+                             dropout=0.0,
+                             layout=layout)
     inference_model = TransformerNMTInference(model=model)
     model.initialize()
     if train_hybridize:
@@ -148,23 +148,23 @@ def test_transformer_nmt_model(train_hybridize, inference_hybridize,
 
 
 def test_transformer_cfg_registry():
-    assert len(transformer_nmt_cfg_reg.list_keys()) > 0
+    assert len(transformer_cfg_reg.list_keys()) > 0
 
 
-@pytest.mark.parametrize('cfg_key', transformer_nmt_cfg_reg.list_keys())
+@pytest.mark.parametrize('cfg_key', transformer_cfg_reg.list_keys())
 def test_transformer_cfg(cfg_key):
-    cfg = TransformerNMTModel.get_cfg(cfg_key)
+    cfg = TransformerModel.get_cfg(cfg_key)
     cfg.defrost()
     cfg.MODEL.src_vocab_size = 32
     cfg.MODEL.tgt_vocab_size = 32
     cfg.freeze()
-    model = TransformerNMTModel.from_cfg(cfg)
+    model = TransformerModel.from_cfg(cfg)
     model.initialize()
     model.hybridize()
     cfg.defrost()
     cfg.MODEL.layout = 'TN'
     cfg.freeze()
-    model_tn = TransformerNMTModel.from_cfg(cfg)
+    model_tn = TransformerModel.from_cfg(cfg)
     model_tn.share_parameters(model.collect_params())
     model_tn.hybridize()
     mx.npx.waitall()

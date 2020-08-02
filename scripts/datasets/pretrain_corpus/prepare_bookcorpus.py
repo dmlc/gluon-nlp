@@ -75,6 +75,7 @@ def main(args):
                         filename = os.path.basename(name)
                     f.extract(name, os.path.join(save_dir, filename))
         else:
+            # TODO(zheyuye), format for pretraining
             raise NotImplementedError
     else:
         raise NotImplementedError

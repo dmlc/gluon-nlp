@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import json
 import shutil
@@ -11,7 +12,7 @@ from numpy.testing import assert_allclose
 
 import torch
 from gluonnlp.data.vocab import Vocab as gluon_Vocab
-from gluonnlp.utils.misc import sha1sum, logging_config
+from gluonnlp.utils.misc import sha1sum, logging_config, naming_convention
 from fairseq.models.roberta import RobertaModel as fairseq_RobertaModel
 from gluonnlp.models.roberta import RobertaModel, RobertaForMLM
 from gluonnlp.data.tokenizers import HuggingFaceByteBPETokenizer
@@ -23,8 +24,6 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Convert the fairseq RoBERTa Model to Gluon.')
     parser.add_argument('--fairseq_model_path', type=str, required=True,
                         help='Directory of the fairseq RoBERTa model.')
-    parser.add_argument('--model_size', type=str, choices=['base', 'large'], default='base',
-                        help='Size of RoBERTa model.')
     parser.add_argument('--save_dir', type=str, default=None,
                         help='Directory path to save the converted RoBERTa model.')
     parser.add_argument('--gpu', type=int, default=None,
@@ -69,16 +68,12 @@ def convert_vocab(args, fairseq_model):
     inter_vocab = sorted(inter_vocab, key=lambda x: x[1])
     tokens = [e[0] for e in inter_vocab]
 
-    tail = [fairseq_vocab[-4],
-            fairseq_vocab[-3],
-            fairseq_vocab[-2],
-            fairseq_vocab[-1]]
-    assert tail == ['madeupword0000',
-                    'madeupword0001',
-                    'madeupword0002',
-                    '<mask>']
+    tail = [
+        vocab for vocab in fairseq_vocab.indices.keys() if re.match(
+            r'^madeupword[\d]{4}$',
+            vocab) is not None]
     all_tokens = ['<s>', '<pad>', '</s>', '<unk>'] + \
-        tokens + tail
+        tokens + tail + ['<mask>']
 
     gluon_vocab = gluon_Vocab(all_tokens,
                               unk_token=fairseq_vocab.unk_word,
@@ -172,7 +167,7 @@ def convert_params(fairseq_model,
                    gluon_cfg,
                    ctx):
     fairseq_params = fairseq_model.state_dict()
-    fairseq_prefix = 'model.decoder.'
+    fairseq_prefix = 'model.encoder.'
     gluon_prefix = 'backbone_model.'
     print('converting {} params'.format(gluon_prefix))
 
@@ -265,7 +260,7 @@ def test_model(fairseq_model, gluon_model, gpu):
     batch_size = 3
     seq_length = 32
     vocab_size = len(fairseq_model.task.dictionary)
-    padding_id = fairseq_model.model.decoder.sentence_encoder.padding_idx
+    padding_id = fairseq_model.model.encoder.sentence_encoder.padding_idx
     input_ids = np.random.randint(  # skip padding_id
         padding_id + 1,
         vocab_size,
@@ -315,7 +310,6 @@ def test_model(fairseq_model, gluon_model, gpu):
             )
     # checking masked_language_scores
     gl_mlm_scores = gl_mlm_scores.asnumpy()
-    fs_mlm_scores = fs_mlm_scores.transpose(0, 1)
     fs_mlm_scores = fs_mlm_scores.detach().cpu().numpy()
     for j in range(batch_size):
         assert_allclose(
@@ -377,7 +371,14 @@ def convert_fairseq_model(args):
 
     logging.info('Conversion finished!')
     logging.info('Statistics:')
-    rename(args.save_dir)
+    old_names = os.listdir(args.save_dir)
+    for old_name in old_names:
+        new_name, long_hash = naming_convention(args.save_dir, old_name)
+        old_path = os.path.join(args.save_dir, old_name)
+        new_path = os.path.join(args.save_dir, new_name)
+        shutil.move(old_path, new_path)
+        file_size = os.path.getsize(new_path)
+        logging.info('\t{}/{} {} {}'.format(args.save_dir, new_name, long_hash, file_size))
 
 
 if __name__ == '__main__':
