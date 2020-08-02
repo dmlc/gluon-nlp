@@ -108,8 +108,8 @@ FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'mob
 @use_np
 class MobileBertEncoderLayer(HybridBlock):
     """The Transformer Encoder Layer in Mobile Bert"""
-    # TODO(zheyuye), use stacked groups for single ffn layer in transformer.TransformerEncoderLayer
-    # and revise the other models and scripts, making sure they are compatible.
+    # TODO(zheyuye), use stacked groups for single ffn layer in TransformerEncoderLayer
+    # and revise the other models and scripts, masking sure their are compatible.
 
     def __init__(self,
                  use_bottleneck: bool = True,
@@ -267,13 +267,11 @@ class MobileBertEncoderLayer(HybridBlock):
             is_last_ffn = (ffn_idx == (num_stacked_ffn - 1))
             # only apply dropout on last ffn layer if use bottleneck
             dropout = float(hidden_dropout_prob * (not use_bottleneck) * is_last_ffn)
-            activation_dropout = float(activation_dropout_prob * (not use_bottleneck)
-                                       * is_last_ffn)
             self.stacked_ffn.add(
                 PositionwiseFFN(units=real_units,
                                 hidden_size=hidden_size,
                                 dropout=dropout,
-                                activation_dropout=activation_dropout,
+                                activation_dropout=activation_dropout_prob,
                                 weight_initializer=weight_initializer,
                                 bias_initializer=bias_initializer,
                                 activation=activation,
@@ -1021,7 +1019,8 @@ def list_pretrained_mobilebert():
 
 def get_pretrained_mobilebert(model_name: str = 'google_uncased_mobilebert',
                               root: str = get_model_zoo_home_dir(),
-                              load_backbone=True, load_mlm=True)\
+                             load_backbone: str = True,
+                             load_mlm: str = False)\
         -> Tuple[CN, HuggingFaceWordPieceTokenizer, str, str]:
     """Get the pretrained mobile bert weights
 
@@ -1077,6 +1076,7 @@ def get_pretrained_mobilebert(model_name: str = 'google_uncased_mobilebert',
                                          sha1_hash=FILE_STATS[mlm_params_path])
     else:
         local_mlm_params_path = None
+
     do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
                        and PRETRAINED_URL[model_name]['lowercase'] else False
     tokenizer = HuggingFaceWordPieceTokenizer(
