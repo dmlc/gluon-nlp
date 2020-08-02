@@ -11,7 +11,7 @@ import json
 from xml.etree import ElementTree
 from gluonnlp.data.filtering import ProfanityFilter
 from gluonnlp.utils.misc import file_line_number, download, load_checksum_stats
-from gluonnlp.base import get_data_home_dir
+from gluonnlp.base import get_data_home_dir, get_repo_url
 from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 
 # The datasets are provided by WMT2014-WMT2019 and can be freely used for research purposes.
@@ -337,8 +337,15 @@ _MONOLINGUAL_URLS = {
     }
 }
 
-with open(os.path.join(_CURR_DIR, '..', 'url_checksums', 'mirror', 'wmt.txt')) as wmt_mirror_map_f:
+with open(os.path.join(_CURR_DIR, '..', 'url_checksums', 'mirror', 'wmt.json')) as wmt_mirror_map_f:
     _WMT_MIRROR_URL_MAP = json.load(wmt_mirror_map_f)
+
+def _download_with_mirror(url, path, sha1_hash):
+    return download(
+        get_repo_url() + _WMT_MIRROR_URL_MAP[url] if url in _WMT_MIRROR_URL_MAP else url,
+        path=path,
+        sha1_hash=sha1_hash
+    )
 
 def _clean_space(s: str):
     """Removes trailing and leading spaces and collapses multiple consecutive internal spaces to a single one.
@@ -629,8 +636,8 @@ def fetch_mono_dataset(selection: Union[str, List[str], List[List[str]]],
             save_path_l = [path] + selection + [matched_lang, original_filename]
         else:
             save_path_l = [path] + selection + [original_filename]
-        download_fname = download(
-            _WMT_MIRROR_URL_MAP[url] if url in _WMT_MIRROR_URL_MAP else url,
+        download_fname = _download_with_mirror(
+            url,
             path=os.path.join(*save_path_l),
             sha1_hash=sha1_hash
         )
@@ -799,8 +806,8 @@ def fetch_wmt_parallel_dataset(selection: Union[str, List[str], List[List[str]]]
             save_path_l = [path] + selection + [matched_pair, original_filename]
         else:
             save_path_l = [path] + selection + [original_filename]
-        download_fname = download(
-            _WMT_MIRROR_URL_MAP[url] if url in _WMT_MIRROR_URL_MAP else url,
+        download_fname = _download_with_mirror(
+            url,
             path=os.path.join(*save_path_l),
             sha1_hash=sha1_hash
         )
