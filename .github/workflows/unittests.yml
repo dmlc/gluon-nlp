@@ -25,6 +25,10 @@ jobs:
         # TODO https://github.com/apache/incubator-mxnet/issues/18293
         run: sudo apt-get install libopenblas-dev
 
+      - name: Install Mac dependencies
+        if: matrix.os == 'macos-latest'
+        run: brew install protobuf
+
       - name: Setup python
         uses: actions/setup-python@v2
         with:
