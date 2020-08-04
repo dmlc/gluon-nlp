@@ -489,7 +489,7 @@ def train(args):
                 if local_rank == 0 and \
                    (args.max_update > 0 and n_train_iters % args.save_interval_update == 0):
                     model.save_parameters(os.path.join(args.save_dir,
-                                                       '{:d}.params'.format(n_train_iters // args.save_interval_update)),
+                                                       'update{:d}.params'.format(n_train_iters // args.save_interval_update)),
                                           deduplicate=True)
                 if args.max_update > 0 and n_train_iters >= args.max_update:
                     break

@@ -7,8 +7,8 @@ mx.npx.set_np()
 def get_parser():
     parser = argparse.ArgumentParser(description='Script to average the checkpoints')
     parser.add_argument('--checkpoints', type=str, required=True, nargs='+',
-                        help='checkpoint file paths, supports two format: '
-                        '--checkpoints folder/epoch*.params or --checkpoints folder/*.param')
+                        help='checkpoint file paths, supports two format, '
+                        '--checkpoints folder/epoch*.params or --checkpoints folder/update*.param')
     parser.add_argument('--begin', type=int, required=True, help='begin number of checkpoints')
     parser.add_argument('--end', type=int, required=True, help='end number of checkpoints')
     parser.add_argument('--save-path', type=str, required=True,
@@ -20,8 +20,8 @@ def main(args):
     assert args.end >= args.begin
     args.range = list(range(args.begin, args.end + 1))
     
-    ckpt_epochs_regexp = re.compile(r'(.*\/)epoch(\d+)\.params')
-    ckpt_updates_regexp = re.compile(r'(.*\/)(\d+)\.params')
+    ckpt_epochs_regexp = re.compile(r'(.*\/)?epoch(\d+)\.params')
+    ckpt_updates_regexp = re.compile(r'(.*\/)?update(\d+)\.params')
     ckpt_path = args.checkpoints[0]
     if ckpt_epochs_regexp.fullmatch(ckpt_path) is not None:
         ckpt_regexp = ckpt_epochs_regexp
