@@ -197,29 +197,35 @@ def load_embeddings(vocab=None, pretrained_name_or_dir='glove.6B.50d', unknown='
     Training is performed on aggregated global word-word co-occurrence statistics from a corpus, and
     the resulting representations showcase interesting linear substructures of the word vector
     space. (Source from https://nlp.stanford.edu/projects/glove/)
-        Available sources:
-            ['glove.42B.300d', 'glove.6B.100d', 'glove.6B.200d', 'glove.6B.300d', 'glove.6B.50d', \
-             'glove.840B.300d', 'glove.twitter.27B.100d', 'glove.twitter.27B.200d', \
-             'glove.twitter.27B.25d', 'glove.twitter.27B.50d']
+    
+    Available sources:
+    ['glove.42B.300d', 'glove.6B.100d', 'glove.6B.200d', 'glove.6B.300d', 'glove.6B.50d', \
+     'glove.840B.300d', 'glove.twitter.27B.100d', 'glove.twitter.27B.200d', \
+     'glove.twitter.27B.25d', 'glove.twitter.27B.50d']
+
     Word2Vec: an unsupervised learning algorithm for obtaining vector representations for words.
     Training is performed with continuous bag-of-words or skip-gram architecture for computing vector
     representations of words.
-        Available sources:
-            ['GoogleNews-vectors-negative300', 'freebase-vectors-skipgram1000',
-             'freebase-vectors-skipgram1000-en']
+
+    Available sources:
+    ['GoogleNews-vectors-negative300', 'freebase-vectors-skipgram1000', \
+     'freebase-vectors-skipgram1000-en']
+
     FastText: an open-source, free, lightweight library that allows users to learn text
     representations and text classifiers. It works on standard, generic hardware. Models can later
     be reduced in size to even fit on mobile devices. (Source from https://fasttext.cc/)
-        Available sources:
-            ['cc.af.300', ..., 'cc.en.300', ..., 'crawl-300d-2M', 'crawl-300d-2M-subword', \
-             'wiki-news-300d-1M', 'wiki-news-300d-1M-subword', \
-             'wiki.aa', ..., 'wiki.multi.ar', ..., 'wiki.zu']
-            Detailed sources can be founded by `gluonnlp.embedding.list_sources('FastText')`
-        For 'wiki.multi' embedding:
 
-        Word Translation Without Parallel Data
-        Alexis Conneau, Guillaume Lample, Marc'Aurelio Ranzato, Ludovic Denoyer, and Herve Jegou.
-        https://arxiv.org/abs/1710.04087
+    Available sources:
+    ['cc.af.300', ..., 'cc.en.300', ..., 'crawl-300d-2M', 'crawl-300d-2M-subword', \
+     'wiki-news-300d-1M', 'wiki-news-300d-1M-subword', \
+     'wiki.aa', ..., 'wiki.multi.ar', ..., 'wiki.zu']
+
+    Detailed sources can be founded by `gluonnlp.embedding.list_sources('FastText')`
+
+    For 'wiki.multi' embedding:
+    Word Translation Without Parallel Data
+    Alexis Conneau, Guillaume Lample, Marc'Aurelio Ranzato, Ludovic Denoyer, and Herve Jegou.
+    https://arxiv.org/abs/1710.04087
 
     Parameters
     ----------
