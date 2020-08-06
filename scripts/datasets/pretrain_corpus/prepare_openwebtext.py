@@ -57,7 +57,7 @@ def extract_files(full_name, output_dir, shuffle=False):
         with tarfile.open(full_name) as t:
             txt_names = t.getnames()
             if shuffle:
-                txt_names = random.shuffle(txt_names)
+                random.shuffle(txt_names)
             for txt_name in txt_names:
                 f = t.extractfile(txt_name)
                 for line in f.readlines():
