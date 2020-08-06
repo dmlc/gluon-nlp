@@ -330,7 +330,8 @@ def train(args):
     model.initialize(mx.init.Xavier(magnitude=args.magnitude),
                      ctx=ctx_l)
     model.hybridize()
-    logging.info(model)
+    if local_rank == num_parts - 1:
+        logging.info(model)
     with open(os.path.join(args.save_dir, 'config.yml'), 'w') as cfg_f:
         cfg_f.write(cfg.dump())
     label_smooth_loss = LabelSmoothCrossEntropyLoss(num_labels=len(tgt_vocab),
@@ -389,12 +390,15 @@ def train(args):
     else:
         raise NotImplementedError
 
+    if local_rank == num_parts - 1:
+        logging.info(train_batch_sampler)
+
     batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
     train_data_loader = gluon.data.DataLoader(data_train,
                                               batch_sampler=train_batch_sampler,
                                               batchify_fn=batchify_fn,
                                               num_workers=0)
-    logging.info(train_batch_sampler)
+
     val_data_loader = gluon.data.DataLoader(data_val,
                                             batch_size=args.val_batch_size,
                                             batchify_fn=batchify_fn,
@@ -453,7 +457,7 @@ def train(args):
                 sample_data_l = next(train_multi_data_loader)
             except StopIteration:
                 is_last_batch = True
-            if num_params is None:
+            if local_rank == num_parts - 1 and num_params is None:
                 num_params, num_fixed_params = count_parameters(model.collect_params())
                 logging.info('Total Number of Parameters (not-fixed/fixed): {}/{}'
                              .format(num_params, num_fixed_params))
