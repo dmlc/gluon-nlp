@@ -330,7 +330,7 @@ def train(args):
     model.initialize(mx.init.Xavier(magnitude=args.magnitude),
                      ctx=ctx_l)
     model.hybridize()
-    if is_master_node:
+    if local_rank == 0:
         logging.info(model)
     with open(os.path.join(args.save_dir, 'config.yml'), 'w') as cfg_f:
         cfg_f.write(cfg.dump())
@@ -390,7 +390,7 @@ def train(args):
     else:
         raise NotImplementedError
 
-    if is_master_node:
+    if local_rank == 0:
         logging.info(train_batch_sampler)
 
     batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
@@ -457,7 +457,7 @@ def train(args):
                 sample_data_l = next(train_multi_data_loader)
             except StopIteration:
                 is_last_batch = True
-            if is_master_node and num_params is None:
+            if local_rank == 0 and num_params is None:
                 num_params, num_fixed_params = count_parameters(model.collect_params())
                 logging.info('Total Number of Parameters (not-fixed/fixed): {}/{}'
                              .format(num_params, num_fixed_params))
@@ -475,7 +475,7 @@ def train(args):
                 if (args.epochs > 0 and epoch_id >= args.epochs - args.num_averages) or \
                    (args.max_update > 0 and n_train_iters >= args.max_update - args.num_averages * args.save_interval_update):
                     model_averager.step()
-                if is_master_node and \
+                if local_rank == 0 and \
                    (n_epoch_train_iters % args.log_interval == 0 or is_last_batch):
                     log_end_time = time.time()
                     log_wc = log_wc.asnumpy()
@@ -490,14 +490,14 @@ def train(args):
                     log_avg_loss = 0
                     log_loss_denom = 0
                     log_wc = 0
-                if is_master_node and \
+                if local_rank == 0 and \
                    (args.max_update > 0 and n_train_iters % args.save_interval_update == 0):
                     model.save_parameters(os.path.join(args.save_dir,
                                                        'update{:d}.params'.format(n_train_iters // args.save_interval_update)),
                                           deduplicate=True)
                 if args.max_update > 0 and n_train_iters >= args.max_update:
                     break
-        if is_master_node and args.epochs > 0:
+        if local_rank == 0 and args.epochs > 0:
             model.save_parameters(os.path.join(args.save_dir,
                                                'epoch{:d}.params'.format(epoch_id)),
                                   deduplicate=True)
