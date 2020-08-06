@@ -471,7 +471,7 @@ def train(args):
                 if (args.epochs > 0 and epoch_id >= args.epochs - args.num_averages) or \
                    (args.max_update > 0 and n_train_iters >= args.max_update - args.num_averages * args.save_interval_update):
                     model_averager.step()
-                if local_rank == 0 and \
+                if local_rank == num_parts - 1 and \
                    (n_epoch_train_iters % args.log_interval == 0 or is_last_batch):
                     log_end_time = time.time()
                     log_wc = log_wc.asnumpy()
@@ -479,21 +479,21 @@ def train(args):
                     log_avg_loss = (log_avg_loss / log_loss_denom).asnumpy()
                     logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, '
                                  'throughput={:.2f}K wps, wc={:.2f}K, LR={}'
-                                 .format(epoch_id, processed_batch_num, len(train_data_loader),
+                                 .format(epoch_id, processed_batch_num * num_parts, len(train_data_loader),
                                          log_avg_loss, np.exp(log_avg_loss),
                                          wps / 1000, log_wc / 1000, trainer.learning_rate))
                     log_start_time = time.time()
                     log_avg_loss = 0
                     log_loss_denom = 0
                     log_wc = 0
-                if local_rank == 0 and \
+                if local_rank == num_parts - 1 and \
                    (args.max_update > 0 and n_train_iters % args.save_interval_update == 0):
                     model.save_parameters(os.path.join(args.save_dir,
                                                        'update{:d}.params'.format(n_train_iters // args.save_interval_update)),
                                           deduplicate=True)
                 if args.max_update > 0 and n_train_iters >= args.max_update:
                     break
-        if args.epochs > 0:
+        if local_rank == num_parts - 1 and args.epochs > 0:
             model.save_parameters(os.path.join(args.save_dir,
                                                'epoch{:d}.params'.format(epoch_id)),
                                   deduplicate=True)
