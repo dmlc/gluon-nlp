@@ -1,39 +1,44 @@
 import argparse
 import mxnet as mx
+import re
 
 mx.npx.set_np()
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Script to average the checkpoints')
-    parser.add_argument('--checkpoints', type=str, required=True,
-                        help='path of checkpoints, use * to represent the numbers, '
-                        'e.g. --checkpoints folder/epoch*.prams')
-    parser.add_argument('--range', type=str, nargs='+', required=True,
-                        help='number of checkpoints, supports range and list format at present, '
-                        'e.g. --range range(3) [4,7, 5] range(8,100,2)')
+    parser.add_argument('--checkpoints', type=str, required=True, nargs='+',
+                        help='checkpoint file paths, supports two format, '
+                        '--checkpoints folder/epoch*.params or --checkpoints folder/update*.param')
+    parser.add_argument('--begin', type=int, required=True, help='begin number of checkpoints')
+    parser.add_argument('--end', type=int, required=True, help='end number of checkpoints')
     parser.add_argument('--save-path', type=str, required=True,
                         help='Path of the output file')
     return parser
 
 def main(args):
-    temp_range = []
-    try:
-        for r in args.range:
-            if len(r) > 5 and r[:5] == 'range':
-                r = r[5:].strip()[1:-1].split(',')
-                r = tuple([int(n.strip()) for n in r])
-                assert len(r) >= 1 and len(r) <= 3
-                temp_range.extend(range(*r))
-            elif r[0] == '[' and r[-1] == ']':
-                r = r[1:-1].split(',')
-                r = [int(n.strip()) for n in r]
-                temp_range.extend(r)
-            else:
-                raise NotImplementedError
-    except:
-        raise Exception('wrong range format')
-    args.range = temp_range
-    ckpt_paths = [args.checkpoints.replace('*', str(i)) for i in args.range]
+    assert args.begin >= 0
+    assert args.end >= args.begin
+    args.range = list(range(args.begin, args.end + 1))
+    
+    ckpt_epochs_regexp = re.compile(r'(.*\/)?epoch(\d+)\.params')
+    ckpt_updates_regexp = re.compile(r'(.*\/)?update(\d+)\.params')
+    ckpt_path = args.checkpoints[0]
+    if ckpt_epochs_regexp.fullmatch(ckpt_path) is not None:
+        ckpt_regexp = ckpt_epochs_regexp
+    elif ckpt_updates_regexp.fullmatch(ckpt_path) is not None:
+        ckpt_regexp = ckpt_updates_regexp
+    else:
+        raise Exception('Wrong checkpoints path format')
+    
+    ckpt_paths = []
+    for path in args.checkpoints:
+        m = ckpt_regexp.fullmatch(path)
+        assert m is not None, 'Wrong checkpoints path format'
+        num = int(m.group(2))
+        if num >= args.begin and num <= args.end:
+            ckpt_paths.append(path)
+    
+    assert len(ckpt_paths) > 0
     res = mx.npx.load(ckpt_paths[0])
     keys = res.keys()
     for ckpt_path in ckpt_paths[1:]:

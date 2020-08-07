@@ -285,14 +285,20 @@ class BoundedBudgetSampler(BaseSampler):
         Whether to shuffle the batches.
     seed
         The seed of the sampler
+    num_parts
+        Number of partitions which the data is split into (default: 1)
+    part_index
+        The index of the part to read from
     """
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_num_tokens: int = -1, max_num_sentences: int = -1,
                  required_batch_size_multiple: int = 1,
-                 shuffle: bool = False, seed: Optional[int] = None):
+                 shuffle: bool = True, seed: Optional[int] = None,
+                 num_parts: int = 1, part_index: int = 0):
         assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
         assert max_num_tokens > 0 or max_num_sentences > 0, \
                'One of max_num_tokens and max_num_sentences must be larger than 0'
+        assert part_index < num_parts, 'part_index should be less than num_parts'
         self._lengths = np.array(lengths)
         if self._lengths.ndim == 2:
             self._lengths = self._lengths.max(axis=1)
@@ -302,6 +308,8 @@ class BoundedBudgetSampler(BaseSampler):
         self._batches = []
         self._shuffle = shuffle
         self._rng = np.random.RandomState(seed)
+        self._num_parts = num_parts
+        self._part_index = part_index
         # sort
         self._indices = self._indices[np.argsort(self._lengths, kind='mergesort')]
         batch = []
@@ -332,7 +340,11 @@ class BoundedBudgetSampler(BaseSampler):
     def __iter__(self):
         if self._shuffle:
             self._rng.shuffle(self._batches)
-        for batch in self._batches:
+        part_batches = []
+        for i in range(len(self._batches)):
+            if i % self._num_parts == self._part_index:
+                part_batches.append(self._batches[i])
+        for batch in part_batches:
             yield batch
 
     def __len__(self):
