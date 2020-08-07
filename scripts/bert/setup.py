@@ -22,10 +22,10 @@ def CompileBERTCustomPass():
     mxnet_path = pathlib.Path(mxnet.__file__).parent.absolute()
     mxnet_include_path = pathlib.Path.joinpath(mxnet_path, 'include/mxnet')
     pass_path = os.path.dirname(os.path.realpath(__file__))
-    target = pass_path + '/' + out_lib_file
-    source = pass_path + '/bertpass_gpu.cc'
-    os.system('g++ -shared -fPIC -std=c++11 ' + source +
-              ' -o ' + target + ' -I ' +
+    target = str(pass_path) + '/' + out_lib_file
+    source = str(pass_path) + '/bertpass_gpu.cc'
+    os.system('g++ -shared -fPIC -std=c++11 ' + str(source) +
+              ' -o ' + str(target) + ' -I ' +
               str(mxnet_include_path))
 
 class CompileBERTPass(install):
