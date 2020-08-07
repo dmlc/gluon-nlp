@@ -1,3 +1,5 @@
+python3 -m pip install tensorflow==2.3.0 --upgrade --user
+python3 -m pip install tensorflow_hub --upgrade --user
 export TF_FORCE_GPU_ALLOW_GROWTH="true"
 
 # Conversion for English Models

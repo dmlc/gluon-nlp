@@ -1,13 +1,14 @@
 import pytest
 import tempfile
 import os
+import logging
 import mxnet as mx
 import multiprocessing
 import functools
 from mxnet.gluon import nn
 import numpy as np
 from numpy.testing import assert_allclose
-from gluonnlp.utils.misc import AverageSGDTracker, download, sha1sum
+from gluonnlp.utils.misc import AverageSGDTracker, download, sha1sum, logging_config
 mx.npx.set_np()
 
 
@@ -105,3 +106,9 @@ def test_download_https(overwrite):
                         'cc-index.paths.gz',
                     sha1_hash='fac65325fdd881b75d6badc0f3caea287d91ed54',
                     overwrite=overwrite)
+
+
+def test_logging_config():
+    logger = logging.getLogger(__name__)
+    with tempfile.TemporaryDirectory() as root:
+        logging_config(folder=root, logger=logger)

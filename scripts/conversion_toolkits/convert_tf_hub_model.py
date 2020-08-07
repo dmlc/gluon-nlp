@@ -186,10 +186,10 @@ CONVERT_MAP_TF2 = [
 
 def get_name_map(tf_names, is_TF1=True):
     """
-    Get the converting mapping between tensor names and mxnet names.
+    Get the converting mapping between TF names and mxnet names.
     The above mapping CONVERT_MAP is effectively adaptive to Bert and Albert,
     but there is no guarantee that it can match to other tf models in case of
-    some sepecial variable_scope (tensorflow) and prefix (mxnet).
+    some special variable_scope (tensorflow) and prefix (mxnet).
 
     Redefined mapping is encouraged to adapt the personalization model.
 
@@ -199,6 +199,7 @@ def get_name_map(tf_names, is_TF1=True):
         the parameters names of tensorflow model
     is_TF1
         whether load from TF1 Hub Modules
+
     Returns
     -------
     A dictionary with the following format:
@@ -305,11 +306,11 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
         # see https://www.tensorflow.org/hub/tf2_saved_model for details
         logging.info('The model is loaded as the TF2 SavedModel')
         TF1_Hub_Modules = False
-        input_word_ids = tf.keras.layers.Input(shape=(seq_length), dtype=tf.int32,
+        input_word_ids = tf.keras.layers.Input(shape=(seq_length,), dtype=tf.int32,
                                                name="input_word_ids")
-        input_word_mask = tf.keras.layers.Input(shape=(seq_length), dtype=tf.int32,
+        input_word_mask = tf.keras.layers.Input(shape=(seq_length,), dtype=tf.int32,
                                                 name="input_mask")
-        segment_type_ids = tf.keras.layers.Input(shape=(seq_length), dtype=tf.int32,
+        segment_type_ids = tf.keras.layers.Input(shape=(seq_length,), dtype=tf.int32,
                                                  name="segment_ids")
         pooled_output, sequence_output = bert_layer([input_word_ids, input_word_mask,
                                                      segment_type_ids])

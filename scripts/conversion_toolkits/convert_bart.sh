@@ -1,3 +1,4 @@
+python3 -m pip install git+https://github.com/pytorch/fairseq.git@master --upgrade --user
 for model in base large
 do
     mkdir bart_${model}

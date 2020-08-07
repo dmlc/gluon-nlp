@@ -17,12 +17,12 @@ def get_parser():
 
     We support the following models:
 
-        "python learn_subword.py --model spm" : Train a Sentencepiece Model on raw text;
-        "python learn_subword.py --model subword_nmt" : Train with the subword-nmt package;
-        "python learn_subword.py --model yttm" : Train with YouTokenToMe; 
-        "python learn_subword.py --model hf_bytebpe" : Train with the Byte-level BPE Tokenizer Implemented by Huggingface.
-        "python learn_subword.py --model hf_wordpiece" : Train with the Wordpiece Tokenizer Implementated by Huggingface.
-        "python learn_subword.py --model hf_bpe" : Train with the BPE Tokenizer Implemented by Huggingface.
+        "python3 learn_subword.py --model spm" : Train a Sentencepiece Model on raw text;
+        "python3 learn_subword.py --model subword_nmt" : Train with the subword-nmt package;
+        "python3 learn_subword.py --model yttm" : Train with YouTokenToMe; 
+        "python3 learn_subword.py --model hf_bytebpe" : Train with the Byte-level BPE Tokenizer Implemented by Huggingface.
+        "python3 learn_subword.py --model hf_wordpiece" : Train with the Wordpiece Tokenizer Implementated by Huggingface.
+        "python3 learn_subword.py --model hf_bpe" : Train with the BPE Tokenizer Implemented by Huggingface.
     ''')
     )
     parser.add_argument('--corpus', type=str, nargs='+', required=True,
