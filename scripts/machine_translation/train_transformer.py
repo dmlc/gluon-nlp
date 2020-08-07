@@ -483,8 +483,8 @@ def train(args):
                     log_avg_loss = (log_avg_loss / log_loss_denom).asnumpy()
                     logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, '
                                  'throughput={:.2f}K wps, wc={:.2f}K, LR={}'
-                                 .format(epoch_id, processed_batch_num * num_parts, len(train_data_loader),
-                                         log_avg_loss, np.exp(log_avg_loss),
+                                 .format(epoch_id, min(processed_batch_num * num_parts, len(train_data_loader)),
+                                         len(train_data_loader), log_avg_loss, np.exp(log_avg_loss),
                                          wps / 1000, log_wc / 1000, trainer.learning_rate))
                     log_start_time = time.time()
                     log_avg_loss = 0
@@ -492,18 +492,22 @@ def train(args):
                     log_wc = 0
                 if local_rank == 0 and \
                    (args.max_update > 0 and n_train_iters % args.save_interval_update == 0):
+                    n_update = n_train_iters // args.save_interval_update
                     model.save_parameters(os.path.join(args.save_dir,
-                                                       'update{:d}.params'.format(n_train_iters // args.save_interval_update)),
+                                                       'update{:d}.params'.format(n_update)),
                                           deduplicate=True)
+                    avg_valid_loss = validation(model, val_data_loader, ctx_l)
+                    logging.info('[Update {}] validation loss/ppl={:.4f}/{:.4f}'
+                                 .format(n_update, avg_valid_loss, np.exp(avg_valid_loss)))
                 if args.max_update > 0 and n_train_iters >= args.max_update:
                     break
         if local_rank == 0 and args.epochs > 0:
             model.save_parameters(os.path.join(args.save_dir,
                                                'epoch{:d}.params'.format(epoch_id)),
                                   deduplicate=True)
-        avg_valid_loss = validation(model, val_data_loader, ctx_l)
-        logging.info('[Epoch {}] validation loss/ppl={:.4f}/{:.4f}'
-                     .format(epoch_id, avg_valid_loss, np.exp(avg_valid_loss)))
+            avg_valid_loss = validation(model, val_data_loader, ctx_l)
+            logging.info('[Epoch {}] validation loss/ppl={:.4f}/{:.4f}'
+                         .format(epoch_id, avg_valid_loss, np.exp(avg_valid_loss)))
 
         if args.max_update > 0 and n_train_iters >= args.max_update:
             break
