@@ -22,16 +22,6 @@ FROM nvidia/cuda:10.2-cudnn7-devel-ubuntu18.04
       rm -rf /var/lib/apt/lists/*
 
  RUN pip3 install --upgrade pip && pip3 install awscli && pip3 install --pre 'mxnet-cu102' -f https://dist.mxnet.io/python
-
- RUN ln -s /usr/bin/python3 /usr/bin/python && \
-    ln -s /usr/bin/pip3 /usr/bin/pip
-
- # Avoid ascii errors when reading files in Python
- RUN apt-get install -y \
-   locales && \
-   locale-gen en_US.UTF-8
- ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
-
  RUN git clone https://github.com/dmlc/gluon-nlp
  WORKDIR gluon-nlp
  ADD gluon_nlp_job.sh .
