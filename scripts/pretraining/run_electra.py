@@ -472,9 +472,11 @@ def train(args):
         train_end_time - train_start_time))
     if writer is not None:
         writer.close()
-    model_name = args.model_name.replace('google', 'gluon')
-    save_dir = os.path.join(args.output_dir, model_name)
-    final_save(model, save_dir, tokenizer)
+        
+    if local_rank == 0:
+        model_name = args.model_name.replace('google', 'gluon')
+        save_dir = os.path.join(args.output_dir, model_name)
+        final_save(model, save_dir, tokenizer)
 
 # TODO(zheyuye), Directly implement a metric for weighted accuracy
 
