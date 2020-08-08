@@ -356,8 +356,7 @@ class GELU(HybridBlock):
 
     def hybrid_forward(self, F, x):
         if self._mode == 'erf':
-            # TODO Investigate the precision of F.npx.leaky_relu(x, act_type='gelu')
-            return x * 0.5 * (1.0 + F.npx.erf(x / math.sqrt(2.0)))
+            return F.npx.leaky_relu(x, act_type='gelu')
         elif self._mode == 'tanh':
             return 0.5 * x\
                    * (1.0 + F.np.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * (x ** 3))))

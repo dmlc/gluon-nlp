@@ -53,9 +53,7 @@ def main(args):
         random.shuffle(fnames)
     num_files = len(fnames)
     num_out_files = min(args.num_out_files, num_files)
-    file_volume = math.ceil(num_files / num_out_files)
-    splited_files = np.array_split(fnames, file_volume)
-    num_out_files = len(splited_files)
+    splited_files = np.array_split(fnames, num_out_files)
     output_files = [os.path.join(
         args.output, "owt-pretrain-record-{}.npz".format(str(i).zfill(4))) for i in range(num_out_files)]
     print("All preprocessed features will be saved in {} npz files".format(num_out_files))
