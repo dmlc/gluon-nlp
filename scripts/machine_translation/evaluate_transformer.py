@@ -247,10 +247,17 @@ def evaluate(args):
             of.write('\n'.join(pred_sentences))
             of.write('\n')
 
-        sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences, ref_streams=[all_tgt_lines])
-        logging.info('Time Spent: {}, #Sent={}, SacreBlEU={} Avg NLL={}, Perplexity={}'
+        sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences, ref_streams=[all_tgt_lines])        
+        logging.info('Time Spent: {}, #Sent={}, SacreBlEU={} '
+                     '({:2.1f} {:2.1f} {:2.1f} {:2.1f}) '
+                     '(BP={:.3f}, ratio={:.3f}, syslen={}, reflen={}), '
+                     'Avg NLL={}, Perplexity={}'
                      .format(end_eval_time - start_eval_time, len(all_tgt_lines),
-                             sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
+                             sacrebleu_out.score,
+                             *sacrebleu_out.precisions,
+                             sacrebleu_out.bp, sacrebleu_out.sys_len / sacrebleu_out.ref_len,
+                             sacrebleu_out.sys_len, sacrebleu_out.ref_len,
+                             avg_nll_loss, np.exp(avg_nll_loss)))
     # inference only
     else:
         with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
