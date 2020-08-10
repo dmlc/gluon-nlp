@@ -1000,7 +1000,7 @@ class GluonNLPBackboneBenchmark:
                             "model": model_name,
                             "batch_size": bs,
                             "sequence_length": ss,
-                            'latency': str(int(latency * 1000)),
+                            'latency': str(int(latency * 1000)) if latency is not np.nan else str(np.nan),
                             'memory': str(memory),
                         }
                     )
