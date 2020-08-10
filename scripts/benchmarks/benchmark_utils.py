@@ -944,9 +944,11 @@ class GluonNLPBackboneBenchmark:
         for model_name in self._model_names:
             for (batch_size, sequence_length), (time_spent, memory)\
                     in result_dict[model_name].items():
-                if time_spent != np.nan:
+                if np.isnan(time_spent):
+                    time_spent = str(time_spent)
+                else:
                     time_spent = round(1000 * time_spent)
-                time_spent = str(time_spent)
+                    time_spent = str(time_spent)
                 memory = str(memory)
                 logger.info(
                     model_name[:30].center(30) + str(batch_size).center(15) +
@@ -1001,7 +1003,7 @@ class GluonNLPBackboneBenchmark:
                             "model": model_name,
                             "batch_size": bs,
                             "sequence_length": ss,
-                            'latency': str(int(latency * 1000)) if latency is not np.nan else str(np.nan),
+                            'latency': str(int(latency * 1000)) if not np.isnan(latency) else str(np.nan),
                             'memory': str(memory),
                         }
                     )
