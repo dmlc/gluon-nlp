@@ -501,7 +501,7 @@ def train(args):
                                  .format(n_update, avg_valid_loss, np.exp(avg_valid_loss)))
                 if args.max_update > 0 and n_train_iters >= args.max_update:
                     break
-        if local_rank == 0 and args.epochs > 0:
+        if local_rank == 0:
             model.save_parameters(os.path.join(args.save_dir,
                                                'epoch{:d}.params'.format(epoch_id)),
                                   deduplicate=True)
