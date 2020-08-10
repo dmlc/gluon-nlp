@@ -23,9 +23,6 @@ FROM nvidia/cuda:10.2-cudnn7-devel-ubuntu18.04
 
  RUN pip3 install --upgrade pip && pip3 install awscli && pip3 install --pre 'mxnet-cu102' -f https://dist.mxnet.io/python
 
- RUN ln -s /usr/bin/python3 /usr/bin/python && \
-    ln -s /usr/bin/pip3 /usr/bin/pip
-
  # Avoid ascii errors when reading files in Python
  RUN apt-get install -y \
    locales && \
