@@ -835,7 +835,7 @@ class GluonNLPBackboneBenchmark:
                         infer_time, infer_memory = self.inference_speed_memory(model_name,
                                                                                batch_size,
                                                                                sequence_length)
-                    except Exception:
+                    except Exception as e:
                         infer_time = np.nan
                         infer_memory = np.nan
                     inference_result[model_name][workload] = (infer_time, infer_memory)

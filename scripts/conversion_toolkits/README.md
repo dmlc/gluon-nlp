@@ -39,7 +39,7 @@ Thus, you will need to clone the [electra repository](https://github.com/ZheyuYe
 and download the checkpoint. The parameters are converted from local checkpoints.
 By running the following command, you can convert + verify the ELECTRA model with both the discriminator and the generator.
 
-Notice: pleas set up the `--electra_path` with the cloned path if you'd like to directly use `convert_electra.py`.
+Notice: please set up the `--electra_path` with the cloned path if you'd like to directly use `convert_electra.py`.
 
 ```bash
 bash convert_electra.sh
