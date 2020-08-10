@@ -703,7 +703,7 @@ class GluonNLPBackboneBenchmark:
         # run_forward()
         # mx_profiler.set_state('stop')
         # print(mx_profiler.dumps(reset=True))
-        runtimes = timeit.repeat(run_forward, repeat=self._repeat, number=4)
+        runtimes = timeit.repeat(run_forward, repeat=self._repeat, number=3)
 
         # Profile memory
         if self._use_gpu:
@@ -944,7 +944,8 @@ class GluonNLPBackboneBenchmark:
         for model_name in self._model_names:
             for (batch_size, sequence_length), (time_spent, memory)\
                     in result_dict[model_name].items():
-                time_spent = round(1000 * time_spent)
+                if time_spent != np.nan:
+                    time_spent = round(1000 * time_spent)
                 time_spent = str(time_spent)
                 memory = str(memory)
                 logger.info(
