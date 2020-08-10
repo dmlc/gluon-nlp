@@ -699,12 +699,8 @@ class GluonNLPBackboneBenchmark:
                 out.wait_to_read()
 
         timeit.repeat(run_forward, repeat=1, number=3)
-        # mx_profiler.set_state('run')
-        # run_forward()
-        # mx_profiler.set_state('stop')
-        # print(mx_profiler.dumps(reset=True))
         runtimes = timeit.repeat(run_forward, repeat=self._repeat, number=3)
-
+        mxnet.npx.waitall()
         # Profile memory
         if self._use_gpu:
             nvml.nvmlInit()
