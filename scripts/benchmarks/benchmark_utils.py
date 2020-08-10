@@ -778,8 +778,8 @@ class GluonNLPBackboneBenchmark:
                     # contextual_embedding to contextual_embedding_ograd
                     # and the head gradient of pooled_out to pooled_out_ograd
                     # Thus, we simply doing two hadamard product and sum up the results.
-                    fake_loss = (contextual_embedding * contextual_embedding_ograd).sum()\
-                                + (pooled_out * pooled_out_ograd).sum()
+                    fake_loss = mxnet.np.sum(contextual_embedding * contextual_embedding_ograd)\
+                                + mxnet.np.sum(pooled_out * pooled_out_ograd)
                     fake_loss.backward()
                 mxnet.npx.waitall()
         elif model_cls.__name__ in ['BartModel']:
