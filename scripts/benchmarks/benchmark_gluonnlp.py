@@ -4,18 +4,18 @@ mx.npx.set_np()
 
 
 MODELS = [
-    # 'google_en_uncased_bert_base',
-    # 'google_en_uncased_bert_large',
-    # 'google_albert_base_v2',
-    # 'google_albert_large_v2',
-    # 'google_albert_xlarge_v2',
-    # 'google_albert_xxlarge_v2',
+    'google_en_uncased_bert_base',
+    'google_en_uncased_bert_large',
+    'google_albert_base_v2',
+    'google_albert_large_v2',
+    'google_albert_xlarge_v2',
+    'google_albert_xxlarge_v2',
     'google_electra_small',
-    # 'google_electra_base',
-    # 'google_electra_large',
-    # 'google_uncased_mobilebert',
+    'google_electra_base',
+    'google_electra_large',
+    'google_uncased_mobilebert',
     'fairseq_bart_base',
-    # 'fairseq_bart_large'
+    'fairseq_bart_large'
 ]
 
 # (batch_size, seq_length)
