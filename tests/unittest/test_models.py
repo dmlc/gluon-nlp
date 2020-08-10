@@ -658,6 +658,70 @@ def test_weight_drop():
             assert not mx.test_utils.almost_equal(grads[name].asnumpy(), param.grad().asnumpy())
 
 
+# helper method used by test_hparam_allow_override_parameter_in_get_model_api
+def verify_get_model_with_hparam_allow_override(models, hparam_allow_override, predefined_args_dict,
+        mutable_args, dataset_name):
+
+    for model in models:
+        predefined_args = predefined_args_dict[model].copy()
+        if hparam_allow_override:
+            params_that_should_throw_exception = set()
+        else:
+            params_that_should_throw_exception = set(predefined_args.keys()) - set(mutable_args)
+        params_that_threw_exception = set()
+        for param in predefined_args:
+            try:
+                nlp.model.get_model(model, dataset_name=dataset_name,
+                    hparam_allow_override=hparam_allow_override, **{param: predefined_args[param]})
+            except:
+                # we're expecting get_model to fail if hparam_allow_override is False
+                # and the parameter is not in the set of mutable parameters
+                expected = not hparam_allow_override and not param in mutable_args
+                assert expected, 'Unexpected exception when creating model ' + model + ' with '\
+                       'parameter ' + param + '.\n'
+                params_that_threw_exception.add(param)
+
+        assert params_that_threw_exception == params_that_should_throw_exception
+
+
+@pytest.mark.parametrize('hparam_allow_override', [False, True])
+def test_hparam_allow_override_parameter_in_get_model_api(hparam_allow_override):
+    models = ['awd_lstm_lm_1150', 'awd_lstm_lm_600']
+    mutable_args_of_models = ['dropout', 'weight_drop', 'drop_h', 'drop_i', 'drop_e']
+    predefined_args_dict = nlp.model.language_model.awd_lstm_lm_hparams.copy()
+    verify_get_model_with_hparam_allow_override(models, hparam_allow_override, predefined_args_dict,
+            mutable_args_of_models, 'wikitext-2')
+
+    models = ['standard_lstm_lm_200', 'standard_lstm_lm_650', 'standard_lstm_lm_1500']
+    mutable_args_of_models = ['dropout']
+    predefined_args_dict = nlp.model.language_model.standard_lstm_lm_hparams.copy()
+    verify_get_model_with_hparam_allow_override(models, hparam_allow_override, predefined_args_dict,
+            mutable_args_of_models, 'wikitext-2')
+
+    models = ['big_rnn_lm_2048_512']
+    mutable_args_of_models = ['embed_dropout', 'encode_dropout']
+    predefined_args_dict = nlp.model.language_model.big_rnn_lm_hparams.copy()
+    verify_get_model_with_hparam_allow_override(models, hparam_allow_override, predefined_args_dict,
+            mutable_args_of_models, 'wikitext-2')
+
+    models = ['transformer_en_de_512']
+    mutable_args_of_models = ['num_units', 'hidden_size', 'dropout', 'epsilon', 'num_layers',
+                                  'num_heads', 'scaled']
+    predefined_args_dict = {
+        'transformer_en_de_512': nlp.model.transformer.transformer_en_de_hparams.copy()
+    }
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        verify_get_model_with_hparam_allow_override(models, hparam_allow_override, predefined_args_dict,
+            mutable_args_of_models, 'WMT2014')
+
+    models = ['distilbert_6_768_12']
+    mutable_args_of_models = ['use_residual', 'dropout', 'word_embed']
+    predefined_args_dict = nlp.model.bert.bert_hparams.copy()
+    verify_get_model_with_hparam_allow_override(models, hparam_allow_override, predefined_args_dict,
+            mutable_args_of_models, 'distilbert_book_corpus_wiki_en_uncased')
+
+
 def test_gelu():
     x = mx.random.uniform(shape=(3, 4, 5))
     net = nlp.model.GELU()

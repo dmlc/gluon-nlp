@@ -28,6 +28,38 @@ from mxnet.gluon.utils import _get_repo_url, download
 from gluonnlp.data.transforms import GPT2BPEDetokenizer, GPT2BPETokenizer
 
 from ..text_generation.model import get_model
+from ..text_generation.model.gpt import gpt2_hparams
+
+
+def verify_get_model_with_hparam_allow_override(models, hparam_allow_override, predefined_args_dict,
+        mutable_args, dataset_name):
+
+    for model in models:
+        predefined_args = predefined_args_dict[model].copy()
+        if hparam_allow_override:
+            params_that_should_throw_exception = set()
+        else:
+            params_that_should_throw_exception = set(predefined_args.keys()) - set(mutable_args)
+        params_that_threw_exception = set()
+        for key in predefined_args:
+            try:
+                get_model(model, dataset_name=dataset_name,
+                    hparam_allow_override=hparam_allow_override, **{key: predefined_args[key]})
+            except:
+                expected = not hparam_allow_override and not key in mutable_args
+                params_that_threw_exception.add(key)
+                assert expected
+
+        assert params_that_threw_exception == params_that_should_throw_exception
+
+
+@pytest.mark.parametrize('hparam_allow_override', [False, True])
+def test_hparam_allow_override_gpt2(hparam_allow_override):
+    models = ['gpt2_117m', 'gpt2_345m']
+    mutable_args_of_models = ['dropout']
+    predefined_args_dict = gpt2_hparams.copy()
+    verify_get_model_with_hparam_allow_override(models, hparam_allow_override, predefined_args_dict,
+            mutable_args_of_models, 'openai_webtext')
 
 
 @pytest.mark.remote_required

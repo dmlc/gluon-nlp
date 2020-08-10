@@ -28,7 +28,6 @@ arXiv preprint arXiv:1408.5882.
 import argparse
 import time
 import random
-import numpy as np
 
 import mxnet as mx
 from mxnet import nd, gluon, autograd
@@ -39,9 +38,8 @@ import text_cnn
 
 gluonnlp.utils.check_version('0.7.0')
 
-np.random.seed(3435)
-random.seed(3435)
-mx.random.seed(3435)
+seed = 3435
+gluonnlp.utils.set_seed(seed)
 
 parser = argparse.ArgumentParser(description='Sentiment analysis with the textCNN model on\
                                  various datasets.')
@@ -72,13 +70,14 @@ else:
 
 if args.data_name in ('MR', 'Subj', 'CR', 'MPQA'):
     vocab, max_len, output_size, train_dataset, train_data_lengths \
-    = process_data.load_dataset(args.data_name)
+    = process_data.load_dataset(args.data_name, args.model_mode)
 elif args.data_name == 'TREC':
     vocab, max_len, output_size, train_dataset, train_data_lengths, \
-    test_dataset, test_data_lengths = process_data.load_dataset(args.data_name)
+    test_dataset, test_data_lengths = process_data.load_dataset(args.data_name, args.model_mode)
 else:
     vocab, max_len, output_size, train_dataset, train_data_lengths, test_dataset, \
-    test_data_lengths, dev_dataset, dev_data_lengths = process_data.load_dataset(args.data_name)
+    test_data_lengths, dev_dataset, dev_data_lengths = process_data.load_dataset(args.data_name,
+                                                                                 args.model_mode)
 
 model = text_cnn.model(args.dropout, vocab, args.model_mode, output_size)
 print(model)

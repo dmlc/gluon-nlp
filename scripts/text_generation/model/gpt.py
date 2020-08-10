@@ -393,7 +393,8 @@ def gpt2_345m(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
 
 
 def _get_gpt2_model(model_name=None, dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
-                    root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                    root=os.path.join(get_home_dir(), 'models'),
+                    hparam_allow_override=False, **kwargs):
     """Any predefined GPT-2 model.
 
     Parameters
@@ -416,26 +417,24 @@ def _get_gpt2_model(model_name=None, dataset_name=None, vocab=None, pretrained=T
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     GPT2Model, gluonnlp.vocab.Vocab
     """
     predefined_args = gpt2_hparams[model_name].copy()
-    mutable_args = ['dropout']
-    mutable_args = frozenset(mutable_args)
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-        'Cannot override predefined model settings.'
+    if not hparam_allow_override:
+        mutable_args = ['dropout']
+        mutable_args = frozenset(mutable_args)
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     vocab = _load_vocab(dataset_name, vocab, root)
     # GPT2
-    net = GPT2Model(units=predefined_args['units'],
-                    vocab_size=len(vocab),
-                    max_length=predefined_args['max_length'],
-                    num_layers=predefined_args['num_layers'],
-                    num_heads=predefined_args['num_heads'],
-                    dropout=predefined_args['dropout'],
-                    **kwargs)
+    net = GPT2Model(vocab_size=len(vocab), **predefined_args)
     if pretrained:
         _load_pretrained_params(net, model_name, dataset_name, root, ctx)
     return net, vocab

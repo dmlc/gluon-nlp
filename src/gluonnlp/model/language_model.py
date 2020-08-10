@@ -173,6 +173,69 @@ class StandardRNN(train.StandardRNN):
         out = self.decoder(encoded)
         return out, state
 
+awd_lstm_lm_1150_hparams = {
+        'embed_size': 400,
+        'hidden_size': 1150,
+        'mode': 'lstm',
+        'num_layers': 3,
+        'tie_weights': True,
+        'dropout': 0.4,
+        'weight_drop': 0.5,
+        'drop_h': 0.2,
+        'drop_i': 0.65,
+        'drop_e': 0.1
+}
+
+awd_lstm_lm_600_hparams = {
+        'embed_size': 200,
+        'hidden_size': 600,
+        'mode': 'lstm',
+        'num_layers': 3,
+        'tie_weights': True,
+        'dropout': 0.2,
+        'weight_drop': 0.2,
+        'drop_h': 0.1,
+        'drop_i': 0.3,
+        'drop_e': 0.05
+}
+
+standard_lstm_lm_200_hparams = {
+        'embed_size': 200,
+        'hidden_size': 200,
+        'mode': 'lstm',
+        'num_layers': 2,
+        'tie_weights': True,
+        'dropout': 0.2
+}
+
+standard_lstm_lm_650_hparams = {
+        'embed_size': 650,
+        'hidden_size': 650,
+        'mode': 'lstm',
+        'num_layers': 2,
+        'tie_weights': True,
+        'dropout': 0.5
+}
+
+standard_lstm_lm_1500_hparams = {
+        'embed_size': 1500,
+        'hidden_size': 1500,
+        'mode': 'lstm',
+        'num_layers': 2,
+        'tie_weights': True,
+        'dropout': 0.65
+}
+
+awd_lstm_lm_hparams = {
+        'awd_lstm_lm_1150': awd_lstm_lm_1150_hparams,
+        'awd_lstm_lm_600': awd_lstm_lm_600_hparams
+}
+
+standard_lstm_lm_hparams = {
+        'standard_lstm_lm_200': standard_lstm_lm_200_hparams,
+        'standard_lstm_lm_650': standard_lstm_lm_650_hparams,
+        'standard_lstm_lm_1500': standard_lstm_lm_1500_hparams
+}
 
 def _get_rnn_model(model_cls, model_name, dataset_name, vocab, pretrained, ctx, root, **kwargs):
     vocab = _load_vocab(dataset_name, vocab, root)
@@ -184,7 +247,8 @@ def _get_rnn_model(model_cls, model_name, dataset_name, vocab, pretrained, ctx, 
 
 
 def awd_lstm_lm_1150(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                     root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                     root=os.path.join(get_home_dir(), 'models'),
+                     hparam_allow_override=False, **kwargs):
     r"""3-layer LSTM language model with weight-drop, variational dropout, and tied weights.
 
     Embedding size is 400, and hidden layer size is 1150.
@@ -208,31 +272,27 @@ def awd_lstm_lm_1150(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     gluon.Block, gluonnlp.Vocab
     """
-    predefined_args = {'embed_size': 400,
-                       'hidden_size': 1150,
-                       'mode': 'lstm',
-                       'num_layers': 3,
-                       'tie_weights': True,
-                       'dropout': 0.4,
-                       'weight_drop': 0.5,
-                       'drop_h': 0.2,
-                       'drop_i': 0.65,
-                       'drop_e': 0.1}
-    mutable_args = frozenset(['dropout', 'weight_drop', 'drop_h', 'drop_i', 'drop_e'])
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           'Cannot override predefined model settings.'
+    predefined_args = awd_lstm_lm_hparams['awd_lstm_lm_1150'].copy()
+    if not hparam_allow_override:
+        mutable_args = frozenset(['dropout', 'weight_drop', 'drop_h', 'drop_i', 'drop_e'])
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(AWDRNN, 'awd_lstm_lm_1150', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
 
 
 def awd_lstm_lm_600(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                    root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                    root=os.path.join(get_home_dir(), 'models'),
+                    hparam_allow_override=False, **kwargs):
     r"""3-layer LSTM language model with weight-drop, variational dropout, and tied weights.
 
     Embedding size is 200, and hidden layer size is 600.
@@ -256,30 +316,26 @@ def awd_lstm_lm_600(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     gluon.Block, gluonnlp.Vocab
     """
-    predefined_args = {'embed_size': 200,
-                       'hidden_size': 600,
-                       'mode': 'lstm',
-                       'num_layers': 3,
-                       'tie_weights': True,
-                       'dropout': 0.2,
-                       'weight_drop': 0.2,
-                       'drop_h': 0.1,
-                       'drop_i': 0.3,
-                       'drop_e': 0.05}
-    mutable_args = frozenset(['dropout', 'weight_drop', 'drop_h', 'drop_i', 'drop_e'])
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           'Cannot override predefined model settings.'
+    predefined_args = awd_lstm_lm_hparams['awd_lstm_lm_600'].copy()
+    if not hparam_allow_override:
+        mutable_args = frozenset(['dropout', 'weight_drop', 'drop_h', 'drop_i', 'drop_e'])
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(AWDRNN, 'awd_lstm_lm_600', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
 
 def standard_lstm_lm_200(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                         root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                         root=os.path.join(get_home_dir(), 'models'),
+                         hparam_allow_override=False, **kwargs):
     r"""Standard 2-layer LSTM language model with tied embedding and output weights.
 
     Both embedding and hidden dimensions are 200.
@@ -303,27 +359,27 @@ def standard_lstm_lm_200(dataset_name=None, vocab=None, pretrained=False, ctx=cp
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     gluon.Block, gluonnlp.Vocab
     """
-    predefined_args = {'embed_size': 200,
-                       'hidden_size': 200,
-                       'mode': 'lstm',
-                       'num_layers': 2,
-                       'tie_weights': True,
-                       'dropout': 0.2}
-    mutable_args = ['dropout']
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           'Cannot override predefined model settings.'
+    predefined_args = standard_lstm_lm_hparams['standard_lstm_lm_200'].copy()
+    if not hparam_allow_override:
+        mutable_args = frozenset(['dropout'])
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(StandardRNN, 'standard_lstm_lm_200', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
 
 
 def standard_lstm_lm_650(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                         root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                         root=os.path.join(get_home_dir(), 'models'),
+                         hparam_allow_override=False, **kwargs):
     r"""Standard 2-layer LSTM language model with tied embedding and output weights.
 
     Both embedding and hidden dimensions are 650.
@@ -347,27 +403,27 @@ def standard_lstm_lm_650(dataset_name=None, vocab=None, pretrained=False, ctx=cp
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     gluon.Block, gluonnlp.Vocab
     """
-    predefined_args = {'embed_size': 650,
-                       'hidden_size': 650,
-                       'mode': 'lstm',
-                       'num_layers': 2,
-                       'tie_weights': True,
-                       'dropout': 0.5}
-    mutable_args = ['dropout']
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           'Cannot override predefined model settings.'
+    predefined_args = standard_lstm_lm_hparams['standard_lstm_lm_650'].copy()
+    if not hparam_allow_override:
+        mutable_args = frozenset(['dropout'])
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(StandardRNN, 'standard_lstm_lm_650', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
 
 
 def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                          root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                          root=os.path.join(get_home_dir(), 'models'),
+                          hparam_allow_override=False, **kwargs):
     r"""Standard 2-layer LSTM language model with tied embedding and output weights.
 
     Both embedding and hidden dimensions are 1500.
@@ -391,20 +447,19 @@ def standard_lstm_lm_1500(dataset_name=None, vocab=None, pretrained=False, ctx=c
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     gluon.Block, gluonnlp.Vocab
     """
-    predefined_args = {'embed_size': 1500,
-                       'hidden_size': 1500,
-                       'mode': 'lstm',
-                       'num_layers': 2,
-                       'tie_weights': True,
-                       'dropout': 0.65}
-    mutable_args = ['dropout']
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           'Cannot override predefined model settings.'
+    predefined_args = standard_lstm_lm_hparams['standard_lstm_lm_1500'].copy()
+    if not hparam_allow_override:
+        mutable_args = frozenset(['dropout'])
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(StandardRNN, 'standard_lstm_lm_1500',
                           dataset_name, vocab, pretrained, ctx, root, **predefined_args)
@@ -514,8 +569,21 @@ class BigRNN(Block):
         out = out.reshape((length, batch_size, -1))
         return out, state
 
+big_rnn_lm_2048_512_hparams = {
+        'embed_size': 512,
+        'hidden_size': 2048,
+        'projection_size': 512,
+        'num_layers': 1,
+        'embed_dropout': 0.1,
+        'encode_dropout': 0.1}
+
+big_rnn_lm_hparams = {
+        'big_rnn_lm_2048_512': big_rnn_lm_2048_512_hparams
+}
+
 def big_rnn_lm_2048_512(dataset_name=None, vocab=None, pretrained=False, ctx=cpu(),
-                        root=os.path.join(get_home_dir(), 'models'), **kwargs):
+                        root=os.path.join(get_home_dir(), 'models'),
+                        hparam_allow_override=False, **kwargs):
     r"""Big 1-layer LSTMP language model.
 
     Both embedding and projection size are 512. Hidden size is 2048.
@@ -539,20 +607,19 @@ def big_rnn_lm_2048_512(dataset_name=None, vocab=None, pretrained=False, ctx=cpu
     root : str, default '$MXNET_HOME/models'
         Location for keeping the model parameters.
         MXNET_HOME defaults to '~/.mxnet'.
+    hparam_allow_override : bool, default False
+        If set to True, pre-defined hyper-parameters of the model
+        (e.g. the number of layers, hidden units) can be overriden.
 
     Returns
     -------
     gluon.Block, gluonnlp.Vocab
     """
-    predefined_args = {'embed_size': 512,
-                       'hidden_size': 2048,
-                       'projection_size': 512,
-                       'num_layers': 1,
-                       'embed_dropout': 0.1,
-                       'encode_dropout': 0.1}
-    mutable_args = ['embed_dropout', 'encode_dropout']
-    assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
-           'Cannot override predefined model settings.'
+    predefined_args = big_rnn_lm_hparams['big_rnn_lm_2048_512'].copy()
+    if not hparam_allow_override:
+        mutable_args = frozenset(['embed_dropout', 'encode_dropout'])
+        assert all((k not in kwargs or k in mutable_args) for k in predefined_args), \
+            'Cannot override predefined model settings.'
     predefined_args.update(kwargs)
     return _get_rnn_model(BigRNN, 'big_rnn_lm_2048_512', dataset_name, vocab, pretrained,
                           ctx, root, **predefined_args)
