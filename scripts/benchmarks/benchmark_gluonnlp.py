@@ -1,4 +1,6 @@
+import mxnet as mx
 from benchmark_utils import GluonNLPBackboneBenchmark
+mx.npx.set_np()
 
 
 MODELS = [
