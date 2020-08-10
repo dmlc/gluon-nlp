@@ -852,7 +852,8 @@ class GluonNLPBackboneBenchmark:
                         train_time, train_memory = self.train_speed_memory(model_name,
                                                                            batch_size,
                                                                            sequence_length)
-                    except Exception:
+                    except Exception as e:
+                        raise e
                         train_time = np.nan
                         train_memory = np.nan
                     train_result[model_name][workload] = (train_time, train_memory)
