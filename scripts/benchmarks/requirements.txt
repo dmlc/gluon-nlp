@@ -1,2 +1,2 @@
 transformers
-pynvml3
+py3nvml
