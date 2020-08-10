@@ -56,21 +56,25 @@ def tokenize_lines_to_ids(lines, tokenizer):
     return results
 
 
-def get_all_features(file_list, output_file, tokenizer, max_seq_length, short_seq_prob):
-    """Get the feature data in numpy form.
+def get_all_features(x):
+    """
+    Get the feature data in numpy form.
 
     Parameters
     ----------
-    file_list
-        A list of text files
-    output_file
-         The path to a output file that store the np_features
-    tokenizer
-        The trained tokenizer
-    max_seq_length
-        Maximum sequence length of the training features
-    short_seq_prob
-         The probability of sampling sequences shorter than the max_seq_length.
+    x
+        List/tuple that contains:
+
+        - file_list
+            A list of text files
+        - output_file
+             The path to a output file that store the np_features
+        - tokenizer
+            The trained tokenizer
+        - max_seq_length
+            Maximum sequence length of the training features
+        - short_seq_prob
+             The probability of sampling sequences shorter than the max_seq_length.
 
     Returns
     -------
@@ -78,6 +82,7 @@ def get_all_features(file_list, output_file, tokenizer, max_seq_length, short_se
         A tuple of (input_ids, segment_ids, valid_lengths),
         in which each item is a list of numpy arrays.
     """
+    file_list, output_file, tokenizer, max_seq_length, short_seq_prob = x
     all_features = []
     for text_file in file_list:
         features = process_a_text(text_file, tokenizer, max_seq_length, short_seq_prob)
