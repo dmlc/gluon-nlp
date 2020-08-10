@@ -836,6 +836,7 @@ class GluonNLPBackboneBenchmark:
                                                                                batch_size,
                                                                                sequence_length)
                     except Exception as e:
+                        logger.info(e)
                         infer_time = np.nan
                         infer_memory = np.nan
                     inference_result[model_name][workload] = (infer_time, infer_memory)
@@ -849,6 +850,7 @@ class GluonNLPBackboneBenchmark:
                                                                            batch_size,
                                                                            sequence_length)
                     except Exception as e:
+                        logger.info(e)
                         train_time = np.nan
                         train_memory = np.nan
                     train_result[model_name][workload] = (train_time, train_memory)
