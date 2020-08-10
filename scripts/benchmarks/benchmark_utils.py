@@ -719,7 +719,7 @@ class GluonNLPBackboneBenchmark:
             # cpu
             memory_bytes = measure_peak_memory_cpu(run_forward)
             memory = Memory(memory_bytes) if isinstance(memory_bytes, int) else memory_bytes
-        return np.mean(runtimes), memory
+        return np.min(runtimes) / 3.0, memory
 
     def _train_speed_memory(self, model_name: str, batch_size: int, sequence_length: int)\
             -> Tuple[float, Memory]:
@@ -794,7 +794,7 @@ class GluonNLPBackboneBenchmark:
         else:
             raise NotImplementedError
         timeit.repeat(train_step, repeat=1, number=3)
-        runtimes = timeit.repeat(train_step, repeat=self._repeat, number=10)
+        runtimes = timeit.repeat(train_step, repeat=self._repeat, number=3)
 
         # Profile memory
         if self._use_gpu:
@@ -810,7 +810,7 @@ class GluonNLPBackboneBenchmark:
             # cpu
             memory_bytes = measure_peak_memory_cpu(train_step)
             memory = Memory(memory_bytes) if isinstance(memory_bytes, int) else memory_bytes
-        return np.mean(runtimes), memory
+        return np.min(runtimes) / 3.0, memory
 
     def inference_speed_memory(self, *args, **kwargs) -> float:
         return separate_process_wrapper_fn(self._inference_speed_memory, False)(*args, **kwargs)
