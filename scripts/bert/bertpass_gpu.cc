@@ -28,7 +28,7 @@
 #include <algorithm>
 #include <unordered_set>
 #include <functional>
-#include "lib_api.h"
+#include "mxnet/lib_api.h"
 
 class Node;
 struct NodeEntry {
