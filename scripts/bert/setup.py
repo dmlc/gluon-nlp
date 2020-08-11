@@ -15,11 +15,12 @@ requirements = [
 ]
 
 def CompileBERTCustomPass():
+    """Compiles custom graph pass for BERT into a library. It offers performance improvements"""
     logging.basicConfig(stream=sys.stderr, level=logging.INFO)
     log = logging.getLogger()
     input_pass_file = 'bertpass_gpu.cc'
     out_lib_file = 'bertpass_lib.so'
-    log.info(' ... compiling BERT custom graph pass library into %s', out_lib_file)
+    log.info(' ... compiling BERT custom graph pass into %s', out_lib_file)
     mxnet_path = pathlib.Path(mxnet.__file__).parent.absolute()
     mxnet_include_path = pathlib.Path.joinpath(mxnet_path, 'include/mxnet')
     pass_path = os.path.dirname(os.path.realpath(__file__))
