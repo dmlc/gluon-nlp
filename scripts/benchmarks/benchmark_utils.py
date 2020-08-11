@@ -782,7 +782,7 @@ class GluonNLPBackboneBenchmark:
             def train_step():
                 with mxnet.autograd.record():
                     contextual_embedding, pooled_out = model(input_ids, valid_length,
-                                                            input_ids, valid_length)
+                                                             input_ids, valid_length)
                     fake_loss = (contextual_embedding * contextual_embedding_ograd).sum() \
                                 + (pooled_out * pooled_out_ograd).sum()
                     fake_loss.backward()
