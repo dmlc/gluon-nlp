@@ -27,8 +27,8 @@ def CompileBERTCustomPass():
     source = os.path.join(pass_path, input_pass_file)
     target = os.path.join(pass_path, out_lib_file)
     comm = ('g++ -shared -fPIC -std=c++11 ' + str(source) +
-              ' -o ' + str(target) + ' -I ' +
-              str(mxnet_include_path))
+            ' -o ' + str(target) + ' -I ' +
+            str(mxnet_include_path))
     print('Compilation command: ', comm)
     os.system('g++ -shared -fPIC -std=c++11 ' + str(source) +
               ' -o ' + str(target) + ' -I ' +
