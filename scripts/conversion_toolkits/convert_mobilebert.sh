@@ -1,3 +1,4 @@
+python3 -m pip install tensorflow==1.15 --upgrade --user
 export TF_FORCE_GPU_ALLOW_GROWTH="true"
 svn checkout https://github.com/google-research/google-research/trunk/mobilebert
 

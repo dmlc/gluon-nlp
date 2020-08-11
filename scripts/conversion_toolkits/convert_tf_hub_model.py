@@ -152,7 +152,7 @@ CONVERT_MAP_TF1 = [
     ('LayerNorm', 'layer_norm'),  # albert
     ('attention_1', 'attention'),  # albert
     ('attention/output/dense', 'attention_proj'),
-    ('ffn_1', ''),  # bert & albert
+    ('ffn_1/', ''),  # bert & albert
     ('intermediate/dense', 'ffn.ffn_1'),  # albert
     ('intermediate/output/dense', 'ffn.ffn_2'),  # albert
     ('output/dense', 'ffn.ffn_2'),  # bert
@@ -385,6 +385,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
         all_keys.remove(dst_name)
         if 'self_attention/attention_output/kernel' in src_name:
             mx_params[dst_name].set_data(tf_param_val.reshape((cfg.MODEL.units, -1)).T)
+            continue
         if src_name.endswith('kernel'):
             mx_params[dst_name].set_data(tf_param_val.T)
         else:
