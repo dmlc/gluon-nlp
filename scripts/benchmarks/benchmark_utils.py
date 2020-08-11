@@ -715,7 +715,7 @@ class GluonNLPBackboneBenchmark:
             # cpu
             memory_bytes = measure_peak_memory_cpu(run_forward)
             memory = Memory(memory_bytes) if isinstance(memory_bytes, int) else memory_bytes
-        return np.min(runtimes) / 3.0, memory
+        return float(np.min(runtimes) / 3.0), memory
 
     def _train_speed_memory(self, model_name: str, batch_size: int, sequence_length: int)\
             -> Tuple[float, Memory]:
@@ -806,7 +806,7 @@ class GluonNLPBackboneBenchmark:
             # cpu
             memory_bytes = measure_peak_memory_cpu(train_step)
             memory = Memory(memory_bytes) if isinstance(memory_bytes, int) else memory_bytes
-        return np.min(runtimes) / 3.0, memory
+        return float(np.min(runtimes) / 3.0), memory
 
     def inference_speed_memory(self, *args, **kwargs) -> float:
         return separate_process_wrapper_fn(self._inference_speed_memory, False)(*args, **kwargs)
