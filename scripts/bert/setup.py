@@ -6,8 +6,8 @@ import pathlib
 import sys
 import os
 import logging
-from setuptools import setup
 from distutils.command.install import install
+from setuptools import setup
 import mxnet
 
 requirements = [
