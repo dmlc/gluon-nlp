@@ -171,7 +171,7 @@ CONVERT_MAP_TF2 = [
     ('word_embeddings/embeddings', 'word_embed.weight'),
     ('type_embeddings/embeddings', 'token_type_embed.weight'),
     ('position_embedding/embeddings', 'token_pos_embed._embed.weight'),
-    ('embeddings/layer_norm/', 'embed_layer_norm'),
+    ('embeddings/layer_norm', 'embed_layer_norm'),
     ('embedding_projection', 'embed_factorized_proj'),
     ('self_attention/attention_output', 'attention_proj'),
     ('self_attention_layer_norm', 'layer_norm'),
@@ -383,7 +383,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
         if dst_name is None:
             continue
         all_keys.remove(dst_name)
-        if 'self_attention/attention_output' in src_name:
+        if 'self_attention/attention_output/kernel' in src_name:
             mx_params[dst_name].set_data(tf_param_val.reshape((cfg.MODEL.units, -1)).T)
             continue
         if src_name.endswith('kernel'):
