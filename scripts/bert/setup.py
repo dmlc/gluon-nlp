@@ -30,6 +30,11 @@ def CompileBERTCustomPass():
             ' -o ' + str(target) + ' -I ' +
             str(mxnet_include_path))
     print('Compilation command: ', comm)
+    print('What does lib_api.h contain?')
+    path_lib_api = os.path.join(mxnet_include_path, str('mxnet/lib_api.h'))
+    with open(path_lib_api, 'r') as f:
+        contents = f.read()
+    print(contents)
     os.system('g++ -shared -fPIC -std=c++11 ' + str(source) +
               ' -o ' + str(target) + ' -I ' +
               str(mxnet_include_path))
