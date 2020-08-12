@@ -704,11 +704,14 @@ class GluonNLPBackboneBenchmark:
         # Profile memory
         if self._use_gpu:
             nvml.nvmlInit()
+            handle = nvml.nvmlDeviceGetHandleByIndex(self._device_idx)
+            meminfo = nvml.nvmlDeviceGetMemoryInfo(handle)
+            bytes_in_use = meminfo.used
             run_forward()
             handle = nvml.nvmlDeviceGetHandleByIndex(self._device_idx)
             meminfo = nvml.nvmlDeviceGetMemoryInfo(handle)
             max_bytes_in_use = meminfo.used
-            memory = Memory(max_bytes_in_use)
+            memory = Memory(max_bytes_in_use - bytes_in_use)
             # shutdown nvml
             nvml.nvmlShutdown()
         else:
