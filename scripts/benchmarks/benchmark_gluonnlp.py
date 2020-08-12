@@ -1,6 +1,8 @@
 import mxnet as mx
 import argparse
+import os
 from benchmark_utils import GluonNLPBackboneBenchmark
+from multiprocessing import Process
 mx.npx.set_np()
 
 
@@ -55,6 +57,28 @@ def get_parser():
     return parser
 
 
+def run_benchmark(workload, model_name, out_file_name, is_train):
+    if is_train:
+        benchmark = GluonNLPBackboneBenchmark(
+            workloads=workload,
+            model_names=model_name,
+            profile_inference=False,
+            profile_train=True,
+            to_csv=True,
+            inference_out_csv_file=out_file_name)
+        benchmark.run()
+    else:
+        benchmark = GluonNLPBackboneBenchmark(
+            workloads=workload,
+            model_names=model_name,
+            profile_inference=True,
+            profile_train=False,
+            to_csv=True,
+            inference_out_csv_file=out_file_name)
+        benchmark.run()
+    return
+
+
 if __name__ == '__main__':
     parser = get_parser()
     args = parser.parse_args()
@@ -66,22 +90,44 @@ if __name__ == '__main__':
         else:
             profile_models = [ele for ele in MODELS]
         if args.mode == 'inference':
-            inference_benchmark = GluonNLPBackboneBenchmark(
-                workloads=inference_workloads,
-                model_names=profile_models,
-                profile_inference=True,
-                profile_train=False,
-                to_csv=True,
-                inference_out_csv_file='gluonnlp_infer_fp32_{}_{}.csv'.format(layout, compute_layout))
-            inference_benchmark.run()
+            out_dir = 'infer_fp32_{}_{}'.format(layout, compute_layout)
+            os.makedirs(out_dir, exist_ok=True)
+            for model_name in profile_models:
+                for workload in inference_workloads:
+                    process = Process(
+                        target=run_benchmark,
+                        args=(workload, model_name,
+                              os.path.join(out_dir,'{}_{}_{}.csv'.format(model_name, workload[0],
+                                                                         workload[1])), False))
+                    process.run()
+                    process.join()
+            # inference_benchmark = GluonNLPBackboneBenchmark(
+            #     workloads=inference_workloads,
+            #     model_names=profile_models,
+            #     profile_inference=True,
+            #     profile_train=False,
+            #     to_csv=True,
+            #     inference_out_csv_file='gluonnlp_infer_fp32_{}_{}.csv'.format(layout, compute_layout))
+            # inference_benchmark.run()
         elif args.mode == 'train':
-            train_benchmark = GluonNLPBackboneBenchmark(
-                workloads=train_workloads,
-                model_names=profile_models,
-                profile_inference=False,
-                profile_train=True,
-                to_csv=True,
-                train_out_csv_file='gluonnlp_train_fp32_{}_{}.csv'.format(layout, compute_layout))
-            train_benchmark.run()
+            out_dir = 'infer_fp32_{}_{}'.format(layout, compute_layout)
+            os.makedirs(out_dir, exist_ok=True)
+            for model_name in profile_models:
+                for workload in train_workloads:
+                    process = Process(
+                        target=run_benchmark,
+                        args=(workload, model_name,
+                              os.path.join(out_dir, '{}_{}_{}.csv'.format(model_name, workload[0],
+                                                                          workload[1])), True))
+                    process.run()
+                    process.join()
+            # train_benchmark = GluonNLPBackboneBenchmark(
+            #     workloads=train_workloads,
+            #     model_names=profile_models,
+            #     profile_inference=False,
+            #     profile_train=True,
+            #     to_csv=True,
+            #     train_out_csv_file='gluonnlp_train_fp32_{}_{}.csv'.format(layout, compute_layout))
+            # train_benchmark.run()
         else:
             raise NotImplementedError

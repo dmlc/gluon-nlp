@@ -791,7 +791,13 @@ class GluonNLPBackboneBenchmark:
         else:
             raise NotImplementedError
         timeit.repeat(train_step, repeat=1, number=3)
+        mxnet.npx.waitall()
+        for ctx in mx_all_contexts:
+            ctx.empty_cache()
         runtimes = timeit.repeat(train_step, repeat=self._repeat, number=3)
+        mxnet.npx.waitall()
+        for ctx in mx_all_contexts:
+            ctx.empty_cache()
         mxnet.npx.waitall()
         # Profile memory
         if self._use_gpu:
