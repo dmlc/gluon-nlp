@@ -13,9 +13,11 @@ python3 -m pip install -U -r requirements.txt --user
 python3 benchmark_hf.py
 ```
 
-## GluonNLP Backbones based on MXNet
+## GluonNLP Backbones based on MXNet-2.0
+
+We profile three options: `NT` layout, `NT` layout with `TN` layout internally, and `TN` layout.
 
 ```bash
 python3 -m pip install -U -r requirements.txt --user
-python3 benchmark_gluonnlp.py
+bash benchmark_gluonnlp.sh
 ```
