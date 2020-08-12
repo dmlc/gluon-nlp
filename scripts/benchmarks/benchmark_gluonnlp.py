@@ -2,6 +2,7 @@ import mxnet as mx
 import argparse
 import os
 from benchmark_utils import GluonNLPBackboneBenchmark
+import multiprocessing as mp
 from multiprocessing import Process
 mx.npx.set_np()
 
@@ -80,6 +81,7 @@ def run_benchmark(workload, model_name, out_file_name, is_train):
 
 
 if __name__ == '__main__':
+    mp.set_start_method('spawn')
     parser = get_parser()
     args = parser.parse_args()
     if args.compute_layout is None:
