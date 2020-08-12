@@ -59,10 +59,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.compute_layout is None:
         args.compute_layout = args.layout
-    for layout, compute_layout in [('NT', 'NT'),
-                                   ('NT', 'TN'),
-                                   ('TN', 'TN')]:
-
+    for layout, compute_layout in [(args.layout, args.compute_layout)]:
         if compute_layout != layout:
             profile_models = [ele for ele in MODELS if 'bart' not in ele]
         else:
