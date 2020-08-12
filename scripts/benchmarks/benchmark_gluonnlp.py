@@ -99,7 +99,7 @@ if __name__ == '__main__':
                         args=(workload, model_name,
                               os.path.join(out_dir,'{}_{}_{}.csv'.format(model_name, workload[0],
                                                                          workload[1])), False))
-                    process.run()
+                    process.start()
                     process.join()
             # inference_benchmark = GluonNLPBackboneBenchmark(
             #     workloads=inference_workloads,
@@ -119,7 +119,7 @@ if __name__ == '__main__':
                         args=(workload, model_name,
                               os.path.join(out_dir, '{}_{}_{}.csv'.format(model_name, workload[0],
                                                                           workload[1])), True))
-                    process.run()
+                    process.start()
                     process.join()
             # train_benchmark = GluonNLPBackboneBenchmark(
             #     workloads=train_workloads,
