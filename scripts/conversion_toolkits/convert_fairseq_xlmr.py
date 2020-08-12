@@ -93,25 +93,22 @@ def convert_fairseq_model(args):
         of.write(gluon_cfg.dump())
 
     ctx = mx.gpu(args.gpu) if args.gpu is not None else mx.cpu()
-    for is_mlm in [False, True]:
-        gluon_xlmr = convert_params(fairseq_xlmr,
-                                    gluon_cfg,
-                                    ctx,
-                                    is_mlm=is_mlm)
 
-        if is_mlm:
-            if args.test:
-                test_model(fairseq_xlmr, gluon_xlmr, args.gpu)
+    gluon_xlmr = convert_params(fairseq_xlmr,
+                                   gluon_cfg,
+                                   ctx)
+    if args.test:
+        test_model(fairseq_xlmr, gluon_xlmr, args.gpu)
 
-            gluon_xlmr.save_parameters(os.path.join(args.save_dir, 'model_mlm.params'), deduplicate=True)
-            logging.info('Convert the RoBERTa MLM model in {} to {}'.
-                         format(os.path.join(args.fairseq_model_path, 'model.pt'), \
-                                os.path.join(args.save_dir, 'model_mlm.params')))
-        else:
-            gluon_xlmr.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
-            logging.info('Convert the RoBERTa backbone model in {} to {}'.
-                         format(os.path.join(args.fairseq_model_path, 'model.pt'), \
-                                os.path.join(args.save_dir, 'model.params')))
+    gluon_xlmr.save_parameters(os.path.join(args.save_dir, 'model_mlm.params'), deduplicate=True)
+    logging.info('Convert the RoBERTa MLM model in {} to {}'.
+                 format(os.path.join(args.fairseq_model_path, 'model.pt'), \
+                        os.path.join(args.save_dir, 'model_mlm.params')))
+    gluon_xlmr.backbone_model.save_parameters(
+        os.path.join(args.save_dir, 'model.params'), deduplicate=True)
+    logging.info('Convert the RoBERTa backbone model in {} to {}'.
+                 format(os.path.join(args.fairseq_model_path, 'model.pt'), \
+                        os.path.join(args.save_dir, 'model.params')))
 
     logging.info('Conversion finished!')
     logging.info('Statistics:')

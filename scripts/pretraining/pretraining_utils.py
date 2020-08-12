@@ -14,7 +14,7 @@ import gluonnlp.data.batchify as bf
 from gluonnlp.utils.misc import glob
 from gluonnlp.data.loading import NumpyDataset, DatasetLoader
 from gluonnlp.data.sampler import SplitSampler, FixedBucketSampler
-from gluonnlp.op import select_vectors_by_position, updated_vectors_by_position
+from gluonnlp.op import select_vectors_by_position, update_vectors_by_position
 
 PretrainFeature = collections.namedtuple(
     'PretrainFeature',
@@ -62,16 +62,20 @@ def get_all_features(x):
 
     Parameters
     ----------
-    file_list
-        A list of text files
-    output_file
-         The path to a output file that store the np_features
-    tokenizer
-        The trained tokenizer
-    max_seq_length
-        Maximum sequence length of the training features
-    short_seq_prob
-         The probability of sampling sequences shorter than the max_seq_length.
+    x
+        List/tuple that contains:
+
+        - file_list
+            A list of text files
+        - output_file
+             The path to a output file that store the np_features
+        - tokenizer
+            The trained tokenizer
+        - max_seq_length
+            Maximum sequence length of the training features
+        - short_seq_prob
+             The probability of sampling sequences shorter than the max_seq_length.
+
     Returns
     -------
     np_features
@@ -105,6 +109,7 @@ def process_a_text(text_file, tokenizer, max_seq_length, short_seq_prob=0.05):
         Maximum sequence length of the training features
     short_seq_prob
         The probability of sampling sequences shorter than the max_seq_length.
+
     Returns
     -------
     features
@@ -168,8 +173,12 @@ def convert_to_npz(all_features, output_file=None):
         The path to a output file that store the np_features.
     Returns
     -------
-    (input_ids, segment_ids, valid_lengths)
+    input_ids
         A tuple of features
+    segment_ids
+        The segment ids
+    valid_lengths
+        The valid lengths
     """
     input_ids = []
     segment_ids = []
@@ -190,7 +199,7 @@ def convert_to_npz(all_features, output_file=None):
         npz_outputs['valid_lengths'] = np.array(valid_lengths, dtype='int32')
         np.savez_compressed(output_file, **npz_outputs)
         logging.info("Saved {} features in {} ".format(len(all_features), output_file))
-    return (input_ids, segment_ids, valid_lengths)
+    return input_ids, segment_ids, valid_lengths
 
 
 def sentenceize(current_sentences, max_seq_length, target_seq_length):
@@ -288,7 +297,7 @@ def prepare_pretrain_bucket_sampler(dataset, batch_size, shuffle=False, num_buck
                                  num_buckets=num_buckets,
                                  ratio=0,
                                  shuffle=shuffle)
-    logging.debug('Sampler created for a new dataset:\n%s', sampler)
+    logging.debug('Sampler created for a new dataset:\n {}'.format(sampler))
     return sampler
 
 
@@ -296,7 +305,8 @@ def get_pretrain_data_npz(data, batch_size, shuffle, num_buckets,
                           vocab, num_parts=1, part_idx=0,
                           num_dataset_workers=1, num_batch_workers=1,
                           circle_length=1, repeat=1,
-                          dataset_cached=False, num_max_dataset_cached=0):
+                          dataset_cached=False,
+                          num_max_dataset_cached=0):
     """Get a data iterator from pre-processed npz files.
 
     Parameters
@@ -443,6 +453,7 @@ class ElectraMasker(HybridBlock):
 
     def __init__(self, tokenizer, max_seq_length, mask_prob,
                  proposal_distribution=1.0):
+        super().__init__()
         self._max_seq_length = max_seq_length
         self._mask_prob = mask_prob
         self._max_num_masked_position = int((self._mask_prob + 0.005) *
@@ -529,7 +540,7 @@ class ElectraMasker(HybridBlock):
             self.vocab.cls_id).astype(
             np.int32)
         # Masking token by replacing with [MASK]
-        masked_input_ids = updated_vectors_by_position(F, input_ids, filled, replaced_positions)
+        masked_input_ids = update_vectors_by_position(F, input_ids, filled, replaced_positions)
 
         # Note: It is likely have multiple zero values in masked_positions if number of masked of
         # positions not reached the maximum. However, this example hardly exists since valid_length

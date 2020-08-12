@@ -32,7 +32,7 @@ Language Generation, Translation, and Comprehension},
 __all__ = ['BartModel', 'list_pretrained_bart', 'get_pretrained_bart']
 
 import os
-from typing import Tuple
+from typing import Tuple, List
 
 import mxnet as mx
 from mxnet import use_np
@@ -146,6 +146,7 @@ class BartModel(TransformerModel):
     def __init__(self,
                  use_pooler: bool = False,
                  classifier_activation: bool = False,
+                 extract_feature: bool = False,
                  pooler_activation='tanh',
                  **kwargs):
         """
@@ -153,7 +154,10 @@ class BartModel(TransformerModel):
         Parameters
         ----------
         use_pooler
+            Whether to use pooler
         classifier_activation
+        extract_feature
+            Whether to extract the feature
         pooler_activation
         **kwargs
         """
@@ -161,9 +165,10 @@ class BartModel(TransformerModel):
         assert self._src_vocab_size == self._tgt_vocab_size, \
             'Vocab size mismatch between encoder and decoder'
         self._vocab_size = self._src_vocab_size
+        self.extract_feature = extract_feature
         self.use_pooler = use_pooler
         self.classifier_activation = classifier_activation
-        if not use_pooler:
+        if not extract_feature:
             if self.tie_weights:
                 self.tgt_final_layer = \
                     nn.Dense(self._tgt_vocab_size, flatten=False,
@@ -177,7 +182,7 @@ class BartModel(TransformerModel):
                              weight_initializer=self.weight_initializer,
                              use_bias=False,
                              dtype=self._dtype)
-        elif classifier_activation:
+        elif use_pooler and classifier_activation:
             # Construct pooler
             self.pooler = nn.Dense(units=self.units,
                                    in_units=self.units,
@@ -210,43 +215,66 @@ class BartModel(TransformerModel):
 
         Returns
         -------
-        (contextual_embedding)
-            - layout = 'NT'
-                Shape (batch_size, tgt_length, units)
-            - layout = 'TN'
-                Shape (tgt_length, batch_size, units)
-        (pooled_output)
-            This is optional. Shape (batch_size, units)
-        (dec_out)
-            - layout = 'NT'
-                Shape (batch_size, tgt_length, tgt_vocab_size)
-            - layout = 'TN'
-                Shape (tgt_length, batch_size, tgt_vocab_size)
+        A tuple contains
+
+        - If 'self.extract_feature' = True
+            - contextual_embedding
+                - layout = 'NT'
+                    Shape (batch_size, tgt_length, units)
+                - layout = 'TN'
+                    Shape (tgt_length, batch_size, units)
+            - pooled_output, optional, only enabled if use_pooler = True
+                Shape (batch_size, units)
+        - If 'self.extract_feature' = False
+            - dec_out
+                - layout = 'NT'
+                    Shape (batch_size, tgt_length, tgt_vocab_size)
+                - layout = 'TN'
+                    Shape (tgt_length, batch_size, tgt_vocab_size)
         """
         enc_out = self.encode(F, src_data, src_valid_length)
-        contextual_embedding = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out, src_valid_length)
-        if self.use_pooler:
-            pooled_output = self.apply_pooling(contextual_embedding)
-            return contextual_embedding, pooled_output
+        contextual_embedding = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out,
+                                               src_valid_length)
+        if self.extract_feature:
+            if self.use_pooler:
+                pooled_output = self.apply_pooling(F, contextual_embedding, tgt_valid_length)
+                return contextual_embedding, pooled_output
+            else:
+                return contextual_embedding
         else:
             dec_out = self.tgt_final_layer(contextual_embedding)
             return dec_out
 
-    def apply_pooling(self, sequence):
+    def apply_pooling(self, F, sequence, valid_length):
         """Generate the representation given the inputs.
 
-        This is used for pre-training or fine-tuning a mobile bert model.
-        Get the first token of the whole sequence which is [CLS]
+        This is used for pre-training or fine-tuning a BART model.
+        In BART, the pooled output is the embedding of the last token.
 
-        sequence:
-            Shape (batch_size, sequence_length, units)
-        return:
+        Parameters
+        ----------
+        F
+            ndarray or symbol
+        sequence
+            - layout = 'NT'
+                Shape (batch_size, sequence_length, units)
+            - layout = 'TN'
+                Shape (sequence_length, batch_size, units)
+        valid_length
+            Valid length of each sequence
+            shape (batch_size,)
+
+        Returns
+        -------
+        outputs
             Shape (batch_size, units)
         """
         if self._layout == 'NT':
-            outputs = sequence[:, 0, :]
+            batch_indices = F.npx.arange_like(sequence, axis=0).astype(mx.np.int32)
+            outputs = sequence[batch_indices, valid_length - 1]
         elif self._layout == 'TN':
-            outputs = sequence[0, :, :]
+            batch_indices = F.npx.arange_like(sequence, axis=1).astype(mx.np.int32)
+            outputs = sequence[valid_length - 1, batch_indices]
         else:
             raise NotImplementedError
         if self.classifier_activation:
@@ -270,9 +298,33 @@ class BartModel(TransformerModel):
             return bart_cfg_reg.create(key)
 
     @classmethod
-    def from_cfg(cls, cfg, dtype=None,
-                 use_pooler=False,
+    def from_cfg(cls, cfg,
+                 dtype=None,
+                 extract_feature=False,
+                 use_pooler=True,
                  classifier_activation=False):
+        """
+
+        Parameters
+        ----------
+        cfg
+            The configuration
+        dtype
+            Data type of the loaded config
+        extract_feature
+            Whether to only extract feature.
+            If so, the output of the layer will be contextual embeddings or the
+            contextual embedding + pooled output
+        use_pooler
+            Whether to use pooler
+        classifier_activation
+            Whether to use the classifier activation
+
+        Returns
+        -------
+        model
+            The initialized BartModel
+        """
         cfg = cls.get_cfg().clone_merge(cfg)
         embed_initializer = mx.init.create(*cfg.INITIALIZER.embed)
         weight_initializer = mx.init.create(*cfg.INITIALIZER.weight)
@@ -288,6 +340,7 @@ class BartModel(TransformerModel):
                    shared_embed=cfg.MODEL.shared_embed,
                    tie_weights=cfg.MODEL.tie_weights,
                    data_norm=cfg.MODEL.data_norm,
+                   extract_feature=extract_feature,
                    use_pooler=use_pooler,
                    classifier_activation=classifier_activation,
                    attention_dropout=cfg.MODEL.attention_dropout,
@@ -323,7 +376,7 @@ def list_pretrained_bart():
 def get_pretrained_bart(model_name: str = 'fairseq_bart_base',
                         root: str = get_model_zoo_home_dir(),
                         load_backbone: bool = True) \
-        -> Tuple[CN, HuggingFaceByteBPETokenizer, str]:
+        -> Tuple[CN, HuggingFaceByteBPETokenizer, str, List]:
     """Get the pretrained RoBERTa weights
 
     Parameters
@@ -334,6 +387,7 @@ def get_pretrained_bart(model_name: str = 'fairseq_bart_base',
         The downloading root
     load_backbone
         Whether to load the weights of the backbone network
+
     Returns
     -------
     cfg
@@ -342,6 +396,9 @@ def get_pretrained_bart(model_name: str = 'fairseq_bart_base',
         The HuggingFaceByteBPETokenizer
     params_path
         Path to the parameters
+    additional_output
+        The additional outputs
+
     """
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}'.format(
         model_name, list_pretrained_bart())
@@ -369,16 +426,16 @@ def get_pretrained_bart(model_name: str = 'fairseq_bart_base',
     else:
         local_params_path = None
 
-    local_mlm_params_path = None
     do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
                        and PRETRAINED_URL[model_name]['lowercase'] else False
     tokenizer = HuggingFaceByteBPETokenizer(
         merges_file=local_paths['merges'],
         vocab_file=local_paths['vocab'],
         lowercase=do_lower)
+    additional_out = []
     if cfg is None:
         cfg = BartModel.get_cfg().clone_merge(local_paths['cfg'])
-    return cfg, tokenizer, local_params_path, local_mlm_params_path
+    return cfg, tokenizer, local_params_path, additional_out
 
 
 BACKBONE_REGISTRY.register('bart', [BartModel,

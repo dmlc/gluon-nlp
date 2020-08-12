@@ -53,5 +53,5 @@ In order to generate the hash values of the data files, you can revise [update_d
 and include the new URLS + create the stats file that will store the hash keys. Use the following command to update the hash key:
 
 ```bash
-python update_download_stats.py
+python3 update_download_stats.py
 ```

@@ -28,15 +28,9 @@ In the process, we downloaded the config file from the [official repo](https://g
 and move it into `${case}_bert_${model}/assets/`.
 
 ## ALBERT
-
+You can use the command described in
 ```bash
-for model in base large xlarge xxlarge
-do
-    mkdir albert_${model}_v2
-    wget "https://tfhub.dev/google/albert_${model}/3?tf-hub-format=compressed" -O "albert_${model}_v3.tar.gz"
-    tar -xvf albert_${model}_v3.tar.gz --directory albert_${model}_v2
-    python convert_tf_hub_model.py --tf_hub_model_path albert_${model}_v2 --model_type albert --test
-done
+bash convert_albert_from_tf_hub.sh
 ```
 
 ## ELECTRA
@@ -45,52 +39,29 @@ Thus, you will need to clone the [electra repository](https://github.com/ZheyuYe
 and download the checkpoint. The parameters are converted from local checkpoints.
 By running the following command, you can convert + verify the ELECTRA model with both the discriminator and the generator.
 
-Notice: pleas set up the `--electra_path` with the cloned path ~~or get this electra repository packaged by `pip install -e .`.~~
+Notice: please set up the `--electra_path` with the cloned path if you'd like to directly use `convert_electra.py`.
 
 ```bash
-# Need to use TF 1.13.2 to use contrib layer
-pip uninstall tensorflow
-pip install tensorflow==1.13.2
-
-# Actual conversion
 bash convert_electra.sh
 ```
 
-## Mobile Bert
+## MobileBert
 ```bash
 bash convert_mobilebert.sh
 ```
 
 ## RoBERTa
 ```bash
-for model in base large
-do
-    mkdir roberta_${model}
-    wget "https://dl.fbaipublicfiles.com/fairseq/models/roberta.${model}.tar.gz"
-    tar zxf roberta.${model}.tar.gz --directory roberta_${model}
-    python convert_fairseq_roberta.py --fairseq_model_path roberta_${model}/roberta.${model} --test
-done
+bash convert_roberta.sh
 ```
 
 ## XLM-R
 
 ```bash
-for model in base large
-do
-    mkdir xlmr_${model}
-    wget "https://dl.fbaipublicfiles.com/fairseq/models/xlmr.${model}.tar.gz"
-    tar zxf xlmr.${model}.tar.gz --directory xlmr_${model}
-    python convert_fairseq_xlmr.py --fairseq_model_path xlmr_${model}/xlmr.${model} --model_size ${model} --test
-done
+bash convert_xlmr.sh
 ```
 
 ## BART
 ```bash
-for model in base large
-do  
-    mkdir bart_${model}
-    wget  "https://dl.fbaipublicfiles.com/fairseq/models/bart.${model}.tar.gz"
-    tar zxf bart.${model}.tar.gz --directory bart_${model}
-    python convert_fairseq_bart.py --fairseq_model_path bart_${model}/bart.${model} --test
-done
+bash convert_bart.sh
 ```
