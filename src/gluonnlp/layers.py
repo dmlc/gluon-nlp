@@ -81,7 +81,6 @@ class NoNorm(HybridBlock):
     in_channels : int
         Number of channels (feature maps) in input data. If not specified,
         initialization will be deferred to the first time `forward` is called
-
     center: bool, default True
         If True, add offset of `beta` to normalized tensor.
         If False, `beta` is ignored.

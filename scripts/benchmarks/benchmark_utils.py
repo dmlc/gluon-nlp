@@ -815,10 +815,6 @@ class GluonNLPBackboneBenchmark:
         return separate_process_wrapper_fn(self._train_speed_memory, False)(*args, **kwargs)
 
     def run(self):
-        # mx_profiler.set_config(profile_all=True,
-        #                        aggregate_stats=True,
-        #                        continuous_dump=False,
-        #                        filename='mxnet_profile.json')
         result_dict = {model_name: {} for model_name in self._model_names}
         inference_result = copy.deepcopy(result_dict)
         train_result = copy.deepcopy(result_dict)
