@@ -50,7 +50,8 @@ def get_parser():
                         help='The layout of the computation')
     parser.add_argument('--compute_layout', type=str, default=None,
                         help='The compute layout of the computation')
-    parser.add_argument('--mode', type=str, choices=['train', 'inference'])
+    parser.add_argument('--mode', type=str, default='train',
+                        choices=['train', 'inference'])
     return parser
 
 
