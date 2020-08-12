@@ -791,7 +791,7 @@ class GluonNLPBackboneBenchmark:
             raise NotImplementedError
         timeit.repeat(train_step, repeat=1, number=3)
         runtimes = timeit.repeat(train_step, repeat=self._repeat, number=3)
-
+        mxnet.npx.waitall()
         # Profile memory
         if self._use_gpu:
             nvml.nvmlInit()
