@@ -838,9 +838,9 @@ class GluonNLPBackboneBenchmark:
                         infer_time = np.nan
                         infer_memory = np.nan
                     inference_result[model_name][workload] = (infer_time, infer_memory)
-                    mxnet.npx.waitall()
                     for ctx in mx_all_contexts:
                         ctx.empty_cache()
+                    mxnet.npx.waitall()
                     self.save_to_csv(inference_result, self._inference_out_csv_file)
                 if self._profile_train:
                     try:
@@ -852,9 +852,9 @@ class GluonNLPBackboneBenchmark:
                         train_time = np.nan
                         train_memory = np.nan
                     train_result[model_name][workload] = (train_time, train_memory)
-                    mxnet.npx.waitall()
                     for ctx in mx_all_contexts:
                         ctx.empty_cache()
+                    mxnet.npx.waitall()
                     self.save_to_csv(train_result, self._train_out_csv_file)
 
         if self._profile_inference:
