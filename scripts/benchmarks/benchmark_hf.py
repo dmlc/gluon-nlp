@@ -144,8 +144,6 @@ if __name__ == '__main__':
                     except Exception:
                         latency = math.nan
                         memory = math.nan
-                    torch_empty_cache()
-                    torch.cuda.synchronize()
                     new_df = pd.DataFrame({'model': [model],
                                            'batch_size': [batch_size],
                                            'sequence_length': [seq_length],
