@@ -980,7 +980,7 @@ class GluonNLPBackboneBenchmark:
     def save_to_csv(self, result_dict, filename):
         if not self._to_csv:
             return
-        logger.info("Saving results to csv.")
+        logger.info("Saving results to csv {}.".format(filename))
         with open(filename, mode="w") as csv_file:
 
             assert len(self._model_names) > 0, "At least 1 model should be defined, but got {}".format(
