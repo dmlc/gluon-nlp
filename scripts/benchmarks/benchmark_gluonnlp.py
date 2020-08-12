@@ -1,4 +1,5 @@
 import mxnet as mx
+import argparse
 from benchmark_utils import GluonNLPBackboneBenchmark
 mx.npx.set_np()
 
@@ -42,7 +43,22 @@ inference_workloads = [
     (400, 100),
 ]
 
+
+def get_parser():
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    parser.add_argument('--layout', type=str, default=None,
+                        help='The layout of the computation')
+    parser.add_argument('--compute_layout', type=str, default=None,
+                        help='The compute layout of the computation')
+    parser.add_argument('--mode', type=str, choices=['train', 'inference'])
+    return parser
+
+
 if __name__ == '__main__':
+    parser = get_parser()
+    args = parser.parse_args()
+    if args.compute_layout is None:
+        args.compute_layout = args.layout
     for layout, compute_layout in [('NT', 'NT'),
                                    ('NT', 'TN'),
                                    ('TN', 'TN')]:
@@ -51,20 +67,23 @@ if __name__ == '__main__':
             profile_models = [ele for ele in MODELS if 'bart' not in ele]
         else:
             profile_models = [ele for ele in MODELS]
-        inference_benchmark = GluonNLPBackboneBenchmark(
-            workloads=inference_workloads,
-            model_names=profile_models,
-            profile_inference=True,
-            profile_train=False,
-            to_csv=True,
-            inference_out_csv_file='gluonnlp_infer_fp32_{}_{}.csv'.format(layout, compute_layout))
-        inference_benchmark.run()
-
-        train_benchmark = GluonNLPBackboneBenchmark(
-            workloads=train_workloads,
-            model_names=profile_models,
-            profile_inference=False,
-            profile_train=True,
-            to_csv=True,
-            train_out_csv_file='gluonnlp_train_fp32_{}_{}.csv'.format(layout, compute_layout))
-        train_benchmark.run()
+        if args.mode == 'inference':
+            inference_benchmark = GluonNLPBackboneBenchmark(
+                workloads=inference_workloads,
+                model_names=profile_models,
+                profile_inference=True,
+                profile_train=False,
+                to_csv=True,
+                inference_out_csv_file='gluonnlp_infer_fp32_{}_{}.csv'.format(layout, compute_layout))
+            inference_benchmark.run()
+        elif args.mode == 'train':
+            train_benchmark = GluonNLPBackboneBenchmark(
+                workloads=train_workloads,
+                model_names=profile_models,
+                profile_inference=False,
+                profile_train=True,
+                to_csv=True,
+                train_out_csv_file='gluonnlp_train_fp32_{}_{}.csv'.format(layout, compute_layout))
+            train_benchmark.run()
+        else:
+            raise NotImplementedError
