@@ -46,7 +46,7 @@ inference_workloads = [
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Process some integers.')
-    parser.add_argument('--layout', type=str, default=None,
+    parser.add_argument('--layout', type=str, default='NT',
                         help='The layout of the computation')
     parser.add_argument('--compute_layout', type=str, default=None,
                         help='The compute layout of the computation')
