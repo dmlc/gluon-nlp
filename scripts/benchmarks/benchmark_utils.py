@@ -705,6 +705,7 @@ class GluonNLPBackboneBenchmark:
         if self._use_gpu:
             nvml.nvmlInit()
             run_forward()
+            mxnet.npx.waitall()
             handle = nvml.nvmlDeviceGetHandleByIndex(self._device_idx)
             meminfo = nvml.nvmlDeviceGetMemoryInfo(handle)
             max_bytes_in_use = meminfo.used
@@ -796,6 +797,7 @@ class GluonNLPBackboneBenchmark:
         if self._use_gpu:
             nvml.nvmlInit()
             train_step()
+            mxnet.npx.waitall()
             handle = nvml.nvmlDeviceGetHandleByIndex(self._device_idx)
             meminfo = nvml.nvmlDeviceGetMemoryInfo(handle)
             max_bytes_in_use = meminfo.used
