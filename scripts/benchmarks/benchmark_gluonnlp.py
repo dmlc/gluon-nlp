@@ -110,7 +110,9 @@ if __name__ == '__main__':
                     df = df.append(new_df, ignore_index=True)
                     df.to_csv('gluonnlp_infer_fp32_{}_{}.csv'.format(layout, compute_layout))
         elif args.mode == 'train':
-            out_dir = 'infer_fp32_{}_{}'.format(layout, compute_layout)
+            out_dir = 'train_fp32_{}_{}'.format(layout, compute_layout)
+            df = pd.DataFrame(columns=['model', 'batch_size', 'sequence_length',
+                                       'latency', 'memory'])
             os.makedirs(out_dir, exist_ok=True)
             for model_name in profile_models:
                 for workload in train_workloads:
