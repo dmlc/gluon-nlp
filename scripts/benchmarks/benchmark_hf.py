@@ -3,6 +3,8 @@ import pandas as pd
 import math
 import os
 from multiprocessing import Process
+import torch
+from torch.cuda import empty_cache as torch_empty_cache
 from transformers import HfArgumentParser, PyTorchBenchmark, PyTorchBenchmarkArguments
 
 
@@ -130,6 +132,8 @@ if __name__ == '__main__':
                     except Exception:
                         latency = math.nan
                         memory = math.nan
+                    torch_empty_cache()
+                    torch.cuda.synchronize()
                     new_df = pd.DataFrame({'model': [model],
                                            'batch_size': [batch_size],
                                            'sequence_length': [seq_length],
