@@ -1,6 +1,7 @@
 import mxnet as mx
 import argparse
 import os
+import pandas as pd
 from benchmark_utils import GluonNLPBackboneBenchmark
 import multiprocessing as mp
 from multiprocessing import Process
@@ -66,7 +67,7 @@ def run_benchmark(workload, model_name, out_file_name, is_train):
             profile_inference=False,
             profile_train=True,
             to_csv=True,
-            inference_out_csv_file=out_file_name)
+            train_out_csv_file=out_file_name)
         benchmark.run()
     else:
         benchmark = GluonNLPBackboneBenchmark(
@@ -93,43 +94,35 @@ if __name__ == '__main__':
             profile_models = [ele for ele in MODELS]
         if args.mode == 'inference':
             out_dir = 'infer_fp32_{}_{}'.format(layout, compute_layout)
+            df = pd.DataFrame(columns=['model', 'batch_size', 'sequence_length',
+                                       'latency', 'memory'])
             os.makedirs(out_dir, exist_ok=True)
             for model_name in profile_models:
                 for workload in inference_workloads:
+                    out_path = os.path.join(out_dir, '{}_{}_{}.csv'.format(model_name, workload[0],
+                                                                           workload[1]))
                     process = Process(
                         target=run_benchmark,
-                        args=(workload, model_name,
-                              os.path.join(out_dir,'{}_{}_{}.csv'.format(model_name, workload[0],
-                                                                         workload[1])), False))
+                        args=(workload, model_name, out_path, False))
                     process.start()
                     process.join()
-            # inference_benchmark = GluonNLPBackboneBenchmark(
-            #     workloads=inference_workloads,
-            #     model_names=profile_models,
-            #     profile_inference=True,
-            #     profile_train=False,
-            #     to_csv=True,
-            #     inference_out_csv_file='gluonnlp_infer_fp32_{}_{}.csv'.format(layout, compute_layout))
-            # inference_benchmark.run()
+                    new_df = pd.read_csv(out_path)
+                    df = df.append(new_df, ignore_index=True)
+                    df.to_csv('gluonnlp_infer_fp32_{}_{}.csv'.format(layout, compute_layout))
         elif args.mode == 'train':
             out_dir = 'infer_fp32_{}_{}'.format(layout, compute_layout)
             os.makedirs(out_dir, exist_ok=True)
             for model_name in profile_models:
                 for workload in train_workloads:
+                    out_path = os.path.join(out_dir, '{}_{}_{}.csv'.format(model_name, workload[0],
+                                                                           workload[1]))
                     process = Process(
                         target=run_benchmark,
-                        args=(workload, model_name,
-                              os.path.join(out_dir, '{}_{}_{}.csv'.format(model_name, workload[0],
-                                                                          workload[1])), True))
+                        args=(workload, model_name, out_path, True))
                     process.start()
                     process.join()
-            # train_benchmark = GluonNLPBackboneBenchmark(
-            #     workloads=train_workloads,
-            #     model_names=profile_models,
-            #     profile_inference=False,
-            #     profile_train=True,
-            #     to_csv=True,
-            #     train_out_csv_file='gluonnlp_train_fp32_{}_{}.csv'.format(layout, compute_layout))
-            # train_benchmark.run()
+                    new_df = pd.read_csv(out_path)
+                    df = df.append(new_df, ignore_index=True)
+                    df.to_csv('gluonnlp_train_fp32_{}_{}.csv'.format(layout, compute_layout))
         else:
             raise NotImplementedError
