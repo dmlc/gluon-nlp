@@ -126,7 +126,7 @@ def convert_tf_assets(tf_assets_dir, model_type):
         vocab_size = len(tokenizer.vocab)
     elif vocab_path:
         vocab_path = os.path.join(tf_assets_dir, vocab_path)
-        vocab_size = len(open(vocab_path, 'rU').readlines())
+        vocab_size = len(open(vocab_path, 'r', encoding='utf-8').readlines())
     cfg = convert_tf_config(json_cfg_path, vocab_size, model_type)
     return cfg, vocab_path, spm_model_path
 
