@@ -5,7 +5,19 @@ import os
 from multiprocessing import Process
 import torch
 from torch.cuda import empty_cache as torch_empty_cache
+from typing import Callable
 from transformers import HfArgumentParser, PyTorchBenchmark, PyTorchBenchmarkArguments
+
+
+class CustomizedPyTorchBenchmark(PyTorchBenchmark):
+    def _prepare_train_func(self, model_name: str, batch_size: int, sequence_length: int) -> Callable[[], None]:
+        _train = super(CustomizedPyTorchBenchmark, self)._prepare_train_func(model_name,
+                                                                             batch_size,
+                                                                             sequence_length)
+        def train_fn():
+            _train()
+            torch.cuda.synchronize()
+        return train_fn
 
 
 HF_MODELS = [
@@ -69,7 +81,7 @@ if __name__ == '__main__':
                 if use_fp16:
                     args.append('--fp16')
                 benchmark_args = parser.parse_args_into_dataclasses(args)[0]
-                benchmark = PyTorchBenchmark(args=benchmark_args)
+                benchmark = CustomizedPyTorchBenchmark(args=benchmark_args)
                 p = Process(target=benchmark.run)
                 p.start()
                 p.join()
