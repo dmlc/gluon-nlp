@@ -174,7 +174,7 @@ class SquadDatasetProcessor:
         self.sep_id = vocab.eos_id if 'sep_token' not in vocab.special_token_keys else vocab.sep_id
 
         # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
-        ChunkFeature = collections.namedtuple('ChunkFeature',
+        self.ChunkFeature = collections.namedtuple('ChunkFeature',
                                               ['qas_id',
                                                'data',
                                                'valid_length',
@@ -186,7 +186,7 @@ class SquadDatasetProcessor:
                                                'context_offset',
                                                'chunk_start',
                                                'chunk_length'])
-        BatchifyFunction = bf.NamedTuple(ChunkFeature,
+        self.BatchifyFunction = bf.NamedTuple(self.ChunkFeature,
                                          {'qas_id': bf.List(),
                                           'data': bf.Pad(val=self.pad_id),
                                           'valid_length': bf.Stack(),
@@ -264,17 +264,17 @@ class SquadDatasetProcessor:
                 # Here, we increase the start and end because we put query before context
                 start_pos = chunk.gt_start_pos + context_offset
                 end_pos = chunk.gt_end_pos + context_offset
-            chunk_feature = ChunkFeature(qas_id=feature.qas_id,
-                                         data=data,
-                                         valid_length=valid_length,
-                                         segment_ids=segment_ids,
-                                         masks=masks,
-                                         is_impossible=chunk.is_impossible,
-                                         gt_start=start_pos,
-                                         gt_end=end_pos,
-                                         context_offset=context_offset,
-                                         chunk_start=chunk.start,
-                                         chunk_length=chunk.length)
+            chunk_feature = self.ChunkFeature(qas_id=feature.qas_id,
+                                              data=data,
+                                              valid_length=valid_length,
+                                              segment_ids=segment_ids,
+                                              masks=masks,
+                                              is_impossible=chunk.is_impossible,
+                                              gt_start=start_pos,
+                                              gt_end=end_pos,
+                                              context_offset=context_offset,
+                                              chunk_start=chunk.start,
+                                              chunk_length=chunk.length)
             ret.append(chunk_feature)
         return ret
 

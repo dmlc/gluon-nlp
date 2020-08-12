@@ -532,9 +532,10 @@ class ElectraModel(HybridBlock):
         for (layer_depth, layer) in enumerate(self.encoder.all_encoder_layers):
             layer_params = layer.collect_params()
             for key, value in layer_params.items():
-                for pn in not_included:
-                    if pn in key:
-                        continue
+                if not_included:
+                    for pn in not_included:
+                        if pn in key:
+                            continue
                 value.lr_mult = layerwise_decay**(max_depth - (layer_depth + 1))
 
     def frozen_params(self, untunable_depth, not_included=None):
@@ -556,9 +557,10 @@ class ElectraModel(HybridBlock):
 
         for layer in all_layers[:untunable_depth]:
             for key, value in layer.collect_params().items():
-                for pn in not_included:
-                    if pn in key:
-                        continue
+                if not_included:
+                    for pn in not_included:
+                        if pn in key:
+                            continue
                 value.grad_req = 'null'
 
     @staticmethod
