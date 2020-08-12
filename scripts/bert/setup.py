@@ -31,7 +31,7 @@ def CompileBERTCustomPass():
             str(mxnet_include_path))
     print('Compilation command: ', comm)
     print('What does lib_api.h contain?')
-    path_lib_api = os.path.join(mxnet_include_path, str('mxnet/lib_api.h'))
+    path_lib_api = pathlib.Path.joinpath(mxnet_include_path, 'mxnet/lib_api.h')
     with open(path_lib_api, 'r') as f:
         contents = f.read()
     print(contents)
