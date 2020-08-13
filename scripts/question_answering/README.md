@@ -37,7 +37,7 @@ MODEL_NAME=google_albert_base_v2
 nlp_data prepare_squad --version ${VERSION}
 
 # Run the script
-python run_squad.py \
+python3 run_squad.py \
     --model_name ${MODEL_NAME} \
     --data_dir squad \
     --output_dir fintune_${MODEL_NAME}_squad_${VERSION} \
@@ -58,7 +58,7 @@ python run_squad.py \
 or evaluate SQuAD1.1 based on a SQuAD2.0 fine-tuned checkpoint as
 
 ```bash
-python run_squad.py \
+python3 run_squad.py \
     --model_name ${MODEL_NAME} \
     --data_dir squad \
     --output_dir ${OUT_DIR} \
@@ -70,10 +70,11 @@ python run_squad.py \
     --overwrite_cache \
 ```
 
-We could speed up multi-GPU training via horovod. Compared to KVStore, training RoBERTa Large model on SQuAD 2.0 with 3 epochs will save roughly 1/4 training resources (8.48 vs 11.32 hours). Results may vary depending on the training instances.
+We could speed up multi-GPU training via horovod.
+Compared to KVStore, training RoBERTa Large model on SQuAD 2.0 with 3 epochs will save roughly 1/4 training resources (8.48 vs 11.32 hours). Results may vary depending on the training instances.
 
 ```bash
-mpirun -np 4 -H localhost:4 python run_squad.py \
+mpirun -np 4 -H localhost:4 python3 run_squad.py \
     --comm_backend horovod \
     ...
 ```
@@ -83,7 +84,7 @@ As for ELECTRA model, we fine-tune it with layer-wise learning rate decay as
 VERSION=2.0  # Either 2.0 or 1.1
 MODEL_NAME=google_electra_small
 
-python run_squad.py \
+python3 run_squad.py \
     --model_name ${MODEL_NAME} \
     --data_dir squad \
     --output_dir fintune_${MODEL_NAME}_squad_${VERSION} \
@@ -109,7 +110,7 @@ For RoBERTa and XLMR, we remove 'segment_ids' and replace `[CLS]` and `[SEP]` wi
 VERSION=2.0  # Either 2.0 or 1.1
 MODEL_NAME=fairseq_roberta_large
 
-python run_squad.py \
+python3 run_squad.py \
     --model_name ${MODEL_NAME} \
     --data_dir squad \
     --output_dir fintune_${MODEL_NAME}_squad_${VERSION} \
