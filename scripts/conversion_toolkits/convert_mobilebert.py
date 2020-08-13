@@ -106,7 +106,7 @@ def convert_tf_assets(tf_assets_dir):
     assert vocab_path is not None and json_cfg_path is not None
 
     vocab_path = os.path.join(tf_assets_dir, vocab_path)
-    vocab_size = len(open(vocab_path, 'rU').readlines())
+    vocab_size = len(open(vocab_path, 'r', encoding='utf-8').readlines())
     json_cfg_path = os.path.join(tf_assets_dir, json_cfg_path)
     cfg = convert_tf_config(json_cfg_path, vocab_size)
     return cfg, json_cfg_path, vocab_path

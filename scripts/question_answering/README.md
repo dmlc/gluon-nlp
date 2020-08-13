@@ -168,7 +168,7 @@ For reference, we have also included the results of original version from Google
 |--------------------------|----------------|---------------|
 |Google BERT base          |   88.5/80.8    |     - / -     |
 |Google BERT large         |   90.9/84.1    |     - / -     |
-|Google ELECTRA base       |     - /75.8    |     - /70.1   |
+|Google ELECTRA small      |     - /75.8    |     - /70.1   |
 |Google ELECTRA base       |     - /86.8    |     - /83.7   |
 |Google ELECTRA large      |     - /89.7    |     - /88.1   |
 |Fairseq RoBERTa large     |   94.6/88.9    |	89.4/86.5   |

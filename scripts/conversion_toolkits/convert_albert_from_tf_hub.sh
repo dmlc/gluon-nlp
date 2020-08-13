@@ -1,4 +1,4 @@
-python3 -m pip install tensorflow==1.13.2 --upgrade --user
+python3 -m pip install tensorflow==1.15 --upgrade --user
 python3 -m pip install tensorflow_hub --upgrade --user
 export TF_FORCE_GPU_ALLOW_GROWTH="true"
 for model in base large xlarge xxlarge

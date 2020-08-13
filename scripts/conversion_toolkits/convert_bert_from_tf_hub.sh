@@ -17,7 +17,7 @@ do
         wget ${url} -O "${hub_directory}.tar.gz"
         tar -xvf ${hub_directory}.tar.gz --directory ${hub_directory}
         cp bert_${model}_config.json ${hub_directory}/assets/
-        python convert_tf_hub_model.py --tf_hub_model_path ${hub_directory} --model_type bert --test
+        python3 convert_tf_hub_model.py --tf_hub_model_path ${hub_directory} --model_type bert --test
     done
 done
 
@@ -28,7 +28,7 @@ mkdir ${hub_directory}
 wget ${url} -O "${hub_directory}.tar.gz"
 tar -xvf ${hub_directory}.tar.gz --directory ${hub_directory}
 cp bert_base_config.json ${hub_directory}/assets/
-python convert_tf_hub_model.py --tf_hub_model_path ${hub_directory} --model_type bert --test
+python3 convert_tf_hub_model.py --tf_hub_model_path ${hub_directory} --model_type bert --test
 
 # Conversion for Multi-lingual Models
 url="https://tfhub.dev/tensorflow/bert_multi_cased_L-12_H-768_A-12/2?tf-hub-format=compressed"
@@ -37,7 +37,7 @@ mkdir ${hub_directory}
 wget ${url} -O "${hub_directory}.tar.gz"
 tar -xvf ${hub_directory}.tar.gz --directory ${hub_directory}
 cp bert_base_config.json ${hub_directory}/assets/
-python convert_tf_hub_model.py --tf_hub_model_path ${hub_directory} --model_type bert --test
+python3 convert_tf_hub_model.py --tf_hub_model_path ${hub_directory} --model_type bert --test
 
 # Conversion for Whole-word-masking Models
 for case in cased uncased
@@ -48,5 +48,5 @@ do
     wget ${url} -O "${hub_directory}.tar.gz"
     tar -xvf ${hub_directory}.tar.gz --directory ${hub_directory}
     cp bert_large_config.json ${hub_directory}/assets/
-    python convert_tf_hub_model.py --tf_hub_model_path ${hub_directory} --model_type bert --test
+    python3 convert_tf_hub_model.py --tf_hub_model_path ${hub_directory} --model_type bert --test
 done
