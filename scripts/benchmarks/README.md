@@ -1,7 +1,7 @@
 # Benchmarking the Performance of NLP Backbones
 
-We benchmark the training, inference latency + memory usage of the NLP backbones.
-For comparison, we also provide the numbers of 
+We benchmark the latency and peak memory usage of the training and inference of the NLP backbones.
+For comparison, we also provide the numbers of the models in huggingface.
 
 ## Backbones in HuggingFace
 
@@ -13,6 +13,16 @@ python3 -m pip install -U -r requirements.txt --user
 python3 benchmark_hf.py
 ```
 
+It will generate a list of csv files:
+
+```
+├── pytorch_train_fp32.csv
+├── pytorch_train_fp16.csv
+├── pytorch_infer_fp32.csv
+├── pytorch_infer_fp16.csv
+├── pytorch_infer_fp32_ts.csv
+```
+
 ## GluonNLP Backbones based on MXNet-2.0
 
 We profile three options: `NT` layout, `NT` layout with `TN` layout internally, and `TN` layout.
@@ -20,4 +30,14 @@ We profile three options: `NT` layout, `NT` layout with `TN` layout internally, 
 ```bash
 python3 -m pip install -U -r requirements.txt --user
 bash benchmark_gluonnlp.sh
+```
+
+It will generate csv files with `gluonnlp_` as the prefix
+```
+├── gluonnlp_train_fp32_NT_NT.csv
+├── gluonnlp_train_fp32_NT_TN.csv
+├── gluonnlp_train_fp32_TN_TN.csv
+├── gluonnlp_infer_fp32_NT_NT.csv
+├── gluonnlp_infer_fp32_NT_TN.csv
+├── gluonnlp_infer_fp32_TN_TN.csv
 ```
