@@ -158,7 +158,7 @@ def train(net, train_data, test_data, dev_data=None):
                 L = loss(output, label).mean()
             L.backward()
             # Update parameter.
-            trainer.step(args.batch_size)
+            trainer.step(1)
             log_interval_L += L.asscalar()
             epoch_L += L.asscalar()
             if (i + 1) % args.log_interval == 0:
