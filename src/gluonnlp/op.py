@@ -37,7 +37,7 @@ def select_vectors_by_position(F, data, positions):
     """
     # Here, we use gather_nd to select the output from data:
     # Need to compute
-    #   out[i, j, ...] = in[i, masked_position[i, j], ...]
+    #   out[i, j, :] = in[i, masked_position[i, j], :]
     # Thus, construct a indices with shape [2, batch_size, num_masked_position], where
     #     indices[0, i, j] = i
     #     indices[1, i, j] = masked_position[i, j]
@@ -48,23 +48,26 @@ def select_vectors_by_position(F, data, positions):
                                  axis=1).astype(np.int32)
     batch_idx = batch_idx + F.np.zeros_like(positions)
     indices = F.np.stack([batch_idx, positions])
+    # TODO(sxjscience) We can revise the implementation to advanced indexing
+    #  once the bug in MXNet is solved:
+    #  https://github.com/apache/incubator-mxnet/issues/18919
     out = F.npx.gather_nd(data, indices)
     return out
 
 
 @use_np
-def add_vectors_by_position(F, base, data, positions):
+def add_vectors_by_position(F, data, increment, positions):
     """Scatter each batch with the given positions.
 
-    base[i, positions[i, j], ...] += data[i, j, ...]
+    data[i, positions[i, j], ...] += increment[i, j, ...]
 
     Parameters
     ----------
     F
-    base
+    data
         Input tensor of the array to be updated.
         Shape (batch_size, seq_length, ...)
-    data
+    increment
         Input tensor of token ids
         Shape (batch_size, num_disp_position, ...)
     positions
@@ -86,34 +89,33 @@ def add_vectors_by_position(F, base, data, positions):
     #     indices[0, i * num_masked_position + j] = i
     #     indices[1, i * num_masked_position + j] = masked_position[i, j]
     # And convert data to the shape of the (batch_size * num_masked_position, )
-    # Then, out = npx.index_add(base, indices, data)
+    # Then, out = npx.index_add(data, indices, increment)
     positions = positions.astype(np.int32)
     # batch_idx.shape = (batch_size, 1) as [[0], [1], [2], ...]
     batch_idx = F.np.expand_dims(F.npx.arange_like(positions, axis=0),
                                  axis=1).astype(np.int32)
     batch_idx = batch_idx + F.np.zeros_like(positions)
-    indices = F.np.stack([batch_idx.reshape(-1), positions.reshape(-1)])
-
-    out = F.npx.index_add(base, indices, data.reshape(-1))
+    indices = F.np.stack([batch_idx.reshape((-1,)), positions.reshape((-1,))])
+    out = F.npx.index_add(data, indices, F.npx.reshape(increment, (-5, -4)))
     return out
 
 
 @use_np
-def update_vectors_by_position(F, base, data, positions):
+def update_vectors_by_position(F, data, val, positions):
     """
     Update each batch with the given positions. Considered as a reversed process of
     "select_vectors_by_position", this is an operator similar to "add_vectors_by_position"
     that updates the results instead of adding.
 
-    base[i, positions[i, j], :] = data[i, j, :]
+    data[i, positions[i, j], :] = val[i, j, :]
 
     Parameters
     ----------
     F
-    base:
+    data:
         Input tensor of the array to be updated.
         Shape (batch_size, seq_length)
-    data
+    val
         Input tensor of token ids
         Shape (batch_size, num_disp_position)
     positions
@@ -133,9 +135,9 @@ def update_vectors_by_position(F, base, data, positions):
     batch_idx = F.np.expand_dims(F.npx.arange_like(positions, axis=0),
                                  axis=1).astype(np.int32)
     batch_idx = batch_idx + F.np.zeros_like(positions)
-    indices = F.np.stack([batch_idx.reshape(-1), positions.reshape(-1)])
+    indices = F.np.stack([batch_idx.reshape((-1,)), positions.reshape((-1,))])
 
-    out = F.npx.index_update(base, indices, data.reshape(-1))
+    out = F.npx.index_update(data, indices, F.npx.reshape(val, (-5, -4)))
     return out
 
 
