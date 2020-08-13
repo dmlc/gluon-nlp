@@ -1,6 +1,7 @@
 # Benchmarking the Performance of NLP Backbones
 
-We benchmark the latency and peak memory usage of the training and inference of the NLP backbones.
+We benchmark the latency and peak memory usage of a single training (forward + backward) and inference (forward-only) step 
+of the NLP backbones.
 For comparison, we also provide the numbers of the models in huggingface.
 
 ## Backbones in HuggingFace
