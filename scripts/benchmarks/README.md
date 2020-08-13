@@ -25,7 +25,8 @@ It will generate a list of csv files:
 
 ## GluonNLP Backbones based on MXNet-2.0
 
-We profile three options: `NT` layout, `NT` layout with `TN` layout internally, and `TN` layout.
+We profile three options: `NT` layout, `NT` layout with `TN` layout as the compute layout,
+and `TN` layout.
 
 ```bash
 python3 -m pip install -U -r requirements.txt --user
