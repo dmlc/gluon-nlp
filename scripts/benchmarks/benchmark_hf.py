@@ -4,7 +4,6 @@ import math
 import os
 from multiprocessing import Process
 import torch
-from torch.cuda import empty_cache as torch_empty_cache
 from typing import Callable
 from transformers import HfArgumentParser, PyTorchBenchmark, PyTorchBenchmarkArguments
 import logging
