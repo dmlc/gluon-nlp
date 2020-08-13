@@ -52,26 +52,29 @@ def test_add_vectors_by_position(batch_size, seq_length, num_sel_positions,
         foo.hybridize()
     out_mx = foo(data, increment, positions).asnumpy()
     out_np = data.asnumpy().copy()
-    batch_idx = np.expand_dims(np.arange(data.shape[0]).astype(np.int32), axis=1)
-    out_np[batch_idx, positions.asnumpy()] += increment.asnumpy()
-    for bsize in range(batch_size):
-        for element in range(seq_length):
-            print(bsize, element)
-            assert_allclose(out_mx[bsize, element], out_np[bsize, element], 1E-4, 1E-4)
+    positions = positions.asnumpy()
+    increment = increment.asnumpy()
+    for bidx in range(batch_size):
+        for sidx in range(num_sel_positions):
+            sel = positions[bidx, sidx]
+            out_np[bidx, sel] += increment[bidx, sidx]
+    assert_allclose(out_np, out_mx, 1E-4, 1E-4)
 
 
 @pytest.mark.parametrize('batch_size', [1, 4])
 @pytest.mark.parametrize('seq_length', [16, 32])
 @pytest.mark.parametrize('num_sel_positions', [1, 5])
 @pytest.mark.parametrize('feature_shape,update_shape', [((16,), (16,)),
-                                                        ((16, 32), (16,)),
+                                                        ((16, 32), (16, 1)),
                                                         ((16, 32), (16, 32))])
 @pytest.mark.parametrize('hybridized', [False, True])
 def test_update_vectors_by_position(batch_size, seq_length, num_sel_positions,
                                     feature_shape, update_shape, hybridized):
     data = mx.np.random.uniform(-1, 1, (batch_size, seq_length) + feature_shape, dtype=np.float32)
     val = mx.np.random.uniform(-1, 1, (batch_size, num_sel_positions) + update_shape)
-    positions = mx.np.random.randint(0, seq_length, (batch_size, num_sel_positions), dtype=np.int32)
+    positions = mx.np.zeros((batch_size, num_sel_positions), dtype=np.int32)
+    for i in range(batch_size):
+        positions[i, :] = np.random.choice(seq_length, num_sel_positions, replace=False)
 
     class Foo(gluon.HybridBlock):
         def hybrid_forward(self, F, p_data, p_val, p_positions):
