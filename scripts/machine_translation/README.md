@@ -13,13 +13,12 @@ bash wmt2014_ende.sh yttm
 Then, you can run the experiment.
 For "transformer_base" configuration
 
-# TODO
 ```bash
 SUBWORD_MODEL=yttm
 SRC=en
 TGT=de
 datapath=../datasets/machine_translation
-python train_transformer.py \
+python3 train_transformer.py \
     --train_src_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
     --train_tgt_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
     --dev_src_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
@@ -53,7 +52,7 @@ Use the following command to inference/evaluate the Transformer model:
 
 ```bash
 SUBWORD_MODEL=yttm
-python evaluate_transformer.py \
+python3 evaluate_transformer.py \
     --param_path transformer_base_wmt2014_en_de_${SUBWORD_MODEL}/average_21_30.params \
     --src_lang en \
     --tgt_lang de \
@@ -77,7 +76,7 @@ SUBWORD_MODEL=yttm
 SRC=en
 TGT=de
 datapath=../datasets/machine_translation
-python train_transformer.py \
+python3 train_transformer.py \
     --train_src_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
     --train_tgt_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
     --dev_src_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
@@ -112,7 +111,7 @@ Use the following command to inference/evaluate the Transformer model:
 
 ```bash
 SUBWORD_MODEL=yttm
-python evaluate_transformer.py \
+python3 evaluate_transformer.py \
     --param_path transformer_big_wmt2014_en_de_${SUBWORD_MODEL}/average_21_30.params \
     --src_lang en \
     --tgt_lang de \

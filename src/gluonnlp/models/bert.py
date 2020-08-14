@@ -637,7 +637,7 @@ class BertForMLM(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units)
-            cfg.MODEL.compute_layout = 'auto'
+        pooled_out
             Shape (batch_size, units)
         mlm_scores :
             Shape (batch_size, num_masked_positions, vocab_size)

@@ -30,8 +30,10 @@ def test_get_backbone(name):
         if 'roberta' in name:
             out = net(inputs, valid_length)
         elif 'xlmr' in name:
-            # Skip for XLMR tests
+            # Skip for XLMR tests. It takes too much CPU memory.
             return
+        elif 'bart' in name:
+            out = net(inputs, valid_length, inputs, valid_length)
         else:
             out = net(inputs, token_types, valid_length)
         mx.npx.waitall()

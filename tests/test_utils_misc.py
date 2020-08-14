@@ -1,13 +1,15 @@
 import pytest
 import tempfile
 import os
+import logging
 import mxnet as mx
 import multiprocessing
 import functools
 from mxnet.gluon import nn
+from pathlib import Path
 import numpy as np
 from numpy.testing import assert_allclose
-from gluonnlp.utils.misc import AverageSGDTracker, download, sha1sum
+from gluonnlp.utils.misc import AverageSGDTracker, download, sha1sum, logging_config
 mx.npx.set_np()
 
 
@@ -105,3 +107,38 @@ def test_download_https(overwrite):
                         'cc-index.paths.gz',
                     sha1_hash='fac65325fdd881b75d6badc0f3caea287d91ed54',
                     overwrite=overwrite)
+
+
+def test_logging_config():
+    logger = logging.getLogger(__name__)
+    with tempfile.TemporaryDirectory() as root:
+        logging_config(folder=root, logger=logger, name='test')
+        file_names = os.listdir(root)
+        assert file_names[0] == 'test.log'
+        file_size = Path(os.path.join(root, 'test.log')).stat().st_size
+        assert file_size == 0
+        logger.info('123')
+        for handler in logger.handlers:
+            handler.flush()
+        file_size_test1 = Path(os.path.join(root, 'test.log')).stat().st_size
+        assert file_size_test1 > 0
+        logging_config(folder=root, logger=logger, name='foo', overwrite_handler=False)
+        logger.info('123')
+        for handler in logger.handlers:
+            handler.flush()
+        file_size_test2 = Path(os.path.join(root, 'test.log')).stat().st_size
+        file_size_foo1 = Path(os.path.join(root, 'foo.log')).stat().st_size
+        assert file_size_test2 > file_size_test1
+        assert file_size_foo1 > 0
+
+        # After overwrite, the old hanlder will be removed
+        logging_config(folder=root, logger=logger, name='zoo', overwrite_handler=True)
+        logger.info('12345')
+        for handler in logger.handlers:
+            handler.flush()
+        file_size_zoo1 = Path(os.path.join(root, 'zoo.log')).stat().st_size
+        file_size_test3 = Path(os.path.join(root, 'test.log')).stat().st_size
+        file_size_foo2 = Path(os.path.join(root, 'foo.log')).stat().st_size
+        assert file_size_test3 == file_size_test2
+        assert file_size_foo2 == file_size_foo1
+        assert file_size_zoo1 > 0

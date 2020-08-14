@@ -44,6 +44,7 @@ def glob(url, separator=','):
         result.extend(_glob.glob(os.path.expanduser(pattern.strip())))
     return result
 
+
 class AverageSGDTracker(object):
     def __init__(self, params=None):
         """Maintain a set of shadow variables "v" that is calculated by
@@ -134,10 +135,12 @@ def file_line_number(path: str) -> int:
     Parameters
     ----------
     path
+        The path to calculate the number of lines in a file.
 
     Returns
     -------
     ret
+        The number of lines
     """
     ret = 0
     with open(path, 'rb') as f:
@@ -147,6 +150,18 @@ def file_line_number(path: str) -> int:
 
 
 def md5sum(filename):
+    """Calculate the md5sum of a file
+
+    Parameters
+    ----------
+    filename
+        Name of the file
+
+    Returns
+    -------
+    ret
+        The md5sum
+    """
     with open(filename, mode='rb') as f:
         d = hashlib.md5()
         for buf in iter(functools.partial(f.read, 1024*100), b''):
@@ -155,11 +170,24 @@ def md5sum(filename):
 
 
 def sha1sum(filename):
+    """Calculate the sha1sum of a file
+
+    Parameters
+    ----------
+    filename
+        Name of the file
+
+    Returns
+    -------
+    ret
+        The sha1sum
+    """
     with open(filename, mode='rb') as f:
         d = hashlib.sha1()
         for buf in iter(functools.partial(f.read, 1024*100), b''):
             d.update(buf)
     return d.hexdigest()
+
 
 def naming_convention(file_dir, file_name):
     """Rename files with 8-character hash"""
@@ -171,36 +199,68 @@ def naming_convention(file_dir, file_name):
         file_sufix=file_sufix)
     return new_name, long_hash
 
+
 def logging_config(folder: Optional[str] = None,
                    name: Optional[str] = None,
+                   logger: logging.Logger = logging.root,
                    level: int = logging.INFO,
                    console_level: int = logging.INFO,
-                   console: bool = True) -> str:
-    """Config the logging module"""
+                   console: bool = True,
+                   overwrite_handler: bool = False) -> str:
+    """Config the logging module. It will set the logger to save to the specified file path.
+
+    Parameters
+    ----------
+    folder
+        The folder to save the log
+    name
+        Name of the saved
+    logger
+        The logger
+    level
+        Logging level
+    console_level
+        Logging level of the console log
+    console
+        Whether to also log to console
+    overwrite_handler
+        Whether to overwrite the existing handlers in the logger
+
+    Returns
+    -------
+    folder
+        The folder to save the log file.
+    """
     if name is None:
-        name = inspect.stack()[1][1].split('.')[0]
+        name = inspect.stack()[-1][1].split('.')[0]
     if folder is None:
         folder = os.path.join(os.getcwd(), name)
     if not os.path.exists(folder):
         os.makedirs(folder, exist_ok=True)
-    # Remove all the current handlers
-    for handler in logging.root.handlers:
-        logging.root.removeHandler(handler)
-    logging.root.handlers = []
+    need_file_handler = True
+    need_console_handler = True
+    # Check all loggers.
+    if overwrite_handler:
+        logger.handlers = []
+    else:
+        for handler in logger.handlers:
+            if isinstance(handler, logging.StreamHandler):
+                need_console_handler = False
     logpath = os.path.join(folder, name + ".log")
     print("All Logs will be saved to {}".format(logpath))
-    logging.root.setLevel(level)
+    logger.setLevel(level)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    logfile = logging.FileHandler(logpath)
-    logfile.setLevel(level)
-    logfile.setFormatter(formatter)
-    logging.root.addHandler(logfile)
-    if console:
+    if need_file_handler:
+        logfile = logging.FileHandler(logpath)
+        logfile.setLevel(level)
+        logfile.setFormatter(formatter)
+        logger.addHandler(logfile)
+    if console and need_console_handler:
         # Initialze the console logging
         logconsole = logging.StreamHandler()
         logconsole.setLevel(console_level)
         logconsole.setFormatter(formatter)
-        logging.root.addHandler(logconsole)
+        logger.addHandler(logconsole)
     return folder
 
 
@@ -313,9 +373,9 @@ class GoogleDriveDownloader:
 
     @staticmethod
     def download_file_from_google_drive(file_id, dest_path, overwrite=False, showsize=False):
-        """
-        Downloads a shared file from google drive into a given folder.
+        """Downloads a shared file from google drive into a given folder.
         Optionally unzips it.
+
         Parameters
         ----------
         file_id: str
@@ -328,9 +388,6 @@ class GoogleDriveDownloader:
             optional, if True forces re-download and overwrite.
         showsize: bool
             optional, if True print the current download size.
-        Returns
-        -------
-        None
         """
 
         destination_directory = os.path.dirname(dest_path)
@@ -485,7 +542,7 @@ def download(url: str,
                 # and have the same hash with target file
                 # delete the temporary file
                 if not os.path.exists(fname) or (sha1_hash and not sha1sum(fname) == sha1_hash):
-                    # atmoic operation in the same file system
+                    # atomic operation in the same file system
                     replace_file('{}.{}'.format(fname, random_uuid), fname)
                 else:
                     try:
@@ -546,8 +603,24 @@ def check_version(min_version: str,
         else:
             raise AssertionError(msg)
 
+
 def init_comm(backend, gpus):
-    """Init communication backend"""
+    """Init communication backend
+
+    Parameters
+    ----------
+    backend
+    gpus
+
+    Returns
+    -------
+    store
+    num_workers
+    rank
+    local_rank
+    is_master_node
+    ctx_l
+    """
     # backend specific implementation
     import mxnet as mx
     if backend == 'horovod':

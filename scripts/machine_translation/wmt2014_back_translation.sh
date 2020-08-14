@@ -27,7 +27,7 @@ cd ../../../machine_translation
 datapath=../datasets/machine_translation
 
 # train the reverse model to translate German to English
-python train_transformer.py \
+python3 train_transformer.py \
     --train_src_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
     --train_tgt_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
     --dev_src_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${TGT} \
@@ -59,7 +59,7 @@ for NUM in ` seq -f %03g 0 193 `; do
     fi
     {
         echo processing ${split_corpus}
-        python evaluate_transformer.py \
+        python3 evaluate_transformer.py \
             --param_path transformer_wmt2014_de_en_${SUBWORD_ALGO}/average.params \
             --src_lang ${TGT} \
             --tgt_lang ${SRC} \
@@ -115,7 +115,7 @@ for LANG in ${SRC} ${TGT} ; do
 done
 
 # Use the combine data to train the new model
-python train_transformer.py \
+python3 train_transformer.py \
     --train_src_corpus ${datapath}/wmt2014_backtranslation/bt.train.tok.${SUBWORD_ALGO}.${SRC} \
     --train_tgt_corpus ${datapath}/wmt2014_backtranslation/bt.train.tok.${SUBWORD_ALGO}.${TGT} \
     --dev_src_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
@@ -144,7 +144,7 @@ nlp_nmt average_checkpoint --prefix range() \
     --save-path backtranslation_transformer_wmt2014_ende_${SUBWORD_ALGO}/average.params
 
 # Finally, we can evaluate the model
-python evaluate_transformer.py \
+python3 evaluate_transformer.py \
     --param_path backtranslation_transformer_wmt2014_ende_${SUBWORD_ALGO}/avg_20_29.params \
     --src_lang ${SRC} \
     --tgt_lang ${TGT} \
