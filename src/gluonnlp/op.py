@@ -200,15 +200,15 @@ def gumbel_softmax(F, logits, temperature: float = 1.0, eps: float = 1E-10,
 def trunc_gumbel(F, logits, truncation):
     """Sample from the TruncGumbel distribution.
 
-    The CDF of the Truncated Gumbel distribution is defined as
+    The cumulative density function (CDF) of the Truncated Gumbel distribution is defined as
 
-    TruncGumbel(\alpha, truncation) = max(Gumbel(\alpha), truncation)
+    TruncGumbel(\alpha, truncation) \prop max(Gumbel(\alpha), truncation)
 
     To sample from the distribution, we can use the CDF inversion technique.
 
     References:
 
-        1. [NIPS2014] A* Sampling
+        1. [NIPS2014] A* Sampling, https://papers.nips.cc/paper/5449-a-sampling.pdf
         2. https://cmaddis.github.io/gumbel-machinery
 
     Parameters
