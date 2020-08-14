@@ -137,7 +137,6 @@ def test_logging_config():
         for handler in logger.handlers:
             handler.flush()
         file_size_zoo1 = Path(os.path.join(root, 'zoo.log')).stat().st_size
-        print('run')
         file_size_test3 = Path(os.path.join(root, 'test.log')).stat().st_size
         file_size_foo2 = Path(os.path.join(root, 'foo.log')).stat().st_size
         assert file_size_test3 == file_size_test2

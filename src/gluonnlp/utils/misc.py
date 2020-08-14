@@ -242,18 +242,11 @@ def logging_config(folder: Optional[str] = None,
     # Check all loggers.
     if overwrite_handler:
         logger.handlers = []
-    else:
-        for handler in logger.handlers:
-            if isinstance(handler, logging.FileHandler):
-                need_file_handler = False
-            elif isinstance(handler, logging.StreamHandler):
-                need_console_handler = False
     logpath = os.path.join(folder, name + ".log")
     print("All Logs will be saved to {}".format(logpath))
     logger.setLevel(level)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     if need_file_handler:
-        print(logpath)
         logfile = logging.FileHandler(logpath)
         logfile.setLevel(level)
         logfile.setFormatter(formatter)
