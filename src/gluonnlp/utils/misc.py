@@ -232,7 +232,7 @@ def logging_config(folder: Optional[str] = None,
         The folder to save the log file.
     """
     if name is None:
-        name = inspect.stack()[1][1].split('.')[0]
+        name = inspect.stack()[-1][1].split('.')[0]
     if folder is None:
         folder = os.path.join(os.getcwd(), name)
     if not os.path.exists(folder):
@@ -240,22 +240,20 @@ def logging_config(folder: Optional[str] = None,
     need_file_handler = True
     need_console_handler = True
     # Check all loggers.
-    for handler in logger.handlers:
-        if isinstance(handler, logging.FileHandler):
-            if overwrite_handler:
-                logger.removeHandler(handler)
-            else:
+    if overwrite_handler:
+        logger.handlers = []
+    else:
+        for handler in logger.handlers:
+            if isinstance(handler, logging.FileHandler):
                 need_file_handler = False
-        elif isinstance(handler, logging.StreamHandler):
-            if overwrite_handler:
-                logger.removeHandler(handler)
-            else:
+            elif isinstance(handler, logging.StreamHandler):
                 need_console_handler = False
     logpath = os.path.join(folder, name + ".log")
     print("All Logs will be saved to {}".format(logpath))
     logger.setLevel(level)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     if need_file_handler:
+        print(logpath)
         logfile = logging.FileHandler(logpath)
         logfile.setLevel(level)
         logfile.setFormatter(formatter)
@@ -265,7 +263,7 @@ def logging_config(folder: Optional[str] = None,
         logconsole = logging.StreamHandler()
         logconsole.setLevel(console_level)
         logconsole.setFormatter(formatter)
-        logging.root.addHandler(logconsole)
+        logger.addHandler(logconsole)
     return folder
 
 
