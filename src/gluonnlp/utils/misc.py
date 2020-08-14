@@ -242,6 +242,10 @@ def logging_config(folder: Optional[str] = None,
     # Check all loggers.
     if overwrite_handler:
         logger.handlers = []
+    else:
+        for handler in logger.handlers:
+            if isinstance(handler, logging.StreamHandler):
+                need_console_handler = False
     logpath = os.path.join(folder, name + ".log")
     print("All Logs will be saved to {}".format(logpath))
     logger.setLevel(level)
