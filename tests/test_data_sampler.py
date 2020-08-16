@@ -137,13 +137,18 @@ def test_split_sampler_even_size(num_samples, num_parts):
 @pytest.mark.parametrize('required_batch_size_multiple', [1, 5])
 @pytest.mark.parametrize('shuffle', [True, False])
 @pytest.mark.parametrize('seed', [100, None])
+@pytest.mark.parametrize('num_parts', [1, 4])
 def test_bounded_budget_sampler(seq_lengths, max_num_tokens, max_num_sentences,
-                                required_batch_size_multiple, shuffle, seed):
-    sampler = s.BoundedBudgetSampler(seq_lengths, max_num_tokens, max_num_sentences,
-                                     required_batch_size_multiple, shuffle, seed)
-    print(sampler)
+                                required_batch_size_multiple, shuffle, seed, num_parts):
+    samplers = []
+    for index in range(num_parts):
+        samplers.append(s.BoundedBudgetSampler(seq_lengths, max_num_tokens, max_num_sentences,
+                                               required_batch_size_multiple, shuffle, seed,
+                                               num_parts, index))
     total_sampled_ids = []
-    for batch_sample_ids in sampler:
-        total_sampled_ids.extend(batch_sample_ids)
+    for sampler in samplers:
+        print(sampler)
+        for batch_sample_ids in sampler:
+            total_sampled_ids.extend(batch_sample_ids)
     assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
     assert sorted(total_sampled_ids) == list(range(len(total_sampled_ids)))

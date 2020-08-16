@@ -23,7 +23,6 @@ __all__ = ['ConstWidthBucket', 'LinearWidthBucket', 'ExpWidthBucket',
 import math
 import random
 import warnings
-import random
 import numpy as np
 import abc
 from typing import Union, Sequence, Optional, List
@@ -289,12 +288,16 @@ class BoundedBudgetSampler(BaseSampler):
         Number of partitions which the data is split into (default: 1)
     part_index
         The index of the part to read from
+    even_size
+        If the number of samples is not even across all partitions, sample a few extra samples
+        for the ones with fewer samples.
     """
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_num_tokens: int = -1, max_num_sentences: int = -1,
                  required_batch_size_multiple: int = 1,
                  shuffle: bool = True, seed: Optional[int] = None,
-                 num_parts: int = 1, part_index: int = 0):
+                 num_parts: int = 1, part_index: int = 0,
+                 even_size: bool = False):
         assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
         assert max_num_tokens > 0 or max_num_sentences > 0, \
                'One of max_num_tokens and max_num_sentences must be larger than 0'
@@ -310,6 +313,7 @@ class BoundedBudgetSampler(BaseSampler):
         self._rng = np.random.RandomState(seed)
         self._num_parts = num_parts
         self._part_index = part_index
+        self._even_size = even_size
         # sort
         self._indices = self._indices[np.argsort(self._lengths, kind='mergesort')]
         batch = []
@@ -335,29 +339,51 @@ class BoundedBudgetSampler(BaseSampler):
                 )
             batch.append(index)
         if len(batch) > 0:
-            self._batches.append(np.array(batch))        
-        
+            self._batches.append(np.array(batch))
+
+        # split batches to parts
+        # split strategy is same as the SplitSampler
+        length = len(lengths)
+        if not even_size:
+            part_len = length // num_parts
+            remaining = length % num_parts
+            self._start = part_len * part_index + min(part_index, remaining)
+            self._end = self._start + part_len + (part_index < remaining)
+            self._part_len = self._end - self._start
+        else:
+            part_len = int(length + num_parts - 1) // num_parts
+            self._start = part_len * part_index
+            self._end = self._start + part_len
+            self._start = self._start if self._start < length else length
+            self._end = self._end if self._end < length else length
+            self._part_len = part_len
+        self._part_batches = self._batches[self._start:self._end]
+        if even_size and len(self._part_batches) < self._part_len:
+            candidates = random.sample(self._batches, k=self._part_len-len(self._part_batches))
+            self._part_batches.extend(candidates)
+        self._part_sample_num = sum([len(b) for b in self._part_batches])
+
     def __iter__(self):
         if self._shuffle:
-            self._rng.shuffle(self._batches)
-        part_batches = []
-        for i in range(len(self._batches)):
-            if i % self._num_parts == self._part_index:
-                part_batches.append(self._batches[i])
-        for batch in part_batches:
+            self._rng.shuffle(self._part_batches)
+        for batch in self._part_batches:
             yield batch
 
     def __len__(self):
-        return len(self._batches)
+        return len(self._part_batches)
 
     def __repr__(self):
         ret = '{name}(\n' \
             '  sample_num={sample_num},\n' \
-            '  batch_num={batch_num}\n'\
+            '  batch_num={batch_num}\n' \
+            '  part_num={part_num}\n' \
+            '  part_index={part_index}\n' \
             ')'\
             .format(name=self.__class__.__name__,
-                    sample_num=len(self._lengths),
-                    batch_num=len(self._batches))
+                    sample_num=self._part_sample_num,
+                    batch_num=len(self._part_batches),
+                    part_num=self._num_parts,
+                    part_index=self._part_index)
         return ret
 
 
