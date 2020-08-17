@@ -3,7 +3,7 @@
 Following the instruction of [Prepare OpenWebTextCorpus](../datasets/pretrain_corpus#openwebtext), download and prepare the dataset, obtaining a total of 20610 text files in the folder `prepared_owt`.
 
 ```bash
-python data_preprocessing.py --input prepared_owt --output preprocessed_owt --max_seq_length 128 --shuffle
+python3 data_preprocessing.py --input prepared_owt --output preprocessed_owt --max_seq_length 128 --shuffle
 ```
 The above command allows us to generate the preprocessed Numpy features saved in `.npz`.
 # Pretrain Model
@@ -11,7 +11,7 @@ The above command allows us to generate the preprocessed Numpy features saved in
 Following [Official Quickstart](https://github.com/google-research/electra#quickstart-pre-train-a-small-electra-model), pretrain a small model using OpenWebText as pretraining corpus. Note that [horovod](https://github.com/horovod/horovod) needs to be installed in advance, if `comm_backend` is set to `horovod`.
 
 ```bash
-horovodrun -np 2 -H localhost:2 python -m run_electra \
+horovodrun -np 2 -H localhost:2 python3 -m run_electra \
     --model_name google_electra_small \
     --data 'preprocessed_owt/*.npz' \
     --generator_units_scale 0.25 \
@@ -35,7 +35,7 @@ horovodrun -np 2 -H localhost:2 python -m run_electra \
 
 Alternatively, we could preprocessing the features on the fly and train this model with raw text directly like
 ```bash
-horovodrun -np 2 -H localhost:2 python -m run_electra \
+horovodrun -np 2 -H localhost:2 python3 -m run_electra \
     --model_name google_electra_small \
     --generator_units_scale 0.25 \
     --data 'prepared_owt/*.txt' \
@@ -72,7 +72,7 @@ gluon_electra_small_owt
 After pretraining, several downstream NLP tasks such as Question Answering are available to fine-tune. Here is an example of fine-tuning a local pretrained model on [SQuAD 1.1/2.0](../question_answering#squad).
 
 ```bash
-python run_squad.py \
+python3 run_squad.py \
     --model_name google_electra_small \
     --data_dir squad \
     --backbone_path ${OUTPUT}/model-{short_hash}.params \

@@ -395,7 +395,7 @@ class AlbertModel(HybridBlock):
                 Shape (batch_size, seq_length, units)
             - layout = 'TN'
                 Shape (seq_length, batch_size, units)
-        pooled_output :
+        pooled_output
             This is optional. Shape (batch_size, units)
         """
         initial_embedding = self.get_initial_embedding(F, inputs, token_types)

@@ -14,12 +14,12 @@ def get_parser():
 
     We support the following models:
 
-        "python apply_subword.py --model spm" : Encode with Sentencepiece Model;
-        "python apply_subword.py --model subword_nmt" : Encode with the subword-nmt package;
-        "python apply_subword.py --model yttm" : Encode with YouTokenToMe; 
-        "python apply_subword.py --model hf_bytebpe" : Encode with the Byte-level BPE Tokenizer Implemented by Huggingface.
-        "python apply_subword.py --model hf_wordpiece" : Encode with the Wordpiece Tokenizer Implementated by Huggingface.
-        "python apply_subword.py --model hf_bpe" : Encode with the BPE Tokenizer Implemented by Huggingface.
+        "python3 apply_subword.py --model spm" : Encode with Sentencepiece Model;
+        "python3 apply_subword.py --model subword_nmt" : Encode with the subword-nmt package;
+        "python3 apply_subword.py --model yttm" : Encode with YouTokenToMe; 
+        "python3 apply_subword.py --model hf_bytebpe" : Encode with the Byte-level BPE Tokenizer Implemented by Huggingface.
+        "python3 apply_subword.py --model hf_wordpiece" : Encode with the Wordpiece Tokenizer Implementated by Huggingface.
+        "python3 apply_subword.py --model hf_bpe" : Encode with the BPE Tokenizer Implemented by Huggingface.
     ''')
     )
     parser.add_argument('--corpus', type=str, nargs='+', required=True,

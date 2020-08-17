@@ -114,7 +114,7 @@ def convert_tf_assets(tf_assets_dir, model_size, electra_path):
 
     if vocab_path:
         vocab_path = os.path.join(tf_assets_dir, vocab_path)
-        vocab_size = len(open(vocab_path, 'rU').readlines())
+        vocab_size = len(open(vocab_path, 'r', encoding='utf-8').readlines())
     config_dict = get_dict_config(model_size, electra_path)
     cfg = convert_tf_config(config_dict, vocab_size)
     return cfg, vocab_path

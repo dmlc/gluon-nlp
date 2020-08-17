@@ -35,7 +35,12 @@ requirements = [
     'regex',
     'contextvars',
     'pyarrow',
-    'pandas'
+    'sentencepiece',
+    'protobuf',
+    'pandas',
+    'tokenizers>=0.7.0',
+    'youtokentome>=1.0.6',
+    'fasttext>=0.9.2'
 ]
 
 setup(
@@ -56,7 +61,8 @@ setup(
     )),
     package_dir={"": "src"},
     package_data={'': [os.path.join('models', 'model_zoo_checksums', '*.txt'),
-                       os.path.join('cli', 'data', 'url_checksums', '*.txt')]},
+                       os.path.join('cli', 'data', 'url_checksums', '*.txt'),
+                       os.path.join('cli', 'data', 'url_checksums', 'mirror', '*.json')]},
     zip_safe=True,
     include_package_data=True,
     install_requires=requirements,
@@ -64,14 +70,9 @@ setup(
         'extras': [
             'boto3',
             'tqdm',
-            'protobuf',
-            'tokenizers>=0.7.0',
-            'sentencepiece',
             'jieba',
             'subword_nmt',
-            'youtokentome>=1.0.6',
             'spacy>=2.0.0',
-            'fasttext>=0.9.2',
             'langid',
             'nltk',
             'h5py>=2.10',

@@ -16,7 +16,7 @@ Nevertheless, we utilize the [Project Gutenberg](https://www.gutenberg.org/) as 
 You can use the following command to download and prepare the Gutenberg dataset.
 
 ```bash
-python prepare_bookcorpus.py --dataset gutenberg
+python3 prepare_bookcorpus.py --dataset gutenberg
 ```
 
 Also, you should follow the [license](https://www.gutenberg.org/wiki/Gutenberg:The_Project_Gutenberg_License) for using the data.
@@ -27,16 +27,16 @@ Please install [attardi/wikiextractor](https://github.com/attardi/wikiextractor)
 
 ```bash
 # Download
-python prepare_wikipedia.py --mode download --lang en --date latest -o ./
+python3 prepare_wikipedia.py --mode download --lang en --date latest -o ./
 
 # Properly format the text files
-python prepare_wikipedia.py --mode format -i [path-to-wiki.xml.bz2] -o ./
+python3 prepare_wikipedia.py --mode format -i [path-to-wiki.xml.bz2] -o ./
 
 ```
 The process of downloading and formatting is time consuming, and we offer an alternative solution to download the prepared raw text file from S3 bucket. This raw text file is in English and was dumped at 2020-06-20 being formated by the above very process (` --lang en --date 20200620`).
 
 ```bash
-python prepare_wikipedia.py --mode download_prepared -o ./
+python3 prepare_wikipedia.py --mode download_prepared -o ./
 ```
 ### References
 - [NVIDIA/DeepLearningExamples](https://github.com/NVIDIA/DeepLearningExamples/tree/master/PyTorch/LanguageModeling/BERT)
@@ -48,7 +48,7 @@ You can download the OpenWebText from [link](https://skylion007.github.io/OpenWe
 After downloading and extracting the OpenWebText (i.e., `tar xf openwebtext.tar.xz`), you can use the following command to preprocess the dataset.
 
 ```bash
-python prepare_openwebtext.py --input openwebtext/ --output prepared_owt --shuffle
+python3 prepare_openwebtext.py --input openwebtext/ --output prepared_owt --shuffle
 ```
 
 In this step, the archived txt are directly read without decompressing.
