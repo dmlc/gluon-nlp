@@ -370,18 +370,22 @@ class BoundedBudgetSampler(BaseSampler):
             yield batch
 
     def __len__(self):
-        return len(self._part_batches)
+        return len(self._batches)
 
     def __repr__(self):
         ret = '{name}(\n' \
             '  sample_num={sample_num},\n' \
-            '  batch_num={batch_num}\n' \
-            '  part_num={part_num}\n' \
+            '  batch_num={batch_num},\n' \
+            '  part_sample_num={part_sample_num},\n' \
+            '  part_batch_num={part_batch_num},\n' \
+            '  part_num={part_num},\n' \
             '  part_index={part_index}\n' \
             ')'\
             .format(name=self.__class__.__name__,
-                    sample_num=self._part_sample_num,
-                    batch_num=len(self._part_batches),
+                    sample_num=self._lengths.shape[0],
+                    batch_num=len(self._batches),
+                    part_sample_num=self._part_sample_num,
+                    part_batch_num=len(self._part_batches),
                     part_num=self._num_parts,
                     part_index=self._part_index)
         return ret
