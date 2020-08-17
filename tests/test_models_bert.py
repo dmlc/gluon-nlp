@@ -16,7 +16,7 @@ def test_bert_small_cfg(compute_layout):
     cfg = BertModel.get_cfg()
     cfg.defrost()
     cfg.MODEL.vocab_size = 100
-    cfg.MODEL.units = 12 * 8
+    cfg.MODEL.units = 12 * 4
     cfg.MODEL.hidden_size = 64
     cfg.MODEL.num_layers = 2
     cfg.MODEL.num_heads = 2
@@ -31,7 +31,7 @@ def test_bert_small_cfg(compute_layout):
 
     # Sample data
     batch_size = 4
-    sequence_length = 16
+    sequence_length = 8
     num_mask = 3
     inputs = mx.np.random.randint(0, 10, (batch_size, sequence_length))
     token_types = mx.np.random.randint(0, 2, (batch_size, sequence_length))
