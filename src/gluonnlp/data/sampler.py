@@ -289,8 +289,8 @@ class BoundedBudgetSampler(BaseSampler):
     part_index
         The index of the part to read from
     even_size
-        If the number of samples is not even across all partitions, sample a few extra samples
-        for the ones with fewer samples.
+        If the number of batches is not even across all partitions, sample a few extra batches
+        for the ones with fewer batches.
     """
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_num_tokens: int = -1, max_num_sentences: int = -1,
@@ -342,8 +342,7 @@ class BoundedBudgetSampler(BaseSampler):
             self._batches.append(np.array(batch))
 
         # split batches to parts
-        # split strategy is same as the SplitSampler
-        length = len(lengths)
+        length = len(self._batches)
         if not even_size:
             part_len = length // num_parts
             remaining = length % num_parts
@@ -370,20 +369,16 @@ class BoundedBudgetSampler(BaseSampler):
             yield batch
 
     def __len__(self):
-        return len(self._batches)
+        return len(self._part_batches)
 
     def __repr__(self):
         ret = '{name}(\n' \
-            '  sample_num={sample_num},\n' \
-            '  batch_num={batch_num},\n' \
             '  part_sample_num={part_sample_num},\n' \
             '  part_batch_num={part_batch_num},\n' \
             '  part_num={part_num},\n' \
             '  part_index={part_index}\n' \
             ')'\
             .format(name=self.__class__.__name__,
-                    sample_num=self._lengths.shape[0],
-                    batch_num=len(self._batches),
                     part_sample_num=self._part_sample_num,
                     part_batch_num=len(self._part_batches),
                     part_num=self._num_parts,
