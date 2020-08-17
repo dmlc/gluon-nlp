@@ -175,10 +175,10 @@ def parse_args():
     args = parser.parse_args()
     if args.max_update > 0:
         args.epochs = -1
-    logging_config(args.save_dir, console=True)
     _, args.num_parts, args.rank, args.local_rank, _, args.ctx_l = init_comm(
         args.comm_backend, args.gpus)
     if args.local_rank == 0:
+        logging_config(args.save_dir, console=True)
         logging.info(args)
     return args
 
