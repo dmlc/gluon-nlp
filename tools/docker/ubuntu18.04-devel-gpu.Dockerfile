@@ -111,30 +111,6 @@ RUN pip3 install --no-cache --upgrade \
     ${MX_URL} \
     awscli
 
-## Install MXNet
-#RUN mkdir /tmp/mxnet \
-# && cd /tmp/mxnet \
-# && git clone --single-branch --branch master --recursive https://github.com/apache/incubator-mxnet \
-# && cd incubator-mxnet \
-# && mkdir build \
-# && cd build \
-# && cmake -GNinja -C ../config/linux_gpu.cmake .. \
-# && cmake --build . \
-# && cd ../python \
-# && python3 -m pip install . --user \
-# && rm -rf /tmp/mxnet
-#
-## Install Horovod
-## TODO Fix once https://github.com/horovod/horovod/pull/2155 gets merged
-#RUN mkdir /tmp/horovod \
-# && cd /tmp/horovod \
-# && git clone --single-branch --branch mx2-pr --recursive https://github.com/eric-haibin-lin/horovod \
-# && cd horovod \
-# && HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_GPU_BROADCAST=NCCL HOROVOD_WITHOUT_GLOO=1 \
-#    HOROVOD_WITH_MPI=1 HOROVOD_WITH_MXNET=1 HOROVOD_WITHOUT_PYTORCH=1 \
-#    HOROVOD_WITHOUT_TENSORFLOW=1 python3 setup.py install --user \
-# && horovodrun -np 2 python3 -m pytest -v test/test_mxnet.py\
-
 RUN pip3 install --no-cache --upgrade \
  https://repo.mxnet.io/dist/python/cu102/mxnet_cu102-2.0.0b20200818-py2.py3-none-manylinux2014_x86_64.whl --user
 
