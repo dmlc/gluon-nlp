@@ -74,7 +74,7 @@ We could speed up multi-GPU training via horovod.
 Compared to KVStore, training RoBERTa Large model on SQuAD 2.0 with 3 epochs will save roughly 1/4 training resources (8.48 vs 11.32 hours). Results may vary depending on the training instances.
 
 ```bash
-mpirun -np 4 -H localhost:4 python3 run_squad.py \
+horovodrun -np 4 -H localhost:4 python3 run_squad.py \
     --comm_backend horovod \
     ...
 ```

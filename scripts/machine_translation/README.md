@@ -42,7 +42,7 @@ python3 train_transformer.py \
 
 Or training via horovod
 ```
-mpirun -np 4 -H localhost:4 python3 train_transformer.py \
+horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     ...
 ```
