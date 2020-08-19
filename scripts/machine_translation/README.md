@@ -44,7 +44,25 @@ Or training via horovod
 ```
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
-    ...
+    --train_src_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
+    --train_tgt_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
+    --dev_src_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
+    --dev_tgt_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${TGT} \
+    --src_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --src_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --tgt_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --tgt_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --save_dir transformer_base_wmt2014_en_de_${SUBWORD_ALGO} \
+    --cfg transformer_base \
+    --lr 0.002 \
+    --sampler BoundedBudgetSampler \
+    --max_num_tokens 2700 \
+    --max_update 15000 \
+    --save_interval_update 500 \
+    --warmup_steps 6000 \
+    --warmup_init_lr 0.0 \
+    --seed 123 \
+    --gpus 0,1,2,3
 ```
 
 Use the average_checkpoint cli to average the last 10 checkpoints
