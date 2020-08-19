@@ -709,7 +709,7 @@ class ShardedIterator(BaseSampler):
             yield batch
     
     def __len__(self):
-        return self._part_len
+        return len(self._sampler)
     
     def __repr__(self):
         ret = '{name}(\n' \
@@ -722,5 +722,5 @@ class ShardedIterator(BaseSampler):
                     batch_num=len(self._sampler),
                     part_batch_num=self._part_len,
                     num_parts=self._num_parts,
-                    part_index=self.part_index)
+                    part_index=self._part_index)
         return ret
