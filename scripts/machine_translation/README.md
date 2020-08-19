@@ -47,7 +47,7 @@ mpirun -np 4 -H localhost:4 python3 train_transformer.py \
     ...
 ```
 
-Use the average_checkpoint cli to average the last 10 epoch checkpoints
+Use the average_checkpoint cli to average the last 10 checkpoints
 
 ```bash
 gluon_average_checkpoint --checkpoints transformer_base_wmt2014_en_de_${SUBWORD_ALGO}/epoch*.params \
@@ -59,8 +59,7 @@ gluon_average_checkpoint --checkpoints transformer_base_wmt2014_en_de_${SUBWORD_
 Use the following command to inference/evaluate the Transformer model:
 
 ```bash
-SUBWORD_MODEL=yttm
-python evaluate_transformer.py \
+python3 evaluate_transformer.py \
     --param_path transformer_base_wmt2014_en_de_${SUBWORD_MODEL}/epoch_avg_30_39.params \
     --src_lang en \
     --tgt_lang de \
@@ -105,7 +104,7 @@ python3 train_transformer.py \
     --gpus 0,1,2,3
 ```
 
-Use the average_checkpoint cli to average the last 10 update checkpoints
+Use the average_checkpoint cli to average the last 10 checkpoints
 
 ```bash
 gluon_average_checkpoint --checkpoints transformer_big_wmt2014_en_de_${SUBWORD_ALGO}/update*.params \
@@ -118,7 +117,6 @@ gluon_average_checkpoint --checkpoints transformer_big_wmt2014_en_de_${SUBWORD_A
 Use the following command to inference/evaluate the Transformer model:
 
 ```bash
-SUBWORD_MODEL=yttm
 python3 evaluate_transformer.py \
     --param_path transformer_big_wmt2014_en_de_${SUBWORD_MODEL}/average_21_30.params \
     --src_lang en \
