@@ -23,7 +23,7 @@ nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
                       --src-corpus train.raw.${SRC} \
                       --tgt-corpus train.raw.${TGT} \
                       --min-num-words 1 \
-                      --max-num-words 250 \
+                      --max-num-words 100 \
                       --max-ratio 1.5 \
                       --src-save-path train.tok.${SRC} \
                       --tgt-save-path train.tok.${TGT}
@@ -33,7 +33,7 @@ nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
                       --src-corpus dev.raw.${SRC} \
                       --tgt-corpus dev.raw.${TGT} \
                       --min-num-words 1 \
-                      --max-num-words 250 \
+                      --max-num-words 100 \
                       --max-ratio 1.5 \
                       --src-save-path dev.tok.${SRC} \
                       --tgt-save-path dev.tok.${TGT}
