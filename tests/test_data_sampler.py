@@ -34,7 +34,6 @@ def test_fixed_bucket_sampler(seq_lengths, ratio, shuffle, num_buckets, bucket_s
                                    ratio=ratio, shuffle=shuffle,
                                    use_average_length=use_average_length,
                                    bucket_scheme=bucket_scheme)
-    print(sampler)
     total_sampled_ids = []
     for batch_sample_ids in sampler:
         total_sampled_ids.extend(batch_sample_ids)
@@ -137,18 +136,35 @@ def test_split_sampler_even_size(num_samples, num_parts):
 @pytest.mark.parametrize('required_batch_size_multiple', [1, 5])
 @pytest.mark.parametrize('shuffle', [True, False])
 @pytest.mark.parametrize('seed', [100, None])
-@pytest.mark.parametrize('num_parts', [1, 4])
 def test_bounded_budget_sampler(seq_lengths, max_num_tokens, max_num_sentences,
-                                required_batch_size_multiple, shuffle, seed, num_parts):
-    samplers = []
-    for index in range(num_parts):
-        samplers.append(s.BoundedBudgetSampler(seq_lengths, max_num_tokens, max_num_sentences,
-                                               required_batch_size_multiple, shuffle, seed,
-                                               num_parts, index))
+                                required_batch_size_multiple, shuffle, seed):
+    sampler = s.BoundedBudgetSampler(seq_lengths, max_num_tokens, max_num_sentences,
+                                     required_batch_size_multiple, shuffle, seed)
     total_sampled_ids = []
-    for sampler in samplers:
-        print(sampler)
-        for batch_sample_ids in sampler:
+    for batch_sample_ids in sampler:
+        total_sampled_ids.extend(batch_sample_ids)
+    assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
+    assert sorted(total_sampled_ids) == list(range(len(total_sampled_ids)))
+
+
+@pytest.mark.parametrize('seq_lengths', [[np.random.randint(10, 100) for _ in range(N)],
+                                         [(np.random.randint(10, 100), np.random.randint(10, 100)) for _ in range(N)]])
+@pytest.mark.parametrize('max_num_tokens', [200, 500])
+@pytest.mark.parametrize('max_num_sentences', [-1, 5])
+@pytest.mark.parametrize('required_batch_size_multiple', [1, 5])
+@pytest.mark.parametrize('shuffle', [True, False])
+@pytest.mark.parametrize('num_parts', [1, 4])
+@pytest.mark.parametrize('even_size', [False])
+def test_sharded_iterator(seq_lengths, max_num_tokens, max_num_sentences,
+                          required_batch_size_multiple, shuffle,
+                          num_parts, even_size):
+    total_sampled_ids = []
+    for part_index in range(num_parts):
+        # here we use independent (but same) sampler to simulate multi process situation
+        sampler = s.BoundedBudgetSampler(seq_lengths, max_num_tokens, max_num_sentences,
+                                         required_batch_size_multiple, shuffle, seed=100)
+        sharded_iter = s.ShardedIterator(sampler, num_parts, part_index, even_size)
+        for batch_sample_ids in sharded_iter:
             total_sampled_ids.extend(batch_sample_ids)
     assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
     assert sorted(total_sampled_ids) == list(range(len(total_sampled_ids)))
