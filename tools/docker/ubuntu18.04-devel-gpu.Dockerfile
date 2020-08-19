@@ -100,8 +100,8 @@ RUN pip3 install --no-cache --upgrade \
 
 
 # Install MXNet
-RUN mkdir /tmp/mxnet \
- && cd /tmp/mxnet \
+RUN mkdir -p ${WORKDIR}/mxnet \
+ && cd ${WORKDIR}/mxnet \
  && git clone --single-branch --branch master --recursive https://github.com/apache/incubator-mxnet \
  && cd incubator-mxnet \
  && mkdir build \
@@ -109,8 +109,7 @@ RUN mkdir /tmp/mxnet \
  && cmake -DMXNET_CUDA_ARCH="3.0;5.0;6.0;7.0" -GNinja -C ../config/linux_gpu.cmake .. \
  && cmake --build . \
  && cd ../python \
- && python3 -m pip install . --user \
- && rm -rf /tmp/mxnet
+ && python3 -m pip install -U -e . --user
 
 # Install Horovod
 # TODO Fix once https://github.com/horovod/horovod/pull/2155 gets merged
