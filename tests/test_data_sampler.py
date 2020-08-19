@@ -34,6 +34,8 @@ def test_fixed_bucket_sampler(seq_lengths, ratio, shuffle, num_buckets, bucket_s
                                    ratio=ratio, shuffle=shuffle,
                                    use_average_length=use_average_length,
                                    bucket_scheme=bucket_scheme)
+    # here we print sampler to cover the __repr__ func of the sampler
+    print(sampler)
     total_sampled_ids = []
     for batch_sample_ids in sampler:
         total_sampled_ids.extend(batch_sample_ids)
@@ -140,6 +142,7 @@ def test_bounded_budget_sampler(seq_lengths, max_num_tokens, max_num_sentences,
                                 required_batch_size_multiple, shuffle, seed):
     sampler = s.BoundedBudgetSampler(seq_lengths, max_num_tokens, max_num_sentences,
                                      required_batch_size_multiple, shuffle, seed)
+    print(sampler)
     total_sampled_ids = []
     for batch_sample_ids in sampler:
         total_sampled_ids.extend(batch_sample_ids)
@@ -160,10 +163,11 @@ def test_sharded_iterator(seq_lengths, max_num_tokens, max_num_sentences,
                           num_parts, even_size):
     total_sampled_ids = []
     for part_index in range(num_parts):
-        # here we use independent (but same) sampler to simulate multi process situation
+        # we use independent (but same) sampler to simulate multi process situation
         sampler = s.BoundedBudgetSampler(seq_lengths, max_num_tokens, max_num_sentences,
                                          required_batch_size_multiple, shuffle, seed=100)
         sharded_iter = s.ShardedIterator(sampler, num_parts, part_index, even_size)
+        print(sharded_iter)
         for batch_sample_ids in sharded_iter:
             total_sampled_ids.extend(batch_sample_ids)
     assert len(set(total_sampled_ids)) == len(total_sampled_ids) == N
