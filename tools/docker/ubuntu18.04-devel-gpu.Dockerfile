@@ -40,22 +40,6 @@ RUN apt-get update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-# Install CMake 3.13.3. The default in Ubuntu 18.04 is cmake 3.10.2
-ARG CMAKE_VERSION=3.13
-ARG CMAKE_VERSION_BUILD=3
-RUN apt remove -y --purge --auto-remove cmake \
- && mkdir /tmp/cmake \
- && cd /tmp/cmake \
- && wget https://cmake.org/files/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.${CMAKE_VERSION_BUILD}.tar.gz \
- && tar -xzvf cmake-${CMAKE_VERSION}.${CMAKE_VERSION_BUILD}.tar.gz \
- && cd cmake-${CMAKE_VERSION}.${CMAKE_VERSION_BUILD} \
- && ./bootstrap \
- && make -j$(nproc) \
- && make install \
- && cmake --version \
- && rm -rf /tmp/cmake
-
-
 RUN python3 -m pip --no-cache-dir install --upgrade \
     pip \
     setuptools
@@ -108,12 +92,36 @@ RUN pip3 install --no-cache --upgrade \
     PyYAML==5.3.1 \
     mpi4py==3.0.2 \
     jupyterlab==2.2.4 \
-    ${MX_URL} \
+    cmake \
     awscli
 
 RUN pip3 install --no-cache --upgrade \
  https://repo.mxnet.io/dist/python/cu102/mxnet_cu102-2.0.0b20200818-py2.py3-none-manylinux2014_x86_64.whl --user
 
+
+# Install MXNet
+RUN mkdir /tmp/mxnet \
+ && cd /tmp/mxnet \
+ && git clone --single-branch --branch master --recursive https://github.com/apache/incubator-mxnet \
+ && cd incubator-mxnet \
+ && mkdir build \
+ && cd build \
+ && cmake -DMXNET_CUDA_ARCH="3.0;5.0;6.0;7.0" -GNinja -C ../config/linux_gpu.cmake .. \
+ && cmake --build . \
+ && cd ../python \
+ && python3 -m pip install . --user \
+ && rm -rf /tmp/mxnet
+
+# Install Horovod
+# TODO Fix once https://github.com/horovod/horovod/pull/2155 gets merged
+RUN mkdir /tmp/horovod \
+ && cd /tmp/horovod \
+ && git clone --single-branch --branch mx2-pr --recursive https://github.com/eric-haibin-lin/horovod \
+ && cd horovod \
+ && HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_GPU_BROADCAST=NCCL HOROVOD_WITHOUT_GLOO=1 \
+    HOROVOD_WITH_MPI=1 HOROVOD_WITH_MXNET=1 HOROVOD_WITHOUT_PYTORCH=1 \
+    HOROVOD_WITHOUT_TENSORFLOW=1 python3 setup.py install --user \
+ && horovodrun -np 2 python3 -m pytest -v test/test_mxnet.py\
 
 RUN mkdir -p ${WORKDIR}/notebook
 RUN mkdir -p ${WORKDIR}/data
