@@ -141,6 +141,9 @@ EXPOSE 8786
 
 WORKDIR ${WORKDIR}
 
+# Debug horovod by default
+RUN echo NCCL_DEBUG=INFO >> /etc/nccl.conf
+
 # Revise default shell to /bin/bash
 RUN jupyter notebook --generate-config \
   && echo "c.NotebookApp.terminado_settings = { 'shell_command': ['/bin/bash'] }" >> /root/.jupyter/jupyter_notebook_config.py
