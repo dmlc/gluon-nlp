@@ -12,8 +12,8 @@ nlp_data prepare_wmt \
 # We use sacrebleu to fetch the dev set (newstest2013) and test set (newstest2014)
 sacrebleu -t wmt13 -l ${SRC}-${TGT} --echo src > ${SAVE_PATH}/dev.raw.${SRC}
 sacrebleu -t wmt13 -l ${SRC}-${TGT} --echo ref > ${SAVE_PATH}/dev.raw.${TGT}
-sacrebleu -t wmt14 -l ${SRC}-${TGT} --echo src > ${SAVE_PATH}/test.raw.${SRC}
-sacrebleu -t wmt14 -l ${SRC}-${TGT} --echo ref > ${SAVE_PATH}/test.raw.${TGT}
+sacrebleu -t wmt14/full -l ${SRC}-${TGT} --echo src > ${SAVE_PATH}/test.raw.${SRC}
+sacrebleu -t wmt14/full -l ${SRC}-${TGT} --echo ref > ${SAVE_PATH}/test.raw.${TGT}
 
 
 # Clean and tokenize the training + dev corpus
@@ -34,6 +34,7 @@ nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-corpus dev.raw.${TGT} \
                       --min-num-words 1 \
                       --max-num-words 100 \
+                      --max-ratio 1.5 \
                       --src-save-path dev.tok.${SRC} \
                       --tgt-save-path dev.tok.${TGT}
 

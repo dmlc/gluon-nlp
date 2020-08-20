@@ -109,6 +109,15 @@ def test_download_https(overwrite):
                     overwrite=overwrite)
 
 
+@pytest.mark.remote_required
+@pytest.mark.parametrize('overwrite', [False, True])
+def test_download_non_existing(overwrite):
+    with pytest.raises(RuntimeError, match='Failed downloading url'):
+        verify_download(url='https://commoncrawl.s3.amazonaws.com/crawl-data/CC-MAIN-2014-41/non_existing',
+                        sha1_hash='foo',
+                        overwrite=overwrite)
+
+
 def test_logging_config():
     logger = logging.getLogger(__name__)
     with tempfile.TemporaryDirectory() as root:
