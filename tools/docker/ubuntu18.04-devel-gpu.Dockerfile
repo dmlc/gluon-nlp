@@ -32,6 +32,8 @@ RUN apt-get update \
     unzip \
     libopenblas-dev \
     ninja-build \
+    openssh-client \
+    openssh-server \
     python3-dev \
     python3-pip \
     python3-setuptools \
@@ -82,6 +84,7 @@ RUN pip3 install --no-cache --upgrade \
     wheel \
     numpy==1.19.1 \
     pandas==0.25.1 \
+    pytest \
     Pillow \
     requests==2.22.0 \
     scikit-learn==0.20.4 \
