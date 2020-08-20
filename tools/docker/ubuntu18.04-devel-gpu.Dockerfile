@@ -95,10 +95,6 @@ RUN pip3 install --no-cache --upgrade \
     cmake \
     awscli
 
-RUN pip3 install --no-cache --upgrade \
- https://repo.mxnet.io/dist/python/cu102/mxnet_cu102-2.0.0b20200818-py2.py3-none-manylinux2014_x86_64.whl --user
-
-
 # Install MXNet
 RUN mkdir -p ${WORKDIR}/mxnet \
  && cd ${WORKDIR}/mxnet \
