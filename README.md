@@ -72,3 +72,14 @@ python3 -m gluonnlp.cli.preprocess help
 
 # Run Unittests
 You may go to [tests](tests) to see all how to run the unittests.
+
+
+# Use Docker
+You can use Docker to launch a JupyterLab development environment with GluonNLP installed.
+
+```
+docker pull gluonai/gluon-nlp:v1.0.0
+docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 gluonai/gluon-nlp:v1.0.0
+``` 
+
+For more details, you can refer to the guidance in [tools/docker].
