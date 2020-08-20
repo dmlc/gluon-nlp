@@ -117,9 +117,11 @@ RUN mkdir ${WORKDIR}/horovod \
  && cd ${WORKDIR}/horovod \
  && git clone --single-branch --branch mx2-pr --recursive https://github.com/eric-haibin-lin/horovod \
  && cd horovod \
+ && ldconfig /usr/local/cuda/targets/x86_64-linux/lib/stubs \
  && HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_GPU_BROADCAST=NCCL HOROVOD_WITHOUT_GLOO=1 \
     HOROVOD_WITH_MPI=1 HOROVOD_WITH_MXNET=1 HOROVOD_WITHOUT_PYTORCH=1 \
-    HOROVOD_WITHOUT_TENSORFLOW=1 python3 setup.py install --user
+    HOROVOD_WITHOUT_TENSORFLOW=1 python3 setup.py install --user \
+ && ldconfig
 
 RUN mkdir -p ${WORKDIR}/notebook
 RUN mkdir -p ${WORKDIR}/data
