@@ -180,6 +180,7 @@ def parse_args():
     logging.info(args)
     return args
 
+
 def validation(model, data_loader, ctx_l):
     """Validate the model on the dataset
 
