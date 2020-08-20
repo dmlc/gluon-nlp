@@ -9,7 +9,7 @@ You can run the docker with the following command:
 
 ```
 docker pull gluonai/gluon-nlp:v1.0.0
-docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 gluonai/gluon-nlp:v1.0.0
+docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 gluonai/gluon-nlp:gpu-latest
 ```
 
 
