@@ -70,6 +70,18 @@ python3 -m gluonnlp.cli.preprocess help
 
 ```
 
+### Frequently Asked Questions
+- **Question**: I cannot you access the command line toolkits. By running `nlp_data`, it reports `nlp_data: command not found`.
+  
+  This is sometimes because that you have installed glunonnlp to the user folder and 
+  the executables are installed to `~/.local/bin`. You can try to change the `PATH` variable to 
+  also include '~/.local/bin'.
+  
+  ```
+  export PATH=${PATH}:~/.local/bin
+  ```
+
+
 # Run Unittests
 You may go to [tests](tests) to see all how to run the unittests.
 
@@ -78,8 +90,8 @@ You may go to [tests](tests) to see all how to run the unittests.
 You can use Docker to launch a JupyterLab development environment with GluonNLP installed.
 
 ```
-docker pull gluonai/gluon-nlp:v1.0.0
-docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 gluonai/gluon-nlp:v1.0.0
+docker pull gluonai/gluon-nlp:gpu-latest
+docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=4g gluonai/gluon-nlp:gpu-latest
 ``` 
 
-For more details, you can refer to the guidance in [tools/docker].
+For more details, you can refer to the guidance in [tools/docker](tools/docker).
