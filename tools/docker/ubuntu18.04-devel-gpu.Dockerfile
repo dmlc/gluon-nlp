@@ -119,8 +119,7 @@ RUN mkdir /tmp/horovod \
  && cd horovod \
  && HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_GPU_BROADCAST=NCCL HOROVOD_WITHOUT_GLOO=1 \
     HOROVOD_WITH_MPI=1 HOROVOD_WITH_MXNET=1 HOROVOD_WITHOUT_PYTORCH=1 \
-    HOROVOD_WITHOUT_TENSORFLOW=1 python3 setup.py install --user \
- && horovodrun -np 2 python3 -m pytest -v test/test_mxnet.py\
+    HOROVOD_WITHOUT_TENSORFLOW=1 python3 setup.py install --user
 
 RUN mkdir -p ${WORKDIR}/notebook
 RUN mkdir -p ${WORKDIR}/data
