@@ -1737,7 +1737,7 @@ def list_all():
 @TOKENIZER_REGISTRY.register('char')
 class CharTokenizer(BaseTokenizerWithVocab):
     def __init__(self, vocab: Optional[Vocab] = None,
-                 unk_token: Optional[str] = None,
+                 unk_token: Optional[str] = Vocab.UNK_TOKEN,
                  lowercase: bool = False,
                  unicode_normalizer: Optional[str] = None):
         self._vocab = vocab
@@ -1760,6 +1760,9 @@ class CharTokenizer(BaseTokenizerWithVocab):
             if sequence[index] not in self._vocab.all_tokens:
                 sequence[index] = self._unk_token
         return sequence
+
+    def encode_with_offsets(self, sentences, output_type=str):
+            raise NotImplementedError('We cannot obtain the original offsets for CharTokenizer.')
 
     def encode(self, sentences, output_type=str):
         is_multiple_sentences = isinstance(sentences, list)
