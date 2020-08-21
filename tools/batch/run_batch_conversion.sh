@@ -2,7 +2,7 @@ MODEL_NAME=$1
 
 python3 tools/batch/submit-job.py \
     --region us-east-1 \
-    --source-ref batch \
+    --source-ref master \
     --job-type g4dn.4x \
     --name convert_${MODEL_NAME} \
     --work-dir scripts/conversion_toolkits \

@@ -2,7 +2,7 @@ MODEL_NAME=$1
 
 python3 submit-job.py \
     --region us-east-1 \
-    --source-ref batch \
+    --source-ref master \
     --job-type g4dn.12x \
     --name test_squad_${MODEL_NAME} \
     --work-dir scripts/question_answering \
