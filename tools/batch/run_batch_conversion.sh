@@ -6,5 +6,5 @@ python3 tools/batch/submit-job.py \
     --job-type g4dn.4x \
     --name convert_${MODEL_NAME} \
     --work-dir scripts/conversion_toolkits \
-    --remote https://github.com/zheyuye/gluon-nlp/ \
+    --remote https://github.com/dmlcgluon-nlp/ \
     --command 'bash convert_'${MODEL_NAME}'.sh | tee stdout.log'
