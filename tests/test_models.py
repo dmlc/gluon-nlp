@@ -12,7 +12,6 @@ def test_list_backbone_names():
 
 
 @pytest.mark.parametrize('name', list_backbone_names())
-@pytest.mark.parametrize('use_gpu', [mx.cpu(), mx.gpu()])
 def test_get_backbone(name, use_gpu):
     with tempfile.TemporaryDirectory() as root, use_gpu:
         model_cls, cfg, tokenizer, local_params_path, _ = get_backbone(name, root=root)

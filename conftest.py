@@ -206,3 +206,10 @@ def doctest(doctest_namespace):
     doctest_namespace['gluon'] = mx.gluon
     import doctest
     doctest.ELLIPSIS_MARKER = '-etc-'
+
+def pytest_addoption(parser):
+    parser.addoption("--device", action="append", default=[], help="list of device choices to run the tests. ex: mx.gpu() (For GPU test only)")
+
+def pytest_generate_tests(metafunc):
+    if 'use_gpu' in metafunc.fixturenames:
+        metafunc.parametrize("use_gpu", metafunc.config.option.device)

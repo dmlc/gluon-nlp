@@ -6,7 +6,6 @@ from mxnet.test_utils import compare_optimizer
 mx.npx.reset_np()
 
 
-@pytest.mark.parametrize('use_gpu', [mx.cpu(), mx.gpu()])
 def test_adam(use_gpu):
     with use_gpu:
         opt1 = AdamW
