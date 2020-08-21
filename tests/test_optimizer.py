@@ -6,8 +6,8 @@ from mxnet.test_utils import compare_optimizer
 mx.npx.reset_np()
 
 
-def test_adam(use_gpu):
-    with use_gpu:
+def test_adam(ctx):
+    with ctx:
         opt1 = AdamW
         opt2 = AdamW
         shapes = [(3, 4, 5), (10, 4), (7,)]
