@@ -1,10 +1,9 @@
 import pytest
-import numpy as np
 import mxnet as mx
 import tempfile
 from gluonnlp.models.bart import BartModel, \
     list_pretrained_bart, get_pretrained_bart, bart_cfg_reg
-from gluonnlp.utils.testing import verify_nmt_model
+
 
 mx.npx.set_np()
 
@@ -33,6 +32,7 @@ def test_bart(model_name):
 
 def test_bart_cfg_registry():
     assert len(bart_cfg_reg.list_keys()) > 0
+
 
 @pytest.mark.parametrize('cfg_key', bart_cfg_reg.list_keys())
 def test_bart_cfg(cfg_key):

@@ -36,7 +36,7 @@ import numpy as np
 from mxnet import use_np
 from mxnet.gluon import HybridBlock, nn
 from ..registry import BACKBONE_REGISTRY
-from ..op import gumbel_softmax, select_vectors_by_position, add_vectors_by_position, updated_vectors_by_position
+from ..op import gumbel_softmax, select_vectors_by_position, add_vectors_by_position, update_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..layers import PositionalEmbedding, get_activation
 from .transformer import TransformerEncoderLayer
@@ -158,7 +158,7 @@ PRETRAINED_URL = {
         'gen_model': 'google_electra_large/gen_model-82c1b17b.params',
         'lowercase': True,
     },
-    'gluon_electra_small_owt':{
+    'gluon_electra_small_owt': {
         'cfg': 'gluon_electra_small_owt/model-6e276d98.yml',
         'vocab': 'gluon_electra_small_owt/vocab-e6d2b21d.json',
         'params': 'gluon_electra_small_owt/model-e9636891.params',
@@ -532,9 +532,10 @@ class ElectraModel(HybridBlock):
         for (layer_depth, layer) in enumerate(self.encoder.all_encoder_layers):
             layer_params = layer.collect_params()
             for key, value in layer_params.items():
-                for pn in not_included:
-                    if pn in key:
-                        continue
+                if not_included:
+                    for pn in not_included:
+                        if pn in key:
+                            continue
                 value.lr_mult = layerwise_decay**(max_depth - (layer_depth + 1))
 
     def frozen_params(self, untunable_depth, not_included=None):
@@ -556,9 +557,10 @@ class ElectraModel(HybridBlock):
 
         for layer in all_layers[:untunable_depth]:
             for key, value in layer.collect_params().items():
-                for pn in not_included:
-                    if pn in key:
-                        continue
+                if not_included:
+                    for pn in not_included:
+                        if pn in key:
+                            continue
                 value.grad_req = 'null'
 
     @staticmethod
@@ -811,6 +813,7 @@ class ElectraForPretrain(HybridBlock):
                  tied_embeddings=True,
                  disallow_correct=False,
                  temperature=1.0,
+                 gumbel_eps=1E-9,
                  dtype='float32',
                  weight_initializer=None,
                  bias_initializer=None):
@@ -843,6 +846,7 @@ class ElectraForPretrain(HybridBlock):
         self._tied_embeddings = tied_embeddings
         self._disallow_correct = disallow_correct
         self._temperature = temperature
+        self._gumbel_eps = gumbel_eps
         self._dtype = dtype
 
         self.disc_cfg = disc_cfg
@@ -879,7 +883,7 @@ class ElectraForPretrain(HybridBlock):
         self.discriminator.hybridize()
 
     def hybrid_forward(self, F, inputs, token_types, valid_length,
-                       unmasked_tokens, masked_positions):
+                       original_tokens, masked_positions):
         """Getting the mlm scores of each masked positions from a generator,
         then produces the corrupted tokens sampling from a gumbel distribution.
         We also get the ground-truth and scores of the replaced token detection
@@ -900,6 +904,7 @@ class ElectraForPretrain(HybridBlock):
             - layout = 'TN'
                 Shape (seq_length, batch_size)
         token_types
+            The token types.
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
@@ -908,25 +913,28 @@ class ElectraForPretrain(HybridBlock):
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
         valid_length
-            The valid length of each sequence
+            The valid length of each sequence.
             Shape (batch_size,)
-        unmasked_tokens
-            The original tokens that appear in the unmasked input sequence
+        original_tokens
+            The original tokens that appear in the unmasked input sequence.
             Shape (batch_size, num_masked_positions).
         masked_positions :
-            The masked position of the sequence
+            The masked position of the sequence.
             Shape (batch_size, num_masked_positions).
 
         Returns
         -------
         mlm_scores
+            The masked language model score.
             Shape (batch_size, num_masked_positions, vocab_size)
         rtd_scores
+            The replaced-token-detection score. Predicts whether the tokens are replaced or not.
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-        replaced_inputs :
+        replaced_inputs
+
             Shape (batch_size, num_masked_positions)
         labels
             - layout = 'NT'
@@ -944,13 +952,13 @@ class ElectraForPretrain(HybridBlock):
             _, _, mlm_scores = self.generator(inputs, token_types, valid_length, masked_positions)
 
         corrupted_tokens, fake_data, labels = self.get_corrupted_tokens(
-            F, inputs, unmasked_tokens, masked_positions, mlm_scores)
-        # the discriminator take same input as the generator but the token_ids are
+            F, inputs, original_tokens, masked_positions, mlm_scores)
+        # The discriminator takes the same input as the generator and the token_ids are
         # replaced with fake data
         _, _, rtd_scores = self.discriminator(fake_data, token_types, valid_length)
         return mlm_scores, rtd_scores, corrupted_tokens, labels
 
-    def get_corrupted_tokens(self, F, inputs, unmasked_tokens, masked_positions, logits):
+    def get_corrupted_tokens(self, F, inputs, original_tokens, masked_positions, logits):
         """
         Sample from the generator to create corrupted input.
 
@@ -963,13 +971,14 @@ class ElectraForPretrain(HybridBlock):
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-        unmasked_tokens
+        original_tokens
             The original tokens that appear in the unmasked input sequence
             Shape (batch_size, num_masked_positions).
         masked_positions
             The masked position of the sequence
             Shape (batch_size, num_masked_positions).
         logits
+            The logits of each tokens
             Shape (batch_size, num_masked_positions, vocab_size)
 
         Returns
@@ -989,23 +998,23 @@ class ElectraForPretrain(HybridBlock):
         """
 
         if self._disallow_correct:
+            # TODO(sxjscience), Revise the implementation
             disallow = F.npx.one_hot(masked_positions, depth=self.vocab_size, dtype=self._dtype)
-            # TODO(zheyuye), Update when operation -= supported
             logits = logits - 1000.0 * disallow
         # gumbel_softmax() samples from the logits with a noise of Gumbel distribution
         prob = gumbel_softmax(
             F,
             logits,
             temperature=self._temperature,
-            eps=1e-9,
+            eps=self._gumbel_eps,
             use_np_gumbel=False)
         corrupted_tokens = F.np.argmax(prob, axis=-1).astype(np.int32)
 
         if self.disc_backbone.layout == 'TN':
             inputs = inputs.T
-        original_data = updated_vectors_by_position(F,
-            inputs, unmasked_tokens, masked_positions)
-        fake_data = updated_vectors_by_position(F,
+        original_data = update_vectors_by_position(F,
+            inputs, original_tokens, masked_positions)
+        fake_data = update_vectors_by_position(F,
             inputs, corrupted_tokens, masked_positions)
         updates_mask = add_vectors_by_position(F, F.np.zeros_like(inputs),
                 F.np.ones_like(masked_positions), masked_positions)

@@ -20,8 +20,8 @@ parser.add_argument('--job-type', help='type of job to submit.', type=str,
                              'p3.2x', 'p3.8x', 'p3.16x', 'p3dn.24x',
                              'c5n.18x'], default='g4dn.4x')
 parser.add_argument('--source-ref',
-                    help='ref in GluonNLP main github. e.g. numpy, refs/pull/500/head',
-                    type=str, default='numpy')
+                    help='ref in GluonNLP main github. e.g. master, refs/pull/500/head',
+                    type=str, default='master')
 parser.add_argument('--work-dir',
                     help='working directory inside the repo. e.g. scripts/preprocess',
                     type=str, default='scripts/preprocess')
@@ -47,6 +47,7 @@ args = parser.parse_args()
 session = boto3.Session(profile_name=args.profile, region_name=args.region)
 batch, cloudwatch = [session.client(service_name=sn) for sn in ['batch', 'logs']]
 
+
 def printLogs(logGroupName, logStreamName, startTime):
     kwargs = {'logGroupName': logGroupName,
               'logStreamName': logStreamName,
@@ -70,32 +71,35 @@ def printLogs(logGroupName, logStreamName, startTime):
     return lastTimestamp
 
 
-def getLogStream(logGroupName, jobName, jobId):
-    response = cloudwatch.describe_log_streams(
-        logGroupName=logGroupName,
-        logStreamNamePrefix=jobName + '/' + jobId
-    )
-    logStreams = response['logStreams']
-    if not logStreams:
-        return ''
-    else:
-        return logStreams[0]['logStreamName']
-
 def nowInMillis():
     endTime = long(total_seconds(datetime.utcnow() - datetime(1970, 1, 1))) * 1000
     return endTime
+
 
 job_definitions = {
     'g4dn.4x': 'gluon-nlp-1-jobs:5',
     'g4dn.8x': 'gluon-nlp-1-jobs:4',
     'g4dn.12x': 'gluon-nlp-1-4gpu-jobs:1',
     'g4dn.16x': 'gluon-nlp-1-jobs:3',
-    'p3.2x': 'gluon-nlp-1-jobs:5',
+    'p3.2x': 'gluon-nlp-1-jobs:11',
     'p3.8x': 'gluon-nlp-1-4gpu-jobs:2',
     'p3.16x': 'gluon-nlp-1-8gpu-jobs:1',
     'p3dn.24x': 'gluon-nlp-1-8gpu-jobs:2',
     'c5n.18x': 'gluon-nlp-1-cpu-jobs:2',
 }
+
+job_queues = {
+    'g4dn.4x': 'g4dn',
+    'g4dn.8x': 'g4dn',
+    'g4dn.12x': 'g4dn-multi-gpu',
+    'g4dn.16x': 'g4dn',
+    'p3.2x': 'p3',
+    'p3.8x': 'p3-4gpu',
+    'p3.16x': 'p3-8gpu',
+    'p3dn.24x': 'p3dn-8gpu',
+    'c5n.18x': 'c5n',
+}
+
 
 def main():
     spin = ['-', '/', '|', '\\', '-', '/', '|', '\\']
@@ -103,14 +107,12 @@ def main():
 
     jobName = re.sub('[^A-Za-z0-9_\-]', '', args.name)[:128]  # Enforce AWS Batch jobName rules
     jobType = args.job_type
-    jobQueue = jobType.split('.')[0]
-    if jobQueue == 'p3dn':
-        jobQueue = 'p3'
+    jobQueue = job_queues[jobType]
     jobDefinition = job_definitions[jobType]
     command = args.command.split()
     wait = args.wait
 
-    parameters={
+    parameters = {
         'SOURCE_REF': args.source_ref,
         'WORK_DIR': args.work_dir,
         'SAVED_OUTPUT': args.saved_output,
@@ -135,7 +137,6 @@ def main():
     running = False
     status_set = set()
     startTime = 0
-
     while wait:
         time.sleep(random.randint(5, 10))
         describeJobsResponse = batch.describe_jobs(jobs=[jobId])
@@ -147,10 +148,10 @@ def main():
             sys.exit(status == 'FAILED')
 
         elif status == 'RUNNING':
-            logStreamName = getLogStream(logGroupName, jobName, jobId)
+            logStreamName = describeJobsResponse['jobs'][0]['container']['logStreamName']
             if not running:
                 running = True
-                print('\rJob [{} - {}] is RUNNING.'.format(jobName, jobId))
+                print('\rJob [{}, {}] is RUNNING.'.format(jobName, jobId))
                 if logStreamName:
                     print('Output [{}]:\n {}'.format(logStreamName, '=' * 80))
             if logStreamName:
@@ -160,6 +161,7 @@ def main():
             print('\rJob [%s - %s] is %-9s... %s' % (jobName, jobId, status, spin[spinner % len(spin)]),)
             sys.stdout.flush()
             spinner += 1
+
 
 if __name__ == '__main__':
     main()

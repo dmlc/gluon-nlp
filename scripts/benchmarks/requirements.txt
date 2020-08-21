@@ -1,0 +1,4 @@
+transformers
+py3nvml
+torch
+torchvision
