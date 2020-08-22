@@ -39,7 +39,8 @@ def test_beam_search_score(length, alpha, K, batch_size, vocab_size, from_logits
 # TODO(sxjscience) Test for the state_batch_axis
 @pytest.mark.parametrize('early_return', [False, True])
 @pytest.mark.parametrize('eos_id', [0, None])
-def test_beam_search(early_return, eos_id):
+@pytest.mark.parametrize('hybridize', [False, True])
+def test_beam_search(early_return, eos_id, hybridize):
     class SimpleStepDecoder(HybridBlock):
         def __init__(self, vocab_size=5, hidden_units=4):
             super().__init__()
@@ -80,10 +81,12 @@ def test_beam_search(early_return, eos_id):
     step_decoder = SimpleStepDecoder(vocab_size, hidden_units)
     step_decoder.initialize()
     sampler = BeamSearchSampler(beam_size=4, decoder=step_decoder, eos_id=eos_id, vocab_size=vocab_size,
-                                max_length_b=100)
+                                max_length_b=100, early_return=early_return)
+    if hybridize:
+        sampler.hybridize()
     states = mx.np.random.normal(0, 1, (batch_size, hidden_units))
     inputs = mx.np.random.randint(0, vocab_size, (batch_size,))
-    samples, scores, valid_length = sampler(inputs, states, early_return=early_return)
+    samples, scores, valid_length = sampler(inputs, states)
     samples = samples.asnumpy()
     valid_length = valid_length.asnumpy()
     for i in range(batch_size):
@@ -99,7 +102,8 @@ def test_beam_search(early_return, eos_id):
 # TODO(sxjscience) Test for the state_batch_axis
 @pytest.mark.parametrize('early_return', [False, True])
 @pytest.mark.parametrize('eos_id', [0, None])
-def test_beam_search_stochastic(early_return, eos_id):
+@pytest.mark.parametrize('hybridize', [False, True])
+def test_beam_search_stochastic(early_return, eos_id, hybridize):
     class SimpleStepDecoder(HybridBlock):
         def __init__(self, vocab_size=5, hidden_units=4):
             super().__init__()
@@ -140,10 +144,12 @@ def test_beam_search_stochastic(early_return, eos_id):
     step_decoder = SimpleStepDecoder(vocab_size, hidden_units)
     step_decoder.initialize()
     sampler = BeamSearchSampler(beam_size=4, decoder=step_decoder, eos_id=eos_id, vocab_size=vocab_size,
-                                stochastic=True, max_length_b=100)
+                                stochastic=True, max_length_b=100, early_return=early_return)
+    if hybridize:
+        sampler.hybridize()
     states = mx.np.random.normal(0, 1, (batch_size, hidden_units))
     inputs = mx.np.random.randint(0, vocab_size, (batch_size,))
-    samples, scores, valid_length = sampler(inputs, states, early_return=early_return)
+    samples, scores, valid_length = sampler(inputs, states)
     samples = samples.asnumpy()
     valid_length = valid_length.asnumpy()
     for i in range(batch_size):
@@ -154,11 +160,11 @@ def test_beam_search_stochastic(early_return, eos_id):
             if vl < samples.shape[2]:
                 assert (samples[i, j, vl:] == -1).all()
             assert (samples[i, :, 0] == inputs[i].asnumpy()).all()
-    
+
     # test for repeativeness
     has_different_sample = False
     for _ in range(10):
-        new_samples, scores, valid_length = sampler(inputs, states, early_return=early_return)
+        new_samples, scores, valid_length = sampler(inputs, states)
         if not np.array_equal(new_samples.asnumpy(), samples):
             has_different_sample = True
             break
@@ -167,7 +173,8 @@ def test_beam_search_stochastic(early_return, eos_id):
 @pytest.mark.parametrize('early_return', [False, True])
 @pytest.mark.parametrize('sampling_paras', [(-1.0, -1), (0.05, -1), (-1.0, 1), (-1.0, 3)])
 @pytest.mark.parametrize('eos_id', [0, None])
-def test_multinomial_sampling(early_return, sampling_paras, eos_id):
+@pytest.mark.parametrize('hybridize', [False, True])
+def test_multinomial_sampling(early_return, sampling_paras, eos_id, hybridize):
     class SimpleStepDecoder(HybridBlock):
         def __init__(self, vocab_size=5, hidden_units=4):
             super().__init__()
@@ -194,10 +201,12 @@ def test_multinomial_sampling(early_return, sampling_paras, eos_id):
     sampler = BeamSearchSampler(beam_size=4, decoder=step_decoder, eos_id=eos_id, vocab_size=vocab_size,
                                 stochastic=False,
                                 sampling=True, sampling_topp=sampling_topp, sampling_topk=sampling_topk,
-                                max_length_b=100)
+                                max_length_b=100, early_return=early_return)
+    if hybridize:
+        sampler.hybridize()
     states = mx.np.random.normal(0, 1, (batch_size, hidden_units))
     inputs = mx.np.random.randint(0, vocab_size, (batch_size,))
-    samples, scores, valid_length = sampler(inputs, states, early_return=early_return)
+    samples, scores, valid_length = sampler(inputs, states)
     samples = samples.asnumpy()
     valid_length = valid_length.asnumpy()
     for i in range(batch_size):
