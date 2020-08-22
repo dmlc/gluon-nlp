@@ -346,7 +346,7 @@ def train(args):
     train_start_time = time.time()
     if args.num_accumulated != 1:
         # set grad to zero for gradient accumulation
-        model.collect_params().zero_grad()
+        model.zero_grad()
 
     # start training
     train_loop_dataloader = grouper(repeat(data_train), len(ctx_l))
@@ -419,7 +419,7 @@ def train(args):
         step_num += 1
         if args.num_accumulated != 1:
             # set grad to zero for gradient accumulation
-            model.collect_params().zero_grad()
+            model.zero_grad()
 
         # saving
         if step_num % save_interval == 0 or step_num >= num_train_steps:
