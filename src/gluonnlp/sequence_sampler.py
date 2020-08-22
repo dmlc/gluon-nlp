@@ -17,7 +17,6 @@
 """Implements the beam search sampler."""
 import warnings
 import mxnet as mx
-from mxnet import np, npx
 import abc
 from mxnet.gluon import HybridBlock
 from typing import Callable, Optional
@@ -129,17 +128,17 @@ class BeamSearchScorer(HybridBlock):
 
     def forward(self, outputs, scores, step):  # pylint: disable=arguments-differ
         if not self._from_logits:
-            outputs = npx.log_softmax(outputs / self._temperature)
+            outputs = mx.npx.log_softmax(outputs / self._temperature)
 
         if self._alpha != 0.0:
-            step = step.astype(np.float32)
+            step = step.astype(mx.np.float32)
             prev_lp = (self._K + step - 1) ** self._alpha / ((self._K + 1) ** self._alpha)
-            prev_lp = prev_lp * (step != 1).astype(np.float32) + (step == 1).astype(np.float32)
+            prev_lp = prev_lp * (step != 1).astype(mx.np.float32) + (step == 1).astype(mx.np.float32)
             lp = (self._K + step) ** self._alpha / ((self._K + 1) ** self._alpha)
             scores = scores * prev_lp
-            candidate_scores = (outputs + np.expand_dims(scores, axis=-1)) / lp
+            candidate_scores = (outputs + mx.np.expand_dims(scores, axis=-1)) / lp
         else:
-            candidate_scores = outputs + np.expand_dims(scores, axis=-1)
+            candidate_scores = outputs + mx.np.expand_dims(scores, axis=-1)
         return candidate_scores
 
     def __repr__(self):
@@ -236,7 +235,7 @@ def _choose_states(states, indices, state_batch_axis=None):
             batch_axis = 0
         else:
             batch_axis = state_batch_axis
-        states = np.take(states, indices, axis=batch_axis)
+        states = mx.np.take(states, indices, axis=batch_axis)
         return states
     else:
         raise TypeError('The type of the states is not supported, type(states) = {}'.format(type(states)))
@@ -278,7 +277,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         T : mx.np.ndarray
             The previous scores. Shape (batch_size, beam_size)
         """
-        g_phi = phi + np.random.gumbel(np.zeros_like(phi))
+        g_phi = phi + mx.np.random.gumbel(mx.np.zeros_like(phi))
         Z = g_phi.max(dim)
         g = self.shift_gumbel_maximum(g_phi, T, dim, Z=Z)
         return g
@@ -295,10 +294,10 @@ class _BeamSearchStepUpdate(HybridBlock):
         """
         if Z is None:
             Z = g_phi.max(dim)
-        T_ = npx.reshape(T, (-4, 1))
-        Z_ = npx.reshape(Z, (-4, 1))
-        u = T_ - g_phi + np.log1p(-np.exp(g_phi - Z_)+1e-5)
-        return T_ - self.activation(u) - np.log1p(np.exp(-np.abs(u)))
+        T_ = mx.npx.reshape(T, (-4, 1))
+        Z_ = mx.npx.reshape(Z, (-4, 1))
+        u = T_ - g_phi + mx.np.log1p(-mx.np.exp(g_phi - Z_)+1e-5)
+        return T_ - self.activation(u) - mx.np.log1p(mx.np.exp(-mx.np.abs(u)))
 
     def forward(self, samples, valid_length, outputs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
                 states, batch_shift):
@@ -349,63 +348,63 @@ class _BeamSearchStepUpdate(HybridBlock):
         """
         beam_size = self._beam_size
         vocab_size = self._vocab_size
-        beam_alive_mask_bcast = np.expand_dims(beam_alive_mask, axis=2)
-        candidate_scores = self._scorer(npx.reshape(outputs, (-6, -1, beam_size, -2)),
+        beam_alive_mask_bcast = mx.np.expand_dims(beam_alive_mask, axis=2)
+        candidate_scores = self._scorer(mx.npx.reshape(outputs, (-6, -1, beam_size, -2)),
                                         scores, step)
         if self.stochastic:
             if step == 1:
                 candidate_scores_gumbel\
                     = candidate_scores[:1]\
-                      + np.random.gumbel(np.zeros_like(candidate_scores[:1]))
+                      + mx.np.random.gumbel(mx.np.zeros_like(candidate_scores[:1]))
                 candidate_scores_residual = candidate_scores[1:]
-                candidate_scores = np.concatenate((candidate_scores_gumbel,
-                                                     candidate_scores_residual), axis=0)
+                candidate_scores = mx.np.concatenate((candidate_scores_gumbel,
+                                                      candidate_scores_residual), axis=0)
             else:
                 candidate_scores = self.gumbel_with_maximum(candidate_scores, scores, -1)
         # Concat the candidate scores and the scores of the finished beams
         # The resulting candidate score will have shape (batch_size, beam_size * |V| + beam_size)
-        candidate_scores = np.where(beam_alive_mask_bcast,
-                                      candidate_scores,
-                                      np.full_like(candidate_scores,
+        candidate_scores = mx.np.where(beam_alive_mask_bcast,
+                                       candidate_scores,
+                                       mx.np.full_like(candidate_scores,
                                                      LARGE_NEGATIVE_FLOAT))
-        finished_scores = np.where(beam_alive_mask,
-                                     np.full_like(scores,
-                                                    LARGE_NEGATIVE_FLOAT),
+        finished_scores = mx.np.where(beam_alive_mask,
+                                      mx.np.full_like(scores,
+                                                      LARGE_NEGATIVE_FLOAT),
                                      scores)
-        candidate_scores = np.concatenate([npx.reshape(candidate_scores, (-2, -1)),
-                                             finished_scores],
-                                            axis=1)
+        candidate_scores = mx.np.concatenate([mx.npx.reshape(candidate_scores, (-2, -1)),
+                                              finished_scores],
+                                              axis=1)
         # Get the top K scores
         # new_scores and indices will have shape (batch_size, beam_size)
-        new_scores, indices = npx.topk(candidate_scores, axis=1, k=beam_size, ret_typ='both')
-        indices = indices.astype(np.int32)
-        use_prev = (indices >= (beam_size * vocab_size)).astype(np.int32)
-        chosen_word_ids = np.mod(indices, vocab_size)
-        beam_ids = np.where(use_prev, indices - beam_size * vocab_size,
-                              np.floor(indices / vocab_size).astype(np.int32))
-        batch_beam_indices = beam_ids + np.expand_dims(batch_shift, axis=1)
-        chosen_word_ids = np.where(use_prev, - np.ones_like(indices), chosen_word_ids)
+        new_scores, indices = mx.npx.topk(candidate_scores, axis=1, k=beam_size, ret_typ='both')
+        indices = indices.astype(mx.np.int32)
+        use_prev = (indices >= (beam_size * vocab_size)).astype(mx.np.int32)
+        chosen_word_ids = mx.np.mod(indices, vocab_size)
+        beam_ids = mx.np.where(use_prev, indices - beam_size * vocab_size,
+                               mx.np.floor(indices / vocab_size).astype(mx.np.int32))
+        batch_beam_indices = beam_ids + mx.np.expand_dims(batch_shift, axis=1)
+        chosen_word_ids = mx.np.where(use_prev, - mx.np.ones_like(indices), chosen_word_ids)
         # Update the samples and vaild_length
         # TODO(sxjscience) The current implementation is quite tricky
         #  We should wait for hybridizable advanced indexing to avoid this
-        selected_samples = np.take(npx.reshape(samples, (-5, -2)),
-                                     batch_beam_indices.reshape((-1,)), axis=0)
-        new_samples = npx.reshape(np.concatenate([selected_samples,
-                                                      chosen_word_ids.reshape((-1, 1))],
-                                                     axis=1),
+        selected_samples = mx.np.take(mx.npx.reshape(samples, (-5, -2)),
+                                      batch_beam_indices.reshape((-1,)), axis=0)
+        new_samples = mx.npx.reshape(mx.np.concatenate([selected_samples,
+                                                        chosen_word_ids.reshape((-1, 1))],
+                                                       axis=1),
                                     (-6, -1, beam_size, -2))
-        new_valid_length = np.take(valid_length.reshape((-1,)),
-                                     batch_beam_indices.reshape((-1,)),
-                                     axis=0).reshape((-1, beam_size)) + 1 - use_prev
+        new_valid_length = mx.np.take(valid_length.reshape((-1,)),
+                                      batch_beam_indices.reshape((-1,)),
+                                      axis=0).reshape((-1, beam_size)) + 1 - use_prev
         # Update the states
         new_states = _choose_states(states, batch_beam_indices.reshape((-1,)),
                                     self._state_batch_axis)
         # Update the alive mask.
-        beam_alive_mask = np.take(beam_alive_mask.reshape((-1,)),
-                                    batch_beam_indices.reshape((-1,)), axis=0)\
+        beam_alive_mask = mx.np.take(beam_alive_mask.reshape((-1,)),
+                                     batch_beam_indices.reshape((-1,)), axis=0)\
                               .reshape((-1, beam_size))
         if self._eos_id is not None:
-            beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(np.float32)
+            beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(mx.np.float32)
         return new_samples, new_valid_length, new_scores, chosen_word_ids,\
                beam_alive_mask, new_states
 
@@ -568,19 +567,19 @@ class BeamSearchSampler(HybridBlock):
         states = _expand_to_beam_size(states, beam_size=beam_size, batch_size=batch_size,
                                       state_batch_axis=self._state_batch_axis)
         step_input = _expand_to_beam_size(inputs, beam_size=beam_size,
-                                          batch_size=batch_size).astype(np.int32)
+                                          batch_size=batch_size).astype(mx.np.int32)
         # All beams are initialized to alive
         # Generated samples are initialized to be the inputs
         # Except the first beam where the scores are set to be zero, all beams have -inf scores.
         # Valid length is initialized to be 1
-        beam_alive_mask = mx.np.ones(shape=(batch_size, beam_size), ctx=ctx, dtype=np.float32)
-        valid_length = mx.np.ones(shape=(batch_size, beam_size), ctx=ctx, dtype=np.int32)
+        beam_alive_mask = mx.np.ones(shape=(batch_size, beam_size), ctx=ctx, dtype=mx.np.float32)
+        valid_length = mx.np.ones(shape=(batch_size, beam_size), ctx=ctx, dtype=mx.np.int32)
         scores = mx.np.zeros(shape=(batch_size, beam_size), ctx=ctx)
         if beam_size > 1:
             scores[:, 1:beam_size] = LARGE_NEGATIVE_FLOAT
         samples = step_input.reshape((batch_size, beam_size, 1))
-        batch_shift = mx.np.arange(0, batch_size * beam_size, beam_size, ctx=ctx, dtype=np.int32)
-        step = mx.np.array(0, ctx=ctx, dtype=np.float32)
+        batch_shift = mx.np.arange(0, batch_size * beam_size, beam_size, ctx=ctx, dtype=mx.np.int32)
+        step = mx.np.array(0, ctx=ctx, dtype=mx.np.float32)
         for i in range(max_length):
             log_probs, new_states = self._decoder(step_input, states)
             assert log_probs.shape[1] == self._vocab_size
@@ -592,12 +591,12 @@ class BeamSearchSampler(HybridBlock):
             if self._early_return:
                 if mx.np.sum(beam_alive_mask).asnumpy() == 0:
                     return samples, scores, valid_length
-        beam_alive_mask = beam_alive_mask.astype(np.int32)
+        beam_alive_mask = beam_alive_mask.astype(mx.np.int32)
         if self._eos_id is not None:
             final_word = mx.np.where(beam_alive_mask,
                                      mx.np.full((batch_size, beam_size), self._eos_id,
-                                                ctx=ctx, dtype=np.int32),
-                                     mx.np.full((batch_size, beam_size), -1, ctx=ctx, dtype=np.int32))
+                                                ctx=ctx, dtype=mx.np.int32),
+                                     mx.np.full((batch_size, beam_size), -1, ctx=ctx, dtype=mx.np.int32))
             samples = mx.np.concatenate([samples,
                                          final_word.reshape((final_word.shape[0],
                                                              final_word.shape[1], 1))],
@@ -693,54 +692,54 @@ class _MultinomialStepUpdate(HybridBlock):
         """
         # bsz * beam_size * vocab_size
         outputs = outputs.reshape((-1, self._beam_size, self._vocab_size))
-        probs = npx.softmax(outputs / self._temperature)
+        probs = mx.npx.softmax(outputs / self._temperature)
 
         if self._sampling_topp > 0:
-            probs = np.where(
+            probs = mx.np.where(
                 probs > self._sampling_topp,
                 probs,
-                np.zeros_like(probs)
+                mx.np.zeros_like(probs)
             )
         elif self._sampling_topk > 0:
-            topk_probs = npx.topk(probs, axis=2, k=self._sampling_topk, ret_typ='value')
+            topk_probs = mx.npx.topk(probs, axis=2, k=self._sampling_topk, ret_typ='value')
             # choose the k max prob
             k_prob = topk_probs[:,:,-1]
-            k_prob = np.expand_dims(k_prob, axis=-1)
-            probs = np.where(
+            k_prob = mx.np.expand_dims(k_prob, axis=-1)
+            probs = mx.np.where(
                 probs >= k_prob,
                 probs,
-                np.zeros_like(probs)
+                mx.np.zeros_like(probs)
             )
 
         # renormalize
-        probs_sum = np.sum(probs, axis=2, keepdims=True)
+        probs_sum = mx.np.sum(probs, axis=2, keepdims=True)
         probs = probs / probs_sum
 
         # bsz * beam_size
         chosen_word_ids, chosen_word_log_probs = \
-            npx.random.categorical(probs, get_prob=True)
+            mx.npx.random.categorical(probs, get_prob=True)
 
-        new_scores = scores + np.where(
+        new_scores = scores + mx.np.where(
             beam_alive_mask,
             chosen_word_log_probs,
-            np.zeros_like(chosen_word_log_probs)
+            mx.np.zeros_like(chosen_word_log_probs)
         )
 
         # mask dead words
-        chosen_word_ids = np.where(
+        chosen_word_ids = mx.np.where(
             beam_alive_mask,
             chosen_word_ids,
-            np.full_like(beam_alive_mask, -1, dtype=np.int32)
+            mx.np.full_like(beam_alive_mask, -1, dtype=mx.np.int32)
         )
 
-        new_valid_length = valid_length + beam_alive_mask.astype(np.int32)
-        new_samples = np.concatenate(
-            [samples, np.expand_dims(chosen_word_ids, axis=2)],
+        new_valid_length = valid_length + beam_alive_mask.astype(mx.np.int32)
+        new_samples = mx.np.concatenate(
+            [samples, mx.np.expand_dims(chosen_word_ids, axis=2)],
             axis=2
         )
         new_states = states
         if self._eos_id is not None:
-            beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(np.int32)
+            beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(mx.np.int32)
 
         return new_samples, new_valid_length, new_scores, chosen_word_ids,\
                beam_alive_mask, new_states
