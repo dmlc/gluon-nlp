@@ -39,7 +39,7 @@ jobs:
           python -m pip install --user -e .[extras]
       - name: Test project
         run: |
-          python -m pytest --cov=./ --cov-report=xml --device="mx.cpu()" --durations=50 tests/
+          python -m pytest --cov=./ --cov-report=xml --device="cpu" --durations=50 tests/
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.0.10
         with:
