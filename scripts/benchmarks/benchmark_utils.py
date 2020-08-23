@@ -91,7 +91,7 @@ else:
 
 
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
-logging_config(logger=logger)
+logging_config(folder='gluonnlp_benchmark', name='benchmark', logger=logger)
 
 
 _is_memory_tracing_enabled = False

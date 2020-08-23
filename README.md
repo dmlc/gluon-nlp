@@ -1,15 +1,29 @@
-# GluonNLP + Numpy
+<h3 align="center">
+GluonNLP: Your Choice of Deep Learning for NLP
+</h3>
 
-Implementing NLP algorithms using the new numpy-like interface of MXNet. It's also a testbed for the next-generation release of GluonNLP.
+<p align="center">
+    <a href="https://github.com/dmlc/gluon-nlp/actions"><img src="https://github.com/dmlc/gluon-nlp/workflows/continuous%20build/badge.svg"></a>
+    <a href="https://codecov.io/gh/dmlc/gluon-nlp"><img src="https://codecov.io/gh/dmlc/gluon-nlp/branch/master/graph/badge.svg"></a>
+    <a href="https://github.com/dmlc/gluonnlp/actions"><img src="https://img.shields.io/badge/python-3.6%2C3.8-blue.svg"></a>
+    <a href="https://pypi.org/project/gluonnlp/#history"><img src="https://img.shields.io/pypi/v/gluonnlp.svg"></a>
+</p>
 
-This is a work-in-progress.
-
+GluonNLP is a toolkit that enables easy text preprocessing, datasets
+loading and neural models building to help you speed up your Natural
+Language Processing (NLP) research.
 
 # Features
 
-- Data Pipeline for NLP
-- AutoML support (TODO)
+For NLP Practitioners
+- Easy-to-use Data Pipeline
+- Automatically Train Models via AutoNLP (TODO)
+
+For Researchers
 - Pretrained Model Zoo
+- Programming with numpy-like API
+
+For Engineers
 - Fast Deployment
     - [TVM](https://tvm.apache.org/) (TODO)
 - AWS Integration
@@ -70,6 +84,18 @@ python3 -m gluonnlp.cli.preprocess help
 
 ```
 
+### Frequently Asked Questions
+- **Question**: I cannot you access the command line toolkits. By running `nlp_data`, it reports `nlp_data: command not found`.
+  
+  This is sometimes because that you have installed glunonnlp to the user folder and 
+  the executables are installed to `~/.local/bin`. You can try to change the `PATH` variable to 
+  also include '~/.local/bin'.
+  
+  ```
+  export PATH=${PATH}:~/.local/bin
+  ```
+
+
 # Run Unittests
 You may go to [tests](tests) to see all how to run the unittests.
 
@@ -78,8 +104,8 @@ You may go to [tests](tests) to see all how to run the unittests.
 You can use Docker to launch a JupyterLab development environment with GluonNLP installed.
 
 ```
-docker pull gluonai/gluon-nlp:v1.0.0
-docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 gluonai/gluon-nlp:v1.0.0
+docker pull gluonai/gluon-nlp:gpu-latest
+docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=4g gluonai/gluon-nlp:gpu-latest
 ``` 
 
-For more details, you can refer to the guidance in [tools/docker].
+For more details, you can refer to the guidance in [tools/docker](tools/docker).

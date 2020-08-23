@@ -39,6 +39,7 @@ requirements = [
     'protobuf',
     'pandas',
     'tokenizers>=0.7.0',
+    'click>=7.0',  # Dependency of youtokentome
     'youtokentome>=1.0.6',
     'fasttext>=0.9.2'
 ]

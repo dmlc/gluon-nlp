@@ -74,7 +74,7 @@ RUN echo "hwloc_base_binding_policy = none" >> /usr/local/etc/openmpi-mca-params
 ENV LD_LIBRARY_PATH=/usr/local/openmpi/lib:$LD_LIBRARY_PATH
 ENV PATH=/usr/local/openmpi/bin/:/usr/local/bin:/root/.local/bin:$PATH
 
-RUN ln -s $(which ${PYTHON}) /usr/local/bin/python
+RUN ln -s $(which python3) /usr/local/bin/python
 
 RUN mkdir -p ${WORKDIR}
 
@@ -143,6 +143,25 @@ WORKDIR ${WORKDIR}
 
 # Debug horovod by default
 RUN echo NCCL_DEBUG=INFO >> /etc/nccl.conf
+
+# Install NodeJS + Tensorboard + TensorboardX
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
+    && apt-get install -y nodejs
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    libsndfile1-dev
+
+RUN pip3 install --no-cache --upgrade \
+    soundfile==0.10.2 \
+    ipywidgets==7.5.1 \
+    jupyter_tensorboard==0.2.0 \
+    widgetsnbextension==3.5.1 \
+    tensorboard==2.1.1 \
+    tensorboardX==2.1
+RUN jupyter labextension install jupyterlab_tensorboard \
+   && jupyter nbextension enable --py widgetsnbextension \
+   && jupyter labextension install @jupyter-widgets/jupyterlab-manager
 
 # Revise default shell to /bin/bash
 RUN jupyter notebook --generate-config \
