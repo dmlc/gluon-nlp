@@ -1,15 +1,24 @@
-# GluonNLP + Numpy
+<h3 align="center">
+GluonNLP: Your Choice of Deep Learning for NLP
+</h3>
 
-Implementing NLP algorithms using the new numpy-like interface of MXNet. It's also a testbed for the next-generation release of GluonNLP.
+<p align="center">
+    [![build](https://github.com/dmlc/gluonnlp/workflows/unittests/badge.svg)](https://github.com/dmlc/gluonnlp/actions)
+    [![codecov](https://codecov.io/gh/dmlc/gluon-nlp/branch/master/graph/badge.svg)](https://codecov.io/gh/dmlc/gluon-nlp)
+    [![python](https://img.shields.io/badge/python-3.5%2C3.7-blue.svg)](https://github.com/dmlc/gluonnlp/actions)]
+    [![pypi](https://img.shields.io/pypi/v/gluonnlp.svg)](https://pypi.org/project/gluonnlp/#history)]
+</p>
 
-This is a work-in-progress.
-
+GluonNLP is a toolkit that enables easy text preprocessing, datasets
+loading and neural models building to help you speed up your Natural
+Language Processing (NLP) research.
 
 # Features
 
 - Data Pipeline for NLP
 - AutoML support (TODO)
 - Pretrained Model Zoo
+- Programming with numpy-like API
 - Fast Deployment
     - [TVM](https://tvm.apache.org/) (TODO)
 - AWS Integration
