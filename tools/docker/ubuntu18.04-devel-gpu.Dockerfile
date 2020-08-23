@@ -145,7 +145,7 @@ WORKDIR ${WORKDIR}
 RUN echo NCCL_DEBUG=INFO >> /etc/nccl.conf
 
 # Install NodeJS + Tensorboard + TensorboardX
-RUN curl -sL https://deb.nodesource.com/setup_14.x | -E bash - \
+RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
     && apt-get install -y nodejs
 
 RUN pip3 install --no-cache --upgrade \
