@@ -151,6 +151,7 @@ RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
 RUN pip3 install --no-cache --upgrade \
     soundfile==0.10.2 \
     jupyter_tensorboard==0.2.0 \
+    widgetsnbextension==3.5.1 \
     tensorboard==2.1.1 \
     tensorboardX==2.1
 RUN jupyter labextension install jupyterlab_tensorboard \
