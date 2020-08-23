@@ -149,10 +149,13 @@ RUN curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash - \
     && sudo apt-get install -y nodejs
 
 RUN pip3 install --no-cache --upgrade \
+    soundfile==0.10.2 \
     jupyter_tensorboard==0.2.0 \
     tensorboard==2.1.1 \
     tensorboardX==2.1
-RUN jupyter labextension install jupyterlab_tensorboard
+RUN jupyter labextension install jupyterlab_tensorboard \
+   && jupyter nbextension enable --py widgetsnbextension \
+   && jupyter labextension install @jupyter-widgets/jupyterlab-manager
 
 # Revise default shell to /bin/bash
 RUN jupyter notebook --generate-config \
