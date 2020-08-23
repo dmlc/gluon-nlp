@@ -9,11 +9,11 @@ You can run the docker with the following command.
 
 ```
 docker pull gluonai/gluon-nlp:gpu-latest
-docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=4g gluonai/gluon-nlp:gpu-latest
+docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=2g gluonai/gluon-nlp:gpu-latest
 ```
 
 Here, we open the ports 8888, 8787, 8786, which are used for connecting to JupyterLab. 
-Also, we set `--shm-size` to `4g`. This sets the shared memory storage to 4GB. Since NCCL will 
+Also, we set `--shm-size` to `2g`. This sets the shared memory storage to 2GB. Since NCCL will 
 create shared memory segments, this argument is essential for the JupyterNotebook to work with NCCL. 
 (See also https://github.com/NVIDIA/nccl/issues/290).
 
