@@ -474,7 +474,7 @@ class BeamSearchSampler(HybridBlock):
                  sampling: bool = False,
                  sampling_topp: float = -1.0,
                  sampling_topk: int = -1,
-                 early_return: bool = False):
+                 early_return: bool = True):
         super().__init__()
         self._beam_size = beam_size
         self._vocab_size = vocab_size
