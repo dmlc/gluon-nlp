@@ -15,10 +15,15 @@ Language Processing (NLP) research.
 
 # Features
 
-- Easy-to-use Data Pipeline for NLP
+For NLP Practitioners
+- Easy-to-use Data Pipeline
 - Automatically Train Models via AutoNLP (TODO)
+
+For Researchers
 - Pretrained Model Zoo
 - Programming with numpy-like API
+
+For Engineers
 - Fast Deployment
     - [TVM](https://tvm.apache.org/) (TODO)
 - AWS Integration
