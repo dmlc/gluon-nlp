@@ -3,10 +3,10 @@ GluonNLP: Your Choice of Deep Learning for NLP
 </h3>
 
 <p align="center">
-    [![build](https://github.com/dmlc/gluonnlp/workflows/unittests/badge.svg)](https://github.com/dmlc/gluonnlp/actions)
-    [![codecov](https://codecov.io/gh/dmlc/gluon-nlp/branch/master/graph/badge.svg)](https://codecov.io/gh/dmlc/gluon-nlp)
-    [![python](https://img.shields.io/badge/python-3.5%2C3.7-blue.svg)](https://github.com/dmlc/gluonnlp/actions)]
-    [![pypi](https://img.shields.io/pypi/v/gluonnlp.svg)](https://pypi.org/project/gluonnlp/#history)]
+    <a href="https://github.com/dmlc/gluon-nlp/actions"><img src="https://github.com/dmlc/gluon-nlp/workflows/continuous%20build/badge.svg"></a>
+    <a href="https://codecov.io/gh/dmlc/gluon-nlp"><img src="https://codecov.io/gh/dmlc/gluon-nlp/branch/master/graph/badge.svg"></a>
+    <a href="https://github.com/dmlc/gluonnlp/actions"><img src="https://img.shields.io/badge/python-3.6%2C3.8-blue.svg"></a>
+    <a href="https://pypi.org/project/gluonnlp/#history"><img src="https://img.shields.io/pypi/v/gluonnlp.svg"></a>
 </p>
 
 GluonNLP is a toolkit that enables easy text preprocessing, datasets
@@ -15,8 +15,8 @@ Language Processing (NLP) research.
 
 # Features
 
-- Data Pipeline for NLP
-- AutoML support (TODO)
+- Easy-to-use Data Pipeline for NLP
+- Automatically Train Models via AutoNLP (TODO)
 - Pretrained Model Zoo
 - Programming with numpy-like API
 - Fast Deployment
