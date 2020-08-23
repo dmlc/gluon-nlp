@@ -15,7 +15,6 @@
 # specific language governing permissions and limitations
 # under the License.
 """Implements the beam search sampler."""
-import numpy as np
 import warnings
 import mxnet as mx
 import abc
@@ -109,37 +108,37 @@ class BeamSearchScorer(HybridBlock):
 
         Parameters
         ----------
-        outputs : NDArray or Symbol
+        outputs : mx.np.ndarray
             If from_logits is True, outputs is the log probabilities of the candidates.
             Shape (d1, d2, ..., dn, V).
             Otherwise, outputs is the unnormalized outputs from predictor of the same shape,
             before softmax/log_softmax.
-        scores : NDArray or Symbol
+        scores : mx.np.ndarray
             The original scores of the beams. Shape (d1, d2, ..., dn)
-        step : NDArray or Symbol
+        step : mx.np.ndarray
             Step to calculate the score function. It starts from 1. The shape is a scalar.
 
         Returns
         -------
-        candidate_scores : NDArray or Symbol
+        candidate_scores : mx.np.ndarray
             The scores of all the candidates. Shape (d1, d2, ..., dn, V), where V is the size
             of the vocabulary.
         """
         return super().__call__(outputs, scores, step)
 
-    def hybrid_forward(self, F, outputs, scores, step):  # pylint: disable=arguments-differ
+    def forward(self, outputs, scores, step):  # pylint: disable=arguments-differ
         if not self._from_logits:
-            outputs = F.npx.log_softmax(outputs / self._temperature)
+            outputs = mx.npx.log_softmax(outputs / self._temperature)
 
         if self._alpha != 0.0:
-            step = step.astype(np.float32)
+            step = step.astype(mx.np.float32)
             prev_lp = (self._K + step - 1) ** self._alpha / ((self._K + 1) ** self._alpha)
-            prev_lp = prev_lp * (step != 1).astype(np.float32) + (step == 1).astype(np.float32)
+            prev_lp = prev_lp * (step != 1).astype(mx.np.float32) + (step == 1).astype(mx.np.float32)
             lp = (self._K + step) ** self._alpha / ((self._K + 1) ** self._alpha)
             scores = scores * prev_lp
-            candidate_scores = (outputs + F.np.expand_dims(scores, axis=-1)) / lp
+            candidate_scores = (outputs + mx.np.expand_dims(scores, axis=-1)) / lp
         else:
-            candidate_scores = outputs + F.np.expand_dims(scores, axis=-1)
+            candidate_scores = outputs + mx.np.expand_dims(scores, axis=-1)
         return candidate_scores
 
     def __repr__(self):
@@ -155,8 +154,8 @@ def _expand_to_beam_size(data, beam_size, batch_size, state_batch_axis=None):
 
     Parameters
     ----------
-    data : A single NDArray/Symbol or nested container with NDArrays/Symbol
-        Each NDArray/Symbol should have shape (N, ...) when state_info is None,
+    data : A single mx.np.ndarray or nested container with mx.np.ndarray
+        Each mx.np.ndarray should have shape (N, ...) when state_info is None,
         or same as the layout in state_info when it's not None.
     beam_size : int
         Beam size
@@ -167,8 +166,8 @@ def _expand_to_beam_size(data, beam_size, batch_size, state_batch_axis=None):
         When None, this method assumes that the batch axis is the first dimension.
     Returns
     -------
-    new_states : Object that contains NDArrays/Symbols
-        Each NDArray/Symbol should have shape batch_size * beam_size on the batch axis.
+    new_states : Object that contains mx.np.ndarray
+        Each mx.np.ndarray should have shape batch_size * beam_size on the batch axis.
     """
     if isinstance(data, (list, tuple)):
         if state_batch_axis is not None:
@@ -197,22 +196,19 @@ def _expand_to_beam_size(data, beam_size, batch_size, state_batch_axis=None):
         new_shape = tuple(new_shape)
         bcast_new_shape = new_shape[:batch_axis] + (batch_size, beam_size) + new_shape[(batch_axis + 1):]
         return mx.np.expand_dims(data, batch_axis + 1).broadcast_to(bcast_new_shape).reshape(new_shape)
-    elif isinstance(data, mx.sym.Symbol):
-        raise NotImplementedError
     elif data is None:
         return None
     else:
         raise NotImplementedError
 
 
-def _choose_states(F, states, indices, state_batch_axis=None):
+def _choose_states(states, indices, state_batch_axis=None):
     """
 
     Parameters
     ----------
-    F : ndarray or symbol
-    states : Object contains NDArrays/Symbols
-    indices : NDArray or Symbol
+    states : Object contains mx.np.ndarray
+    indices : mx.np.ndarray
         Indices of the states to take. Shape (N,).
     state_batch_axis
         Descriptors for states, it is generated from decoder's ``state_batch_axis``.
@@ -220,26 +216,26 @@ def _choose_states(F, states, indices, state_batch_axis=None):
 
     Returns
     -------
-    new_states : Object contains NDArrays/Symbols
-        Each NDArray/Symbol should have shape (..., N, ...).
+    new_states : Object contains mx.np.ndarray
+        Each mx.np.ndarray should have shape (..., N, ...).
     """
     if isinstance(states, (list, tuple)):
         if state_batch_axis is not None:
-            return [_choose_states(F, d, indices, b_axis)
+            return [_choose_states(d, indices, b_axis)
                     for d, b_axis in zip(states, state_batch_axis)]
         else:
-            return [_choose_states(F, d, indices, None) for d in states]
+            return [_choose_states(d, indices, None) for d in states]
     elif isinstance(states, dict):
         if state_batch_axis is not None:
-            return {k: _choose_states(F, v, indices, state_batch_axis[k]) for k, v in states.items()}
+            return {k: _choose_states(v, indices, state_batch_axis[k]) for k, v in states.items()}
         else:
-            return {k: _choose_states(F, v, indices, None) for k, v in states.items()}
-    elif isinstance(states, (mx.np.ndarray, mx.sym.numpy._Symbol)):
+            return {k: _choose_states(v, indices, None) for k, v in states.items()}
+    elif isinstance(states, mx.np.ndarray):
         if state_batch_axis is None:
             batch_axis = 0
         else:
             batch_axis = state_batch_axis
-        states = F.np.take(states, indices, axis=batch_axis)
+        states = mx.np.take(states, indices, axis=batch_axis)
         return states
     else:
         raise TypeError('The type of the states is not supported, type(states) = {}'.format(type(states)))
@@ -271,149 +267,149 @@ class _BeamSearchStepUpdate(HybridBlock):
         self.activation = get_activation('relu')
         assert eos_id is None or eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
-    def gumbel_with_maximum(self, F, phi, T, dim=-1):
+    def gumbel_with_maximum(self, phi, T, dim=-1):
         """
         Parameters
         ----------
         F
-        phi : mx.np.ndarray or Symbol
+        phi : mx.np.ndarray
             Shape (batch_size, beam_size, L).
-        T : mx.np.ndarray or Symbol
+        T : mx.np.ndarray
             The previous scores. Shape (batch_size, beam_size)
         """
-        g_phi = phi + F.np.random.gumbel(F.np.zeros_like(phi))
+        g_phi = phi + mx.np.random.gumbel(mx.np.zeros_like(phi))
         Z = g_phi.max(dim)
-        g = self.shift_gumbel_maximum(F, g_phi, T, dim, Z=Z)
+        g = self.shift_gumbel_maximum(g_phi, T, dim, Z=Z)
         return g
-    
-    def shift_gumbel_maximum(self, F, g_phi, T, dim=-1, Z=None):
+
+    def shift_gumbel_maximum(self, g_phi, T, dim=-1, Z=None):
         """
         Parameters
         ----------
         F
-        g_phi : mx.np.ndarray or Symbol
+        g_phi : mx.np.ndarray
             Shape (batch_size, beam_size, L).
-        T : mx.np.ndarray or Symbol
+        T : mx.np.ndarray
             The previous scores. Shape (batch_size, beam_size)
         """
         if Z is None:
             Z = g_phi.max(dim)
-        T_ = F.npx.reshape(T, (-4, 1))
-        Z_ = F.npx.reshape(Z, (-4, 1))
-        u = T_ - g_phi + F.np.log1p(-F.np.exp(g_phi - Z_)+1e-5)
-        return T_ - self.activation(u) - F.np.log1p(F.np.exp(-F.np.abs(u)))
+        T_ = mx.npx.reshape(T, (-4, 1))
+        Z_ = mx.npx.reshape(Z, (-4, 1))
+        u = T_ - g_phi + mx.np.log1p(-mx.np.exp(g_phi - Z_)+1e-5)
+        return T_ - self.activation(u) - mx.np.log1p(mx.np.exp(-mx.np.abs(u)))
 
-    def hybrid_forward(self, F, samples, valid_length, outputs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
-                       states, batch_shift):
+    def forward(self, samples, valid_length, outputs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
+                states, batch_shift):
         """
 
         Parameters
         ----------
         F
-        samples : mx.np.ndarray or Symbol
+        samples : mx.np.ndarray
             The current samples generated by beam search.
             Shape (batch_size, beam_size, L).
-        valid_length : NDArray or Symbol
+        valid_length : mx.np.ndarray
             The current valid lengths of the samples
-        outputs : NDArray or Symbol
+        outputs : mx.np.ndarray
             Outputs from predictor. If from_logits was set to True in scorer, then it's the
             log probability of the current step. Else, it's the unnormalized outputs before
             softmax or log_softmax.
             Shape (batch_size * beam_size, V).
-        scores : NDArray or Symbol
+        scores : mx.np.ndarray
             The previous scores. Shape (batch_size, beam_size)
-        step : NDArray or Symbol
+        step : mx.np.ndarray
             The current step for doing beam search. Begins from 1. Shape ()
-        beam_alive_mask : NDArray or Symbol
+        beam_alive_mask : mx.np.ndarray
             Shape (batch_size, beam_size)
-        states : nested structure of NDArrays/Symbols
-            Each NDArray/Symbol should have shape (N, ...) when state_info is None,
+        states : nested structure of mx.np.ndarray
+            Each mx.np.ndarray should have shape (N, ...) when state_info is None,
             or same as the layout in state_info when it's not None.
-        batch_shift : NDArray or Symbol
+        batch_shift : mx.np.ndarray
             Contains [0, beam_size, 2 * beam_size, ..., (batch_size - 1) * beam_size].
             Shape (batch_size,)
 
         Returns
         -------
-        new_samples : NDArray or Symbol or an empty list
+        new_samples : mx.np.ndarray or an empty list
             The updated samples.
             When single_step is False, shape (batch_size, beam_size, L + 1)
-        new_valid_length : NDArray or Symbol
+        new_valid_length : mx.np.ndarray
             Valid lengths of the samples. Shape (batch_size, beam_size)
-        new_scores : NDArray or Symbol
+        new_scores : mx.np.ndarray
             Shape (batch_size, beam_size)
-        chosen_word_ids : NDArray or Symbol
+        chosen_word_ids : mx.np.ndarray
             The chosen word ids of the step. Shape (batch_size, beam_size). If it's negative,
             no word will be appended to the beam.
-        beam_alive_mask : NDArray or Symbol
+        beam_alive_mask : mx.np.ndarray
             Shape (batch_size, beam_size)
-        new_states : nested structure of NDArrays/Symbols
-            Inner NDArrays have shape (batch_size * beam_size, ...)
+        new_states : nested structure of mx.np.ndarray
+            Inner mx.np.ndarrays have shape (batch_size * beam_size, ...)
         """
         beam_size = self._beam_size
         vocab_size = self._vocab_size
-        beam_alive_mask_bcast = F.np.expand_dims(beam_alive_mask, axis=2)
-        candidate_scores = self._scorer(F.npx.reshape(outputs, (-6, -1, beam_size, -2)),
+        beam_alive_mask_bcast = mx.np.expand_dims(beam_alive_mask, axis=2)
+        candidate_scores = self._scorer(mx.npx.reshape(outputs, (-6, -1, beam_size, -2)),
                                         scores, step)
         if self.stochastic:
             if step == 1:
                 candidate_scores_gumbel\
                     = candidate_scores[:1]\
-                      + F.np.random.gumbel(F.np.zeros_like(candidate_scores[:1]))
+                      + mx.np.random.gumbel(mx.np.zeros_like(candidate_scores[:1]))
                 candidate_scores_residual = candidate_scores[1:]
-                candidate_scores = F.np.concatenate((candidate_scores_gumbel,
-                                                     candidate_scores_residual), axis=0)
+                candidate_scores = mx.np.concatenate((candidate_scores_gumbel,
+                                                      candidate_scores_residual), axis=0)
             else:
-                candidate_scores = self.gumbel_with_maximum(F, candidate_scores, scores, -1)
+                candidate_scores = self.gumbel_with_maximum(candidate_scores, scores, -1)
         # Concat the candidate scores and the scores of the finished beams
         # The resulting candidate score will have shape (batch_size, beam_size * |V| + beam_size)
-        candidate_scores = F.np.where(beam_alive_mask_bcast,
-                                      candidate_scores,
-                                      F.np.full_like(candidate_scores,
+        candidate_scores = mx.np.where(beam_alive_mask_bcast,
+                                       candidate_scores,
+                                       mx.np.full_like(candidate_scores,
                                                      LARGE_NEGATIVE_FLOAT))
-        finished_scores = F.np.where(beam_alive_mask,
-                                     F.np.full_like(scores,
-                                                    LARGE_NEGATIVE_FLOAT),
+        finished_scores = mx.np.where(beam_alive_mask,
+                                      mx.np.full_like(scores,
+                                                      LARGE_NEGATIVE_FLOAT),
                                      scores)
-        candidate_scores = F.np.concatenate([F.npx.reshape(candidate_scores, (-2, -1)),
-                                             finished_scores],
-                                            axis=1)
+        candidate_scores = mx.np.concatenate([mx.npx.reshape(candidate_scores, (-2, -1)),
+                                              finished_scores],
+                                              axis=1)
         # Get the top K scores
         # new_scores and indices will have shape (batch_size, beam_size)
-        new_scores, indices = F.npx.topk(candidate_scores, axis=1, k=beam_size, ret_typ='both')
-        indices = indices.astype(np.int32)
-        use_prev = (indices >= (beam_size * vocab_size)).astype(np.int32)
-        chosen_word_ids = F.np.mod(indices, vocab_size)
-        beam_ids = F.np.where(use_prev, indices - beam_size * vocab_size,
-                              F.np.floor(indices / vocab_size).astype(np.int32))
-        batch_beam_indices = beam_ids + F.np.expand_dims(batch_shift, axis=1)
-        chosen_word_ids = F.np.where(use_prev, - F.np.ones_like(indices), chosen_word_ids)
+        new_scores, indices = mx.npx.topk(candidate_scores, axis=1, k=beam_size, ret_typ='both')
+        indices = indices.astype(mx.np.int32)
+        use_prev = (indices >= (beam_size * vocab_size)).astype(mx.np.int32)
+        chosen_word_ids = mx.np.mod(indices, vocab_size)
+        beam_ids = mx.np.where(use_prev, indices - beam_size * vocab_size,
+                               mx.np.floor(indices / vocab_size).astype(mx.np.int32))
+        batch_beam_indices = beam_ids + mx.np.expand_dims(batch_shift, axis=1)
+        chosen_word_ids = mx.np.where(use_prev, - mx.np.ones_like(indices), chosen_word_ids)
         # Update the samples and vaild_length
         # TODO(sxjscience) The current implementation is quite tricky
         #  We should wait for hybridizable advanced indexing to avoid this
-        selected_samples = F.np.take(F.npx.reshape(samples, (-5, -2)),
-                                     batch_beam_indices.reshape((-1,)), axis=0)
-        new_samples = F.npx.reshape(F.np.concatenate([selected_samples,
-                                                      chosen_word_ids.reshape((-1, 1))],
-                                                     axis=1),
+        selected_samples = mx.np.take(mx.npx.reshape(samples, (-5, -2)),
+                                      batch_beam_indices.reshape((-1,)), axis=0)
+        new_samples = mx.npx.reshape(mx.np.concatenate([selected_samples,
+                                                        chosen_word_ids.reshape((-1, 1))],
+                                                       axis=1),
                                     (-6, -1, beam_size, -2))
-        new_valid_length = F.np.take(valid_length.reshape((-1,)),
-                                     batch_beam_indices.reshape((-1,)),
-                                     axis=0).reshape((-1, beam_size)) + 1 - use_prev
+        new_valid_length = mx.np.take(valid_length.reshape((-1,)),
+                                      batch_beam_indices.reshape((-1,)),
+                                      axis=0).reshape((-1, beam_size)) + 1 - use_prev
         # Update the states
-        new_states = _choose_states(F, states, batch_beam_indices.reshape((-1,)),
+        new_states = _choose_states(states, batch_beam_indices.reshape((-1,)),
                                     self._state_batch_axis)
         # Update the alive mask.
-        beam_alive_mask = F.np.take(beam_alive_mask.reshape((-1,)),
-                                    batch_beam_indices.reshape((-1,)), axis=0)\
+        beam_alive_mask = mx.np.take(beam_alive_mask.reshape((-1,)),
+                                     batch_beam_indices.reshape((-1,)), axis=0)\
                               .reshape((-1, beam_size))
         if self._eos_id is not None:
-            beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(np.float32)
+            beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(mx.np.float32)
         return new_samples, new_valid_length, new_scores, chosen_word_ids,\
                beam_alive_mask, new_states
 
 
-class BeamSearchSampler:
+class BeamSearchSampler(HybridBlock):
     r"""Draw samples from the decoder by beam search.
 
     Parameters
@@ -460,6 +456,10 @@ class BeamSearchSampler:
         Multinomial sampling with topk,
         see [ACL2018] "Hierarchical Neural Story Generation"
         https://www.aclweb.org/anthology/P18-1082.pdf
+    early_return
+        Whether to return when all beams are dead.
+        Without early_return, the sequences will be generated until the
+        maximum length is reached.
     """
     def __init__(self, beam_size: int,
                  decoder: BaseStepDecoder,
@@ -473,7 +473,9 @@ class BeamSearchSampler:
                  stochastic: bool = False,
                  sampling: bool = False,
                  sampling_topp: float = -1.0,
-                 sampling_topk: int = -1):
+                 sampling_topk: int = -1,
+                 early_return: bool = True):
+        super().__init__()
         self._beam_size = beam_size
         self._vocab_size = vocab_size
         assert beam_size > 0,\
@@ -495,6 +497,7 @@ class BeamSearchSampler:
         self._sampling = sampling
         self._sampling_topp = sampling_topp
         self._sampling_topk = sampling_topk
+        self._early_return = early_return
         if sampling:
             self._updater = _MultinomialStepUpdate(
                 beam_size=beam_size,
@@ -523,31 +526,27 @@ class BeamSearchSampler:
                     warnings.warn(
                         'To use stochastic beam search, we need to set the alpha as 0.0')
 
-    def __call__(self, inputs, states, src_seq_lengths=None, early_return=True):
+    def forward(self, inputs, states, src_seq_lengths=None):
         """Sample by beam search.
 
         Parameters
         ----------
-        inputs : NDArray
+        inputs : mx.np.ndarray
             The initial input of the decoder. Shape is (batch_size,).
-        states : Object that contains NDArrays
+        states : Object that contains mx.np.ndarrays
             The initial states of the decoder.
-        src_seq_lengths : NDArray
+        src_seq_lengths : mx.np.ndarray
             The source sequence lengths. Shape is (batch_size,).
-        early_return : bool
-            Whether to return when all beams are dead.
-            Without early_return, the sequences will be generated until the
-            maximum length is reached.
 
         Returns
         -------
-        samples : NDArray
+        samples : mx.np.ndarray
             Samples draw by beam search. Shape (batch_size, beam_size, length).
             DType is int32.
-        scores : NDArray
+        scores : mx.np.ndarray
             Scores of the samples. Shape (batch_size, beam_size).
              We make sure that scores[i, :] are in descending order.
-        valid_length : NDArray
+        valid_length : mx.np.ndarray
             The valid length of the samples. Shape (batch_size, beam_size).
             DType is int32.
         """
@@ -568,19 +567,19 @@ class BeamSearchSampler:
         states = _expand_to_beam_size(states, beam_size=beam_size, batch_size=batch_size,
                                       state_batch_axis=self._state_batch_axis)
         step_input = _expand_to_beam_size(inputs, beam_size=beam_size,
-                                          batch_size=batch_size).astype(np.int32)
+                                          batch_size=batch_size).astype(mx.np.int32)
         # All beams are initialized to alive
         # Generated samples are initialized to be the inputs
         # Except the first beam where the scores are set to be zero, all beams have -inf scores.
         # Valid length is initialized to be 1
-        beam_alive_mask = mx.np.ones(shape=(batch_size, beam_size), ctx=ctx, dtype=np.float32)
-        valid_length = mx.np.ones(shape=(batch_size, beam_size), ctx=ctx, dtype=np.int32)
+        beam_alive_mask = mx.np.ones(shape=(batch_size, beam_size), ctx=ctx, dtype=mx.np.float32)
+        valid_length = mx.np.ones(shape=(batch_size, beam_size), ctx=ctx, dtype=mx.np.int32)
         scores = mx.np.zeros(shape=(batch_size, beam_size), ctx=ctx)
         if beam_size > 1:
             scores[:, 1:beam_size] = LARGE_NEGATIVE_FLOAT
         samples = step_input.reshape((batch_size, beam_size, 1))
-        batch_shift = mx.np.arange(0, batch_size * beam_size, beam_size, ctx=ctx, dtype=np.int32)
-        step = mx.np.array(0, ctx=ctx, dtype=np.float32)
+        batch_shift = mx.np.arange(0, batch_size * beam_size, beam_size, ctx=ctx, dtype=mx.np.int32)
+        step = mx.np.array(0, ctx=ctx, dtype=mx.np.float32)
         for i in range(max_length):
             log_probs, new_states = self._decoder(step_input, states)
             assert log_probs.shape[1] == self._vocab_size
@@ -589,20 +588,20 @@ class BeamSearchSampler:
                 self._updater(samples, valid_length, log_probs, scores, step, beam_alive_mask,
                               new_states, batch_shift)
             step_input = mx.npx.relu(chosen_word_ids).reshape((-1,))
-            if early_return:
+            if self._early_return:
                 if mx.np.sum(beam_alive_mask).asnumpy() == 0:
                     return samples, scores, valid_length
-        beam_alive_mask = beam_alive_mask.astype(np.int32)
+        beam_alive_mask = beam_alive_mask.astype(mx.np.int32)
         if self._eos_id is not None:
             final_word = mx.np.where(beam_alive_mask,
                                      mx.np.full((batch_size, beam_size), self._eos_id,
-                                                ctx=ctx, dtype=np.int32),
-                                     mx.np.full((batch_size, beam_size), -1, ctx=ctx, dtype=np.int32))
+                                                ctx=ctx, dtype=mx.np.int32),
+                                     mx.np.full((batch_size, beam_size), -1, ctx=ctx, dtype=mx.np.int32))
             samples = mx.np.concatenate([samples,
                                          final_word.reshape((final_word.shape[0],
                                                              final_word.shape[1], 1))],
                                         axis=2)
-            valid_length += beam_alive_mask
+            valid_length = valid_length + beam_alive_mask
         return samples, scores, valid_length
 
     def __repr__(self):
@@ -644,103 +643,103 @@ class _MultinomialStepUpdate(HybridBlock):
         assert eos_id is None or eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
         assert sampling_topp <= 0 or sampling_topk <= 0, 'sampling_topp conflicts with sampling_topk'
 
-    def hybrid_forward(self, F, samples, valid_length, outputs, scores, step, beam_alive_mask,
-                       states, batch_shift):
+    def forward(self, samples, valid_length, outputs, scores, step, beam_alive_mask,
+                states, batch_shift):
         """
 
         Parameters
         ----------
         F
-        samples : mx.np.ndarray or Symbol
+        samples : mx.np.ndarray
             The current samples generated by beam search.
             Shape (batch_size, beam_size, L).
-        valid_length : NDArray or Symbol
+        valid_length : mx.np.ndarray
             The current valid lengths of the samples
-        outputs : NDArray or Symbol
+        outputs : mx.np.ndarray
             Outputs from predictor. If from_logits was set to True in scorer, then it's the
             log probability of the current step. Else, it's the unnormalized outputs before
             softmax or log_softmax.
             Shape (batch_size * beam_size, V).
-        scores : NDArray or Symbol
+        scores : mx.np.ndarray
             The previous scores. Shape (batch_size, beam_size)
-        step : NDArray or Symbol
+        step : mx.np.ndarray
             The current step for doing beam search. Begins from 1. Shape ()
-        beam_alive_mask : NDArray or Symbol
+        beam_alive_mask : mx.np.ndarray
             Shape (batch_size, beam_size)
-        states : nested structure of NDArrays/Symbols
-            Each NDArray/Symbol should have shape (N, ...) when state_info is None,
+        states : nested structure of mx.np.ndarray
+            Each mx.np.ndarray should have shape (N, ...) when state_info is None,
             or same as the layout in state_info when it's not None.
-        batch_shift : NDArray or Symbol
+        batch_shift : mx.np.ndarray
             Contains [0, beam_size, 2 * beam_size, ..., (batch_size - 1) * beam_size].
             Shape (batch_size,)
 
         Returns
         -------
-        new_samples : NDArray or Symbol or an empty list
+        new_samples : mx.np.ndarray or an empty list
             The updated samples.
             When single_step is False, shape (batch_size, beam_size, L + 1)
-        new_valid_length : NDArray or Symbol
+        new_valid_length : mx.np.ndarray
             Valid lengths of the samples. Shape (batch_size, beam_size)
-        new_scores : NDArray or Symbol
+        new_scores : mx.np.ndarray
             Shape (batch_size, beam_size)
-        chosen_word_ids : NDArray or Symbol
+        chosen_word_ids : mx.np.ndarray
             The chosen word ids of the step. Shape (batch_size, beam_size). If it's negative,
             no word will be appended to the beam.
-        beam_alive_mask : NDArray or Symbol
+        beam_alive_mask : mx.np.ndarray
             Shape (batch_size, beam_size)
-        new_states : nested structure of NDArrays/Symbols
-            Inner NDArrays have shape (batch_size * beam_size, ...)
+        new_states : nested structure of mx.np.ndarray
+            Inner mx.np.ndarrays have shape (batch_size * beam_size, ...)
         """
         # bsz * beam_size * vocab_size
         outputs = outputs.reshape((-1, self._beam_size, self._vocab_size))
-        probs = F.npx.softmax(outputs / self._temperature)
-        
+        probs = mx.npx.softmax(outputs / self._temperature)
+
         if self._sampling_topp > 0:
-            probs = F.np.where(
+            probs = mx.np.where(
                 probs > self._sampling_topp,
                 probs,
-                F.np.zeros_like(probs)
+                mx.np.zeros_like(probs)
             )
         elif self._sampling_topk > 0:
-            topk_probs = F.npx.topk(probs, axis=2, k=self._sampling_topk, ret_typ='value')
+            topk_probs = mx.npx.topk(probs, axis=2, k=self._sampling_topk, ret_typ='value')
             # choose the k max prob
             k_prob = topk_probs[:,:,-1]
-            k_prob = F.np.expand_dims(k_prob, axis=-1)
-            probs = F.np.where(
+            k_prob = mx.np.expand_dims(k_prob, axis=-1)
+            probs = mx.np.where(
                 probs >= k_prob,
                 probs,
-                F.np.zeros_like(probs)
+                mx.np.zeros_like(probs)
             )
-            
+
         # renormalize
-        probs_sum = F.np.sum(probs, axis=2, keepdims=True)
+        probs_sum = mx.np.sum(probs, axis=2, keepdims=True)
         probs = probs / probs_sum
-        
+
         # bsz * beam_size
         chosen_word_ids, chosen_word_log_probs = \
-            F.npx.random.categorical(probs, get_prob=True)
-        
-        new_scores = scores + F.np.where(
+            mx.npx.random.categorical(probs, get_prob=True)
+
+        new_scores = scores + mx.np.where(
             beam_alive_mask,
             chosen_word_log_probs,
-            F.np.zeros_like(chosen_word_log_probs)
-        )
-        
-        # mask dead words
-        chosen_word_ids = F.np.where(
-            beam_alive_mask,
-            chosen_word_ids,
-            F.np.full_like(beam_alive_mask, -1, dtype=np.int32)
+            mx.np.zeros_like(chosen_word_log_probs)
         )
 
-        new_valid_length = valid_length + beam_alive_mask.astype(np.int32)
-        new_samples = F.np.concatenate(
-            [samples, F.np.expand_dims(chosen_word_ids, axis=2)],
+        # mask dead words
+        chosen_word_ids = mx.np.where(
+            beam_alive_mask,
+            chosen_word_ids,
+            mx.np.full_like(beam_alive_mask, -1, dtype=mx.np.int32)
+        )
+
+        new_valid_length = valid_length + beam_alive_mask.astype(mx.np.int32)
+        new_samples = mx.np.concatenate(
+            [samples, mx.np.expand_dims(chosen_word_ids, axis=2)],
             axis=2
         )
         new_states = states
         if self._eos_id is not None:
-            beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(np.int32)
-        
+            beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(mx.np.int32)
+
         return new_samples, new_valid_length, new_scores, chosen_word_ids,\
                beam_alive_mask, new_states
