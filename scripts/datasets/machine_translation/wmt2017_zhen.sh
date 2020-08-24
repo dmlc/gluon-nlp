@@ -18,7 +18,7 @@ sacrebleu -t wmt17 -l ${SRC}-${TGT} --echo ref > ${SAVE_PATH}/test.raw.${TGT}
 
 # Clean and tokenize the training + dev corpus
 cd ${SAVE_PATH}
-nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
+nlp_process clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus train.raw.${SRC} \
                       --tgt-corpus train.raw.${TGT} \
@@ -30,7 +30,7 @@ nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
                       --src-save-path train.tok.${SRC} \
                       --tgt-save-path train.tok.${TGT}
 
-nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
+nlp_process clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus dev.raw.${SRC} \
                       --tgt-corpus dev.raw.${TGT} \
@@ -43,7 +43,7 @@ nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-save-path dev.tok.${TGT}
 
 # For test corpus, we will just tokenize the data
-nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
+nlp_process clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus test.raw.${SRC} \
                       --tgt-corpus test.raw.${TGT} \
@@ -54,11 +54,11 @@ nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
 
 # Learn BPE with the training data. We learn independent source/target vocabulary
 
-nlp_preprocess learn_subword --corpus train.tok.${SRC} \
+nlp_process learn_subword --corpus train.tok.${SRC} \
                              --model ${SUBWORD_ALGO} \
                              --save-dir ./${SRC}_model \
                              --vocab-size 44000
-nlp_preprocess learn_subword --corpus train.tok.${TGT} \
+nlp_process learn_subword --corpus train.tok.${TGT} \
                              --model ${SUBWORD_ALGO} \
                              --save-dir ./${TGT}_model \
                              --vocab-size 33000
@@ -66,7 +66,7 @@ nlp_preprocess learn_subword --corpus train.tok.${TGT} \
 # Apply the learned codes to the training set
 for LANG in ${SRC} ${TGT}
 do
-nlp_preprocess apply_subword --model ${SUBWORD_ALGO}\
+nlp_process apply_subword --model ${SUBWORD_ALGO}\
                              --output-type subword \
                              --model-path ${LANG}_model/${SUBWORD_ALGO}.model \
                              --vocab-path ${LANG}_model/${SUBWORD_ALGO}.vocab \
@@ -79,7 +79,7 @@ for LANG in ${SRC} ${TGT}
 do
   for SPLIT in dev test
   do
-    nlp_preprocess apply_subword --model ${SUBWORD_ALGO} \
+    nlp_process apply_subword --model ${SUBWORD_ALGO} \
                                  --output-type subword \
                                  --model-path ${LANG}_model/${SUBWORD_ALGO}.model \
                                  --vocab-path ${LANG}_model/${SUBWORD_ALGO}.vocab \

@@ -1,10 +1,8 @@
-import glob
 import os
 import argparse
 import zipfile
 from gluonnlp.base import get_data_home_dir
 from gluonnlp.utils.misc import download, load_checksum_stats
-from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 
 
 _CITATIONS = r"""
@@ -22,7 +20,7 @@ _CITATIONS = r"""
 """
 
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
-_URL_FILE_STATS_PATH = os.path.join(_CURR_DIR, '..', 'url_checksums', 'book_corpus.txt')
+_URL_FILE_STATS_PATH = os.path.join(_CURR_DIR, '..', 'url_checksums', 'gutenberg.txt')
 _URL_FILE_STATS = load_checksum_stats(_URL_FILE_STATS_PATH)
 
 
@@ -38,28 +36,22 @@ _URLS = {
 }
 
 
-@DATA_PARSER_REGISTRY.register('prepare_bookcorpus')
 def get_parser():
-    parser = argparse.ArgumentParser(description='Download and Prepare the BookCorpus dataset.')
-    parser.add_argument('--dataset', type=str, choices=['gutenberg'], default='gutenberg')
-    parser.add_argument('--mode', type=str, default='raw', choices=['raw', 'format'],
-                        help='Specify the mode for preparing the data.'
-                             ' "raw" means to download and extract the books into the output'
-                             ' folder, each file is a book and the filename is the tile of the '
-                             'book. "format" means to format the extracted txt files for '
-                             'usage of pretraining.')
+    parser = argparse.ArgumentParser(description='Download and Prepare the BookCorpus dataset. '
+                                                 'We will download and extract the books into the '
+                                                 'output folder, each file is a book and the '
+                                                 'filename is the tile of the book.')
     parser.add_argument('--save_dir', type=str, default=None,
                         help='The directory to save the dataset. Default is the same as the'
                              ' dataset.')
     parser.add_argument('--cache-path', type=str,
-                        default=os.path.join(get_data_home_dir(), 'book_corpus'),
+                        default=os.path.join(get_data_home_dir(), 'gutenberg'),
                         help='The temporary path to download the compressed dataset.')
     return parser
 
 
-@DATA_MAIN_REGISTRY.register('prepare_bookcorpus')
 def main(args):
-    url = _URLS[args.dataset]
+    url = _URLS['gutenberg']
     file_hash = _URL_FILE_STATS[url]
     target_download_location = os.path.join(args.cache_path,
                                             os.path.basename(url))
@@ -67,18 +59,11 @@ def main(args):
     save_dir = args.dataset if args.save_dir is None else args.save_dir
     if not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
-    if args.dataset == 'gutenberg':
-        if args.mode == 'raw':
-            with zipfile.ZipFile(target_download_location) as f:
-                for name in f.namelist():
-                    if name.endswith('.txt'):
-                        filename = os.path.basename(name)
-                    f.extract(name, os.path.join(save_dir, filename))
-        else:
-            # TODO(zheyuye), format for pretraining
-            raise NotImplementedError
-    else:
-        raise NotImplementedError
+    with zipfile.ZipFile(target_download_location) as f:
+        for name in f.namelist():
+            if name.endswith('.txt'):
+                filename = os.path.basename(name)
+            f.extract(name, os.path.join(save_dir, filename))
 
 
 def cli_main():
