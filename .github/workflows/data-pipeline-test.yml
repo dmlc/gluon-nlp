@@ -1,4 +1,4 @@
-name: continuous build - data
+name: data pipeline test
 
 on: [push, pull_request]
 
@@ -9,8 +9,10 @@ defaults:
 jobs:
   unittest:
     runs-on: ubuntu-latest
-    matrix:
-      python-version: [ '3.7' ]
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ '3.7' ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
