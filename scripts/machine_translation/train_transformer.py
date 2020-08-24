@@ -526,7 +526,6 @@ def train(args):
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
-    os.environ['MXNET_USE_FUSION'] = '0'  # Manually disable pointwise fusion
     args = parse_args()
     np.random.seed(args.seed)
     mx.random.seed(args.seed)

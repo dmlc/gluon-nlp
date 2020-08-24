@@ -1125,8 +1125,6 @@ class TransformerModel(HybridBlock):
                          bias_initializer=bias_initializer,
                          use_bias=False,
                          dtype=self._dtype)
-        self.encoder.hybridize()
-        self.decoder.hybridize()
 
     @property
     def layout(self) -> str:

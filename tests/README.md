@@ -3,13 +3,13 @@
 To run the unittests, use the following command
 
 ```bash
-pytest .
+python3 -m pytest .
 ```
 
 To test for certain file, e.g., the `test_models_transformer.py`, use the following command
 
 ```bash
-pytest test_models_transformer
+python3 -m pytest test_models_transformer
 ```
 
 Refer to the [official guide of pytest](https://docs.pytest.org/en/latest/) for more details.
