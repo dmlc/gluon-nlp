@@ -15,11 +15,6 @@ jobs:
         # TODO Add windows test by using "windows-latest"
         os: [ubuntu-latest, macos-latest]
         python-version: [ '3.6', '3.7', '3.8']
-      exclude:
-        - os: macos-latest
-          python-version: [ '3.8' ]
-        - os: macos-latest
-            python-version: [ '3.6' ]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
