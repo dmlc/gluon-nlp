@@ -422,7 +422,7 @@ def test_xlnet_finetune_squad():
                                     + arguments)
     time.sleep(5)
 
-@pytest.mark.serial
+'''@pytest.mark.serial
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
@@ -441,4 +441,4 @@ def test_deploy_bert(bert_model, task, dtype):
                                     + arguments)
     os.environ['MXNET_FC_TRUE_FP16'] = '0'
     os.environ['MXNET_SAFE_ACCUMULATION'] = '0'
-    time.sleep(5)
+    time.sleep(5)'''
