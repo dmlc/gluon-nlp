@@ -6,6 +6,7 @@ import os
 from collections import OrderedDict
 import json
 from uuid import uuid4
+from packaging import version
 from gluonnlp.data import Vocab
 
 
@@ -92,8 +93,8 @@ def main(args):
             raise ValueError('There are overlaps between the custom special tokens and the'
                              ' unk, bos, eos, pad tokens')
         special_tokens_kv[k] = v
-    # hf_wordpiece must contains mask, cls and sep tokens
-    # the costom defined mask,cls,sep can overwrite the default settings
+    # hf_wordpiece must contain mask, cls and sep tokens
+    # the custom defined mask,cls,sep can overwrite the default settings
     if args.model == 'hf_wordpiece':
         if 'mask_token' not in special_tokens_kv:
             special_tokens_kv['mask_token'] = Vocab.MASK_TOKEN
@@ -160,7 +161,7 @@ def main(args):
             vocab.extend(sorted(list(uniq_chars_final)))
             fm.readline()
             pair = fm.readline()
-            while (pair):
+            while pair:
                 vocab.append(pair.replace(' ', '', 1).strip())
                 pair = fm.readline()
         if len(corpus_path_list) > 1:
@@ -207,7 +208,11 @@ def main(args):
             vocab_size=args.vocab_size,
             show_progress=True,
             special_tokens=special_tokens)
-        tokenizer.save(args.save_dir, args.model)
+        # Deal with the API change of tokenizers >= 0.8
+        if version.parse(tokenizers.__version__) >= version.parse('0.8'):
+            tokenizer.save(os.path.join(args.save_dir, args.model))
+        else:
+            tokenizer.save(args.save_dir, args.model)
         # we replace the huggingface vocab file with our Vocab implementation
         if args.model == 'hf_wordpiece':
             hf_vocab_file = model_prefix + '-vocab.txt'
