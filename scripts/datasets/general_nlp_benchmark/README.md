@@ -12,8 +12,8 @@ can we design a model that can solve these tasks all in once?
 featurize the text data, in which we extract two types of embeddings: one for the 
 whole sentence and the other for each tokens in the sentence. Later, 
 in [T5](https://arxiv.org/pdf/1910.10683.pdf), the author proposed to convert every task 
-into a text-to-text problem. However, it is difficult to convert tasks like sentence similarity 
-match, or named-entity recognition into text-to-text, because they involve real-values or text 
+into a text-to-text problem. However, it is difficult to convert tasks like measuring the similarity between sentences,
+or named-entity recognition into text-to-text, because they involve real-values or entity
 spans that are difficult to be encoded as raw text data.
 
 In GluonNLP, we propose a unified way to tackle these NLP problems. We convert these datasets 
@@ -102,3 +102,7 @@ see [SuperGLUE Diagnostic](https://super.gluebenchmark.com/diagnostics).
 |---------------|----------|----------------------|----------------|
 | Winogender    | 356 |hypothesis, premise, label | Accuracy       |
 | Broadcoverage | 1104  | label, sentence1, sentence2, logic | Matthews corr. |
+
+## Text Classification Benchmark
+
+We also provide the script to download a series of text classification datasets for the purpose of benchmarking. 

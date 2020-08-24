@@ -136,7 +136,7 @@ Fine-tuning the listed models with hyper-parameter learning rate 2e-5, epochs 3,
 Performance are shown in the table below, in which the SQuAD1.1 are evaluated with SQuAD2.0 checkpoints.
 Notice that the standard metrics of SQuAD are EM and F1. The former is an exact match score between predictions and references, while the latter is a token-level f1 score in which the common tokens are considered as True Positives.
 
-|Reproduced ALBERT Models (F1/EM)  | SQuAD 1.1 dev | SQuAD 2.0 dev | Json | Log | Command |
+|Reproduced ALBERT Models (F1/EM)  | SQuAD 1.1 dev | SQuAD 2.0 dev | SQuAD 2.0 Results File | Log | Command |
 |----------------------------------|---------------|---------------|------|-----| --------|
 |ALBERT base                       | 90.55/83.83   | 82.09/79.40   |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_base_v2_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_base_v2_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_albert_base.sh) |
 |ALBERT large                      | 92.66/86.43   | 84.98/82.19   |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_large_v2_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_large_v2_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_albert_large.sh) |
@@ -154,14 +154,14 @@ For reference, we've included the results from Google's Original Experiments
 
 For the reset pretrained models, the results on SQuAD1.1 and SQuAD2.0 are given as follows.
 
-| Model Name    | SQuAD1.1 dev  | SQuAD2.0 dev |  Json | Log | Command |
+| Model Name    | SQuAD1.1 dev  | SQuAD2.0 dev | SQuAD 2.0 Results File | Log | Command |
 |--------------------------|---------------|--------------|------|-----|--------|
 |BERT base                 | 88.40/81.24   | 76.43/73.59  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_en_uncased_bert_base_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_en_uncased_bert_base_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_uncased_bert_base.sh) |
 |BERT large                | 90.45/83.55   | 81.41/78.46  | [json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_en_uncased_bert_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_en_uncased_bert_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_uncased_bert_large.sh) |
 |ELECTRA small             | 85.42/78.95   | 73.93/71.36  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_small_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_small_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_small.sh) |      
-|ELECTRA base              | 92.63/87.34   | 86.65/83.95  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_base_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_base_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_small.sh) |
-|ELECTRA large             | 94.95/89.94   | 90.67/88.32  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_base.sh) |
-|Mobile BERT             | 82.45/88.99  | 79.60/74.11  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_mobilebert.sh) |
+|ELECTRA base              | 92.63/87.34   | 86.65/83.95  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_base_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_base_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_base.sh) |
+|ELECTRA large             | 94.95/89.94   | 90.67/88.32  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_large.sh) |
+|MobileBERT             | 82.45/88.99  | 79.60/74.11  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_mobilebert.sh) |
 |RoBERTa large             | 94.58/88.86   | 89.69/86.80  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_fairseq_roberta_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_fairseq_roberta_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_large.sh) |
 
 For reference, we have also included the results of original version from Google and Fairseq
@@ -173,5 +173,5 @@ For reference, we have also included the results of original version from Google
 |Google ELECTRA small      |     - /75.8    |     - /70.1   |
 |Google ELECTRA base       |     - /86.8    |     - /83.7   |
 |Google ELECTRA large      |     - /89.7    |     - /88.1   |
-|Google Mobile BERT        |   81.4/88.6	|   74.4/77.1   |
+|Google MobileBERT         |   81.4/88.6	|   77.1/74.4   |
 |Fairseq RoBERTa large     |   94.6/88.9    |	89.4/86.5   |

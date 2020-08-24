@@ -4,6 +4,7 @@ import re
 
 mx.npx.set_np()
 
+
 def get_parser():
     parser = argparse.ArgumentParser(description='Script to average the checkpoints')
     parser.add_argument('--checkpoints', type=str, required=True, nargs='+',
@@ -14,6 +15,7 @@ def get_parser():
     parser.add_argument('--save-path', type=str, required=True,
                         help='Path of the output file')
     return parser
+
 
 def main(args):
     assert args.begin >= 0
@@ -48,6 +50,7 @@ def main(args):
     for key in keys:
         res[key] /= len(args.range)
     mx.npx.save(args.save_path, res)
+
 
 def cli_main():
     parser = get_parser()

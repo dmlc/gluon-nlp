@@ -3,7 +3,6 @@ import os
 import tarfile
 from gluonnlp.base import get_data_home_dir
 from gluonnlp.utils.misc import download, load_checksum_stats
-from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 import zipfile
 
 _CITATIONS = """
@@ -42,7 +41,6 @@ _URLS = {
 }
 
 
-@DATA_PARSER_REGISTRY.register('prepare_music_midi')
 def get_parser():
     parser = argparse.ArgumentParser(description='Download the Music Midi Datasets.')
     parser.add_argument('--dataset', type=str, required=True,
@@ -60,7 +58,6 @@ def get_parser():
     return parser
 
 
-@DATA_MAIN_REGISTRY.register('prepare_music_midi')
 def main(args):
     # Download the data
     url = _URLS[args.dataset]

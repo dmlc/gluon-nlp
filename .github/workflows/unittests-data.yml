@@ -1,0 +1,39 @@
+name: continuous build - data
+
+on: [push, pull_request]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    matrix:
+      python-version: [ '3.7' ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Install OS specific dependencies
+      - name: Install Linux dependencies
+        run: sudo apt-get install libopenblas-dev
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
+      - name: Install Other Dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install setuptools pytest pytest-cov contextvars
+          python3 -m pip install --upgrade cython
+          python3 -m pip install --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
+          python3 -m pip install .[extras]
+      - name: Test Machine Translation Script
+        run: |
+          cd scripts/datasets/machine_translation
+          bash wmt2014_ende.sh hf_bpe
+          bash wmt2017_zhen.sh hf_bpe

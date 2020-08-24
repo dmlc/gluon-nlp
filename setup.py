@@ -74,7 +74,7 @@ setup(
             'jieba',
             'subword_nmt',
             'spacy>=2.0.0',
-            'langid',
+            'langid==1.1.6',
             'nltk',
             'h5py>=2.10',
             'scipy',
@@ -99,7 +99,7 @@ setup(
     entry_points={
         'console_scripts': [
             'nlp_data = gluonnlp.cli.data.__main__:cli_main',
-            'nlp_preprocess = gluonnlp.cli.preprocess.__main__:cli_main',
+            'nlp_process = gluonnlp.cli.process.__main__:cli_main',
             'gluon_average_checkpoint = gluonnlp.cli.average_checkpoint:cli_main'
         ],
     },

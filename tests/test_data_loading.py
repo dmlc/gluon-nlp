@@ -27,11 +27,6 @@ def prepare_bucket_sampler(dataset, batch_size, shuffle=False, num_buckets=1):
     return sampler
 
 
-@pytest.mark.skipif(sys.version_info >= (3, 8),
-                    reason='The test fails everytime in python3.8 due to the issues'
-                           ' in MXNet: '
-                           'https://github.com/apache/incubator-mxnet/issues/17782, '
-                           'https://github.com/apache/incubator-mxnet/issues/17774')
 def test_dataset_loader():
     with tempfile.TemporaryDirectory() as root:
         num_files = 5

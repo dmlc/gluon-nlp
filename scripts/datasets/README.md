@@ -32,11 +32,12 @@ In case you will need to preprocess the dataset, there are toolkits in [preproce
     - [MAESTRO](./music_generation/README.md#maestro)
 - [Pretraining Corpus](./pretrain_corpus)
     - [Wikipedia](./pretrain_corpus/README.md#wikipedia)
-    - [BookCorpus](./pretrain_corpus/README.md#bookcorpus)
+    - [Gutenberg BookCorpus](./pretrain_corpus/README.md#gutenberg-bookcorpus)
     - [OpenWebText](./pretrain_corpus/README.md#openwebtext)
 - [General NLP Benchmarks](./general_nlp_benchmark)
     - [GLUE](./general_nlp_benchmark/README.md#glue-benchmark)
     - [SuperGLUE](./general_nlp_benchmark/README.md#superglue-benchmark)
+    - [Text Classification Benchmark](./general_nlp_benchmark/README.md#text-classification-benchmark)
 
 ## Contribution Guide
 
