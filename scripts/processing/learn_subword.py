@@ -210,7 +210,7 @@ def main(args):
             special_tokens=special_tokens)
         # Deal with the API change of tokenizers >= 0.8
         if version.parse(tokenizers.__version__) >= version.parse('0.8'):
-            tokenizer.save(os.path.join(args.save_dir, args.model))
+            tokenizer.save(os.path.join(args.save_dir, '{}.model'.format(args.model)))
         else:
             tokenizer.save(args.save_dir, args.model)
         # we replace the huggingface vocab file with our Vocab implementation
@@ -220,9 +220,10 @@ def main(args):
                 for line in fv:
                     vocab.append(line.strip())
         else:
-            # Move the hf_${model}-merges.txt to hf_${model}.models
-            os.rename(os.path.join(args.save_dir, '{}-merges.txt'.format(args.model)),
-                      os.path.join(args.save_dir, '{}.model'.format(args.model)))
+            if version.parse(tokenizers.__version__) < version.parse('0.8'):
+                # Move the hf_${model}-merges.txt to hf_${model}.models
+                os.rename(os.path.join(args.save_dir, '{}-merges.txt'.format(args.model)),
+                          os.path.join(args.save_dir, '{}.model'.format(args.model)))
             hf_vocab_file = model_prefix + '-vocab.json'
             with open(hf_vocab_file, 'r', encoding='utf-8') as fv:
                 vocab_kv = json.load(fv)
@@ -240,10 +241,10 @@ def main(args):
 def cat_corpus(corpus_path_list):
     # TODO Use temporary file
     corpus_path = "./" + str(uuid4()) + '.corpus'
-    with open(corpus_path, 'wb') as cat_corpus:
+    with open(corpus_path, 'wb') as of:
         for cp in corpus_path_list:
             with open(cp, 'rb') as corpus:
-                cat_corpus.write(corpus.read())
+                of.write(corpus.read())
     return corpus_path
 
 
