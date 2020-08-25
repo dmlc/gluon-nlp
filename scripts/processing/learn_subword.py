@@ -18,22 +18,22 @@ def get_parser():
 
     We support the following models:
 
-        - "nlp_process learn_subword --model spm --corpus CORPUS"
+        - "nlp_process learn_subword --model spm --corpus CORPUS --vocab-size SIZE"
             Train a Sentencepiece Model on raw text.
 
-        - "nlp_process learn_subword --model subword_nmt --corpus CORPUS"
+        - "nlp_process learn_subword --model subword_nmt --corpus CORPUS --vocab-size SIZE"
             Train with the subword-nmt package:
 
-        - "nlp_process learn_subword --model yttm --corpus CORPUS"
+        - "nlp_process learn_subword --model yttm --corpus CORPUS --vocab-size SIZE"
             Train with YouTokenToMe:
 
-        - "nlp_process learn_subword --model hf_bytebpe --corpus CORPUS"
+        - "nlp_process learn_subword --model hf_bytebpe --corpus CORPUS --vocab-size SIZE"
             Train with the Byte-level BPE Tokenizer Implemented by Huggingface.
 
-        - "nlp_process learn_subword --model hf_wordpiece --corpus CORPUS"
+        - "nlp_process learn_subword --model hf_wordpiece --corpus CORPUS --vocab-size SIZE"
             Train with the Wordpiece Tokenizer Implementated by Huggingface.
 
-        - "nlp_process learn_subword --model hf_bpe --corpus CORPUS"
+        - "nlp_process learn_subword --model hf_bpe --corpus CORPUS --vocab-size SIZE"
             Train with the BPE Tokenizer Implemented by Huggingface.
     '''),
        prog='learn_subword'
@@ -50,7 +50,7 @@ def get_parser():
                                                       'hf_wordpiece',
                                                       'hf_bpe'],
                         required=True, help='Subword model type')
-    parser.add_argument('--save-dir', type=str, required=True,
+    parser.add_argument('--save-dir', type=str, default=None,
                         help='Directory for saving the model and vocabulary file')
     parser.add_argument('--coverage', type=float, default=1.0, 
                         help='Amount of characters covered by the model, '
@@ -81,6 +81,8 @@ def get_parser():
 
 def main(args):
     corpus_path_list = args.corpus
+    if args.save_dir is None:
+        args.save_dir = args.model
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
     model_prefix = os.path.join(args.save_dir, args.model)
