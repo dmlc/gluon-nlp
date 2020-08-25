@@ -83,6 +83,10 @@ def main(args):
     corpus_path_list = args.corpus
     if args.save_dir is None:
         args.save_dir = args.model
+    for corpus_path in corpus_path_list:
+        if not os.path.exists(corpus_path):
+            raise ValueError('The path="{}" provided by --corpus does not exist!'
+                             .format(corpus_path))
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
     model_prefix = os.path.join(args.save_dir, args.model)
