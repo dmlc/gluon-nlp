@@ -8,6 +8,7 @@ mx.npx.reset_np()
 
 def test_adam(ctx):
     with getattr(mx, ctx)():
+        assert False
         opt1 = AdamW
         opt2 = AdamW
         shapes = [(3, 4, 5), (10, 4), (7,)]
