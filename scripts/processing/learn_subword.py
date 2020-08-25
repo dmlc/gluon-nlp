@@ -87,8 +87,7 @@ def main(args):
         if not os.path.exists(corpus_path):
             raise ValueError('The path="{}" provided by --corpus does not exist!'
                              .format(corpus_path))
-    if not os.path.exists(args.save_dir):
-        os.makedirs(args.save_dir)
+    os.makedirs(args.save_dir, exist_ok=True)
     model_prefix = os.path.join(args.save_dir, args.model)
     special_tokens_kv = OrderedDict()
     # unk is always required
