@@ -66,6 +66,8 @@ def get_parser():
     parser.add_argument('--strip-accents', action='store_true', default=False,
                         help='Disable BERT characters normalization, '
                         'only applicable to hf_wordpiece')
+    parser.add_argument('--disable-unk', action='store_true', default=False,
+                        help='Whether to disable unk token (default settings enable unk)')
     parser.add_argument('--disable-bos', action='store_true', default=False,
                         help='Disable bos token (default settings enable bos)')
     parser.add_argument('--disable-eos', action='store_true', default=False,
@@ -79,6 +81,7 @@ def get_parser():
                              'this is not applicable to yttm')
     return parser
 
+
 def main(args):
     corpus_path_list = args.corpus
     if args.save_dir is None:
@@ -90,8 +93,8 @@ def main(args):
     os.makedirs(args.save_dir, exist_ok=True)
     model_prefix = os.path.join(args.save_dir, args.model)
     special_tokens_kv = OrderedDict()
-    # unk is always required
-    special_tokens_kv['unk_token'] = Vocab.UNK_TOKEN
+    if not args.disable_unk:
+        special_tokens_kv['unk_token'] = Vocab.UNK_TOKEN
     if not args.disable_bos:
         special_tokens_kv['bos_token'] = Vocab.BOS_TOKEN
     if not args.disable_eos:
@@ -227,7 +230,16 @@ def main(args):
             special_tokens=special_tokens)
         # Deal with the API change of tokenizers >= 0.8
         if version.parse(tokenizers.__version__) >= version.parse('0.8'):
-            tokenizer.save(os.path.join(args.save_dir, '{}.model'.format(args.model)))
+            save_model_path = model_prefix + '.model'
+            tokenizer.save(save_model_path)
+            model_info = json.load(open(save_model_path, encoding='utf-8'))
+            special_tokens_in_tokenizer = model_info['added_tokens']
+            assert len(special_tokens_in_tokenizer) == len(special_tokens)
+            hf_vocab = model_info['model']['vocab']
+            hf_vocab_sorted = sorted(list(hf_vocab.items()), key=lambda x: x[1])
+            hf_vocab_ids = [ele[1] for ele in hf_vocab_sorted]
+            assert min(hf_vocab_ids) == 0 and max(hf_vocab_ids) == len(hf_vocab_ids) - 1
+            vocab = [ele[0] for ele in hf_vocab_sorted]
         else:
             tokenizer.save(args.save_dir, args.model)
             # we replace the huggingface vocab file with our Vocab implementation
@@ -249,8 +261,11 @@ def main(args):
             os.remove(hf_vocab_file)
     else:
         raise NotImplementedError
-    unk_token = special_tokens_kv.pop('unk_token')
-    vocab_obj = Vocab(vocab, unk_token=unk_token, **special_tokens_kv)
+    if 'unk_token' in special_tokens_kv:
+        unk_token = special_tokens_kv.pop('unk_token')
+        vocab_obj = Vocab(vocab, unk_token=unk_token, **special_tokens_kv)
+    else:
+        vocab_obj = Vocab(vocab, unk_token=None, **special_tokens_kv)
     vocab_obj.save(model_prefix + '.vocab')
 
 
