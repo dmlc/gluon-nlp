@@ -18,18 +18,23 @@ def get_parser():
 
     We support the following models:
 
-        - Train a Sentencepiece Model on raw text:
-            "nlp_process learn_subword --model spm --corpus CORPUS";
-        - Train with the subword-nmt package:
-            "nlp_process learn_subword --model subword_nmt --corpus CORPUS";
-        - Train with YouTokenToMe:
-            "nlp_process learn_subword --model yttm --corpus CORPUS"; 
-        - Train with the Byte-level BPE Tokenizer Implemented by Huggingface.
-            "nlp_process learn_subword --model hf_bytebpe --corpus CORPUS";
-        - Train with the Wordpiece Tokenizer Implementated by Huggingface.
-            "nlp_process learn_subword --model hf_wordpiece --corpus CORPUS";
-        - Train with the BPE Tokenizer Implemented by Huggingface.
-            "nlp_process learn_subword --model hf_bpe --corpus CORPUS"
+        - "nlp_process learn_subword --model spm --corpus CORPUS"
+            Train a Sentencepiece Model on raw text.
+
+        - "nlp_process learn_subword --model subword_nmt --corpus CORPUS"
+            Train with the subword-nmt package:
+
+        - "nlp_process learn_subword --model yttm --corpus CORPUS"
+            Train with YouTokenToMe:
+
+        - "nlp_process learn_subword --model hf_bytebpe --corpus CORPUS"
+            Train with the Byte-level BPE Tokenizer Implemented by Huggingface.
+
+        - "nlp_process learn_subword --model hf_wordpiece --corpus CORPUS"
+            Train with the Wordpiece Tokenizer Implementated by Huggingface.
+
+        - "nlp_process learn_subword --model hf_bpe --corpus CORPUS"
+            Train with the BPE Tokenizer Implemented by Huggingface.
     '''),
        prog='learn_subword'
     )
