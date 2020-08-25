@@ -18,13 +18,20 @@ def get_parser():
 
     We support the following models:
 
-        "python3 learn_subword.py --model spm" : Train a Sentencepiece Model on raw text;
-        "python3 learn_subword.py --model subword_nmt" : Train with the subword-nmt package;
-        "python3 learn_subword.py --model yttm" : Train with YouTokenToMe; 
-        "python3 learn_subword.py --model hf_bytebpe" : Train with the Byte-level BPE Tokenizer Implemented by Huggingface.
-        "python3 learn_subword.py --model hf_wordpiece" : Train with the Wordpiece Tokenizer Implementated by Huggingface.
-        "python3 learn_subword.py --model hf_bpe" : Train with the BPE Tokenizer Implemented by Huggingface.
-    ''')
+        - Train a Sentencepiece Model on raw text:
+            "nlp_process learn_subword --model spm --corpus CORPUS";
+        - Train with the subword-nmt package:
+            "nlp_process learn_subword --model subword_nmt --corpus CORPUS";
+        - Train with YouTokenToMe:
+            "nlp_process learn_subword --model yttm --corpus CORPUS"; 
+        - Train with the Byte-level BPE Tokenizer Implemented by Huggingface.
+            "nlp_process learn_subword --model hf_bytebpe --corpus CORPUS";
+        - Train with the Wordpiece Tokenizer Implementated by Huggingface.
+            "nlp_process learn_subword --model hf_wordpiece --corpus CORPUS";
+        - Train with the BPE Tokenizer Implemented by Huggingface.
+            "nlp_process learn_subword --model hf_bpe --corpus CORPUS"
+    '''),
+       prog='learn_subword'
     )
     parser.add_argument('--corpus', type=str, nargs='+', required=True,
                         help='Path of the corpus. '
@@ -213,24 +220,23 @@ def main(args):
             tokenizer.save(os.path.join(args.save_dir, '{}.model'.format(args.model)))
         else:
             tokenizer.save(args.save_dir, args.model)
-        # we replace the huggingface vocab file with our Vocab implementation
-        if args.model == 'hf_wordpiece':
-            hf_vocab_file = model_prefix + '-vocab.txt'
-            with open(hf_vocab_file, 'r', encoding='utf-8') as fv:
-                for line in fv:
-                    vocab.append(line.strip())
-        else:
-            if version.parse(tokenizers.__version__) < version.parse('0.8'):
+            # we replace the huggingface vocab file with our Vocab implementation
+            if args.model == 'hf_wordpiece':
+                hf_vocab_file = model_prefix + '-vocab.txt'
+                with open(hf_vocab_file, 'r', encoding='utf-8') as fv:
+                    for line in fv:
+                        vocab.append(line.strip())
+            else:
                 # Move the hf_${model}-merges.txt to hf_${model}.models
                 os.rename(os.path.join(args.save_dir, '{}-merges.txt'.format(args.model)),
                           os.path.join(args.save_dir, '{}.model'.format(args.model)))
-            hf_vocab_file = model_prefix + '-vocab.json'
-            with open(hf_vocab_file, 'r', encoding='utf-8') as fv:
-                vocab_kv = json.load(fv)
-                vocab_kv = sorted(list(vocab_kv.items()), key=lambda x: x[1])
-                for kv in vocab_kv:
-                    vocab.append(kv[0])
-        os.remove(hf_vocab_file)
+                hf_vocab_file = model_prefix + '-vocab.json'
+                with open(hf_vocab_file, 'r', encoding='utf-8') as fv:
+                    vocab_kv = json.load(fv)
+                    vocab_kv = sorted(list(vocab_kv.items()), key=lambda x: x[1])
+                    for kv in vocab_kv:
+                        vocab.append(kv[0])
+            os.remove(hf_vocab_file)
     else:
         raise NotImplementedError
     unk_token = special_tokens_kv.pop('unk_token')
