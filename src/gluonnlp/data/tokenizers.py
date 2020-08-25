@@ -250,13 +250,6 @@ class BaseTokenizerWithVocab(BaseTokenizer):
         pass
 
 
-def load_tokenizer(method, **kwargs):
-    if method == 'whitespace':
-        return WhitespaceTokenizer()
-    elif method == 'moses':
-        return MosesTokenizer(**kwargs)
-
-
 @TOKENIZER_REGISTRY.register('whitespace')
 class WhitespaceTokenizer(BaseTokenizerWithVocab):
     def __init__(self, vocab: Optional[Vocab] = None):
