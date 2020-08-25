@@ -1,4 +1,4 @@
-__version__ = '1.0.0'
+__version__ = '1.0.0.dev'
 from . import base
 from . import data
 from . import models
