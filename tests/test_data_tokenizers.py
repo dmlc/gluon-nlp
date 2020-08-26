@@ -6,9 +6,11 @@ from uuid import uuid4
 import os
 import unicodedata
 import tempfile
+import gluonnlp
 from gluonnlp.data.tokenizers import WhitespaceTokenizer, MosesTokenizer, JiebaTokenizer,\
     SpacyTokenizer, SubwordNMTTokenizer, YTTMTokenizer, SentencepieceTokenizer, \
-    HuggingFaceBPETokenizer, HuggingFaceByteBPETokenizer, HuggingFaceWordPieceTokenizer
+    HuggingFaceBPETokenizer, HuggingFaceByteBPETokenizer, HuggingFaceWordPieceTokenizer, \
+    HuggingFaceTokenizer
 from gluonnlp.base import get_repo_url
 from gluonnlp.data import Vocab
 from gluonnlp.utils.misc import download
@@ -619,3 +621,19 @@ def test_huggingface_wordpiece_tokenizer():
 
         os.remove(vocab_path)
         os.remove(hf_vocab_path)
+
+
+def test_huggingface_wordpiece_tokenizer_new():
+    with tempfile.TemporaryDirectory() as dir_path:
+        model_path = os.path.join(dir_path, 'hf_wordpiece_new_0.8.model')
+        download(url=get_repo_url() + 'tokenizer_test_models/hf_bytebpe_/hf_wordpiece_new_0.8.model',
+                 path=model_path)
+        vocab_path = os.path.join(dir_path, 'hf_wordpiece_new_0.vocab')
+        download(url=get_repo_url() + 'tokenizer_test_models/hf_bytebpe/test_hf_bytebpe.vocab',
+                 path=vocab_path)
+        tokenizer = HuggingFaceTokenizer(model_path, vocab_path)
+
+
+def test_tokenizers_create():
+    tokenizer = gluonnlp.data.tokenizers.create('moses', 'en')
+    tokenizer.encode('hello world!')
