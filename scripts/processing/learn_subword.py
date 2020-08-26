@@ -2,6 +2,7 @@ from gluonnlp.utils.lazy_imports import try_import_sentencepiece,\
     try_import_subword_nmt, try_import_yttm, try_import_huggingface_tokenizers
 from pkg_resources import parse_version
 import argparse
+import warnings
 import textwrap
 import os
 from collections import OrderedDict
@@ -224,6 +225,9 @@ def main(args):
             tokenizer = tokenizers.ByteLevelBPETokenizer(lowercase=args.lowercase)
         elif args.model == 'hf_wordpiece':
             unk_token = special_tokens_kv.get('unk_token', None)
+            if unk_token != '[UNK]':
+                warnings.warn('In HuggingFace WordPiece algorithm, the unk_token must be "[UNK]".')
+                unk_token = '[UNK]'
             sep_token = special_tokens_kv.get('sep_token', None)
             cls_token = special_tokens_kv.get('cls_token', None)
             pad_token = special_tokens_kv.get('pad_token', None)
