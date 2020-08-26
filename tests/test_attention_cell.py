@@ -274,118 +274,117 @@ def test_gen_attn_mask(ctx):
 @pytest.mark.parametrize('hybridize', [False, True])
 @pytest.mark.seed(123)
 def test_multi_head_rel_attn_score(num_heads, method, bidirectional, hybridize, ctx):
-    with ctx:
-        batch_size = 6
-        query_length = 25
-        mem_length = 20
-        query_head_units = 7
+    batch_size = 6
+    query_length = 25
+    mem_length = 20
+    query_head_units = 7
 
-        # Initialize the attention cell with relative positional embedding
-        base_layout = 'NKT'
-        base_use_einsum = False
-        if method == 'shaw':
-            num_buckets = None
-            max_distance = 20
-        elif method == 't5':
-            num_buckets = 10
-            max_distance = 20
-        elif method == 'transformer_xl':
-            num_buckets = None
-            max_distance = None
-        else:
-            raise NotImplementedError
-        base_score_cell = RelAttentionScoreCell(query_units=num_heads * query_head_units,
-                                                num_heads=num_heads,
-                                                dropout=0.0,
-                                                method=method,
-                                                num_buckets=num_buckets,
-                                                max_distance=max_distance,
-                                                layout=base_layout,
-                                                use_einsum=base_use_einsum)
-        base_score_cell.initialize()
-        if hybridize:
-            base_score_cell.hybridize()
-        # Generate the data
-        query = mx.np.random.normal(0, 1,
-                                    (batch_size, num_heads, query_length, query_head_units),
-                                    dtype=np.float32)
-        if method != 't5':
-            rel_score_grad = mx.np.random.normal(0, 1, (batch_size, num_heads, query_length, mem_length),
-                                                 dtype=np.float32)
-        else:
-            rel_score_grad = mx.np.random.normal(0, 1,
-                                                 (num_heads, query_length, mem_length),
-                                                 dtype=np.float32)
-        query_positions = mx.np.arange(query_length, dtype=np.int32)
-        mem_positions = mx.np.arange(mem_length, dtype=np.int32)
-        rel_positions = mx.np.expand_dims(query_positions, axis=-1)\
-                        - mx.np.expand_dims(mem_positions, axis=0)
-        mask = mx.np.random.randint(0, 2, (batch_size, query_length, mem_length), dtype=np.int32)
-        query.attach_grad()
-        with mx.autograd.record():
-            rel_score = base_score_cell(rel_positions, query)
-            rel_score.backward(rel_score_grad)
-        original_rel_score = rel_score.asnumpy()
-        original_grad_norm = grad_global_norm(base_score_cell.collect_params().values())
-        original_query_grad_norm = np.linalg.norm(query.grad.asnumpy())
-        assert original_grad_norm > 0
-        # 1. Test for permutation equivariant
-        # We can permutate the query, rel_positions and the rel_score_grad and the result should
-        # always be the same.
-        query_perm = mx.np.array(np.random.permutation(query_length), dtype=np.int32)
-        mem_perm = mx.np.array(np.random.permutation(mem_length, ), dtype=np.int32)
+    # Initialize the attention cell with relative positional embedding
+    base_layout = 'NKT'
+    base_use_einsum = False
+    if method == 'shaw':
+        num_buckets = None
+        max_distance = 20
+    elif method == 't5':
+        num_buckets = 10
+        max_distance = 20
+    elif method == 'transformer_xl':
+        num_buckets = None
+        max_distance = None
+    else:
+        raise NotImplementedError
+    base_score_cell = RelAttentionScoreCell(query_units=num_heads * query_head_units,
+                                            num_heads=num_heads,
+                                            dropout=0.0,
+                                            method=method,
+                                            num_buckets=num_buckets,
+                                            max_distance=max_distance,
+                                            layout=base_layout,
+                                            use_einsum=base_use_einsum)
+    base_score_cell.initialize()
+    if hybridize:
+        base_score_cell.hybridize()
+    # Generate the data
+    query = mx.np.random.normal(0, 1,
+                                (batch_size, num_heads, query_length, query_head_units),
+                                dtype=np.float32)
+    if method != 't5':
+        rel_score_grad = mx.np.random.normal(0, 1, (batch_size, num_heads, query_length, mem_length),
+                                             dtype=np.float32)
+    else:
+        rel_score_grad = mx.np.random.normal(0, 1,
+                                             (num_heads, query_length, mem_length),
+                                             dtype=np.float32)
+    query_positions = mx.np.arange(query_length, dtype=np.int32)
+    mem_positions = mx.np.arange(mem_length, dtype=np.int32)
+    rel_positions = mx.np.expand_dims(query_positions, axis=-1)\
+                    - mx.np.expand_dims(mem_positions, axis=0)
+    mask = mx.np.random.randint(0, 2, (batch_size, query_length, mem_length), dtype=np.int32)
+    query.attach_grad()
+    with mx.autograd.record():
+        rel_score = base_score_cell(rel_positions, query)
+        rel_score.backward(rel_score_grad)
+    original_rel_score = rel_score.asnumpy()
+    original_grad_norm = grad_global_norm(base_score_cell.collect_params().values())
+    original_query_grad_norm = np.linalg.norm(query.grad.asnumpy())
+    assert original_grad_norm > 0
+    # 1. Test for permutation equivariant
+    # We can permutate the query, rel_positions and the rel_score_grad and the result should
+    # always be the same.
+    query_perm = mx.np.array(np.random.permutation(query_length), dtype=np.int32)
+    mem_perm = mx.np.array(np.random.permutation(mem_length, ), dtype=np.int32)
 
-        query.grad[:] = 0
-        with mx.autograd.record():
-            rel_score = base_score_cell(rel_positions[query_perm, :][:, mem_perm],
-                                        query[:, :, query_perm, :])
-            if method != 't5':
-                rel_score.backward(rel_score_grad[:, :, query_perm, :][:, :, :, mem_perm])
-            else:
-                rel_score.backward(rel_score_grad[:, query_perm, :][:, :, mem_perm])
-        permutated_out = rel_score.asnumpy()
-        permutated_grad_norm = grad_global_norm(base_score_cell.collect_params().values())
-        permutated_query_grad_norm = np.linalg.norm(query.grad.asnumpy())
+    query.grad[:] = 0
+    with mx.autograd.record():
+        rel_score = base_score_cell(rel_positions[query_perm, :][:, mem_perm],
+                                    query[:, :, query_perm, :])
         if method != 't5':
-            assert_allclose(
-                original_rel_score[:, :, query_perm.asnumpy(), :][:, :, :, mem_perm.asnumpy()],
-                permutated_out, 1E-4, 1E-4)
+            rel_score.backward(rel_score_grad[:, :, query_perm, :][:, :, :, mem_perm])
         else:
-            assert_allclose(original_rel_score[:, query_perm.asnumpy(), :][:, :, mem_perm.asnumpy()],
-                            permutated_out, 1E-4, 1E-4)
-        assert_allclose(permutated_grad_norm, original_grad_norm, 1E-4, 1E-4)
-        assert_allclose(permutated_query_grad_norm, original_query_grad_norm, 1E-4, 1E-4)
-        # 2. Test for different layout + use/not use einsum
-        for layout in ['NKT', 'NTK', 'TNK']:
-            for use_einsum in [False, True]:
-                if layout == base_layout and use_einsum == base_use_einsum:
-                    continue
-                score_cell = RelAttentionScoreCell(query_units=num_heads * query_head_units,
-                                                   num_heads=num_heads,
-                                                   dropout=0.0,
-                                                   method=method,
-                                                   num_buckets=num_buckets,
-                                                   max_distance=max_distance,
-                                                   layout=layout,
-                                                   use_einsum=use_einsum)
-                score_cell.initialize()
-                if hybridize:
-                    score_cell.hybridize()
-                score_cell.load_dict({name: param.data() for name, param in base_score_cell.collect_params().items()})
-                query.attach_grad()
-                query.grad[:] = 0
-                with mx.autograd.record():
-                    if layout == 'NKT':
-                        rel_score = score_cell(rel_positions, query)
-                        rel_score.backward(rel_score_grad)
-                    elif layout == 'NTK':
-                        rel_score = score_cell(rel_positions, query.transpose((0, 2, 1, 3)))
-                        rel_score.backward(rel_score_grad)
-                    elif layout == 'TNK':
-                        rel_score = score_cell(rel_positions, query.transpose((2, 0, 1, 3)))
-                        rel_score.backward(rel_score_grad)
-                    else:
-                        raise NotImplementedError
-                assert_allclose(rel_score.asnumpy(), original_rel_score, 1E-5, 1E-5)
-                layout_query_grad_norm = np.linalg.norm(query.grad.asnumpy())
-                assert_allclose(layout_query_grad_norm, original_query_grad_norm, 1E-5, 1E-5)
+            rel_score.backward(rel_score_grad[:, query_perm, :][:, :, mem_perm])
+    permutated_out = rel_score.asnumpy()
+    permutated_grad_norm = grad_global_norm(base_score_cell.collect_params().values())
+    permutated_query_grad_norm = np.linalg.norm(query.grad.asnumpy())
+    if method != 't5':
+        assert_allclose(
+            original_rel_score[:, :, query_perm.asnumpy(), :][:, :, :, mem_perm.asnumpy()],
+            permutated_out, 1E-4, 1E-4)
+    else:
+        assert_allclose(original_rel_score[:, query_perm.asnumpy(), :][:, :, mem_perm.asnumpy()],
+                        permutated_out, 1E-4, 1E-4)
+    assert_allclose(permutated_grad_norm, original_grad_norm, 1E-4, 1E-4)
+    assert_allclose(permutated_query_grad_norm, original_query_grad_norm, 1E-4, 1E-4)
+    # 2. Test for different layout + use/not use einsum
+    for layout in ['NKT', 'NTK', 'TNK']:
+        for use_einsum in [False, True]:
+            if layout == base_layout and use_einsum == base_use_einsum:
+                continue
+            score_cell = RelAttentionScoreCell(query_units=num_heads * query_head_units,
+                                               num_heads=num_heads,
+                                               dropout=0.0,
+                                               method=method,
+                                               num_buckets=num_buckets,
+                                               max_distance=max_distance,
+                                               layout=layout,
+                                               use_einsum=use_einsum)
+            score_cell.initialize()
+            if hybridize:
+                score_cell.hybridize()
+            score_cell.load_dict({name: param.data() for name, param in base_score_cell.collect_params().items()})
+            query.attach_grad()
+            query.grad[:] = 0
+            with mx.autograd.record():
+                if layout == 'NKT':
+                    rel_score = score_cell(rel_positions, query)
+                    rel_score.backward(rel_score_grad)
+                elif layout == 'NTK':
+                    rel_score = score_cell(rel_positions, query.transpose((0, 2, 1, 3)))
+                    rel_score.backward(rel_score_grad)
+                elif layout == 'TNK':
+                    rel_score = score_cell(rel_positions, query.transpose((2, 0, 1, 3)))
+                    rel_score.backward(rel_score_grad)
+                else:
+                    raise NotImplementedError
+            assert_allclose(rel_score.asnumpy(), original_rel_score, 1E-5, 1E-5)
+            layout_query_grad_norm = np.linalg.norm(query.grad.asnumpy())
+            assert_allclose(layout_query_grad_norm, original_query_grad_norm, 1E-5, 1E-5)
