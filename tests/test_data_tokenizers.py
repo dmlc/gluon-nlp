@@ -626,10 +626,12 @@ def test_huggingface_wordpiece_tokenizer():
 def test_huggingface_wordpiece_tokenizer_new():
     with tempfile.TemporaryDirectory() as dir_path:
         model_path = os.path.join(dir_path, 'hf_wordpiece_new_0.8.model')
-        download(url=get_repo_url() + 'tokenizer_test_models/hf_bytebpe_/hf_wordpiece_new_0.8.model',
+        download(url=get_repo_url() +
+                     'tokenizer_test_models/hf_wordpiece_new_0.8/hf_wordpiece.model',
                  path=model_path)
         vocab_path = os.path.join(dir_path, 'hf_wordpiece_new_0.vocab')
-        download(url=get_repo_url() + 'tokenizer_test_models/hf_bytebpe/test_hf_bytebpe.vocab',
+        download(url=get_repo_url() +
+                     'tokenizer_test_models/hf_wordpiece_new_0.8/hf_wordpiece.vocab',
                  path=vocab_path)
         tokenizer = HuggingFaceTokenizer(model_path, vocab_path)
 
