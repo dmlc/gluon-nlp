@@ -123,7 +123,7 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
         if vocab_file is not None:
             self._vocab = load_vocab(vocab_file)
         else:
-            sorted_hf_vocab_kv = sorted(list(hf_vocab.items()), lambda x: x[1])
+            sorted_hf_vocab_kv = sorted(list(hf_vocab.items()), key=lambda x: x[1])
             for i, ele in enumerate(sorted_hf_vocab_kv):
                 assert ele[1] == i
             all_tokens = [ele[1] for ele in sorted_hf_vocab_kv]
