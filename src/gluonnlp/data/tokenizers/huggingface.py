@@ -203,24 +203,12 @@ class LegacyHuggingFaceTokenizer(BaseTokenizerWithVocab):
                                                               TokenOffsetsType]:
         return hf_encode_with_offsets(self._model, sentences, output_type)
 
-    def __rebuild_tokenizer(self):
-        raise NotImplementedError
-
     @property
     def vocab(self) -> Optional[Vocab]:
         return self._vocab
 
     def set_vocab(self, vocab):
         raise NotImplementedError('Cannot set vocabulary for the HuggingFaceTokenizer.')
-
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state['_model'] = None
-        return state
-
-    def __setstate__(self, state):
-        self.__dict__ = state
-        self.__rebuild_tokenizer()
 
 
 @TOKENIZER_REGISTRY.register('hf_bpe')
@@ -473,6 +461,15 @@ class HuggingFaceByteBPETokenizer(LegacyHuggingFaceTokenizer):
                          self._vocab)
         return ret
 
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['_model'] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self.__rebuild_tokenizer()
+
 
 @TOKENIZER_REGISTRY.register('hf_wordpiece')
 class HuggingFaceWordPieceTokenizer(LegacyHuggingFaceTokenizer):
@@ -596,3 +593,12 @@ class HuggingFaceWordPieceTokenizer(LegacyHuggingFaceTokenizer):
                          self._wordpieces_prefix,
                          self._vocab)
         return ret
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state['_model'] = None
+        return state
+
+    def __setstate__(self, state):
+        self.__dict__ = state
+        self.__rebuild_tokenizer()
