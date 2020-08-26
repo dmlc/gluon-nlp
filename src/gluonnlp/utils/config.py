@@ -3,7 +3,7 @@ import yacs.config
 
 class CfgNode(yacs.config.CfgNode):
     def clone_merge(self, cfg_filename_or_other_cfg):
-        """Create a new cfg by cloning and mering with the given cfg
+        """Create a new cfg by cloning and merging with the given cfg
 
         Parameters
         ----------
