@@ -114,7 +114,7 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
             '`python3 -m pip install --upgrade tokenizers`.'
         self._model_file = model_file
         self._vocab_file = vocab_file
-        self._model = tokenizers.Tokenizer.from_str(model_file)
+        self._model = tokenizers.Tokenizer.from_file(model_file)
         hf_vocab = self._model.get_vocab()
         with open(model_file, 'r', encoding='utf-8') as f:
             model_info = json.load(f)
