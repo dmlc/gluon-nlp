@@ -109,7 +109,7 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
     def __init__(self, model_file: Optional[str] = None,
                  vocab_file: Optional[str] = None):
         tokenizers = try_import_huggingface_tokenizers()
-        assert parse_version(tokenizers.__version) >= parse_version('0.8'), \
+        assert parse_version(tokenizers.__version__) >= parse_version('0.8'), \
             'Only support tokenizers>=0.8. You can upgrade tokenizers via ' \
             '`python3 -m pip install --upgrade tokenizers`.'
         self._model_file = model_file
