@@ -4,6 +4,7 @@ from multiprocessing import Pool
 import numpy as np
 import time
 from gluonnlp.data import tokenizers
+from gluonnlp.data.tokenizers.huggingface import is_new_version_model_file
 
 
 def get_parser():
@@ -123,23 +124,29 @@ def main(args):
                                             model_path=args.model_path,
                                             bpe_dropout=args.bpe_dropout,
                                             n_threads=1)
-    elif args.model == 'hf_bytebpe':
-        tokenizer_model = tokenizers.create('hf_bytebpe',
-                                            merges_file=args.model_path,
-                                            vocab_file=args.vocab_path,
-                                            dropout=args.bpe_dropout,
-                                            lowercase=args.lowercase)
-    elif args.model == 'hf_wordpiece':
-        tokenizer_model = tokenizers.create('hf_wordpiece',
-                                            vocab_file=args.vocab_path,
-                                            lowercase=args.lowercase,
-                                            strip_accents=args.strip_accents)
-    elif args.model == 'hf_bpe':
-        tokenizer_model = tokenizers.create('hf_bpe',
-                                            merges_file=args.model_path,
-                                            vocab_file=args.vocab_path,
-                                            dropout=args.bpe_dropout,
-                                            lowercase=args.lowercase)
+    elif args.model == 'hf_bytebpe' or 'hf_bpe' or 'hf_wordpiece':
+        if is_new_version_model_file(args.model_path):
+            tokenizer_model = tokenizers.create('hf_tokenizer',
+                                                model_file=args.model_path,
+                                                vocab_file=args.vocab_path)
+        else:
+            if args.model == 'hf_bytebpe':
+                tokenizer_model = tokenizers.create('hf_bytebpe',
+                                                    merges_file=args.model_path,
+                                                    vocab_file=args.vocab_path,
+                                                    dropout=args.bpe_dropout,
+                                                    lowercase=args.lowercase)
+            elif args.model == 'hf_wordpiece':
+                tokenizer_model = tokenizers.create('hf_wordpiece',
+                                                    vocab_file=args.vocab_path,
+                                                    lowercase=args.lowercase,
+                                                    strip_accents=args.strip_accents)
+            elif args.model == 'hf_bpe':
+                tokenizer_model = tokenizers.create('hf_bpe',
+                                                    merges_file=args.model_path,
+                                                    vocab_file=args.vocab_path,
+                                                    dropout=args.bpe_dropout,
+                                                    lowercase=args.lowercase)
     else:
         raise NotImplementedError
     print('Applying {} to {}'. format(tokenizer_model.__class__.__name__,

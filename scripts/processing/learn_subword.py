@@ -1,5 +1,6 @@
 from gluonnlp.utils.lazy_imports import try_import_sentencepiece,\
     try_import_subword_nmt, try_import_yttm, try_import_huggingface_tokenizers
+from pkg_resources import parse_version
 import argparse
 import textwrap
 import os
@@ -113,15 +114,18 @@ def main(args):
             raise ValueError('There are overlaps between the custom special tokens and the'
                              ' unk, bos, eos, pad tokens')
         special_tokens_kv[k] = v
-    # hf_wordpiece must contain mask, cls and sep tokens
-    # the custom defined mask,cls,sep can overwrite the default settings
     if args.model == 'hf_wordpiece':
-        if 'mask_token' not in special_tokens_kv:
-            special_tokens_kv['mask_token'] = Vocab.MASK_TOKEN
-        if 'cls_token' not in special_tokens_kv:
-            special_tokens_kv['cls_token'] = Vocab.CLS_TOKEN
-        if 'sep_token' not in special_tokens_kv:
-            special_tokens_kv['sep_token'] = Vocab.SEP_TOKEN
+        tokenizers = try_import_huggingface_tokenizers()
+        if parse_version(tokenizers.__version__) < parse_version('0.8'):
+            # The older version of Tokenizers
+            # hf_wordpiece must contain mask, cls and sep tokens
+            # the custom defined mask,cls,sep can overwrite the default settings
+            if 'mask_token' not in special_tokens_kv:
+                special_tokens_kv['mask_token'] = Vocab.MASK_TOKEN
+            if 'cls_token' not in special_tokens_kv:
+                special_tokens_kv['cls_token'] = Vocab.CLS_TOKEN
+            if 'sep_token' not in special_tokens_kv:
+                special_tokens_kv['sep_token'] = Vocab.SEP_TOKEN
     special_tokens = list(special_tokens_kv.values())
     print('special tokens: ' + ', '.join(special_tokens))
     vocab = []
