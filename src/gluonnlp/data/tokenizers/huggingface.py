@@ -126,7 +126,7 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
             sorted_hf_vocab_kv = sorted(list(hf_vocab.items()), key=lambda x: x[1])
             for i, ele in enumerate(sorted_hf_vocab_kv):
                 assert ele[1] == i
-            all_tokens = [ele[1] for ele in sorted_hf_vocab_kv]
+            all_tokens = [ele[0] for ele in sorted_hf_vocab_kv]
             special_tokens = [token['content'] for token in added_tokens]
             special_token_keys = []
             no_valid_name_key_cnt = 0
