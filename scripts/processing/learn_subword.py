@@ -223,8 +223,19 @@ def main(args):
         elif args.model == 'hf_bytebpe':
             tokenizer = tokenizers.ByteLevelBPETokenizer(lowercase=args.lowercase)
         elif args.model == 'hf_wordpiece':
-            tokenizer = tokenizers.BertWordPieceTokenizer(lowercase=args.lowercase,
-                                                          strip_accents=args.strip_accents)
+            unk_token = special_tokens_kv.get('unk_token', None)
+            sep_token = special_tokens_kv.get('sep_token', None)
+            cls_token = special_tokens_kv.get('cls_token', None)
+            pad_token = special_tokens_kv.get('pad_token', None)
+            mask_token = special_tokens_kv.get('mask_token', None)
+            tokenizer = tokenizers.BertWordPieceTokenizer(
+                unk_token=unk_token,
+                sep_token=sep_token,
+                cls_token=cls_token,
+                pad_token=pad_token,
+                mask_token=mask_token,
+                lowercase=args.lowercase,
+                strip_accents=args.strip_accents)
         else:
             raise NotImplementedError
         tokenizer.train(
