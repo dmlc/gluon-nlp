@@ -337,7 +337,6 @@ def train(args):
     step_num = args.start_step
     finish_flag = False
     num_samples_per_update = 0
-    loss_denom = float(len(ctx_l) * args.num_accumulated * num_workers)
 
     log_total_loss = 0
     log_mlm_loss = 0
@@ -346,7 +345,7 @@ def train(args):
     train_start_time = time.time()
     if args.num_accumulated != 1:
         # set grad to zero for gradient accumulation
-        model.collect_params().zero_grad()
+        model.zero_grad()
 
     # start training
     train_loop_dataloader = grouper(repeat(data_train), len(ctx_l))
@@ -378,12 +377,14 @@ def train(args):
                 with mx.autograd.record():
                     mlm_scores, rtd_scores, corrupted_tokens, labels = model(
                         masked_input_ids, segment_ids, valid_lengths, unmasked_tokens, masked_positions)
-                    # the official implementation takes the sum of each batch inside the loss function
-                    # while SigmoidBinaryCrossEntropyLoss and SoftmaxCELoss takes the mean value
+                    num_elements = masked_weights.sum()
                     mlm_loss = mlm_loss_fn(
-                        mlm_scores, unmasked_tokens, masked_weights.reshape(-1)).mean() / (masked_weights.mean() + 1e-6)
+                        mx.nd.reshape(mlm_scores.as_nd_ndarray(), (-3, -1)).as_np_ndarray(),
+                        unmasked_tokens.reshape((-1,)),
+                        masked_weights.reshape((-1, 1))).sum() / (num_elements + 1e-6)
+                    num_elements = length_masks.sum()
                     rtd_loss = rtd_loss_fn(
-                        rtd_scores, labels, length_masks).mean() / (length_masks.mean() + 1e-6)
+                        rtd_scores, labels, length_masks).sum() / (num_elements + 1e-6)
                     output = ElectraOutput(mlm_scores=mlm_scores,
                                            rtd_scores=rtd_scores,
                                            rtd_labels=labels,
@@ -391,7 +392,7 @@ def train(args):
                                            )
                     mlm_loss_l.append(mlm_loss)
                     rtd_loss_l.append(rtd_loss)
-                    loss = (args.gen_weight * mlm_loss + args.disc_weight * rtd_loss) / loss_denom
+                    loss = (args.gen_weight * mlm_loss + args.disc_weight * rtd_loss) / args.num_accumulated
                     loss_l.append(loss)
 
             for loss in loss_l:
@@ -402,24 +403,28 @@ def train(args):
             log_rtd_loss += sum([ele.as_in_ctx(ctx_l[0])
                                  for ele in rtd_loss_l]).asnumpy()
             log_total_loss += sum([ele.as_in_ctx(ctx_l[0])
-                                   for ele in loss_l]).asnumpy() * loss_denom
+                                   for ele in loss_l]).asnumpy()
 
         # update
         trainer.allreduce_grads()
-        # Here, the accumulated gradients are
-        # \sum_{n=1}^N g_n / loss_denom
-        # Thus, in order to clip the average gradient
-        #   \frac{1}{N} \sum_{n=1}^N      -->  clip to args.max_grad_norm
-        # We need to change the ratio to be
-        #  \sum_{n=1}^N g_n / loss_denom  -->  clip to args.max_grad_norm  * N / loss_denom
+
+        effective_num_workers = num_workers * len(ctx_l) # equals num_gpus 
         total_norm, ratio, is_finite = clip_grad_global_norm(
-            params, args.max_grad_norm * num_samples_per_update / loss_denom)
-        total_norm = total_norm / (num_samples_per_update / loss_denom)
-        trainer.update(num_samples_per_update / loss_denom, ignore_stale_grad=True)
+            params, args.max_grad_norm * effective_num_workers)
+
+        if args.comm_backend == 'horovod':
+            # Note that horovod.trainer._scale is default to num_workers,
+            # thus trainer.update(1) will scale the gradients by 1./num_workers
+            trainer.update(1, ignore_stale_grad=True)
+        else:
+            # gluon.trainer._scale is default to 1
+            trainer.update(effective_num_workers, ignore_stale_grad=True)
+
+        total_norm = total_norm / effective_num_workers
         step_num += 1
-        if args.num_accumulated != 1:
+        if args.num_accumulated > 1:
             # set grad to zero for gradient accumulation
-            model.collect_params().zero_grad()
+            model.zero_grad()
 
         # saving
         if step_num % save_interval == 0 or step_num >= num_train_steps:
@@ -472,7 +477,7 @@ def train(args):
         train_end_time - train_start_time))
     if writer is not None:
         writer.close()
-        
+
     if local_rank == 0:
         model_name = args.model_name.replace('google', 'gluon')
         save_dir = os.path.join(args.output_dir, model_name)
@@ -538,7 +543,6 @@ def evaluation(writer, step_num, masked_input, eval_input):
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
-    os.environ['MXNET_USE_FUSION'] = '0'  # Manually disable pointwise fusion
     args = parse_args()
     logging_config(args.output_dir, name='pretrain_owt')
     logging.debug('Random seed set to {}'.format(args.seed))
