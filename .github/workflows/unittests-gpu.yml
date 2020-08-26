@@ -38,6 +38,6 @@ jobs:
 
       - name: Test project on AWS Batch
         run: |
-          python ./tools/batch/submit-job.py --region us-east-1 --job-type p3.2x --source-ref ${{ github.ref }} --work-dir tools/batch --remote https://github.com/barry-jin/gluon-nlp --command "../../test.sh" --wait | tee > script.log
+          python ./tools/batch/submit-job.py --region us-east-1 --job-type p3.2x --source-ref ${{ github.ref }} --work-dir tools/batch --remote https://github.com/dmlc/gluon-nlp --command "../../test.sh" --wait | tee > script.log
           
 
