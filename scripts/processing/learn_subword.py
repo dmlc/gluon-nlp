@@ -117,6 +117,9 @@ def main(args):
         special_tokens_kv[k] = v
     if args.model == 'hf_wordpiece':
         tokenizers = try_import_huggingface_tokenizers()
+        if 'unk_token' not in special_tokens_kv or special_tokens_kv['unk_token'] != '[UNK]':
+            # TODO, HF Tokenizer must have the unk token.
+            special_tokens_kv['unk_token'] = '[UNK]'
         if parse_version(tokenizers.__version__) < parse_version('0.8'):
             # The older version of Tokenizers
             # hf_wordpiece must contain mask, cls and sep tokens
