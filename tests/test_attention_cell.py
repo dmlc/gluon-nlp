@@ -18,7 +18,7 @@ mx.npx.set_np()
 @pytest.mark.parametrize('rel_score_type', ['share_head', 'no_share_head', 'no'])
 @pytest.mark.seed(123)
 def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize, rel_score_type, ctx):
-    with getattr(mx, ctx)():
+    with ctx:
         batch_size = 5
         query_length, mem_length = 16, 32
         query_head_units = 8
@@ -155,7 +155,7 @@ def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize,
 @pytest.mark.parametrize('normalized', [True, False])
 @pytest.mark.seed(123)
 def test_dot_product_attention(scaled, normalized, ctx):
-    with getattr(mx, ctx)():
+    with ctx:
         num_heads = 4
         batch_size = 32
         query_length, mem_length = 16, 32
@@ -197,7 +197,7 @@ def test_gen_attn_mask(ctx):
             return gen_mem_attn_mask(F, mem, mem_valid_length, data, valid_length,
                                      dtype=self._dtype, layout=self._layout)
 
-    with getattr(mx, ctx)():
+    with ctx:
         batch_size = 4
         query_length = 8
         mem_length = 6
@@ -274,7 +274,7 @@ def test_gen_attn_mask(ctx):
 @pytest.mark.parametrize('hybridize', [False, True])
 @pytest.mark.seed(123)
 def test_multi_head_rel_attn_score(num_heads, method, bidirectional, hybridize, ctx):
-    with getattr(mx, ctx)():
+    with ctx:
         batch_size = 6
         query_length = 25
         mem_length = 20

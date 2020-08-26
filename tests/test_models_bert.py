@@ -13,7 +13,7 @@ def test_list_pretrained_bert():
 
 @pytest.mark.parametrize('compute_layout', ['auto', 'NT', 'TN'])
 def test_bert_small_cfg(compute_layout, ctx):
-    with getattr(mx, ctx)():
+    with ctx:
         cfg = BertModel.get_cfg()
         cfg.defrost()
         cfg.MODEL.vocab_size = 100
@@ -93,7 +93,7 @@ def test_bert_small_cfg(compute_layout, ctx):
 @pytest.mark.parametrize('model_name', list_pretrained_bert())
 def test_bert_get_pretrained(model_name, ctx):
     assert len(list_pretrained_bert()) > 0
-    with tempfile.TemporaryDirectory() as root, getattr(mx, ctx)():
+    with tempfile.TemporaryDirectory() as root, ctx:
         cfg, tokenizer, backbone_params_path, mlm_params_path =\
             get_pretrained_bert(model_name, load_backbone=True, load_mlm=True, root=root)
         assert cfg.MODEL.vocab_size == len(tokenizer.vocab)
