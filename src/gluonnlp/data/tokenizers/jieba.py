@@ -1,9 +1,7 @@
 __all__ = ['JiebaTokenizer']
 
 from typing import Optional
-from .base import TOKENIZER_REGISTRY, BaseTokenizerWithVocab,\
-    TokenizerEncodeWithoutVocabError, TokenizerDecodeWithoutVocabError,\
-    TokenTypeNotSupportedError
+from .base import *
 from ..vocab import Vocab
 from ...utils.lazy_imports import try_import_jieba
 
@@ -49,28 +47,28 @@ class JiebaTokenizer(BaseTokenizerWithVocab):
             ret_tokens = [[ele[0] for ele in tokens] for tokens in all_tokens]
         elif output_type is int:
             if self._vocab is None:
-                raise ValueError(_encode_no_vocab_err_msg())
+                raise TokenizerEncodeWithoutVocabError
             ret_tokens = [self._vocab[[ele[0] for ele in tokens]] for tokens in all_tokens]
         else:
-            raise ValueError(_token_type_unsupported_err_msg(output_type))
+            raise TokenTypeNotSupportedError(output_type)
         if is_multiple_sentences:
             return ret_tokens, offsests
         else:
             return ret_tokens[0], offsests[0]
 
     def decode(self, tokens):
-        is_multiple_sentences = _is_tokens_from_multiple_sentences(tokens)
+        is_multiple_sentences = is_tokens_from_multiple_sentences(tokens)
         if not is_multiple_sentences:
             tokens = [tokens]
-        token_type = _get_token_type(tokens)
+        token_type = get_token_type(tokens)
         if token_type is str:
             ret = [''.join(ele_tokens) for ele_tokens in tokens]
         elif token_type is int:
             if self._vocab is None:
-                raise ValueError(_decode_no_vocab_err_msg())
+                raise TokenizerDecodeWithoutVocabError
             ret = [''.join(self._vocab.to_tokens(ele_tokens)) for ele_tokens in tokens]
         else:
-            raise ValueError(_token_type_unsupported_err_msg(token_type))
+            raise TokenTypeNotSupportedError(token_type)
         if is_multiple_sentences:
             return ret
         else:
