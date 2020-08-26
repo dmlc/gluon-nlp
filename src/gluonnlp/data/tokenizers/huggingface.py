@@ -335,7 +335,7 @@ class HuggingFaceBPETokenizer(LegacyHuggingFaceTokenizer):
         assert self._unk_token == self._vocab.unk_token
         self._model = tokenizers.CharBPETokenizer(
             vocab_file=temp_hf_vocab_file if temp_hf_vocab_file else self._vocab_file,
-            merges_file=self._merges_or_model_file,
+            merges_file=self._merges_file,
             unk_token=self._unk_token, suffix=self._suffix, dropout=self._dropout,
             lowercase=self._lowercase)
         if temp_hf_vocab_file:
