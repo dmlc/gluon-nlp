@@ -1,7 +1,7 @@
 set -ex
 
 python3 -m pip install --upgrade pip
-python3 -m pip installsetuptools pytest pytest-cov contextvars
+python3 -m pip install setuptools pytest pytest-cov contextvars
 python3 -m pip install --upgrade --force-reinstall langid==1.15
 python3 -m pip install --upgrade cython
 
