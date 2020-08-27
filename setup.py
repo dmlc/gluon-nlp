@@ -32,6 +32,7 @@ requirements = [
     'yacs>=0.1.6',
     'sacrebleu',
     'flake8',
+    'packaging',
     'regex',
     'contextvars',
     'pyarrow',
