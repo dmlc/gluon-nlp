@@ -624,6 +624,7 @@ def test_huggingface_wordpiece_tokenizer():
 
 
 def test_huggingface_wordpiece_tokenizer_v08():
+    """Test for huggingface tokenizer >=0.8"""
     with tempfile.TemporaryDirectory() as dir_path:
         model_path = os.path.join(dir_path, 'hf_wordpiece_new_0.8.model')
         download(url=get_repo_url() +
