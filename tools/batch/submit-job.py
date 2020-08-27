@@ -18,7 +18,7 @@ parser.add_argument('--name', help='name of the job', type=str, default='dummy')
 parser.add_argument('--job-type', help='type of job to submit.', type=str,
                     choices=['g4dn.4x', 'g4dn.8x', 'g4dn.12x', 'g4dn.16x',
                              'p3.2x', 'p3.8x', 'p3.16x', 'p3dn.24x',
-                             'c5n.18x'], default='g4dn.4x')
+                             'c5n.18x', 'c5n.4x'], default='g4dn.4x')
 parser.add_argument('--source-ref',
                     help='ref in GluonNLP main github. e.g. master, refs/pull/500/head',
                     type=str, default='master')
@@ -85,6 +85,7 @@ job_definitions = {
     'p3.8x': 'gluon-nlp-1-4gpu-jobs:2',
     'p3.16x': 'gluon-nlp-1-8gpu-jobs:1',
     'p3dn.24x': 'gluon-nlp-1-8gpu-jobs:2',
+    'c5n.4x': 'gluon-nlp-1-cpu-jobs:3',
     'c5n.18x': 'gluon-nlp-1-cpu-jobs:2',
 }
 
@@ -97,6 +98,7 @@ job_queues = {
     'p3.8x': 'p3-4gpu',
     'p3.16x': 'p3-8gpu',
     'p3dn.24x': 'p3dn-8gpu',
+    'c5n.4x': 'c5n',
     'c5n.18x': 'c5n',
 }
 

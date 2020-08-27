@@ -29,7 +29,7 @@ jobs:
       - name: Test project on AWS Batch
         run: |
           python ./tools/batch/submit-job.py --region us-east-1 \
-                                             --job-type c5n.18x \
+                                             --job-type c5n.4x \
                                              --source-ref master \
                                              --work-dir tests/batch_scripts \
                                              --remote https://github.com/dmlc/gluon-nlp \
