@@ -8,6 +8,7 @@ import tarfile
 import argparse
 import multiprocessing
 from gluonnlp.utils.misc import download, load_checksum_stats
+from gluonnlp.base import get_repo_url
 
 _CITATION = """\
 @ONLINE {wikidump,
@@ -55,7 +56,7 @@ _URL_FILE_STATS = load_checksum_stats(_URL_FILE_STATS_PATH)
 
 _URLS = {
     'wikipedia-en-20200620':
-        'https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/pretrain_corpus/wikipedia-en-20200620.tar.gz',
+        get_repo_url() + 'pretrain_corpus/wikipedia-en-20200620.tar.gz',
 }
 
 
