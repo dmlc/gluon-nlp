@@ -38,7 +38,7 @@ def get_parser():
         - "nlp_process learn_subword --model hf_bpe --corpus CORPUS --vocab-size SIZE"
             Train with the BPE Tokenizer Implemented by Huggingface.
     '''),
-       prog='learn_subword'
+        prog='learn_subword'
     )
     parser.add_argument('--corpus', type=str, nargs='+', required=True,
                         help='Path of the corpus. '
@@ -60,14 +60,21 @@ def get_parser():
     parser.add_argument('--n-threads', type=int, default=-1,
                         help='Number of threads, only applicable to yttm')
     parser.add_argument('--input-sentence-size', type=int, default=1000000,
-                        help='Size of input sentence, only applicable to sentencepiece, '
-                        'you can reduce this value when getting out of memory error')
+                        help='Size of input sentence. Internally, the algorithm will randomly '
+                             'sample some sentences to train the tokenizer. '
+                             'This is only applicable to sentencepiece, '
+                             'you can reduce this value when getting out of memory error.')
     parser.add_argument('--lowercase', action='store_true', default=False,
                         help='Use lowercase, '
                         'only applicable to hf_bpe, hf_bytebpe and hf_wordpiece')
-    parser.add_argument('--strip-accents', action='store_true', default=False,
-                        help='Disable BERT characters normalization, '
-                        'only applicable to hf_wordpiece')
+    parser.add_argument('--no-strip-accents', action='store_true', default=False,
+                        help='Whether to disable the BERT characters normalization, '
+                             'only applicable to hf_wordpiece')
+    parser.add_argument('--no-handle-chinese-chars', action='store_true', default=False,
+                        help='Whether to disable the handling of Chinese characters. '
+                             'Basically, Chinese (). For more details, you can refer to '
+                             'https://github.com/google-research/bert/'
+                             'blob/master/multilingual.md#tokenization')
     parser.add_argument('--disable-unk', action='store_true', default=False,
                         help='Whether to disable unk token (default settings enable unk)')
     parser.add_argument('--disable-bos', action='store_true', default=False,
@@ -223,7 +230,9 @@ def main(args):
     elif args.model in ['hf_bpe', 'hf_bytebpe', 'hf_wordpiece']:
         tokenizers = try_import_huggingface_tokenizers()
         if args.model == 'hf_bpe':
-            tokenizer = tokenizers.CharBPETokenizer(lowercase=args.lowercase)
+            tokenizer = tokenizers.CharBPETokenizer(
+                lowercase=args.lowercase,
+                split_on_whitespace_only=not args.no_handle_chinese_chars)
         elif args.model == 'hf_bytebpe':
             tokenizer = tokenizers.ByteLevelBPETokenizer(lowercase=args.lowercase)
         elif args.model == 'hf_wordpiece':
@@ -242,7 +251,9 @@ def main(args):
                 pad_token=pad_token,
                 mask_token=mask_token,
                 lowercase=args.lowercase,
-                strip_accents=args.strip_accents)
+                strip_accents=not args.no_strip_accents,
+                handle_chinese_chars=not args.no_handle_chinese_chars
+            )
         else:
             raise NotImplementedError
         tokenizer.train(

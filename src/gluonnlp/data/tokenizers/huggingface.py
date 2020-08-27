@@ -150,6 +150,16 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
         # Verify all tokens exist
         for token, idx in hf_vocab.items():
             assert self._vocab[token] == idx
+        if self._model_info['model']['type'] == 'BPE':
+
+        elif self._model_info['model']['type'] == 'WordPiece':
+
+        elif self._model_info['model']['type'] == 'ByteLevel':
+
+        else:
+            raise NotImplementedError('The model type = "{}" has not been supported yet. Feel free '
+                                      'to try to add the support!'
+                                      .format(self._model_info['model']['type']))
 
     def encode(self, sentences: SentencesType,
                output_type: type = str) -> Union[TokensType, TokenIDsType]:
@@ -162,6 +172,21 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
                             output_type: type = str) -> Tuple[Union[TokensType, TokenIDsType],
                                                               TokenOffsetsType]:
         return hf_encode_with_offsets(self._model, sentences, output_type)
+
+    def get_whole_word_boundary(self, tokens):
+        """Get the boundary of whole words
+
+        Parameters
+        ----------
+        tokens
+
+        Returns
+        -------
+        masks
+            A 0 - 1 boolean matrix that
+        mark_first_subword
+        """
+
 
     @property
     def vocab(self) -> Optional[Vocab]:
@@ -497,14 +522,26 @@ class HuggingFaceWordPieceTokenizer(LegacyHuggingFaceTokenizer):
         self.__rebuild_tokenizer()
         self._first_subword_id_set = frozenset([self._vocab[ele]
                                                 for ele in self._vocab.all_tokens
-                                                if not ele.startswith(self._wordpieces_prefix) and
-                                                not ele in [self._sep_token, self._cls_token]])
+                                                if not ele.startswith(self._wordpieces_prefix)])
 
     def is_first_subword(self, tokens: Union[str, int, List[str], List[int]]) \
             -> Union[bool, List[bool]]:
+        """Whether the token is the first subword token in a sequence of subword tokens.
+
+        This can be used for implementing whole-word masking.
+
+        We won't care about the special tokens
+
+        Parameters
+        ----------
+        tokens
+
+        Returns
+        -------
+        ret
+        """
         if isinstance(tokens, str):
-            return not tokens.startswith(self._wordpieces_prefix)\
-                   and (tokens not in self._vocab.special_tokens)
+            return not tokens.startswith(self._wordpieces_prefix)
         elif isinstance(tokens, int):
             return tokens in self._first_subword_id_set
         elif isinstance(tokens, list):

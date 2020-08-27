@@ -112,7 +112,7 @@ class YTTMTokenizer(BaseTokenizerWithVocab):
 
     def is_first_subword(self, tokens: Union[str, int, List[str], List[int]]) \
             -> Union[bool, List[bool]]:
-        """Whether the token is the first subword token
+        """Whether the token is the first subword token in a list of subword tokens
 
         Parameters
         ----------
@@ -122,7 +122,8 @@ class YTTMTokenizer(BaseTokenizerWithVocab):
         Returns
         -------
         ret
-            Whether the token is the first subword token in the list of subwords
+            Whether the token is the first subword token in a sequence of subword tokens
+            that construct the token
         """
         if isinstance(tokens, str):
             return tokens.startswith(self._meta_symbol)

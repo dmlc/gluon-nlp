@@ -623,13 +623,13 @@ def test_huggingface_wordpiece_tokenizer():
         os.remove(hf_vocab_path)
 
 
-def test_huggingface_wordpiece_tokenizer_new():
+def test_huggingface_wordpiece_tokenizer_v08():
     with tempfile.TemporaryDirectory() as dir_path:
         model_path = os.path.join(dir_path, 'hf_wordpiece_new_0.8.model')
         download(url=get_repo_url() +
                      'tokenizer_test_models/hf_wordpiece_new_0.8/hf_wordpiece.model',
                  path=model_path)
-        vocab_path = os.path.join(dir_path, 'hf_wordpiece_new_0.vocab')
+        vocab_path = os.path.join(dir_path, 'hf_wordpiece_new_0.8.vocab')
         download(url=get_repo_url() +
                      'tokenizer_test_models/hf_wordpiece_new_0.8/hf_wordpiece.vocab',
                  path=vocab_path)
