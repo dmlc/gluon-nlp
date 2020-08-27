@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from datetime import datetime
 import io
 import os
 import re
@@ -26,6 +27,10 @@ def find_version(*file_paths):
 
 VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
+if VERSION.endswith('dev'):
+    VERSION = VERSION + datetime.today().strftime('%Y%m%d')
+
+
 requirements = [
     'numpy',
     'sacremoses>=0.0.38',
@@ -39,6 +44,7 @@ requirements = [
     'protobuf',
     'pandas',
     'tokenizers>=0.7.0',
+    'click>=7.0',  # Dependency of youtokentome
     'youtokentome>=1.0.6',
     'fasttext>=0.9.2'
 ]

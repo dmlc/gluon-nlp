@@ -23,7 +23,6 @@ __all__ = ['ConstWidthBucket', 'LinearWidthBucket', 'ExpWidthBucket',
 import math
 import random
 import warnings
-import random
 import numpy as np
 import abc
 from typing import Union, Sequence, Optional, List
@@ -285,20 +284,14 @@ class BoundedBudgetSampler(BaseSampler):
         Whether to shuffle the batches.
     seed
         The seed of the sampler
-    num_parts
-        Number of partitions which the data is split into (default: 1)
-    part_index
-        The index of the part to read from
     """
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_num_tokens: int = -1, max_num_sentences: int = -1,
                  required_batch_size_multiple: int = 1,
-                 shuffle: bool = True, seed: Optional[int] = None,
-                 num_parts: int = 1, part_index: int = 0):
+                 shuffle: bool = True, seed: Optional[int] = None):
         assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
         assert max_num_tokens > 0 or max_num_sentences > 0, \
                'One of max_num_tokens and max_num_sentences must be larger than 0'
-        assert part_index < num_parts, 'part_index should be less than num_parts'
         self._lengths = np.array(lengths)
         if self._lengths.ndim == 2:
             self._lengths = self._lengths.max(axis=1)
@@ -308,8 +301,6 @@ class BoundedBudgetSampler(BaseSampler):
         self._batches = []
         self._shuffle = shuffle
         self._rng = np.random.RandomState(seed)
-        self._num_parts = num_parts
-        self._part_index = part_index
         # sort
         self._indices = self._indices[np.argsort(self._lengths, kind='mergesort')]
         batch = []
@@ -335,16 +326,12 @@ class BoundedBudgetSampler(BaseSampler):
                 )
             batch.append(index)
         if len(batch) > 0:
-            self._batches.append(np.array(batch))        
-        
+            self._batches.append(np.array(batch))
+
     def __iter__(self):
         if self._shuffle:
             self._rng.shuffle(self._batches)
-        part_batches = []
-        for i in range(len(self._batches)):
-            if i % self._num_parts == self._part_index:
-                part_batches.append(self._batches[i])
-        for batch in part_batches:
+        for batch in self._batches:
             yield batch
 
     def __len__(self):
@@ -353,7 +340,7 @@ class BoundedBudgetSampler(BaseSampler):
     def __repr__(self):
         ret = '{name}(\n' \
             '  sample_num={sample_num},\n' \
-            '  batch_num={batch_num}\n'\
+            '  batch_num={batch_num},\n' \
             ')'\
             .format(name=self.__class__.__name__,
                     sample_num=len(self._lengths),
@@ -671,3 +658,69 @@ class SplitSampler(BaseSampler):
 
     def __len__(self):
         return self._len * self._repeat
+
+
+class ShardedIterator(BaseSampler):
+    r"""A sharded wrapper around an iterable (padded to length).
+    
+    Parameters
+    ----------
+    sampler
+    num_parts
+        Number of partitions which the data is split into (default: 1)
+    part_index
+        The index of the part to read from
+    even_size
+        If the number of batches is not even across all partitions, sample a few extra batches
+        for the ones with fewer batches.
+    """
+    def __init__(self, sampler: BaseSampler,
+                 num_parts: int = 1,
+                 part_index: int = 0,
+                 even_size: bool = False):
+        assert part_index < num_parts, 'part_index should be less than num_parts'
+        self._sampler = sampler
+        self._num_parts = num_parts
+        self._part_index = part_index
+        self._even_size = even_size
+
+        length = len(sampler)
+        if not even_size:
+            part_len = length // num_parts
+            remaining = length % num_parts
+            self._start = part_len * part_index + min(part_index, remaining)
+            self._end = self._start + part_len + (part_index < remaining)
+            self._part_len = self._end - self._start
+        else:
+            part_len = int(length + num_parts - 1) // num_parts
+            self._start = part_len * part_index
+            self._end = self._start + part_len
+            self._start = self._start if self._start < length else length
+            self._end = self._end if self._end < length else length
+            self._part_len = part_len
+
+    def __iter__(self):
+        batches = list(self._sampler)
+        part_batches = batches[self._start:self._end]
+        if self._even_size and len(part_batches) < self._part_len:
+            candidates = random.sample(batches, k=self._part_len-len(part_batches))
+            part_batches.extend(candidates)
+        for batch in part_batches:
+            yield batch
+    
+    def __len__(self):
+        return len(self._sampler)
+    
+    def __repr__(self):
+        ret = '{name}(\n' \
+            '  batch_num={batch_num},\n' \
+            '  part_batch_num={part_batch_num},\n' \
+            '  num_parts={num_parts},\n' \
+            '  part_index={part_index},\n' \
+            ')'\
+            .format(name=self.__class__.__name__,
+                    batch_num=len(self._sampler),
+                    part_batch_num=self._part_len,
+                    num_parts=self._num_parts,
+                    part_index=self._part_index)
+        return ret

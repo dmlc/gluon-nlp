@@ -30,7 +30,6 @@ from uuid import uuid4
 from typing import List, Tuple, Union, NewType, Optional
 from collections import OrderedDict
 
-import jieba
 import sacremoses
 
 from .vocab import Vocab

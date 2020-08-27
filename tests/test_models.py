@@ -12,8 +12,8 @@ def test_list_backbone_names():
 
 
 @pytest.mark.parametrize('name', list_backbone_names())
-def test_get_backbone(name):
-    with tempfile.TemporaryDirectory() as root:
+def test_get_backbone(name, ctx):
+    with tempfile.TemporaryDirectory() as root, getattr(mx, ctx)():
         model_cls, cfg, tokenizer, local_params_path, _ = get_backbone(name, root=root)
         net = model_cls.from_cfg(cfg)
         net.load_parameters(local_params_path)

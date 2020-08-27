@@ -1,0 +1,46 @@
+name: continuous build - gpu
+
+on: [push, pull_request_target]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  unittest-gpu:
+    runs-on: ubuntu-latest
+    strategy: 
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Linux dependencies
+        run: sudo apt-get install libopenblas-dev
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
+
+      - name: Install Other Dependencies
+        run: |
+          python -m pip install --user --upgrade pip
+          python -m pip install --user -e .[extras]
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Test project on AWS Batch
+        run: |
+          python ./tools/batch/submit-job.py --region us-east-1 --job-type p3.2x --source-ref ${{ github.ref }} --work-dir tools/batch --remote https://github.com/dmlc/gluon-nlp --command "./test.sh" --wait
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1.0.10
+        with:
+          env_vars: OS,PYTHON 
