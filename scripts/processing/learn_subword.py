@@ -238,9 +238,6 @@ def main(args):
             tokenizer = tokenizers.ByteLevelBPETokenizer(lowercase=args.lowercase)
         elif args.model == 'hf_wordpiece':
             unk_token = special_tokens_kv.get('unk_token', None)
-            if unk_token != '[UNK]':
-                warnings.warn('In HuggingFace WordPiece algorithm, the unk_token must be "[UNK]".')
-                unk_token = '[UNK]'
             sep_token = special_tokens_kv.get('sep_token', None)
             cls_token = special_tokens_kv.get('cls_token', None)
             pad_token = special_tokens_kv.get('pad_token', None)
@@ -295,11 +292,8 @@ def main(args):
             os.remove(hf_vocab_file)
     else:
         raise NotImplementedError
-    if 'unk_token' in special_tokens_kv:
-        unk_token = special_tokens_kv.pop('unk_token')
-        vocab_obj = Vocab(vocab, unk_token=unk_token, **special_tokens_kv)
-    else:
-        vocab_obj = Vocab(vocab, unk_token=None, **special_tokens_kv)
+    unk_token = special_tokens_kv.get('unk_token', None)
+    vocab_obj = Vocab(vocab, unk_token=unk_token, **special_tokens_kv)
     vocab_obj.save(model_prefix + '.vocab')
 
 

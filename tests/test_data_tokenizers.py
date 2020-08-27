@@ -70,6 +70,7 @@ def verify_encode_token_with_offsets(tokenizer, all_sentences, gt_offsets=None):
             enc_tokens = tokenizer.encode(sentences, str)
             tokens, offsets = tokenizer.encode_with_offsets(sentences, str)
             assert ele_gt_offsets == offsets
+            assert enc_tokens == tokens
 
 
 def verify_sentencepiece_tokenizer_with_offsets(tokenizer, all_sentences):
@@ -98,7 +99,7 @@ def verify_encode_with_offsets_consistency(tokenizer, all_sentences):
         tokens, offsets = tokenizer.encode_with_offsets(sentences, int)
         str_tokens, str_offsets = tokenizer.encode_with_offsets(sentences, str)
         assert offsets == str_offsets
-        assert tokens == str_tokens == enc_tokens
+        assert tokens == enc_tokens
 
 
 def verify_encode_token(tokenizer, all_sentences, all_gt_tokens):
@@ -137,17 +138,28 @@ def verify_decode_spm(tokenizer, all_sentences, gt_int_decode_sentences):
 
 
 def verify_decode_subword_nmt(tokenizer, all_sentences, gt_int_decode, gt_str_decode):
-    for sentences, case_gt_int_deocde, case_gt_str_decode in [(all_sentences[0], gt_int_decode[0], gt_str_decode[0]),
+    for sentences, case_gt_int_decode, case_gt_str_decode in [(all_sentences[0], gt_int_decode[0], gt_str_decode[0]),
                                                               (all_sentences, gt_int_decode, gt_str_decode)]:
         assert tokenizer.decode(tokenizer.encode(sentences, str)) == case_gt_str_decode
-        assert tokenizer.decode(tokenizer.encode(sentences, int)) == case_gt_int_deocde
+        assert tokenizer.decode(tokenizer.encode(sentences, int)) == case_gt_int_decode
 
 
 def verify_decode_hf(tokenizer, all_sentences, gt_decode_sentences):
-    for sentences, case_gt_deocde in [(all_sentences[0], gt_decode_sentences[0]),
-                                          (all_sentences, gt_decode_sentences)]:
-        assert tokenizer.decode(tokenizer.encode(sentences, str)) == case_gt_deocde
-        assert tokenizer.decode(tokenizer.encode(sentences, int)) == case_gt_deocde
+    for sentences, case_gt_decode in [(all_sentences[0], gt_decode_sentences[0]),
+                                      (all_sentences, gt_decode_sentences)]:
+        assert tokenizer.decode(tokenizer.encode(sentences, str)) == case_gt_decode
+        assert tokenizer.decode(tokenizer.encode(sentences, int)) == case_gt_decode
+        if isinstance(sentences, list):
+            for sentence in sentences:
+                assert tokenizer.vocab.all_tokens[tokenizer.encode(sentence, int)]\
+                       == tokenizer.encode(sentence, str)
+                assert tokenizer.vocab[tokenizer.encode(sentence, str)]\
+                       == tokenizer.encode(sentence, int)
+        else:
+            assert tokenizer.vocab.all_tokens[tokenizer.encode(sentences, int)] \
+                   == tokenizer.encode(sentences, str)
+            assert tokenizer.vocab[tokenizer.encode(sentences, str)] \
+                   == tokenizer.encode(sentences, int)
 
 
 def verify_decode_no_vocab_raise(tokenizer):
@@ -629,12 +641,44 @@ def test_huggingface_wordpiece_tokenizer_v08():
         model_path = os.path.join(dir_path, 'hf_wordpiece_new_0.8.model')
         download(url=get_repo_url() +
                      'tokenizer_test_models/hf_wordpiece_new_0.8/hf_wordpiece.model',
-                 path=model_path)
+                 path=model_path,
+                 sha1_hash='66ccadf6e5e354ff9604e4a82f107a2ac873abd5')
         vocab_path = os.path.join(dir_path, 'hf_wordpiece_new_0.8.vocab')
         download(url=get_repo_url() +
                      'tokenizer_test_models/hf_wordpiece_new_0.8/hf_wordpiece.vocab',
-                 path=vocab_path)
+                 path=vocab_path,
+                 sha1_hash='dd6fdf4bbc74eaa8806d12cb3d38a4d9a306aea8')
         tokenizer = HuggingFaceTokenizer(model_path, vocab_path)
+        gt_tokenized = [['Hel', '##lo', ',', 'y', '[UNK]', 'all', '!',
+                         'How', 'are', 'you', '[UNK]', '[UNK]', '[UNK]', '[UNK]', '?'],
+                        ['Gl', '##u', '##on', '##N', '##L', '##P', 'is', 'great', '[UNK]',
+                         '[UNK]', '[UNK]', '!', '!', '!'],
+                        ['Gl', '##u', '##on', '##N', '##L', '##P', '-',
+                         'Am', '##az', '##on', '-', 'Ha', '##ibi', '##n', '-', 'Leon', '##ard',
+                         '-', 'She', '##n', '##g', '-', 'Sh', '##ua', '##i', '-', 'X',
+                         '##ing', '##j', '##ian', '.', '.', '.', '.', '.', '/', ':', '!',
+                         '@', '#', '[UNK]', 'ab', '##c', '[UNK]']]
+        gt_offsets = [[(0, 3), (3, 5), (5, 6), (7, 8), (8, 9), (9, 12), (12, 13),
+                       (14, 17), (18, 21), (22, 25), (26, 27), (28, 29), (30, 31),
+                       (32, 33), (34, 35)],
+                      [(0, 2), (2, 3), (3, 5), (5, 6), (6, 7), (7, 8), (9, 11), (12, 17),
+                       (17, 18), (18, 19), (19, 20), (20, 21), (21, 22), (22, 23)],
+                      [(0, 2), (2, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 9),
+                       (9, 11), (11, 13), (13, 15), (15, 16), (16, 18), (18, 21),
+                       (21, 22), (22, 23), (23, 27), (27, 30), (30, 31), (31, 34),
+                       (34, 35), (35, 36), (36, 37), (37, 39), (39, 41), (41, 42),
+                       (42, 43), (43, 44), (44, 47), (47, 48), (48, 51), (51, 52),
+                       (52, 53), (53, 54), (54, 55), (55, 56), (56, 57), (57, 58),
+                       (58, 59), (59, 60), (60, 61), (62, 63), (63, 65), (65, 66),
+                       (66, 67)]]
+        gt_decode = ['Hello, y all! How are you?',
+                     'GluonNLP is great!!!',
+                     'GluonNLP - Amazon - Haibin - Leonard - Sheng - Shuai - Xingjian..... / '
+                     ':! @ # abc']
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, HuggingFaceTokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
 
 
 def test_tokenizers_create():
