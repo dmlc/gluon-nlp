@@ -681,6 +681,95 @@ def test_huggingface_wordpiece_tokenizer_v08():
         verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
 
 
+def test_huggingface_bpe_tokenizer_v08():
+    """Test for huggingface BPE tokenizer >=0.8"""
+    with tempfile.TemporaryDirectory() as dir_path:
+        model_path = os.path.join(dir_path, 'hf_bpe_new_0.8.model')
+        download(url=get_repo_url() +
+                     'tokenizer_test_models/hf_bpe_new_0.8/hf_bpe.model',
+                 path=model_path,
+                 sha1_hash='ecda90979561ca4c5a8d769b5e3c9fa2270d5317')
+        vocab_path = os.path.join(dir_path, 'hf_bpe_new_0.8.vocab')
+        download(url=get_repo_url() +
+                     'tokenizer_test_models/hf_bpe_new_0.8/hf_bpe.vocab',
+                 path=vocab_path,
+                 sha1_hash='b92dde0b094f405208f3ec94b5eae88430bf4262')
+        tokenizer = HuggingFaceTokenizer(model_path, vocab_path)
+        gt_tokenized = [['H', 'ello</w>', ',</w>', 'y</w>', 'all</w>', '!</w>',
+                         'How</w>', 'are</w>', 'you</w>', '?</w>'],
+                        ['G', 'lu', 'on', 'N', 'L', 'P</w>', 'is</w>', 'great</w>',
+                         '!</w>', '!</w>', '!</w>'],
+                        ['G', 'lu', 'on', 'N', 'L', 'P</w>', '-</w>', 'Amaz', 'on</w>',
+                         '-</w>', 'Ha', 'i', 'bin</w>', '-</w>', 'Leon', 'ard</w>', '-</w>',
+                         'Sh', 'eng</w>', '-</w>', 'S', 'hu', 'ai</w>', '-</w>', 'X', 'ing',
+                         'j', 'ian</w>', '.</w>', '.</w>', '.</w>', '.</w>', '.</w>', '/</w>',
+                         ':</w>', '!</w>', '@</w>', '#</w>', 'ab', 'c</w>']]
+        gt_offsets = [[(0, 1), (1, 5), (5, 6), (7, 8), (9, 12), (12, 13), (14, 17),
+                       (18, 21), (22, 25), (34, 35)],
+                      [(0, 1), (1, 3), (3, 5), (5, 6), (6, 7), (7, 8), (9, 11), (12, 17),
+                       (20, 21), (21, 22), (22, 23)],
+                      [(0, 1), (1, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 13), (13, 15),
+                       (15, 16), (16, 18), (18, 19), (19, 22), (22, 23), (23, 27), (27, 30),
+                       (30, 31), (31, 33), (33, 36), (36, 37), (37, 38), (38, 40), (40, 42),
+                       (42, 43), (43, 44), (44, 47), (47, 48), (48, 51), (51, 52), (52, 53),
+                       (53, 54), (54, 55), (55, 56), (56, 57), (57, 58), (58, 59), (59, 60),
+                       (60, 61), (63, 65), (65, 66)]]
+        gt_decode = ['Hello , y all ! How are you ?',
+                     'GluonNLP is great ! ! !',
+                     'GluonNLP - Amazon - Haibin - Leonard - Sheng - Shuai - Xingjian'
+                     ' . . . . . / : ! @ # abc']
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, HuggingFaceTokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
+
+
+def test_huggingface_bytebpe_tokenizer_v08():
+    """Test for huggingface bytebpe tokenizer >=0.8"""
+    with tempfile.TemporaryDirectory() as dir_path:
+        model_path = os.path.join(dir_path, 'hf_bytebpe_new_0.8.model')
+        download(url=get_repo_url() +
+                     'tokenizer_test_models/hf_bytebpe_new_0.8/hf_bytebpe.model',
+                 path=model_path,
+                 sha1_hash='a1c4da1f6c21df923e150f56dbb5b7a53c61808b')
+        vocab_path = os.path.join(dir_path, 'hf_bytebpe_new_0.8.vocab')
+        download(url=get_repo_url() +
+                     'tokenizer_test_models/hf_bytebpe_new_0.8/hf_bytebpe.vocab',
+                 path=vocab_path,
+                 sha1_hash='7831b19078a3222f450e65b2188dc0770473123b')
+        tokenizer = HuggingFaceTokenizer(model_path, vocab_path)
+        gt_tokenized = [['He', 'llo', ',', 'Ġy', "'", 'all', '!', 'ĠHow', 'Ġare', 'Ġyou',
+                         'Ġâ', 'ħ', '§', 'Ġ', 'ð', 'Ł', 'ĺ', 'ģ', 'Ġ', 'ð', 'Ł', 'ĺ',
+                         'ģ', 'Ġ', 'ð', 'Ł', 'ĺ', 'ģ', 'Ġ?'],
+                        ['G', 'l', 'u', 'on', 'N', 'L', 'P', 'Ġis', 'Ġgreat', 'ï', '¼', 'ģ',
+                         'ï', '¼', 'ģ', 'ï', '¼', 'ģ', '!', '!', '!'],
+                        ['G', 'l', 'u', 'on', 'N', 'L', 'P', '-', 'Am', 'az', 'on', '-',
+                         'Ha', 'ib', 'in', '-', 'Le', 'on', 'ard', '-', 'S', 'hen', 'g', '-',
+                         'Sh', 'u', 'ai', '-', 'X', 'ing', 'j', 'ian',
+                         '..', '...', '/', ':', '!', '@', '#', 'Ġ', "'", 'ab', 'c', "'"]]
+        gt_offsets = [[(0, 2), (2, 5), (5, 6), (6, 8), (8, 9), (9, 12), (12, 13), (13, 17),
+                       (17, 21), (21, 25), (25, 27), (26, 27), (26, 27), (27, 28), (28, 29),
+                       (28, 29), (28, 29), (28, 29), (29, 30), (30, 31), (30, 31), (30, 31),
+                       (30, 31), (31, 32), (32, 33), (32, 33), (32, 33), (32, 33), (33, 35)],
+                      [(0, 1), (1, 2), (2, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 11), (11, 17),
+                       (17, 18), (17, 18), (17, 18), (18, 19), (18, 19), (18, 19), (19, 20),
+                       (19, 20), (19, 20), (20, 21), (21, 22), (22, 23)],
+                      [(0, 1), (1, 2), (2, 3), (3, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 11),
+                       (11, 13), (13, 15), (15, 16), (16, 18), (18, 20), (20, 22), (22, 23),
+                       (23, 25), (25, 27), (27, 30), (30, 31), (31, 32), (32, 35), (35, 36),
+                       (36, 37), (37, 39), (39, 40), (40, 42), (42, 43), (43, 44),
+                       (44, 47), (47, 48), (48, 51), (51, 53), (53, 56), (56, 57),
+                       (57, 58), (58, 59), (59, 60), (60, 61), (61, 62), (62, 63),
+                       (63, 65), (65, 66), (66, 67)]]
+        gt_decode = ["Hello, y'all! How are you Ⅷ 😁 😁 😁 ?",
+                     'GluonNLP is great！！！!!!',
+                     "GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# 'abc'"]
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, HuggingFaceTokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
+
+
 def test_tokenizers_create():
     tokenizer = gluonnlp.data.tokenizers.create('moses', 'en')
     tokenizer.encode('hello world!')
