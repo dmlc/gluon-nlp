@@ -292,8 +292,7 @@ def main(args):
             os.remove(hf_vocab_file)
     else:
         raise NotImplementedError
-    unk_token = special_tokens_kv.get('unk_token', None)
-    vocab_obj = Vocab(vocab, unk_token=unk_token, **special_tokens_kv)
+    vocab_obj = Vocab(vocab, **special_tokens_kv)
     vocab_obj.save(model_prefix + '.vocab')
 
 
