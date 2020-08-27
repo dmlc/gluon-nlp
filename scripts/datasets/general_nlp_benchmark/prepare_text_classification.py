@@ -28,6 +28,7 @@ def get_parser():
     parser.add_argument("-t", "--tasks",
                         help="tasks to download data for as a comma separated string",
                         type=str,
+                        choices=list(TASK2PATH.keys()) + ['all'],
                         default="all")
     parser.add_argument("-d", "--data_dir",
                         help="Directory to save data to", type=str,
