@@ -21,6 +21,6 @@ For example, the test of [models/transformer.py](../src/gluonnlp/models/transfor
 `test_models_transformer.py`. The test of [models/__init__.py](../src/gluonnlp/models/__init__.py) 
 is `test_models.py`. 
 
-Also, we include the unittests for `nlp_process` in [processing](processing), 
+Also, we include the scheduled testing scripts for `nlp_process` in [processing](processing), 
 and 'nlp_data' in [data](data).
 
