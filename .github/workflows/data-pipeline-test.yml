@@ -1,6 +1,8 @@
-name: data pipeline test
+name: data pipeline end-to-end
 
-on: [push, pull_request]
+on:
+  schedule:
+    - cron: '0 4 * * *'  # At 04:00, everyday
 
 defaults:
   run:
@@ -17,25 +19,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      # Install OS specific dependencies
-      - name: Install Linux dependencies
-        run: sudo apt-get install libopenblas-dev
-
-      - name: Setup python
-        uses: actions/setup-python@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
         with:
-          python-version: ${{ matrix.python-version }}
-          architecture: x64
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
 
-      - name: Install Other Dependencies
+      - name: Test project on AWS Batch
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install setuptools pytest pytest-cov contextvars
-          python3 -m pip install --upgrade cython
-          python3 -m pip install --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
-          python3 -m pip install .[extras]
-      - name: Test Machine Translation Script
-        run: |
-          cd scripts/datasets/machine_translation
-          bash wmt2014_ende.sh hf_bpe
-          bash wmt2017_zhen.sh hf_bpe
+          python ./tools/batch/submit-job.py --region us-east-1 \
+                                             --job-type c5n.18x \
+                                             --source-ref master \
+                                             --work-dir . \
+                                             --remote https://github.com/dmlc/gluon-nlp \
+                                             --command "./tests/batch_scripts/test_data_pipeline.sh" --wait
