@@ -151,15 +151,13 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
         for token, idx in hf_vocab.items():
             assert self._vocab[token] == idx
         if self._model_info['model']['type'] == 'BPE':
-            
+            self._last_subtoken_id_set =\
+                frozenset([i for i, ele in enumerate(self._vocab.all_tokens)
+                           if ele.endswith('</w>')])
         elif self._model_info['model']['type'] == 'WordPiece':
-
-        elif self._model_info['model']['type'] == 'ByteLevel':
-
-        else:
-            raise NotImplementedError('The model type = "{}" has not been supported yet. Feel free '
-                                      'to try to add the support!'
-                                      .format(self._model_info['model']['type']))
+            self._first_subtoken_id_set =\
+                frozenset([i for i, ele in enumerate(self._vocab.all_tokens)
+                           if not ele.startswith('##')])
 
     def encode(self, sentences: SentencesType,
                output_type: type = str) -> Union[TokensType, TokenIDsType]:
@@ -173,20 +171,75 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
                                                               TokenOffsetsType]:
         return hf_encode_with_offsets(self._model, sentences, output_type)
 
-    def get_whole_word_boundary(self, tokens):
-        """Get the boundary of whole words
+    @property
+    def model_type(self):
+        return self._model_info['model']['type']
+
+    def is_last_subword(self, tokens):
+        """Whether the sub-token is the last sub-token in a split token list.
+
+        Only supports the case when the tokenizer is a HuggingFaceBPETokenizer
 
         Parameters
         ----------
         tokens
+            A single token or a list of tokens
 
         Returns
         -------
-        masks
-            A 0 - 1 boolean matrix that
-        mark_first_subword
+        ret
+            The results
         """
+        assert self.model_type == 'BPE',\
+            'Only supports BPE model. The model_type={}'.format(self.model_type)
+        if isinstance(tokens, str):
+            return tokens.endswith('</w>')
+        elif isinstance(tokens, int):
+            return tokens in self._last_subtoken_id_set
+        elif isinstance(tokens, list):
+            if len(tokens) == 0:
+                return []
+            if isinstance(tokens[0], str):
+                return [ele.endswith('</w>') for ele in tokens], False
+            elif isinstance(tokens[0], int):
+                return [ele in self._last_subtoken_id_set for ele in tokens], False
+            else:
+                raise NotImplementedError
+        else:
+            raise NotImplementedError
 
+    def is_first_subword(self, tokens):
+        """Whether the sub-token is the first sub-token in a token list.
+
+        Only supports the case when the tokenizer is a HuggingFaceWordPieceTokenizer
+
+        Parameters
+        ----------
+        tokens
+            A single token or a list of tokens
+
+        Returns
+        -------
+        ret
+            The results
+        """
+        assert self.model_type == 'WordPiece', \
+            'Only supports WordPiece model. The model_type={}'.format(self.model_type)
+        if isinstance(tokens, str):
+            return not tokens.startswith('##')
+        elif isinstance(tokens, int):
+            return tokens in self._first_subtoken_id_set
+        elif isinstance(tokens, list):
+            if len(tokens) == 0:
+                return []
+            if isinstance(tokens[0], str):
+                return [not ele.startswith('##') for ele in tokens]
+            elif isinstance(tokens[0], int):
+                return [ele in self._first_subtoken_id_set for ele in tokens]
+            else:
+                raise NotImplementedError
+        else:
+            raise NotImplementedError
 
     @property
     def vocab(self) -> Optional[Vocab]:
@@ -549,7 +602,6 @@ class HuggingFaceWordPieceTokenizer(LegacyHuggingFaceTokenizer):
                 return []
             if isinstance(tokens[0], str):
                 return [not ele.startswith(self._wordpieces_prefix)
-                        and (ele not in self._vocab.special_tokens)
                         for ele in tokens]
             elif isinstance(tokens[0], int):
                 return [ele in self._first_subword_id_set for ele in tokens]
