@@ -49,7 +49,8 @@ def main(args):
         task_dir_path = os.path.join(args.data_dir, task)
         os.makedirs(task_dir_path, exist_ok=True)
         file_url = TASK2PATH[task]
-        download_path = download(file_url, args.cache_path)
+        sha1_hash = _URL_FILE_STATS[file_url]
+        download_path = download(file_url, args.cache_path, sha1_hash=sha1_hash)
         with tarfile.open(download_path) as f:
             f.extractall(task_dir_path)
         if task == 'imdb':
