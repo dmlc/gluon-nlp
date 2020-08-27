@@ -61,7 +61,6 @@ def main(args):
                         os.path.join(task_dir_path, 'test.parquet'))
             train_data = pd.read_parquet(os.path.join(task_dir_path, 'train.parquet'))
             test_data = pd.read_parquet(os.path.join(task_dir_path, 'test.parquet'))
-            print('Task={}, #Train={}, #Test={}'.format(task, len(train_data), len(test_data)))
         elif task == 'ag':
             train_data = pd.read_csv(os.path.join(task_dir_path, 'ag_news_csv', 'train.csv'),
                                      header=None)
@@ -73,7 +72,6 @@ def main(args):
                                       'content': test_data[1] + ' ' + test_data[2]})
             train_data.to_parquet(os.path.join(task_dir_path, 'train.parquet'))
             test_data.to_parquet(os.path.join(task_dir_path, 'test.parquet'))
-            print('Task={}, #Train={}, #Test={}'.format(task, len(train_data), len(test_data)))
         elif task == 'dbpedia':
             train_data = pd.read_csv(os.path.join(task_dir_path, 'dbpedia_csv', 'train.csv'),
                                      header=None)
@@ -85,7 +83,6 @@ def main(args):
                                       'content': test_data[1] + ' ' + test_data[2]})
             train_data.to_parquet(os.path.join(task_dir_path, 'train.parquet'))
             test_data.to_parquet(os.path.join(task_dir_path, 'test.parquet'))
-            print('Task={}, #Train={}, #Test={}'.format(task, len(train_data), len(test_data)))
         elif task == 'yelp2':
             train_data = pd.read_csv(os.path.join(task_dir_path, 'yelp_review_polarity_csv',
                                                   'train.csv'), header=None)
@@ -134,6 +131,7 @@ def main(args):
             test_data.to_parquet(os.path.join(task_dir_path, 'test.parquet'))
         else:
             raise NotImplementedError
+        print('Task={}, #Train={}, #Test={}'.format(task, len(train_data), len(test_data)))
 
 
 def cli_main():
