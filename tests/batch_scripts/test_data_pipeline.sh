@@ -1,5 +1,6 @@
 python3 -m pip install --user -upgrade pip
 python3 -m pip install --user setuptools pytest pytest-cov contextvars
+python3 -m pip install --upgrade --force-reinstall langid --user
 python3 -m pip install --upgrade cython
 
 python3 -m pip install --pre --user "mxnet-cu102>=2.0.0b20200802" -f https://dist.mxnet.io/python
