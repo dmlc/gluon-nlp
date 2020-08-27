@@ -39,5 +39,15 @@ jobs:
       - name: Test project on AWS Batch
         run: |
           python ./tools/batch/submit-job.py --region us-east-1 --job-type g4dn.4x --source-ref ${{ github.ref }} --work-dir tools/batch --remote https://github.com/dmlc/gluon-nlp --command "/gluon-nlp/test.sh" --wait | tee > script.log
-          
+
+      - name: Upload log file for AWS Batch test results
+        uses: actions/upload-artifact@v2
+        with:
+          name: GPU_Test_Results
+          path: script.log
+
+      - name: Download log file for AWS Batch test results
+        uses: actions/download-artifact@v2
+        with:
+          name: GPU_Test_Results
 
