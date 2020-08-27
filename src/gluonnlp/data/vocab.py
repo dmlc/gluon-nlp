@@ -106,6 +106,9 @@ class Vocab:
     >>> vocab['hellohello']
     2
 
+    >>> vocab.to_tokens([0, 1])
+    ['hello', 'world']
+
     >>> # Case 2: Disabling the unknown token
     >>> vocab = nlp.data.Vocab(['hello', 'world'], unk_token=None)
     >>> vocab

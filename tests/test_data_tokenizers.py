@@ -151,12 +151,12 @@ def verify_decode_hf(tokenizer, all_sentences, gt_decode_sentences):
         assert tokenizer.decode(tokenizer.encode(sentences, int)) == case_gt_decode
         if isinstance(sentences, list):
             for sentence in sentences:
-                assert tokenizer.vocab.all_tokens[tokenizer.encode(sentence, int)]\
+                assert tokenizer.vocab.to_tokens(tokenizer.encode(sentence, int))\
                        == tokenizer.encode(sentence, str)
                 assert tokenizer.vocab[tokenizer.encode(sentence, str)]\
                        == tokenizer.encode(sentence, int)
         else:
-            assert tokenizer.vocab.all_tokens[tokenizer.encode(sentences, int)] \
+            assert tokenizer.vocab.to_tokens(tokenizer.encode(sentences, int)) \
                    == tokenizer.encode(sentences, str)
             assert tokenizer.vocab[tokenizer.encode(sentences, str)] \
                    == tokenizer.encode(sentences, int)
