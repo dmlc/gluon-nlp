@@ -1,8 +1,6 @@
 #!/bin/bash
 # Shell script for installing dependencies and running test on AWS Batch
 
-# alias python3='/usr/bin/python3'
-
 echo $PWD
 
 sudo apt-get install libopenblas-dev
