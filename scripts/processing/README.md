@@ -8,15 +8,15 @@ To clean and tokenize a parallel corpus, use
 nlp_process clean_tok_para_corpus --help
 ```
 
-## Learn Subword Model
+## Learn a subword model
 
 To learn a subword tokenizer, use
 ```
-nlp_process learn_subword 
+nlp_process learn_subword --help
 ```
 
 
-## Apply Subword Model
+## Apply the learned subword model
 To apply the learned subword tokenizer, user
 ```
 nlp_process apply_subword --help

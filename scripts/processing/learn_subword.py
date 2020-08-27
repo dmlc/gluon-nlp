@@ -99,6 +99,7 @@ def main(args):
         if not os.path.exists(corpus_path):
             raise ValueError('The path="{}" provided by --corpus does not exist!'
                              .format(corpus_path))
+    print('Learn the {} subword model based on {}.'.format(args.model, args.corpus))
     os.makedirs(args.save_dir, exist_ok=True)
     model_prefix = os.path.join(args.save_dir, args.model)
     special_tokens_kv = OrderedDict()
@@ -232,7 +233,7 @@ def main(args):
         if args.model == 'hf_bpe':
             tokenizer = tokenizers.CharBPETokenizer(
                 lowercase=args.lowercase,
-                split_on_whitespace_only=not args.no_handle_chinese_chars)
+                split_on_whitespace_only=args.no_handle_chinese_chars)
         elif args.model == 'hf_bytebpe':
             tokenizer = tokenizers.ByteLevelBPETokenizer(lowercase=args.lowercase)
         elif args.model == 'hf_wordpiece':
