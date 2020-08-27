@@ -33,4 +33,4 @@ jobs:
                                              --source-ref master \
                                              --work-dir . \
                                              --remote https://github.com/dmlc/gluon-nlp \
-                                             --command "./tests/batch_scripts/test_data_pipeline.sh" --wait
+                                             --command "bash tests/batch_scripts/test_data_pipeline.sh" --wait
