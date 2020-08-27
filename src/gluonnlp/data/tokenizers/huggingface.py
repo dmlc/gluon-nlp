@@ -151,7 +151,7 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
         for token, idx in hf_vocab.items():
             assert self._vocab[token] == idx
         if self._model_info['model']['type'] == 'BPE':
-
+            
         elif self._model_info['model']['type'] == 'WordPiece':
 
         elif self._model_info['model']['type'] == 'ByteLevel':
