@@ -508,7 +508,7 @@ class ElectraMasker(HybridBlock):
 
         # Get the masking probability of each position
         sample_probs = self._proposal_distribution * valid_candidates
-        sample_probs /= np.sum(sample_probs, axis=-1, keepdims=True)
+        sample_probs /= F.np.sum(sample_probs, axis=-1, keepdims=True)
         sample_probs = F.npx.stop_gradient(sample_probs)
         gumbels = F.np.random.gumbel(F.np.zeros_like(sample_probs))
         # Following the instruction of official repo to avoid deduplicate postions
