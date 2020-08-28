@@ -123,5 +123,5 @@ benchmarking. We select the classical datasets that are also used in
 To obtain the datasets, run:
 
 ```
-nlp_data prepare_glue -t all
+nlp_data prepare_text_classification -t all
 ```
