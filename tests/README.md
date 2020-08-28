@@ -3,13 +3,25 @@
 To run the unittests, use the following command
 
 ```bash
-python3 -m pytest .
+python3 -m pytest --device="cpu" .
 ```
 
 To test for certain file, e.g., the `test_models_transformer.py`, use the following command
 
 ```bash
-python3 -m pytest test_models_transformer
+python3 -m pytest --device="cpu" test_models_transformer.py
+```
+
+To test only for gpu device, use the following command
+
+```bash
+python3 -m pytest --device="gpu" test_models_transformer.py
+```
+
+To test both for cpu and gpu device, use the following command
+
+```bash
+python3 -m pytest --device="cpu" --device="gpu" test_models_transformer.py
 ```
 
 Refer to the [official guide of pytest](https://docs.pytest.org/en/latest/) for more details.

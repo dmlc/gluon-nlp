@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from datetime import datetime
 import io
 import os
 import re
@@ -25,6 +26,10 @@ def find_version(*file_paths):
 
 
 VERSION = find_version('src', 'gluonnlp', '__init__.py')
+
+if VERSION.endswith('dev'):
+    VERSION = VERSION + datetime.today().strftime('%Y%m%d')
+
 
 requirements = [
     'numpy',

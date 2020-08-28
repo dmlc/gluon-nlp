@@ -532,7 +532,7 @@ class ElectraMasker(HybridBlock):
             F.np.random.uniform(
                 F.np.zeros_like(masked_positions),
                 F.np.ones_like(masked_positions)) > self._mask_prob) * masked_positions
-        # dealling with multiple zero values in replaced_positions which causes
+        # dealing with multiple zero values in replaced_positions which causes
         # the [CLS] being replaced
         filled = F.np.where(
             replaced_positions,

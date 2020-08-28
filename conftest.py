@@ -212,4 +212,4 @@ def pytest_addoption(parser):
 
 def pytest_generate_tests(metafunc):
     if 'ctx' in metafunc.fixturenames:
-        metafunc.parametrize("ctx", metafunc.config.option.device)
+        metafunc.parametrize("ctx", [getattr(mx, device)() for device in metafunc.config.option.device])
