@@ -30,7 +30,7 @@ jobs:
         run: |
           python ./tools/batch/submit-job.py --region us-east-1 \
                                              --job-type c5n.4x \
-                                             --source-ref master \
+                                             --source-ref ${{ github.ref }} \
                                              --work-dir tests/batch_scripts \
-                                             --remote https://github.com/dmlc/gluon-nlp \
+                                             --remote ${{ github.repository }} \
                                              --command "bash test_data_pipeline.sh" --wait
