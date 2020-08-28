@@ -331,7 +331,7 @@ class WhitespaceTokenizer(BaseTokenizerWithVocab):
 
 @TOKENIZER_REGISTRY.register('spacy')
 class SpacyTokenizer(BaseTokenizerWithVocab):
-    r"""Apply the Spacy Tokenizer.
+    """Apply the Spacy Tokenizer.
 
     Users of this class are required to install `spaCy <https://spacy.io/usage/>`_
     and download corresponding NLP models, such as :samp:`python -m spacy download en`.

@@ -16,9 +16,9 @@ For RoBERTa XLM-R and BART model, we rely on the master version of [fairseq](htt
 
 ## Convert all models
 
-``bash
+```bash
 bash convert_all.sh
-``
+```
 
 ### BERT
 Convert model from [BERT LIST](https://tfhub.dev/google/collections/bert/1).

@@ -5,7 +5,7 @@ Model Zoo
 
    .. card::
       :title: Machine Translation
-      :link: model_zoo/machine_translation/index.html
+      :link: https://github.com/dmlc/gluon-nlp/tree/master/scripts/machine_translation
 
       From "Hello" to "Bonjour".
 

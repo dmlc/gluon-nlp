@@ -290,8 +290,8 @@ def norm_vecs_by_row(x):
     return x / np.sqrt(np.sum(x * x, axis=1) + 1E-10).reshape((-1,1))
 
 def topk(res, k):
-    part = np.argpartition(res, k)
-    return part[np.argsort(res[part])].tolist()
+    part = np.argpartition(res, -k)[-k:]
+    return part[np.argsort(res[part])].tolist()[::-1]
 
 def get_knn(vocab, matrix, k, word):
     word_vec = matrix[vocab[word]].reshape((-1, 1))
