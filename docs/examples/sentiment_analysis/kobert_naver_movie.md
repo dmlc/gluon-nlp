@@ -350,7 +350,3 @@ Minutes.](https://arxiv.org/abs/1807.11205)” arXiv preprint arXiv:1807.11205
 [2] Goyal et.al., “[Accurate, Large Minibatch SGD: Training ImageNet in 1
 Hour.](https://arxiv.org/abs/1706.02677)” arXiv preprint arXiv:1706.02677
 (2018).
-
-```{.python .input}
-
-```
