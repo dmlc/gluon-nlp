@@ -41,7 +41,7 @@ requirements = [
     'regex',
     'contextvars',
     'pyarrow',
-    'sentencepiece',
+    'sentencepiece==0.1.91',
     'protobuf',
     'pandas',
     'tokenizers==0.8.1',
