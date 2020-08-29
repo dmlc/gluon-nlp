@@ -139,6 +139,7 @@ def main():
     running = False
     status_set = set()
     startTime = 0
+    logStreamName = None
     while wait:
         time.sleep(random.randint(5, 10))
         describeJobsResponse = batch.describe_jobs(jobs=[jobId])
@@ -146,7 +147,8 @@ def main():
         if status == 'SUCCEEDED' or status == 'FAILED':
             print('=' * 80)
             print('Job [{} - {}] {}'.format(jobName, jobId, status))
-
+            if logStreamName:
+                startTime = printLogs(logGroupName, logStreamName, startTime) + 1
             sys.exit(status == 'FAILED')
 
         elif status == 'RUNNING':
