@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libxft-dev &&\
   rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --upgrade pip && pip3 install awscli && pip3 install --pre 'mxnet-cu102' -f https://dist.mxnet.io/python
-RUN git clone https://github.com/dmlc/gluon-nlp
-WORKDIR gluon-nlp
+RUN pip3 install --upgrade pip && pip3 install awscli
+mkdir workspace
+WORKDIR workspace
 ADD gluon_nlp_job.sh .
