@@ -26,6 +26,6 @@ RUN pip3 install  --no-cache --upgrade \
     wheel \
     cmake \
     awscli
-mkdir workspace
+RUN mkdir workspace
 WORKDIR workspace
 ADD gluon_nlp_job.sh .
