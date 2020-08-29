@@ -21,7 +21,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libxft-dev &&\
   rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install --upgrade pip && pip3 install awscli
+RUN pip3 install --upgrade pip
+RUN pip3 install  --no-cache --upgrade \
+    wheel \
+    cmake \
+    awscli
 mkdir workspace
 WORKDIR workspace
 ADD gluon_nlp_job.sh .
