@@ -27,6 +27,9 @@ jobs:
       - name: Install Other Dependencies
         run: |
           python -m pip install --user --quiet --upgrade pip
+          python3 -m pip install setuptools pytest pytest-cov contextvars
+          python3 -m pip install --upgrade cython
+          python3 -m pip install --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
           python -m pip install --user --quiet -e .[extras]
           pip install sphinx>=1.5.5 sphinx-gallery sphinx_rtd_theme matplotlib Image recommonmark
 
