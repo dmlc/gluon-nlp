@@ -16,7 +16,8 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install Linux dependencies
-        run: sudo apt-get install libopenblas-dev
+        run: |
+          sudo apt-get install libopenblas-dev texlive texlive-latex-extra pandoc
 
       - name: Setup python
         uses: actions/setup-python@v2
