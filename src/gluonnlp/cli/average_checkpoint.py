@@ -39,7 +39,8 @@ def main(args):
         num = int(m.group(2))
         if num >= args.begin and num <= args.end:
             ckpt_paths.append(path)
-    
+    print('Load models from {}'.format(ckpt_paths))
+    print('Average the models and save it to {}'.format(args.save_path))
     assert len(ckpt_paths) > 0
     res = mx.npx.load(ckpt_paths[0])
     keys = res.keys()

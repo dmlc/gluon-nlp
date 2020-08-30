@@ -14,20 +14,20 @@ Then, you can run the experiment.
 For "transformer_base" configuration
 
 ```bash
-SUBWORD_MODEL=yttm
+SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
 datapath=../datasets/machine_translation
 python3 train_transformer.py \
-    --train_src_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_MODEL}.${SRC} \
-    --train_tgt_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_MODEL}.${TGT} \
-    --dev_src_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_MODEL}.${SRC} \
-    --dev_tgt_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_MODEL}.${TGT} \
-    --src_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_MODEL}.model \
-    --src_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-    --tgt_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_MODEL}.model \
-    --tgt_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-    --save_dir transformer_base_wmt2014_en_de_${SUBWORD_MODEL} \
+    --train_src_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
+    --train_tgt_corpus ${datapath}/wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
+    --dev_src_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
+    --dev_tgt_corpus ${datapath}/wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${TGT} \
+    --src_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --src_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --tgt_subword_model_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --tgt_vocab_path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --save_dir transformer_base_wmt2014_en_de_${SUBWORD_ALGO} \
     --cfg transformer_base \
     --lr 0.002 \
     --sampler BoundedBudgetSampler \
@@ -78,16 +78,16 @@ Use the following command to inference/evaluate the Transformer model:
 
 ```bash
 python3 evaluate_transformer.py \
-    --param_path transformer_base_wmt2014_en_de_${SUBWORD_MODEL}/epoch_avg_30_39.params \
+    --param_path transformer_base_wmt2014_en_de_${SUBWORD_ALGO}/epoch_avg_30_39.params \
     --src_lang en \
     --tgt_lang de \
-    --cfg transformer_base_wmt2014_en_de_${SUBWORD_MODEL}/config.yml \
-    --src_tokenizer ${SUBWORD_MODEL} \
-    --tgt_tokenizer ${SUBWORD_MODEL} \
-    --src_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
-    --tgt_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
-    --src_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-    --tgt_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
+    --cfg transformer_base_wmt2014_en_de_${SUBWORD_ALGO}/config.yml \
+    --src_tokenizer ${SUBWORD_ALGO} \
+    --tgt_tokenizer ${SUBWORD_ALGO} \
+    --src_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --tgt_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --src_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --tgt_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --src_corpus ../datasets/machine_translation/wmt2014_ende/test.raw.en \
     --tgt_corpus ../datasets/machine_translation/wmt2014_ende/test.raw.de
 ```
@@ -97,7 +97,7 @@ python3 evaluate_transformer.py \
 For "transformer_wmt_en_de_big" configuration
 
 ```bash
-SUBWORD_MODEL=yttm
+SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
 datapath=../datasets/machine_translation
@@ -136,16 +136,16 @@ Use the following command to inference/evaluate the Transformer model:
 
 ```bash
 python3 evaluate_transformer.py \
-    --param_path transformer_big_wmt2014_en_de_${SUBWORD_MODEL}/average_21_30.params \
+    --param_path transformer_big_wmt2014_en_de_${SUBWORD_ALGO}/average_21_30.params \
     --src_lang en \
     --tgt_lang de \
-    --cfg transformer_big_wmt2014_en_de_${SUBWORD_MODEL}/config.yml \
-    --src_tokenizer ${SUBWORD_MODEL} \
-    --tgt_tokenizer ${SUBWORD_MODEL} \
-    --src_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
-    --tgt_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.model \
-    --src_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
-    --tgt_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_MODEL}.vocab \
+    --cfg transformer_big_wmt2014_en_de_${SUBWORD_ALGO}/config.yml \
+    --src_tokenizer ${SUBWORD_ALGO} \
+    --tgt_tokenizer ${SUBWORD_ALGO} \
+    --src_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --tgt_subword_model_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_ALGO}.model \
+    --src_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --tgt_vocab_path ../datasets/machine_translation/wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --src_corpus ../datasets/machine_translation/wmt2014_ende/test.raw.en \
     --tgt_corpus ../datasets/machine_translation/wmt2014_ende/test.raw.de
 ```
