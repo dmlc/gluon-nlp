@@ -30,7 +30,7 @@ jobs:
           python -m pip install --upgrade cython
           python -m pip install --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
           python -m pip install --user --quiet -e .[extras]
-          pip install sphinx>=1.5.5 sphinx-gallery sphinx_rtd_theme sphinx-autodoc-typehints matplotlib Image recommonmark
+          python -m pip install --user sphinx>=1.5.5 sphinx-gallery sphinx_rtd_theme sphinx-autodoc-typehints matplotlib Image recommonmark
 
       - name: Build Website local(Without displaying python output)
         run: |
