@@ -149,7 +149,8 @@ __main__.MyModelWithNickName
         try:
             return obj(*args, **kwargs)
         except Exception as exp:
-            print('Cannot create "{}" with the arguments!'.format(name))
+            print('Registry creation error! Cannot create "{}" --> {} with the provided arguments!'
+                  .format(name, obj))
             raise exp
 
     def create_with_json(self, name: str, json_str: str):
