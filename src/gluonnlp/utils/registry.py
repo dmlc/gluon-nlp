@@ -149,7 +149,7 @@ __main__.MyModelWithNickName
         try:
             return obj(*args, **kwargs)
         except Exception as exp:
-            print('Cannot create "{}" --> {} with the provided arguments!'
+            print('Cannot create name="{}" --> {} with the provided arguments!'
                   .format(name, obj))
             raise exp
 
