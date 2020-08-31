@@ -52,7 +52,7 @@ class YTTMTokenizer(BaseTokenizerWithVocab):
                              self._vocab.bos_token,
                              self._vocab.eos_token]:
                 assert token in ocab_nonspecial_tokens_set
-        for idx, token in all_tokens:
+        for idx, token in enumerate(all_tokens):
             assert self._vocab[token] == idx
         self._first_subword_id_set = frozenset([self._vocab[ele]
                                                 for ele in self._vocab.all_tokens
