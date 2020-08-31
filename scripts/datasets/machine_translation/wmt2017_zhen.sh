@@ -57,7 +57,6 @@ nlp_process clean_tok_para_corpus --src-lang ${SRC} \
 nlp_process learn_subword --corpus train.tok.${SRC} \
                              --model ${SUBWORD_ALGO} \
                              --save-dir ./${SRC}_model \
-                             --no-handle-chinese-chars \
                              --vocab-size 44000
 nlp_process learn_subword --corpus train.tok.${TGT} \
                              --model ${SUBWORD_ALGO} \
