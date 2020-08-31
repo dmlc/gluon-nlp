@@ -9,7 +9,7 @@ from ...utils.lazy_imports import try_import_yttm
 
 @TOKENIZER_REGISTRY.register('yttm')
 class YTTMTokenizer(BaseTokenizerWithVocab):
-    def __init__(self, model_path: str, vocab_path: str = None,
+    def __init__(self, model_path: str, vocab: Optional[Union[str, Vocab]] = None,
                  bpe_dropout: float = 0.0, n_threads: int = -1):
         """
 
@@ -32,8 +32,8 @@ class YTTMTokenizer(BaseTokenizerWithVocab):
         self._bpe_dropout = bpe_dropout
         self._out_type = yttm.OutputType
         all_tokens = self._bpe.vocab()
-        if vocab_path is not None:
-            self._vocab = load_vocab(vocab_path)
+        if vocab is not None:
+            self._vocab = load_vocab(vocab)
         else:
             self._vocab = Vocab(all_tokens,
                                 unk_token='<UNK>', pad_token='<PAD>',
@@ -43,8 +43,8 @@ class YTTMTokenizer(BaseTokenizerWithVocab):
         assert self._vocab.unk_token == '<UNK>' and \
                self._vocab.pad_token == '<PAD>' and \
                self._vocab.bos_token == '<BOS>' and \
-               self._vocab.eos_token == '<EOS>', 'Incompatible vocabulary! Received vocab_path={},' \
-                                                 ' vocab={}'.format(vocab_path, self._vocab)
+               self._vocab.eos_token == '<EOS>', 'Incompatible vocabulary! Received ' \
+                                                 'vocab={}'.format(self._vocab)
         ocab_nonspecial_tokens_set = frozenset(self._vocab.non_special_tokens)
         for token in all_tokens:
             if token not in [self._vocab.unk_token,
