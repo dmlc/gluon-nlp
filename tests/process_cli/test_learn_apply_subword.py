@@ -1,5 +1,4 @@
 import os
-import tempfile
 from gluonnlp.cli.process import learn_subword, apply_subword
 from gluonnlp.data import tokenizers
 
@@ -29,6 +28,15 @@ def verify_subword_algorithms_ende(dir_path):
                                   '--save-dir', dir_path])
         # Train the tokenizer
         learn_subword.main(args)
+        if model in ['yttm', 'spm', 'subword_nmt']:
+            model_key = model
+        else:
+            model_key = 'hf_tokenizer'
+        tokenizer = tokenizers.create(model_key,
+                                      model_path=os.path.join(dir_path,
+                                                              '{}.model'.format(model)),
+                                      vocab=os.path.join(dir_path,
+                                                         '{}.vocab'.format(model)))
         args = apply_parser.parse_args(['--corpus'] + [corpus_path_pair[0]] +
                                        ['--model', model,
                                         '--model-path', os.path.join(dir_path,
@@ -49,6 +57,14 @@ def verify_subword_algorithms_ende(dir_path):
                                         os.path.join(dir_path,
                                                      'wmt19-test-de-en.en.{}'.format(model))])
         apply_subword.main(args)
+
+        # Decode back with the trained tokenizer
+        for prefix_fname in ['wmt19-test-de-en.de.{}'.format(model),
+                             'wmt19-test-de-en.de.{}'.format(model)]:
+            with open('{}.decode'.format(prefix_fname), 'w', encoding='utf-8') as out_f:
+                with open('{}'.format(prefix_fname), 'r') as in_f:
+                    for line in in_f:
+                        out_f.write(tokenizer.decode(line.split()) + '\n')
 
 
 if __name__ == '__main__':
