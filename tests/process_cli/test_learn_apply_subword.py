@@ -29,11 +29,17 @@ def verify_subword_algorithms_ende(dir_path):
                                   '--save-dir', dir_path])
         # Train the tokenizer
         learn_subword.main(args)
-        args = apply_parser.parse_args(['--corpus'] + corpus_path_pair[0] +
+        args = apply_parser.parse_args(['--corpus'] + [corpus_path_pair[0]] +
                                        ['--model', model,
                                         '--save-path',
                                         os.path.join(dir_path,
                                                      'wmt19-test-de-en.de.{}'.format(model))])
+        apply_subword.main(args)
+        args = apply_parser.parse_args(['--corpus'] + [corpus_path_pair[1]] +
+                                       ['--model', model,
+                                        '--save-path',
+                                        os.path.join(dir_path,
+                                                     'wmt19-test-de-en.en.{}'.format(model))])
         apply_subword.main(args)
 
 
