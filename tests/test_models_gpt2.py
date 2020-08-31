@@ -89,7 +89,7 @@ def test_gpt2_incremental_states():
     gpt2_model.initialize(ctx=ctx)
     gpt2_model.hybridize()
 
-    _, one_time_states = gpt2_model(
+    one_time_hiddens, one_time_states = gpt2_model(
         inputs,
         gpt2_model.init_states(batch_size, ctx),
         mx.np.array(0, dtype=np.int32, ctx=ctx)
@@ -97,18 +97,21 @@ def test_gpt2_incremental_states():
     
     states = gpt2_model.init_states(batch_size, ctx)
     for i in range(sequence_length):
-        _, states = gpt2_model(
+        hiddens, states = gpt2_model(
             inputs[:, i:i+1],
             states,
             mx.np.array(i, dtype=np.int32, ctx=ctx)
         )
     incremental_states = states
+    incremental_hiddens = hiddens
     assert_allclose(incremental_states.asnumpy(),
                     states.asnumpy(), 1E-4, 1E-4)
+    assert_allclose(incremental_hiddens.asnumpy(),
+                    hiddens.asnumpy(), 1E-4, 1E-4)
 
 
 #@pytest.mark.remote_required
-#@pytest.mark.parametrize('model_name', list_pretrained_gpt2())
+@pytest.mark.parametrize('model_name', list_pretrained_gpt2())
 def test_gpt2(model_name):
     # test from pretrained
     assert len(list_pretrained_gpt2()) > 0
