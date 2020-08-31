@@ -149,8 +149,10 @@ __main__.MyModelWithNickName
         try:
             return obj(*args, **kwargs)
         except Exception as exp:
-            print('Cannot create name="{}" --> {} with the provided arguments!'
-                  .format(name, obj))
+            print('Cannot create name="{}" --> {} with the provided arguments!\n'
+                  '   args={},\n'
+                  '   kwargs={},\n'
+                  .format(name, obj, args, kwargs))
             raise exp
 
     def create_with_json(self, name: str, json_str: str):
