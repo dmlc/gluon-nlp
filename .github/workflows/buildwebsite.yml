@@ -32,7 +32,8 @@ jobs:
           python -m pip install --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
           python -m pip install --quiet -e .[extras]
           python -m pip install setuptools ipython sphinx>=1.5.5 sphinx-gallery nbsphinx notedown sphinx_rtd_theme mxtheme sphinx-autodoc-typehints matplotlib Image recommonmark
+          python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
 
-      - name: Build Website local(Without displaying python output)
+      - name: Build Website local
         run: |
-          make docs_local MD2IPYNB_OPTION=-d
+          make docs_local
