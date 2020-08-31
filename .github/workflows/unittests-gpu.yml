@@ -49,7 +49,7 @@ jobs:
       - name: Test project on AWS Batch(For pull request)
         if: startsWith(steps.extract_branch.outputs.branch, 'PR-') == true
         run: |
-          python ./tools/batch/submit-job.py --region us-east-1 --job-type g4dn.4x --source-ref refs/pull/${github.event.number}/head --work-dir tools/batch --remote https://github.com/dmlc/gluon-nlp --command "/gluon-nlp/test.sh" --wait | tee > script.log
+          python ./tools/batch/submit-job.py --region us-east-1 --job-type g4dn.4x --source-ref refs/pull/${{ github.event.pull_request.number }}/head --work-dir tools/batch --remote https://github.com/dmlc/gluon-nlp --command "/gluon-nlp/test.sh" --wait | tee > script.log
 
       - name: Upload log file for AWS Batch test results
         uses: actions/upload-artifact@v2
