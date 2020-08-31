@@ -247,7 +247,7 @@ class BaseTokenizerWithVocab(BaseTokenizer):
 
 
 def create(name: str, *args, **kwargs) -> BaseTokenizer:
-    """Create a tokenizer via name and
+    """Create a tokenizer via name and additional arguments
 
     Parameters
     ----------
@@ -271,7 +271,7 @@ def create(name: str, *args, **kwargs) -> BaseTokenizer:
 
 
 def create_with_json(name: str, json_str: str) -> BaseTokenizer:
-    """Create tokenizer with a json string as the argument
+    """Create tokenizer with name and a json string as the argument
 
     Parameters
     ----------

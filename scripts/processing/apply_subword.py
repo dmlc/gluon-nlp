@@ -15,12 +15,12 @@ def get_parser():
 
     We support the following models:
 
-        "python3 apply_subword.py --model spm" : Encode with Sentencepiece Model;
-        "python3 apply_subword.py --model subword_nmt" : Encode with the subword-nmt package;
-        "python3 apply_subword.py --model yttm" : Encode with YouTokenToMe; 
-        "python3 apply_subword.py --model hf_bytebpe" : Encode with the Byte-level BPE Tokenizer Implemented by Huggingface.
-        "python3 apply_subword.py --model hf_wordpiece" : Encode with the Wordpiece Tokenizer Implementated by Huggingface.
-        "python3 apply_subword.py --model hf_bpe" : Encode with the BPE Tokenizer Implemented by Huggingface.
+        "nlp_process apply_subword --model spm" : Encode with Sentencepiece Model;
+        "nlp_process apply_subword --model subword_nmt" : Encode with the subword-nmt package;
+        "nlp_process apply_subword --model yttm" : Encode with YouTokenToMe; 
+        "nlp_process apply_subword --model hf_bytebpe" : Encode with the Byte-level BPE Tokenizer Implemented by Huggingface.
+        "nlp_process apply_subword --model hf_wordpiece" : Encode with the WordPiece Tokenizer Implementated by Huggingface.
+        "nlp_process apply_subword --model hf_bpe" : Encode with the BPE Tokenizer Implemented by Huggingface.
     ''')
     )
     parser.add_argument('--corpus', type=str, nargs='+', required=True,
@@ -115,20 +115,21 @@ def main(args):
                                             vocab=args.vocab_path)
     elif args.model == 'subword_nmt':
         tokenizer_model = tokenizers.create('subword_nmt',
-                                            codec_path=args.model_path,
-                                            vocab_path=args.vocab_path,
+                                            model_path=args.model_path,
+                                            vocab=args.vocab_path,
                                             bpe_dropout=args.bpe_dropout)
     elif args.model == 'yttm':
         args.bpe_dropout = 0.0 if not args.bpe_dropout else args.bpe_dropout
         tokenizer_model = tokenizers.create('yttm',
                                             model_path=args.model_path,
+                                            vocab=args.vocab_path,
                                             bpe_dropout=args.bpe_dropout,
                                             n_threads=1)
     elif args.model == 'hf_bytebpe' or 'hf_bpe' or 'hf_wordpiece':
         if is_new_version_model_file(args.model_path):
             tokenizer_model = tokenizers.create('hf_tokenizer',
-                                                model_file=args.model_path,
-                                                vocab_file=args.vocab_path)
+                                                model_path=args.model_path,
+                                                vocab=args.vocab_path)
         else:
             if args.model == 'hf_bytebpe':
                 tokenizer_model = tokenizers.create('hf_bytebpe',

@@ -3,18 +3,23 @@ __all__ = ['YTTMTokenizer']
 from typing import Optional, Tuple, Union, List
 import os
 from .base import *
-from ..vocab import Vocab
+from ..vocab import Vocab, load_vocab
 from ...utils.lazy_imports import try_import_yttm
 
 
 @TOKENIZER_REGISTRY.register('yttm')
 class YTTMTokenizer(BaseTokenizerWithVocab):
-    def __init__(self, model_path: str, bpe_dropout: float = 0.0, n_threads: int = -1):
+    def __init__(self, model_path: str, vocab_path: str = None,
+                 bpe_dropout: float = 0.0, n_threads: int = -1):
         """
 
         Parameters
         ----------
         model_path
+            Path of the YTTM model file
+        vocab_path
+            Path of the vocabulary. It must be compatible to the YTTM model file.
+            You are able to add new special tokens, but it must be compatible to the YTTM file.
         bpe_dropout
             The dropout probability in BPE-Dropout:
                 "BPE-Dropout: Simple and Effective Subword Regularization"
@@ -27,12 +32,28 @@ class YTTMTokenizer(BaseTokenizerWithVocab):
         self._bpe_dropout = bpe_dropout
         self._out_type = yttm.OutputType
         all_tokens = self._bpe.vocab()
-        self._vocab = Vocab(all_tokens,
-                            unk_token='<UNK>', pad_token='<PAD>',
-                            bos_token='<BOS>', eos_token='<EOS>')
+        if vocab_path is not None:
+            self._vocab = load_vocab(vocab_path)
+        else:
+            self._vocab = Vocab(all_tokens,
+                                unk_token='<UNK>', pad_token='<PAD>',
+                                bos_token='<BOS>', eos_token='<EOS>')
         self._meta_symbol = u'▁'  # U+2581 as the symbol for the first subword token
-        if len(self._vocab) != len(all_tokens):
-            raise ValueError('Cannot load the trained YTTM model file!')
+        # Assertions to verify that the vocabulary is compatible to the YTTM Model file.
+        assert self._vocab.unk_token == '<UNK>' and \
+               self._vocab.pad_token == '<PAD>' and \
+               self._vocab.bos_token == '<BOS>' and \
+               self._vocab.eos_token == '<EOS>', 'Incompatible vocabulary! Received vocab_path={},' \
+                                                 ' vocab={}'.format(vocab_path, self._vocab)
+        ocab_nonspecial_tokens_set = frozenset(self._vocab.non_special_tokens)
+        for token in all_tokens:
+            if token not in [self._vocab.unk_token,
+                             self._vocab.pad_token,
+                             self._vocab.bos_token,
+                             self._vocab.eos_token]:
+                assert token in ocab_nonspecial_tokens_set
+        for idx, token in all_tokens:
+            assert self._vocab[token] == idx
         self._first_subword_id_set = frozenset([self._vocab[ele]
                                                 for ele in self._vocab.all_tokens
                                                 if ele.startswith(self._meta_symbol)])

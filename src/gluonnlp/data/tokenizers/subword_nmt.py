@@ -13,35 +13,45 @@ from ...utils.lazy_imports import try_import_subword_nmt
 
 @TOKENIZER_REGISTRY.register('subword_nmt')
 class SubwordNMTTokenizer(BaseTokenizerWithVocab):
-    def __init__(self, codec_path, vocab_path: Optional[Union[str, Vocab]] = None,
+    def __init__(self, model_path, vocab: Union[str, Vocab],
                  separator: str = '@@', bpe_dropout: float = 0.0,
                  suffix: str = '</w>'):
         """
 
         Parameters
         ----------
-        codec_path
-        vocab_path
+        model_path
+        vocab
         separator
         bpe_dropout
         suffix
         """
         try_import_subword_nmt()
         from subword_nmt.apply_bpe import BPE
-        self._codec_path = codec_path
-        self._vocab = load_vocab(vocab_path)
+        self._model_path = model_path
+        self._vocab = load_vocab(vocab)
         self._separator = separator
         self._bpe_dropout = bpe_dropout
         self._suffix = suffix
-        with open(self._codec_path, 'r', encoding='utf-8') as merge_codes:
+        with open(self._model_path, 'r', encoding='utf-8') as merge_codes:
             self._bpe = BPE(codes=merge_codes, separator=self._separator)
         self._last_subword_id_set = frozenset([self._vocab[ele]
                                                for ele in self._vocab.all_tokens
                                                if not ele.endswith(self._separator)])
 
     def transform_sentence(self, sentence):
-        # replace the separator in encoded result with suffix
-        # a@@, b@@, c ->  a, b, c</w>
+        """replace the separator in encoded result with suffix
+
+        a@@, b@@, c ->  a, b, c</w>
+
+        Parameters
+        ----------
+        sentence
+
+        Returns
+        -------
+        new_sentence
+        """
         return [word[:-2] if len(word) > 2 and word[-2:] == self._separator else word + self._suffix
                 for word in sentence]
 
@@ -156,12 +166,12 @@ class SubwordNMTTokenizer(BaseTokenizerWithVocab):
 
     def __repr__(self):
         ret = '{}(\n' \
-              '   codec_path = {}\n' \
+              '   model_path = {}\n' \
               '   separator = {}\n' \
               '   bpe_dropout = {}\n' \
               '   vocab = {}\n' \
               ')'.format(self.__class__.__name__,
-                         os.path.realpath(self._codec_path),
+                         os.path.realpath(self._model_path),
                          self._separator,
                          self._bpe_dropout,
                          self._vocab)
@@ -175,5 +185,5 @@ class SubwordNMTTokenizer(BaseTokenizerWithVocab):
     def __setstate__(self, state):
         self.__dict__ = state
         from subword_nmt.apply_bpe import BPE
-        with open(self._codec_path, 'r', encoding='utf-8') as merge_codes:
+        with open(self._model_path, 'r', encoding='utf-8') as merge_codes:
             self._bpe = BPE(codes=merge_codes, separator=self._separator)

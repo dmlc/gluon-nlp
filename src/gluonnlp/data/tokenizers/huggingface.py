@@ -106,22 +106,21 @@ def hf_decode(model, tokens):
 
 @TOKENIZER_REGISTRY.register('hf_tokenizer')
 class HuggingFaceTokenizer(BaseTokenizerWithVocab):
-    def __init__(self, model_file: Optional[str] = None,
-                 vocab_file: Optional[str] = None):
+    def __init__(self, model_path: Optional[str] = None,
+                 vocab: Optional[str] = None):
         tokenizers = try_import_huggingface_tokenizers()
         assert parse_version(tokenizers.__version__) >= parse_version('0.8'), \
             'Only support tokenizers>=0.8. You can upgrade tokenizers via ' \
             '`python3 -m pip install --upgrade tokenizers`.'
-        self._model_file = model_file
-        self._vocab_file = vocab_file
-        self._model = tokenizers.Tokenizer.from_file(model_file)
+        self._model_path = model_path
+        self._model = tokenizers.Tokenizer.from_file(model_path)
         hf_vocab = self._model.get_vocab()
-        with open(model_file, 'r', encoding='utf-8') as f:
+        with open(model_path, 'r', encoding='utf-8') as f:
             model_info = json.load(f)
             self._model_info = model_info
         added_tokens = model_info['added_tokens']
-        if vocab_file is not None:
-            self._vocab = load_vocab(vocab_file)
+        if vocab is not None:
+            self._vocab = load_vocab(vocab)
         else:
             sorted_hf_vocab_kv = sorted(list(hf_vocab.items()), key=lambda x: x[1])
             for i, ele in enumerate(sorted_hf_vocab_kv):
@@ -256,8 +255,7 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
     def __repr__(self):
         ret = '{}(\n' \
               '   type = {}\n' \
-              '   model_file = {}\n' \
-              '   vocab_file = {}\n' \
+              '   model_path = {}\n' \
               '   normalizer = {}\n' \
               '   vocab = {}\n' \
               ')'.format(self.__class__.__name__,

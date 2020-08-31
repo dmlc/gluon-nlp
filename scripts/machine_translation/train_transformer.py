@@ -123,7 +123,8 @@ def parse_args():
                              'You may select a yml file or use the prebuild configurations.')
     parser.add_argument('--label_smooth_alpha', type=float, default=0.1,
                         help='Weight of label smoothing')
-    parser.add_argument('--sampler', type=str, choices=['BoundedBudgetSampler', 'FixedBucketSampler'],
+    parser.add_argument('--sampler', type=str, choices=['BoundedBudgetSampler',
+                                                        'FixedBucketSampler'],
                         default='FixedBucketSampler', help='Type of sampler')
     parser.add_argument('--batch_size', type=int, default=2700,
                         help='Batch size. Number of tokens per gpu in a minibatch.')
@@ -278,12 +279,12 @@ def create_tokenizer(tokenizer_type, model_path, vocab_path):
     elif tokenizer_type == 'spm':
         return tokenizers.create(tokenizer_type, model_path=model_path, vocab=vocab_path)
     elif tokenizer_type == 'subword_nmt':
-        return tokenizers.create(tokenizer_type, codec_path=model_path, vocab_path=vocab_path)
+        return tokenizers.create(tokenizer_type, model_path=model_path, vocab=vocab_path)
     elif tokenizer_type == 'yttm':
         return tokenizers.create(tokenizer_type, model_path=model_path)
     elif tokenizer_type in ['hf_bytebpe', 'hf_wordpiece', 'hf_bpe']:
         if huggingface.is_new_version_model_file(model_path):
-            return tokenizers.create('hf_tokenizer', model_file=model_path, vocab_file=vocab_path)
+            return tokenizers.create('hf_tokenizer', model_path=model_path, vocab=vocab_path)
         elif tokenizer_type == 'hf_bytebpe':
             return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
         elif tokenizer_type == 'hf_wordpiece':
