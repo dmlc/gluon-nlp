@@ -175,6 +175,11 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
     def model_type(self):
         return self._model_info['model']['type']
 
+    @property
+    def model_info(self):
+        """Get the model info."""
+        return self._model_info
+
     def is_last_subword(self, tokens):
         """Whether the sub-token is the last sub-token in a split token list.
 

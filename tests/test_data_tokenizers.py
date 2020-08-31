@@ -34,7 +34,8 @@ ZH_SAMPLES = ['苟活者在淡红的血色中，会依稀看见微茫的希望�
 
 SUBWORD_TEST_SAMPLES = ["Hello, y'all! How are you Ⅷ 😁 😁 😁 ?",
                         'GluonNLP is great！！！!!!',
-                        "GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# 'abc'"]
+                        "GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# 'abc'",
+                        "1.0+1.0=2.0"]
 
 
 def random_inject_space(sentence):

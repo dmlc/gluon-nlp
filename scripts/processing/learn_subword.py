@@ -67,14 +67,18 @@ def get_parser():
     parser.add_argument('--lowercase', action='store_true', default=False,
                         help='Use lowercase, '
                         'only applicable to hf_bpe, hf_bytebpe and hf_wordpiece')
-    parser.add_argument('--no-strip-accents', action='store_true', default=False,
-                        help='Whether to disable the BERT characters normalization, '
-                             'only applicable to hf_wordpiece')
-    parser.add_argument('--no-handle-chinese-chars', action='store_true', default=False,
-                        help='Whether to disable the handling of Chinese characters. '
-                             'Basically, Chinese (). For more details, you can refer to '
+    parser.add_argument('--bert-normalizer', action='store_true', default=False,
+                        help='Whether to use the Normalizer in BERT. '
+                             'This will be used only when you choose the huggingface models. '
+                             'Basically, the BERT Normalizer will '
+                             '1) remove control characters. '
+                             '2) putting spaces around chinese characters. '
+                             '3) strip accents. '
+                             'For more details, you can refer to '
                              'https://github.com/google-research/bert/'
                              'blob/master/multilingual.md#tokenization')
+    parser.add_argument('--split-punctuation', action='store_true', default=False,
+                        help='Whether to split on punctuation.')
     parser.add_argument('--disable-unk', action='store_true', default=False,
                         help='Whether to disable unk token (default settings enable unk)')
     parser.add_argument('--disable-bos', action='store_true', default=False,
@@ -231,9 +235,11 @@ def main(args):
     elif args.model in ['hf_bpe', 'hf_bytebpe', 'hf_wordpiece']:
         tokenizers = try_import_huggingface_tokenizers()
         if args.model == 'hf_bpe':
+            split_on_whitespace_only = not args.split_punctuation
             tokenizer = tokenizers.CharBPETokenizer(
                 lowercase=args.lowercase,
-                split_on_whitespace_only=args.no_handle_chinese_chars)
+                bert_normalizer=args.bert_normalizer,
+                split_on_whitespace_only=split_on_whitespace_only)
         elif args.model == 'hf_bytebpe':
             tokenizer = tokenizers.ByteLevelBPETokenizer(lowercase=args.lowercase)
         elif args.model == 'hf_wordpiece':
@@ -242,6 +248,14 @@ def main(args):
             cls_token = special_tokens_kv.get('cls_token', None)
             pad_token = special_tokens_kv.get('pad_token', None)
             mask_token = special_tokens_kv.get('mask_token', None)
+            if args.bert_normalizer:
+                strip_accents = None
+                clean_text = True
+                handle_chinese_chars = True
+            else:
+                strip_accents = False
+                clean_text = False
+                handle_chinese_chars = False
             tokenizer = tokenizers.BertWordPieceTokenizer(
                 unk_token=unk_token,
                 sep_token=sep_token,
@@ -249,8 +263,9 @@ def main(args):
                 pad_token=pad_token,
                 mask_token=mask_token,
                 lowercase=args.lowercase,
-                strip_accents=not args.no_strip_accents,
-                handle_chinese_chars=not args.no_handle_chinese_chars
+                strip_accents=strip_accents,
+                handle_chinese_chars=handle_chinese_chars,
+                clean_text=clean_text
             )
         else:
             raise NotImplementedError
