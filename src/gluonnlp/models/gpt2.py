@@ -199,15 +199,16 @@ class GPT2SelfAttentionLayer(HybridBlock):
         """
         x = self.ln(x)
         if self._layout == 'NT':
-            time_axis = 1
+            batch_axis, time_axis = 0, 1
         else:
-            time_axis = 0
+            batch_axis, time_axis = 1, 0
 
         query, key, value = F.np.split(self.qkv(x), 3, axis=-1)
         if layer_states is not None:
             prev_key, prev_value = layer_states[0], layer_states[1]
             key = F.np.concatenate([prev_key, key], axis=time_axis)
             value = F.np.concatenate([prev_value, value], axis=time_axis)
+        new_states = F.np.stack([key, value], axis=0)
         
         # gen mask
         query_pos = F.npx.arange_like(query, axis=time_axis)
@@ -218,11 +219,12 @@ class GPT2SelfAttentionLayer(HybridBlock):
         mask = (F.npx.reshape(key_pos, (1, -1)) <= 
                 F.npx.reshape(query_pos, (-1, 1))).astype(self._dtype)
         # broadcast to (batch_size, query_len, key_len)
-        mask = F.npx.broadcast_like(F.np.expand_dims(mask, axis=0),
-                                          query,
-                                          lhs_axes=0,
-                                          rhs_axes=0)
-        
+        mask = F.npx.broadcast_like(
+            F.np.expand_dims(mask, axis=0),
+            query,
+            lhs_axes=0,
+            rhs_axes=batch_axis
+        )
 
         query = F.npx.reshape(query, (-2, -2, self._num_heads, -1))
         key = F.npx.reshape(key, (-2, -2, self._num_heads, -1))
@@ -232,8 +234,7 @@ class GPT2SelfAttentionLayer(HybridBlock):
         out = self.out_proj(out)
         out = self.hidden_dropout(out)
 
-        return out, F.np.stack([F.npx.reshape(key, (-2, -2, -1)),
-                                F.npx.reshape(value, (-2, -2, -1))], axis=0)
+        return out, new_states
 
 
 @use_np
@@ -337,7 +338,11 @@ class GPT2Layer(HybridBlock):
 
         Parameters
         ----------
-        x
+        x :
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_in)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_in)
         layer_states :
             - layout = 'NT'
                 Shape (2, batch_size, prev_len, C_in)
@@ -446,16 +451,20 @@ class GPT2Model(HybridBlock):
         
         if self._layout != self._compute_layout:
             x = F.np.swapaxes(x, 0, 1)
+            states = F.np.swapaxes(states, 2, 3)
         
         new_states = []
         for layer_idx in range(self._num_layers):
             layer_states = None if states is None else states[layer_idx]
             x, new_layer_states = self._layers[layer_idx](x, layer_states, prev_len)
             new_states.append(new_layer_states)
+        new_states = F.np.stack(new_states, axis=0)
+        
         x = self._final_ln(x)
         if self._layout != self._compute_layout:
             x = F.np.swapaxes(x, 0, 1)
-        return x, F.np.stack(new_states, axis=0)
+            new_states = F.np.swapaxes(new_states, 2, 3)
+        return x, new_states
 
     def get_initial_embedding(self, F, inputs, prev_len):
         """Get the initial token embeddings that considers the token type and positional embeddings
@@ -473,7 +482,6 @@ class GPT2Model(HybridBlock):
         Returns
         -------
         embedding
-            The initial embedding that will be fed into the encoder
             - layout = 'NT'
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
@@ -549,7 +557,7 @@ class GPT2Model(HybridBlock):
 
 @use_np
 class GPT2ForLM(HybridBlock):
-    def __init__(self, backbone_cfg=gpt2_124M()):
+    def __init__(self, backbone_cfg=None):
         super().__init__()
         self._backbone_model = GPT2Model.from_cfg(backbone_cfg)
         self._lm_head = nn.Dense(
@@ -584,8 +592,6 @@ class GPT2ForLM(HybridBlock):
         """
 
         contextual_embeddings, new_states = self._backbone_model(inputs, states, prev_len)
-        if self._backbone_model.layout == 'TN':
-            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
         logits = self._lm_head(contextual_embeddings)
         return logits, new_states
 
