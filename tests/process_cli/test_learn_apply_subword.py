@@ -37,6 +37,10 @@ def verify_subword_algorithms_ende(dir_path):
         apply_subword.main(args)
         args = apply_parser.parse_args(['--corpus'] + [corpus_path_pair[1]] +
                                        ['--model', model,
+                                        '--model-path', os.path.join(dir_path,
+                                                                     '{}.model'.format(model)),
+                                        '--vocab-path', os.path.join(dir_path,
+                                                                     '{}.vocab'.format(model)),
                                         '--save-path',
                                         os.path.join(dir_path,
                                                      'wmt19-test-de-en.en.{}'.format(model))])
