@@ -7,13 +7,21 @@ defaults:
     shell: bash
 
 jobs:
-  unittest-macos:
-    runs-on: macos-latest
+  unittest:
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         # TODO Add windows test by using "windows-latest"
-        python-version: ['3.7']
+        os: [macos-latest, ubuntu-latest]
+        python-version: [ '3.6', '3.7', '3.8']
+        exclude:
+          - os: macos-latest
+            python-version: 3.6
+          - os: macos-latest
+            python-version: 3.8
+          - os: ubuntu-latest
+            python-version: 3.7
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -43,40 +51,4 @@ jobs:
         uses: codecov/codecov-action@v1.0.10
         with:
           env_vars: OS,PYTHON    
-
-  unittest-ubuntu:
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.6', '3.8']
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      # Install OS specific dependencies
-      - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-latest'
-        # TODO https://github.com/apache/incubator-mxnet/issues/18293
-        run: sudo apt-get install libopenblas-dev
-
-      - name: Setup python
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-          architecture: x64
-      - name: Install Other Dependencies
-        run: |
-          python -m pip install --user --upgrade pip
-          python -m pip install --user setuptools pytest pytest-cov contextvars
-          python -m pip install --upgrade cython
-          python -m pip install --pre --user "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
-          python -m pip install --user -e .[extras]
-      - name: Test project
-        run: |
-          python -m pytest --cov=./ --cov-report=xml --device="cpu" --durations=50 tests/
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.10
-        with:
-          env_vars: OS,PYTHON  
 

@@ -37,12 +37,12 @@ jobs:
           aws-region: us-east-1
 
       - name: Test project on AWS Batch(For push)
-        if: startsWith(${{ github.event_name }}, 'push') == true
+        if: ${{ github.event_name == 'push' }}
         run: |
           python ./tools/batch/submit-job.py --region us-east-1 --job-type g4dn.4x --source-ref ${{ github.ref }} --work-dir tools/batch --remote https://github.com/${{ github.repository }} --command "./batch_states/test.sh" --wait | tee > script.log
 
       - name: Test project on AWS Batch(For pull request)
-        if: startsWith(${{ github.event_name }}, 'pull_request') == true
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
         run: |
           python ./tools/batch/submit-job.py --region us-east-1 --job-type g4dn.4x --source-ref ${{ github.event.pull_request.head.ref }} --work-dir tools/batch --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} --command "./batch_states/test.sh" --wait | tee > script.log
 
