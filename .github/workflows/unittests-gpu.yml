@@ -36,9 +36,20 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
-      - name: Test project on AWS Batch
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+
+      - name: Test project on AWS Batch(For push)
+        if: startsWith(steps.extract_branch.outputs.branch, 'PR-') != true
         run: |
-          python ./tools/batch/submit-job.py --region us-east-1 --job-type g4dn.4x --source-ref ${{ github.ref }} --work-dir tools/batch --remote https://github.com/dmlc/gluon-nlp --command "/gluon-nlp/test.sh" --wait | tee > script.log
+          python ./tools/batch/submit-job.py --region us-east-1 --job-type g4dn.4x --source-ref ${{ github.ref }} --work-dir tools/batch --remote https://github.com/dmlc/gluon-nlp --command "/batch_states/test.sh" --wait | tee > script.log
+
+      - name: Test project on AWS Batch(For pull request)
+        if: startsWith(steps.extract_branch.outputs.branch, 'PR-') == true
+        run: |
+          python ./tools/batch/submit-job.py --region us-east-1 --job-type g4dn.4x --source-ref ${{ github.event.pull_request.head.ref }} --work-dir tools/batch --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} --command "/batch_states/test.sh" --wait | tee > script.log
 
       - name: Upload log file for AWS Batch test results
         uses: actions/upload-artifact@v2
@@ -46,8 +57,4 @@ jobs:
           name: GPU_Test_Results
           path: script.log
 
-      - name: Download log file for AWS Batch test results
-        uses: actions/download-artifact@v2
-        with:
-          name: GPU_Test_Results
 
