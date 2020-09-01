@@ -16,7 +16,7 @@ dependencies:
     - nbconvert==5.6.1
     - nbsphinx==0.7.1
     - ipython
-    - ipykernel==5.3.4
+    - ipykernel
     - numba==0.51.1
     - llvmlite==0.34.0
     - https://github.com/szha/mx-theme/tarball/master
