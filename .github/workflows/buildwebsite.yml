@@ -1,0 +1,40 @@
+name: continuous build - docs
+
+on: [push, pull_request]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  website-build:
+    runs-on: ubuntu-latest
+    strategy: 
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get install libopenblas-dev texlive texlive-latex-extra pandoc
+
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
+
+      - name: Install Other Dependencies
+        run: |
+          python -m pip install --quiet --upgrade pip
+          python -m pip install --upgrade cython
+          python -m pip install --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
+          python -m pip install --quiet -e .[extras]
+          python -m pip install setuptools ipython sphinx>=1.5.5 sphinx-gallery nbsphinx notedown sphinx_rtd_theme mxtheme sphinx-autodoc-typehints matplotlib Image recommonmark jupyter_client
+          python -m nltk.downloader perluniprops nonbreaking_prefixes punkt
+
+      - name: Build Website local
+        run: |
+          make docs_local
+      

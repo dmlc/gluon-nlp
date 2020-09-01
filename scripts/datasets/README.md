@@ -9,11 +9,12 @@ reuse the scripts with your own data (as long as the structure/format matches).
 Thus, the typical workflow for running experiments:
 
 - Download and prepare data with scripts in [datasets](.).
-In case you will need to preprocess the dataset, there are toolkits in [preprocess](../preprocess).
+- In case you will need to preprocess the dataset, there are toolkits in [preprocess](../preprocess).
 - Run the experiments in [scripts](..)
 
 
 ## Available Datasets
+
 - [Machine Translation](./machine_translation)
     - [WMT](./machine_translation/README.md#wmt)
 - [Question Answering](./question_answering)
