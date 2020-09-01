@@ -22,6 +22,10 @@ try:
     import horovod.mxnet as hvd
 except ImportError:
     pass
+try:
+    import byteps.mxnet as bps
+except ImportError:
+    pass
 
 mx.npx.set_np()
 
@@ -118,7 +122,7 @@ def parse_args():
                         help='The scale size of the generator layer')
     # Communication
     parser.add_argument('--comm_backend', type=str, default='device',
-                        choices=['horovod', 'dist_sync_device', 'device'],
+                        choices=['byteps', 'horovod', 'dist_sync_device', 'device'],
                         help='Communication backend.')
     parser.add_argument('--gpus', type=str, default='0',
                         help='list of gpus to run, e.g. 0 or 0,2,5. -1 means using cpu.')
@@ -316,6 +320,8 @@ def train(args):
                                  })
     if args.comm_backend == 'horovod':
         trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optimizer_params)
+    elif args.comm_backend == 'byteps':
+        trainer = bps.DistributedTrainer(param_dict, args.optimizer, optimizer_params)
     else:
         trainer = mx.gluon.Trainer(param_dict, args.optimizer, optimizer_params,
                                    update_on_kvstore=False)
@@ -414,8 +420,8 @@ def train(args):
         total_norm, ratio, is_finite = clip_grad_global_norm(
             params, args.max_grad_norm * num_workers)
 
-        if args.comm_backend == 'horovod':
-            # Note that horovod.trainer._scale is default to num_workers,
+        if args.comm_backend == 'horovod' or args.comm_backend == 'byteps':
+            # Note that hvd.trainer._scale and bps.trainer._scale are default to num_workers,
             # thus trainer.update(1) will scale the gradients by 1./num_workers
             trainer.update(1, ignore_stale_grad=True)
         else:
