@@ -7,3 +7,4 @@ bash convert_mobilebert.sh
 bash convert_roberta.sh
 bash convert_xlmr.sh
 bash convert_bart.sh
+bash convert_gpt2.sh

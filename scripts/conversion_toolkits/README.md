@@ -70,3 +70,8 @@ bash convert_xlmr.sh
 ```bash
 bash convert_bart.sh
 ```
+
+### GPT-2
+```bash
+bash convert_gpt2.sh
+```
