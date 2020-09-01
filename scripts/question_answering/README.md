@@ -134,7 +134,8 @@ We reproduced the ALBERT model which is released by Google, and fine-tune the th
 Fine-tuning the listed models with hyper-parameter learning rate 2e-5, epochs 3, warmup ratio 0.1 and max gradient norm 0.1 (as shown in command). Notice that the `batch_size` is set for each GPU and the global batch size is 48 for all experiments, besides that gradient accumulation (`num_accumulated`) is supported in the case of out of memory.
 
 Performance are shown in the table below, in which the SQuAD1.1 are evaluated with SQuAD2.0 checkpoints.
-Notice that the standard metrics of SQuAD are EM and F1. The former is an exact match score between predictions and references, while the latter is a token-level f1 score in which the common tokens are considered as True Positives.
+Notice that the standard metrics of SQuAD are `EM/F1`. The former is an exact match score between predictions and references, 
+while the latter is a token-level f1 score in which the common tokens are considered as True Positives.
 
 |Reproduced ALBERT Models (F1/EM)  | SQuAD 1.1 dev | SQuAD 2.0 dev | Json | Log | Command |
 |----------------------------------|---------------|---------------|------|-----| --------|
@@ -170,8 +171,8 @@ For reference, we have also included the results of original version from Google
 |--------------------------|----------------|---------------|
 |Google BERT base          |   88.5/80.8    |     - / -     |
 |Google BERT large         |   90.9/84.1    |     - / -     |
-|Google ELECTRA small      |     - /75.8    |     - /70.1   |
-|Google ELECTRA base       |     - /86.8    |     - /83.7   |
-|Google ELECTRA large      |     - /89.7    |     - /88.1   |
+|Google ELECTRA small      |     - /75.8    |      -/70.1   |
+|Google ELECTRA base       |      -/86.8    |      -/83.7   |
+|Google ELECTRA large      |      -/89.7     |     -/88.1   |
 |Google Mobile BERT        |   90.0/82.9	|   79.2/76.2   |
 |Fairseq RoBERTa large     |   94.6/88.9    |	89.4/86.5   |
