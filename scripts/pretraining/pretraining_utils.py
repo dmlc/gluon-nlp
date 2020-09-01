@@ -514,7 +514,8 @@ class ElectraMasker(HybridBlock):
         # Following the instruction of official repo to avoid deduplicate postions
         # with Top_k Sampling as https://github.com/google-research/electra/issues/41
         masked_positions = F.npx.topk(
-            sample_probs + gumbels, k=N, axis=-1, ret_typ='indices', dtype=np.int32)
+            F.np.log(sample_probs) + gumbels, k=N,
+            axis=-1, ret_typ='indices', dtype=np.int32)
 
         masked_weights = F.npx.sequence_mask(
             F.np.ones_like(masked_positions),
