@@ -59,6 +59,8 @@ def parse_args():
                         action='store_false', help="Don't lower case input text.")
     parser.add_argument('--mask_prob', type=float, default=0.15,
                         help='mask probability for generator input')
+    parser.add_argument('--replace_prob', type=float, default=0.85,
+                        help='probability of replace mask tokens with generator predicted tokens.')
     parser.set_defaults(do_lower_case=True)
     parser.add_argument('--num_dataset_workers', type=int, default=4,
                         help='Number of workers to pre-process dataset.')
@@ -241,8 +243,14 @@ def train(args):
                                                   args.attention_dropout_prob,
                                                   args.generator_units_scale,
                                                   args.generator_layers_scale)
+
+    # We initialize EletraMasker with two probabilities, i.e. mask_prob and
+    # replace_prob. For mask_prob, it determines how many tokens are masked
+    # for a given input sequence. For replace_prob, it determines how many masked
+    # tokens are replaced with the generator predicted tokens.
     data_masker = ElectraMasker(
-        tokenizer, args.max_seq_length, args.mask_prob)
+        tokenizer, args.max_seq_length, mask_prob=args.mask_prob,
+        replace_prob=args.replace_prob)
     if args.from_raw_text:
         if args.cached_file_path and not os.path.exists(args.cached_file_path):
             os.mkdir(args.cached_file_path)

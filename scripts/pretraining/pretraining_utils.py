@@ -451,8 +451,8 @@ class ElectraMasker(HybridBlock):
                                           'masked_positions',
                                           'masked_weights'])
 
-    def __init__(self, tokenizer, max_seq_length, mask_prob,
-                 proposal_distribution=1.0):
+    def __init__(self, tokenizer, max_seq_length, mask_prob=0.15,
+                 proposal_distribution=1.0, replace_prob=0.85):
         super().__init__()
         self._max_seq_length = max_seq_length
         self._mask_prob = mask_prob
@@ -460,6 +460,7 @@ class ElectraMasker(HybridBlock):
                                             self._max_seq_length)
         self._proposal_distribution = proposal_distribution
         self.vocab = tokenizer.vocab
+        self._replace_prob = replace_prob
 
     def dynamic_masking(self, F, input_ids, valid_lengths):
         # TODO(zheyuye), two additional flag `disallow_from_mask` and `already_masked`
@@ -532,7 +533,7 @@ class ElectraMasker(HybridBlock):
         replaced_positions = (
             F.np.random.uniform(
                 F.np.zeros_like(masked_positions),
-                F.np.ones_like(masked_positions)) > self._mask_prob) * masked_positions
+                F.np.ones_like(masked_positions)) < self._replace_prob) * masked_positions
         # dealing with multiple zero values in replaced_positions which causes
         # the [CLS] being replaced
         filled = F.np.where(
