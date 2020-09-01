@@ -39,7 +39,7 @@ def pytest_sessionfinish(session, exitstatus):
 
 
 # * Random seed setup
-def pytest_configure():
+def pytest_configure(config):
     """Pytest configuration hook to help reproduce test segfaults
 
     Sets and outputs rng seeds.
@@ -85,6 +85,7 @@ def pytest_configure():
     4. When finished debugging the segfault, remember to unset any exported MXNET_ seed
        variables in the environment to return to non-deterministic testing (a good thing).
     """
+    config.addinivalue_line("markers", "slow: mark test as slow to run")
 
     module_seed_str = os.getenv('MXNET_MODULE_SEED')
     if module_seed_str is None:
@@ -207,8 +208,24 @@ def doctest(doctest_namespace):
     import doctest
     doctest.ELLIPSIS_MARKER = '-etc-'
 
+
 def pytest_addoption(parser):
-    parser.addoption("--device", action="append", default=[], help="list of device choices to run the tests. ex: mx.gpu() (For GPU test only)")
+    parser.addoption("--device", action="append", default=[],
+                     help="list of device choices to run the tests. ex: mx.gpu() (For GPU test only)")
+    parser.addoption(
+        "--runslow", action="store_true", default=False, help="run slow tests"
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--runslow"):
+        # --runslow given in cli: do not skip slow tests
+        return
+    skip_slow = pytest.mark.skip(reason="need --runslow option to run")
+    for item in items:
+        if "slow" in item.keywords:
+            item.add_marker(skip_slow)
+
 
 def pytest_generate_tests(metafunc):
     if 'ctx' in metafunc.fixturenames:
