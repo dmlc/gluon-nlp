@@ -499,7 +499,7 @@ class ElectraMasker(HybridBlock):
 
         for ignore_token in ignore_tokens:
             # TODO(zheyuye), Update when operation += supported
-            valid_candidates = valid_candidates + \
+            valid_candidates = valid_candidates * \
                 F.np.not_equal(input_ids, ignore_token)
         valid_lengths = valid_lengths.astype(np.float32)
         valid_candidates = valid_candidates.astype(np.float32)
@@ -507,14 +507,15 @@ class ElectraMasker(HybridBlock):
             1, F.np.minimum(N, round(valid_lengths * self._mask_prob)))
 
         # Get the masking probability of each position
-        sample_probs = F.npx.softmax(
-            self._proposal_distribution * valid_candidates, axis=-1)  # (B, L)
+        sample_probs = self._proposal_distribution * valid_candidates
+        sample_probs /= F.np.sum(sample_probs, axis=-1, keepdims=True)
         sample_probs = F.npx.stop_gradient(sample_probs)
         gumbels = F.np.random.gumbel(F.np.zeros_like(sample_probs))
         # Following the instruction of official repo to avoid deduplicate postions
         # with Top_k Sampling as https://github.com/google-research/electra/issues/41
         masked_positions = F.npx.topk(
-            sample_probs + gumbels, k=N, axis=-1, ret_typ='indices', dtype=np.int32)
+            F.np.log(sample_probs) + gumbels, k=N,
+            axis=-1, ret_typ='indices', dtype=np.int32)
 
         masked_weights = F.npx.sequence_mask(
             F.np.ones_like(masked_positions),
