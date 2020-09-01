@@ -34,7 +34,7 @@ dependencies:
     - flaky==3.7.0
     - flake8==3.8.3
     - mock==4.0.2
-    - mxnet-cu101==1.6.0
+    - mxnet-cu101==1.6.0.post0
     - scipy==1.5.2
     - regex==2020.7.14
     - nltk==3.5
