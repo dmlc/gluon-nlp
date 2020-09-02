@@ -36,6 +36,6 @@ jobs:
           python ./tools/batch/submit-job.py --region us-east-1 \
                                              --job-type c5n.4x \
                                              --source-ref ${{ github.ref }} \
-                                             --work-dir tests/batch_scripts \
+                                             --work-dir tools/batch/batch_states \
                                              --remote ${{ github.repository }} \
                                              --command "bash test_data_pipeline.sh" --wait
