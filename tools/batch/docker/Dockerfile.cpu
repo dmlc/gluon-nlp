@@ -29,4 +29,4 @@ RUN pip3 install  --no-cache --upgrade \
     awscli
 RUN git clone https://github.com/dmlc/gluon-nlp
 WORKDIR gluon-nlp
-ADD gluon_nlp_job.sh .
+ADD gluon_nlp_cpu_job.sh .
