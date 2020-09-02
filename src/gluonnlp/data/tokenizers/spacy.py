@@ -81,9 +81,6 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
             version = None
         self._version = version
         try:
-            from spacy.cli import download
-            if version is not None:
-                download(model + '-' + version, True)
             self._nlp = spacy.load(model, disable=['parser', 'tagger', 'ner'])
         except Exception:
             from spacy.cli import download
