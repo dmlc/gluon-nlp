@@ -60,7 +60,7 @@ def parse_args():
     parser.add_argument('--mask_prob', type=float, default=0.15,
                         help='mask probability for generator input')
     parser.add_argument('--replace_prob', type=float, default=0.85,
-                        help='probability of replace mask tokens with generator predicted tokens.')
+                        help='probability of replacing mask tokens with generator predicted tokens.')
     parser.set_defaults(do_lower_case=True)
     parser.add_argument('--num_dataset_workers', type=int, default=4,
                         help='Number of workers to pre-process dataset.')

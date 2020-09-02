@@ -449,7 +449,7 @@ class ElectraMasker(HybridBlock):
     ----------
     tokenizer : gluonnlp.data.tokenizers
         Used to tokenize the pretrained text sequence.
-    max_sea_length : int
+    max_seq_length : int
         Maximum sequence length of preprocessed text for pretraining.
     mask_prob : float
         The probability of applying masks on the token in the sequence.
