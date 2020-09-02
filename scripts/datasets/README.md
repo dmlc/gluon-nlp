@@ -56,3 +56,13 @@ and include the new URLS + create the stats file that will store the hash keys. 
 ```bash
 python3 update_download_stats.py
 ```
+
+## Frequently Asked Questions
+- After installing GluonNLP, I cannot access the command line toolkits. It reports `nlp_data: command not found`.
+  
+  The reason is that you have installed glunonnlp to a folder that is not in `PATH`, e.g.,  
+  `~/.local/bin`. You can try to change the `PATH` variable to also include '~/.local/bin' via the following command:
+  
+  ```
+  export PATH=${PATH}:~/.local/bin
+  ```

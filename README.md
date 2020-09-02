@@ -84,17 +84,6 @@ python3 -m gluonnlp.cli.process help
 
 ```
 
-### Frequently Asked Questions
-- After installing GluonNLP, I cannot you access the command line toolkits. It reports `nlp_data: command not found`.
-  
-  The reason is that you have installed glunonnlp to a folder that is not in `PATH`, e.g.,  
-  `~/.local/bin`. You can try to change the `PATH` variable to also include '~/.local/bin' via the following command:
-  
-  ```
-  export PATH=${PATH}:~/.local/bin
-  ```
-
-
 # Run Unittests
 You may go to [tests](tests) to see how to run the unittests.
 
