@@ -22,18 +22,22 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
         The language of the input. If we just specify the lang and do not specify the model,
         we will provide the tokenizer with pre-selected models.
     model
-        The language to tokenize. Default is None, and we will suggest default tokenizer
-        automatically:
+        The language to tokenize. Default is None, and we will choose the tokenizer
+        automatically based on the language:
 
-        en --> 'en_core_web_sm'
-        de --> 'de_core_news_sm'
-        fr --> 'fr_core_news_sm'
-        ja --> 'ja_core_news_sm'
+        en --> 'en_core_web_sm-2.3.0'
+        de --> 'de_core_news_sm-2.3.0'
+        fr --> 'fr_core_news_sm-2.3.0'
+        ja --> 'ja_core_news_sm-2.3.0'
 
         For more details about how to set this flag, you may refer to
         https://spacy.io/usage/models for supported languages.
+
+        Also, you may refer to
+        https://github.com/explosion/spacy-models/blob/master/compatibility.json
     vocab
-        The vocabulary of the tokenizer. Can be optional.
+        The vocabulary of the tokenizer. Can be optional. You must specify this if you
+        will need to map the raw text into integers.
 
     Examples
     --------
@@ -56,19 +60,20 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
     def __init__(self, lang: Optional[str] = 'en', model: Optional[str] = None,
                  vocab: Optional[Vocab] = None):
         self._vocab = vocab
+        self._model = model
         spacy = try_import_spacy()
         if model is None:
             assert lang is not None
             if lang == 'en':
-                model = 'en_core_web_sm'
+                model = 'en_core_web_sm-2.3.0'
             elif lang == 'de':
-                model = 'de_core_news_sm'
+                model = 'de_core_news_sm-2.3.0'
             elif lang == 'fr':
-                model = 'fr_core_news_sm'
+                model = 'fr_core_news_sm-2.3.0'
             elif lang == 'ja':
-                model = 'ja_core_news_cm'
+                model = 'ja_core_news_cm-2.3.0'
             else:
-                model = 'xx_ent_wiki_sm'
+                model = 'xx_ent_wiki_sm-2.3.0'
         retries = 5
         try:
             self._nlp = spacy.load(model, disable=['parser', 'tagger', 'ner'])
@@ -76,7 +81,10 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
             from spacy.cli import download
             while retries >= 0:
                 try:
-                    download(model, False, '--user')
+                    if '-' in model:
+                        download(model, True)
+                    else:
+                        download(model, False)
                     self._nlp = spacy.load(model, disable=['parser', 'tagger', 'ner'])
                     break
                 except Exception as download_err:
@@ -134,6 +142,10 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
             ' spacy. For more details, you may refer to the stack-overflow discussion:'
             ' https://stackoverflow.com/questions/50330455/how-to-detokenize-spacy-text-without-doc-context. '
             'Also, we welcome your contribution for adding a reasonable detokenizer for SpaCy.')
+
+    @property
+    def model(self):
+        return self._model
 
     @property
     def vocab(self):
