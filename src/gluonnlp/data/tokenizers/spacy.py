@@ -82,7 +82,7 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
         self._version = version
         try:
             self._nlp = spacy.load(model, disable=['parser', 'tagger', 'ner'])
-        except Exception:
+        except (Exception, IOError, OSError):
             from spacy.cli import download
             while retries >= 0:
                 try:
@@ -92,7 +92,7 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
                         download(model, False)
                     self._nlp = spacy.load(model, disable=['parser', 'tagger', 'ner'])
                     break
-                except Exception as download_err:
+                except (Exception, IOError, OSError) as download_err:
                     retries -= 1
                     if retries < 0:
                         print('SpaCy Model for the specified model="{model}" has not been '
