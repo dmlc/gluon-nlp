@@ -75,14 +75,22 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
             else:
                 model = 'xx_ent_wiki_sm-2.3.0'
         retries = 5
+        if '-' in model:
+            model, version = model.split('-')
+        else:
+            version = None
+        self._version = version
         try:
+            from spacy.cli import download
+            if version is not None:
+                download(model + '-' + version, True)
             self._nlp = spacy.load(model, disable=['parser', 'tagger', 'ner'])
         except Exception:
             from spacy.cli import download
             while retries >= 0:
                 try:
-                    if '-' in model:
-                        download(model, True)
+                    if version is not None:
+                        download(model + '-' + version, True)
                     else:
                         download(model, False)
                     self._nlp = spacy.load(model, disable=['parser', 'tagger', 'ner'])
@@ -146,6 +154,10 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
     @property
     def model(self):
         return self._model
+
+    @property
+    def version(self):
+        return self._version
 
     @property
     def vocab(self):
