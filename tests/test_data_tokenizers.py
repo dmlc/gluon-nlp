@@ -308,6 +308,12 @@ def test_spacy_tokenizer():
     verify_encode_token_with_offsets(en_tokenizer, EN_SAMPLES)
     verify_encode_token_with_offsets(de_tokenizer, DE_SAMPLES)
 
+    # Test for loading spacy tokenizer from specifying the "model" flag
+    en_tokenizer = SpacyTokenizer(model='en_core_web_sm-2.2.0')
+    out = en_tokenizer.encode(EN_SAMPLES)
+    en_tokenizer = SpacyTokenizer(model='en_core_web_sm')
+    out = en_tokenizer.encode(EN_SAMPLES)
+
 
 def test_yttm_tokenizer():
     with tempfile.TemporaryDirectory() as dir_path:
