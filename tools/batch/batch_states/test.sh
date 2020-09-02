@@ -9,4 +9,4 @@ python3 -m pip install --user --quiet setuptools pytest pytest-cov contextvars
 python3 -m pip install --upgrade --quiet cython
 python3 -m pip install --pre --user --quiet "mxnet-cu102>=2.0.0b20200802" -f https://dist.mxnet.io/python
 python3 -m pip install --user --quiet -e .[extras]
-python3 -m pytest --cov=./ --cov-report=xml --durations=50 --device="gpu" /gluon-nlp/tests/
+python3 -m pytest --cov=./ --cov-report=xml --durations=50 --device="gpu" --runslow /gluon-nlp/tests/

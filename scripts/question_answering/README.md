@@ -134,7 +134,8 @@ We reproduced the ALBERT model which is released by Google, and fine-tune the th
 Fine-tuning the listed models with hyper-parameter learning rate 2e-5, epochs 3, warmup ratio 0.1 and max gradient norm 0.1 (as shown in command). Notice that the `batch_size` is set for each GPU and the global batch size is 48 for all experiments, besides that gradient accumulation (`num_accumulated`) is supported in the case of out of memory.
 
 Performance are shown in the table below, in which the SQuAD1.1 are evaluated with SQuAD2.0 checkpoints.
-Notice that the standard metrics of SQuAD are EM and F1. The former is an exact match score between predictions and references, while the latter is a token-level f1 score in which the common tokens are considered as True Positives.
+Notice that the standard metrics of SQuAD are `EM/F1`. The former is an exact match score between predictions and references, 
+while the latter is a token-level f1 score in which the common tokens are considered as True Positives.
 
 |Reproduced ALBERT Models (F1/EM)  | SQuAD 1.1 dev | SQuAD 2.0 dev | Json | Log | Command |
 |----------------------------------|---------------|---------------|------|-----| --------|
@@ -161,7 +162,7 @@ For the reset pretrained models, the results on SQuAD1.1 and SQuAD2.0 are given 
 |ELECTRA small             | 85.42/78.95   | 73.93/71.36  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_small_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_small_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_small.sh) |      
 |ELECTRA base              | 92.63/87.34   | 86.65/83.95  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_base_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_base_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_small.sh) |
 |ELECTRA large             | 94.95/89.94   | 90.67/88.32  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_base.sh) |
-|Mobile BERT             | 82.45/88.99  | 79.60/74.11  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_mobilebert.sh) |
+|Mobile BERT               | -/-   | 80.54/77.80  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_mobilebert.sh) |
 |RoBERTa large             | 94.58/88.86   | 89.69/86.80  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_fairseq_roberta_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_fairseq_roberta_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_large.sh) |
 
 For reference, we have also included the results of original version from Google and Fairseq
@@ -170,8 +171,8 @@ For reference, we have also included the results of original version from Google
 |--------------------------|----------------|---------------|
 |Google BERT base          |   88.5/80.8    |     - / -     |
 |Google BERT large         |   90.9/84.1    |     - / -     |
-|Google ELECTRA small      |     - /75.8    |     - /70.1   |
-|Google ELECTRA base       |     - /86.8    |     - /83.7   |
-|Google ELECTRA large      |     - /89.7    |     - /88.1   |
-|Google Mobile BERT        |   81.4/88.6	|   74.4/77.1   |
+|Google ELECTRA small      |     - /75.8    |      -/70.1   |
+|Google ELECTRA base       |      -/86.8    |      -/83.7   |
+|Google ELECTRA large      |      -/89.7     |     -/88.1   |
+|Google Mobile BERT        |   90.0/82.9	|   79.2/76.2   |
 |Fairseq RoBERTa large     |   94.6/88.9    |	89.4/86.5   |

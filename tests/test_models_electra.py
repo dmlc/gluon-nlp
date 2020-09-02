@@ -63,6 +63,7 @@ def test_electra_model(compute_layout, ctx):
                         1E-4, 1E-4)
 
 
+@pytest.mark.slow
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_electra())
 def test_electra_get_pretrained(model_name, ctx):

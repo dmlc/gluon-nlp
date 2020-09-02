@@ -258,7 +258,7 @@ class GPT2FFN(HybridBlock):
         self._activation = activation
         self._dtype = dtype
         self.layer_norm = nn.LayerNorm(epsilon=self._layer_norm_eps,
-                                      in_channels=self._units)
+                                       in_channels=self._units)
         self.ffn_1 = nn.Dense(units=self._hidden_size,
                               in_units=self._units,
                               flatten=False,
@@ -275,7 +275,7 @@ class GPT2FFN(HybridBlock):
         self.hidden_dropout = nn.Dropout(self._hidden_dropout_prob)
 
     def hybrid_forward(self, F, data):
-        # here the resnet is applied before the layernorm,
+        # here the residual connection is applied before the layernorm,
         # which is different from the PositionwiseFFN(pre_norm=True)
         out = self.layer_norm(data)
         out = self.activation(self.ffn_1(out))
@@ -338,7 +338,8 @@ class GPT2Layer(HybridBlock):
 
         Parameters
         ----------
-        x :
+        x
+            Input
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_in)
             - layout = 'TN'
@@ -349,11 +350,27 @@ class GPT2Layer(HybridBlock):
             - layout = 'TN'
                 Shape (2, prev_len, batch_size, C_in)
         prev_len
+            The previous length
+
+        Returns
+        -------
+        new_x
+            Output
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_out)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_out)
+        new_states
+            - layout = 'NT'
+                Shape (2, batch_size, prev_len + seq_length, C_in)
+            - layout = 'TN'
+                Shape (2, prev_len + seq_length, batch_size, C_in)
         """
         h, new_layer_states = self.atten(x, layer_states, prev_len)
         x = x + h
         h = self.ffn(x)
         return h, new_layer_states
+
 
 @use_np
 class GPT2Model(HybridBlock):
@@ -378,7 +395,7 @@ class GPT2Model(HybridBlock):
                  compute_layout='auto'):
         super().__init__()
         self._vocab_size = vocab_size
-        self._units= units
+        self._units = units
         self._num_layers = num_layers
         self._num_heads = num_heads
         self._max_length = max_length
@@ -397,7 +414,7 @@ class GPT2Model(HybridBlock):
             self._compute_layout = layout
         else:
             self._compute_layout = compute_layout
-        self._embed= nn.Embedding(
+        self._embed = nn.Embedding(
             input_dim=self._vocab_size,
             output_dim=self._units,
             weight_initializer=embed_initializer,
@@ -440,12 +457,34 @@ class GPT2Model(HybridBlock):
         Parameters
         ----------
         x
-        states :
+            Input
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        states
+            The previous states
             - layout = 'NT'
                 Shape (num_layers, 2, batch_size, prev_len, C_in)]
             - layout = 'TN'
                 Shape (num_layers, 2, prev_len, batch_size, C_in)]
         prev_len
+            The previous length. It will be a scalar.
+
+        Returns
+        -------
+        new_x
+            Output
+            - layout = 'NT'
+                Shape (batch_size, seq_length, C_out)
+            - layout = 'TN'
+                Shape (seq_length, batch_size, C_out)
+        new_states
+            The new states
+            - layout = 'NT'
+                Shape (num_layers, 2, batch_size, prev_len + seq_length, C_in)
+            - layout = 'TN'
+                Shape (num_layers, 2, prev_len + seq_length, batch_size, C_in)
         """
         x = self.get_initial_embedding(F, x, prev_len)
         
@@ -478,6 +517,7 @@ class GPT2Model(HybridBlock):
             - layout = 'TN'
                 Shape (seq_length, batch_size)
         prev_len
+            The previous length. It will be a scalar.
         
         Returns
         -------
@@ -555,6 +595,7 @@ class GPT2Model(HybridBlock):
                    layout=cfg.MODEL.layout,
                    compute_layout=cfg.MODEL.compute_layout)
 
+
 @use_np
 class GPT2ForLM(HybridBlock):
     def __init__(self, backbone_cfg=None):
@@ -580,7 +621,13 @@ class GPT2ForLM(HybridBlock):
             - layout = 'TN'
                 Shape (seq_length, batch_size)
         states
+            The states.
+            - layout = 'NT'
+                Shape (num_layers, 2, batch_size, prev_len, C_in)
+            - layout = 'TN'
+                Shape (num_layers, 2, prev_len, batch_size, C_in)
         prev_len
+            Will be a scalar that represents the previous length
 
         Returns
         -------
@@ -589,8 +636,12 @@ class GPT2ForLM(HybridBlock):
                 Shape (batch_size, seq_length, vocab_size).
             - layout = 'TN'
                 Shape (seq_length, batch_size, vocab_size).
+        new_states
+            - layout = 'NT'
+                Shape (num_layers, 2, batch_size, prev_len + seq_length, C_in)
+            - layout = 'TN'
+                Shape (num_layers, 2, prev_len + seq_length, batch_size, C_in)
         """
-
         contextual_embeddings, new_states = self._backbone_model(inputs, states, prev_len)
         logits = self._lm_head(contextual_embeddings)
         return logits, new_states
@@ -660,8 +711,8 @@ def get_pretrained_gpt2(model_name: str = 'gpt2_124M',
         local_params_path = None
     if load_lm and lm_params_path is not None:
         local_lm_params_path = download(url=get_repo_model_zoo_url() + lm_params_path,
-                                         path=os.path.join(root, lm_params_path),
-                                         sha1_hash=FILE_STATS[lm_params_path])
+                                        path=os.path.join(root, lm_params_path),
+                                        sha1_hash=FILE_STATS[lm_params_path])
     else:
         local_lm_params_path = None
 
