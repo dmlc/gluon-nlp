@@ -11,6 +11,7 @@ def test_list_backbone_names():
     assert len(list_backbone_names()) > 0
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize('name', list_backbone_names())
 def test_get_backbone(name, ctx):
     with tempfile.TemporaryDirectory() as root, ctx:
@@ -30,10 +31,12 @@ def test_get_backbone(name, ctx):
         if 'roberta' in name:
             out = net(inputs, valid_length)
         elif 'xlmr' in name:
-            # Skip for XLMR tests. It takes too much CPU memory.
-            return
+            out = net(inputs, valid_length)
         elif 'bart' in name:
             out = net(inputs, valid_length, inputs, valid_length)
+        elif 'gpt2' in name:
+            # Temporarily skip GPT-2 test
+            pass
         else:
             out = net(inputs, token_types, valid_length)
         mx.npx.waitall()

@@ -12,6 +12,7 @@ def test_list_pretrained_bart():
     assert len(list_pretrained_bart()) > 0
 
 
+@pytest.mark.slow
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_bart())
 def test_bart(model_name):
