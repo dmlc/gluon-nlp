@@ -427,7 +427,7 @@ def test_xlnet_finetune_squad():
 @pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
-@pytest.mark.parametrize('bert_model', ['bert_12_768_12', 'bert_24_1024_16'])
+@pytest.mark.parametrize('bert_model', ['bert_12_768_12'])
 @pytest.mark.parametrize('task', ['SST', 'embedding', 'QA'])
 @pytest.mark.parametrize('dtype', ['float32', 'float16'])
 def test_deploy_bert(bert_model, task, dtype):
