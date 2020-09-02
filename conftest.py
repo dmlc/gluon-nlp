@@ -38,6 +38,14 @@ def pytest_sessionfinish(session, exitstatus):
         session.exitstatus = 0
 
 
+def pytest_addoption(parser):
+    parser.addoption("--device", action="append", default=[],
+                     help="list of device choices to run the tests. ex: mx.gpu() (For GPU test only)")
+    parser.addoption(
+        "--runslow", action="store_true", default=False, help="run slow tests"
+    )
+
+
 # * Random seed setup
 def pytest_configure(config):
     """Pytest configuration hook to help reproduce test segfaults
@@ -207,14 +215,6 @@ def doctest(doctest_namespace):
     doctest_namespace['gluon'] = mx.gluon
     import doctest
     doctest.ELLIPSIS_MARKER = '-etc-'
-
-
-def pytest_addoption(parser):
-    parser.addoption("--device", action="append", default=[],
-                     help="list of device choices to run the tests. ex: mx.gpu() (For GPU test only)")
-    parser.addoption(
-        "--runslow", action="store_true", default=False, help="run slow tests"
-    )
 
 
 def pytest_collection_modifyitems(config, items):
