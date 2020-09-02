@@ -25,10 +25,10 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
         The language to tokenize. Default is None, and we will choose the tokenizer
         automatically based on the language:
 
-        en --> 'en_core_web_sm-2.3.0'
-        de --> 'de_core_news_sm-2.3.0'
-        fr --> 'fr_core_news_sm-2.3.0'
-        ja --> 'ja_core_news_sm-2.3.0'
+        en --> 'en_core_web_sm'
+        de --> 'de_core_news_sm'
+        fr --> 'fr_core_news_sm'
+        ja --> 'ja_core_news_sm'
 
         For more details about how to set this flag, you may refer to
         https://spacy.io/usage/models for supported languages.
@@ -65,31 +65,24 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
         if model is None:
             assert lang is not None
             if lang == 'en':
-                model = 'en_core_web_sm-2.3.0'
+                model = 'en_core_web_sm'
             elif lang == 'de':
-                model = 'de_core_news_sm-2.3.0'
+                model = 'de_core_news_sm'
             elif lang == 'fr':
-                model = 'fr_core_news_sm-2.3.0'
+                model = 'fr_core_news_sm'
             elif lang == 'ja':
-                model = 'ja_core_news_cm-2.3.0'
+                model = 'ja_core_news_cm'
             else:
-                model = 'xx_ent_wiki_sm-2.3.0'
+                model = 'xx_ent_wiki_sm'
+        self._model = model
         retries = 5
-        if '-' in model:
-            model, version = model.split('-')
-        else:
-            version = None
-        self._version = version
         try:
             self._nlp = spacy.load(model, disable=['parser', 'tagger', 'ner'])
         except (Exception, IOError, OSError):
             from spacy.cli import download
             while retries >= 0:
                 try:
-                    if version is not None:
-                        download(model + '-' + version, True)
-                    else:
-                        download(model, False)
+                    download(model, False)
                     self._nlp = spacy.load(model, disable=['parser', 'tagger', 'ner'])
                     break
                 except (Exception, IOError, OSError) as download_err:
@@ -151,10 +144,6 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
     @property
     def model(self):
         return self._model
-
-    @property
-    def version(self):
-        return self._version
 
     @property
     def vocab(self):
