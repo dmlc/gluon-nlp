@@ -443,7 +443,21 @@ def get_pretrain_data_text(data, batch_size, shuffle, num_buckets, tokenizer, vo
 
 
 class ElectraMasker(HybridBlock):
-    """process the pre-processed pretrain data"""
+    """ELECTRA pre-processes and applies masks pretrain data
+
+    Parameters
+    ----------
+    tokenizer : gluonnlp.data.tokenizers
+        Used to tokenize the pretrained text sequence.
+    max_sea_length : int
+        Maximum sequence length of preprocessed text for pretraining.
+    mask_prob : float
+        The probability of applying masks on the token in the sequence.
+    proposal_distribution : float
+        A predefined probability distribution for each position in the sequence.
+    replace_prob : float
+        The probability of replace current token with a generator-predicted token.
+    """
     MaskedInput = collections.namedtuple('MaskedInput',
                                          ['input_ids',
                                           'masks',

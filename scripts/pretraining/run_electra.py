@@ -243,11 +243,6 @@ def train(args):
                                                   args.attention_dropout_prob,
                                                   args.generator_units_scale,
                                                   args.generator_layers_scale)
-
-    # We initialize EletraMasker with two probabilities, i.e. mask_prob and
-    # replace_prob. For mask_prob, it determines how many tokens are masked
-    # for a given input sequence. For replace_prob, it determines how many masked
-    # tokens are replaced with the generator predicted tokens.
     data_masker = ElectraMasker(
         tokenizer, args.max_seq_length, mask_prob=args.mask_prob,
         replace_prob=args.replace_prob)
