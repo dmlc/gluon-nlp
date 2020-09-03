@@ -6,8 +6,8 @@ SQuAD datasets is distributed under the [CC BY-SA 4.0](http://creativecommons.or
 Run the following command to download squad
 
 ```bash
-python prepare_squad.py --version 1.1 # Squad 1.1
-python prepare_squad.py --version 2.0 # Squad 2.0
+python3 prepare_squad.py --version 1.1 # Squad 1.1
+python3 prepare_squad.py --version 2.0 # Squad 2.0
 ```
 
 For all datasets we support, we provide command-line-toolkits for downloading them as
@@ -25,12 +25,15 @@ squad
 ```
 
 ## SearchQA
-Following BSD-3-Clause License, we uploaded the SearchQA to our S3 bucket and provide the link to download the processed txt files. Please check out the [Google drive link](https://drive.google.com/drive/u/0/folders/1kBkQGooNyG0h8waaOJpgdGtOnlb1S649) to download to raw and split files collected through web search using the scraper from [GitHub repository](https://github.com/nyu-dl/dl4ir-searchQA).
+Following BSD-3-Clause License, we uploaded the SearchQA to our S3 bucket and provide the link to 
+download the processed txt files. Please check out the [Google drive link](https://drive.google.com/drive/u/0/folders/1kBkQGooNyG0h8waaOJpgdGtOnlb1S649) 
+to download to raw and split files collected through web search using the scraper 
+from [GitHub repository](https://github.com/nyu-dl/dl4ir-searchQA).
 
 Download SearchQA Dataset with python command or Command-line Toolkits
 
 ```bash
-python prepare_searchqa.py
+python3 prepare_searchqa.py
 
 # Or download with command-line toolkits
 nlp_data prepare_searchqa
@@ -50,8 +53,8 @@ searchqa
 Run the following command to download triviaqa
 
 ```bash
-python prepare_triviaqa.py --version rc         # Download TriviaQA version 1.0 for RC (2.5G)
-python prepare_triviaqa.py --version unfiltered # Download unfiltered TriviaQA version 1.0 (604M)
+python3 prepare_triviaqa.py --version rc         # Download TriviaQA version 1.0 for RC (2.5G)
+python3 prepare_triviaqa.py --version unfiltered # Download unfiltered TriviaQA version 1.0 (604M)
 
 # Or download with command-line toolkits
 nlp_data prepare_triviaqa --version rc
@@ -85,7 +88,7 @@ triviaqa
 HotpotQA is distributed under a [CC BY-SA 4.0 License](https://creativecommons.org/licenses/by-sa/4.0/). We only provide download scripts (run by the following command), and please check out the [GitHub repository](https://github.com/hotpotqa/hotpot) for the details of preprocessing and evaluation.
 
 ```bash
-python prepare_hotpotqa.py
+python3 prepare_hotpotqa.py
 
 # Or download with command-line toolkits
 nlp_data prepare_hotpotqa

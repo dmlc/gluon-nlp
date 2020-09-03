@@ -19,15 +19,15 @@ fi;
 
 git fetch origin $SOURCE_REF:working
 git checkout working
+python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20200802" -f https://dist.mxnet.io/python
 pip3 install -v -e .[extras]
-TIMESTAMP=$(date '+%Y%m%dT%H%M%SZ')
 
 cd $WORK_DIR
 /bin/bash -o pipefail -c "$COMMAND"
 COMMAND_EXIT_CODE=$?
 if [[ -f $SAVED_OUTPUT ]]; then
-  aws s3 cp $SAVED_OUTPUT s3://gluon-nlp-dev/batch/$TIMESTAMP/$AWS_BATCH_JOB_ID/$SAVE_PATH;
+  aws s3 cp $SAVED_OUTPUT s3://gluon-nlp-dev/batch/$AWS_BATCH_JOB_ID/$SAVE_PATH;
 elif [[ -d $SAVED_OUTPUT ]]; then
-  aws s3 cp --recursive $SAVED_OUTPUT s3://gluon-nlp-dev/batch/$TIMESTAMP/$AWS_BATCH_JOB_ID/$SAVE_PATH;
+  aws s3 cp --recursive $SAVED_OUTPUT s3://gluon-nlp-dev/batch/$AWS_BATCH_JOB_ID/$SAVE_PATH;
 fi;
 exit $COMMAND_EXIT_CODE

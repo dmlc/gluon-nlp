@@ -14,7 +14,7 @@ import gluonnlp.data.batchify as bf
 from gluonnlp.utils.misc import glob
 from gluonnlp.data.loading import NumpyDataset, DatasetLoader
 from gluonnlp.data.sampler import SplitSampler, FixedBucketSampler
-from gluonnlp.op import select_vectors_by_position, updated_vectors_by_position
+from gluonnlp.op import select_vectors_by_position, update_vectors_by_position
 
 PretrainFeature = collections.namedtuple(
     'PretrainFeature',
@@ -41,7 +41,6 @@ def tokenize_lines_to_ids(lines, tokenizer):
     """
     results = []
     # tag line delimiters or doc delimiters
-    line_delimiters = False
     for line in lines:
         if not line:
             break
@@ -49,9 +48,7 @@ def tokenize_lines_to_ids(lines, tokenizer):
         # Single empty lines are used as line delimiters
         # Double empty lines are used as document delimiters
         if not line:
-            if not line_delimiters:
-                results.append([])
-            line_delimiters = not line_delimiters
+            results.append([])
         else:
             token_ids = tokenizer.encode(line, int)
             if token_ids:
@@ -65,16 +62,20 @@ def get_all_features(x):
 
     Parameters
     ----------
-    file_list
-        A list of text files
-    output_file
-         The path to a output file that store the np_features
-    tokenizer
-        The trained tokenizer
-    max_seq_length
-        Maximum sequence length of the training features
-    short_seq_prob
-         The probability of sampling sequences shorter than the max_seq_length.
+    x
+        List/tuple that contains:
+
+        - file_list
+            A list of text files
+        - output_file
+             The path to a output file that store the np_features
+        - tokenizer
+            The trained tokenizer
+        - max_seq_length
+            Maximum sequence length of the training features
+        - short_seq_prob
+             The probability of sampling sequences shorter than the max_seq_length.
+
     Returns
     -------
     np_features
@@ -108,6 +109,7 @@ def process_a_text(text_file, tokenizer, max_seq_length, short_seq_prob=0.05):
         Maximum sequence length of the training features
     short_seq_prob
         The probability of sampling sequences shorter than the max_seq_length.
+
     Returns
     -------
     features
@@ -125,8 +127,9 @@ def process_a_text(text_file, tokenizer, max_seq_length, short_seq_prob=0.05):
         for tokenized_line in tokenized_lines:
             current_sentences.append(tokenized_line)
             current_length += len(tokenized_line)
-            # Create feature when meets the empty line or  reaches the target length
-            if (not tokenized_line and current_length != 0) or (current_length >= target_seq_length):
+            # Create feature when meets the empty line or reaches the target length
+            if (not tokenized_line and current_length != 0) or (
+                    current_length >= target_seq_length):
                 first_segment, second_segment = \
                     sentenceize(current_sentences, max_seq_length, target_seq_length)
 
@@ -170,8 +173,12 @@ def convert_to_npz(all_features, output_file=None):
         The path to a output file that store the np_features.
     Returns
     -------
-    (input_ids, segment_ids, valid_lengths)
+    input_ids
         A tuple of features
+    segment_ids
+        The segment ids
+    valid_lengths
+        The valid lengths
     """
     input_ids = []
     segment_ids = []
@@ -192,7 +199,7 @@ def convert_to_npz(all_features, output_file=None):
         npz_outputs['valid_lengths'] = np.array(valid_lengths, dtype='int32')
         np.savez_compressed(output_file, **npz_outputs)
         logging.info("Saved {} features in {} ".format(len(all_features), output_file))
-    return (input_ids, segment_ids, valid_lengths)
+    return input_ids, segment_ids, valid_lengths
 
 
 def sentenceize(current_sentences, max_seq_length, target_seq_length):
@@ -265,11 +272,11 @@ def prepare_pretrain_text_dataset(
     """Create dataset based on the raw text files"""
     if not isinstance(filenames, (list, tuple)):
         filenames = [filenames]
-    # generate a filename based on the input filename ensuring no crash.
-    # filename example: urlsf_subset00-130_data.txt
-    suffix = re.findall(r'\d+-\d+', filenames[0])[0]
     if cached_file_path:
-        output_file = os.path.join(cached_file_path, "owt-pretrain-record-{}.npz".format(suffix))
+        # generate a filename based on the input filename ensuring no crash.
+        # filename example: urlsf_subset00-130_data.txt
+        suffix = re.split(r'\.|/', filenames[0])[-2]
+        output_file = os.path.join(cached_file_path, "{}-pretrain-record.npz".format(suffix))
     else:
         output_file = None
     np_features = get_all_features(
@@ -290,7 +297,7 @@ def prepare_pretrain_bucket_sampler(dataset, batch_size, shuffle=False, num_buck
                                  num_buckets=num_buckets,
                                  ratio=0,
                                  shuffle=shuffle)
-    logging.debug('Sampler created for a new dataset:\n%s', sampler)
+    logging.debug('Sampler created for a new dataset:\n {}'.format(sampler))
     return sampler
 
 
@@ -298,7 +305,8 @@ def get_pretrain_data_npz(data, batch_size, shuffle, num_buckets,
                           vocab, num_parts=1, part_idx=0,
                           num_dataset_workers=1, num_batch_workers=1,
                           circle_length=1, repeat=1,
-                          dataset_cached=False, num_max_dataset_cached=0):
+                          dataset_cached=False,
+                          num_max_dataset_cached=0):
     """Get a data iterator from pre-processed npz files.
 
     Parameters
@@ -435,7 +443,21 @@ def get_pretrain_data_text(data, batch_size, shuffle, num_buckets, tokenizer, vo
 
 
 class ElectraMasker(HybridBlock):
-    """process the pre-processed pretrain data"""
+    """ELECTRA pre-processes and applies masks pretrain data
+
+    Parameters
+    ----------
+    tokenizer : gluonnlp.data.tokenizers
+        Used to tokenize the pretrained text sequence.
+    max_seq_length : int
+        Maximum sequence length of preprocessed text for pretraining.
+    mask_prob : float
+        The probability of applying masks on the token in the sequence.
+    proposal_distribution : float
+        A predefined probability distribution for each position in the sequence.
+    replace_prob : float
+        The probability of replace current token with a generator-predicted token.
+    """
     MaskedInput = collections.namedtuple('MaskedInput',
                                          ['input_ids',
                                           'masks',
@@ -443,14 +465,16 @@ class ElectraMasker(HybridBlock):
                                           'masked_positions',
                                           'masked_weights'])
 
-    def __init__(self, tokenizer, max_seq_length, mask_prob,
-                 proposal_distribution=1.0):
+    def __init__(self, tokenizer, max_seq_length, mask_prob=0.15,
+                 proposal_distribution=1.0, replace_prob=0.85):
+        super().__init__()
         self._max_seq_length = max_seq_length
         self._mask_prob = mask_prob
         self._max_num_masked_position = int((self._mask_prob + 0.005) *
                                             self._max_seq_length)
         self._proposal_distribution = proposal_distribution
         self.vocab = tokenizer.vocab
+        self._replace_prob = replace_prob
 
     def dynamic_masking(self, F, input_ids, valid_lengths):
         # TODO(zheyuye), two additional flag `disallow_from_mask` and `already_masked`
@@ -490,19 +514,24 @@ class ElectraMasker(HybridBlock):
 
         for ignore_token in ignore_tokens:
             # TODO(zheyuye), Update when operation += supported
-            valid_candidates = valid_candidates + \
+            valid_candidates = valid_candidates * \
                 F.np.not_equal(input_ids, ignore_token)
         valid_lengths = valid_lengths.astype(np.float32)
         valid_candidates = valid_candidates.astype(np.float32)
         num_masked_position = F.np.maximum(
             1, F.np.minimum(N, round(valid_lengths * self._mask_prob)))
-        # The categorical distribution takes normalized probabilities as input
-        # softmax is used here instead of log_softmax
-        sample_probs = F.npx.softmax(
-            self._proposal_distribution * valid_candidates, axis=-1)  # (B, L)
-        # Top-k Sampling is an alternative solution to avoid duplicates positions
-        masked_positions = F.npx.random.categorical(
-            sample_probs, shape=N, dtype=np.int32)
+
+        # Get the masking probability of each position
+        sample_probs = self._proposal_distribution * valid_candidates
+        sample_probs /= F.np.sum(sample_probs, axis=-1, keepdims=True)
+        sample_probs = F.npx.stop_gradient(sample_probs)
+        gumbels = F.np.random.gumbel(F.np.zeros_like(sample_probs))
+        # Following the instruction of official repo to avoid deduplicate postions
+        # with Top_k Sampling as https://github.com/google-research/electra/issues/41
+        masked_positions = F.npx.topk(
+            F.np.log(sample_probs) + gumbels, k=N,
+            axis=-1, ret_typ='indices', dtype=np.int32)
+
         masked_weights = F.npx.sequence_mask(
             F.np.ones_like(masked_positions),
             sequence_length=num_masked_position,
@@ -511,21 +540,27 @@ class ElectraMasker(HybridBlock):
         length_masks = F.npx.sequence_mask(
             F.np.ones_like(input_ids, dtype=np.float32),
             sequence_length=valid_lengths,
-            use_sequence_length=True, axis=1, value=0).astype(np.float32)
+            use_sequence_length=True, axis=1, value=0)
         unmasked_tokens = select_vectors_by_position(
             F, input_ids, masked_positions) * masked_weights
         masked_weights = masked_weights.astype(np.float32)
-
         replaced_positions = (
             F.np.random.uniform(
                 F.np.zeros_like(masked_positions),
-                F.np.ones_like(masked_positions)) > self._mask_prob) * masked_positions
-        #  deal with multiple zeros
+                F.np.ones_like(masked_positions)) < self._replace_prob) * masked_positions
+        # dealing with multiple zero values in replaced_positions which causes
+        # the [CLS] being replaced
         filled = F.np.where(
             replaced_positions,
             self.vocab.mask_id,
-            masked_positions).astype(np.int32)
-        masked_input_ids, _ = updated_vectors_by_position(F, input_ids, filled, replaced_positions)
+            self.vocab.cls_id).astype(
+            np.int32)
+        # Masking token by replacing with [MASK]
+        masked_input_ids = update_vectors_by_position(F, input_ids, filled, replaced_positions)
+
+        # Note: It is likely have multiple zero values in masked_positions if number of masked of
+        # positions not reached the maximum. However, this example hardly exists since valid_length
+        # is almost always equal to max_seq_length
         masked_input = self.MaskedInput(input_ids=masked_input_ids,
                                         masks=length_masks,
                                         unmasked_tokens=unmasked_tokens,

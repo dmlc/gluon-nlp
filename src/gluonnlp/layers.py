@@ -81,7 +81,6 @@ class NoNorm(HybridBlock):
     in_channels : int
         Number of channels (feature maps) in input data. If not specified,
         initialization will be deferred to the first time `forward` is called
-
     center: bool, default True
         If True, add offset of `beta` to normalized tensor.
         If False, `beta` is ignored.
@@ -356,9 +355,10 @@ class GELU(HybridBlock):
 
     def hybrid_forward(self, F, x):
         if self._mode == 'erf':
-            return x * 0.5 * (1.0 + F.npx.erf(x / math.sqrt(2.0)))
+            return F.npx.leaky_relu(x, act_type='gelu')
         elif self._mode == 'tanh':
-            return 0.5 * x * (1.0 + F.np.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * (x ** 3))))
+            return 0.5 * x\
+                   * (1.0 + F.np.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * (x ** 3))))
         elif self._mode == 'sigmoid':
             return x * F.npx.sigmoid(1.702 * x)
         else:

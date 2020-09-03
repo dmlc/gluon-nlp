@@ -7,11 +7,11 @@ import shutil
 import functools
 import tarfile
 import gzip
+import json
 from xml.etree import ElementTree
 from gluonnlp.data.filtering import ProfanityFilter
 from gluonnlp.utils.misc import file_line_number, download, load_checksum_stats
-from gluonnlp.base import get_data_home_dir
-from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
+from gluonnlp.base import get_data_home_dir, get_repo_url
 
 # The datasets are provided by WMT2014-WMT2019 and can be freely used for research purposes.
 # You will need to cite the WMT14-WMT19 shared task overview paper and additional citation
@@ -336,10 +336,22 @@ _MONOLINGUAL_URLS = {
     }
 }
 
+with open(os.path.join(_CURR_DIR, '..', 'url_checksums', 'mirror', 'wmt.json'), encoding='utf-8') as wmt_mirror_map_f:
+    _WMT_MIRROR_URL_MAP = json.load(wmt_mirror_map_f)
+
+
+def _download_with_mirror(url, path, sha1_hash):
+    return download(
+        get_repo_url() + _WMT_MIRROR_URL_MAP[url] if url in _WMT_MIRROR_URL_MAP else url,
+        path=path,
+        sha1_hash=sha1_hash
+    )
+
 
 def _clean_space(s: str):
     """Removes trailing and leading spaces and collapses multiple consecutive internal spaces to a single one.
-    This is borrowed from sacrebleu: https://github.com/mjpost/sacreBLEU/blob/069b0c88fceb29f3e24c3c19ba25342a3e7f96cb/sacrebleu.py#L1077
+    This is borrowed from sacrebleu:
+    https://github.com/mjpost/sacreBLEU/blob/069b0c88fceb29f3e24c3c19ba25342a3e7f96cb/sacrebleu.py#L1077
 
     Parameters
     ----------
@@ -626,7 +638,11 @@ def fetch_mono_dataset(selection: Union[str, List[str], List[List[str]]],
             save_path_l = [path] + selection + [matched_lang, original_filename]
         else:
             save_path_l = [path] + selection + [original_filename]
-        download_fname = download(url, path=os.path.join(*save_path_l), sha1_hash=sha1_hash)
+        download_fname = _download_with_mirror(
+            url,
+            path=os.path.join(*save_path_l),
+            sha1_hash=sha1_hash
+        )
         download_fname_l.append(download_fname)
     if len(download_fname_l) > 1:
         data_path = concatenate_files(download_fname_l)
@@ -792,7 +808,11 @@ def fetch_wmt_parallel_dataset(selection: Union[str, List[str], List[List[str]]]
             save_path_l = [path] + selection + [matched_pair, original_filename]
         else:
             save_path_l = [path] + selection + [original_filename]
-        download_fname = download(url, path=os.path.join(*save_path_l), sha1_hash=sha1_hash)
+        download_fname = _download_with_mirror(
+            url,
+            path=os.path.join(*save_path_l),
+            sha1_hash=sha1_hash
+        )
         download_fname_l.append(download_fname)
     if len(download_fname_l) > 1:
         data_path = concatenate_files(download_fname_l)
@@ -926,11 +946,13 @@ def download_wmt17_train(lang_pair: str = 'en-de', path: str = _BASE_DATASET_PAT
     return train_src_paths, train_tgt_paths
 
 
-@DATA_PARSER_REGISTRY.register('prepare_wmt')
 def get_parser():
     parser = argparse.ArgumentParser(description='Downloading and Preprocessing WMT Datasets.')
     parser.add_argument('--dataset', type=str, required=True,
-                        choices=['wmt2014', 'wmt2017', 'newscrawl'],
+                        choices=['wmt2014',
+                                 'wmt2016',
+                                 'wmt2017',
+                                 'newscrawl'],
                         help='The dataset to use.')
     parser.add_argument('--mono', action='store_true',
                         help='Download monolingual dataset.')
@@ -986,7 +1008,6 @@ def mono_main(args):
         raise NotImplementedError
 
 
-@DATA_MAIN_REGISTRY.register('prepare_wmt')
 def main(args):
     if args.mono:
         mono_main(args)

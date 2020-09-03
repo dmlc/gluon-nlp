@@ -3,8 +3,8 @@ import pytest
 from numpy.testing import assert_allclose
 from gluonnlp.models.transformer import\
     TransformerEncoder, TransformerDecoder, \
-    TransformerNMTModel, TransformerNMTInference,\
-    transformer_nmt_cfg_reg
+    TransformerModel, TransformerNMTInference,\
+    transformer_cfg_reg
 from gluonnlp.attention_cell import gen_mem_attn_mask, gen_self_attn_mask
 from gluonnlp.utils.testing import verify_nmt_model, verify_nmt_inference
 mx.npx.set_np()
@@ -33,6 +33,23 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
     encoded_mem = enc(src_data, src_valid_length)
     full_decode_out = dec(dst_data, dst_valid_length, encoded_mem, src_valid_length)
 
+    # Test for the TN layout
+    enc_tn = TransformerEncoder(units=units, hidden_size=64, num_layers=num_enc_layers, num_heads=4,
+                                dropout=0.0, pre_norm=pre_norm, layout='TN')
+    enc_tn.share_parameters(enc.collect_params())
+    dec_tn = TransformerDecoder(units=units, hidden_size=64, num_layers=num_dec_layers, num_heads=4,
+                                dropout=0.0, pre_norm=pre_norm, layout='TN')
+    dec_tn.share_parameters(dec.collect_params())
+    enc_tn.hybridize()
+    dec_tn.hybridize()
+    encoded_mem_tn = enc_tn(mx.np.swapaxes(src_data, 0, 1), src_valid_length)
+    full_decode_out_tn = dec_tn(mx.np.swapaxes(dst_data, 0, 1), dst_valid_length,
+                                encoded_mem_tn, src_valid_length)
+    assert_allclose(encoded_mem_tn.asnumpy(),
+                    mx.np.swapaxes(encoded_mem, 0, 1).asnumpy(), 1E-5, 1E-5)
+    assert_allclose(full_decode_out_tn.asnumpy(),
+                    mx.np.swapaxes(full_decode_out, 0, 1).asnumpy(), 1E-5, 1E-5)
+
     # Test the consistency via shifting the data and the valid_length
     for i in range(1, dst_valid_length.asnumpy().min()):
         for partial_decode_out in [dec(dst_data[:, :(-i), :],
@@ -52,11 +69,11 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
     states = dec.layers[0].init_states(batch_size, h_out.ctx, h_out.dtype)
     h_out_from_incremental = []
     for i in range(tgt_seq_length):
-        ele_h_out, states = dec.layers[0].incremental_decode(mx, dst_data[:, i:(i + 1), :], states,
+        ele_h_out, states = dec.layers[0].incremental_decode(mx, dst_data[:, i, :], states,
                                                              encoded_mem, src_valid_length,
                                                              enc_mem_attn_mask)
         h_out_from_incremental.append(ele_h_out)
-    h_out_from_incremental = mx.np.concatenate(h_out_from_incremental, axis=1)
+    h_out_from_incremental = mx.np.stack(h_out_from_incremental, axis=1)
 
     for i in range(batch_size):
         val_length = dst_valid_length[i].asnumpy()
@@ -66,10 +83,10 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
     states = dec.init_states(batch_size, src_data.ctx, src_data.dtype)
     final_out_from_incremental = []
     for i in range(tgt_seq_length):
-        ele_final_out, states = dec.incremental_decode(mx, dst_data[:, i:(i + 1), :],
+        ele_final_out, states = dec.incremental_decode(mx, dst_data[:, i, :],
                                                        states, encoded_mem, src_valid_length)
         final_out_from_incremental.append(ele_final_out)
-    final_out_from_incremental = mx.np.concatenate(final_out_from_incremental, axis=1)
+    final_out_from_incremental = mx.np.stack(final_out_from_incremental, axis=1)
     for i in range(batch_size):
         val_length = dst_valid_length[i].asnumpy()
         assert_allclose(final_out_from_incremental[i, :val_length, :].asnumpy(),
@@ -85,12 +102,13 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
                           (2, 3, 16, 24)])
 @pytest.mark.parametrize('enc_recurrent', [False, True])
 @pytest.mark.parametrize('dec_recurrent', [False, True])
-@pytest.mark.parametrize('tie_weights', [False, True])
+@pytest.mark.parametrize('tie_weights,layout', [(False, 'NT'), (True, 'NT'), (True, 'TN')])
 def test_transformer_nmt_model(train_hybridize, inference_hybridize,
                                enc_pre_norm, dec_pre_norm,
                                enc_units, dec_units,
                                enc_num_layers, dec_num_layers,
-                               enc_recurrent, dec_recurrent, tie_weights):
+                               enc_recurrent, dec_recurrent, tie_weights,
+                               layout):
     src_seq_length = 20
     tgt_seq_length = 15
     src_vocab_size = 32
@@ -99,25 +117,26 @@ def test_transformer_nmt_model(train_hybridize, inference_hybridize,
         shared_embed = False
     else:
         shared_embed = True
-    model = TransformerNMTModel(src_vocab_size=src_vocab_size,
-                                tgt_vocab_size=tgt_vocab_size,
-                                max_src_length=src_seq_length,
-                                max_tgt_length=tgt_seq_length,
-                                enc_units=enc_units,
-                                enc_hidden_size=64,
-                                enc_num_heads=4,
-                                enc_num_layers=enc_num_layers,
-                                enc_pre_norm=enc_pre_norm,
-                                enc_recurrent=enc_recurrent,
-                                dec_units=dec_units,
-                                dec_hidden_size=64,
-                                dec_num_heads=4,
-                                dec_num_layers=dec_num_layers,
-                                dec_pre_norm=dec_pre_norm,
-                                dec_recurrent=dec_recurrent,
-                                shared_embed=shared_embed,
-                                tie_weights=tie_weights,
-                                dropout=0.0)
+    model = TransformerModel(src_vocab_size=src_vocab_size,
+                             tgt_vocab_size=tgt_vocab_size,
+                             max_src_length=src_seq_length,
+                             max_tgt_length=tgt_seq_length,
+                             enc_units=enc_units,
+                             enc_hidden_size=64,
+                             enc_num_heads=4,
+                             enc_num_layers=enc_num_layers,
+                             enc_pre_norm=enc_pre_norm,
+                             enc_recurrent=enc_recurrent,
+                             dec_units=dec_units,
+                             dec_hidden_size=64,
+                             dec_num_heads=4,
+                             dec_num_layers=dec_num_layers,
+                             dec_pre_norm=dec_pre_norm,
+                             dec_recurrent=dec_recurrent,
+                             shared_embed=shared_embed,
+                             tie_weights=tie_weights,
+                             dropout=0.0,
+                             layout=layout)
     inference_model = TransformerNMTInference(model=model)
     model.initialize()
     if train_hybridize:
@@ -129,17 +148,23 @@ def test_transformer_nmt_model(train_hybridize, inference_hybridize,
 
 
 def test_transformer_cfg_registry():
-    assert len(transformer_nmt_cfg_reg.list_keys()) > 0
+    assert len(transformer_cfg_reg.list_keys()) > 0
 
 
-@pytest.mark.parametrize('cfg_key', transformer_nmt_cfg_reg.list_keys())
+@pytest.mark.parametrize('cfg_key', transformer_cfg_reg.list_keys())
 def test_transformer_cfg(cfg_key):
-    cfg = TransformerNMTModel.get_cfg(cfg_key)
+    cfg = TransformerModel.get_cfg(cfg_key)
     cfg.defrost()
-    cfg.MODEL.src_vocab_size = 1000
-    cfg.MODEL.tgt_vocab_size = 1000
+    cfg.MODEL.src_vocab_size = 32
+    cfg.MODEL.tgt_vocab_size = 32
     cfg.freeze()
-    model = TransformerNMTModel.from_cfg(cfg)
+    model = TransformerModel.from_cfg(cfg)
     model.initialize()
     model.hybridize()
+    cfg.defrost()
+    cfg.MODEL.layout = 'TN'
+    cfg.freeze()
+    model_tn = TransformerModel.from_cfg(cfg)
+    model_tn.share_parameters(model.collect_params())
+    model_tn.hybridize()
     mx.npx.waitall()

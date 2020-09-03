@@ -19,7 +19,6 @@ import tarfile
 import argparse
 import functools
 import multiprocessing
-from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 
 _CITATIONS = r"""
 @misc{Gokaslan2019OpenWeb,
@@ -31,7 +30,6 @@ _CITATIONS = r"""
 """
 
 
-@DATA_PARSER_REGISTRY.register('prepare_openwebtext')
 def get_parser():
     parser = argparse.ArgumentParser(description='Prepare the OpenWebText corpus for pretraining')
     parser.add_argument("-i", "--input", required=True,
@@ -51,24 +49,24 @@ def extract_files(full_name, output_dir, shuffle=False):
     """
     if not full_name.endswith(".xz"):
         return
-    file_prefix =  re.split('\.|/',full_name)[1]
-    with open("{}.txt".format(os.path.join(output_dir, file_prefix)),"w") as fp:
+    file_prefix = re.split(r'\.|/', full_name)[-2]
+    file_prefix = file_prefix.replace('urlsf_subset', 'openwebtext-prepared-')
+    with open("{}.txt".format(os.path.join(output_dir, file_prefix)), "w") as fp:
         with tarfile.open(full_name) as t:
             txt_names = t.getnames()
             if shuffle:
-                txt_names = random.shuffle(txt_names)
+                random.shuffle(txt_names)
             for txt_name in txt_names:
                 f = t.extractfile(txt_name)
                 for line in f.readlines():
                     # skip empty line
                     line = line.strip()
                     if line:
-                        fp.write(line.decode()+'\n')
+                        fp.write(line.decode() + '\n')
                 # Two extra line break to mark the document separation
-                fp.write('\n\n')
+                fp.write('\n')
 
 
-@DATA_MAIN_REGISTRY.register('prepare_openwebtext')
 def main(args):
     num_process = min(multiprocessing.cpu_count(), args.num_process)
     if not os.path.exists(args.output):
@@ -76,11 +74,16 @@ def main(args):
     fnames = sorted(os.listdir(args.input))
     fnames = [os.path.join(args.input, fname) for fname in fnames]
     if args.shuffle:
-        fnames = random.shuffle(fnames)
+        random.shuffle(fnames)
     print('Start extracting {} files with {} cores'.format(len(fnames), num_process))
     start_time = time.time()
     with multiprocessing.Pool(num_process) as pool:
-        iter = pool.imap(functools.partial(extract_files, output_dir=args.output, shuffle=args.shuffle), fnames)
+        iter = pool.imap(
+            functools.partial(
+                extract_files,
+                output_dir=args.output,
+                shuffle=args.shuffle),
+            fnames)
         for f_index, _ in enumerate(iter):
             if f_index > 0 and f_index % 250 == 0:
                 elapsed = time.time() - start_time

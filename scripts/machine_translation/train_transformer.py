@@ -42,16 +42,28 @@ import math
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
-from gluonnlp.models.transformer import TransformerNMTModel
+from gluonnlp.models.transformer import TransformerModel
 from gluonnlp.utils.misc import logging_config, AverageSGDTracker, count_parameters,\
-    md5sum, grouper
-from gluonnlp.data.sampler import *
+    md5sum, grouper, init_comm
+from gluonnlp.data.sampler import (
+    ConstWidthBucket,
+    LinearWidthBucket,
+    ExpWidthBucket,
+    FixedBucketSampler,
+    BoundedBudgetSampler,
+    ShardedIterator
+)
 import gluonnlp.data.batchify as bf
 from gluonnlp.data import Vocab
 from gluonnlp.data import tokenizers
-from gluonnlp.data.tokenizers import BaseTokenizerWithVocab
+from gluonnlp.data.tokenizers import BaseTokenizerWithVocab, huggingface
 from gluonnlp.lr_scheduler import InverseSquareRootScheduler
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
+try:
+    import horovod.mxnet as hvd
+except ImportError:
+    hvd = None
+
 mx.npx.set_np()
 
 
@@ -106,11 +118,14 @@ def parse_args():
                              'each update step contains gpu_num * num_accumulated batches.')
     parser.add_argument('--save_interval_update', type=int, default=500,
                          help='Update interval of saving checkpoints while using max_update.')
-    parser.add_argument('--cfg', type=str, default='transformer_nmt_base',
+    parser.add_argument('--cfg', type=str, default='transformer_base',
                         help='Configuration of the transformer model. '
                              'You may select a yml file or use the prebuild configurations.')
     parser.add_argument('--label_smooth_alpha', type=float, default=0.1,
                         help='Weight of label smoothing')
+    parser.add_argument('--sampler', type=str, choices=['BoundedBudgetSampler',
+                                                        'FixedBucketSampler'],
+                        default='FixedBucketSampler', help='Type of sampler')
     parser.add_argument('--batch_size', type=int, default=2700,
                         help='Batch size. Number of tokens per gpu in a minibatch.')
     parser.add_argument('--val_batch_size', type=int, default=16,
@@ -123,6 +138,10 @@ def parse_args():
                              '"exp": the width of bucket increases exponentially')
     parser.add_argument('--bucket_ratio', type=float, default=0.0,
                         help='Ratio for increasing the throughput of the bucketing')
+    parser.add_argument('--max_num_tokens', type=int, default=-1,
+                        help='max tokens num of each batch, applicable while using BoundedBudgetSampler')
+    parser.add_argument('--max_num_sentences', type=int, default=-1,
+                        help='max sentences num of each batch, applicable while using BoundedBudgetSampler')
     parser.add_argument('--lr', type=float, default=0.002,
                         help='The learning rate at the end of the warmup stage. '
                              'If it is not given, we will use the formula suggested in the '
@@ -139,15 +158,20 @@ def parse_args():
                              'This is useful to mimic large batch training with limited gpu memory')
     parser.add_argument('--magnitude', type=float, default=3.0,
                         help='Magnitude of Xavier initialization')
-    parser.add_argument('--num_averages', type=int, default=5,
+    parser.add_argument('--num_averages', type=int, default=-1,
                         help='Perform final testing based on the '
                              'average of last num_averages checkpoints. '
-                             'This is only used if average_checkpoint is True')
+                             'Use num_average will cause extra gpu memory usage.')
     parser.add_argument('--log_interval', type=int, default=10, metavar='N',
                         help='report interval')
     parser.add_argument('--save_dir', type=str, default='transformer_out',
                         help='directory path to save the final model and training log')
     parser.add_argument('--overwrite_cache', action='store_true')
+    parser.add_argument('--fp16', action='store_true',
+                        help='Whether to use dtype float16')
+    parser.add_argument('--comm_backend', type=str, default='device',
+                        choices=['horovod', 'dist_sync_device', 'device'],
+                        help='Communication backend.')
     parser.add_argument('--gpus', type=str,
                         help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
     args = parser.parse_args()
@@ -157,12 +181,13 @@ def parse_args():
     logging.info(args)
     return args
 
+
 def validation(model, data_loader, ctx_l):
     """Validate the model on the dataset
 
     Parameters
     ----------
-    model : TransformerNMTModel
+    model : TransformerModel
         The transformer model
     data_loader : DataLoader
         DataLoader
@@ -209,14 +234,16 @@ def load_dataset_with_cache(src_corpus_path: str,
                             tgt_corpus_path: str,
                             src_tokenizer: BaseTokenizerWithVocab,
                             tgt_tokenizer: BaseTokenizerWithVocab,
-                            overwrite_cache: bool):
+                            overwrite_cache: bool,
+                            local_rank: int):
     # TODO online h5py multi processing encode (Tao)
     src_md5sum = md5sum(src_corpus_path)
     tgt_md5sum = md5sum(tgt_corpus_path)
     cache_filepath = os.path.join(CACHE_PATH,
                                   '{}_{}.cache.npz'.format(src_md5sum[:6], tgt_md5sum[:6]))
     if os.path.exists(cache_filepath) and not overwrite_cache:
-        logging.info('Load cache from {}'.format(cache_filepath))
+        if local_rank == 0:
+            logging.info('Load cache from {}'.format(cache_filepath))
         npz_data = np.load(cache_filepath, allow_pickle=True)
         src_data, tgt_data = npz_data['src_data'][:], npz_data['tgt_data'][:]
     else:
@@ -252,20 +279,25 @@ def create_tokenizer(tokenizer_type, model_path, vocab_path):
     elif tokenizer_type == 'spm':
         return tokenizers.create(tokenizer_type, model_path=model_path, vocab=vocab_path)
     elif tokenizer_type == 'subword_nmt':
-        return tokenizers.create(tokenizer_type, codec_path=model_path, vocab_path=vocab_path)
+        return tokenizers.create(tokenizer_type, model_path=model_path, vocab=vocab_path)
     elif tokenizer_type == 'yttm':
         return tokenizers.create(tokenizer_type, model_path=model_path)
-    elif tokenizer_type == 'hf_bytebpe':
-        return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
-    elif tokenizer_type == 'hf_wordpiece':
-        return tokenizers.create(tokenizer_type, vocab_file=vocab_path)
-    elif tokenizer_type == 'hf_bpe':
-        return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
+    elif tokenizer_type in ['hf_bytebpe', 'hf_wordpiece', 'hf_bpe']:
+        if huggingface.is_new_version_model_file(model_path):
+            return tokenizers.create('hf_tokenizer', model_path=model_path, vocab=vocab_path)
+        elif tokenizer_type == 'hf_bytebpe':
+            return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
+        elif tokenizer_type == 'hf_wordpiece':
+            return tokenizers.create(tokenizer_type, vocab_file=vocab_path)
+        elif tokenizer_type == 'hf_bpe':
+            return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
     else:
         raise NotImplementedError
 
 
 def train(args):
+    _, num_parts, rank, local_rank, _, ctx_l = init_comm(
+        args.comm_backend, args.gpus)
     src_tokenizer = create_tokenizer(args.src_tokenizer,
                                      args.src_subword_model_path,
                                      args.src_vocab_path)
@@ -278,34 +310,38 @@ def train(args):
                                                              args.train_tgt_corpus,
                                                              src_tokenizer,
                                                              tgt_tokenizer,
-                                                             args.overwrite_cache)
+                                                             args.overwrite_cache,
+                                                             local_rank)
     dev_src_data, dev_tgt_data = load_dataset_with_cache(args.dev_src_corpus,
                                                          args.dev_tgt_corpus,
                                                          src_tokenizer,
                                                          tgt_tokenizer,
-                                                         args.overwrite_cache)
+                                                         args.overwrite_cache,
+                                                         local_rank)
     data_train = gluon.data.SimpleDataset(
         [(src_tokens, tgt_tokens, len(src_tokens), len(tgt_tokens), i)
          for i, (src_tokens, tgt_tokens) in enumerate(zip(train_src_data, train_tgt_data))])
     data_val = gluon.data.SimpleDataset(
         [(src_tokens, tgt_tokens, len(src_tokens), len(tgt_tokens), i)
          for i, (src_tokens, tgt_tokens) in enumerate(zip(dev_src_data, dev_tgt_data))])
-    ctx_l = [mx.cpu()] if args.gpus is None or args.gpus == ''\
-        else [mx.gpu(int(x)) for x in args.gpus.split(',')]
     # Construct the model + loss function
     if args.cfg.endswith('.yml'):
-        cfg = TransformerNMTModel.get_cfg().clone_merge(args.cfg)
+        cfg = TransformerModel.get_cfg().clone_merge(args.cfg)
     else:
-        cfg = TransformerNMTModel.get_cfg(args.cfg)
+        cfg = TransformerModel.get_cfg(args.cfg)
     cfg.defrost()
     cfg.MODEL.src_vocab_size = len(src_vocab)
     cfg.MODEL.tgt_vocab_size = len(tgt_vocab)
+    if args.fp16:
+        raise NotImplementedError
+#        cfg.MODEL.dtype = 'float16'
     cfg.freeze()
-    model = TransformerNMTModel.from_cfg(cfg)
+    model = TransformerModel.from_cfg(cfg)
     model.initialize(mx.init.Xavier(magnitude=args.magnitude),
                      ctx=ctx_l)
     model.hybridize()
-    logging.info(model)
+    if local_rank == 0:
+        logging.info(model)
     with open(os.path.join(args.save_dir, 'config.yml'), 'w') as cfg_f:
         cfg_f.write(cfg.dump())
     label_smooth_loss = LabelSmoothCrossEntropyLoss(num_labels=len(tgt_vocab),
@@ -313,6 +349,10 @@ def train(args):
                                                     from_logits=False)
     label_smooth_loss.hybridize()
     rescale_loss = 100.0
+    
+    if args.comm_backend == 'horovod':
+        hvd.broadcast_parameters(model.collect_params(), root_rank=0)
+    
     # Construct the trainer
     # TODO(sxjscience) Support AMP
     if args.lr is None:
@@ -321,39 +361,59 @@ def train(args):
         base_lr = args.lr
     lr_scheduler = InverseSquareRootScheduler(warmup_steps=args.warmup_steps, base_lr=base_lr,
                                               warmup_init_lr=args.warmup_init_lr)
-    trainer = gluon.Trainer(model.collect_params(), 'adam',
-                            {'learning_rate': args.lr, 'beta1': 0.9,
-                             'beta2': 0.98, 'epsilon': 1e-9, 'lr_scheduler': lr_scheduler})
+    trainer_settings = (model.collect_params(), 'adam',
+                        {'learning_rate': args.lr, 'beta1': 0.9,
+                         'beta2': 0.98, 'epsilon': 1e-9, 'lr_scheduler': lr_scheduler})
+    if args.comm_backend == 'horovod':
+        trainer = hvd.DistributedTrainer(*trainer_settings)
+    else:
+        trainer = gluon.Trainer(*trainer_settings)
     # Load Data
-    if args.bucket_scheme == 'constant':
-        bucket_scheme = ConstWidthBucket()
-    elif args.bucket_scheme == 'linear':
-        bucket_scheme = LinearWidthBucket()
-    elif args.bucket_scheme == 'exp':
-        bucket_scheme = ExpWidthBucket(bucket_len_step=1.2)
+    if args.sampler == 'BoundedBudgetSampler':
+        train_batch_sampler = BoundedBudgetSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
+                                                   max_num_tokens=args.max_num_tokens,
+                                                   max_num_sentences=args.max_num_sentences,
+                                                   seed=args.seed)
+        if num_parts > 1:
+            train_batch_sampler = ShardedIterator(train_batch_sampler, num_parts=num_parts,
+                                                  part_index=rank)
+    elif args.sampler == 'FixedBucketSampler':
+        if args.comm_backend == 'horovod':
+            raise NotImplementedError('FixedBucketSampler does not support horovod at present')
+
+        if args.bucket_scheme == 'constant':
+            bucket_scheme = ConstWidthBucket()
+        elif args.bucket_scheme == 'linear':
+            bucket_scheme = LinearWidthBucket()
+        elif args.bucket_scheme == 'exp':
+            bucket_scheme = ExpWidthBucket(bucket_len_step=1.2)
+        else:
+            raise NotImplementedError
+        # TODO(sxjscience) Support auto-bucket-size tuning
+        train_batch_sampler = FixedBucketSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
+                                                 batch_size=args.batch_size,
+                                                 num_buckets=args.num_buckets,
+                                                 ratio=args.bucket_ratio,
+                                                 shuffle=True,
+                                                 use_average_length=True,
+                                                 bucket_scheme=bucket_scheme,
+                                                 seed=args.seed)
     else:
         raise NotImplementedError
+
+    logging.info(train_batch_sampler)
+
     batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
-    # TODO(sxjscience) Support auto-bucket-size tuning
-    train_batch_sampler = FixedBucketSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
-                                             batch_size=args.batch_size,
-                                             num_buckets=args.num_buckets,
-                                             ratio=args.bucket_ratio,
-                                             shuffle=True,
-                                             use_average_length=True,
-                                             bucket_scheme=bucket_scheme,
-                                             seed=args.seed)
     train_data_loader = gluon.data.DataLoader(data_train,
                                               batch_sampler=train_batch_sampler,
                                               batchify_fn=batchify_fn,
                                               num_workers=0)
-    logging.info(train_batch_sampler)
+
     val_data_loader = gluon.data.DataLoader(data_val,
                                             batch_size=args.val_batch_size,
                                             batchify_fn=batchify_fn,
                                             num_workers=0,
                                             shuffle=False)
-    num_batches = len(train_data_loader)
     for v in model.collect_params().values():
         if v.grad_req != 'null':
             v.grad_req = 'add'
@@ -362,7 +422,6 @@ def train(args):
     log_start_time = time.time()
     num_params, num_fixed_params = None, None
     # TODO(sxjscience) Add a log metric class
-    
     accum_count = 0
     loss_denom = 0
     n_train_iters = 0
@@ -408,7 +467,7 @@ def train(args):
                 sample_data_l = next(train_multi_data_loader)
             except StopIteration:
                 is_last_batch = True
-            if num_params is None:
+            if local_rank == 0 and num_params is None:
                 num_params, num_fixed_params = count_parameters(model.collect_params())
                 logging.info('Total Number of Parameters (not-fixed/fixed): {}/{}'
                              .format(num_params, num_fixed_params))
@@ -426,35 +485,39 @@ def train(args):
                 if (args.epochs > 0 and epoch_id >= args.epochs - args.num_averages) or \
                    (args.max_update > 0 and n_train_iters >= args.max_update - args.num_averages * args.save_interval_update):
                     model_averager.step()
-                if n_epoch_train_iters % args.log_interval == 0:
+                if local_rank == 0 and \
+                   (n_epoch_train_iters % args.log_interval == 0 or is_last_batch):
                     log_end_time = time.time()
                     log_wc = log_wc.asnumpy()
                     wps = log_wc / (log_end_time - log_start_time)
                     log_avg_loss = (log_avg_loss / log_loss_denom).asnumpy()
                     logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, '
                                  'throughput={:.2f}K wps, wc={:.2f}K, LR={}'
-                                 .format(epoch_id, processed_batch_num, num_batches,
-                                         log_avg_loss, np.exp(log_avg_loss),
+                                 .format(epoch_id, processed_batch_num * num_parts,
+                                         len(train_data_loader), log_avg_loss, np.exp(log_avg_loss),
                                          wps / 1000, log_wc / 1000, trainer.learning_rate))
                     log_start_time = time.time()
                     log_avg_loss = 0
                     log_loss_denom = 0
                     log_wc = 0
-                if args.max_update > 0 and n_train_iters % args.save_interval_update == 0:
+                if local_rank == 0 and \
+                   (args.max_update > 0 and n_train_iters % args.save_interval_update == 0):
+                    n_update = n_train_iters // args.save_interval_update
                     model.save_parameters(os.path.join(args.save_dir,
-                                                       '{:d}.params'.format(n_train_iters // args.save_interval_update)),
+                                                       'update{:d}.params'.format(n_update)),
                                           deduplicate=True)
+                    avg_valid_loss = validation(model, val_data_loader, ctx_l)
+                    logging.info('[Update {}] validation loss/ppl={:.4f}/{:.4f}'
+                                 .format(n_update, avg_valid_loss, np.exp(avg_valid_loss)))
                 if args.max_update > 0 and n_train_iters >= args.max_update:
                     break
-                    
-        if args.epochs > 0:
+        if local_rank == 0:
             model.save_parameters(os.path.join(args.save_dir,
                                                'epoch{:d}.params'.format(epoch_id)),
                                   deduplicate=True)
-            
-        avg_valid_loss = validation(model, val_data_loader, ctx_l)
-        logging.info('[Epoch {}] validation loss/ppl={:.4f}/{:.4f}'
-                     .format(epoch_id, avg_valid_loss, np.exp(avg_valid_loss)))
+            avg_valid_loss = validation(model, val_data_loader, ctx_l)
+            logging.info('[Epoch {}] validation loss/ppl={:.4f}/{:.4f}'
+                         .format(epoch_id, avg_valid_loss, np.exp(avg_valid_loss)))
 
         if args.max_update > 0 and n_train_iters >= args.max_update:
             break
@@ -468,7 +531,6 @@ def train(args):
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
-    os.environ['MXNET_USE_FUSION'] = '0'  # Manually disable pointwise fusion
     args = parse_args()
     np.random.seed(args.seed)
     mx.random.seed(args.seed)
