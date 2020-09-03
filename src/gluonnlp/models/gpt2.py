@@ -195,7 +195,6 @@ class GPT2SelfAttentionLayer(HybridBlock):
                 Shape (2, batch_size, prev_len, C_in)
             - layout = 'TN'
                 Shape (2, prev_len, batch_size, C_in)
-        prev_len
         """
         x = self.ln(x)
         if self._layout == 'NT':
