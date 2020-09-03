@@ -263,7 +263,7 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
               '   vocab = {}\n' \
               ')'.format(self.__class__.__name__,
                          self._model_info['model']['type'],
-                         self._model_file,
+                         self._model_path,
                          self._vocab_file,
                          self._model_info['normalizer'],
                          self._vocab)

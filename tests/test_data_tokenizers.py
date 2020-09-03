@@ -174,6 +174,7 @@ def verify_decode_no_vocab_raise(tokenizer):
 
 
 def verify_pickleble(tokenizer, cls):
+    print(tokenizer)
     # Verify if the tokenizer is pickleable and has the same behavior after dumping/loading
     tokenizer_p = pickle.loads(pickle.dumps(tokenizer))
     assert isinstance(tokenizer_p, cls)
