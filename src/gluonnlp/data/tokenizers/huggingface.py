@@ -441,7 +441,6 @@ class HuggingFaceBPETokenizer(LegacyHuggingFaceTokenizer):
               ')'.format(self.__class__.__name__,
                          os.path.realpath(self._merges_file),
                          os.path.realpath(self._vocab_file),
-                         self._is_merge_file,
                          self._unk_token, self._suffix,
                          self._dropout, self._lowercase,
                          self._unicode_normalizer,
