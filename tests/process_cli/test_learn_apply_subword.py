@@ -67,7 +67,8 @@ def test_subword_algorithms_ende(model):
                          'wmt19-test-de-en.en.{}'.format(model)]:
         with open(os.path.join(dir_path, '{}.decode'.format(prefix_fname)),
                   'w', encoding='utf-8') as out_f:
-            with open(os.path.join(dir_path, '{}'.format(prefix_fname)), 'r') as in_f:
+            with open(os.path.join(dir_path, '{}'.format(prefix_fname)), 'r',
+                      encoding='utf-8') as in_f:
                 for line in in_f:
                     out_f.write(tokenizer.decode(line.split()) + '\n')
 
