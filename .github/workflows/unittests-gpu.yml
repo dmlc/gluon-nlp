@@ -39,13 +39,16 @@ jobs:
       - name: Test project on AWS Batch(For push)
         if: ${{ github.event_name == 'push' }}
         run: |
-          (python ./tools/batch/submit-job.py --region us-east-1 \
+          python ./tools/batch/submit-job.py --region us-east-1 \
                                              --job-type g4dn.4x \
                                              --source-ref ${{ github.ref }} \
                                              --work-dir tools/batch \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.repository }} \
-                                             --command "./batch_states/test.sh | tee > ./script.log" --wait | grep -oP -m 1 'jobId: \K(.*)' > jobid.log) > /dev/null 2>&1
+                                             --command "./batch_states/test.sh | tee > ./script.log" \
+                                             --wait | tee > temp.log  
+
+          head -100 temp.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
 
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./coverage.xml
@@ -57,13 +60,16 @@ jobs:
       - name: Test project on AWS Batch(For pull request)
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
         run: |
-          (python ./tools/batch/submit-job.py --region us-east-1 \
+          python ./tools/batch/submit-job.py --region us-east-1 \
                                              --job-type g4dn.4x \
                                              --source-ref ${{ github.event.pull_request.head.ref }} \
                                              --work-dir tools/batch \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
-                                             --command "./batch_states/test.sh | tee > ./script.log" --wait | grep -oP -m 1 'jobId: \K(.*)' > jobid.log) > /dev/null 2>&1
+                                             --command "./batch_states/test.sh | tee > ./script.log" \
+                                             --wait | tee > temp.log
+
+          head -100 temp.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
 
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./coverage.xml
