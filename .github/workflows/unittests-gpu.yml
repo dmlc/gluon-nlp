@@ -48,20 +48,7 @@ jobs:
                                              --save-path temp \
                                              --remote https://github.com/${{ github.repository }} \
                                              --command "./batch_states/test.sh | tee > ./script.log" \
-                                             --wait | tee > temp.log  
-
-          head -100 temp.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
-
-          echo "Job ID is"
-          cat jobid.log
-
-          echo "Copy Codecov file"
-          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
-          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./coverage.xml
-
-          echo "Copy log file"
-          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/script.log
-          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./script.log
+                                             --wait 2>&1 | tee temp.log  
 
 
       - name: Test project on AWS Batch(For pull request)
@@ -76,12 +63,17 @@ jobs:
                                              --save-path temp \
                                              --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
                                              --command "./batch_states/test.sh | tee > ./script.log" \
-                                             --wait | tee > temp.log
+                                             --wait 2>&1 | tee temp.log
 
+      - name: Wait for job and copy files from AWS s3
+        if: ${{ failure() || success() }}
+        run: |
           head -100 temp.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
 
           echo "Job ID is"
           cat jobid.log
+
+          cat jobid.log | xargs -i python ./tools/batch/wait-job --job-id {}
 
           echo "Copy Codecov file"
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
@@ -92,12 +84,14 @@ jobs:
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/script.log ./script.log
 
       - name: Upload coverage to Codecov
+        if: ${{ failure() || success() }}
         uses: codecov/codecov-action@v1.0.10
         with:
           env_vars: OS,PYTHON
           file: ./coverage.xml
 
       - name: Upload log file for AWS Batch test results
+        if: ${{ failure() || success() }}
         uses: actions/upload-artifact@v2
         with:
           name: GPU_Test_Results
