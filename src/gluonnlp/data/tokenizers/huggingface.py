@@ -443,7 +443,6 @@ class HuggingFaceBPETokenizer(LegacyHuggingFaceTokenizer):
                          os.path.realpath(self._vocab_file),
                          self._unk_token, self._suffix,
                          self._dropout, self._lowercase,
-                         self._unicode_normalizer,
                          self._vocab)
         return ret
 
