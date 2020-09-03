@@ -23,11 +23,11 @@ bash convert_all.sh
 ### BERT
 Convert model from [BERT LIST](https://tfhub.dev/google/collections/bert/1).
 
-You can use the script provided in [convert_bert_from_tf_hub.sh](convert_bert_from_tf_hub.sh).
+You can use the script provided in [convert_bert.sh](convert_bert.sh).
 The following command give you a rough idea about the code.
 
 ```bash
-bash convert_bert_from_tf_hub.sh
+bash convert_bert.sh
 ```
 
 In the process, we downloaded the config file from the [official repo](https://github.com/google-research/bert#pre-trained-models), download the configuration file `bert_config.json`,
@@ -36,7 +36,7 @@ and move it into `${case}_bert_${model}/assets/`.
 ### ALBERT
 You can use the command described in
 ```bash
-bash convert_albert_from_tf_hub.sh
+bash convert_albert.sh
 ```
 
 ### ELECTRA
@@ -69,4 +69,9 @@ bash convert_xlmr.sh
 ### BART
 ```bash
 bash convert_bart.sh
+```
+
+### GPT-2
+```bash
+bash convert_gpt2.sh
 ```

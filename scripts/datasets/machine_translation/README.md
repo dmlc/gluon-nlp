@@ -18,7 +18,7 @@ nlp_data prepare_wmt \
         --save-path wmt2014_en_de
 ```
 
-By combining `nlp_data` and `nlp_preprocess`, we provide the example for preparing the 
+By combining `nlp_data` and `nlp_process`, we provide the example for preparing the 
 WMT2014 en-de training dataset: [wmt2014_ende.sh](wmt2014_ende.sh). This involves three steps:
 - Downloading the raw text data
 - Clean and tokenize the data

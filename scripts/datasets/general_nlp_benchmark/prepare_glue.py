@@ -3,19 +3,15 @@
 # and
 # https://github.com/nyu-mll/jiant/blob/master/scripts/download_superglue_data.py
 import os
-import sys
 import shutil
-import tempfile
 import argparse
 import zipfile
 import json
-import pathlib
 import pandas as pd
 import pyarrow
 import pyarrow.json
 from gluonnlp.utils.misc import download, load_checksum_stats
 from gluonnlp.base import get_data_home_dir
-from gluonnlp.registry import DATA_MAIN_REGISTRY, DATA_PARSER_REGISTRY
 from gluonnlp.data.tokenizers import WhitespaceTokenizer
 
 
@@ -595,7 +591,6 @@ def get_tasks(benchmark, task_names):
     return tasks
 
 
-@DATA_PARSER_REGISTRY.register('prepare_glue')
 def get_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--benchmark", choices=['glue', 'superglue'],
@@ -615,7 +610,6 @@ def get_parser():
     return parser
 
 
-@DATA_MAIN_REGISTRY.register('prepare_glue')
 def main(args):
     if args.data_dir is None:
         args.data_dir = args.benchmark

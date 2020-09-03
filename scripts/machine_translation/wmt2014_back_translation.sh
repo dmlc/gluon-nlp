@@ -16,7 +16,7 @@ nlp_data prepare_wmt \
 
 # Clean and tokenize the monolingual corpus
 cd wmt2014_mono
-nlp_preprocess clean_tok_mono_corpus \
+nlp_process clean_tok_mono_corpus \
                         --lang ${TGT} \
                         --corpus train.raw.${TGT} \
                         --min-num-words 1 \
@@ -85,7 +85,7 @@ cat ` seq -f "${datapath}/wmt2014_mono/train.tok.${SRC}.split%03g/pred_sentences
 cp ${datapath}/wmt2014_mono/train.tok.${TGT} ${datapath}/wmt2014_mono/syn.train.raw.${TGT}
 
 # Clean the synthetic data
-nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
+nlp_process clean_tok_para_corpus --src-lang ${SRC} \
     --tgt-lang ${TGT} \
     --src-corpus ${datapath}/wmt2014_mono/syn.train.raw.${SRC} \
     --tgt-corpus ${datapath}/wmt2014_mono/syn.train.raw.${TGT} \
@@ -106,7 +106,7 @@ done
 
 # Tokenize
 for LANG in ${SRC} ${TGT} ; do
-    nlp_preprocess apply_subword --model ${SUBWORD_ALGO} \
+    nlp_process apply_subword --model ${SUBWORD_ALGO} \
         --output-type subword \
         --model-path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.model \
         --vocab-path ${datapath}/wmt2014_ende/${SUBWORD_ALGO}.vocab \

@@ -89,6 +89,7 @@ def test_bert_small_cfg(compute_layout, ctx):
         assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-4, 1E-4)
 
 
+@pytest.mark.slow
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_bert())
 def test_bert_get_pretrained(model_name, ctx):
