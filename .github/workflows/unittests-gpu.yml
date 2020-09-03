@@ -45,7 +45,7 @@ jobs:
                                              --work-dir tools/batch \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.repository }} \
-                                             --command "./batch_states/test.sh | tee > ./script.log" --wait | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
+                                             --command "./batch_states/test.sh | tee > ./script.log" | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
 
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./coverage.xml
@@ -63,7 +63,7 @@ jobs:
                                              --work-dir tools/batch \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
-                                             --command "./batch_states/test.sh | tee > ./script.log" --wait | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
+                                             --command "./batch_states/test.sh | tee > ./script.log" | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
 
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./coverage.xml
