@@ -67,6 +67,7 @@ def test_robert_small_config(compute_layout):
     assert_allclose(mlm_scores_tn.asnumpy(), mlm_scores.asnumpy(), 1E-4, 1E-4)
 
 
+@pytest.mark.slow
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_roberta())
 def test_roberta(model_name):

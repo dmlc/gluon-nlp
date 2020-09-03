@@ -1,6 +1,5 @@
 import os
 import argparse
-from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 from gluonnlp.utils.misc import download, load_checksum_stats
 from gluonnlp.base import get_data_home_dir
 
@@ -27,7 +26,6 @@ _URLS = {
 }
 
 
-@DATA_PARSER_REGISTRY.register('prepare_searchqa')
 def get_parser():
     parser = argparse.ArgumentParser(description='Downloading the SearchQA Dataset.')
     parser.add_argument('--save-path', type=str, default='searchqa')
@@ -37,7 +35,6 @@ def get_parser():
     return parser
 
 
-@DATA_MAIN_REGISTRY.register('prepare_searchqa')
 def main(args):
     if not os.path.exists(args.save_path):
         os.makedirs(args.save_path)

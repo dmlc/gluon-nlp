@@ -37,13 +37,14 @@ requirements = [
     'yacs>=0.1.6',
     'sacrebleu',
     'flake8',
+    'packaging',
     'regex',
     'contextvars',
     'pyarrow',
-    'sentencepiece',
+    'sentencepiece==0.1.91',
     'protobuf',
     'pandas',
-    'tokenizers>=0.7.0',
+    'tokenizers==0.8.1',
     'click>=7.0',  # Dependency of youtokentome
     'youtokentome>=1.0.6',
     'fasttext>=0.9.2'
@@ -78,8 +79,8 @@ setup(
             'tqdm',
             'jieba',
             'subword_nmt',
-            'spacy>=2.0.0',
-            'langid',
+            'spacy>=2.3.0',
+            'langid==1.1.6',
             'nltk',
             'h5py>=2.10',
             'scipy',
@@ -104,7 +105,7 @@ setup(
     entry_points={
         'console_scripts': [
             'nlp_data = gluonnlp.cli.data.__main__:cli_main',
-            'nlp_preprocess = gluonnlp.cli.preprocess.__main__:cli_main',
+            'nlp_process = gluonnlp.cli.process.__main__:cli_main',
             'gluon_average_checkpoint = gluonnlp.cli.average_checkpoint:cli_main'
         ],
     },

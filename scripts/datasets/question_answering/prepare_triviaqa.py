@@ -1,7 +1,6 @@
 import os
 import tarfile
 import argparse
-from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 from gluonnlp.utils.misc import download, load_checksum_stats
 from gluonnlp.base import get_data_home_dir
 
@@ -30,7 +29,6 @@ _URLS = {
 }
 
 
-@DATA_PARSER_REGISTRY.register('prepare_triviaqa')
 def get_parser():
     parser = argparse.ArgumentParser(description='Downloading the TriviaQA Dataset.')
     parser.add_argument('--type', type=str, choices=['rc', 'unfiltered'], default='rc',
@@ -42,7 +40,6 @@ def get_parser():
     return parser
 
 
-@DATA_MAIN_REGISTRY.register('prepare_triviaqa')
 def main(args):
 
     def extract(tar_path, target_path):
@@ -66,6 +63,7 @@ def main(args):
         os.symlink(os.path.join(args.cache_path, file_name),
                    os.path.join(args.save_path, file_name))
     extract(os.path.join(args.save_path, file_name), args.save_path)
+
 
 def cli_main():
     parser = get_parser()

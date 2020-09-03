@@ -5,15 +5,15 @@ This helps create a unified text corpus for studying the performance of differen
 When releasing the datasets, we follow the [FAIR principle](https://www.go-fair.org/fair-principles/),
 i.e., the dataset needs to be findable, accessible, interoperable, and reusable.
 
-## BookCorpus
-Unfortunately, we are unable to provide the original [Toronto BookCorpus dataset](https://yknzhu.wixsite.com/mbweb) due to licensing issues.
+## Gutenberg BookCorpus
+Unfortunately, we are unable to provide the [Toronto BookCorpus dataset](https://yknzhu.wixsite.com/mbweb) due to licensing issues.
 
 There are some open source efforts for reproducing the dataset, e.g.,
  using [soskek/bookcorpus](https://github.com/soskek/bookcorpus) or directly downloading the [preprocessed version](https://drive.google.com/file/d/16KCjV9z_FHm8LgZw05RSuk4EsAWPOP_z/view).
 
-Nevertheless, we utilize the [Project Gutenberg](https://www.gutenberg.org/) as an alternative to Toronto BookCorpus.
+Thus, we utilize the [Project Gutenberg](https://www.gutenberg.org/) as an alternative to Toronto BookCorpus.
 
-You can use the following command to download and prepare the Gutenberg dataset.
+You can use the following command to download and prepare the Gutenberg corpus.
 
 ```bash
 python3 prepare_bookcorpus.py --dataset gutenberg

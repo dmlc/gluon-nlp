@@ -1,0 +1,41 @@
+name: data pipeline end-to-end
+
+on:
+  schedule:
+    - cron: '00 18 * * *'  # At UTC 6:00 PM, everyday, use https://crontab.guru/
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ '3.7' ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Other Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install boto3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Test Data Pipeline on AWS Batch
+        run: |
+          python ./tools/batch/submit-job.py --region us-east-1 \
+                                             --job-type c5n.4x \
+                                             --source-ref ${{ github.ref }} \
+                                             --work-dir tools/batch/batch_states \
+                                             --remote ${{ github.repository }} \
+                                             --command "bash test_data_pipeline.sh" --wait

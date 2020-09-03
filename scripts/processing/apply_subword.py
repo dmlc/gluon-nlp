@@ -4,6 +4,7 @@ from multiprocessing import Pool
 import numpy as np
 import time
 from gluonnlp.data import tokenizers
+from gluonnlp.data.tokenizers.huggingface import is_new_version_model_file
 
 
 def get_parser():
@@ -14,12 +15,12 @@ def get_parser():
 
     We support the following models:
 
-        "python3 apply_subword.py --model spm" : Encode with Sentencepiece Model;
-        "python3 apply_subword.py --model subword_nmt" : Encode with the subword-nmt package;
-        "python3 apply_subword.py --model yttm" : Encode with YouTokenToMe; 
-        "python3 apply_subword.py --model hf_bytebpe" : Encode with the Byte-level BPE Tokenizer Implemented by Huggingface.
-        "python3 apply_subword.py --model hf_wordpiece" : Encode with the Wordpiece Tokenizer Implementated by Huggingface.
-        "python3 apply_subword.py --model hf_bpe" : Encode with the BPE Tokenizer Implemented by Huggingface.
+        "nlp_process apply_subword --model spm" : Encode with Sentencepiece Model;
+        "nlp_process apply_subword --model subword_nmt" : Encode with the subword-nmt package;
+        "nlp_process apply_subword --model yttm" : Encode with YouTokenToMe; 
+        "nlp_process apply_subword --model hf_bytebpe" : Encode with the Byte-level BPE Tokenizer Implemented by Huggingface.
+        "nlp_process apply_subword --model hf_wordpiece" : Encode with the WordPiece Tokenizer Implementated by Huggingface.
+        "nlp_process apply_subword --model hf_bpe" : Encode with the BPE Tokenizer Implemented by Huggingface.
     ''')
     )
     parser.add_argument('--corpus', type=str, nargs='+', required=True,
@@ -109,37 +110,55 @@ class ParallelCorpusApplyer:
 def main(args):
     start = time.time()
     if args.model == 'spm':
+        assert args.model_path is not None, 'Must specify --model_path when using the "spm" model.'
         tokenizer_model = tokenizers.create('spm',
                                             model_path=args.model_path,
                                             vocab=args.vocab_path)
     elif args.model == 'subword_nmt':
+        assert args.model_path is not None,\
+            'Must specify --model_path when using the "subword_nmt" model.'
+        assert args.vocab_path is not None, \
+            'Must specify --vocab_path when using the "subword_nmt" model.'
         tokenizer_model = tokenizers.create('subword_nmt',
-                                            codec_path=args.model_path,
-                                            vocab_path=args.vocab_path,
+                                            model_path=args.model_path,
+                                            vocab=args.vocab_path,
                                             bpe_dropout=args.bpe_dropout)
     elif args.model == 'yttm':
+        assert args.model_path is not None,\
+            'Must specify --model_path when using the "subword_nmt" model.'
         args.bpe_dropout = 0.0 if not args.bpe_dropout else args.bpe_dropout
         tokenizer_model = tokenizers.create('yttm',
                                             model_path=args.model_path,
+                                            vocab=args.vocab_path,
                                             bpe_dropout=args.bpe_dropout,
                                             n_threads=1)
-    elif args.model == 'hf_bytebpe':
-        tokenizer_model = tokenizers.create('hf_bytebpe',
-                                            merges_file=args.model_path,
-                                            vocab_file=args.vocab_path,
-                                            dropout=args.bpe_dropout,
-                                            lowercase=args.lowercase)
-    elif args.model == 'hf_wordpiece':
-        tokenizer_model = tokenizers.create('hf_wordpiece',
-                                            vocab_file=args.vocab_path,
-                                            lowercase=args.lowercase,
-                                            strip_accents=args.strip_accents)
-    elif args.model == 'hf_bpe':
-        tokenizer_model = tokenizers.create('hf_bpe',
-                                            merges_file=args.model_path,
-                                            vocab_file=args.vocab_path,
-                                            dropout=args.bpe_dropout,
-                                            lowercase=args.lowercase)
+    elif args.model == 'hf_bytebpe' or 'hf_bpe' or 'hf_wordpiece':
+        if is_new_version_model_file(args.model_path):
+            assert args.model_path is not None, \
+                'Must specify --model_path when using the "{}" model.'.format(args.model)
+            assert args.vocab_path is not None, \
+                'Must specify --vocab_path when using the "{}" model.'.format(args.model)
+            tokenizer_model = tokenizers.create('hf_tokenizer',
+                                                model_path=args.model_path,
+                                                vocab=args.vocab_path)
+        else:
+            if args.model == 'hf_bytebpe':
+                tokenizer_model = tokenizers.create('hf_bytebpe',
+                                                    merges_file=args.model_path,
+                                                    vocab_file=args.vocab_path,
+                                                    dropout=args.bpe_dropout,
+                                                    lowercase=args.lowercase)
+            elif args.model == 'hf_wordpiece':
+                tokenizer_model = tokenizers.create('hf_wordpiece',
+                                                    vocab_file=args.vocab_path,
+                                                    lowercase=args.lowercase,
+                                                    strip_accents=args.strip_accents)
+            elif args.model == 'hf_bpe':
+                tokenizer_model = tokenizers.create('hf_bpe',
+                                                    merges_file=args.model_path,
+                                                    vocab_file=args.vocab_path,
+                                                    dropout=args.bpe_dropout,
+                                                    lowercase=args.lowercase)
     else:
         raise NotImplementedError
     print('Applying {} to {}'. format(tokenizer_model.__class__.__name__,

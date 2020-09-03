@@ -12,9 +12,10 @@ from gluonnlp.cli.data.question_answering.prepare_hotpotqa import _URLS as hotpo
 from gluonnlp.cli.data.question_answering.prepare_searchqa import _URLS as searchqa_urls
 from gluonnlp.cli.data.language_modeling.prepare_lm import _URLS as lm_urls
 from gluonnlp.cli.data.music_generation.prepare_music_midi import _URLS as midi_urls
-from gluonnlp.cli.data.pretrain_corpus.prepare_bookcorpus import _URLS as book_urls
+from gluonnlp.cli.data.pretrain_corpus.prepare_gutenberg import _URLS as gutenberg_urls
 from gluonnlp.cli.data.general_nlp_benchmark.prepare_glue import SUPERGLUE_TASK2PATH as superglue_urls
 from gluonnlp.cli.data.general_nlp_benchmark.prepare_glue import GLUE_TASK2PATH as glue_urls
+from gluonnlp.cli.data.general_nlp_benchmark.prepare_text_classification import TASK2PATH as text_classification_urls
 
 
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
@@ -108,15 +109,17 @@ if __name__ == '__main__':
                       save_path=os.path.join(_CHECK_SUM_BASE, 'hotpotqa.txt'))
     get_hash_and_size(triviaqa_url,
                       save_path=os.path.join(_CHECK_SUM_BASE, 'triviaqa.txt'))
-    get_hash_and_size(searchqa_url,
+    get_hash_and_size(gutenberg_urls,
+                      save_path=os.path.join(_CHECK_SUM_BASE, 'gutenberg.txt'))
+    get_hash_and_size(searchqa_urls,
                       save_path=os.path.join(_CHECK_SUM_BASE, 'searchqa.txt'))
     get_hash_and_size(lm_urls,
                       save_path=os.path.join(_CHECK_SUM_BASE, 'language_model.txt'))
     get_hash_and_size(midi_urls,
                       save_path=os.path.join(_CHECK_SUM_BASE, 'music_midi.txt'))
-    get_hash_and_size(book_urls,
-                      save_path=os.path.join(_CHECK_SUM_BASE, 'book_corpus.txt'))
     get_hash_and_size(glue_urls,
                       save_path=os.path.join(_CHECK_SUM_BASE, 'glue.txt'))
     get_hash_and_size(superglue_urls,
                       save_path=os.path.join(_CHECK_SUM_BASE, 'superglue.txt'))
+    get_hash_and_size(text_classification_urls,
+                      save_path=os.path.join(_CHECK_SUM_BASE, 'text_classification.txt'))
