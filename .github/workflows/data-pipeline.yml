@@ -2,7 +2,7 @@ name: data pipeline end-to-end
 
 on:
   schedule:
-    - cron: '00 18 * * *'  # At UTC 6:00 PM, everyday, use https://crontab.guru/
+    - cron: '00 18 * * *'  # At UTC 18:00 AM, everyday, use https://crontab.guru/
 
 defaults:
   run:
