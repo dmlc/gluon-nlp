@@ -1,6 +1,5 @@
 import os
 import argparse
-from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 from gluonnlp.utils.misc import download, load_checksum_stats
 from gluonnlp.base import get_data_home_dir
 
@@ -39,7 +38,6 @@ _URLS = {
 }
 
 
-@DATA_PARSER_REGISTRY.register('prepare_squad')
 def get_parser():
     parser = argparse.ArgumentParser(description='Downloading the SQuAD Dataset.')
     parser.add_argument('--version', type=str, choices=['1.1', '2.0'], default='1.1',
@@ -51,7 +49,6 @@ def get_parser():
     return parser
 
 
-@DATA_MAIN_REGISTRY.register('prepare_squad')
 def main(args):
     train_url = _URLS[args.version]['train']
     dev_url = _URLS[args.version]['dev']

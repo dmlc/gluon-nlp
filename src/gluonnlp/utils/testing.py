@@ -1,3 +1,5 @@
+__all__ = ['is_match_states_batch_size', 'verify_nmt_model', 'verify_nmt_inference']
+
 import numpy.testing as npt
 import mxnet as mx
 from mxnet.util import use_np
