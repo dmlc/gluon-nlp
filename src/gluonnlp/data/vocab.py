@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Vocabulary."""
-__all__ = ['Vocab']
+__all__ = ['Vocab', 'load_vocab']
 
 import collections
 import json
@@ -37,7 +37,6 @@ def _check_special_token_identifier(key):
                          ' Received {}'.format(key))
 
 
-#TODO Revise examples
 class Vocab:
     """Indexing the text tokens.
 
@@ -84,17 +83,76 @@ class Vocab:
     --------
 
     >>> import gluonnlp as nlp
+    >>> # Case 1: Create vocab object from a list of tokens
+    >>> vocab = nlp.data.Vocab(['hello', 'world'])
+    >>> vocab
+    Vocab(size=3, unk_token="<unk>")
+
+    >>> vocab.all_tokens
+    ['hello', 'world', '<unk>']
+
+    >>> vocab.special_tokens
+    ['<unk>']
+
+    >>> vocab.non_special_tokens
+    ['hello', 'world']
+
+    >>> vocab['hello']
+    0
+
+    >>> vocab[['hello', 'world']]
+    [0, 1]
+
+    >>> vocab['hellohello']
+    2
+
+    >>> vocab.to_tokens([0, 1])
+    ['hello', 'world']
+
+    >>> # Case 2: Disabling the unknown token
+    >>> vocab = nlp.data.Vocab(['hello', 'world'], unk_token=None)
+    >>> vocab
+    Vocab(size=2, unk_token=None)
+
+    >>> vocab.special_tokens
+    []
+
+    >>> # Case 3: Customized special tokens
+    >>> vocab = nlp.data.Vocab(['hello', 'world'], cls_token='<cls>', server_token='<server>')
+    >>> vocab.all_tokens
+    ['hello', 'world', '<unk>', '<cls>', '<server>']
+
+    >>> vocab.cls_token
+    '<cls>'
+
+    >>> vocab.server_token
+    '<server>'
+
+    >>> # Case 4: Register special tokens
+    >>> vocab = nlp.data.Vocab(['<bos>', '<cls>', 'hello'], bos_token='<bos>', cls_token='<cls>')
+    >>> vocab.all_tokens
+    ['<bos>', '<cls>', 'hello', '<unk>']
+
+    >>> vocab.special_tokens
+    ['<bos>', '<cls>', '<unk>']
+
+    >>> # Case 5: Serialize and Load
+    >>> vocab = nlp.data.Vocab(['hello', 'world'])
+    >>> vocab.save('vocab.json')
+    >>> new_vocab = nlp.data.Vocab.load('vocab.json')
+    >>> print(new_vocab.all_tokens)
+    ['hello', 'world', '<unk>']
+
+    >>> # Case 6: Load from Counter. We will order the tokens based on frequency
     >>> import collections
     >>> text_data = ['hello', 'world', 'hello', 'nice', 'world', 'hi', 'world']
     >>> counter = collections.Counter(text_data)
-    >>> my_vocab = nlp.data.Vocab(counter)
+    >>> vocab = nlp.data.Vocab(counter)
+    >>> vocab
+    Vocab(size=5, unk_token="<unk>")
 
-    Extra keyword arguments of the format `xxx_token` are used to expose
-    specified tokens as attributes.
-
-    >>> my_vocab2 = nlp.data.Vocab(counter, special_token='hi')
-    >>> my_vocab2.special_token
-    'hi'
+    >>> vocab.all_tokens
+    ['world', 'hello', 'nice', 'hi', '<unk>']
 
     """
     UNK_TOKEN = '<unk>'
@@ -172,6 +230,7 @@ class Vocab:
 
     @property
     def has_unk(self) -> bool:
+        """Whether the vocabulary object contains unknown token."""
         return hasattr(self, 'unk_token')
 
     @property
@@ -203,6 +262,7 @@ class Vocab:
 
     @property
     def token_to_idx(self) -> Dict[Hashable, int]:
+        """Get the index of the token in the vocabulary"""
         return self._token_to_idx
 
     def to_tokens(self, idx: Union[int, Tuple[int], List[int], np.ndarray])\
@@ -234,12 +294,10 @@ class Vocab:
     def __contains__(self, token: Hashable) -> bool:
         """Checks whether a text token exists in the vocabulary.
 
-
         Parameters
         ----------
         token
             A text token.
-
 
         Returns
         -------
@@ -258,7 +316,6 @@ class Vocab:
         ----------
         tokens
             A source token or tokens to be converted.
-
 
         Returns
         -------
@@ -289,13 +346,11 @@ class Vocab:
         tokens
             A source token or tokens to be converted.
 
-
         Returns
         -------
         ret
             A token index or a list of token indices according to the vocabulary.
         """
-
         return self[tokens]
 
     def __repr__(self):
@@ -380,3 +435,24 @@ class Vocab:
         """
         with open(path, 'r', encoding='utf-8') as f:
             return cls.from_json(f.read())
+
+
+def load_vocab(vocab: Union[str, Vocab]) -> Vocab:
+    """Quick helper function to load vocabulary from a file.
+
+    Parameters
+    ----------
+    vocab
+
+    Returns
+    -------
+
+    """
+    if isinstance(vocab, Vocab):
+        return vocab
+    elif isinstance(vocab, str):
+        return Vocab.load(vocab)
+    else:
+        raise NotImplementedError('Type of the input vocab is not supported. '
+                                  'We only support "str" or "Vocab". type(vocab) = "{}".'
+                                  .format(type(vocab)))

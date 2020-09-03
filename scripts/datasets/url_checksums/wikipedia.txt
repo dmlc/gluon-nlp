@@ -1,1 +1,1 @@
-https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/pretrain_corpus/wikipedia-en-20200620.tar.gz    1e1d77c31622744aaa45ff5bfbfca397154d9186    5068070627
+https://gluonnlp-numpy-data.s3-accelerate.amazonaws.com/pretrain_corpus/wikipedia-en-20200620.tar.gz    1e1d77c31622744aaa45ff5bfbfca397154d9186    5068070627

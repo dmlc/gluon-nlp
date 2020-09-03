@@ -11,8 +11,6 @@ and [ELECTRA](https://github.com/google-research/bert). Free to choose one of th
 | google_en_uncased_bert_base      | google_albert_large_v2   | google_electra_base  |
 | google_en_cased_bert_large       | google_albert_xalrge_v2  | google_electra_large |
 | google_en_uncased_bert_large     | google_albert_xxlarge_v2 |                      |
-| google_zh_bert_base              |                          |                      |
-| google_multi_cased_bert_base     |                          |                      |
 | google_en_cased_bert_wwm_large   |                          |                      |
 | google_en_uncased_bert_wwm_large |                          |                      |
 
@@ -71,7 +69,8 @@ python3 run_squad.py \
 ```
 
 We could speed up multi-GPU training via horovod.
-Compared to KVStore, training RoBERTa Large model on SQuAD 2.0 with 3 epochs will save roughly 1/4 training resources (8.48 vs 11.32 hours). Results may vary depending on the training instances.
+Compared to KVStore, training RoBERTa Large model on SQuAD 2.0 with 3 epochs will save 
+roughly 1/4 training resources (8.48 vs 11.32 hours). Results may vary depending on the training instances.
 
 ```bash
 horovodrun -np 4 -H localhost:4 python3 run_squad.py \
@@ -137,7 +136,7 @@ Performance are shown in the table below, in which the SQuAD1.1 are evaluated wi
 Notice that the standard metrics of SQuAD are `EM/F1`. The former is an exact match score between predictions and references, 
 while the latter is a token-level f1 score in which the common tokens are considered as True Positives.
 
-|Reproduced ALBERT Models (F1/EM)  | SQuAD 1.1 dev | SQuAD 2.0 dev | Json | Log | Command |
+|Reproduced ALBERT Models (F1/EM)  | SQuAD 1.1 dev | SQuAD 2.0 dev | SQuAD 2.0 Results File | Log | Command |
 |----------------------------------|---------------|---------------|------|-----| --------|
 |ALBERT base                       | 90.55/83.83   | 82.09/79.40   |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_base_v2_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_base_v2_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_albert_base.sh) |
 |ALBERT large                      | 92.66/86.43   | 84.98/82.19   |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_large_v2_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_large_v2_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_albert_large.sh) |
@@ -155,7 +154,7 @@ For reference, we've included the results from Google's Original Experiments
 
 For the reset pretrained models, the results on SQuAD1.1 and SQuAD2.0 are given as follows.
 
-| Model Name    | SQuAD1.1 dev  | SQuAD2.0 dev |  Json | Log | Command |
+| Model Name    | SQuAD1.1 dev  | SQuAD2.0 dev | SQuAD 2.0 Results File | Log | Command |
 |--------------------------|---------------|--------------|------|-----|--------|
 |BERT base                 | 88.40/81.24   | 76.43/73.59  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_en_uncased_bert_base_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_en_uncased_bert_base_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_uncased_bert_base.sh) |
 |BERT large                | 90.45/83.55   | 81.41/78.46  | [json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_en_uncased_bert_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_en_uncased_bert_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_uncased_bert_large.sh) |

@@ -12,8 +12,8 @@ can we design a model that can solve these tasks all in once?
 featurize the text data, in which we extract two types of embeddings: one for the 
 whole sentence and the other for each tokens in the sentence. Later, 
 in [T5](https://arxiv.org/pdf/1910.10683.pdf), the author proposed to convert every task 
-into a text-to-text problem. However, it is difficult to convert tasks like sentence similarity 
-match, or named-entity recognition into text-to-text, because they involve real-values or text 
+into a text-to-text problem. However, it is difficult to convert tasks like measuring the similarity between sentences,
+or named-entity recognition into text-to-text, because they involve real-values or entity
 spans that are difficult to be encoded as raw text data.
 
 In GluonNLP, we propose a unified way to tackle these NLP problems. We convert these datasets 
@@ -29,7 +29,7 @@ All tasks used in these general benchmarks are converted to this format.
 
 The details of the benchmark are described in [GLUE Paper](https://openreview.net/pdf?id=rJ4km2R5t7).
 
-To obtain the dataset, run:
+To obtain the datasets, run:
 
 ```
 nlp_data prepare_glue --benchmark glue
@@ -73,7 +73,7 @@ This is the recommended approach in [GLUE](https://openreview.net/pdf?id=rJ4km2R
 
 The details are described in [SuperGLUE Paper](https://arxiv.org/pdf/1905.00537.pdf).
 
-To obtain the benchmark, run:
+To obtain the datasets, run:
 
 ```
 nlp_data prepare_glue --benchmark superglue
@@ -102,3 +102,26 @@ see [SuperGLUE Diagnostic](https://super.gluebenchmark.com/diagnostics).
 |---------------|----------|----------------------|----------------|
 | Winogender    | 356 |hypothesis, premise, label | Accuracy       |
 | Broadcoverage | 1104  | label, sentence1, sentence2, logic | Matthews corr. |
+
+## Text Classification Benchmark
+
+We also provide the script to download a series of text classification datasets for the purpose of 
+benchmarking. We select the classical datasets that are also used in 
+[Character-level Convolutional Networks for TextClassification, NeurIPS2015](https://arxiv.org/pdf/1509.01626.pdf)
+ and [Funnel-Transformer: Filtering out SequentialRedundancy for Efficient Language Processing, Arxiv2020](https://arxiv.org/pdf/2006.03236.pdf). 
+
+| Dataset       | #Train  | #Test   | Columns         | Metrics         |
+|---------------|---------|---------|-----------------|-----------------|
+| AG            | 120000  | 7600    | content, label  | acc             |
+| IMDB          | 25000   | 25000   | content, label  | acc             |
+| DBpedia       | 560000  | 70000   | content, label  | acc             |
+| Yelp2         | 560000  | 38000   | content, label  | acc             |
+| Yelp5         | 650000  | 50000   | content, label  | acc             |
+| Amazon2       | 3600000 | 400000  | content, label  | acc             |
+| Amazon5       | 3000000 | 650000  | content, label  | acc             |
+
+To obtain the datasets, run:
+
+```
+nlp_data prepare_text_classification -t all
+```

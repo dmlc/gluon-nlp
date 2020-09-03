@@ -7,9 +7,8 @@ import time
 import tarfile
 import argparse
 import multiprocessing
-
-from gluonnlp.registry import DATA_MAIN_REGISTRY, DATA_PARSER_REGISTRY
 from gluonnlp.utils.misc import download, load_checksum_stats
+from gluonnlp.base import get_repo_url
 
 _CITATION = """\
 @ONLINE {wikidump,
@@ -57,7 +56,7 @@ _URL_FILE_STATS = load_checksum_stats(_URL_FILE_STATS_PATH)
 
 _URLS = {
     'wikipedia-en-20200620':
-        'https://gluonnlp-numpy-data.s3-us-west-2.amazonaws.com/pretrain_corpus/wikipedia-en-20200620.tar.gz',
+        get_repo_url() + 'pretrain_corpus/wikipedia-en-20200620.tar.gz',
 }
 
 
@@ -121,7 +120,6 @@ def merge(x):
                             article_lines.append(line)
 
 
-@DATA_PARSER_REGISTRY.register('prepare_wikipedia')
 def get_parser():
     parser = argparse.ArgumentParser(description='Download and Prepare the Wikipedia')
     parser.add_argument('--mode', type=str,
@@ -215,7 +213,6 @@ def format_wikicorpus(input, output, bytes, num_process, num_out_files):
     print("Done preparation within {:.2f} seconds".format(elapsed))
 
 
-@DATA_MAIN_REGISTRY.register('prepare_wikipedia')
 def main(args):
     num_process = min(multiprocessing.cpu_count(), args.num_process)
     if args.mode == 'download':
