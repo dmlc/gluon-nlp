@@ -39,8 +39,10 @@ jobs:
       - name: Test project on AWS Batch(For push)
         if: ${{ github.event_name == 'push' }}
         run: |
+          echo "Start submitting job"
           python ./tools/batch/submit-job.py --region us-east-1 \
                                              --job-type g4dn.4x \
+                                             --name GluonNLP-${{ github.ref }}-${{ github.run_id }} \
                                              --source-ref ${{ github.ref }} \
                                              --work-dir tools/batch \
                                              --save-path temp \
@@ -50,9 +52,14 @@ jobs:
 
           head -100 temp.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
 
+          echo "Job ID is"
+          cat jobid.log
+
+          echo "Copy Codecov file"
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./coverage.xml
 
+          echo "Copy log file"
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/script.log
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./script.log
 
@@ -60,8 +67,10 @@ jobs:
       - name: Test project on AWS Batch(For pull request)
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
         run: |
+          echo "Start submitting job"
           python ./tools/batch/submit-job.py --region us-east-1 \
                                              --job-type g4dn.4x \
+                                             --name GluonNLP-${{ github.ref }}-${{ github.run_id }} \
                                              --source-ref ${{ github.event.pull_request.head.ref }} \
                                              --work-dir tools/batch \
                                              --save-path temp \
@@ -71,11 +80,16 @@ jobs:
 
           head -100 temp.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
 
+          echo "Job ID is"
+          cat jobid.log
+
+          echo "Copy Codecov file"
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./coverage.xml
 
+          echo "Copy log file"
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/script.log
-          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./script.log
+          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/script.log ./script.log
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.0.10
