@@ -42,12 +42,12 @@ jobs:
           echo "Start submitting job"
           python ./tools/batch/submit-job.py --region us-east-1 \
                                              --job-type g4dn.4x \
-                                             --name GluonNLP-${{ github.ref }}-${{ github.run_id }} \
+                                             --name GluonNLP-GPU-Test-${{ github.ref }} \
                                              --source-ref ${{ github.ref }} \
                                              --work-dir tools/batch \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.repository }} \
-                                             --command "./batch_states/test.sh | tee > ./script.log" \
+                                             --command "(./batch_states/test.sh | tee > ./gputest.stdout.log) 3>&1 1>&2 2>&3 | tee ./gputest.stderr.log" \
                                              --wait | tee > temp.log  
 
 
@@ -57,12 +57,12 @@ jobs:
           echo "Start submitting job"
           python ./tools/batch/submit-job.py --region us-east-1 \
                                              --job-type g4dn.4x \
-                                             --name GluonNLP-${{ github.ref }}-${{ github.run_id }} \
+                                             --name GluonNLP-GPU-Test-PR#${{ github.event.number }} \
                                              --source-ref ${{ github.event.pull_request.head.ref }} \
                                              --work-dir tools/batch \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
-                                             --command "./batch_states/test.sh | tee > ./script.log" \
+                                             --command "(./batch_states/test.sh | tee > ./gputest.stdout.log) 3>&1 1>&2 2>&3 | tee ./gputest.stderr.log" \
                                              --wait | tee > temp.log
 
       - name: Wait for job and copy files from AWS s3
@@ -78,10 +78,14 @@ jobs:
           echo "Copy Codecov file"
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./coverage.xml
+          
+          mkdir test_logs
+          echo "Copy log files"
+          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/gputest.stdout.log
+          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/gputest.stdout.log ./test_logs/gputest.stdout.log
 
-          echo "Copy log file"
-          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/script.log
-          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/script.log ./script.log
+          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/gputest.stderr.log
+          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/gputest.stderr.log ./test_logs/gputest.stderr.log
 
       - name: Upload coverage to Codecov
         if: ${{ failure() || success() }}
@@ -95,6 +99,6 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: GPU_Test_Results
-          path: ./script.log
+          path: ./test_logs
 
 
