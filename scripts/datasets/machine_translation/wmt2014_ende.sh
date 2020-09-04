@@ -18,7 +18,7 @@ sacrebleu -t wmt14/full -l ${SRC}-${TGT} --echo ref > ${SAVE_PATH}/test.raw.${TG
 
 # Clean and tokenize the training + dev corpus
 cd ${SAVE_PATH}
-nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
+nlp_process clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus train.raw.${SRC} \
                       --tgt-corpus train.raw.${TGT} \
@@ -28,7 +28,7 @@ nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
                       --src-save-path train.tok.${SRC} \
                       --tgt-save-path train.tok.${TGT}
 
-nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
+nlp_process clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus dev.raw.${SRC} \
                       --tgt-corpus dev.raw.${TGT} \
@@ -39,7 +39,7 @@ nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-save-path dev.tok.${TGT}
 
 # For test corpus, we will just tokenize the data
-nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
+nlp_process clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus test.raw.${SRC} \
                       --tgt-corpus test.raw.${TGT} \
@@ -47,7 +47,7 @@ nlp_preprocess clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-save-path test.tok.${TGT}
 
 # Learn BPE with the training data
-nlp_preprocess learn_subword --corpus train.tok.${SRC} train.tok.${TGT} \
+nlp_process learn_subword --corpus train.tok.${SRC} train.tok.${TGT} \
                              --model ${SUBWORD_ALGO} \
                              --save-dir . \
                              --vocab-size 32768
@@ -55,7 +55,7 @@ nlp_preprocess learn_subword --corpus train.tok.${SRC} train.tok.${TGT} \
 # Apply the learned codes to the training set
 for LANG in ${SRC} ${TGT}
 do
-nlp_preprocess apply_subword --model ${SUBWORD_ALGO}\
+nlp_process apply_subword --model ${SUBWORD_ALGO}\
                              --output-type subword \
                              --model-path ${SUBWORD_ALGO}.model \
                              --vocab-path ${SUBWORD_ALGO}.vocab \
@@ -68,7 +68,7 @@ for LANG in ${SRC} ${TGT}
 do
   for SPLIT in dev test
   do
-    nlp_preprocess apply_subword --model ${SUBWORD_ALGO} \
+    nlp_process apply_subword --model ${SUBWORD_ALGO} \
                                  --output-type subword \
                                  --model-path ${SUBWORD_ALGO}.model \
                                  --vocab-path ${SUBWORD_ALGO}.vocab \

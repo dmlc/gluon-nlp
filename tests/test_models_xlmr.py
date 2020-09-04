@@ -13,11 +13,13 @@ def test_list_pretrained_xlmr():
     assert len(list_pretrained_xlmr()) > 0
 
 
+@pytest.mark.slow
 @pytest.mark.remote_required
-def test_xlmr():
+@pytest.mark.parametrize('model_name', list_pretrained_xlmr())
+def test_xlmr(model_name, ctx):
     # test from pretrained
     assert len(list_pretrained_xlmr()) > 0
-    for model_name in ['fairseq_xlmr_base']:
+    with ctx:
         with tempfile.TemporaryDirectory() as root:
             cfg, tokenizer, params_path, mlm_params_path =\
                 get_pretrained_xlmr(model_name, load_backbone=True, load_mlm=False, root=root)

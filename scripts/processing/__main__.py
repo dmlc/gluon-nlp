@@ -16,7 +16,7 @@ SUBCOMMANDS = ['clean_tok_para_corpus', 'clean_tok_mono_corpus',
 def cli_main():
     parser = argparse.ArgumentParser(
         description='Sharable data preprocessing utilities in GluonNLP.',
-        prog='nlp_preprocess', add_help=False)
+        prog='nlp_process', add_help=False)
     parser.add_argument('command', type=str,
                         choices=SUBCOMMANDS,
                         metavar='[subcommand]',

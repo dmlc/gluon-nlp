@@ -1,11 +1,14 @@
 from gluonnlp.utils.lazy_imports import try_import_sentencepiece,\
     try_import_subword_nmt, try_import_yttm, try_import_huggingface_tokenizers
+from pkg_resources import parse_version
 import argparse
+import warnings
 import textwrap
 import os
 from collections import OrderedDict
 import json
 from uuid import uuid4
+from packaging import version
 from gluonnlp.data import Vocab
 
 
@@ -17,13 +20,25 @@ def get_parser():
 
     We support the following models:
 
-        "python3 learn_subword.py --model spm" : Train a Sentencepiece Model on raw text;
-        "python3 learn_subword.py --model subword_nmt" : Train with the subword-nmt package;
-        "python3 learn_subword.py --model yttm" : Train with YouTokenToMe; 
-        "python3 learn_subword.py --model hf_bytebpe" : Train with the Byte-level BPE Tokenizer Implemented by Huggingface.
-        "python3 learn_subword.py --model hf_wordpiece" : Train with the Wordpiece Tokenizer Implementated by Huggingface.
-        "python3 learn_subword.py --model hf_bpe" : Train with the BPE Tokenizer Implemented by Huggingface.
-    ''')
+        - "nlp_process learn_subword --model spm --corpus CORPUS --vocab-size SIZE"
+            Train a Sentencepiece Model on raw text.
+
+        - "nlp_process learn_subword --model subword_nmt --corpus CORPUS --vocab-size SIZE"
+            Train with the subword-nmt package:
+
+        - "nlp_process learn_subword --model yttm --corpus CORPUS --vocab-size SIZE"
+            Train with YouTokenToMe:
+
+        - "nlp_process learn_subword --model hf_bytebpe --corpus CORPUS --vocab-size SIZE"
+            Train with the Byte-level BPE Tokenizer Implemented by Huggingface.
+
+        - "nlp_process learn_subword --model hf_wordpiece --corpus CORPUS --vocab-size SIZE"
+            Train with the Wordpiece Tokenizer Implementated by Huggingface.
+
+        - "nlp_process learn_subword --model hf_bpe --corpus CORPUS --vocab-size SIZE"
+            Train with the BPE Tokenizer Implemented by Huggingface.
+    '''),
+        prog='learn_subword'
     )
     parser.add_argument('--corpus', type=str, nargs='+', required=True,
                         help='Path of the corpus. '
@@ -37,7 +52,7 @@ def get_parser():
                                                       'hf_wordpiece',
                                                       'hf_bpe'],
                         required=True, help='Subword model type')
-    parser.add_argument('--save-dir', type=str, required=True,
+    parser.add_argument('--save-dir', type=str, default=None,
                         help='Directory for saving the model and vocabulary file')
     parser.add_argument('--coverage', type=float, default=1.0, 
                         help='Amount of characters covered by the model, '
@@ -45,14 +60,27 @@ def get_parser():
     parser.add_argument('--n-threads', type=int, default=-1,
                         help='Number of threads, only applicable to yttm')
     parser.add_argument('--input-sentence-size', type=int, default=1000000,
-                        help='Size of input sentence, only applicable to sentencepiece, '
-                        'you can reduce this value when getting out of memory error')
+                        help='Size of input sentence. Internally, the algorithm will randomly '
+                             'sample some sentences to train the tokenizer. '
+                             'This is only applicable to sentencepiece, '
+                             'you can reduce this value when getting out of memory error.')
     parser.add_argument('--lowercase', action='store_true', default=False,
                         help='Use lowercase, '
                         'only applicable to hf_bpe, hf_bytebpe and hf_wordpiece')
-    parser.add_argument('--strip-accents', action='store_true', default=False,
-                        help='Disable BERT characters normalization, '
-                        'only applicable to hf_wordpiece')
+    parser.add_argument('--bert-normalizer', action='store_true', default=False,
+                        help='Whether to use the Normalizer in BERT. '
+                             'This will be used only when you choose the huggingface models. '
+                             'Basically, the BERT Normalizer will '
+                             '1) remove control characters. '
+                             '2) putting spaces around chinese characters. '
+                             '3) strip accents. '
+                             'For more details, you can refer to '
+                             'https://github.com/google-research/bert/'
+                             'blob/master/multilingual.md#tokenization')
+    parser.add_argument('--split-punctuation', action='store_true', default=False,
+                        help='Whether to split on punctuation.')
+    parser.add_argument('--disable-unk', action='store_true', default=False,
+                        help='Whether to disable unk token (default settings enable unk)')
     parser.add_argument('--disable-bos', action='store_true', default=False,
                         help='Disable bos token (default settings enable bos)')
     parser.add_argument('--disable-eos', action='store_true', default=False,
@@ -66,14 +94,21 @@ def get_parser():
                              'this is not applicable to yttm')
     return parser
 
+
 def main(args):
     corpus_path_list = args.corpus
-    if not os.path.exists(args.save_dir):
-        os.makedirs(args.save_dir)
+    if args.save_dir is None:
+        args.save_dir = args.model
+    for corpus_path in corpus_path_list:
+        if not os.path.exists(corpus_path):
+            raise ValueError('The path="{}" provided by --corpus does not exist!'
+                             .format(corpus_path))
+    print('Learn the {} subword model based on {}.'.format(args.model, args.corpus))
+    os.makedirs(args.save_dir, exist_ok=True)
     model_prefix = os.path.join(args.save_dir, args.model)
     special_tokens_kv = OrderedDict()
-    # unk is always required
-    special_tokens_kv['unk_token'] = Vocab.UNK_TOKEN
+    if not args.disable_unk:
+        special_tokens_kv['unk_token'] = Vocab.UNK_TOKEN
     if not args.disable_bos:
         special_tokens_kv['bos_token'] = Vocab.BOS_TOKEN
     if not args.disable_eos:
@@ -92,15 +127,21 @@ def main(args):
             raise ValueError('There are overlaps between the custom special tokens and the'
                              ' unk, bos, eos, pad tokens')
         special_tokens_kv[k] = v
-    # hf_wordpiece must contains mask, cls and sep tokens
-    # the costom defined mask,cls,sep can overwrite the default settings
     if args.model == 'hf_wordpiece':
-        if 'mask_token' not in special_tokens_kv:
-            special_tokens_kv['mask_token'] = Vocab.MASK_TOKEN
-        if 'cls_token' not in special_tokens_kv:
-            special_tokens_kv['cls_token'] = Vocab.CLS_TOKEN
-        if 'sep_token' not in special_tokens_kv:
-            special_tokens_kv['sep_token'] = Vocab.SEP_TOKEN
+        tokenizers = try_import_huggingface_tokenizers()
+        if 'unk_token' not in special_tokens_kv or special_tokens_kv['unk_token'] != '[UNK]':
+            # TODO, HF Tokenizer must have the unk token.
+            special_tokens_kv['unk_token'] = '[UNK]'
+        if parse_version(tokenizers.__version__) < parse_version('0.8'):
+            # The older version of Tokenizers
+            # hf_wordpiece must contain mask, cls and sep tokens
+            # the custom defined mask,cls,sep can overwrite the default settings
+            if 'mask_token' not in special_tokens_kv:
+                special_tokens_kv['mask_token'] = Vocab.MASK_TOKEN
+            if 'cls_token' not in special_tokens_kv:
+                special_tokens_kv['cls_token'] = Vocab.CLS_TOKEN
+            if 'sep_token' not in special_tokens_kv:
+                special_tokens_kv['sep_token'] = Vocab.SEP_TOKEN
     special_tokens = list(special_tokens_kv.values())
     print('special tokens: ' + ', '.join(special_tokens))
     vocab = []
@@ -160,7 +201,7 @@ def main(args):
             vocab.extend(sorted(list(uniq_chars_final)))
             fm.readline()
             pair = fm.readline()
-            while (pair):
+            while pair:
                 vocab.append(pair.replace(' ', '', 1).strip())
                 pair = fm.readline()
         if len(corpus_path_list) > 1:
@@ -194,12 +235,38 @@ def main(args):
     elif args.model in ['hf_bpe', 'hf_bytebpe', 'hf_wordpiece']:
         tokenizers = try_import_huggingface_tokenizers()
         if args.model == 'hf_bpe':
-            tokenizer = tokenizers.CharBPETokenizer(lowercase=args.lowercase)
+            split_on_whitespace_only = not args.split_punctuation
+            tokenizer = tokenizers.CharBPETokenizer(
+                lowercase=args.lowercase,
+                bert_normalizer=args.bert_normalizer,
+                split_on_whitespace_only=split_on_whitespace_only)
         elif args.model == 'hf_bytebpe':
             tokenizer = tokenizers.ByteLevelBPETokenizer(lowercase=args.lowercase)
         elif args.model == 'hf_wordpiece':
-            tokenizer = tokenizers.BertWordPieceTokenizer(lowercase=args.lowercase,
-                                                          strip_accents=args.strip_accents)
+            unk_token = special_tokens_kv.get('unk_token', None)
+            sep_token = special_tokens_kv.get('sep_token', None)
+            cls_token = special_tokens_kv.get('cls_token', None)
+            pad_token = special_tokens_kv.get('pad_token', None)
+            mask_token = special_tokens_kv.get('mask_token', None)
+            if args.bert_normalizer:
+                strip_accents = None
+                clean_text = True
+                handle_chinese_chars = True
+            else:
+                strip_accents = False
+                clean_text = False
+                handle_chinese_chars = False
+            tokenizer = tokenizers.BertWordPieceTokenizer(
+                unk_token=unk_token,
+                sep_token=sep_token,
+                cls_token=cls_token,
+                pad_token=pad_token,
+                mask_token=mask_token,
+                lowercase=args.lowercase,
+                strip_accents=strip_accents,
+                handle_chinese_chars=handle_chinese_chars,
+                clean_text=clean_text
+            )
         else:
             raise NotImplementedError
         tokenizer.train(
@@ -207,38 +274,50 @@ def main(args):
             vocab_size=args.vocab_size,
             show_progress=True,
             special_tokens=special_tokens)
-        tokenizer.save(args.save_dir, args.model)
-        # we replace the huggingface vocab file with our Vocab implementation
-        if args.model == 'hf_wordpiece':
-            hf_vocab_file = model_prefix + '-vocab.txt'
-            with open(hf_vocab_file, 'r', encoding='utf-8') as fv:
-                for line in fv:
-                    vocab.append(line.strip())
+        # Deal with the API change of tokenizers >= 0.8
+        if version.parse(tokenizers.__version__) >= version.parse('0.8'):
+            save_model_path = model_prefix + '.model'
+            tokenizer.save(save_model_path)
+            model_info = json.load(open(save_model_path, encoding='utf-8'))
+            special_tokens_in_tokenizer = model_info['added_tokens']
+            assert len(special_tokens_in_tokenizer) == len(special_tokens)
+            hf_vocab = model_info['model']['vocab']
+            hf_vocab_sorted = sorted(list(hf_vocab.items()), key=lambda x: x[1])
+            hf_vocab_ids = [ele[1] for ele in hf_vocab_sorted]
+            assert min(hf_vocab_ids) == 0 and max(hf_vocab_ids) == len(hf_vocab_ids) - 1
+            vocab = [ele[0] for ele in hf_vocab_sorted]
         else:
-            # Move the hf_${model}-merges.txt to hf_${model}.models
-            os.rename(os.path.join(args.save_dir, '{}-merges.txt'.format(args.model)),
-                      os.path.join(args.save_dir, '{}.model'.format(args.model)))
-            hf_vocab_file = model_prefix + '-vocab.json'
-            with open(hf_vocab_file, 'r', encoding='utf-8') as fv:
-                vocab_kv = json.load(fv)
-                vocab_kv = sorted(list(vocab_kv.items()), key=lambda x: x[1])
-                for kv in vocab_kv:
-                    vocab.append(kv[0])
-        os.remove(hf_vocab_file)
+            tokenizer.save(args.save_dir, args.model)
+            # we replace the huggingface vocab file with our Vocab implementation
+            if args.model == 'hf_wordpiece':
+                hf_vocab_file = model_prefix + '-vocab.txt'
+                with open(hf_vocab_file, 'r', encoding='utf-8') as fv:
+                    for line in fv:
+                        vocab.append(line.strip())
+            else:
+                # Move the hf_${model}-merges.txt to hf_${model}.models
+                os.rename(os.path.join(args.save_dir, '{}-merges.txt'.format(args.model)),
+                          os.path.join(args.save_dir, '{}.model'.format(args.model)))
+                hf_vocab_file = model_prefix + '-vocab.json'
+                with open(hf_vocab_file, 'r', encoding='utf-8') as fv:
+                    vocab_kv = json.load(fv)
+                    vocab_kv = sorted(list(vocab_kv.items()), key=lambda x: x[1])
+                    for kv in vocab_kv:
+                        vocab.append(kv[0])
+            os.remove(hf_vocab_file)
     else:
         raise NotImplementedError
-    unk_token = special_tokens_kv.pop('unk_token')
-    vocab_obj = Vocab(vocab, unk_token=unk_token, **special_tokens_kv)
+    vocab_obj = Vocab(vocab, **special_tokens_kv)
     vocab_obj.save(model_prefix + '.vocab')
 
 
 def cat_corpus(corpus_path_list):
     # TODO Use temporary file
     corpus_path = "./" + str(uuid4()) + '.corpus'
-    with open(corpus_path, 'wb') as cat_corpus:
+    with open(corpus_path, 'wb') as of:
         for cp in corpus_path_list:
             with open(cp, 'rb') as corpus:
-                cat_corpus.write(corpus.read())
+                of.write(corpus.read())
     return corpus_path
 
 

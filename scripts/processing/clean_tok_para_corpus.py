@@ -26,7 +26,6 @@ def get_tokenizer(tokenizer, lang=None):
             raise NotImplementedError
 
 
-# TODO(sxjscience) Consider whether to
 def check_both_latin1(src_sentence: str, tgt_sentence: str) -> bool:
     """Check whether the sentence pair can all be encoded in latin1
 

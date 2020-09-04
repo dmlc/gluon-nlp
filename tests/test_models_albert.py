@@ -158,6 +158,7 @@ def test_list_pretrained_albert():
     assert len(list_pretrained_albert()) > 0
 
 
+@pytest.mark.slow
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_albert())
 def test_albert_get_pretrained(model_name):

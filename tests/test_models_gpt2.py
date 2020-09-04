@@ -96,20 +96,22 @@ def test_gpt2_incremental_states(ctx):
         )
 
         states = gpt2_model.init_states(batch_size, ctx)
+        hiddens_l = []
         for i in range(sequence_length):
             hiddens, states = gpt2_model(
                 inputs[:, i:i+1],
                 states,
                 mx.np.array(i, dtype=np.int32, ctx=ctx)
             )
-        incremental_states = states
-        incremental_hiddens = hiddens
-        assert_allclose(incremental_states.asnumpy(),
+            hiddens_l.append(hiddens)
+        hiddens_concat = mx.np.concatenate(hiddens_l, axis=1)
+        assert_allclose(one_time_states.asnumpy(),
                         states.asnumpy(), 1E-4, 1E-4)
-        assert_allclose(incremental_hiddens.asnumpy(),
-                        hiddens.asnumpy(), 1E-4, 1E-4)
+        assert_allclose(one_time_hiddens.asnumpy(),
+                        hiddens_concat.asnumpy(), 1E-4, 1E-4)
 
 
+@pytest.mark.slow
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_gpt2())
 def test_gpt2(model_name, ctx):
@@ -126,34 +128,33 @@ def test_gpt2(model_name, ctx):
         gpt2_lm_model = GPT2ForLM(cfg)
         gpt2_lm_model.load_parameters(lm_params_path)
 
-    # test forward
-    batch_size = 3
-    seq_length = 32
-    ctx = mx.cpu()
-    vocab_size = len(tokenizer.vocab)
-    input_ids = mx.np.array(
-        np.random.randint(
-            2,
-            vocab_size,
-            (batch_size, seq_length)
-        ),
-        dtype=np.int32,
-        ctx=ctx
-    )
-    logits, _ = gpt2_lm_model(
-        input_ids,
-        gpt2_lm_model.init_states(batch_size, ctx),
-        mx.np.array(0, dtype=np.int32, ctx=ctx)
-    )
-    mx.npx.waitall()
-    # test backward
-    label_smooth_loss = LabelSmoothCrossEntropyLoss(num_labels=vocab_size)
-    with mx.autograd.record():
+        # test forward
+        batch_size = 3
+        seq_length = 32
+        vocab_size = len(tokenizer.vocab)
+        input_ids = mx.np.array(
+            np.random.randint(
+                2,
+                vocab_size,
+                (batch_size, seq_length)
+            ),
+            dtype=np.int32,
+            ctx=ctx
+        )
         logits, _ = gpt2_lm_model(
             input_ids,
             gpt2_lm_model.init_states(batch_size, ctx),
             mx.np.array(0, dtype=np.int32, ctx=ctx)
         )
-        loss = label_smooth_loss(logits, input_ids)
-        loss.backward()
-    mx.npx.waitall()
+        mx.npx.waitall()
+        # test backward
+        label_smooth_loss = LabelSmoothCrossEntropyLoss(num_labels=vocab_size)
+        with mx.autograd.record():
+            logits, _ = gpt2_lm_model(
+                input_ids,
+                gpt2_lm_model.init_states(batch_size, ctx),
+                mx.np.array(0, dtype=np.int32, ctx=ctx)
+            )
+            loss = label_smooth_loss(logits, input_ids)
+            loss.backward()
+        mx.npx.waitall()

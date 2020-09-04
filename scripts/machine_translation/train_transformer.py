@@ -56,7 +56,7 @@ from gluonnlp.data.sampler import (
 import gluonnlp.data.batchify as bf
 from gluonnlp.data import Vocab
 from gluonnlp.data import tokenizers
-from gluonnlp.data.tokenizers import BaseTokenizerWithVocab
+from gluonnlp.data.tokenizers import BaseTokenizerWithVocab, huggingface
 from gluonnlp.lr_scheduler import InverseSquareRootScheduler
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
 try:
@@ -123,7 +123,8 @@ def parse_args():
                              'You may select a yml file or use the prebuild configurations.')
     parser.add_argument('--label_smooth_alpha', type=float, default=0.1,
                         help='Weight of label smoothing')
-    parser.add_argument('--sampler', type=str, choices=['BoundedBudgetSampler', 'FixedBucketSampler'],
+    parser.add_argument('--sampler', type=str, choices=['BoundedBudgetSampler',
+                                                        'FixedBucketSampler'],
                         default='FixedBucketSampler', help='Type of sampler')
     parser.add_argument('--batch_size', type=int, default=2700,
                         help='Batch size. Number of tokens per gpu in a minibatch.')
@@ -278,15 +279,18 @@ def create_tokenizer(tokenizer_type, model_path, vocab_path):
     elif tokenizer_type == 'spm':
         return tokenizers.create(tokenizer_type, model_path=model_path, vocab=vocab_path)
     elif tokenizer_type == 'subword_nmt':
-        return tokenizers.create(tokenizer_type, codec_path=model_path, vocab_path=vocab_path)
+        return tokenizers.create(tokenizer_type, model_path=model_path, vocab=vocab_path)
     elif tokenizer_type == 'yttm':
         return tokenizers.create(tokenizer_type, model_path=model_path)
-    elif tokenizer_type == 'hf_bytebpe':
-        return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
-    elif tokenizer_type == 'hf_wordpiece':
-        return tokenizers.create(tokenizer_type, vocab_file=vocab_path)
-    elif tokenizer_type == 'hf_bpe':
-        return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
+    elif tokenizer_type in ['hf_bytebpe', 'hf_wordpiece', 'hf_bpe']:
+        if huggingface.is_new_version_model_file(model_path):
+            return tokenizers.create('hf_tokenizer', model_path=model_path, vocab=vocab_path)
+        elif tokenizer_type == 'hf_bytebpe':
+            return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
+        elif tokenizer_type == 'hf_wordpiece':
+            return tokenizers.create(tokenizer_type, vocab_file=vocab_path)
+        elif tokenizer_type == 'hf_bpe':
+            return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
     else:
         raise NotImplementedError
 
@@ -358,8 +362,8 @@ def train(args):
     lr_scheduler = InverseSquareRootScheduler(warmup_steps=args.warmup_steps, base_lr=base_lr,
                                               warmup_init_lr=args.warmup_init_lr)
     trainer_settings = (model.collect_params(), 'adam',
-                            {'learning_rate': args.lr, 'beta1': 0.9,
-                             'beta2': 0.98, 'epsilon': 1e-9, 'lr_scheduler': lr_scheduler})
+                        {'learning_rate': args.lr, 'beta1': 0.9,
+                         'beta2': 0.98, 'epsilon': 1e-9, 'lr_scheduler': lr_scheduler})
     if args.comm_backend == 'horovod':
         trainer = hvd.DistributedTrainer(*trainer_settings)
     else:
@@ -367,11 +371,12 @@ def train(args):
     # Load Data
     if args.sampler == 'BoundedBudgetSampler':
         train_batch_sampler = BoundedBudgetSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
-                                                     max_num_tokens=args.max_num_tokens,
-                                                     max_num_sentences=args.max_num_sentences,
-                                                     seed=args.seed)
+                                                   max_num_tokens=args.max_num_tokens,
+                                                   max_num_sentences=args.max_num_sentences,
+                                                   seed=args.seed)
         if num_parts > 1:
-            train_batch_sampler = ShardedIterator(train_batch_sampler, num_parts=num_parts, part_index=rank)
+            train_batch_sampler = ShardedIterator(train_batch_sampler, num_parts=num_parts,
+                                                  part_index=rank)
     elif args.sampler == 'FixedBucketSampler':
         if args.comm_backend == 'horovod':
             raise NotImplementedError('FixedBucketSampler does not support horovod at present')

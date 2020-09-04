@@ -6,7 +6,6 @@ import shutil
 from typing import List, Optional
 from collections import Counter
 from gluonnlp.base import get_data_home_dir
-from gluonnlp.registry import DATA_MAIN_REGISTRY, DATA_PARSER_REGISTRY
 from gluonnlp.utils.misc import download, load_checksum_stats
 from gluonnlp.data.vocab import Vocab
 
@@ -56,7 +55,6 @@ _URLS = {
 }
 
 
-@DATA_PARSER_REGISTRY.register('prepare_lm')
 def get_parser():
     parser = argparse.ArgumentParser(description='Downloading and Preprocessing'
                                                  ' Language Modeling Datasets.')
@@ -127,7 +125,6 @@ def build_vocab(corpus_path_l: List, eos_token: Optional[str] = '<eos>') -> Voca
     return vocab
 
 
-@DATA_MAIN_REGISTRY.register('prepare_lm')
 def main(args):
     # Download the data
     url = _URLS[args.dataset]
