@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-bash convert_bert_from_tf_hub.sh
-bash convert_albert_from_tf_hub.sh
+bash convert_bert.sh
+bash convert_albert.sh
 bash convert_electra.sh
 bash convert_mobilebert.sh
 bash convert_roberta.sh
