@@ -68,7 +68,7 @@ jobs:
       - name: Wait for job and copy files from AWS s3
         if: ${{ failure() || success() }}
         run: |
-          head -100 temp.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
+          head -100 batch_job.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
 
           echo "Job ID is"
           cat jobid.log
