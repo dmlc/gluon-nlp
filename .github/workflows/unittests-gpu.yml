@@ -48,7 +48,7 @@ jobs:
                                              --save-path temp \
                                              --remote https://github.com/${{ github.repository }} \
                                              --command "(./batch_states/test.sh | tee > ./gputest.stdout.log) 3>&1 1>&2 2>&3 | tee ./gputest.stderr.log" \
-                                             --wait | tee > temp.log  
+                                             --wait | tee > batch_job.log  
 
 
       - name: Test project on AWS Batch(For pull request)
@@ -63,7 +63,7 @@ jobs:
                                              --save-path temp \
                                              --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
                                              --command "(./batch_states/test.sh | tee > ./gputest.stdout.log) 3>&1 1>&2 2>&3 | tee ./gputest.stderr.log" \
-                                             --wait | tee > temp.log
+                                             --wait | tee > batch_job.log
 
       - name: Wait for job and copy files from AWS s3
         if: ${{ failure() || success() }}
@@ -99,6 +99,8 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: GPU_Test_Results
-          path: ./test_logs
+          path: |
+            ./test_logs
+            ./batch_job.log
 
 
