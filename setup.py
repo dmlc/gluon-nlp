@@ -47,7 +47,7 @@ requirements = [
     'tokenizers==0.8.1',
     'click>=7.0',  # Dependency of youtokentome
     'youtokentome>=1.0.6',
-    'fasttext>=0.9.2'
+    'fasttext>=0.9.1,!=0.9.2'  # Fix to 0.9.1 due to https://github.com/facebookresearch/fastText/issues/1052
 ]
 
 setup(
