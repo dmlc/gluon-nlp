@@ -94,13 +94,18 @@ jobs:
           env_vars: OS,PYTHON
           file: ./coverage.xml
 
-      - name: Upload log file for AWS Batch test results
+      - name: Upload standard output and error for gpu tests
         if: ${{ failure() || success() }}
         uses: actions/upload-artifact@v2
         with:
           name: GPU_Test_Results
-          path: |
-            ./test_logs
-            ./batch_job.log
+          path: ./test_logs
+
+      - name: Upload Cloud Watch Log Stream 
+        if: ${{ failure() || success() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Log_Stream
+          path: ./batch_job.log
 
 
