@@ -23,7 +23,6 @@ def test_get_backbone(name, ctx):
         assert num_params > 0
 
         # Test for model export + save
-        assert False
         batch_size = 1
         sequence_length = 4
         inputs = mx.np.random.randint(0, 10, (batch_size, sequence_length))
