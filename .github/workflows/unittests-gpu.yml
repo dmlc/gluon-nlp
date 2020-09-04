@@ -48,7 +48,7 @@ jobs:
                                              --save-path temp \
                                              --remote https://github.com/${{ github.repository }} \
                                              --command "./batch_states/test.sh | tee > ./script.log" \
-                                             --wait 2>&1 | tee temp.log  
+                                             --wait | tee > temp.log  
 
 
       - name: Test project on AWS Batch(For pull request)
@@ -63,7 +63,7 @@ jobs:
                                              --save-path temp \
                                              --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
                                              --command "./batch_states/test.sh | tee > ./script.log" \
-                                             --wait 2>&1 | tee temp.log
+                                             --wait | tee > temp.log
 
       - name: Wait for job and copy files from AWS s3
         if: ${{ failure() || success() }}
@@ -73,7 +73,7 @@ jobs:
           echo "Job ID is"
           cat jobid.log
 
-          cat jobid.log | xargs -i python ./tools/batch/wait-job --job-id {}
+          cat jobid.log | xargs -i python ./tools/batch/wait-job.py --job-id {}
 
           echo "Copy Codecov file"
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
