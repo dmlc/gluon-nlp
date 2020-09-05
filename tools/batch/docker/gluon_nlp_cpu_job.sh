@@ -20,7 +20,7 @@ fi;
 git fetch origin $SOURCE_REF:working
 git checkout working
 python3 -m pip install -U --quiet --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
-pip3 --quiet install -e .[extras]
+python3 -m pip install --quiet -e .[extras]
 
 cd $WORK_DIR
 /bin/bash -o pipefail -c "$COMMAND"
