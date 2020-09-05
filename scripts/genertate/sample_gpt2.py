@@ -26,15 +26,15 @@ def parse_args():
         description='')
     parser.add_argument('--model_name', type=str, default='gpt2_124M',
                         choices=list_pretrained_gpt2(), help='')
-    parser.add_argument('--seed', type=int, default=None, help='The random seed.')
+    parser.add_argument('--seed', type=int, default=100, help='The random seed.')
     parser.add_argument('--nsamples', type=int, default=0, help='')
     parser.add_argument('--batch_size', type=int, default=1, help='')
     parser.add_argument('--length', type=int, default=None, help='')
     parser.add_argument('--temperature', type=float, default=1.0, help='')
     parser.add_argument('--top_k', type=int, default=-1, help='')
-    parser.add_argument('--top_p', type=float, required=-1.0, help='')
+    parser.add_argument('--top_p', type=float, default=-1.0, help='')
     parser.add_argument('--gpu', type=int, default=0, help='')
-
+    return parser.parse_args()
 
 
 # input = prev , states = None, output += new samples ()
@@ -51,7 +51,8 @@ class GPT2Decoder(BaseStepDecoder):
     def init_states(self, batch_size, ctx):
         return self._gpt2_lm_model.init_states(batch_size, ctx)
     def __call__(self, data, states):
-        return self._gpt2_lm_model(data, states)
+        logits, new_states = self._gpt2_lm_model(data, states)
+        return logits[:,-1,:], new_states
 
 
 def sample_gpt2(args):
@@ -76,7 +77,7 @@ def sample_gpt2(args):
     sampler = BeamSearchSampler(
         beam_size=1,
         decoder=gpt2decoder,
-        eos_id=tokenizer.eos_id,
+        eos_id=tokenizer.vocab.eos_id,
         vocab_size=cfg.MODEL.vocab_size,
         max_length_a=0,
         max_length_b=cfg.MODEL.max_length,
@@ -88,14 +89,14 @@ def sample_gpt2(args):
         early_return=True
     )
     
-    start_input = mx.np.full((args.batch_size, 1), tokenizer.bos_id)
+    start_input = mx.np.full((args.batch_size, 1), tokenizer.vocab.eos_id, ctx=ctx)
     start_states = gpt2decoder.init_states(args.batch_size, ctx)
     
     generated = 0
     while args.nsamples <= 0 or generated < args.nsamples:
         samples = sampler(start_input, start_states)
         for i in args.batch_size:
-            text = tokenizer.decode(samples[i][0])
+            text = tokenizer.decode(samples[i][0].asnumpy())
             print(text)
         generated += args.batch_size
 
