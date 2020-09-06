@@ -29,7 +29,7 @@ __all__ = ['ElectraModel', 'ElectraDiscriminator', 'ElectraGenerator',
            'ElectraForPretrain', 'list_pretrained_electra', 'get_pretrained_electra']
 
 import os
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 import mxnet as mx
 import numpy as np
@@ -509,7 +509,8 @@ class ElectraModel(HybridBlock):
         embedding = self.embed_dropout(embedding)
         return embedding
 
-    def apply_layerwise_decay(self, layerwise_decay, not_included=None):
+    def apply_layerwise_decay(self, layerwise_decay: int,
+                              not_included: Optional[List[str]] = None):
         """Apply the layer-wise gradient decay
 
         .. math::
@@ -517,17 +518,18 @@ class ElectraModel(HybridBlock):
 
         Parameters:
         ----------
-        layerwise_decay: int
-            layer-wise decay power
-        not_included: list of str
+        layerwise_decay
+            Power rate of the layer-wise decay
+        not_included
             A list or parameter names that not included in the layer-wise decay
         """
 
-        # consider the task specific finetuning layer as the last layer, following with pooler
-        # In addition, the embedding parameters have the smaller learning rate based on this setting.
+        # Consider the task specific finetuning layer as the last layer, following with pooler
+        # In addition, the embedding parameters have the smaller learning rate based on this
+        # setting.
         max_depth = self.num_layers + 2
         for _, value in self.collect_params('.*embed*').items():
-            value.lr_mult = layerwise_decay**(max_depth)
+            value.lr_mult = layerwise_decay ** max_depth
 
         for (layer_depth, layer) in enumerate(self.encoder.all_encoder_layers):
             layer_params = layer.collect_params()

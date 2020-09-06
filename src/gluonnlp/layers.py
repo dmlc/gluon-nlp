@@ -33,36 +33,42 @@ InitializerType = Optional[Union[mx.init.Initializer, str]]
 
 
 @use_np
-def get_layer_norm(normalization: str = 'layer_norm',
+def get_norm_layer(normalization: str = 'layer_norm',
                    axis: int = -1,
                    epsilon: float = 1e-5,
                    in_channels: int = 0, **kwargs):
     """
-    Get the layer normalization based on the type
+    Get the normalization layer based on the type
 
     Parameters
     ----------
-    normalization: str, default: 'layer_norm'
-        The type of the layer normalization from ['layer_norm', 'no_norm']
+    normalization
+        The type of the layer normalization from ['layer_norm', 'no_norm', 'batch_norm']
     axis
         The axis to normalize the
     epsilon
+        The epsilon of the normalization layer
     in_channels
+        Input channel
 
     Returns
     -------
-    ln
+    norm_layer
         The layer normalization layer
     """
     if isinstance(normalization, str):
         if normalization == 'layer_norm':
-            ln = nn.LayerNorm(axis=axis, epsilon=epsilon, in_channels=in_channels,
-                              **kwargs)
+            norm_layer = nn.LayerNorm(axis=axis, epsilon=epsilon, in_channels=in_channels,
+                                      **kwargs)
         elif normalization == 'no_norm':
-            ln = NoNorm(in_channels=in_channels, **kwargs)
+            norm_layer = NoNorm(in_channels=in_channels, **kwargs)
+        elif normalization == 'identity':
+            norm_layer = IdentityActivation()
+        elif normalization == 'batch_norm':
+            norm_layer = nn.BatchNorm(axis=axis, epsilon=epsilon, in_channels=in_channels, **kwargs)
         else:
             raise NotImplementedError('normalization={} is not supported'.format(normalization))
-        return ln
+        return norm_layer
     else:
         raise NotImplementedError('The type of normalization must be str')
 
@@ -629,7 +635,7 @@ class PositionwiseFFN(HybridBlock):
                               bias_initializer=bias_initializer,
                               dtype=dtype)
         # TODO(sxjscience) We may need to set the dtype flag in LayerNorm, need to double check
-        self.layer_norm = get_layer_norm(normalization=normalization,
+        self.layer_norm = get_norm_layer(normalization=normalization,
                                          in_channels=units,
                                          epsilon=layer_norm_eps)
 

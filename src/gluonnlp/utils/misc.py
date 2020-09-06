@@ -651,3 +651,20 @@ def init_comm(backend, gpus):
             logging.info('GPU communication supported by KVStore')
 
     return store, num_workers, rank, local_rank, is_master_node, ctx_l
+
+
+def get_mxnet_available_ctx():
+    """Get the available contexts visible to MXNet
+
+    Returns
+    -------
+    ctx_l
+        Get the available contexts
+    """
+    import mxnet as mx
+    num_gpus = mx.context.num_gpus()
+    if num_gpus == 0:
+        ctx_l = [mx.cpu()]
+    else:
+        ctx_l = [mx.gpu(i) for i in range(num_gpus)]
+    return ctx_l

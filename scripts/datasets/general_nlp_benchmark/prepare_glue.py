@@ -614,8 +614,9 @@ def main(args):
     if args.data_dir is None:
         args.data_dir = args.benchmark
     args.cache_path = os.path.join(args.cache_path, args.benchmark)
-    print('Downloading {} to {}. Selected tasks = {}'.format(args.benchmark,
-                                                             args.data_dir, args.tasks))
+    print('Downloading {} to "{}". Selected tasks = {}'.format(args.benchmark,
+                                                               args.data_dir,
+                                                               args.tasks))
     os.makedirs(args.cache_path, exist_ok=True)
     os.makedirs(args.data_dir, exist_ok=True)
     tasks = get_tasks(args.benchmark, args.tasks)
