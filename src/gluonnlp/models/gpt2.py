@@ -96,6 +96,16 @@ def gpt2_774M():
     cfg.freeze()
     return cfg
 
+@gpt2_cfg_reg.register()
+def gpt2_1558M():
+    cfg = gpt2_124M()
+    cfg.defrost()
+    cfg.MODEL.num_heads = 25
+    cfg.MODEL.num_layers = 48
+    cfg.MODEL.units = 1600
+    cfg.freeze()
+    return cfg
+
 PRETRAINED_URL = {
     'gpt2_124M': {
         'cfg': gpt2_124M(),
@@ -117,6 +127,13 @@ PRETRAINED_URL = {
         'vocab': 'gpt2_774M/gpt2-9dc62091.vocab',
         'params': 'gpt2_774M/model-9917e24e.params',
         'lm_params': 'gpt2_774M/model_lm-cfbfa641.params'
+    },
+    'gpt2_1558M': {
+        'cfg': gpt2_1558M(),
+        'merges': 'gpt2_1558M/gpt2-396d4d8e.merges',
+        'vocab': 'gpt2_1558M/gpt2-9dc62091.vocab',
+        'params': 'gpt2_1558M/model-af3dd713.params',
+        'lm_params': 'gpt2_1558M/model_lm-c8489dcb.params'
     },
 }
 
