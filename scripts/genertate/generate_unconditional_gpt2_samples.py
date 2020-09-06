@@ -13,7 +13,7 @@ def parse_args():
         description='GPT-2 unconditional sampler. Load a GPT-2 model and sample.')
     parser.add_argument('--model_name', type=str, default='gpt2_124M',
                         choices=list_pretrained_gpt2(), help='Model name')
-    parser.add_argument('--seed', type=int, default=100, help='The random seed')
+    parser.add_argument('--seed', type=int, default=None, help='The random seed')
     parser.add_argument('--nsamples', type=int, default=0, help='Number of samples to return')
     parser.add_argument('--batch_size', type=int, default=1, help='Number of batches')
     parser.add_argument('--length', type=int, default=None,
@@ -90,8 +90,10 @@ def sample_gpt2(args):
         samples, _, _ = sampler(start_input, start_states)
         for i in range(args.batch_size):
             ids = samples[i][0].asnumpy().tolist()
-            ids = ids[1:ids.index(-1)]
+            ids = ids[1:ids.index(-1)] if -1 in ids else \
+                  ids[1:]
             text = tokenizer.decode(ids)
+            print("=" * 40 + " SAMPLE " + str(generated) + " " + "=" * 40)
             print(text)
         generated += args.batch_size
 
@@ -99,7 +101,8 @@ def sample_gpt2(args):
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
     args = parse_args()
-    np.random.seed(args.seed)
-    mx.random.seed(args.seed)
-    random.seed(args.seed)
+    if args.seed is not None:
+        np.random.seed(args.seed)
+        mx.random.seed(args.seed)
+        random.seed(args.seed)
     sample_gpt2(args)
