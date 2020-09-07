@@ -653,13 +653,17 @@ def init_comm(backend, gpus):
     return store, num_workers, rank, local_rank, is_master_node, ctx_l
 
 
-def get_mxnet_available_ctx():
-    """Get the available contexts visible to MXNet
+def get_mxnet_recommended_ctx():
+    """Get the recommended contexts to use for MXNet.
+
+    - If GPU is available, it will return all the visible GPUs, which can be controlled via
+    "CUDA_VISIBLE_DEVICES".
+    - If no GPU is available, it will return the cpu device.
 
     Returns
     -------
     ctx_l
-        Get the available contexts
+        The recommended contexts to use for MXNet
     """
     import mxnet as mx
     num_gpus = mx.context.num_gpus()

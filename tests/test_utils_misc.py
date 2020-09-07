@@ -11,7 +11,7 @@ from pathlib import Path
 import numpy as np
 from numpy.testing import assert_allclose
 from gluonnlp.utils.misc import AverageSGDTracker, download, sha1sum, logging_config,\
-    get_mxnet_available_ctx
+    get_mxnet_recommended_ctx
 mx.npx.set_np()
 
 
@@ -156,8 +156,8 @@ def test_logging_config():
 
 
 @use_np
-def test_get_mxnet_available_ctx():
-    ctx_l = get_mxnet_available_ctx()
+def test_get_mxnet_recommended_ctx():
+    ctx_l = get_mxnet_recommended_ctx()
     for ctx in ctx_l:
         arr = mx.np.array(1.0, ctx=ctx)
         arr_np = arr.asnumpy()
