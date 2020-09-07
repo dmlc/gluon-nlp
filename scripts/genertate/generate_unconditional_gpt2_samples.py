@@ -70,7 +70,7 @@ def sample_gpt2(args):
     sampler = BeamSearchSampler(
         beam_size=1,
         decoder=gpt2decoder,
-        eos_id=tokenizer.vocab.eos_id,
+        eos_id=None,
         vocab_size=cfg.MODEL.vocab_size,
         max_length_a=0,
         max_length_b=args.length,
@@ -89,13 +89,13 @@ def sample_gpt2(args):
     while args.nsamples <= 0 or generated < args.nsamples:
         samples, _, _ = sampler(start_input, start_states)
         for i in range(args.batch_size):
+            generated += 1
             ids = samples[i][0].asnumpy().tolist()
             ids = ids[1:ids.index(-1)] if -1 in ids else \
                   ids[1:]
             text = tokenizer.decode(ids)
             print("=" * 40 + " SAMPLE " + str(generated) + " " + "=" * 40)
             print(text)
-        generated += args.batch_size
 
 
 if __name__ == '__main__':
