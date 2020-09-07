@@ -419,10 +419,11 @@ def setup_logging(args, local_rank):
     """
     logging_config(args.output_dir,
                    name='finetune_squad{}'.format(args.version),# avoid race
+                   overwrite_handler=True,
                    console=(local_rank == 0))
     logging.info(args)
     set_seed(args.seed)
-    logging.debug('Random seed set to {}'.format(args.seed)
+    logging.debug('Random seed set to {}'.format(args.seed))
 
 def train(args):
     store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
