@@ -24,6 +24,12 @@ To test both for cpu and gpu device, use the following command
 python3 -m pytest --device="cpu" --device="gpu" test_models_transformer.py
 ```
 
+In addition, to run all the tests, you should add the `--runslow` flag
+
+```bash
+python3 -m pytest --device="gpu" --runslow test_models.py
+```
+
 Refer to the [official guide of pytest](https://docs.pytest.org/en/latest/) for more details.
 
 # Naming Convention

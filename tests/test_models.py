@@ -36,7 +36,7 @@ def test_get_backbone(name, ctx):
             out = net(inputs, valid_length, inputs, valid_length)
         elif 'gpt2' in name:
             # Temporarily skip GPT-2 test
-            pass
+            return
         else:
             out = net(inputs, token_types, valid_length)
         mx.npx.waitall()
