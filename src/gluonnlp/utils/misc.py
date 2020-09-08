@@ -273,7 +273,7 @@ def count_parameters(params) -> Tuple[int, int]:
     Parameters
     ----------
     params
-
+        The input parameter dict
 
     Returns
     -------
@@ -651,3 +651,24 @@ def init_comm(backend, gpus):
             logging.info('GPU communication supported by KVStore')
 
     return store, num_workers, rank, local_rank, is_master_node, ctx_l
+
+
+def get_mxnet_visible_ctx():
+    """Get the visible contexts in MXNet.
+
+    - If GPU is available, it will return all the visible GPUs, which can be controlled via
+    "CUDA_VISIBLE_DEVICES".
+    - If no GPU is available, it will return the cpu device.
+
+    Returns
+    -------
+    ctx_l
+        The recommended contexts to use for MXNet
+    """
+    import mxnet as mx
+    num_gpus = mx.context.num_gpus()
+    if num_gpus == 0:
+        ctx_l = [mx.cpu()]
+    else:
+        ctx_l = [mx.gpu(i) for i in range(num_gpus)]
+    return ctx_l

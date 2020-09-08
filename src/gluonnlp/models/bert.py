@@ -370,7 +370,8 @@ class BertModel(HybridBlock):
                                        output_dim=units,
                                        weight_initializer=embed_initializer,
                                        dtype=dtype)
-        self.embed_layer_norm = nn.LayerNorm(epsilon=self.layer_norm_eps)
+        self.embed_layer_norm = nn.LayerNorm(epsilon=self.layer_norm_eps,
+                                             in_channels=units)
         self.embed_dropout = nn.Dropout(hidden_dropout_prob)
         # Construct token type embedding
         self.token_type_embed = nn.Embedding(input_dim=num_token_types,
@@ -585,15 +586,18 @@ class BertForMLM(HybridBlock):
         self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer))
         self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                          in_channels=self.backbone_model.units))
         # only load the dense weights with a re-initialized bias
         # parameters are stored in 'word_embed_bias' which is
         # not used in original embedding
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       bias_initializer=bias_initializer))
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
@@ -674,19 +678,23 @@ class BertForPretrain(HybridBlock):
             bias_initializer = self.backbone_model.bias_initializer
         # Construct nsp_classifier for next sentence prediction
         self.nsp_classifier = nn.Dense(units=2,
+                                       in_units=self.backbone_model.units,
                                        weight_initializer=weight_initializer)
         self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer))
         self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                          in_channels=self.backbone_model.units))
         # only load the dense weights with a re-initialized bias
         # parameters are stored in 'word_embed_bias' which is
         # not used in original embedding
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.vocab_size,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       bias_initializer=bias_initializer))
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight

@@ -37,7 +37,7 @@ from mxnet.gluon import HybridBlock, nn
 
 from ..op import select_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
-from ..layers import InitializerType, PositionwiseFFN, PositionalEmbedding, get_layer_norm, get_activation
+from ..layers import InitializerType, PositionwiseFFN, PositionalEmbedding, get_norm_layer, get_activation
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
@@ -177,7 +177,7 @@ class MobileBertEncoderLayer(HybridBlock):
                                                weight_initializer=weight_initializer,
                                                bias_initializer=bias_initializer,
                                                dtype=self._dtype)
-            self.in_bottleneck_ln = get_layer_norm(normalization=normalization,
+            self.in_bottleneck_ln = get_norm_layer(normalization=normalization,
                                                    in_channels=real_units,
                                                    epsilon=layer_norm_eps)
             self.out_bottleneck_proj = nn.Dense(units=units,
@@ -186,7 +186,7 @@ class MobileBertEncoderLayer(HybridBlock):
                                                 weight_initializer=weight_initializer,
                                                 bias_initializer=bias_initializer,
                                                 dtype=self._dtype)
-            self.out_bottleneck_ln = get_layer_norm(normalization=normalization,
+            self.out_bottleneck_ln = get_norm_layer(normalization=normalization,
                                                     in_channels=units,
                                                     epsilon=layer_norm_eps)
 
@@ -197,7 +197,7 @@ class MobileBertEncoderLayer(HybridBlock):
                                           weight_initializer=weight_initializer,
                                           bias_initializer=bias_initializer,
                                           dtype=self._dtype)
-                self.shared_qk_ln = get_layer_norm(normalization=normalization,
+                self.shared_qk_ln = get_norm_layer(normalization=normalization,
                                                    in_channels=real_units,
                                                    epsilon=layer_norm_eps)
         self.attention_proj = nn.Dense(units=real_units,
@@ -258,7 +258,7 @@ class MobileBertEncoderLayer(HybridBlock):
                 dtype=self._dtype,
                 layout=attention_layout
             )
-        self.layer_norm = get_layer_norm(normalization=normalization,
+        self.layer_norm = get_norm_layer(normalization=normalization,
                                          in_channels=real_units,
                                          epsilon=layer_norm_eps)
 
@@ -577,7 +577,7 @@ class MobileBertModel(HybridBlock):
                                                   flatten=False,
                                                   weight_initializer=weight_initializer,
                                                   bias_initializer=bias_initializer)
-        self.embed_layer_norm = get_layer_norm(normalization=normalization,
+        self.embed_layer_norm = get_norm_layer(normalization=normalization,
                                                in_channels=units,
                                                epsilon=self.layer_norm_eps)
 
@@ -815,13 +815,15 @@ class MobileBertForMLM(HybridBlock):
         self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer,
                                       dtype=self.backbone_model.dtype))
         self.mlm_decoder.add(get_activation(self.backbone_model.activation))
         # use basic layer normalization for pretaining
-        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                          in_channels=self.backbone_model.units))
         self.mlm_decoder.hybridize()
         # only load the dense weights with a re-initialized bias
         # parameters are stored in 'word_embed_bias' which is
@@ -918,18 +920,21 @@ class MobileBertForPretrain(HybridBlock):
             bias_initializer = self.backbone_model.bias_initializer
         # Construct nsp_classifier for next sentence prediction
         self.nsp_classifier = nn.Dense(units=2,
+                                       in_units=self.backbone_model.units,
                                        weight_initializer=weight_initializer,
                                        dtype=self.backbone_model.dtype)
         self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer,
                                       dtype=self.backbone_model.dtype))
         self.mlm_decoder.add(get_activation(self.backbone_model.activation))
         # use basic layer normalization for pretaining
-        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                          in_channels=self.backbone_model.units))
         self.mlm_decoder.hybridize()
         # only load the dense weights with a re-initialized bias
         # parameters are stored in 'word_embed_bias' which is
@@ -1019,8 +1024,8 @@ def list_pretrained_mobilebert():
 
 def get_pretrained_mobilebert(model_name: str = 'google_uncased_mobilebert',
                               root: str = get_model_zoo_home_dir(),
-                             load_backbone: str = True,
-                             load_mlm: str = False)\
+                              load_backbone: str = True,
+                              load_mlm: str = False)\
         -> Tuple[CN, HuggingFaceWordPieceTokenizer, str, str]:
     """Get the pretrained mobile bert weights
 
