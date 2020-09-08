@@ -789,7 +789,10 @@ def evaluate(args, last=True):
             str(ctx_l)))
 
     cfg, tokenizer, qa_net, use_segmentation = get_network(
-        args.model_name, ctx_l, args.classifier_dropout)
+        args.model_name, ctx_l, args.classifier_dropout, dtype=args.eval_dtype)
+    if args.eval_dtype == 'float16':
+        qa_net.cast('float16')
+        qa_net.hybridize()
 
     logging.info('Prepare dev data')
     dev_features = get_squad_features(args, tokenizer, segment='dev')
