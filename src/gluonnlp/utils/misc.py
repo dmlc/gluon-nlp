@@ -273,7 +273,7 @@ def count_parameters(params) -> Tuple[int, int]:
     Parameters
     ----------
     params
-
+        The input parameter dict
 
     Returns
     -------
