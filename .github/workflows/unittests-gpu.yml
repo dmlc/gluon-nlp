@@ -47,7 +47,7 @@ jobs:
                                              --work-dir tools/batch \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.repository }} \
-                                             --command "(./batch_states/test.sh | tee > ./gputest.stdout.log) 3>&1 1>&2 2>&3 | tee ./gputest.stderr.log" \
+                                             --command "./batch_states/test.sh" \
                                              --wait | tee > batch_job.log  
 
 
@@ -62,7 +62,7 @@ jobs:
                                              --work-dir tools/batch \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
-                                             --command "(./batch_states/test.sh | tee > ./gputest.stdout.log) 3>&1 1>&2 2>&3 | tee ./gputest.stderr.log" \
+                                             --command "./batch_states/test.sh" \
                                              --wait | tee > batch_job.log
 
       - name: Wait for job and copy files from AWS s3
@@ -78,14 +78,6 @@ jobs:
           echo "Copy Codecov file"
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./coverage.xml
-          
-          mkdir test_logs
-          echo "Copy log files"
-          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/gputest.stdout.log
-          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/gputest.stdout.log ./test_logs/gputest.stdout.log
-
-          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/gputest.stderr.log
-          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/gputest.stderr.log ./test_logs/gputest.stderr.log
 
       - name: Upload coverage to Codecov
         if: ${{ failure() || success() }}
@@ -94,18 +86,11 @@ jobs:
           env_vars: OS,PYTHON
           file: ./coverage.xml
 
-      - name: Upload standard output and error for gpu tests
-        if: ${{ failure() || success() }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: GPU_Test_Results
-          path: ./test_logs
-
       - name: Upload Cloud Watch Log Stream 
         if: ${{ failure() || success() }}
         uses: actions/upload-artifact@v2
         with:
-          name: Log_Stream
+          name: Test_Logs
           path: ./batch_job.log
 
 
