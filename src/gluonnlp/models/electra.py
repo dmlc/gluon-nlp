@@ -726,14 +726,14 @@ class ElectraGenerator(HybridBlock):
                                       bias_initializer=bias_initializer))
         self.mlm_decoder.add(get_activation(self.backbone_model.activation))
         self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
-                                          in_channels=self.backbone_model.units))
+                                          in_channels=self.backbone_model.embed_size))
         # only load the dense weights with a re-initialized bias
         # parameters are stored in 'word_embed_bias' which is
         # not used in original embedding
         self.mlm_decoder.add(
             nn.Dense(
                 units=self.backbone_model.vocab_size,
-                in_units=self.backbone_model.units,
+                in_units=self.backbone_model.embed_size,
                 flatten=False,
                 bias_initializer=bias_initializer))
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
