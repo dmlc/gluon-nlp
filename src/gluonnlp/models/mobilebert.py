@@ -815,13 +815,15 @@ class MobileBertForMLM(HybridBlock):
         self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer,
                                       dtype=self.backbone_model.dtype))
         self.mlm_decoder.add(get_activation(self.backbone_model.activation))
         # use basic layer normalization for pretaining
-        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                          in_channels=self.backbone_model.unitss))
         self.mlm_decoder.hybridize()
         # only load the dense weights with a re-initialized bias
         # parameters are stored in 'word_embed_bias' which is
@@ -918,18 +920,21 @@ class MobileBertForPretrain(HybridBlock):
             bias_initializer = self.backbone_model.bias_initializer
         # Construct nsp_classifier for next sentence prediction
         self.nsp_classifier = nn.Dense(units=2,
+                                       in_units=self.backbone_model.units,
                                        weight_initializer=weight_initializer,
                                        dtype=self.backbone_model.dtype)
         self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer,
                                       dtype=self.backbone_model.dtype))
         self.mlm_decoder.add(get_activation(self.backbone_model.activation))
         # use basic layer normalization for pretaining
-        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                          in_channels=self.backbone_model.units))
         self.mlm_decoder.hybridize()
         # only load the dense weights with a re-initialized bias
         # parameters are stored in 'word_embed_bias' which is

@@ -388,11 +388,13 @@ class ElectraModel(HybridBlock):
                                                    max_length=max_length,
                                                    dtype=self._dtype,
                                                    method=pos_embed_type)
-        self.embed_layer_norm = nn.LayerNorm(epsilon=self.layer_norm_eps)
+        self.embed_layer_norm = nn.LayerNorm(epsilon=self.layer_norm_eps,
+                                             in_channels=embed_size)
 
         self.embed_dropout = nn.Dropout(hidden_dropout_prob)
         if embed_size != units:
             self.embed_factorized_proj = nn.Dense(units=units,
+                                                  in_units=embed_size,
                                                   flatten=False,
                                                   weight_initializer=weight_initializer,
                                                   bias_initializer=bias_initializer)
@@ -635,11 +637,13 @@ class ElectraDiscriminator(HybridBlock):
         self.rtd_encoder = nn.HybridSequential()
         # Extra non-linear layer
         self.rtd_encoder.add(nn.Dense(units=self.backbone_model.units,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer))
         self.rtd_encoder.add(get_activation(self.backbone_model.activation))
         self.rtd_encoder.add(nn.Dense(units=1,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer))
@@ -716,17 +720,20 @@ class ElectraGenerator(HybridBlock):
         self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer))
         self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                          in_channels=self.backbone_model.units))
         # only load the dense weights with a re-initialized bias
         # parameters are stored in 'word_embed_bias' which is
         # not used in original embedding
         self.mlm_decoder.add(
             nn.Dense(
                 units=self.backbone_model.vocab_size,
+                in_units=self.backbone_model.units,
                 flatten=False,
                 bias_initializer=bias_initializer))
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
