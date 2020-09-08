@@ -1019,8 +1019,8 @@ def list_pretrained_mobilebert():
 
 def get_pretrained_mobilebert(model_name: str = 'google_uncased_mobilebert',
                               root: str = get_model_zoo_home_dir(),
-                             load_backbone: str = True,
-                             load_mlm: str = False)\
+                              load_backbone: str = True,
+                              load_mlm: str = False)\
         -> Tuple[CN, HuggingFaceWordPieceTokenizer, str, str]:
     """Get the pretrained mobile bert weights
 
