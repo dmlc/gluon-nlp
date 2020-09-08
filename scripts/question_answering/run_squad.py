@@ -569,8 +569,8 @@ def train(args):
                     sel_start_logits = start_logits[batch_idx, gt_start]
                     sel_end_logits = end_logits[batch_idx, gt_end]
                     sel_answerable_logits = answerable_logits[batch_idx, is_impossible]
-                    span_loss = - 0.5 * (sel_start_logits + sel_end_logits).sum()
-                    answerable_loss = -0.5 * sel_answerable_logits.sum()
+                    span_loss = - 0.5 * (sel_start_logits + sel_end_logits).mean()
+                    answerable_loss = -0.5 * sel_answerable_logits.mean()
                     loss = span_loss + answerable_loss
                     loss_l.append(loss)
                     span_loss_l.append(span_loss)
@@ -601,6 +601,7 @@ def train(args):
             # gluon.trainer._scale is default to 1
             trainer.update(num_workers, ignore_stale_grad=True)
 
+        total_norm = total_norm / num_workers
         if args.num_accumulated > 1:
             # set grad to zero for gradient accumulation
             qa_net.zero_grad()
