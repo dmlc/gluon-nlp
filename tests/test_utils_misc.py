@@ -156,8 +156,8 @@ def test_logging_config():
 
 
 @use_np
-def test_get_mxnet_visible_ctx():
-    ctx_l = get_mxnet_recommended_ctx()
-    for ctx in ctx_l:
-        arr = mx.np.array(1.0, ctx=ctx)
+def test_get_mxnet_visible_ctx(ctx):
+    ctx_l = get_mxnet_visible_ctx()
+    for ele_ctx in ctx_l:
+        arr = mx.np.array(1.0, ctx=ele_ctx)
         arr_np = arr.asnumpy()
