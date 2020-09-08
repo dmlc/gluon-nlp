@@ -253,7 +253,8 @@ def test_bucket_positional_embedding(units, num_buckets, bidirectional, max_dist
 @pytest.mark.parametrize('normalization', ['layer_norm', 'no_norm', 'identity', 'batch_norm'])
 def test_get_norm_layer(normalization, ctx):
     with ctx:
-        norm_layer = get_norm_layer(normalization=normalization)
+        norm_layer = get_norm_layer(normalization=normalization,
+                                    in_channels=16)
         net = mx.gluon.nn.HybridSequential()
         net.add(mx.gluon.nn.Dense(16, in_units=16))
         net.add(norm_layer)
