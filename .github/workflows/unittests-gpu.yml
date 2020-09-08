@@ -39,17 +39,58 @@ jobs:
       - name: Test project on AWS Batch(For push)
         if: ${{ github.event_name == 'push' }}
         run: |
-          python ./tools/batch/submit-job.py --region us-east-1 --job-type g4dn.4x --source-ref ${{ github.ref }} --work-dir tools/batch --remote https://github.com/${{ github.repository }} --command "./batch_states/test.sh" --wait | tee > script.log
+          echo "Start submitting job"
+          python ./tools/batch/submit-job.py --region us-east-1 \
+                                             --job-type g4dn.4x \
+                                             --name GluonNLP-GPU-Test-${{ github.ref }} \
+                                             --source-ref ${{ github.ref }} \
+                                             --work-dir tools/batch \
+                                             --save-path temp \
+                                             --remote https://github.com/${{ github.repository }} \
+                                             --command "./batch_states/test.sh" \
+                                             --wait | tee > batch_job.log  
+
 
       - name: Test project on AWS Batch(For pull request)
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
         run: |
-          python ./tools/batch/submit-job.py --region us-east-1 --job-type g4dn.4x --source-ref ${{ github.event.pull_request.head.ref }} --work-dir tools/batch --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} --command "./batch_states/test.sh" --wait | tee > script.log
+          echo "Start submitting job"
+          python ./tools/batch/submit-job.py --region us-east-1 \
+                                             --job-type g4dn.4x \
+                                             --name GluonNLP-GPU-Test-PR#${{ github.event.number }} \
+                                             --source-ref ${{ github.event.pull_request.head.ref }} \
+                                             --work-dir tools/batch \
+                                             --save-path temp \
+                                             --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
+                                             --command "./batch_states/test.sh" \
+                                             --wait | tee > batch_job.log
 
-      - name: Upload log file for AWS Batch test results
+      - name: Wait for job and copy files from AWS s3
+        if: ${{ failure() || success() }}
+        run: |
+          head -100 batch_job.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
+
+          echo "Job ID is"
+          cat jobid.log
+
+          cat jobid.log | xargs -i python ./tools/batch/wait-job.py --job-id {}
+
+          echo "Copy Codecov file"
+          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
+          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./coverage.xml
+
+      - name: Upload coverage to Codecov
+        if: ${{ failure() || success() }}
+        uses: codecov/codecov-action@v1.0.10
+        with:
+          env_vars: OS,PYTHON
+          file: ./coverage.xml
+
+      - name: Upload Cloud Watch Log Stream 
+        if: ${{ failure() || success() }}
         uses: actions/upload-artifact@v2
         with:
-          name: GPU_Test_Results
-          path: script.log
+          name: Test_Logs
+          path: ./batch_job.log
 
 
