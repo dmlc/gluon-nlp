@@ -510,7 +510,8 @@ class ElectraModel(HybridBlock):
         return embedding
 
     def apply_layerwise_decay(self, layerwise_decay: int,
-                              not_included: Optional[List[str]] = None):
+                              not_included: Optional[List[str]] = None,
+                              num_additional_layers: int = 2):
         """Apply the layer-wise gradient decay
 
         .. math::
@@ -522,12 +523,14 @@ class ElectraModel(HybridBlock):
             Power rate of the layer-wise decay
         not_included
             A list or parameter names that not included in the layer-wise decay
+        num_additional_layers
+            The number of layers after the current backbone. This helps determine the max depth
         """
 
         # Consider the task specific finetuning layer as the last layer, following with pooler
         # In addition, the embedding parameters have the smaller learning rate based on this
         # setting.
-        max_depth = self.num_layers + 2
+        max_depth = self.num_layers + num_additional_layers
         for _, value in self.collect_params('.*embed*').items():
             value.lr_mult = layerwise_decay ** max_depth
 
