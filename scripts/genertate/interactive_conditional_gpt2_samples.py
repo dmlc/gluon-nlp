@@ -81,22 +81,29 @@ def sample_gpt2(args):
         sampling_topk=args.top_k,
         early_return=False
     )
-    
-    start_input = mx.np.full((args.batch_size, 1), tokenizer.vocab.eos_id, ctx=ctx)
     start_states = gpt2decoder.init_states(args.batch_size, ctx)
     
-    generated = 0
-    while args.nsamples <= 0 or generated < args.nsamples:
-        samples, _, _ = sampler(start_input, start_states)
-        for i in range(args.batch_size):
-            generated += 1
-            ids = samples[i][0].asnumpy().tolist()
-            ids = ids[1:ids.index(-1)] if -1 in ids else \
-                  ids[1:]
-            text = tokenizer.decode(ids)
-            print("=" * 40 + " SAMPLE " + str(generated) + " " + "=" * 40)
-            print(text)
-
+    while True:
+        raw_text = input('Model prompt >>> ')
+        while not raw_text:
+            print('Prompt should not be empty!')
+            raw_text = input("Model prompt >>> ")
+        context_tokens = tokenizer.encode(raw_text)
+        start_input = mx.np.repeat(mx.np.expand_dims(mx.np.array(context_tokens, ctx), 0),
+                                   args.batch_size,
+                                   axis=0)
+        generated = 0
+        while generated < args.nsamples:
+            samples, _, _ = sampler(start_input, start_states)
+            for i in range(args.batch_size):
+                generated += 1
+                ids = samples[i][0].asnumpy().tolist()
+                ids = ids[1:ids.index(-1)] if -1 in ids else \
+                      ids[1:]
+                text = tokenizer.decode(ids)
+                print("=" * 40 + " SAMPLE " + str(generated) + " " + "=" * 40)
+                print(text)
+        print("=" * 80)
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
@@ -106,3 +113,4 @@ if __name__ == '__main__':
         mx.random.seed(args.seed)
         random.seed(args.seed)
     sample_gpt2(args)
+
