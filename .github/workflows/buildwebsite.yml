@@ -43,17 +43,15 @@ jobs:
       - name: Compile Notebooks(For push)
         if: ${{ github.event_name == 'push' }}
         run: |
-          python ./tools/batch/batch_states/compile_notebook.py \
-                 --remote ${{ github.repository }} \
-                 --refs ${{ github.ref }}
-
+          ./tools/batch/batch_states/compile_notebooks.sh \
+                 "push" "${{ github.run_number }}" \
+                 "${{ github.repository }}" "${{ github.ref }}"
       - name: Compile Notebooks(For pull request)
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
         run: |
-          python ./tools/batch/batch_states/compile_notebook.py \
-                 --pr-number ${{ github.event.number }} \
-                 --remote ${{ github.event.pull_request.head.repo.full_name }} \
-                 --refs ${{ github.event.pull_request.head.ref }}
+          ./tools/batch/batch_states/compile_notebooks.sh \
+                 "#PR-${{ github.event.number }}" "${{ github.run_number }}" \
+                 "${{ github.event.pull_request.head.repo.full_name }}" "${{ github.event.pull_request.head.ref }}"
 
       - name: Build Website local
         if: ${{ failure() || success() }}
