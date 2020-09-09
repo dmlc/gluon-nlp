@@ -40,7 +40,7 @@ docs: docs_local
 	sed -i.bak 's/33\,150\,243/23\,141\,201/g' docs/_build/html/_static/material-design-lite-1.3.0/material.blue-deep_orange.min.css;
 	sed -i.bak 's/2196f3/178dc9/g' docs/_build/html/_static/sphinx_materialdesign_theme.css;
 
-docs_local: compile_notebooks distribute
+docs_local: distribute
 	make -C docs html SPHINXOPTS=-W
 
 clean:
