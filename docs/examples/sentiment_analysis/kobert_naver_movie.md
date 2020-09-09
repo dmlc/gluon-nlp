@@ -325,6 +325,9 @@ for epoch_id in range(num_epochs):
             step_loss = 0
     test_acc = evaluate_accuracy(model, test_dataloader, ctx)
     print('Test Acc : {}'.format(test_acc))
+    
+# clean up 
+!rm -rf dataset_folder
 ```
 
 So far, we've implemented a sentiment classifier of Naver movie review dataset
