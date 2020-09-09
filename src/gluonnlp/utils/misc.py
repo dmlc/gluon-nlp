@@ -658,6 +658,7 @@ def get_mxnet_visible_ctx():
 
     - If GPU is available, it will return all the visible GPUs, which can be controlled via
     "CUDA_VISIBLE_DEVICES".
+    
     - If no GPU is available, it will return the cpu device.
 
     Returns
