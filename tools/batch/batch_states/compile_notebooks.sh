@@ -7,8 +7,8 @@ remote=$3
 refs=$4
 
 compile_notebook () {
-	local MDFILE=$1
-	DIR=$(dirname $MDFILE)
+    local MDFILE=$1
+    DIR=$(dirname $MDFILE)
     BASENAME=$(basename $MDFILE)
     TARGETNAME=$(dirname $MDFILE)/${BASENAME%.md}.ipynb
     LOGNAME=${BASENAME%.md}.stdout.log
