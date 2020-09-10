@@ -3,6 +3,7 @@ import random
 import os
 import mxnet as mx
 import argparse
+from gluonnlp.utils import set_seed
 from gluonnlp.sequence_sampler import BeamSearchSampler, BaseStepDecoder
 from gluonnlp.models.gpt2 import GPT2ForLM, list_pretrained_gpt2, get_pretrained_gpt2
 
@@ -102,7 +103,5 @@ if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
     args = parse_args()
     if args.seed is not None:
-        np.random.seed(args.seed)
-        mx.random.seed(args.seed)
-        random.seed(args.seed)
+        set_seed(args.seed)
     sample_gpt2(args)

@@ -15,27 +15,33 @@ from gluonnlp.data.tokenizers import HuggingFaceByteBPETokenizer
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Calculate metrics for the generated sentences')
-    parser.add_argument('--generated_file', type=str, required=True, help='Model name')
+    parser.add_argument('--file', type=str, required=True, help='Model name')
     parser.add_argument('--num_samples', type=int, default=1000, help='')
     parser.add_argument('--num_bleu_samples', type=int, default=1000, help='')
     return parser.parse_args()
 
 
-def calculate_self_bleu4(samples, num_bleu_samples):
-    sys_indices = random.sample(range(len(samples)), num_bleu_samples)
+def calculate_self_bleu4(sample_ids, num_bleu_samples):
+    """Self- BLEU is calculated by computing the BLEU score of each generated document
+    using all other generations in the evaluation set as references.
+    """
+    sys_indices = random.sample(range(len(sample_ids)), num_bleu_samples)
     res = 0
     for sys_indice in sys_indices:
         # remove it self
-        ref = samples[:sys_indice] + samples[sys_indice+1:]
+        ref = sample_ids[:sys_indice] + sample_ids[sys_indice+1:]
         sacrebleu_out = sacrebleu.corpus_bleu(
-            sys_stream=samples[sys_indice],
+            sys_stream=sample_ids[sys_indice],
             ref_streams=ref)
         res += sacrebleu_out.score
-    res /= len(samples)
+    res /= len(sample_ids)
     return res
 
 
 def calculate_zipf_coefficient(sample_ids, tokenizer):
+    """The Zipfian coefficient s can be used to compare the distribution in a given
+    text to a theoretically perfect exponential curve.
+    """
     cnt = Counter()
     for sample_id in sample_ids:
         cnt.update(sample_id)
@@ -47,6 +53,8 @@ def calculate_zipf_coefficient(sample_ids, tokenizer):
 
 
 def calculate_repetition(sample_ids):
+    """
+    """
     max_n = 90
     res = 0
     for sample_id in sample_ids:
@@ -82,7 +90,7 @@ def calculate_metrics(args):
         vocab_file=local_paths['vocab'])
     sample_ids = tokenizer.encode(samples, output_type=int)
 
-    self_bleu4 = calculate_self_bleu4(samples, args.num_bleu_samples)
+    self_bleu4 = calculate_self_bleu4(sample_ids, args.num_bleu_samples)
     zipf_coefficient = calculate_zipf_coefficient(sample_ids, tokenizer)
     repetition = calculate_repetition(sample_ids)
     print('Self BLEU 4: {}\n'
@@ -94,4 +102,3 @@ def calculate_metrics(args):
 if __name__ == '__main__':
     args = parse_args()
     calculate_metrics(args)
-    

@@ -3,6 +3,7 @@ import random
 import os
 import mxnet as mx
 import argparse
+from gluonnlp.utils import set_seed
 from gluonnlp.sequence_sampler import BeamSearchSampler, BaseStepDecoder
 from gluonnlp.models.gpt2 import GPT2ForLM, list_pretrained_gpt2, get_pretrained_gpt2
 
@@ -88,8 +89,8 @@ def sample_gpt2(args):
         while not raw_text:
             print('Prompt should not be empty!')
             raw_text = input("Model prompt >>> ")
-        context_tokens = tokenizer.encode(raw_text)
-        start_input = mx.np.repeat(mx.np.expand_dims(mx.np.array(context_tokens, ctx), 0),
+        context_tokens = tokenizer.encode(raw_text, output_type=int)
+        start_input = mx.np.repeat(mx.np.expand_dims(mx.np.array(context_tokens, ctx=ctx), 0),
                                    args.batch_size,
                                    axis=0)
         generated = 0
@@ -109,8 +110,5 @@ if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
     args = parse_args()
     if args.seed is not None:
-        np.random.seed(args.seed)
-        mx.random.seed(args.seed)
-        random.seed(args.seed)
+        set_seed(args.seed)
     sample_gpt2(args)
-
