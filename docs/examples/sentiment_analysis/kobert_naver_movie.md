@@ -327,7 +327,7 @@ for epoch_id in range(num_epochs):
     print('Test Acc : {}'.format(test_acc))
     
 # clean up 
-!rm -rf dataset_folder
+!rm -rf nsmc
 ```
 
 So far, we've implemented a sentiment classifier of Naver movie review dataset
