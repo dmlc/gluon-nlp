@@ -45,6 +45,7 @@ requirements = [
     'protobuf',
     'pandas',
     'tokenizers==0.8.1',
+    'dataclasses;python_version<"3.7"',  # Dataclass for python <= 3.6
     'click>=7.0',  # Dependency of youtokentome
     'youtokentome>=1.0.6',
     'fasttext>=0.9.1,!=0.9.2'  # Fix to 0.9.1 due to https://github.com/facebookresearch/fastText/issues/1052

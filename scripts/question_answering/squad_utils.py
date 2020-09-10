@@ -1,18 +1,16 @@
 """Utility classes and functions for data processing"""
 from typing import Optional, List
 from collections import namedtuple
-import itertools
+from dataclasses import dataclass
 import re
 import numpy as np
-import numpy.ma as ma
 import warnings
 import os
-from tqdm import tqdm
+from tqdm.auto import tqdm
 import json
 import string
 from gluonnlp.data.tokenizers import BaseTokenizerWithVocab
 from gluonnlp.utils.preprocessing import match_tokens_with_char_spans
-from typing import Tuple
 from mxnet.gluon.utils import download
 
 int_float_regex = re.compile('^\d+\.{0,1}\d*$')  # matches if a number is either integer or float
@@ -57,50 +55,41 @@ def get_official_squad_eval_script(version='2.0', download_dir=None):
     return download_path
 
 
+@dataclass
 class SquadExample:
-    """A single training/test example for the Squad dataset, as loaded from disk."""
-    def __init__(self, qas_id: int,
-                 query_text: str,
-                 context_text: str,
-                 answer_text: str,
-                 start_position: int,
-                 end_position: int,
-                 title: str,
-                 answers: Optional[List[str]] = None,
-                 is_impossible: bool = False):
-        """
+    """A single training/test example for the Squad dataset, as loaded from disk.
 
-        Parameters
-        ----------
-        qas_id
-            The example's unique identifier
-        query_text
-            The query string
-        context_text
-            The context string
-        answer_text
-            The answer string
-        start_position
-            The character position of the start of the answer
-        end_position
-            The character position of the end of the answer
-        title
-            The title of the example
-        answers
-            None by default, this is used during evaluation.
-            Holds answers as well as their start positions.
-        is_impossible
-            False by default, set to True if the example has no possible answer.
-        """
-        self.qas_id = qas_id
-        self.query_text = query_text
-        self.context_text = context_text
-        self.answer_text = answer_text
-        self.title = title
-        self.is_impossible = is_impossible
-        self.answers = answers
-        self.start_position = start_position
-        self.end_position = end_position
+    Attributes
+    ----------
+    qas_id
+        The example's unique identifier
+    query_text
+        The query string
+    context_text
+        The context string
+    answer_text
+        The answer string
+    start_position
+        The character position of the start of the answer
+    end_position
+        The character position of the end of the answer
+    title
+        The title of the example
+    answers
+        None by default, this is used during evaluation.
+        Holds answers as well as their start positions.
+    is_impossible
+        False by default, set to True if the example has no possible answer.
+    """
+    qas_id: int
+    query_text: str
+    context_text: str
+    answer_text: str
+    start_position: int
+    end_position: int
+    title: str
+    answers: Optional[List[str]] = None
+    is_impossible: bool = False
 
     def to_json(self):
         return json.dumps(self.__dict__)
