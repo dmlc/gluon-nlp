@@ -63,6 +63,13 @@ jobs:
         run: |
           aws s3 sync --delete ./docs/_build/html/ s3://gluon-nlp-dev/PR#${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/ --acl public-read
 
+     - name: Upload Artifacts 
+        if: ${{ failure() || success() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Notebook_Logs
+          path: ./*.stdout.log
+
       - name: Create comment
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
         uses: peter-evans/create-or-update-comment@v1
