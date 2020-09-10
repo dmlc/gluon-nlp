@@ -5,11 +5,8 @@ from collections import Counter
 import operator
 import numpy as np
 from scipy import stats
-import os
 import random
-from gluonnlp.base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
-from gluonnlp.utils.misc import load_checksum_stats, download
-from gluonnlp.data.tokenizers import HuggingFaceByteBPETokenizer
+from gluonnlp.models.gpt2 import get_pretrained_gpt2
 
 
 def parse_args():
@@ -77,17 +74,9 @@ def calculate_metrics(args):
     samples = samples[:args.num_samples]
     assert len(samples) == args.num_samples
     
-    local_paths = {}
-    download_jobs = [('vocab', 'gpt2_124M/gpt2-9dc62091.vocab'),
-                     ('merges', 'gpt2_124M/gpt2-396d4d8e.merges')]
-    FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 'gpt2.txt'))
-    for k, path in download_jobs:
-        local_paths[k] = download(url=get_repo_model_zoo_url() + path,
-                                  path=os.path.join(get_model_zoo_home_dir(), path),
-                                  sha1_hash=FILE_STATS[path])
-    tokenizer = HuggingFaceByteBPETokenizer(
-        merges_file=local_paths['merges'],
-        vocab_file=local_paths['vocab'])
+    _, _, tokenizer, _, _ = get_pretrained_gpt2(
+        load_backbone=False,
+        load_lm=False)
     sample_ids = tokenizer.encode(samples, output_type=int)
 
     self_bleu4 = calculate_self_bleu4(sample_ids, args.num_bleu_samples)
