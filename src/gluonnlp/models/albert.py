@@ -33,6 +33,7 @@ from typing import Tuple
 
 import mxnet as mx
 from mxnet import use_np
+from mxnet import np, npx
 from mxnet.gluon import HybridBlock, nn
 from .transformer import TransformerEncoderLayer
 from ..registry import BACKBONE_REGISTRY
@@ -45,6 +46,7 @@ from ..attention_cell import gen_self_attn_mask
 from ..layers import get_activation, PositionalEmbedding
 from ..op import select_vectors_by_position
 from ..data.tokenizers import SentencepieceTokenizer
+from ..layers import HybridSequential
 
 albert_cfg_reg = Registry('albert_cfg')
 
@@ -190,7 +192,7 @@ class AlbertEncoder(HybridBlock):
         self._layout = layout
 
 
-        self.all_encoder_groups = nn.HybridSequential()
+        self.all_encoder_groups = HybridSequential()
         for group_idx in range(num_groups):
             self.all_encoder_groups.add(
                 TransformerEncoderLayer(units=units,
@@ -209,7 +211,7 @@ class AlbertEncoder(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, data, valid_length):
+    def forward(self, data, valid_length):
         """
         Generate the representation given the inputs.
 
@@ -236,7 +238,7 @@ class AlbertEncoder(HybridBlock):
         """
         # 1. Embed the data
         time_axis = 1 if self.layout == 'NT' else 0
-        attn_mask = gen_self_attn_mask(F, data, valid_length, dtype=self._dtype,
+        attn_mask = gen_self_attn_mask(data, valid_length, dtype=self._dtype,
                                        attn_type='full', layout=self.layout)
         out = data
         all_encodings_outputs = []
@@ -248,7 +250,7 @@ class AlbertEncoder(HybridBlock):
             # out : [batch_size, seq_len, units]
             # attention_weights : [batch_size, num_heads, seq_len, seq_len]
             if self._output_all_encodings:
-                out = F.npx.sequence_mask(out,
+                out = npx.sequence_mask(out,
                                           sequence_length=valid_length,
                                           use_sequence_length=True,
                                           axis=time_axis)
@@ -259,7 +261,7 @@ class AlbertEncoder(HybridBlock):
 
         if not self._output_all_encodings:
             # if self._output_all_encodings, SequenceMask is already applied above
-            out = F.npx.sequence_mask(out, sequence_length=valid_length,
+            out = npx.sequence_mask(out, sequence_length=valid_length,
                                       use_sequence_length=True,
                                       axis=time_axis)
             return out, additional_outputs
@@ -363,7 +365,7 @@ class AlbertModel(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length=None):
+    def forward(self, inputs, token_types, valid_length=None):
         # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
@@ -399,7 +401,7 @@ class AlbertModel(HybridBlock):
         pooled_output
             This is optional. Shape (batch_size, units)
         """
-        initial_embedding = self.get_initial_embedding(F, inputs, token_types)
+        initial_embedding = self.get_initial_embedding(inputs, token_types)
         # Projecting the embedding into units
         prev_out = initial_embedding
         if self.embed_size != self.units:
@@ -407,9 +409,9 @@ class AlbertModel(HybridBlock):
         outputs = []
         if self._compute_layout != self._layout:
             # Swap input to reflect the compute_layout
-            contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(prev_out, 0, 1),
+            contextual_embeddings, additional_outputs = self.encoder(np.swapaxes(prev_out, 0, 1),
                                                                      valid_length)
-            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
+            contextual_embeddings = np.swapaxes(contextual_embeddings, 0, 1)
         else:
             contextual_embeddings, additional_outputs = self.encoder(prev_out, valid_length)
         outputs.append(contextual_embeddings)
@@ -418,7 +420,7 @@ class AlbertModel(HybridBlock):
             outputs.append(pooled_out)
         return tuple(outputs) if len(outputs) > 1 else outputs[0]
 
-    def get_initial_embedding(self, F, inputs, token_types=None):
+    def get_initial_embedding(self, inputs, token_types=None):
         """Get the initial token embeddings that considers the token type and positional embeddings
 
         Parameters
@@ -450,12 +452,12 @@ class AlbertModel(HybridBlock):
             batch_axis, time_axis = 1, 0
         embedding = self.word_embed(inputs)
         if token_types is None:
-            token_types = F.np.zeros_like(inputs)
+            token_types = np.zeros_like(inputs)
         type_embedding = self.token_type_embed(token_types)
         embedding = embedding + type_embedding
         if self.pos_embed_type is not None:
-            positional_embedding = self.token_pos_embed(F.npx.arange_like(inputs, axis=time_axis))
-            positional_embedding = F.np.expand_dims(positional_embedding, axis=batch_axis)
+            positional_embedding = self.token_pos_embed(npx.arange_like(inputs, axis=time_axis))
+            positional_embedding = np.expand_dims(positional_embedding, axis=batch_axis)
             embedding = embedding + positional_embedding
         # Extra layer normalization plus dropout
         embedding = self.embed_layer_norm(embedding)
@@ -559,7 +561,7 @@ class AlbertForMLM(HybridBlock):
             weight_initializer = self.backbone_model.weight_initializer
         if bias_initializer is None:
             bias_initializer = self.backbone_model.bias_initializer
-        self.mlm_decoder = nn.HybridSequential()
+        self.mlm_decoder = HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
                                       in_units=self.backbone_model.units,
@@ -582,7 +584,7 @@ class AlbertForMLM(HybridBlock):
     def layout(self):
         return self.backbone_model.layout
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length,
+    def forward(self, inputs, token_types, valid_length,
                        masked_positions):
         """Getting the scores of the masked positions.
 
@@ -622,9 +624,9 @@ class AlbertForMLM(HybridBlock):
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
         if self.layout == 'NT':
-            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+            mlm_features = select_vectors_by_position(contextual_embeddings, masked_positions)
         else:
-            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+            mlm_features = select_vectors_by_position(np.swapaxes(contextual_embeddings, 0, 1),
                                                       masked_positions)
         mlm_scores = self.mlm_decoder(mlm_features)
         return contextual_embeddings, pooled_out, mlm_scores
@@ -654,7 +656,7 @@ class AlbertForPretrain(HybridBlock):
         self.sop_classifier = nn.Dense(units=2,
                                        in_units=self.backbone_model.units,
                                        weight_initializer=weight_initializer)
-        self.mlm_decoder = nn.HybridSequential()
+        self.mlm_decoder = HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
                                       in_units=self.backbone_model.units,
@@ -677,7 +679,7 @@ class AlbertForPretrain(HybridBlock):
     def layout(self):
         return self.backbone_model.layout
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length,
+    def forward(self, inputs, token_types, valid_length,
                        masked_positions):
         """Generate the representation given the inputs.
 
@@ -723,9 +725,9 @@ class AlbertForPretrain(HybridBlock):
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
         sop_score = self.sop_classifier(pooled_out)
         if self.layout == 'NT':
-            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+            mlm_features = select_vectors_by_position(contextual_embeddings, masked_positions)
         else:
-            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+            mlm_features = select_vectors_by_position(np.swapaxes(contextual_embeddings, 0, 1),
                                                       masked_positions)
         mlm_scores = self.mlm_decoder(mlm_features)
         return contextual_embeddings, pooled_out, sop_score, mlm_scores

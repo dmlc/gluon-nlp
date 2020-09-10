@@ -1,6 +1,6 @@
 import mxnet as mx
+from mxnet import np, npx
 import math
-import numpy as np
 from mxnet import use_np
 __all__ = ['select_vectors_by_position', 'add_vectors_by_position',
            'update_vectors_by_position',
@@ -10,7 +10,7 @@ __all__ = ['select_vectors_by_position', 'add_vectors_by_position',
 
 
 @use_np
-def select_vectors_by_position(F, data, positions):
+def select_vectors_by_position(data, positions):
     """Select each batch with the given positions.
 
     Once advanced indexing can be hybridized, we can revise the implementation.
@@ -19,7 +19,6 @@ def select_vectors_by_position(F, data, positions):
 
     Parameters
     ----------
-    F
     data
         Input tensor of contextualized token embeddings
         Shape (batch_size, seq_length, ...)
@@ -44,19 +43,19 @@ def select_vectors_by_position(F, data, positions):
     # Then, out = gather_nd(in, indices)
     positions = positions.astype(np.int32)
     # batch_idx.shape = (batch_size, 1) as [[0], [1], [2], ...]
-    batch_idx = F.np.expand_dims(F.npx.arange_like(positions, axis=0),
+    batch_idx = np.expand_dims(npx.arange_like(positions, axis=0),
                                  axis=1).astype(np.int32)
-    batch_idx = batch_idx + F.np.zeros_like(positions)
-    indices = F.np.stack([batch_idx, positions])
+    batch_idx = batch_idx + np.zeros_like(positions)
+    indices = np.stack([batch_idx, positions])
     # TODO(sxjscience) We can revise the implementation to advanced indexing
     #  once the bug in MXNet is solved:
     #  https://github.com/apache/incubator-mxnet/issues/18919
-    out = F.npx.gather_nd(data, indices)
+    out = npx.gather_nd(data, indices)
     return out
 
 
 @use_np
-def add_vectors_by_position(F, data, increment, positions):
+def add_vectors_by_position(data, increment, positions):
     """Scatter each batch with the given positions.
 
     data[i, positions[i, j], ...] += increment[i, j, ...]
@@ -92,16 +91,16 @@ def add_vectors_by_position(F, data, increment, positions):
     # Then, out = npx.index_add(data, indices, increment)
     positions = positions.astype(np.int32)
     # batch_idx.shape = (batch_size, 1) as [[0], [1], [2], ...]
-    batch_idx = F.np.expand_dims(F.npx.arange_like(positions, axis=0),
+    batch_idx = np.expand_dims(npx.arange_like(positions, axis=0),
                                  axis=1).astype(np.int32)
-    batch_idx = batch_idx + F.np.zeros_like(positions)
-    indices = F.np.stack([batch_idx.reshape((-1,)), positions.reshape((-1,))])
-    out = F.npx.index_add(data, indices, F.npx.reshape(increment, (-5, -4)))
+    batch_idx = batch_idx + np.zeros_like(positions)
+    indices = np.stack([batch_idx.reshape((-1,)), positions.reshape((-1,))])
+    out = npx.index_add(data, indices, npx.reshape(increment, (-5, -4)))
     return out
 
 
 @use_np
-def update_vectors_by_position(F, data, val, positions):
+def update_vectors_by_position(data, val, positions):
     """
     Update each batch with the given positions. Considered as a reversed process of
     "select_vectors_by_position", this is an operator similar to "add_vectors_by_position"
@@ -132,17 +131,17 @@ def update_vectors_by_position(F, data, val, positions):
     """
     positions = positions.astype(np.int32)
     # batch_idx.shape = (batch_size, 1) as [[0], [1], [2], ...]
-    batch_idx = F.np.expand_dims(F.npx.arange_like(positions, axis=0),
+    batch_idx = np.expand_dims(npx.arange_like(positions, axis=0),
                                  axis=1).astype(np.int32)
-    batch_idx = batch_idx + F.np.zeros_like(positions)
-    indices = F.np.stack([batch_idx.reshape((-1,)), positions.reshape((-1,))])
+    batch_idx = batch_idx + np.zeros_like(positions)
+    indices = np.stack([batch_idx.reshape((-1,)), positions.reshape((-1,))])
 
-    out = F.npx.index_update(data, indices, F.npx.reshape(val, (-5, -4)))
+    out = npx.index_update(data, indices, npx.reshape(val, (-5, -4)))
     return out
 
 
 @use_np
-def gumbel_softmax(F, logits, temperature: float = 1.0, eps: float = 1E-10,
+def gumbel_softmax(logits, temperature: float = 1.0, eps: float = 1E-10,
                    hard=True, use_np_gumbel: bool = True):
     r"""Perform the gumbel-softmax trick to generate differentiable one-hot vectors from the input
     logits.
@@ -184,20 +183,20 @@ def gumbel_softmax(F, logits, temperature: float = 1.0, eps: float = 1E-10,
     # TODO(sxjscience) Investigate the impact of random.gumbel:
     #  Actually, random.gumble has no eps and may have problem in calculating the gradient.
     if use_np_gumbel:
-        gumbels = F.np.random.gumbel(F.np.zeros_like(logits))
+        gumbels = np.random.gumbel(np.zeros_like(logits))
     else:
-        u = F.np.random.uniform(F.np.zeros_like(logits), 1)
-        gumbels = -F.np.log(-F.np.log(u + eps) + eps)
-    y = F.npx.softmax((gumbels + logits) / temperature, axis=-1)
+        u = np.random.uniform(np.zeros_like(logits), 1)
+        gumbels = -np.log(-np.log(u + eps) + eps)
+    y = npx.softmax((gumbels + logits) / temperature, axis=-1)
     if hard:
-        y_hard = F.np.max(y, axis=-1, keepdims=True) == y
-        y_hard = F.npx.stop_gradient(y_hard - y) + y
+        y_hard = np.max(y, axis=-1, keepdims=True) == y
+        y_hard = npx.stop_gradient(y_hard - y) + y
         return y_hard
     else:
         return y
 
 
-def trunc_gumbel(F, logits, truncation):
+def trunc_gumbel(logits, truncation):
     """Sample from the TruncGumbel distribution.
 
     The cumulative density function (CDF) of the Truncated Gumbel distribution is defined as
@@ -224,11 +223,11 @@ def trunc_gumbel(F, logits, truncation):
         Samples from the TruncGumbel(logits, truncation)
         Shape (...,)
     """
-    gumbels = F.np.random.gumbel(F.np.zeros_like(logits)) + logits
-    return -F.np.log(F.np.exp(-gumbels) + np.exp(-truncation))
+    gumbels = np.random.gumbel(np.zeros_like(logits)) + logits
+    return -np.log(np.exp(-gumbels) + np.exp(-truncation))
 
 
-def relative_position_bucket(F, relative_position,
+def relative_position_bucket(relative_position,
                              bidirectional: bool = True,
                              num_buckets: int = 32,
                              max_distance: int = 128):
@@ -269,10 +268,10 @@ def relative_position_bucket(F, relative_position,
                                      'divisible by 2.'
         num_buckets //= 2
         ret = ret + (relative_position < 0).astype(np.int32) * num_buckets
-        relative_position = F.np.abs(relative_position)
+        relative_position = np.abs(relative_position)
     else:
         # Clip all the negative values to 0
-        relative_position = F.np.clip(relative_position, a_min=0, a_max=None)
+        relative_position = np.clip(relative_position, a_min=0, a_max=None)
     # Now, the relative_position is in the range [0, inf)
 
     # Half of the buckets deal with the exact increments,
@@ -283,31 +282,29 @@ def relative_position_bucket(F, relative_position,
     # The other half of the buckets are for logarithmically bigger bins in positions up to
     # max_distance
     val_if_large = max_exact + (
-            F.np.log(relative_position.astype(np.float32) / max_exact)
+            np.log(relative_position.astype(np.float32) / max_exact)
             / math.log(max_distance / max_exact) * (num_buckets - max_exact)).astype(np.int32)
-    val_if_large = F.np.minimum(val_if_large, num_buckets - 1)
-    ret = ret + F.np.where(is_small, relative_position, val_if_large)
+    val_if_large = np.minimum(val_if_large, num_buckets - 1)
+    ret = ret + np.where(is_small, relative_position, val_if_large)
     return ret
 
 
-def l2_normalize(F, data, axis=-1, eps=1e-6):
+def l2_normalize(data, axis=-1, eps=1e-6):
     """Normalize the data by L2 normalization.
-    
+
     Parameters
     ----------
-    F
-        mx.sym or mx.nd
     data
         The input data
     axis
         The axis that we should perform l2 normalization
     eps
         The epsilon value
-    
+
     Returns
     -------
     ret
         The returned output
     """
-    ret = data / (F.np.linalg.norm(data, axis=axis, keepdims=True) + eps)
+    ret = data / (np.linalg.norm(data, axis=axis, keepdims=True) + eps)
     return ret

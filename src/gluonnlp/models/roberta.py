@@ -33,13 +33,13 @@ import os
 from typing import Tuple
 
 import mxnet as mx
-from mxnet import use_np
+from mxnet import use_np, np, npx
 from mxnet.gluon import HybridBlock, nn
 
 from ..op import select_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, \
                    get_model_zoo_checksum_dir
-from ..layers import PositionalEmbedding, get_activation
+from ..layers import PositionalEmbedding, get_activation, HybridSequential
 from ..registry import BACKBONE_REGISTRY
 from ..utils.misc import download, load_checksum_stats
 from ..utils.registry import Registry
@@ -147,7 +147,7 @@ class RobertaEncoder(HybridBlock):
         self._layout = layout
         self._output_all_encodings = output_all_encodings
         self._output_attention = output_attention
-        self.all_layers = nn.HybridSequential()
+        self.all_layers = HybridSequential()
         for layer_idx in range(self.num_layers):
             self.all_layers.add(
                 TransformerEncoderLayer(
@@ -168,8 +168,8 @@ class RobertaEncoder(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, x, valid_length):
-        atten_mask = gen_self_attn_mask(F, x, valid_length,
+    def forward(self, x, valid_length):
+        atten_mask = gen_self_attn_mask(x, valid_length,
                                         layout=self._layout,
                                         dtype=self._dtype, attn_type='full')
         all_encodings_outputs = [x]
@@ -317,12 +317,12 @@ class RobertaModel(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, tokens, valid_length):
-        embedding = self.get_initial_embedding(F, tokens)
+    def forward(self, tokens, valid_length):
+        embedding = self.get_initial_embedding(tokens)
         if self._layout != self._compute_layout:
-            contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(embedding, 0, 1),
+            contextual_embeddings, additional_outputs = self.encoder(np.swapaxes(embedding, 0, 1),
                                                                      valid_length)
-            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
+            contextual_embeddings = np.swapaxes(contextual_embeddings, 0, 1)
         else:
             contextual_embeddings, additional_outputs = self.encoder(embedding, valid_length)
         if self.use_pooler:
@@ -334,7 +334,7 @@ class RobertaModel(HybridBlock):
         else:
             return contextual_embeddings
 
-    def get_initial_embedding(self, F, inputs):
+    def get_initial_embedding(self, inputs):
         """Get the initial token embeddings that considers the token type and positional embeddings
 
         Parameters
@@ -361,8 +361,8 @@ class RobertaModel(HybridBlock):
             batch_axis, time_axis = 1, 0
         embedding = self.word_embed(inputs)
         if self.pos_embed_type:
-            positional_embedding = self.pos_embed(F.npx.arange_like(inputs, axis=time_axis))
-            positional_embedding = F.np.expand_dims(positional_embedding, axis=batch_axis)
+            positional_embedding = self.pos_embed(npx.arange_like(inputs, axis=time_axis))
+            positional_embedding = np.expand_dims(positional_embedding, axis=batch_axis)
             embedding = embedding + positional_embedding
         if self.encoder_normalize_before:
             embedding = self.embed_ln(embedding)
@@ -461,7 +461,7 @@ class RobertaForMLM(HybridBlock):
         if bias_initializer is None:
             bias_initializer = self.backbone_model.bias_initializer
         self.units = self.backbone_model.units
-        self.mlm_decoder = nn.HybridSequential()
+        self.mlm_decoder = HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.units,
                                       in_units=self.units,
@@ -482,7 +482,7 @@ class RobertaForMLM(HybridBlock):
                 bias_initializer=bias_initializer))
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
 
-    def hybrid_forward(self, F, inputs, valid_length, masked_positions):
+    def forward(self, inputs, valid_length, masked_positions):
         """Getting the scores of the masked positions.
 
         Parameters
@@ -519,8 +519,8 @@ class RobertaForMLM(HybridBlock):
         else:
             contextual_embeddings = all_encodings_outputs
         if self.backbone_model.layout == 'TN':
-            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
-        mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+            contextual_embeddings = np.swapaxes(contextual_embeddings, 0, 1)
+        mlm_features = select_vectors_by_position(contextual_embeddings, masked_positions)
         mlm_scores = self.mlm_decoder(mlm_features)
         return all_encodings_outputs, pooled_out, mlm_scores
 

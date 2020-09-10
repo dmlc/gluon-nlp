@@ -1,4 +1,5 @@
 from mxnet.gluon import HybridBlock
+from mxnet import npx
 
 
 class LabelSmoothCrossEntropyLoss(HybridBlock):
@@ -34,12 +35,11 @@ class LabelSmoothCrossEntropyLoss(HybridBlock):
         self._alpha = alpha
         self._from_logits = from_logits
 
-    def hybrid_forward(self, F, pred, label):
+    def forward(self, pred, label):
         """
 
         Parameters
         ----------
-        F
         pred :
             The predictions of the network. Shape (..., V)
         label :
@@ -51,8 +51,8 @@ class LabelSmoothCrossEntropyLoss(HybridBlock):
             Shape (..., )
         """
         if not self._from_logits:
-            pred = F.npx.log_softmax(pred, axis=-1)
-        log_likelihood = F.npx.pick(pred, label, axis=-1)
+            pred = npx.log_softmax(pred, axis=-1)
+        log_likelihood = npx.pick(pred, label, axis=-1)
         all_scores = pred.sum(axis=-1)
         loss = - (1 - self._alpha) * log_likelihood\
                - self._alpha / float(self._num_labels) * all_scores

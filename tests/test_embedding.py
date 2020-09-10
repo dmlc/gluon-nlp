@@ -37,7 +37,9 @@ def test_load_embeddings():
         matrix4 = load_embeddings(vocab1, path)
         np.testing.assert_almost_equal(matrix4, matrix1)
 
-        
+
+@pytest.mark.slow
+@pytest.mark.remote_required
 def test_get_fasttext_model():
     text_data = ['hello', 'world', 'hello', 'nice', 'world', 'hi', 'world']
     counter = collections.Counter(text_data)
