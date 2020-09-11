@@ -577,7 +577,7 @@ class BeamSearchSampler(HybridBlock):
         scores = mx.np.zeros(shape=(batch_size, beam_size), ctx=ctx)
         if beam_size > 1:
             scores[:, 1:beam_size] = LARGE_NEGATIVE_FLOAT
-        samples = step_input.reshape((batch_size, beam_size, 1))
+        samples = step_input.reshape((batch_size, beam_size, -1))
         batch_shift = mx.np.arange(0, batch_size * beam_size, beam_size, ctx=ctx, dtype=mx.np.int32)
         step = mx.np.array(0, ctx=ctx, dtype=mx.np.float32)
         for i in range(max_length):

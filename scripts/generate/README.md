@@ -14,6 +14,7 @@ python3 generate_unconditional_gpt2_samples.py \
     --nsamples 1000 > samples
 ```
 
+
 Interactive generate gpt2 conditioanl samples
 ```bash
 python3 interactive_conditional_gpt2_samples.py \
@@ -40,3 +41,6 @@ Some metrics for the unconditional generated text
 | topk=640      |                |  -             | -              |
 | topk=40 t=0.7 |                |  -             | -              |
 
+
+Some interesting generated unconditional samples
+# TODO

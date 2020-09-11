@@ -46,17 +46,17 @@ def calculate_self_bleu4(samples, num_bleu_samples):
 
 
 def calculate_zipf_coefficient(sample_ids, tokenizer):
-    """The Zipfian coefficient s can be used to compare the distribution in a given
+    """The Zipfian coefficient (R-squared) can be used to compare the distribution in a given
     text to a theoretically perfect exponential curve.
     """
     cnt = Counter()
     for sample_id in sample_ids:
         cnt.update(sample_id)
     
-    xs = np.arange(1, min(len(cnt), len(tokenizer.vocab)))
+    xs = np.arange(1, min(len(cnt), len(tokenizer.vocab)) + 1)
     ys = np.array(sorted(cnt.values(), key=operator.neg)[:len(tokenizer.vocab)])
     _, _, r, _, _ = stats.linregress(np.log(xs), np.log(ys))
-    return r
+    return r ** 2
 
 
 def calculate_repetition(sample_ids):
@@ -97,7 +97,7 @@ def calculate_metrics(args):
     repetition = calculate_repetition(sample_ids)
     print('Self BLEU 4: {}\n'
           'Zipf coefficient: {}\n'
-          'Repectition: {}\n'
+          'Repetition: {}\n'
           .format(self_bleu4, zipf_coefficient, repetition))
 
 
