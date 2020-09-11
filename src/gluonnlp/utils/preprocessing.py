@@ -29,7 +29,7 @@ def get_trimmed_lengths(lengths: List[int],
     Returns
     -------
     trimmed_lengths
-        The trimmed lengths of the
+        The trimmed lengths of the sequences.
     """
     lengths = np.array(lengths)
     if do_merge:

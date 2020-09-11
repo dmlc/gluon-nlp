@@ -4,6 +4,7 @@ from typing import Tuple, List
 from . import albert
 from . import bert
 from . import electra
+from . import gpt2
 from . import mobilebert
 from . import roberta
 from . import transformer

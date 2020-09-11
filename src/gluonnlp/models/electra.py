@@ -29,7 +29,7 @@ __all__ = ['ElectraModel', 'ElectraDiscriminator', 'ElectraGenerator',
            'ElectraForPretrain', 'list_pretrained_electra', 'get_pretrained_electra']
 
 import os
-from typing import Tuple, Optional
+from typing import Tuple, Optional, List
 
 import mxnet as mx
 import numpy as np
@@ -388,11 +388,13 @@ class ElectraModel(HybridBlock):
                                                    max_length=max_length,
                                                    dtype=self._dtype,
                                                    method=pos_embed_type)
-        self.embed_layer_norm = nn.LayerNorm(epsilon=self.layer_norm_eps)
+        self.embed_layer_norm = nn.LayerNorm(epsilon=self.layer_norm_eps,
+                                             in_channels=embed_size)
 
         self.embed_dropout = nn.Dropout(hidden_dropout_prob)
         if embed_size != units:
             self.embed_factorized_proj = nn.Dense(units=units,
+                                                  in_units=embed_size,
                                                   flatten=False,
                                                   weight_initializer=weight_initializer,
                                                   bias_initializer=bias_initializer)
@@ -509,7 +511,9 @@ class ElectraModel(HybridBlock):
         embedding = self.embed_dropout(embedding)
         return embedding
 
-    def apply_layerwise_decay(self, layerwise_decay, not_included=None):
+    def apply_layerwise_decay(self, layerwise_decay: int,
+                              not_included: Optional[List[str]] = None,
+                              num_additional_layers: int = 2):
         """Apply the layer-wise gradient decay
 
         .. math::
@@ -517,17 +521,20 @@ class ElectraModel(HybridBlock):
 
         Parameters:
         ----------
-        layerwise_decay: int
-            layer-wise decay power
-        not_included: list of str
+        layerwise_decay
+            Power rate of the layer-wise decay
+        not_included
             A list or parameter names that not included in the layer-wise decay
+        num_additional_layers
+            The number of layers after the current backbone. This helps determine the max depth
         """
 
-        # consider the task specific finetuning layer as the last layer, following with pooler
-        # In addition, the embedding parameters have the smaller learning rate based on this setting.
-        max_depth = self.num_layers + 2
+        # Consider the task specific finetuning layer as the last layer, following with pooler
+        # In addition, the embedding parameters have the smaller learning rate based on this
+        # setting.
+        max_depth = self.num_layers + num_additional_layers
         for _, value in self.collect_params('.*embed*').items():
-            value.lr_mult = layerwise_decay**(max_depth)
+            value.lr_mult = layerwise_decay ** max_depth
 
         for (layer_depth, layer) in enumerate(self.encoder.all_encoder_layers):
             layer_params = layer.collect_params()
@@ -630,11 +637,13 @@ class ElectraDiscriminator(HybridBlock):
         self.rtd_encoder = nn.HybridSequential()
         # Extra non-linear layer
         self.rtd_encoder.add(nn.Dense(units=self.backbone_model.units,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer))
         self.rtd_encoder.add(get_activation(self.backbone_model.activation))
         self.rtd_encoder.add(nn.Dense(units=1,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer))
@@ -711,17 +720,20 @@ class ElectraGenerator(HybridBlock):
         self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
+                                      in_units=self.backbone_model.units,
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer))
         self.mlm_decoder.add(get_activation(self.backbone_model.activation))
-        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps))
+        self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
+                                          in_channels=self.backbone_model.embed_size))
         # only load the dense weights with a re-initialized bias
         # parameters are stored in 'word_embed_bias' which is
         # not used in original embedding
         self.mlm_decoder.add(
             nn.Dense(
                 units=self.backbone_model.vocab_size,
+                in_units=self.backbone_model.embed_size,
                 flatten=False,
                 bias_initializer=bias_initializer))
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight

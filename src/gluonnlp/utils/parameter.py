@@ -24,6 +24,7 @@ import numpy as np
 import mxnet as mx
 from collections import defaultdict
 from mxnet.gluon import Parameter
+from mxnet.util import use_np
 from typing import Iterable, Optional, Tuple
 
 
@@ -152,3 +153,27 @@ def clip_grad_global_norm(parameters: Iterable[Parameter],
             for arr in p.list_grad():
                 arr *= scale
     return total_norm, ratio, is_finite
+
+
+@use_np
+def move_to_ctx(arr, ctx):
+    """Move a nested structure of array to the given context
+
+    Parameters
+    ----------
+    arr
+        The input array
+    ctx
+        The MXNet context
+
+    Returns
+    -------
+    new_arr
+        The array that has been moved to context
+    """
+    if isinstance(arr, tuple):
+        return tuple(move_to_ctx(ele, ctx) for ele in arr)
+    elif isinstance(arr, list):
+        return [move_to_ctx(ele, ctx) for ele in arr]
+    else:
+        return None if arr is None else arr.as_in_ctx(ctx)

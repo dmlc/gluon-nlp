@@ -5,11 +5,13 @@ import logging
 import mxnet as mx
 import multiprocessing
 import functools
+from mxnet.util import use_np
 from mxnet.gluon import nn
 from pathlib import Path
 import numpy as np
 from numpy.testing import assert_allclose
-from gluonnlp.utils.misc import AverageSGDTracker, download, sha1sum, logging_config
+from gluonnlp.utils.misc import AverageSGDTracker, download, sha1sum, logging_config,\
+    get_mxnet_visible_ctx
 mx.npx.set_np()
 
 
@@ -151,3 +153,11 @@ def test_logging_config():
         assert file_size_test3 == file_size_test2
         assert file_size_foo2 == file_size_foo1
         assert file_size_zoo1 > 0
+
+
+@use_np
+def test_get_mxnet_visible_ctx(ctx):
+    ctx_l = get_mxnet_visible_ctx()
+    for ele_ctx in ctx_l:
+        arr = mx.np.array(1.0, ctx=ele_ctx)
+        arr_np = arr.asnumpy()
