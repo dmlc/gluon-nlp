@@ -8,7 +8,10 @@ Use the following command to generate gpt2 unconditional samples
 ```bash
 python3 generate_unconditional_gpt2_samples.py \
     --model_name gpt2_774M \
-    --nsamples 5000 > samples
+    --gpu 0 \
+    --temperature 0.7 \
+    --top_k 40 \
+    --nsamples 1000 > samples
 ```
 
 Interactive generate gpt2 conditioanl samples

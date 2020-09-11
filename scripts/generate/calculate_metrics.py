@@ -1,6 +1,6 @@
 import re
 import argparse
-import sacrebleu
+from nltk.translate.bleu_score import sentence_bleu
 from collections import Counter
 import operator
 import numpy as np
@@ -18,20 +18,18 @@ def parse_args():
     return parser.parse_args()
 
 
-def calculate_self_bleu4(sample_ids, num_bleu_samples):
+def calculate_self_bleu4(samples, num_bleu_samples):
     """Self- BLEU is calculated by computing the BLEU score of each generated document
     using all other generations in the evaluation set as references.
     """
-    sys_indices = random.sample(range(len(sample_ids)), num_bleu_samples)
+    sys_indices = random.sample(range(len(samples)), num_bleu_samples)
     res = 0
     for sys_indice in sys_indices:
-        # remove it self
-        ref = sample_ids[:sys_indice] + sample_ids[sys_indice+1:]
-        sacrebleu_out = sacrebleu.corpus_bleu(
-            sys_stream=sample_ids[sys_indice],
-            ref_streams=ref)
-        res += sacrebleu_out.score
-    res /= len(sample_ids)
+        res += sentence_bleu(
+            hypothesis=samples[sys_indice],
+            references=samples[:sys_indice] + samples[sys_indice+1:],
+            weights=(0.25, 0.25, 0.25, 0.25))
+    res /= len(samples)
     return res
 
 
@@ -50,10 +48,10 @@ def calculate_zipf_coefficient(sample_ids, tokenizer):
 
 
 def calculate_repetition(sample_ids):
-    """
+    """The repetition rate in generated samples.
     """
     max_n = 90
-    res = 0
+    n_repeated_examples = 0
     for sample_id in sample_ids:
         rev = list(reversed(sample_id))
         last_n_repeats = [0 for _ in range(max_n)]
@@ -62,9 +60,12 @@ def calculate_repetition(sample_ids):
             while len(rev[n*n_repeat:n*(n_repeat+1)]) == n and \
                   rev[n*n_repeat:n*(n_repeat+1)] == rev[:n]:
                 n_repeat += 1
-            last_n_repeat[n-1] = n_repeat
-#        res += (sum(last_n_repeat) / ) TODO
-        
+            last_n_repeats[n-1] = n_repeat
+        max_repeated_n = max(range(max_n), key=lambda x: last_n_repeats[x])
+        if last_n_repeats[max_repeated_n] > 1 and (max_repeated_n+1 >= 3 or last_n_repeats[max_repeated_n] > 50):
+            n_repeated_examples += 1
+    return n_repeated_examples / len(sample_ids)
+
 
 def calculate_metrics(args):
     with open(args.generated_file, encoding='utf-8') as of:
@@ -79,7 +80,7 @@ def calculate_metrics(args):
         load_lm=False)
     sample_ids = tokenizer.encode(samples, output_type=int)
 
-    self_bleu4 = calculate_self_bleu4(sample_ids, args.num_bleu_samples)
+    self_bleu4 = calculate_self_bleu4(samples, args.num_bleu_samples)
     zipf_coefficient = calculate_zipf_coefficient(sample_ids, tokenizer)
     repetition = calculate_repetition(sample_ids)
     print('Self BLEU 4: {}\n'
