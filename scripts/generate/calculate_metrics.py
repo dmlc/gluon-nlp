@@ -22,15 +22,15 @@ def parse_args():
     return parser.parse_args()
 
 
-def bleu(samples, i):
+def bleu(sample_strs, i):
     return sentence_bleu(
-        hypothesis=samples[i],
-        references=samples[:i] + samples[i+1:],
+        hypothesis=sample_strs[i],
+        references=sample_strs[:i] + sample_strs[i+1:],
         weights=(0.25, 0.25, 0.25, 0.25)
     )
 
 
-def calculate_self_bleu4(samples, num_bleu_samples):
+def calculate_self_bleu4(sample_strs, num_bleu_samples):
     """Self-BLEU is calculated by computing the BLEU score of each generated document
     using all other generations in the evaluation set as references.
     """
@@ -38,8 +38,8 @@ def calculate_self_bleu4(samples, num_bleu_samples):
     pool = Pool(processes=os.cpu_count())
     bleu_scores = list(tqdm(
         pool.imap_unordered(
-            partial(bleu, samples),
-            random.sample(range(len(samples)), num_bleu_samples)),
+            partial(bleu, sample_strs),
+            random.sample(range(len(sample_strs)), num_bleu_samples)),
         total=num_bleu_samples
     ))
     return sum(bleu_scores) / num_bleu_samples
@@ -91,8 +91,9 @@ def calculate_metrics(args):
         load_backbone=False,
         load_lm=False)
     sample_ids = tokenizer.encode(samples, output_type=int)
+    sample_strs = tokenizer.encode(samples, output_type=str)
 
-    self_bleu4 = calculate_self_bleu4(samples, args.num_bleu_samples)
+    self_bleu4 = calculate_self_bleu4(sample_strs, args.num_bleu_samples)
     zipf_coefficient = calculate_zipf_coefficient(sample_ids, tokenizer)
     repetition = calculate_repetition(sample_ids)
     print('Self BLEU 4: {}\n'
