@@ -1,6 +1,7 @@
 """Utility classes and functions for data processing"""
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from collections import namedtuple
+import dataclasses
 from dataclasses import dataclass
 import re
 import numpy as np
@@ -92,7 +93,8 @@ class SquadExample:
     is_impossible: bool = False
 
     def to_json(self):
-        return json.dumps(self.__dict__)
+        return json.dumps(dataclasses.asdict(self),
+                          ensure_ascii=False)
 
     @classmethod
     def from_json(cls, s):
@@ -106,73 +108,64 @@ DocChunk = namedtuple('DocChunk', ['start', 'length',
                                    'gt_end_pos'])
 
 
+@dataclass
 class SquadFeature:
-    def __init__(self, qas_id,
-                 query_token_ids,
-                 context_text,
-                 context_token_ids,
-                 context_token_offsets,
-                 is_impossible,
-                 token_answer_mismatch,
-                 unreliable_span,
-                 gt_answer_text,
-                 gt_start_pos,
-                 gt_end_pos):
-        """The Squad Feature
+    """The Squad Feature
 
-        Parameters
-        ----------
-        qas_id
-            The unique query/answer ID in the squad dataset
-        query_token_ids
-            The tokenized query.
-        context_text
-            The original text of the context
-        context_token_ids
-            The tokenized context.
-        context_token_offsets
-            The offsets of the tokens in the original context string
-        is_impossible
-            Whether the sample is impossible.
-        token_answer_mismatch
-            If this value is True, it means that we cannot reconstruct the ground-truth answer with
-            the tokenized version. Usually, the span-prediction-based approach won't be very
-            accurate and we should rely on the encoder-decoder approach.
-            For example:
-                GT: "japan", Tokenized Version: "japanese"
-                     "six'                       "sixth"
-                     "one"                       "iPhone"
-                     "breed"                     "breeding"
-                     "emotion"                   "emotional"
+    Parameters
+    ----------
+    qas_id
+        The unique query/answer ID in the squad dataset
+    query_token_ids
+        The tokenized query.
+    context_text
+        The original text of the context
+    context_token_ids
+        The tokenized context.
+    context_token_offsets
+        The offsets of the tokens in the original context string
+    is_impossible
+        Whether the sample is impossible.
+    token_answer_mismatch
+        If this value is True, it means that we cannot reconstruct the ground-truth answer with
+        the tokenized version. Usually, the span-prediction-based approach won't be very
+        accurate and we should rely on the encoder-decoder approach.
+        For example:
+            GT: "japan", Tokenized Version: "japanese"
+                 "six'                       "sixth"
+                 "one"                       "iPhone"
+                 "breed"                     "breeding"
+                 "emotion"                   "emotional"
 
-        unreliable_span
-            If this value is True, it means that we cannot rely on the gt_start_pos and gt_end_pos.
-            In this scenario, we cannot utilize the span-prediction-based approach.
-            One example is the question about "how many", the answer will spread across the
-            whole document and there is no clear span.
-        gt_answer_text
-            The ground-truth answer text
-        gt_start_pos
-            The start position of the ground-truth span. None indicates that there is no valid
-            ground-truth span.
-        gt_end_pos
-            The end position of the ground-truth span. None indicates that there is no valid
-            ground-truth span.
-        """
-        self.qas_id = qas_id
-        self.query_token_ids = query_token_ids
-        self.context_text = context_text
-        self.context_token_ids = context_token_ids
-        self.context_token_offsets = context_token_offsets
-        self.is_impossible = is_impossible
-        self.token_answer_mismatch = token_answer_mismatch
-        self.unreliable_span = unreliable_span
-        self.gt_answer_text = gt_answer_text
-        self.gt_start_pos = gt_start_pos
-        self.gt_end_pos = gt_end_pos
+    unreliable_span
+        If this value is True, it means that we cannot rely on the gt_start_pos and gt_end_pos.
+        In this scenario, we cannot utilize the span-prediction-based approach.
+        One example is the question about "how many", the answer will spread across the
+        whole document and there is no clear span.
+    gt_answer_text
+        The ground-truth answer text
+    gt_start_pos
+        The start position of the ground-truth span. None indicates that there is no valid
+        ground-truth span.
+    gt_end_pos
+        The end position of the ground-truth span. None indicates that there is no valid
+        ground-truth span.
+    """
+    qas_id: int
+    query_token_ids: List[int]
+    context_text: str
+    context_token_ids: List[int]
+    context_token_offsets: List[Tuple[int, int]]
+    is_impossible: bool
+    token_answer_mismatch: bool
+    unreliable_span: bool
+    gt_answer_text: str
+    gt_start_pos: Optional[int]
+    gt_end_pos: Optional[int]
 
     def to_json(self):
-        return json.dumps(self.__dict__)
+        return json.dumps(dataclasses.asdict(self),
+                          ensure_ascii=False)
 
     @classmethod
     def from_json(cls, s):
