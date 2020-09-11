@@ -7,7 +7,7 @@ import operator
 import numpy as np
 from scipy import stats
 import random
-import tqdm
+from tqdm import tqdm
 from functools import partial
 from multiprocessing.pool import Pool
 from gluonnlp.models.gpt2 import get_pretrained_gpt2
@@ -22,18 +22,17 @@ def parse_args():
     return parser.parse_args()
 
 
-def bleu(samples, i):
-    return sentence_bleu(
-        hypothesis=samples[i],
-        references=samples[:i] + samples[i+1:],
-        weights=(0.25, 0.25, 0.25, 0.25)
-    )
-
-
 def calculate_self_bleu4(samples, num_bleu_samples):
     """Self-BLEU is calculated by computing the BLEU score of each generated document
     using all other generations in the evaluation set as references.
     """
+    def bleu(samples, i):
+        return sentence_bleu(
+            hypothesis=samples[i],
+            references=samples[:i] + samples[i+1:],
+            weights=(0.25, 0.25, 0.25, 0.25)
+        )
+    
     bleu_scores = []
     pool = Pool(processes=os.cpu_count())
     bleu_scores.append(
