@@ -36,14 +36,12 @@ def calculate_self_bleu4(samples, num_bleu_samples):
     """
     bleu_scores = []
     pool = Pool(processes=os.cpu_count())
-    bleu_scores.append(
-        list(tqdm(
-            pool.imap_unordered(
-                partial(bleu, samples),
-                random.sample(range(len(samples)), num_bleu_samples)),
-            total=num_bleu_samples
-        ))
-    )
+    bleu_scores = list(tqdm(
+        pool.imap_unordered(
+            partial(bleu, samples),
+            random.sample(range(len(samples)), num_bleu_samples)),
+        total=num_bleu_samples
+    ))
     return sum(bleu_scores) / num_bleu_samples
 
 
