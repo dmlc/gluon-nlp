@@ -1,3 +1,4 @@
+import os
 import re
 import argparse
 from nltk.translate.bleu_score import sentence_bleu
@@ -6,6 +7,9 @@ import operator
 import numpy as np
 from scipy import stats
 import random
+import tqdm
+from functools import partial
+from multiprocessing.pool import Pool
 from gluonnlp.models.gpt2 import get_pretrained_gpt2
 
 
@@ -19,18 +23,27 @@ def parse_args():
 
 
 def calculate_self_bleu4(samples, num_bleu_samples):
-    """Self- BLEU is calculated by computing the BLEU score of each generated document
+    """Self-BLEU is calculated by computing the BLEU score of each generated document
     using all other generations in the evaluation set as references.
     """
-    sys_indices = random.sample(range(len(samples)), num_bleu_samples)
-    res = 0
-    for sys_indice in sys_indices:
-        res += sentence_bleu(
-            hypothesis=samples[sys_indice],
-            references=samples[:sys_indice] + samples[sys_indice+1:],
-            weights=(0.25, 0.25, 0.25, 0.25))
-    res /= len(samples)
-    return res
+    def bleu(samples, i):
+        return sentence_bleu(
+            hypothesis=samples[i],
+            references=samples[:i] + samples[i+1:],
+            weights=(0.25, 0.25, 0.25, 0.25)
+        )
+    
+    bleu_scores = []
+    pool = Pool(processes=os.cpu_count())
+    bleu_scores.append(
+        list(tqdm(
+            pool.imap_unordered(
+                partial(bleu, samples),
+                random.sample(range(len(samples)), num_bleu_samples)),
+            total=num_bleu_samples
+        ))
+    )
+    return sum(bleu_scores) / num_bleu_samples
 
 
 def calculate_zipf_coefficient(sample_ids, tokenizer):
@@ -68,14 +81,14 @@ def calculate_repetition(sample_ids):
 
 
 def calculate_metrics(args):
-    with open(args.generated_file, encoding='utf-8') as of:
+    with open(args.file, encoding='utf-8') as of:
         samples = of.read()
     pattern = '='*40 + ' SAMPLE \d+ ' + '='*40 + '\n'
     samples = re.split(pattern, samples)[1:]
     samples = samples[:args.num_samples]
     assert len(samples) == args.num_samples
     
-    _, _, tokenizer, _, _ = get_pretrained_gpt2(
+    _, tokenizer, _, _ = get_pretrained_gpt2(
         load_backbone=False,
         load_lm=False)
     sample_ids = tokenizer.encode(samples, output_type=int)
