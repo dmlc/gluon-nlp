@@ -102,10 +102,13 @@ class SquadExample:
         return cls(**kwargs)
 
 
-DocChunk = namedtuple('DocChunk', ['start', 'length',
-                                   'is_impossible',
-                                   'gt_start_pos',
-                                   'gt_end_pos'])
+@dataclass
+class DocChunk:
+    start: int
+    length: int
+    is_impossible: bool
+    gt_start_pos: Optional[int]
+    gt_end_pos: Optional[int]
 
 
 @dataclass
