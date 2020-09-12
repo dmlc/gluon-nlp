@@ -170,8 +170,8 @@ def test_model(tf_model_path, gluon_model):
 
     # gluon model
     gl_input_ids = mx.np.array(input_ids, dtype=np.int32, ctx=ctx)
-    gl_logits_1, gl_states = gluon_model(gl_input_ids, gl_start_states, mx.np.array(0, dtype=np.int32, ctx=ctx))
-    gl_logits_2, _ = gluon_model(gl_input_ids, gl_states, mx.np.array(seq_length, dtype=np.int32, ctx=ctx))
+    gl_logits_1, gl_states = gluon_model(gl_input_ids, gl_start_states)
+    gl_logits_2, _ = gluon_model(gl_input_ids, gl_states)
 
     # tf model
     with tf.Session(graph=tf.Graph()) as sess:    

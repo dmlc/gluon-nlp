@@ -41,16 +41,14 @@ def test_gpt2_small_config(compute_layout, ctx):
         gpt2_model.hybridize()
         hiddens, _ = gpt2_model(
             inputs,
-            gpt2_model.init_states(batch_size, ctx),
-            mx.np.array(0, dtype=np.int32, ctx=ctx)
+            gpt2_model.init_states(batch_size, ctx)
         )
         gpt2_model_tn = GPT2Model.from_cfg(cfg_tn)
         gpt2_model_tn.share_parameters(gpt2_model.collect_params())
         gpt2_model_tn.hybridize()
         hiddens_tn, _ = gpt2_model_tn(
             inputs.T,
-            gpt2_model_tn.init_states(batch_size, ctx),
-            mx.np.array(0, dtype=np.int32, ctx=ctx)
+            gpt2_model_tn.init_states(batch_size, ctx)
         )
         assert_allclose(np.swapaxes(hiddens_tn.asnumpy(), 0, 1),
                         hiddens.asnumpy(), 1E-4, 1E-4)
@@ -61,16 +59,14 @@ def test_gpt2_small_config(compute_layout, ctx):
         gpt2_lm_model.hybridize()
         logits, states = gpt2_lm_model(
             inputs,
-            gpt2_lm_model.init_states(batch_size, ctx),
-            mx.np.array(0, dtype=np.int32, ctx=ctx)
+            gpt2_lm_model.init_states(batch_size, ctx)
         )
         gpt2_lm_model_tn = GPT2ForLM(cfg_tn)
         gpt2_lm_model_tn.share_parameters(gpt2_lm_model.collect_params())
         gpt2_lm_model_tn.hybridize()
         logits_tn, states_tn = gpt2_lm_model_tn(
             inputs.T,
-            gpt2_lm_model_tn.init_states(batch_size, ctx),
-            mx.np.array(0, dtype=np.int32, ctx=ctx)
+            gpt2_lm_model_tn.init_states(batch_size, ctx)
         )
         assert_allclose(np.swapaxes(logits_tn.asnumpy(), 0, 1),
                         logits.asnumpy(), 1E-4, 1E-4)
@@ -91,8 +87,7 @@ def test_gpt2_incremental_states(ctx):
 
         one_time_hiddens, one_time_states = gpt2_model(
             inputs,
-            gpt2_model.init_states(batch_size, ctx),
-            mx.np.array(0, dtype=np.int32, ctx=ctx)
+            gpt2_model.init_states(batch_size, ctx)
         )
 
         states = gpt2_model.init_states(batch_size, ctx)
@@ -100,8 +95,7 @@ def test_gpt2_incremental_states(ctx):
         for i in range(sequence_length):
             hiddens, states = gpt2_model(
                 inputs[:, i:i+1],
-                states,
-                mx.np.array(i, dtype=np.int32, ctx=ctx)
+                states
             )
             hiddens_l.append(hiddens)
         hiddens_concat = mx.np.concatenate(hiddens_l, axis=1)
@@ -113,7 +107,7 @@ def test_gpt2_incremental_states(ctx):
 
 @pytest.mark.slow
 @pytest.mark.remote_required
-@pytest.mark.parametrize('model_name', list_pretrained_gpt2())
+@pytest.mark.parametrize('model_name', ['gpt2_124M', 'gpt2_355M', 'gpt2_774M'])
 def test_gpt2(model_name, ctx):
     # test from pretrained
     assert len(list_pretrained_gpt2()) > 0
@@ -143,8 +137,7 @@ def test_gpt2(model_name, ctx):
         )
         logits, _ = gpt2_lm_model(
             input_ids,
-            gpt2_lm_model.init_states(batch_size, ctx),
-            mx.np.array(0, dtype=np.int32, ctx=ctx)
+            gpt2_lm_model.init_states(batch_size, ctx)
         )
         mx.npx.waitall()
         # test backward
@@ -152,8 +145,7 @@ def test_gpt2(model_name, ctx):
         with mx.autograd.record():
             logits, _ = gpt2_lm_model(
                 input_ids,
-                gpt2_lm_model.init_states(batch_size, ctx),
-                mx.np.array(0, dtype=np.int32, ctx=ctx)
+                gpt2_lm_model.init_states(batch_size, ctx)
             )
             loss = label_smooth_loss(logits, input_ids)
             loss.backward()
