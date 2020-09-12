@@ -6,6 +6,7 @@ Question Answering with Pretrained Language Model
 import os
 import json
 import time
+import random
 import logging
 import argparse
 import functools
@@ -114,6 +115,10 @@ def parse_args():
     parser.add_argument('--max_query_length', type=int, default=64,
                         help='The maximum number of tokens for the query. Questions longer than '
                              'this will be truncated to this length. default is 64')
+    parser.add_argument('--pre_split_shuffle', action='store_false',
+                        help='Whether to shuffle the train dataset before splitting')
+    parser.add_argument('--inside_split_shuffle', action='store_false',
+                        help='Whether to shuffle the train dataset inside each splitted shards')
     parser.add_argument('--round_to', type=int, default=None,
                         help='The length of padded sequences will be rounded up to be multiple'
                              ' of this argument. When round to is set to 8, training throughput '
@@ -456,8 +461,14 @@ def train(args):
                          sum([ele.is_impossible for ele in train_features])))
     logging.info('After Chunking, #Train Sample/Is Impossible = {}/{}'
                  .format(len(train_dataset), num_impossible))
-    sampler = SplitSampler(len(train_dataset), num_parts=num_workers,
-                           part_index=rank, even_size=True)
+    if args.pre_split_shuffle:
+        random.shuffle(train_dataset)
+    sampler = SplitSampler(
+        len(train_dataset),
+        num_parts=num_workers,
+        part_index=rank,
+        even_size=True,
+        shuffle=args.inside_split_shuffle)
     train_dataloader = mx.gluon.data.DataLoader(
         train_dataset,
         batchify_fn=dataset_processor.BatchifyFunction,
