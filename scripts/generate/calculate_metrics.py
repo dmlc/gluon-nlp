@@ -91,6 +91,8 @@ def calculate_metrics(args):
         load_backbone=False,
         load_lm=False)
     sample_ids = tokenizer.encode(samples, output_type=int)
+    if sample_ids[-1] == tokenizer.vocab.eos_id:
+        sample_ids.pop()
     sample_strs = tokenizer.encode(samples, output_type=str)
 
     self_bleu4 = calculate_self_bleu4(sample_strs, args.num_bleu_samples)

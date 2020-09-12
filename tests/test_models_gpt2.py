@@ -107,7 +107,7 @@ def test_gpt2_incremental_states(ctx):
 
 @pytest.mark.slow
 @pytest.mark.remote_required
-@pytest.mark.parametrize('model_name', list_pretrained_gpt2())
+@pytest.mark.parametrize('model_name', ['gpt2_124M', 'gpt2_355M', 'gpt2_774M'])
 def test_gpt2(model_name, ctx):
     # test from pretrained
     assert len(list_pretrained_gpt2()) > 0
