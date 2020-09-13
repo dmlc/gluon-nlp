@@ -684,6 +684,7 @@ def predict_extended(original_feature,
         Number of start-position candidates
     end_top_n
         Number of end-position candidates
+
     Returns
     -------
     not_answerable_score
