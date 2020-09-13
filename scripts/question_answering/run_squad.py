@@ -114,10 +114,16 @@ def parse_args():
     parser.add_argument('--max_query_length', type=int, default=64,
                         help='The maximum number of tokens for the query. Questions longer than '
                              'this will be truncated to this length. default is 64')
-    parser.add_argument('--pre_split_shuffle', action='store_false',
-                        help='Whether to shuffle the train dataset before splitting')
-    parser.add_argument('--inside_split_shuffle', action='store_false',
-                        help='Whether to shuffle the train dataset inside each splitted shards')
+    parser.add_argument("--do_pre_split_shuffle", dest='pre_split_shuffle',
+                        action="store_true", help="Whether to shuffle the train dataset before splitting")
+    parser.add_argument("--no_pre_split_shuffle", dest='pre_split_shuffle',
+                        action='store_false', help="Don't lower case input text.")
+    parser.set_defaults(pre_split_shuffle=True)
+    parser.add_argument("--do_inside_split_shuffle", dest='inside_split_shuffle',
+                        action="store_true", help="Whether to shuffle the train dataset before splitting")
+    parser.add_argument("--no_inside_split_shuffle", dest='inside_split_shuffle',
+                        action='store_false', help="Whether to shuffle the train dataset inside each split shards")
+    parser.set_defaults(inside_split_shuffle=True)
     parser.add_argument('--pre_shuffle_seed', type=int, default=100,
                         help='Random seed for pre split shuffle')
     parser.add_argument('--round_to', type=int, default=None,
