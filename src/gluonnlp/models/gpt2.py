@@ -216,10 +216,10 @@ class GPT2SelfAttentionLayer(HybridBlock):
         x = self.ln(x)
         if self._layout == 'NT':
             batch_axis, time_axis = 0, 1
-            prev_len = F.npx.shape_array(layer_states)[2]
+            prev_len = npx.shape_array(layer_states)[2]
         else:
             batch_axis, time_axis = 1, 0
-            prev_len = F.npx.shape_array(layer_states)[1]
+            prev_len = npx.shape_array(layer_states)[1]
 
         query, key, value = np.split(self.qkv(x), 3, axis=-1)
         if layer_states is not None:
@@ -500,8 +500,8 @@ class GPT2Model(HybridBlock):
             - layout = 'TN'
                 Shape (num_layers, 2, prev_len + seq_length, batch_size, C_in)
         """
-        prev_len = F.npx.shape_array(states)[3] if self._layout == 'NT' else \
-                   F.npx.shape_array(states)[2]
+        prev_len = npx.shape_array(states)[3] if self._layout == 'NT' else \
+                   npx.shape_array(states)[2]
         x = self.get_initial_embedding(x, prev_len)
 
         if self._layout != self._compute_layout:
