@@ -53,30 +53,38 @@ python3 run_squad.py \
     --max_grad_norm 0.1 \
     --overwrite_cache \
 ```
-or evaluate SQuAD1.1 based on a SQuAD2.0 fine-tuned checkpoint as
+
+To evaluate based on a fine-tuned checkpoint, we can use the following command:
 
 ```bash
+CKPT_PATH=fintune_${MODEL_NAME}_squad_${VERSION}/google_albert_base_v2_squad2.0_8164.params
+OUT_DIR=fintune_${MODEL_NAME}_squad_${VERSION}/evaluate
 python3 run_squad.py \
     --model_name ${MODEL_NAME} \
     --data_dir squad \
     --output_dir ${OUT_DIR} \
     --param_checkpoint ${CKPT_PATH} \
-    --version 2.0 \
+    --version ${VERSION} \
     --do_eval \
-    --gpus 0,1,2,3 \
+    --gpus 0 \
     --eval_batch_size 16 \
     --overwrite_cache \
 ```
 
-We could speed up multi-GPU training via horovod.
+### Using Horovod
+
+We could speed up multi-GPU training via [Horovod](https://github.com/horovod/horovod).
 Compared to KVStore, training RoBERTa Large model on SQuAD 2.0 with 3 epochs will save 
-roughly 1/4 training resources (8.48 vs 11.32 hours). Results may vary depending on the training instances.
+roughly 1/4 training resources (8.48 vs 11.32 hours). Results may vary depending on the 
+training instances.
 
 ```bash
 horovodrun -np 4 -H localhost:4 python3 run_squad.py \
     --comm_backend horovod \
     ...
 ```
+
+### Finetuning Details
 As for ELECTRA model, we fine-tune it with layer-wise learning rate decay as
 
 ```bash
@@ -128,13 +136,14 @@ python3 run_squad.py \
 ```
 
 ### Results
-We reproduced the ALBERT model which is released by Google, and fine-tune the the SQuAD with single models. ALBERT Version 2 are pre-trained without the dropout mechanism but with extra training steps compared to the version 1 (see the [original paper](https://arxiv.org/abs/1909.11942) for details).
+We reproduced the ALBERT model which is released by Google, and fine-tune on SQuAD with a single model. 
+ALBERT Version 2 are pre-trained without the dropout mechanism but with extra training steps compared to the version 1 (see the [original paper](https://arxiv.org/abs/1909.11942) for details).
 
 Fine-tuning the listed models with hyper-parameter learning rate 2e-5, epochs 3, warmup ratio 0.1 and max gradient norm 0.1 (as shown in command). Notice that the `batch_size` is set for each GPU and the global batch size is 48 for all experiments, besides that gradient accumulation (`num_accumulated`) is supported in the case of out of memory.
 
 Performance are shown in the table below, in which the SQuAD1.1 are evaluated with SQuAD2.0 checkpoints.
 Notice that the standard metrics of SQuAD are `EM/F1`. The former is an exact match score between predictions and references, 
-while the latter is a token-level f1 score in which the common tokens are considered as True Positives.
+while the latter is a token-level F1 score in which the common tokens are considered as True Positives.
 
 |Reproduced ALBERT Models (F1/EM)  | SQuAD 1.1 dev | SQuAD 2.0 dev | SQuAD 2.0 Results File | Log | Command |
 |----------------------------------|---------------|---------------|------|-----| --------|
@@ -161,7 +170,7 @@ For the reset pretrained models, the results on SQuAD1.1 and SQuAD2.0 are given 
 |ELECTRA small             | 85.42/78.95   | 73.93/71.36  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_small_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_small_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_small.sh) |      
 |ELECTRA base              | 92.63/87.34   | 86.65/83.95  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_base_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_base_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_small.sh) |
 |ELECTRA large             | 94.95/89.94   | 90.67/88.32  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_base.sh) |
-|Mobile BERT             | 89.87/83.26 | 80.54/77.81  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_mobilebert.sh) |
+|MobileBERT                | 89.87/83.26 | 80.54/77.81  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_mobilebert.sh) |
 |RoBERTa large             | 94.58/88.86   | 89.69/86.80  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_fairseq_roberta_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_fairseq_roberta_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_large.sh) |
 
 For reference, we have also included the results of original version from Google and Fairseq
@@ -173,5 +182,5 @@ For reference, we have also included the results of original version from Google
 |Google ELECTRA small      |     - /75.8    |      -/70.1   |
 |Google ELECTRA base       |      -/86.8    |      -/83.7   |
 |Google ELECTRA large      |      -/89.7     |     -/88.1   |
-|Google Mobile BERT        |   90.0/82.9	|   79.2/76.2   |
+|Google MobileBERT         |   90.0/82.9	|   79.2/76.2   |
 |Fairseq RoBERTa large     |   94.6/88.9    |	89.4/86.5   |

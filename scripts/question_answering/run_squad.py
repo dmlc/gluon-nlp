@@ -684,6 +684,7 @@ def predict_extended(original_feature,
         Number of start-position candidates
     end_top_n
         Number of end-position candidates
+
     Returns
     -------
     not_answerable_score
@@ -938,15 +939,15 @@ def evaluate(args, last=True):
     else:
         ckpt_candidates = [f for f in os.listdir(args.output_dir) if f.endswith('.params')]
         ckpt_candidates.sort(key=lambda ele: (len(ele), ele))
+        ckpt_candidates = [os.path.join(args.output_dir, ele) for ele in ckpt_candidates]
     if last:
         ckpt_candidates = ckpt_candidates[-1:]
 
     best_eval = {}
-    for ckpt_name in ckpt_candidates:
-        logging.info('Starting evaluate the checkpoint {}'.format(ckpt_name))
-        ckpt_path = os.path.join(args.output_dir, ckpt_name)
+    for ckpt_path in ckpt_candidates:
+        logging.info('Starting evaluate the checkpoint {}'.format(ckpt_path))
         qa_net.load_parameters(ckpt_path, ctx=ctx_l, cast_dtype=True)
-        best_eval = eval_validation(ckpt_name, best_eval)
+        best_eval = eval_validation(ckpt_path, best_eval)
 
     logging.info('The best evaluated results are {}'.format(json.dumps(best_eval)))
     output_eval_results_file = os.path.join(args.output_dir, 'best_results.json')
