@@ -228,5 +228,8 @@ def pytest_collection_modifyitems(config, items):
 
 
 def pytest_generate_tests(metafunc):
+    devices = metafunc.config.option.device
+    if not devices:
+        devices = ['cpu']
     if 'ctx' in metafunc.fixturenames:
-        metafunc.parametrize("ctx", [getattr(mx, device)() for device in metafunc.config.option.device])
+        metafunc.parametrize("ctx", [getattr(mx, device)() for device in devices])
