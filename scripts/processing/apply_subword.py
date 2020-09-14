@@ -161,8 +161,10 @@ def main(args):
                                                     lowercase=args.lowercase)
     else:
         raise NotImplementedError
-    print('Applying {} to {}'. format(tokenizer_model.__class__.__name__,
-                                      ', '.join(args.corpus)))
+    print('Applying "{}" to "{}" and save to "{}"'
+          .format(tokenizer_model.__class__.__name__,
+                  ', '.join(args.corpus),
+                  args.save_path))
     output_type = {'subword': str, 'id': int}[args.output_type]
     applyer = ParallelCorpusApplyer(args.corpus, tokenizer_model, output_type)
     with open(args.save_path, 'w', encoding='utf-8', newline='\n') as fo:
