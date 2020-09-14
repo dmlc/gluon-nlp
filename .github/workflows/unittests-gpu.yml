@@ -81,16 +81,17 @@ jobs:
 
       - name: Upload coverage to Codecov(For pull request)
         if: ${{ (failure() || success()) && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') }}
-        uses: codecov/codecov-action@v1.0.10
-        with:
-          file: ./coverage.xml
-
-      - name: Upload coverage to Codecov(For push)
-        if: ${{ (failure() || success()) && github.event_name == 'push' }}
         run: |
           curl -s https://codecov.io/bash -o codecov.sh
           bash codecov.sh -f ./coverage.xml -n -F -C ${{ github.event.pull_request.head.sha }} -P ${{ github.event.pull_request.number }}
 
+
+      - name: Upload coverage to Codecov(For push)
+        if: ${{ (failure() || success()) && github.event_name == 'push' }}
+        uses: codecov/codecov-action@v1.0.10
+        with:
+          file: ./coverage.xml
+        
       - name: Upload Cloud Watch Log Stream 
         if: ${{ failure() || success() }}
         uses: actions/upload-artifact@v2
