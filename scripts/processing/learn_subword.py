@@ -108,6 +108,7 @@ def main(args):
     model_prefix = os.path.join(args.save_dir, args.model)
     print('Save the subword model to {}.model'.format(model_prefix))
     print('Save the vocabulary to {}.vocab'.format(model_prefix))
+    print()
     print('------- Start Training -------------')
     special_tokens_kv = OrderedDict()
     if not args.disable_unk:
@@ -312,7 +313,8 @@ def main(args):
         raise NotImplementedError
     vocab_obj = Vocab(vocab, **special_tokens_kv)
     vocab_obj.save(model_prefix + '.vocab')
-    print('------- Done -------------')
+    print('-------- Done Training -------------')
+
 
 def cat_corpus(corpus_path_list):
     # TODO Use temporary file
