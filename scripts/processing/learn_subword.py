@@ -103,9 +103,13 @@ def main(args):
         if not os.path.exists(corpus_path):
             raise ValueError('The path="{}" provided by --corpus does not exist!'
                              .format(corpus_path))
-    print('Learn the {} subword model based on {}.'.format(args.model, args.corpus))
+    print('Learn the "{}"s subword model based on {}.'.format(args.model, args.corpus))
     os.makedirs(args.save_dir, exist_ok=True)
     model_prefix = os.path.join(args.save_dir, args.model)
+    print('Save the subword model to {}.model'.format(model_prefix))
+    print('Save the vocabulary to {}.vocab'.format(model_prefix))
+    print()
+    print('------- Start Training -------------')
     special_tokens_kv = OrderedDict()
     if not args.disable_unk:
         special_tokens_kv['unk_token'] = Vocab.UNK_TOKEN
@@ -309,6 +313,7 @@ def main(args):
         raise NotImplementedError
     vocab_obj = Vocab(vocab, **special_tokens_kv)
     vocab_obj.save(model_prefix + '.vocab')
+    print('-------- Done Training -------------')
 
 
 def cat_corpus(corpus_path_list):
