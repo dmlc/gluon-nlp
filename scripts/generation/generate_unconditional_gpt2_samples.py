@@ -30,6 +30,8 @@ def parse_args():
                              'https://arxiv.org/abs/1904.09751')
     parser.add_argument('--gpu', type=int, default=0,
                         help='Which gpu to use, set None to use cpu')
+    parser.add_argument('--layout', type=str, choices=['NT', 'TN'], default='NT',
+                        help='Layout of the inference model')
     return parser.parse_args()
 
 
@@ -55,6 +57,9 @@ def sample_gpt2(args):
         model_name=args.model_name,
         load_backbone=False,
         load_lm=True)
+    cfg.defrost()
+    cfg.MODEL.layout = args.layout
+    cfg.freeze()
     
     if args.length is None:
         args.length = cfg.MODEL.max_length
@@ -81,7 +86,10 @@ def sample_gpt2(args):
         early_return=False
     )
     
-    start_input = mx.np.full((args.batch_size, 1), tokenizer.vocab.eos_id, ctx=ctx)
+    start_input = mx.np.full(
+        (args.batch_size, 1) if args.layout == 'NT' else (1, args.batch_size),
+        tokenizer.vocab.eos_id, ctx=ctx
+    )
     start_states = gpt2decoder.init_states(args.batch_size, ctx)
     
     generated = 0
