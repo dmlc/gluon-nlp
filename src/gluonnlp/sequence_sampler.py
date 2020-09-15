@@ -572,7 +572,8 @@ class BeamSearchSampler(HybridBlock):
         states = _expand_to_beam_size(states, beam_size=beam_size, batch_size=batch_size,
                                       state_batch_axis=self._state_batch_axis)
         step_input = _expand_to_beam_size(inputs, beam_size=beam_size,
-                                          batch_size=batch_size).astype(mx.np.int32)
+                                          batch_size=batch_size,
+                                          state_batch_axis=self._data_batch_axis).astype(mx.np.int32)
         # All beams are initialized to alive
         # Generated samples are initialized to be the inputs
         # Except the first beam where the scores are set to be zero, all beams have -inf scores.
