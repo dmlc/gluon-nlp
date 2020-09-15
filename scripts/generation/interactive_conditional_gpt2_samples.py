@@ -48,7 +48,10 @@ class GPT2Decoder(BaseStepDecoder):
     def init_states(self, batch_size, ctx):
         return self._gpt2_lm_model.init_states(batch_size, ctx)
     def __call__(self, data, states):
-        data = mx.npx.reshape(data, (-2, -1))
+        data = mx.npx.reshape(
+            data,
+            (-2, -1) if self._layout == 'NT' else (-1, -2)
+        )
         logits, new_states = self._gpt2_lm_model(data, states)
         return logits[:,-1,:], new_states
 
