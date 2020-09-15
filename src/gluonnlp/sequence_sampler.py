@@ -44,6 +44,10 @@ class BaseStepDecoder(abc.ABC):
         """
         raise NotImplementedError()
 
+    @property
+    def data_batch_axis(self):
+        return 0
+
     @abc.abstractmethod
     def init_states(self, **kwargs):
         raise NotImplementedError()
@@ -493,6 +497,7 @@ class BeamSearchSampler(HybridBlock):
                 scorer = BeamSearchScorer(alpha=1.0, K=5, temperature=temperature)
 
         self._scorer = scorer
+        self._data_batch_axis = decoder.data_batch_axis
         self._state_batch_axis = decoder.state_batch_axis
         self._sampling = sampling
         self._sampling_topp = sampling_topp
@@ -551,7 +556,7 @@ class BeamSearchSampler(HybridBlock):
             DType is int32.
         """
         ctx = inputs.ctx
-        batch_size = inputs.shape[0]
+        batch_size = inputs.shape[self._data_batch_axis]
         beam_size = self._beam_size
         if src_seq_lengths is not None:
             max_src_sequence_length = int(src_seq_lengths.asnumpy().max())
