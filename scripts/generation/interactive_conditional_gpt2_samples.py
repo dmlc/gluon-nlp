@@ -30,6 +30,8 @@ def parse_args():
                              'https://arxiv.org/abs/1904.09751')
     parser.add_argument('--gpu', type=int, default=0,
                         help='Which gpu to use, set None to use cpu')
+    parser.add_argument('--layout', type=str, choices=['NT', 'TN'], default='NT',
+                        help='Layout of the inference model')
     return parser.parse_args()
 
 
