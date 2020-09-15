@@ -38,13 +38,18 @@ def parse_args():
 class GPT2Decoder(BaseStepDecoder):
     def __init__(self, gpt2_lm_model):
         self._gpt2_lm_model = gpt2_lm_model
+        self._layout = self._gpt2_lm_model._backbone_model.layout
     @property
     def state_batch_axis(self):
-        return 2 if self._gpt2_lm_model._backbone_model.layout == 'NT' else 3
+        return 2 if self._layout == 'NT' else 3
     def init_states(self, batch_size, ctx):
         return self._gpt2_lm_model.init_states(batch_size, ctx)
     def __call__(self, data, states):
-        data = mx.npx.reshape(data, (-1, 1))
+        # data (bs, beam=1, -1)
+        data = mx.npx.reshape(
+            data,
+            (-1, 1) if self._layout == 'NT' else (1, -1)
+        )
         logits, new_states = self._gpt2_lm_model(data, states)
         return logits[:,-1,:], new_states
 
@@ -88,7 +93,8 @@ def sample_gpt2(args):
     
     start_input = mx.np.full(
         (args.batch_size, 1) if args.layout == 'NT' else (1, args.batch_size),
-        tokenizer.vocab.eos_id, ctx=ctx
+        tokenizer.vocab.eos_id,
+        ctx=ctx
     )
     start_states = gpt2decoder.init_states(args.batch_size, ctx)
     
