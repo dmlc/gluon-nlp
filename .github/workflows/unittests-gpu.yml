@@ -83,9 +83,9 @@ jobs:
         run: |
           curl -s https://codecov.io/bash -o codecov.sh
           if [ "$EVENT_NAME" == "push" ]; then \
-              bash codecov.sh -f ./coverage.xml -n -F -C ${{ github.event.pull_request.head.sha }} -P ${{ github.event.pull_request.number }}; \
-          else \
               bash codecov.sh -f ./coverage.xml -n -F; \
+          else \
+              bash codecov.sh -f ./coverage.xml -n -F -C ${{ github.event.pull_request.head.sha }} -P ${{ github.event.pull_request.number }}; \
           fi          
         env:
           EVENT_NAME: ${{ github.event_name }}
