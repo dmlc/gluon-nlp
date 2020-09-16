@@ -79,18 +79,16 @@ jobs:
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./coverage.xml
 
-      - name: Upload coverage to Codecov(For pull request)
-        if: ${{ (failure() || success()) && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') }}
+      - name: Upload coverage to Codecov
         run: |
           curl -s https://codecov.io/bash -o codecov.sh
-          bash codecov.sh -f ./coverage.xml -n -F -C ${{ github.event.pull_request.head.sha }} -P ${{ github.event.pull_request.number }}
-
-
-      - name: Upload coverage to Codecov(For push)
-        if: ${{ (failure() || success()) && github.event_name == 'push' }}
-        uses: codecov/codecov-action@v1.0.10
-        with:
-          file: ./coverage.xml
+          if [ "$EVENT_NAME" == "push" ]; then \
+              bash codecov.sh -f ./coverage.xml -n -F -C ${{ github.event.pull_request.head.sha }} -P ${{ github.event.pull_request.number }}; \
+          else \
+              bash codecov.sh -f ./coverage.xml -n -F; \
+          fi          
+        env:
+          EVENT_NAME: ${{ github.event_name }}
         
       - name: Upload Cloud Watch Log Stream 
         if: ${{ failure() || success() }}
