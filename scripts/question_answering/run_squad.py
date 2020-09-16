@@ -114,11 +114,6 @@ def parse_args():
     parser.add_argument('--max_query_length', type=int, default=64,
                         help='The maximum number of tokens for the query. Questions longer than '
                              'this will be truncated to this length. default is 64')
-    parser.add_argument("--do_pre_split_shuffle", dest='pre_split_shuffle',
-                        action="store_true", help="Whether to shuffle the train dataset before splitting")
-    parser.add_argument("--no_pre_split_shuffle", dest='pre_split_shuffle',
-                        action='store_false', help="Don't lower case input text.")
-    parser.set_defaults(pre_split_shuffle=True)
     parser.add_argument("--do_inside_split_shuffle", dest='inside_split_shuffle',
                         action="store_true", help="Whether to shuffle the train dataset before splitting")
     parser.add_argument("--no_inside_split_shuffle", dest='inside_split_shuffle',
@@ -468,9 +463,10 @@ def train(args):
                          sum([ele.is_impossible for ele in train_features])))
     logging.info('After Chunking, #Train Sample/Is Impossible = {}/{}'
                  .format(len(train_dataset), num_impossible))
-    if args.pre_split_shuffle:
-        rs = np.random.RandomState(args.pre_shuffle_seed)
-        rs.shuffle(train_dataset)
+    
+    # Shuffle the dataset using a fixed seed across all workers
+    rs = np.random.RandomState(args.pre_shuffle_seed)
+    rs.shuffle(train_dataset)
     sampler = SplitSampler(
         len(train_dataset),
         num_parts=num_workers,
