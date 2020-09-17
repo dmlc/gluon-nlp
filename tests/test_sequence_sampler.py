@@ -51,6 +51,10 @@ def test_beam_search(early_return, eos_id):
         def state_batch_axis(self):
             return 0
 
+        @property
+        def data_batch_axis(self):
+            return 0
+
         def hybrid_forward(self, F, data, state):
             """
 
@@ -109,6 +113,10 @@ def test_beam_search_stochastic(early_return, eos_id):
 
         @property
         def state_batch_axis(self):
+            return 0
+
+        @property
+        def data_batch_axis(self):
             return 0
 
         def hybrid_forward(self, F, data, state):
@@ -177,6 +185,10 @@ def test_multinomial_sampling(early_return, sampling_paras, eos_id):
 
         @property
         def state_batch_axis(self):
+            return 0
+
+        @property
+        def data_batch_axis(self):
             return 0
 
         def hybrid_forward(self, F, data, state):

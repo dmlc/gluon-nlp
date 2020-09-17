@@ -30,19 +30,32 @@ def parse_args():
                              'https://arxiv.org/abs/1904.09751')
     parser.add_argument('--gpu', type=int, default=0,
                         help='Which gpu to use, set None to use cpu')
+    parser.add_argument('--layout', type=str, choices=['NT', 'TN'], default='NT',
+                        help='Layout of the inference model')
     return parser.parse_args()
 
 
 class GPT2Decoder(BaseStepDecoder):
     def __init__(self, gpt2_lm_model):
         self._gpt2_lm_model = gpt2_lm_model
+        self._layout = self._gpt2_lm_model._backbone_model.layout
+
     @property
     def state_batch_axis(self):
-        return 2 if self._gpt2_lm_model._backbone_model.layout == 'NT' else 3
+        return 2 if self._layout == 'NT' else 3
+
+    @property
+    def data_batch_axis(self):
+        return 0 if self._layout == 'NT' else 1
+
     def init_states(self, batch_size, ctx):
         return self._gpt2_lm_model.init_states(batch_size, ctx)
+
     def __call__(self, data, states):
-        data = mx.npx.reshape(data, (-2, -1))
+        data = mx.np.reshape(
+            data,
+            (-1, 1) if self._layout == 'NT' else (1, -1)
+        )
         logits, new_states = self._gpt2_lm_model(data, states)
         return logits[:,-1,:], new_states
 
@@ -55,6 +68,9 @@ def sample_gpt2(args):
         model_name=args.model_name,
         load_backbone=False,
         load_lm=True)
+    cfg.defrost()
+    cfg.MODEL.layout = args.layout
+    cfg.freeze()
     
     if args.length is None:
         args.length = cfg.MODEL.max_length
@@ -80,29 +96,26 @@ def sample_gpt2(args):
         sampling_topk=args.top_k,
         early_return=False
     )
+    
+    start_input = mx.np.full(
+        (args.batch_size, 1) if args.layout == 'NT' else (1, args.batch_size),
+        tokenizer.vocab.eos_id,
+        ctx=ctx
+    )
     start_states = gpt2decoder.init_states(args.batch_size, ctx)
     
-    while True:
-        raw_text = input('Model prompt >>> ')
-        while not raw_text:
-            print('Prompt should not be empty!')
-            raw_text = input("Model prompt >>> ")
-        context_tokens = tokenizer.encode(raw_text, output_type=int)
-        start_input = mx.np.repeat(mx.np.expand_dims(mx.np.array(context_tokens, ctx=ctx), 0),
-                                   args.batch_size,
-                                   axis=0)
-        generated = 0
-        while generated < args.nsamples:
-            samples, _, _ = sampler(start_input, start_states)
-            for i in range(args.batch_size):
-                generated += 1
-                ids = samples[i][0].asnumpy().tolist()
-                ids = ids[1:ids.index(-1)] if -1 in ids else \
-                      ids[1:]
-                text = tokenizer.decode(ids)
-                print("=" * 40 + " SAMPLE " + str(generated) + " " + "=" * 40)
-                print(text)
-        print("=" * 80)
+    generated = 0
+    while args.nsamples <= 0 or generated < args.nsamples:
+        samples, _, _ = sampler(start_input, start_states)
+        for i in range(args.batch_size):
+            generated += 1
+            ids = samples[i][0].asnumpy().tolist()
+            ids = ids[1:ids.index(-1)] if -1 in ids else \
+                  ids[1:]
+            text = tokenizer.decode(ids)
+            print("=" * 40 + " SAMPLE " + str(generated) + " " + "=" * 40)
+            print(text)
+
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
