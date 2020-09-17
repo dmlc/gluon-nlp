@@ -39,20 +39,24 @@ class GPT2Decoder(BaseStepDecoder):
     def __init__(self, gpt2_lm_model):
         self._gpt2_lm_model = gpt2_lm_model
         self._layout = self._gpt2_lm_model._backbone_model.layout
+
     @property
     def state_batch_axis(self):
         return 2 if self._layout == 'NT' else 3
+
     @property
     def data_batch_axis(self):
         return 0 if self._layout == 'NT' else 1
+
     def init_states(self, batch_size, ctx):
         return self._gpt2_lm_model.init_states(batch_size, ctx)
+
     def __call__(self, data, states):
         if len(data.shape) == 1:
             new_shape = (-1, 1) if self._layout == 'NT' else (1, -1)
         else:
             new_shape = (-2, -1) if self._layout == 'NT' else (-1, -2)
-        data = mx.npx.reshape(
+        data = mx.np.reshape(
             data,
             new_shape
         )
@@ -105,9 +109,12 @@ def sample_gpt2(args):
             raw_text = input("Model prompt >>> ")
         context_tokens = tokenizer.encode(raw_text, output_type=int)
         batch_axis = 0 if args.layout == 'NT' else 1
-        start_input = mx.np.repeat(mx.np.expand_dims(mx.np.array(context_tokens, ctx=ctx), batch_axis),
-                                   args.batch_size,
-                                   axis=batch_axis)
+        new_shape = (args.batch_size, len(context_tokens)) if args.layout == 'NT' else \
+                    (len(context_tokens), args.batch_size)
+        start_input = mx.np.broadcast_to(
+            mx.np.expand_dims(mx.np.array(context_tokens, ctx=ctx), batch_axis),
+            new_shape
+        )
         generated = 0
         while generated < args.nsamples:
             samples, _, _ = sampler(start_input, start_states)

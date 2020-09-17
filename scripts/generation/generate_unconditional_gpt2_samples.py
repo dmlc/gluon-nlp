@@ -39,16 +39,20 @@ class GPT2Decoder(BaseStepDecoder):
     def __init__(self, gpt2_lm_model):
         self._gpt2_lm_model = gpt2_lm_model
         self._layout = self._gpt2_lm_model._backbone_model.layout
+
     @property
     def state_batch_axis(self):
         return 2 if self._layout == 'NT' else 3
+
     @property
     def data_batch_axis(self):
         return 0 if self._layout == 'NT' else 1
+
     def init_states(self, batch_size, ctx):
         return self._gpt2_lm_model.init_states(batch_size, ctx)
+
     def __call__(self, data, states):
-        data = mx.npx.reshape(
+        data = mx.np.reshape(
             data,
             (-1, 1) if self._layout == 'NT' else (1, -1)
         )
