@@ -53,27 +53,27 @@ class Seq2SeqEncoder(Block):
     r"""Base class of the encoders in sequence to sequence learning models.
     """
 
-    def __call__(self, inputs, valid_length=None, states=None):  #pylint: disable=arguments-differ
+    def __call__(self, inputs, states=None, valid_length=None):  #pylint: disable=arguments-differ
         """Encode the input sequence.
 
         Parameters
         ----------
         inputs : NDArray
             The input sequence, Shape (batch_size, length, C_in).
+        states : list of NDArrays or None, default None
+            List that contains the initial states of the encoder.
         valid_length : NDArray or None, default None
             The valid length of the input sequence, Shape (batch_size,). This is used when the
             input sequences are padded. If set to None, all elements in the sequence are used.
-        states : list of NDArrays or None, default None
-            List that contains the initial states of the encoder.
 
         Returns
         -------
         outputs : list
             Outputs of the encoder.
         """
-        return super(Seq2SeqEncoder, self).__call__(inputs, valid_length, states)
+        return super(Seq2SeqEncoder, self).__call__(inputs, states, valid_length)
 
-    def forward(self, inputs, valid_length=None, states=None):  #pylint: disable=arguments-differ
+    def forward(self, inputs, states=None, valid_length=None):  #pylint: disable=arguments-differ
         raise NotImplementedError
 
 
