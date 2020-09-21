@@ -1,0 +1,78 @@
+name: continuous build - docs
+
+on: [push, pull_request_target]
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  website-build:
+    runs-on: ubuntu-latest
+    strategy: 
+      fail-fast: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get install libopenblas-dev texlive texlive-latex-extra pandoc
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
+
+      - name: Install Other Dependencies
+        run: |
+          python -m pip install --quiet --upgrade pip
+          python -m pip install --upgrade cython
+          python -m pip install --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
+          python -m pip install --quiet -e .[extras]
+          python -m pip install setuptools ipython sphinx>=1.5.5 sphinx-gallery nbsphinx sphinx_rtd_theme mxtheme sphinx-autodoc-typehints matplotlib Image recommonmark
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Compile Notebooks(For push)
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          ./tools/batch/batch_states/compile_notebooks.sh \
+                 "push" "${{ github.run_number }}" \
+                 "${{ github.repository }}" "${{ github.ref }}"
+      - name: Compile Notebooks(For pull request)
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
+        run: |
+          ./tools/batch/batch_states/compile_notebooks.sh \
+                 "#PR-${{ github.event.number }}" "${{ github.run_number }}" \
+                 "${{ github.event.pull_request.head.repo.full_name }}" "${{ github.event.pull_request.head.ref }}"
+
+      - name: Build Website local
+        if: ${{ failure() || success() }}
+        run: |
+          make docs_local
+
+      - name: Copy docs to AWS S3(For pull request)
+        if: ${{ (failure() || success()) && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') }}
+        run: |
+          aws s3 sync --delete ./docs/_build/html/ s3://gluon-nlp-dev/PR#${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/ --acl public-read
+
+      - name: Upload Artifacts 
+        if: ${{ failure() || success() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Notebook_Logs
+          path: ./*.stdout.log
+
+      - name: Create comment
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
+        uses: peter-evans/create-or-update-comment@v1
+        with: 
+          issue-number: ${{ github.event.number }}
+          body: |
+            The documentation website for preview: http://gluon-nlp-dev.s3-accelerate.amazonaws.com/PR#${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/index.html

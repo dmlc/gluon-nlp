@@ -39,6 +39,7 @@ def grad_global_norm(parameters: Iterable[Parameter]) -> float:
         This function is only for use when `update_on_kvstore` is set to False in trainer.
 
     Example::
+
         trainer = Trainer(net.collect_params(), update_on_kvstore=False, ...)
         for x, y in mx.gluon.utils.split_and_load(X, [mx.gpu(0), mx.gpu(1)]):
             with mx.autograd.record():
@@ -103,12 +104,14 @@ def clip_grad_global_norm(parameters: Iterable[Parameter],
     the 2-norm.
 
     .. note::
+
         This function is only for use when `update_on_kvstore` is set to False in trainer.
         In cases where training happens on multiple contexts, this method should be used in
         conjunction with ``trainer.allreduce_grads()`` and ``trainer.update()``.
         (**not** ``trainer.step()``)
 
     Example::
+    
         trainer = Trainer(net.collect_params(), update_on_kvstore=False, ...)
         for x, y in mx.gluon.utils.split_and_load(X, [mx.gpu(0), mx.gpu(1)]):
             with mx.autograd.record():

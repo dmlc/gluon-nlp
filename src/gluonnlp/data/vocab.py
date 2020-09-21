@@ -44,12 +44,14 @@ class Vocab:
     ----------
     tokens
         You may specify the input tokens as a python counter object or a list.
+
         If it's a counter
             It represents the text tokens + the frequencies of these tokens in the text data.
             Its keys will be indexed according to frequency thresholds such as `max_size` and `min_freq`.
         If it's a list
             It represents the list of tokens we will add to the vocabulary.
             We will follow the order of the tokens in the list to assign the indices.
+            
         The special tokens (those specified in kwargs) that are not specified in `tokens`
         will be added after the tokens.
     max_size
@@ -256,7 +258,7 @@ class Vocab:
         return list(self._special_token_kv.keys())
 
     @property
-    def special_tokens_kv(self) -> 'OrderedDict[str, Hashable]':
+    def special_tokens_kv(self) -> 'collections.OrderedDict[str, Hashable]':
         """Return the dictionary that maps the special_token_key to the special token"""
         return self._special_token_kv
 

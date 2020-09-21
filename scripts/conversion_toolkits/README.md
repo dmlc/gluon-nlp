@@ -14,13 +14,7 @@ In addition, we can use GPU in all converting scripts by adding `--gpu 0`.
 
 For RoBERTa XLM-R and BART model, we rely on the master version of [fairseq](https://github.com/pytorch/fairseq#requirements-and-installation) package locally as `pip install git+https://github.com/pytorch/fairseq.git@master`.
 
-## Convert all models
-
-``bash
-bash convert_all.sh
-``
-
-### BERT
+## BERT
 Convert model from [BERT LIST](https://tfhub.dev/google/collections/bert/1).
 
 You can use the script provided in [convert_bert.sh](convert_bert.sh).
@@ -33,13 +27,13 @@ bash convert_bert.sh
 In the process, we downloaded the config file from the [official repo](https://github.com/google-research/bert#pre-trained-models), download the configuration file `bert_config.json`,
 and move it into `${case}_bert_${model}/assets/`.
 
-### ALBERT
+## ALBERT
 You can use the command described in
 ```bash
 bash convert_albert.sh
 ```
 
-### ELECTRA
+## ELECTRA
 The TF Hub is not available for ELECTRA model currently.
 Thus, you will need to clone the [electra repository](https://github.com/ZheyuYe/electra)
 and download the checkpoint. The parameters are converted from local checkpoints.
@@ -51,27 +45,27 @@ Notice: please set up the `--electra_path` with the cloned path if you'd like to
 bash convert_electra.sh
 ```
 
-### MobileBert
+## MobileBert
 ```bash
 bash convert_mobilebert.sh
 ```
 
-### RoBERTa
+## RoBERTa
 ```bash
 bash convert_roberta.sh
 ```
 
-### XLM-R
+## XLM-R
 ```bash
 bash convert_xlmr.sh
 ```
 
-### BART
+## BART
 ```bash
 bash convert_bart.sh
 ```
 
-### GPT-2
+## GPT-2
 ```bash
 bash convert_gpt2.sh
 ```

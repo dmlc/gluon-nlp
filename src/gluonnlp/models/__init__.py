@@ -14,6 +14,7 @@ from . import bart
 from ..base import get_model_zoo_home_dir
 from ..registry import BACKBONE_REGISTRY
 from ..data.tokenizers import BaseTokenizer
+from mxnet.gluon import Block
 
 
 def list_backbone_names():
