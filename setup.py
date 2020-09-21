@@ -76,7 +76,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'extras': [
-            'boto3',
+            'boto3==1.14.32',
             'tqdm',
             'jieba',
             'subword_nmt',
