@@ -340,7 +340,7 @@ class BERTEncoder(HybridBlock, Seq2SeqEncoder):
                     activation=activation, layer_norm_eps=layer_norm_eps)
                 self.transformer_cells.add(cell)
 
-    def __call__(self, inputs, states=None, valid_length=None):  # pylint: disable=arguments-differ
+    def __call__(self, inputs, states=None, valid_length=None):
         """Encode the inputs given the states and valid sequence length.
 
         Parameters
