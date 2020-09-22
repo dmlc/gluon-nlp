@@ -75,4 +75,4 @@ jobs:
         with: 
           issue-number: ${{ github.event.number }}
           body: |
-            The documentation website for preview: http://gluon-nlp-dev.s3-accelerate.amazonaws.com/PR%23${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/index.html
+            The documentation website for preview: http://gluon-nlp-dev.s3-accelerate.amazonaws.com/PR${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/index.html
