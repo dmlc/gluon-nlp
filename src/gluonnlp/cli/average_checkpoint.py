@@ -49,7 +49,7 @@ def main(args):
         for key in keys:
             res[key] += ckpt[key]
     for key in keys:
-        res[key] /= len(args.range)
+        res[key] /= len(ckpt_paths)
     mx.npx.save(args.save_path, res)
 
 
