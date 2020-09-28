@@ -41,7 +41,7 @@ jobs:
         run: |
           echo "Start submitting job"
           python ./tools/batch/submit-job.py --region us-east-1 \
-                                             --job-type g4dn.4x \
+                                             --job-type g4dn.4x-100g \
                                              --name GluonNLP-GPU-Test-${{ github.ref }} \
                                              --source-ref ${{ github.ref }} \
                                              --work-dir tools/batch \
@@ -56,7 +56,7 @@ jobs:
         run: |
           echo "Start submitting job"
           python ./tools/batch/submit-job.py --region us-east-1 \
-                                             --job-type g4dn.4x \
+                                             --job-type g4dn.4x-100g \
                                              --name GluonNLP-GPU-Test-PR#${{ github.event.number }} \
                                              --source-ref ${{ github.event.pull_request.head.ref }} \
                                              --work-dir tools/batch \

@@ -78,6 +78,7 @@ def nowInMillis():
 
 job_definitions = {
     'g4dn.4x': 'gluon-nlp-1-jobs:5',
+    'g4dn.4x-100g': 'gluon-nlp-1-jobs:5',
     'g4dn.8x': 'gluon-nlp-1-jobs:4',
     'g4dn.12x': 'gluon-nlp-1-4gpu-jobs:1',
     'g4dn.16x': 'gluon-nlp-1-jobs:3',
@@ -91,6 +92,7 @@ job_definitions = {
 
 job_queues = {
     'g4dn.4x': 'g4dn',
+    'g4dn.4x-100g': 'g4dn-add-volume4',
     'g4dn.8x': 'g4dn',
     'g4dn.12x': 'g4dn-multi-gpu',
     'g4dn.16x': 'g4dn',
