@@ -30,6 +30,11 @@ def test_avg_ckpt():
                               '--begin', '0',
                               '--end', str(num_ckpts-1),
                               '--save-path', os.path.join(_CURR_DIR, 'avg.params')])
+    args.checkpoints = ['fake', 'ckpt']
+    try:
+        average_checkpoint.main(args)
+    except:
+        pass
     args.checkpoints = [os.path.join(_CURR_DIR, 'update{}.params'.format(i)) \
                         for i in range(0, num_ckpts)]
     average_checkpoint.main(args)
