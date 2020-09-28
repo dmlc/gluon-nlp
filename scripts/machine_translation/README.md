@@ -156,17 +156,13 @@ Test BLEU score with 3 seeds (evaluated via sacre BLEU):
 - transformer_base
 
 (test bleu / valid bleu)
-| Subword Model | #Params    | Seed = 123  | Seed = 1234 | Seed = 12345 |  Mean±std   |
-|---------------|------------|-------------|-------------|--------------|-------------|
-| yttm          |            | 26.78/25.96 | -           |  -           |  -          |
-| hf_bpe        |            |  -          | -           |  -           |  -          |
-| spm           |            |  -          | -           |  -           |  -          |
+| Subword Model | Seed = 123  |
+|---------------|-------------|
+| yttm          | 26.78/25.96 |
 
 - transformer_wmt_en_de_big
 
 (test bleu / valid bleu)
-| Subword Model | #Params    | Seed = 123  | Seed = 1234 | Seed = 12345 |  Mean±std   |
-|---------------|------------|-------------|-------------|--------------|-------------|
-| yttm          |            | 27.99/26.84 | -           |  -           |  -          |
-| hf_bpe        |            |  -          | -           |  -           |  -          |
-| spm           |            |  -          | -           |  -           |  -          |
+| Subword Model | Seed = 123  |
+|---------------|-------------|
+| yttm          | 27.99/26.84 |
