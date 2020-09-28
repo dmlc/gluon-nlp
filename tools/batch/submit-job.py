@@ -16,7 +16,7 @@ parser.add_argument('--region', help='Default region when creating new connectio
                     default=None)
 parser.add_argument('--name', help='name of the job', type=str, default='dummy')
 parser.add_argument('--job-type', help='type of job to submit.', type=str,
-                    choices=['g4dn.4x', 'g4dn.8x', 'g4dn.12x', 'g4dn.16x',
+                    choices=['g4dn.4x', 'g4dn.4x-100g', 'g4dn.8x', 'g4dn.12x', 'g4dn.16x',
                              'p3.2x', 'p3.8x', 'p3.16x', 'p3dn.24x',
                              'c5n.18x', 'c5n.4x'], default='g4dn.4x')
 parser.add_argument('--source-ref',
