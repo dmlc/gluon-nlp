@@ -36,11 +36,11 @@ import mxnet as mx
 from mxnet import use_np
 from mxnet.gluon import HybridBlock, nn
 
+from .base import BACKBONE_REGISTRY
 from ..op import select_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, \
                    get_model_zoo_checksum_dir
 from ..layers import PositionalEmbedding, get_activation
-from ..registry import BACKBONE_REGISTRY
 from ..utils.misc import download, load_checksum_stats
 from ..utils.registry import Registry
 from .transformer import TransformerEncoderLayer

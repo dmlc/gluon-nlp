@@ -35,11 +35,11 @@ import mxnet as mx
 import numpy as np
 from mxnet import use_np
 from mxnet.gluon import HybridBlock, nn
-from ..registry import BACKBONE_REGISTRY
+from .base import BACKBONE_REGISTRY
+from .transformer import TransformerEncoderLayer
 from ..op import gumbel_softmax, select_vectors_by_position, add_vectors_by_position, update_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..layers import PositionalEmbedding, get_activation
-from .transformer import TransformerEncoderLayer
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download

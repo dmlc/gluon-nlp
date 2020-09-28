@@ -1,4 +1,11 @@
-from abc import ABC
+__all__ = ['transformer_cfg_reg', 'transformer_base',
+           'transformer_base_prenorm', 'transformer_iwslt_de_en',
+           'transformer_wmt_en_de_big', 'transformer_wmt_en_de_big_t2t',
+           'TransformerEncoderLayer',
+           'TransformerDecoderLayer',
+           'TransformerEncoder', 'TransformerDecoder',
+           'TransformerModel', 'TransformerNMTInference']
+
 
 import numpy as np
 import mxnet as mx
@@ -10,9 +17,6 @@ from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask, gen_mem
 from ..layers import PositionalEmbedding, PositionwiseFFN, InitializerType
 from ..utils.config import CfgNode as CN
 from ..sequence_sampler import BaseStepDecoder
-__all__ = ['TransformerEncoderLayer', 'TransformerDecoderLayer',
-           'TransformerEncoder', 'TransformerDecoder',
-           'TransformerModel', 'TransformerNMTInference']
 
 transformer_cfg_reg = Registry('transformer_cfg')
 

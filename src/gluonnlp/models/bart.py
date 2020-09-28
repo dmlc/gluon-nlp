@@ -38,11 +38,11 @@ import mxnet as mx
 from mxnet import use_np
 from mxnet.gluon import nn
 
+from .base import BACKBONE_REGISTRY
+from .transformer import TransformerModel
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, \
                    get_model_zoo_checksum_dir
-from ..registry import BACKBONE_REGISTRY
 from ..utils.misc import download, load_checksum_stats
-from .transformer import TransformerModel
 from ..utils.config import CfgNode as CN
 from ..utils.registry import Registry
 from ..data.tokenizers import HuggingFaceByteBPETokenizer

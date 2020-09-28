@@ -35,14 +35,14 @@ import numpy as np
 from mxnet import use_np
 from mxnet.gluon import HybridBlock, nn
 
+from .base import BACKBONE_REGISTRY
 from ..op import select_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..layers import InitializerType, PositionwiseFFN, PositionalEmbedding, get_norm_layer, get_activation
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
-from ..utils.registry import Registry
-from ..registry import BACKBONE_REGISTRY
+from ..utils.registry import Registrys
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 

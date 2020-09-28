@@ -1,3 +1,6 @@
+__all__ = ['TransformerXLDecoderLayer', 'TransformerXLDecoder', 'TransformerXLForLM',
+           'TransformerXLForLMGen']
+
 import numpy as np
 import mxnet as mx
 from mxnet import use_np
@@ -8,8 +11,6 @@ from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN,\
     AdaptiveEmbedding, ProjectedAdaptiveLogSoftmaxWithLoss
 from ..utils.config import CfgNode as CN
 from ..sequence_sampler import BaseStepDecoder
-__all__ = ['TransformerXLDecoderLayer', 'TransformerXLDecoder', 'TransformerXLForLM',
-           'TransformerXLForLMGen']
 
 
 @use_np

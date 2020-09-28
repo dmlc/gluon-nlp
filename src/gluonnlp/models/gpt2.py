@@ -32,7 +32,7 @@ from typing import Tuple
 import mxnet as mx
 from mxnet import use_np
 from mxnet.gluon import HybridBlock, nn
-from ..registry import BACKBONE_REGISTRY
+from .base import BACKBONE_REGISTRY
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
