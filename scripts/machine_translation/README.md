@@ -41,7 +41,7 @@ python3 train_transformer.py \
 
 Or training via horovod
 ```
-SUBWORD_ALGO=subword_nmt
+SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \

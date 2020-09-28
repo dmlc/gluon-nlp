@@ -105,8 +105,7 @@ nlp_process clean_tok_para_corpus --src-lang ${SRC} \
 
 # Combine the synthetic data with upsampled original data
 # TODO upsample
-rm -rf wmt2014_backtranslation
-mkdir wmt2014_backtranslation
+mkdir -p wmt2014_backtranslation
 for LANG in ${SRC} ${TGT} ; do
     cat wmt2014_ende/train.tok.${LANG} wmt2014_mono/syn.train.tok.${LANG} \
         > wmt2014_backtranslation/bt.train.tok.${LANG}

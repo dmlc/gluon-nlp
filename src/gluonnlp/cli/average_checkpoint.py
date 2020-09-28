@@ -30,7 +30,7 @@ def main(args):
     elif ckpt_updates_regexp.fullmatch(ckpt_path) is not None:
         ckpt_regexp = ckpt_updates_regexp
     else:
-        raise Exception('Wrong checkpoints path format')
+        raise Exception('Wrong checkpoints path format: {}'.format(ckpt_path))
     
     ckpt_paths = []
     for path in args.checkpoints:
