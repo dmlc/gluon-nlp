@@ -6,6 +6,10 @@ from numpy.testing import assert_allclose
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 
 def test_avg_ckpt():
+    try:
+        average_checkpoint.cli_main()
+    except:
+        pass
     num_ckpts = 5
     model = nn.Dense(units=10, in_units=10)
     model.initialize()
