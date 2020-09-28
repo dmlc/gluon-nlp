@@ -42,7 +42,7 @@ from ..layers import InitializerType, PositionwiseFFN, PositionalEmbedding, get_
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
-from ..utils.registry import Registrys
+from ..utils.registry import Registry
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 
