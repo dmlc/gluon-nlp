@@ -29,11 +29,12 @@ def test_avg_ckpt():
     args = parser.parse_args(['--checkpoints', None,
                               '--begin', '0',
                               '--end', str(num_ckpts-1),
-                              '--save-path', 'avg.params'])
-    args.checkpoints = ['update{}.params'.format(i) for i in range(0, num_ckpts)]
+                              '--save-path', os.path.join(_CURR_DIR, 'avg.params')])
+    args.checkpoints = [os.path.join(_CURR_DIR, 'update{}.params'.format(i)) \
+                        for i in range(0, num_ckpts)]
     average_checkpoint.main(args)
     
-    model.load_parameters('avg.params')
+    model.load_parameters(os.path.join(_CURR_DIR, 'avg.params'))
     params = model.collect_params()
     
     for key in gd_avg.keys():
