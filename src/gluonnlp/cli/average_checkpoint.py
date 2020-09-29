@@ -30,7 +30,7 @@ def main(args):
     elif ckpt_updates_regexp.fullmatch(ckpt_path) is not None:
         ckpt_regexp = ckpt_updates_regexp
     else:
-        raise Exception('Wrong checkpoints path format')
+        raise Exception('Wrong checkpoints path format: {}'.format(ckpt_path))
     
     ckpt_paths = []
     for path in args.checkpoints:
@@ -49,7 +49,7 @@ def main(args):
         for key in keys:
             res[key] += ckpt[key]
     for key in keys:
-        res[key] /= len(args.range)
+        res[key] /= len(ckpt_paths)
     mx.npx.save(args.save_path, res)
 
 
