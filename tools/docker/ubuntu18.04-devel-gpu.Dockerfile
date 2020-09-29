@@ -99,7 +99,7 @@ RUN pip3 install --no-cache --upgrade \
     awscli
 
 # Install MXNet
-RUN python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20200928" -f https://dist.mxnet.io/python --user
+RUN python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20200926" -f https://dist.mxnet.io/python --user
 
 # Install Horovod
 RUN HOROVOD_GPU_OPERATIONS=NCCL python3 -m pip install --no-cache-dir horovod --user
