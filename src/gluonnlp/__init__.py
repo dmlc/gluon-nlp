@@ -10,6 +10,5 @@ from . import loss
 from . import lr_scheduler
 from . import op
 from . import optimizer
-from . import registry
 from . import sequence_sampler
 from . import embedding
