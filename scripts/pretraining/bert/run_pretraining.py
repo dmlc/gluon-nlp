@@ -61,8 +61,6 @@ def parse_args():
                         help='Max gradient norm.')
     parser.add_argument('--warmup_ratio', type=float, default=0.01,
                         help='Ratio of warmup steps in the learning rate scheduler.')
-    parser.add_argument('--no_compute_acc', action='store_true',
-                        help='skip accuracy metric computation during training')
     # debugging
     parser.add_argument('--verbose', action='store_true', help='verbose logging')
     # data pre-processing
@@ -252,11 +250,10 @@ def train(args):
         parameters_option(args.start_step, model, args.ckpt_dir, 'Loading')
         states_option(args.start_step, trainer, args.ckpt_dir, local_rank, 'Loading')
 
+    # backend specific implementation
     if args.comm_backend == 'byteps':
         trainer._init_params()
-    # backend specific implementation
     if args.comm_backend == 'horovod':
-        # Horovod: fetch and broadcast parameters
         hvd.broadcast_parameters(param_dict, root_rank=0)
 
     # prepare the loss function
@@ -320,7 +317,7 @@ def train(args):
                     ns_label_list.append(next_sentence_label)
                     ns_pred_list.append(nsp_score)
 
-                #running_num_tks += valid_length.sum().as_in_ctx(mx.cpu())
+                running_num_tks += valid_length.sum().as_in_ctx(mx.cpu())
 
             for loss in loss_l:
                 loss.backward()
@@ -368,8 +365,7 @@ def train(args):
                     step_num, running_mlm_loss, running_nsp_loss,
                     mlm_metric.get()[1], nsp_metric.get()[1],
                     trainer.learning_rate, total_norm, toc - tic,
-                    #running_num_tks.asnumpy().item() / (toc - tic) / 1000,
-                    0,
+                    running_num_tks.asnumpy().item() / (toc - tic) / 1000,
                     (num_steps - step_num) / (step_num / (toc - train_start_time)) / 3600))
             mlm_metric.reset()
             nsp_metric.reset()
