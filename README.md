@@ -18,7 +18,6 @@ process the text data, and train models.
 
 For NLP Practitioners
 - Easy-to-use Text Processing Tools
-- Automatically Train Models via AutoNLP (TODO)
 
 For Researchers
 - Pretrained Model Zoo
