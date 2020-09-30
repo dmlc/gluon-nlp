@@ -47,7 +47,7 @@ def prepare_pretrain_npz_dataset(filename, allow_pickle=False):
 
 def prepare_pretrain_text_dataset(filename, tokenizer, max_seq_length, short_seq_prob,
                                   masked_lm_prob, max_predictions_per_seq, whole_word_mask,
-                                  vocab):
+                                  random_next_sentence, vocab):
     """Create dataset based on the raw text files"""
     dupe_factor = 1
     if not isinstance(filename, (list, tuple)):
@@ -57,7 +57,7 @@ def prepare_pretrain_text_dataset(filename, tokenizer, max_seq_length, short_seq
                                            short_seq_prob, masked_lm_prob,
                                            max_predictions_per_seq,
                                            whole_word_mask, vocab,
-                                           dupe_factor, 1, None, None))
+                                           dupe_factor, 1, None, None, random_next_sentence))
     return mx.gluon.data.ArrayDataset(*instances)
 
 
@@ -79,9 +79,9 @@ def prepare_pretrain_bucket_sampler(dataset, batch_size, shuffle=False, num_buck
     return sampler
 
 
-def get_pretrain_data_text(data, batch_size, shuffle,
-                           num_buckets, vocab, tokenizer, max_seq_length, short_seq_prob,
-                           masked_lm_prob, max_predictions_per_seq, whole_word_mask,
+def get_pretrain_data_text(data, batch_size, shuffle, num_buckets, vocab, tokenizer,
+                           max_seq_length, short_seq_prob, masked_lm_prob,
+                           max_predictions_per_seq, whole_word_mask, random_next_sentence,
                            num_parts=1, part_idx=0, num_dataset_workers=1, num_batch_workers=1,
                            circle_length=1, repeat=1,
                            dataset_cached=False, num_max_dataset_cached=0):
@@ -95,9 +95,9 @@ def get_pretrain_data_text(data, batch_size, shuffle,
         Whether to shuffle the data.
     num_buckets : int
         The number of buckets for the FixedBucketSampler for training.
-    vocab : BERTVocab
+    vocab : Vocab
         The vocabulary.
-    tokenizer : BERTTokenizer or BERTSPTokenizer
+    tokenizer : BaseTokenizer
         The tokenizer.
     max_seq_length : int
         The hard limit of maximum sequence length of sentence pairs.
@@ -138,7 +138,7 @@ def get_pretrain_data_text(data, batch_size, shuffle,
     dataset_params = {'tokenizer': tokenizer, 'max_seq_length': max_seq_length,
                       'short_seq_prob': short_seq_prob, 'masked_lm_prob': masked_lm_prob,
                       'max_predictions_per_seq': max_predictions_per_seq, 'vocab':vocab,
-                      'whole_word_mask': whole_word_mask}
+                      'whole_word_mask': whole_word_mask, 'random_next_sentence': random_next_sentence}
     sampler_params = {'batch_size': batch_size, 'shuffle': shuffle, 'num_buckets': num_buckets}
     dataset_fn = prepare_pretrain_text_dataset
     sampler_fn = prepare_pretrain_bucket_sampler
@@ -185,7 +185,7 @@ def get_pretrain_data_npz(data, batch_size,
         Whether to shuffle the data.
     num_buckets : int
         The number of buckets for the FixedBucketSampler for training.
-    vocab : BERTVocab
+    vocab : Vocab
         The vocabulary.
     num_parts : int
         The number of partitions for the dataset.
@@ -270,4 +270,5 @@ class MaskedAccuracy(EvalMetric):
                 num_correct = (pred_label == label).sum().asnumpy().item()
                 self.sum_metric += num_correct
                 self.num_inst += len(pred_label)
+
 

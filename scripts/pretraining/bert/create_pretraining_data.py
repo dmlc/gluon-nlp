@@ -234,7 +234,7 @@ def create_training_instances(x):
     """
     (input_files, tokenizer, max_seq_length, short_seq_prob,
      masked_lm_prob, max_predictions_per_seq, whole_word_mask, vocab,
-     dupe_factor, nworker, worker_pool, output_file) = x
+     dupe_factor, nworker, worker_pool, output_file, random_next_sentence) = x
 
     time_start = time.time()
     if nworker > 1:
@@ -279,7 +279,7 @@ def create_training_instances(x):
         for document_index in range(len(all_documents)):
             process_args.append((all_documents, document_index, max_seq_length, short_seq_prob,
                                  masked_lm_prob, max_predictions_per_seq, whole_word_mask,
-                                 vocab, tokenizer))
+                                 vocab, tokenizer, random_next_sentence))
         for _ in range(dupe_factor):
             instances_results = worker_pool.map(create_instances_from_document, process_args)
             for instances_result in instances_results:
@@ -293,7 +293,7 @@ def create_training_instances(x):
                     create_instances_from_document(
                         (all_documents, document_index, max_seq_length, short_seq_prob,
                          masked_lm_prob, max_predictions_per_seq, whole_word_mask,
-                         vocab, tokenizer)))
+                         vocab, tokenizer, random_next_sentence)))
         random.shuffle(instances)
         npz_instances = convert_to_npz(instances, max_seq_length)
 
@@ -318,8 +318,8 @@ def create_training_instances(x):
 
 def create_instances_from_document(x):
     """Creates `TrainingInstance`s for a single document."""
-    (all_documents, document_index, max_seq_length, short_seq_prob,
-     masked_lm_prob, max_predictions_per_seq, whole_word_mask, vocab, tokenizer) = x
+    (all_documents, document_index, max_seq_length, short_seq_prob, masked_lm_prob,
+        max_predictions_per_seq, whole_word_mask, vocab, tokenizer, random_next_sentence) = x
     document = all_documents[document_index]
     _MASK_TOKEN = vocab.mask_id
     _CLS_TOKEN = vocab.cls_id
@@ -368,7 +368,8 @@ def create_instances_from_document(x):
                 tokens_b = []
                 # Random next
                 is_random_next = False
-                if len(current_chunk) == 1 or random.random() < 0.5:
+                if len(current_chunk) == 1 or \
+                        (random_next_sentence and random.random() < 0.5):
                     is_random_next = True
                     target_b_length = target_seq_length - len(tokens_a)
 
@@ -387,6 +388,11 @@ def create_instances_from_document(x):
                     # they don't go to waste.
                     num_unused_segments = len(current_chunk) - a_end
                     i -= num_unused_segments
+                elif not random_next_sentence and random.random() < 0.5:
+                    is_random_next = True
+                    for j in range(a_end, len(current_chunk)):
+                        tokens_b.extend(current_chunk[j])
+                    tokens_a, tokens_b = tokens_b, tokens_a
                 # Actual next
                 else:
                     is_random_next = False

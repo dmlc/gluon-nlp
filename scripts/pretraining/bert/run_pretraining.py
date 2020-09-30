@@ -61,6 +61,8 @@ def parse_args():
                         help='Max gradient norm.')
     parser.add_argument('--warmup_ratio', type=float, default=0.01,
                         help='Ratio of warmup steps in the learning rate scheduler.')
+    parser.add_argument('--no_compute_acc', action='store_true',
+                        help='skip accuracy metric computation during training')
     # debugging
     parser.add_argument('--verbose', action='store_true', help='verbose logging')
     # data pre-processing
@@ -81,6 +83,9 @@ def parse_args():
                              'Effective only if --raw is set.')
     parser.add_argument('--whole_word_mask', action='store_true',
                         help='Whether to use whole word masking rather than per-subword masking.'
+                             'Effective only if --raw is set.')
+    parser.add_argument('--random_next_sentence', action='store_true',
+                        help='Whether to use the sentence order prediction objective as in ALBERT'
                              'Effective only if --raw is set.')
     parser.add_argument('--num_dataset_workers', type=int, default=0,
                         help='Number of workers to pre-process dataset.')
@@ -188,6 +193,7 @@ def train(args):
                                            masked_lm_prob=args.masked_lm_prob,
                                            max_predictions_per_seq=args.max_predictions_per_seq,
                                            whole_word_mask=args.whole_word_mask,
+                                           random_next_sentence=args.random_next_sentence,
                                            tokenizer=tokenizer,
                                            circle_length=args.circle_length,
                                            repeat=args.repeat,
@@ -250,10 +256,11 @@ def train(args):
         parameters_option(args.start_step, model, args.ckpt_dir, 'Loading')
         states_option(args.start_step, trainer, args.ckpt_dir, local_rank, 'Loading')
 
-    # backend specific implementation
     if args.comm_backend == 'byteps':
         trainer._init_params()
+    # backend specific implementation
     if args.comm_backend == 'horovod':
+        # Horovod: fetch and broadcast parameters
         hvd.broadcast_parameters(param_dict, root_rank=0)
 
     # prepare the loss function
