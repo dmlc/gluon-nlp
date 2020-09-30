@@ -25,8 +25,8 @@ compile_notebook () {
             --work-dir . \
             --source-ref ${refs} \
             --remote https://github.com/${remote} \
-            --command "python3 -m pip install --quiet nbformat notedown jupyter_client ipykernel && \
-                       python3 -m nltk.downloader perluniprops nonbreaking_prefixes punkt && \
+            --command "python3 -m pip install --quiet nbformat notedown jupyter_client \
+                       ipykernel matplotlib termcolor && \
                        python3 /gluon-nlp/docs/md2ipynb.py ${MDFILE}" 2>&1 | tee $LOGNAME >/dev/null
 
     BATCH_EXIT_CODE=$?
