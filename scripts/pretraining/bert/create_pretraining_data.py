@@ -201,7 +201,7 @@ def create_training_instances(x):
     ----------
     input_files : list of str
         List of paths to input text files.
-    tokenizer : BERTTokenizer
+    tokenizer : BaseTokenizer
         The BERT tokenizer
     max_seq_length : int
         The hard limit of maximum sequence length of sentence pairs
