@@ -102,7 +102,9 @@ RUN pip3 install --no-cache --upgrade \
 RUN python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20200926" -f https://dist.mxnet.io/python --user
 
 # Install Horovod
-RUN HOROVOD_GPU_OPERATIONS=NCCL python3 -m pip install --no-cache-dir horovod --user
+RUN HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_GPU_BROADCAST=NCCL HOROVOD_WITHOUT_GLOO=1 \
+    HOROVOD_WITH_MPI=1 HOROVOD_WITH_MXNET=1 HOROVOD_WITHOUT_PYTORCH=1 \
+    HOROVOD_WITHOUT_TENSORFLOW=1 python3 -m pip install --no-cache-dir horovod --user
 
 RUN mkdir -p ${WORKDIR}/notebook
 RUN mkdir -p ${WORKDIR}/data
