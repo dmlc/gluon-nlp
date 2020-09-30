@@ -44,3 +44,6 @@ To build a docker image fom the dockerfile, you may use the following command:
 ```
 docker build -f ubuntu18.04-devel-gpu.Dockerfile -t gluonai/gluon-nlp:gpu-latest .
 ```
+
+### Developers of GluonNLP
+You may try to login to your dockerhub account and push the image to dockerhub.
