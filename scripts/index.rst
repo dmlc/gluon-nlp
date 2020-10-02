@@ -5,46 +5,63 @@ Model Zoo
 
    .. card::
       :title: Benchmarking the Performance of NLP Backbones
-      :link: https://github.com/dmlc/gluon-nlp/tree/master/scripts/benchmarks
+      :link: benchmarks/index.html
 
       Placeholder.
 
    .. card::
       :title: Conversion Scripts
-      :link: https://github.com/dmlc/gluon-nlp/tree/master/scripts/conversion_toolkits
+      :link: conversion_toolkits/index.html
 
       Converting NLP models from other frameworks to GluonNLP.
 
    .. card::
       :title: Datasets
-      :link: dhttps://github.com/dmlc/gluon-nlp/tree/master/scripts/datasets
+      :link: datasets/index.html
 
       Placeholder.
 
    .. card::
+      :title: Generation
+      :link: generation/index.html
+
+      Placeholder. 
+
+   .. card::
       :title: Machine Translation
-      :link: https://github.com/dmlc/gluon-nlp/tree/master/scripts/machine_translation
+      :link: machine_translation/index.html
 
       From "Hello" to "Bonjour".
 
    .. card::
       :title: Data Preprocessing Toolkit in GluonNLP
-      :link: https://github.com/dmlc/gluon-nlp/tree/master/scripts/preprocess
+      :link: processing/index.html
 
       Placeholder.
 
    .. card::
       :title: Pretraining Model
-      :link: https://github.com/dmlc/gluon-nlp/tree/master/scripts/pretraining
+      :link: pretraining/index.html
 
       Placeholder.
 
    .. card::
       :title: Question Answering Examples
-      :link: https://github.com/dmlc/gluon-nlp/tree/master/scripts/question_answering
+      :link: question_answering/index.html
 
       Placeholder.
 
 .. toctree::
    :hidden:
    :maxdepth: 1
+
+
+   benchmarks/index
+   conversion_toolkits/index
+   datasets/index
+   generation/index
+   machine_translation/index
+   pretraining/index
+   processing/index
+   question_answering/index
+   
