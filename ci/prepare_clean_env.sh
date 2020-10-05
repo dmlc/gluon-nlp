@@ -11,6 +11,8 @@ export MXNET_HOME=$PWD/tests/data
 export HOROVOD_WITHOUT_TENSORFLOW=1
 export HOROVOD_WITHOUT_PYTORCH=1
 export HOROVOD_WITH_MXNET=1
+export HOROVOD_WITH_GLOO=1
+export HOROVOD_WITHOUT_MPI=1
 
 make clean
 conda env update --prune -p conda/${env_name} -f env/${env_name}.yml
