@@ -20,6 +20,7 @@ conda activate ./conda/${env_name}
 conda list
 printenv
 
+pip install cmake
 pip install -v -e .
 pip install horovod --no-cache-dir -U
 python -m spacy download en
