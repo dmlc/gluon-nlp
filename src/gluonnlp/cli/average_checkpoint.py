@@ -4,6 +4,7 @@ import re
 
 mx.npx.set_np()
 
+
 def get_parser():
     parser = argparse.ArgumentParser(description='Script to average the checkpoints')
     parser.add_argument('--checkpoints', type=str, required=True, nargs='+',
@@ -14,6 +15,7 @@ def get_parser():
     parser.add_argument('--save-path', type=str, required=True,
                         help='Path of the output file')
     return parser
+
 
 def main(args):
     assert args.begin >= 0
@@ -28,7 +30,7 @@ def main(args):
     elif ckpt_updates_regexp.fullmatch(ckpt_path) is not None:
         ckpt_regexp = ckpt_updates_regexp
     else:
-        raise Exception('Wrong checkpoints path format')
+        raise Exception('Wrong checkpoints path format: {}'.format(ckpt_path))
     
     ckpt_paths = []
     for path in args.checkpoints:
@@ -37,7 +39,8 @@ def main(args):
         num = int(m.group(2))
         if num >= args.begin and num <= args.end:
             ckpt_paths.append(path)
-    
+    print('Load models from {}'.format(ckpt_paths))
+    print('Average the models and save it to {}'.format(args.save_path))
     assert len(ckpt_paths) > 0
     res = mx.npx.load(ckpt_paths[0])
     keys = res.keys()
@@ -46,8 +49,9 @@ def main(args):
         for key in keys:
             res[key] += ckpt[key]
     for key in keys:
-        res[key] /= len(args.range)
+        res[key] /= len(ckpt_paths)
     mx.npx.save(args.save_path, res)
+
 
 def cli_main():
     parser = get_parser()

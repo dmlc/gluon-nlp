@@ -19,7 +19,6 @@ import tarfile
 import argparse
 import functools
 import multiprocessing
-from gluonnlp.registry import DATA_PARSER_REGISTRY, DATA_MAIN_REGISTRY
 
 _CITATIONS = r"""
 @misc{Gokaslan2019OpenWeb,
@@ -31,7 +30,6 @@ _CITATIONS = r"""
 """
 
 
-@DATA_PARSER_REGISTRY.register('prepare_openwebtext')
 def get_parser():
     parser = argparse.ArgumentParser(description='Prepare the OpenWebText corpus for pretraining')
     parser.add_argument("-i", "--input", required=True,
@@ -69,7 +67,6 @@ def extract_files(full_name, output_dir, shuffle=False):
                 fp.write('\n')
 
 
-@DATA_MAIN_REGISTRY.register('prepare_openwebtext')
 def main(args):
     num_process = min(multiprocessing.cpu_count(), args.num_process)
     if not os.path.exists(args.output):

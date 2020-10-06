@@ -114,6 +114,8 @@ def parse_args():
     parser.add_argument('--max_query_length', type=int, default=64,
                         help='The maximum number of tokens for the query. Questions longer than '
                              'this will be truncated to this length. default is 64')
+    parser.add_argument('--pre_shuffle_seed', type=int, default=100,
+                        help='Random seed for pre split shuffle')
     parser.add_argument('--round_to', type=int, default=None,
                         help='The length of padded sequences will be rounded up to be multiple'
                              ' of this argument. When round to is set to 8, training throughput '
@@ -413,10 +415,22 @@ def get_network(model_name,
 
     return cfg, tokenizer, qa_net, use_segmentation
 
+def setup_logging(args, local_rank):
+    """
+    Setup logging configuration as well as random seed
+    """
+    logging_config(args.output_dir,
+                   name='finetune_squad{}'.format(args.version),# avoid race
+                   overwrite_handler=True,
+                   console=(local_rank == 0))
+    logging.info(args)
+    set_seed(args.seed)
+    logging.debug('Random seed set to {}'.format(args.seed))
 
 def train(args):
     store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
         args.comm_backend, args.gpus)
+    setup_logging(args, local_rank)
     cfg, tokenizer, qa_net, use_segmentation = \
         get_network(args.model_name, ctx_l,
                     args.classifier_dropout,
@@ -444,8 +458,15 @@ def train(args):
                          sum([ele.is_impossible for ele in train_features])))
     logging.info('After Chunking, #Train Sample/Is Impossible = {}/{}'
                  .format(len(train_dataset), num_impossible))
-    sampler = SplitSampler(len(train_dataset), num_parts=num_workers,
-                           part_index=rank, even_size=True)
+
+    # Shuffle the dataset using a fixed seed across all workers
+    rs = np.random.RandomState(args.pre_shuffle_seed)
+    rs.shuffle(train_dataset)
+    sampler = SplitSampler(
+        len(train_dataset),
+        num_parts=num_workers,
+        part_index=rank,
+        even_size=True)
     train_dataloader = mx.gluon.data.DataLoader(
         train_dataset,
         batchify_fn=dataset_processor.BatchifyFunction,
@@ -467,9 +488,10 @@ def train(args):
         v.wd_mult = 0.0
     params = [p for p in param_dict.values() if p.grad_req != 'null']
     # Set grad_req if gradient accumulation is required
-    if args.num_accumulated > 1:
+    num_accumulated = args.num_accumulated
+    if num_accumulated > 1:
         logging.info('Using gradient accumulation. Effective global batch size = {}'
-                     .format(args.num_accumulated * args.batch_size * len(ctx_l) * num_workers))
+                     .format(num_accumulated * args.batch_size * len(ctx_l) * num_workers))
         for p in params:
             p.grad_req = 'add'
     # backend specific implementation
@@ -523,20 +545,15 @@ def train(args):
         trainer = mx.gluon.Trainer(param_dict, args.optimizer, optimizer_params,
                                    update_on_kvstore=False)
 
-    num_samples_per_update = 0
-    loss_denom = float(len(ctx_l) * args.num_accumulated)
-
     log_span_loss = 0
     log_answerable_loss = 0
     log_total_loss = 0
     log_sample_num = 0
-    if args.num_accumulated != 1:
-        # set grad to zero for gradient accumulation
-        qa_net.zero_grad()
+
     global_tic = time.time()
     tic = time.time()
     for step_num, batch_data in enumerate(
-            grouper(repeat(train_dataloader), len(ctx_l) * args.num_accumulated)):
+            grouper(repeat(train_dataloader), len(ctx_l) * num_accumulated)):
         for sample_l in grouper(batch_data, len(ctx_l)):
             loss_l = []
             span_loss_l = []
@@ -547,7 +564,6 @@ def train(args):
                 # Copy the data to device
                 tokens = sample.data.as_in_ctx(ctx)
                 log_sample_num += len(tokens)
-                num_samples_per_update += len(tokens)
                 segment_ids = sample.segment_ids.as_in_ctx(ctx) if use_segmentation else None
                 valid_length = sample.valid_length.as_in_ctx(ctx)
                 p_mask = sample.masks.as_in_ctx(ctx)
@@ -562,9 +578,9 @@ def train(args):
                     sel_start_logits = start_logits[batch_idx, gt_start]
                     sel_end_logits = end_logits[batch_idx, gt_end]
                     sel_answerable_logits = answerable_logits[batch_idx, is_impossible]
-                    span_loss = - 0.5 * (sel_start_logits + sel_end_logits).sum()
-                    answerable_loss = -0.5 * sel_answerable_logits.sum()
-                    loss = (span_loss + answerable_loss) / loss_denom
+                    span_loss = - 0.5 * (sel_start_logits + sel_end_logits).mean()
+                    answerable_loss = -0.5 * sel_answerable_logits.mean()
+                    loss = span_loss + answerable_loss
                     loss_l.append(loss)
                     span_loss_l.append(span_loss)
                     answerable_loss_l.append(answerable_loss)
@@ -574,27 +590,28 @@ def train(args):
             # All Reduce the Step Loss
             log_span_loss += sum([ele.as_in_ctx(ctx_l[0]) for ele in span_loss_l]).asnumpy()
             log_total_loss += sum([ele.as_in_ctx(ctx_l[0])
-                                   for ele in loss_l]).asnumpy() * loss_denom
+                                   for ele in loss_l]).asnumpy()
             log_answerable_loss += sum([ele.as_in_ctx(ctx_l[0])
                                         for ele in answerable_loss_l]).asnumpy()
         # update
         trainer.allreduce_grads()
 
         if args.max_grad_norm > 0:
-            # Here, the accumulated gradients are
-            # \sum_{n=1}^N g_n / loss_denom
-            # Thus, in order to clip the average gradient
-            #   \frac{1}{N} \sum_{n=1}^N      -->  clip to args.max_grad_norm
-            # We need to change the ratio to be
-            #  \sum_{n=1}^N g_n / loss_denom  -->  clip to args.max_grad_norm  * N / loss_denom
             total_norm, ratio, is_finite = clip_grad_global_norm(
-                params, args.max_grad_norm * num_samples_per_update / loss_denom)
+                params, args.max_grad_norm * num_workers)
         else:
             total_norm = grad_global_norm(params)
 
-        total_norm = total_norm / (num_samples_per_update / loss_denom)
-        trainer.update(num_samples_per_update / loss_denom)
-        if args.num_accumulated != 1:
+        if args.comm_backend == 'horovod':
+            # Note that horovod.trainer._scale is default to num_workers,
+            # thus trainer.update(1) will scale the gradients by 1./num_workers
+            trainer.update(1, ignore_stale_grad=True)
+        else:
+            # gluon.trainer._scale is default to 1
+            trainer.update(num_workers, ignore_stale_grad=True)
+
+        total_norm = total_norm / num_workers
+        if args.num_accumulated > 1:
             # set grad to zero for gradient accumulation
             qa_net.zero_grad()
 
@@ -617,7 +634,7 @@ def train(args):
             logging.info('Params saved in: {}'.format(params_saved))
 
         # logging
-        if local_rank == 0 and (step_num + 1) % log_interval == 0:
+        if (step_num + 1) % log_interval == 0:
             log_span_loss /= log_sample_num
             log_answerable_loss /= log_sample_num
             log_total_loss /= log_sample_num
@@ -684,6 +701,7 @@ def predict_extended(original_feature,
         Number of start-position candidates
     end_top_n
         Number of end-position candidates
+
     Returns
     -------
     not_answerable_score
@@ -779,6 +797,7 @@ def predict_extended(original_feature,
 def evaluate(args, last=True):
     store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
         args.comm_backend, args.gpus)
+    setup_logging(args, local_rank)
     # only evaluate once
     if rank != 0:
         logging.info('Skipping node {}'.format(rank))
@@ -789,7 +808,10 @@ def evaluate(args, last=True):
             str(ctx_l)))
 
     cfg, tokenizer, qa_net, use_segmentation = get_network(
-        args.model_name, ctx_l, args.classifier_dropout)
+        args.model_name, ctx_l, args.classifier_dropout, dtype=args.eval_dtype)
+    if args.eval_dtype == 'float16':
+        qa_net.cast('float16')
+        qa_net.hybridize()
 
     logging.info('Prepare dev data')
     dev_features = get_squad_features(args, tokenizer, segment='dev')
@@ -935,15 +957,15 @@ def evaluate(args, last=True):
     else:
         ckpt_candidates = [f for f in os.listdir(args.output_dir) if f.endswith('.params')]
         ckpt_candidates.sort(key=lambda ele: (len(ele), ele))
+        ckpt_candidates = [os.path.join(args.output_dir, ele) for ele in ckpt_candidates]
     if last:
         ckpt_candidates = ckpt_candidates[-1:]
 
     best_eval = {}
-    for ckpt_name in ckpt_candidates:
-        logging.info('Starting evaluate the checkpoint {}'.format(ckpt_name))
-        ckpt_path = os.path.join(args.output_dir, ckpt_name)
+    for ckpt_path in ckpt_candidates:
+        logging.info('Starting evaluate the checkpoint {}'.format(ckpt_path))
         qa_net.load_parameters(ckpt_path, ctx=ctx_l, cast_dtype=True)
-        best_eval = eval_validation(ckpt_name, best_eval)
+        best_eval = eval_validation(ckpt_path, best_eval)
 
     logging.info('The best evaluated results are {}'.format(json.dumps(best_eval)))
     output_eval_results_file = os.path.join(args.output_dir, 'best_results.json')
@@ -955,8 +977,6 @@ def evaluate(args, last=True):
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
     args = parse_args()
-    logging_config(args.output_dir, name='finetune_squad{}'.format(args.version))
-    set_seed(args.seed)
     if args.do_train:
         train(args)
     if args.do_eval:

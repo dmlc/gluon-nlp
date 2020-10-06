@@ -443,7 +443,21 @@ def get_pretrain_data_text(data, batch_size, shuffle, num_buckets, tokenizer, vo
 
 
 class ElectraMasker(HybridBlock):
-    """process the pre-processed pretrain data"""
+    """ELECTRA pre-processes and applies masks pretrain data
+
+    Parameters
+    ----------
+    tokenizer : gluonnlp.data.tokenizers
+        Used to tokenize the pretrained text sequence.
+    max_seq_length : int
+        Maximum sequence length of preprocessed text for pretraining.
+    mask_prob : float
+        The probability of applying masks on the token in the sequence.
+    proposal_distribution : float
+        A predefined probability distribution for each position in the sequence.
+    replace_prob : float
+        The probability of replace current token with a generator-predicted token.
+    """
     MaskedInput = collections.namedtuple('MaskedInput',
                                          ['input_ids',
                                           'masks',
@@ -451,8 +465,8 @@ class ElectraMasker(HybridBlock):
                                           'masked_positions',
                                           'masked_weights'])
 
-    def __init__(self, tokenizer, max_seq_length, mask_prob,
-                 proposal_distribution=1.0):
+    def __init__(self, tokenizer, max_seq_length, mask_prob=0.15,
+                 proposal_distribution=1.0, replace_prob=0.85):
         super().__init__()
         self._max_seq_length = max_seq_length
         self._mask_prob = mask_prob
@@ -460,6 +474,7 @@ class ElectraMasker(HybridBlock):
                                             self._max_seq_length)
         self._proposal_distribution = proposal_distribution
         self.vocab = tokenizer.vocab
+        self._replace_prob = replace_prob
 
     def dynamic_masking(self, F, input_ids, valid_lengths):
         # TODO(zheyuye), two additional flag `disallow_from_mask` and `already_masked`
@@ -499,7 +514,7 @@ class ElectraMasker(HybridBlock):
 
         for ignore_token in ignore_tokens:
             # TODO(zheyuye), Update when operation += supported
-            valid_candidates = valid_candidates + \
+            valid_candidates = valid_candidates * \
                 F.np.not_equal(input_ids, ignore_token)
         valid_lengths = valid_lengths.astype(np.float32)
         valid_candidates = valid_candidates.astype(np.float32)
@@ -507,14 +522,15 @@ class ElectraMasker(HybridBlock):
             1, F.np.minimum(N, round(valid_lengths * self._mask_prob)))
 
         # Get the masking probability of each position
-        sample_probs = F.npx.softmax(
-            self._proposal_distribution * valid_candidates, axis=-1)  # (B, L)
+        sample_probs = self._proposal_distribution * valid_candidates
+        sample_probs /= F.np.sum(sample_probs, axis=-1, keepdims=True)
         sample_probs = F.npx.stop_gradient(sample_probs)
         gumbels = F.np.random.gumbel(F.np.zeros_like(sample_probs))
         # Following the instruction of official repo to avoid deduplicate postions
         # with Top_k Sampling as https://github.com/google-research/electra/issues/41
         masked_positions = F.npx.topk(
-            sample_probs + gumbels, k=N, axis=-1, ret_typ='indices', dtype=np.int32)
+            F.np.log(sample_probs) + gumbels, k=N,
+            axis=-1, ret_typ='indices', dtype=np.int32)
 
         masked_weights = F.npx.sequence_mask(
             F.np.ones_like(masked_positions),
@@ -531,8 +547,8 @@ class ElectraMasker(HybridBlock):
         replaced_positions = (
             F.np.random.uniform(
                 F.np.zeros_like(masked_positions),
-                F.np.ones_like(masked_positions)) > self._mask_prob) * masked_positions
-        # dealling with multiple zero values in replaced_positions which causes
+                F.np.ones_like(masked_positions)) < self._replace_prob) * masked_positions
+        # dealing with multiple zero values in replaced_positions which causes
         # the [CLS] being replaced
         filled = F.np.where(
             replaced_positions,

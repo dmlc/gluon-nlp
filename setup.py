@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from datetime import datetime
 import io
 import os
 import re
@@ -26,21 +27,28 @@ def find_version(*file_paths):
 
 VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
+if VERSION.endswith('dev'):
+    VERSION = VERSION + datetime.today().strftime('%Y%m%d')
+
+
 requirements = [
     'numpy',
     'sacremoses>=0.0.38',
     'yacs>=0.1.6',
     'sacrebleu',
     'flake8',
+    'packaging',
     'regex',
     'contextvars',
     'pyarrow',
-    'sentencepiece',
+    'sentencepiece==0.1.91',
     'protobuf',
     'pandas',
-    'tokenizers>=0.7.0',
+    'tokenizers==0.8.1',
+    'dataclasses;python_version<"3.7"',  # Dataclass for python <= 3.6
+    'click>=7.0',  # Dependency of youtokentome
     'youtokentome>=1.0.6',
-    'fasttext>=0.9.2'
+    'fasttext>=0.9.1,!=0.9.2'  # Fix to 0.9.1 due to https://github.com/facebookresearch/fastText/issues/1052
 ]
 
 setup(
@@ -72,8 +80,8 @@ setup(
             'tqdm',
             'jieba',
             'subword_nmt',
-            'spacy>=2.0.0',
-            'langid',
+            'spacy>=2.3.0',
+            'langid==1.1.6',
             'nltk',
             'h5py>=2.10',
             'scipy',
@@ -98,7 +106,7 @@ setup(
     entry_points={
         'console_scripts': [
             'nlp_data = gluonnlp.cli.data.__main__:cli_main',
-            'nlp_preprocess = gluonnlp.cli.preprocess.__main__:cli_main',
+            'nlp_process = gluonnlp.cli.process.__main__:cli_main',
             'gluon_average_checkpoint = gluonnlp.cli.average_checkpoint:cli_main'
         ],
     },

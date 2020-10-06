@@ -171,13 +171,16 @@ class BartModel(TransformerModel):
         if not extract_feature:
             if self.tie_weights:
                 self.tgt_final_layer = \
-                    nn.Dense(self._tgt_vocab_size, flatten=False,
+                    nn.Dense(units=self._tgt_vocab_size,
+                             in_units=self.dec_units,
+                             flatten=False,
                              use_bias=False,
                              dtype=self._dtype)
                 self.tgt_final_layer.weight = self.tgt_embed_layer.weight
             else:
                 self.tgt_final_layer = \
-                    nn.Dense(self._tgt_vocab_size,
+                    nn.Dense(units=self._tgt_vocab_size,
+                             in_units=self.dec_units,
                              flatten=False,
                              weight_initializer=self.weight_initializer,
                              use_bias=False,

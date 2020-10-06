@@ -145,7 +145,15 @@ __main__.MyModelWithNickName
         ret
             The created object
         """
-        return self.get(name)(*args, **kwargs)
+        obj = self.get(name)
+        try:
+            return obj(*args, **kwargs)
+        except Exception as exp:
+            print('Cannot create name="{}" --> {} with the provided arguments!\n'
+                  '   args={},\n'
+                  '   kwargs={},\n'
+                  .format(name, obj, args, kwargs))
+            raise exp
 
     def create_with_json(self, name: str, json_str: str):
         """

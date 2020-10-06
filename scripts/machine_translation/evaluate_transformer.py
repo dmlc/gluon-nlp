@@ -12,6 +12,7 @@ from gluonnlp.models.transformer import TransformerModel,\
 from gluonnlp.data.batchify import Tuple, Pad, Stack
 from gluonnlp.data.filtering import MosesNormalizer
 from gluonnlp.data import tokenizers
+from gluonnlp.data.tokenizers import huggingface
 from gluonnlp.sequence_sampler import BeamSearchSampler, BeamSearchScorer
 import sacrebleu
 from tqdm import tqdm
@@ -114,15 +115,18 @@ def create_tokenizer(tokenizer_type, model_path, vocab_path):
     if tokenizer_type == 'spm':
         return tokenizers.create(tokenizer_type, model_path=model_path, vocab=vocab_path)
     elif tokenizer_type == 'subword_nmt':
-        return tokenizers.create(tokenizer_type, codec_path=model_path, vocab_path=vocab_path)
+        return tokenizers.create(tokenizer_type, model_path=model_path, vocab=vocab_path)
     elif tokenizer_type == 'yttm':
-        return tokenizers.create(tokenizer_type, model_path=model_path)
-    elif tokenizer_type == 'hf_bytebpe':
-        return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
-    elif tokenizer_type == 'hf_wordpiece':
-        return tokenizers.create(tokenizer_type, vocab_file=vocab_path)
-    elif tokenizer_type == 'hf_bpe':
-        return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
+        return tokenizers.create(tokenizer_type, model_path=model_path, vocab=vocab_path)
+    elif tokenizer_type in ['hf_bytebpe', 'hf_wordpiece', 'hf_bpe']:
+        if huggingface.is_new_version_model_file(model_path):
+            return tokenizers.create('hf_tokenizer', model_path=model_path, vocab=vocab_path)
+        elif tokenizer_type == 'hf_bytebpe':
+            return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
+        elif tokenizer_type == 'hf_wordpiece':
+            return tokenizers.create(tokenizer_type, vocab_file=vocab_path)
+        elif tokenizer_type == 'hf_bpe':
+            return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
     else:
         raise NotImplementedError
 
@@ -247,10 +251,17 @@ def evaluate(args):
             of.write('\n'.join(pred_sentences))
             of.write('\n')
 
-        sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences, ref_streams=[all_tgt_lines])
-        logging.info('Time Spent: {}, #Sent={}, SacreBlEU={} Avg NLL={}, Perplexity={}'
+        sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences, ref_streams=[all_tgt_lines])        
+        logging.info('Time Spent: {}, #Sent={}, SacreBlEU={} '
+                     '({:2.1f} {:2.1f} {:2.1f} {:2.1f}) '
+                     '(BP={:.3f}, ratio={:.3f}, syslen={}, reflen={}), '
+                     'Avg NLL={}, Perplexity={}'
                      .format(end_eval_time - start_eval_time, len(all_tgt_lines),
-                             sacrebleu_out.score, avg_nll_loss, np.exp(avg_nll_loss)))
+                             sacrebleu_out.score,
+                             *sacrebleu_out.precisions,
+                             sacrebleu_out.bp, sacrebleu_out.sys_len / sacrebleu_out.ref_len,
+                             sacrebleu_out.sys_len, sacrebleu_out.ref_len,
+                             avg_nll_loss, np.exp(avg_nll_loss)))
     # inference only
     else:
         with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
@@ -274,9 +285,9 @@ def evaluate(args):
         logging.info('Time Spent: {}, Inferred sentences: {}'
                      .format(end_eval_time - start_eval_time, processed_sentences))
 
+
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
-    os.environ['MXNET_USE_FUSION'] = '0'  # Manually disable pointwise fusion
     args = parse_args()
     np.random.seed(args.seed)
     mx.random.seed(args.seed)

@@ -50,12 +50,13 @@ from gluonnlp.data.sampler import (
     LinearWidthBucket,
     ExpWidthBucket,
     FixedBucketSampler,
-    BoundedBudgetSampler
+    BoundedBudgetSampler,
+    ShardedIterator
 )
 import gluonnlp.data.batchify as bf
 from gluonnlp.data import Vocab
 from gluonnlp.data import tokenizers
-from gluonnlp.data.tokenizers import BaseTokenizerWithVocab
+from gluonnlp.data.tokenizers import BaseTokenizerWithVocab, huggingface
 from gluonnlp.lr_scheduler import InverseSquareRootScheduler
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
 try:
@@ -122,7 +123,8 @@ def parse_args():
                              'You may select a yml file or use the prebuild configurations.')
     parser.add_argument('--label_smooth_alpha', type=float, default=0.1,
                         help='Weight of label smoothing')
-    parser.add_argument('--sampler', type=str, choices=['BoundedBudgetSampler', 'FixedBucketSampler'],
+    parser.add_argument('--sampler', type=str, choices=['BoundedBudgetSampler',
+                                                        'FixedBucketSampler'],
                         default='FixedBucketSampler', help='Type of sampler')
     parser.add_argument('--batch_size', type=int, default=2700,
                         help='Batch size. Number of tokens per gpu in a minibatch.')
@@ -179,6 +181,7 @@ def parse_args():
     logging.info(args)
     return args
 
+
 def validation(model, data_loader, ctx_l):
     """Validate the model on the dataset
 
@@ -231,14 +234,16 @@ def load_dataset_with_cache(src_corpus_path: str,
                             tgt_corpus_path: str,
                             src_tokenizer: BaseTokenizerWithVocab,
                             tgt_tokenizer: BaseTokenizerWithVocab,
-                            overwrite_cache: bool):
+                            overwrite_cache: bool,
+                            local_rank: int):
     # TODO online h5py multi processing encode (Tao)
     src_md5sum = md5sum(src_corpus_path)
     tgt_md5sum = md5sum(tgt_corpus_path)
     cache_filepath = os.path.join(CACHE_PATH,
                                   '{}_{}.cache.npz'.format(src_md5sum[:6], tgt_md5sum[:6]))
     if os.path.exists(cache_filepath) and not overwrite_cache:
-        logging.info('Load cache from {}'.format(cache_filepath))
+        if local_rank == 0:
+            logging.info('Load cache from {}'.format(cache_filepath))
         npz_data = np.load(cache_filepath, allow_pickle=True)
         src_data, tgt_data = npz_data['src_data'][:], npz_data['tgt_data'][:]
     else:
@@ -274,21 +279,24 @@ def create_tokenizer(tokenizer_type, model_path, vocab_path):
     elif tokenizer_type == 'spm':
         return tokenizers.create(tokenizer_type, model_path=model_path, vocab=vocab_path)
     elif tokenizer_type == 'subword_nmt':
-        return tokenizers.create(tokenizer_type, codec_path=model_path, vocab_path=vocab_path)
+        return tokenizers.create(tokenizer_type, model_path=model_path, vocab=vocab_path)
     elif tokenizer_type == 'yttm':
         return tokenizers.create(tokenizer_type, model_path=model_path)
-    elif tokenizer_type == 'hf_bytebpe':
-        return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
-    elif tokenizer_type == 'hf_wordpiece':
-        return tokenizers.create(tokenizer_type, vocab_file=vocab_path)
-    elif tokenizer_type == 'hf_bpe':
-        return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
+    elif tokenizer_type in ['hf_bytebpe', 'hf_wordpiece', 'hf_bpe']:
+        if huggingface.is_new_version_model_file(model_path):
+            return tokenizers.create('hf_tokenizer', model_path=model_path, vocab=vocab_path)
+        elif tokenizer_type == 'hf_bytebpe':
+            return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
+        elif tokenizer_type == 'hf_wordpiece':
+            return tokenizers.create(tokenizer_type, vocab_file=vocab_path)
+        elif tokenizer_type == 'hf_bpe':
+            return tokenizers.create(tokenizer_type, merges_file=model_path, vocab_file=vocab_path)
     else:
         raise NotImplementedError
 
 
 def train(args):
-    store, num_parts, rank, local_rank, is_master_node, ctx_l = init_comm(
+    _, num_parts, rank, local_rank, _, ctx_l = init_comm(
         args.comm_backend, args.gpus)
     src_tokenizer = create_tokenizer(args.src_tokenizer,
                                      args.src_subword_model_path,
@@ -302,12 +310,14 @@ def train(args):
                                                              args.train_tgt_corpus,
                                                              src_tokenizer,
                                                              tgt_tokenizer,
-                                                             args.overwrite_cache)
+                                                             args.overwrite_cache,
+                                                             local_rank)
     dev_src_data, dev_tgt_data = load_dataset_with_cache(args.dev_src_corpus,
                                                          args.dev_tgt_corpus,
                                                          src_tokenizer,
                                                          tgt_tokenizer,
-                                                         args.overwrite_cache)
+                                                         args.overwrite_cache,
+                                                         local_rank)
     data_train = gluon.data.SimpleDataset(
         [(src_tokens, tgt_tokens, len(src_tokens), len(tgt_tokens), i)
          for i, (src_tokens, tgt_tokens) in enumerate(zip(train_src_data, train_tgt_data))])
@@ -352,8 +362,8 @@ def train(args):
     lr_scheduler = InverseSquareRootScheduler(warmup_steps=args.warmup_steps, base_lr=base_lr,
                                               warmup_init_lr=args.warmup_init_lr)
     trainer_settings = (model.collect_params(), 'adam',
-                            {'learning_rate': args.lr, 'beta1': 0.9,
-                             'beta2': 0.98, 'epsilon': 1e-9, 'lr_scheduler': lr_scheduler})
+                        {'learning_rate': args.lr, 'beta1': 0.9,
+                         'beta2': 0.98, 'epsilon': 1e-9, 'lr_scheduler': lr_scheduler})
     if args.comm_backend == 'horovod':
         trainer = hvd.DistributedTrainer(*trainer_settings)
     else:
@@ -361,11 +371,12 @@ def train(args):
     # Load Data
     if args.sampler == 'BoundedBudgetSampler':
         train_batch_sampler = BoundedBudgetSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
-                                                     max_num_tokens=args.max_num_tokens,
-                                                     max_num_sentences=args.max_num_sentences,
-                                                     seed=args.seed,
-                                                     num_parts=num_parts,
-                                                     part_index=rank)
+                                                   max_num_tokens=args.max_num_tokens,
+                                                   max_num_sentences=args.max_num_sentences,
+                                                   seed=args.seed)
+        if num_parts > 1:
+            train_batch_sampler = ShardedIterator(train_batch_sampler, num_parts=num_parts,
+                                                  part_index=rank)
     elif args.sampler == 'FixedBucketSampler':
         if args.comm_backend == 'horovod':
             raise NotImplementedError('FixedBucketSampler does not support horovod at present')
@@ -390,8 +401,7 @@ def train(args):
     else:
         raise NotImplementedError
 
-    if local_rank == 0:
-        logging.info(train_batch_sampler)
+    logging.info(train_batch_sampler)
 
     batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
     train_data_loader = gluon.data.DataLoader(data_train,
@@ -483,8 +493,8 @@ def train(args):
                     log_avg_loss = (log_avg_loss / log_loss_denom).asnumpy()
                     logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, '
                                  'throughput={:.2f}K wps, wc={:.2f}K, LR={}'
-                                 .format(epoch_id, processed_batch_num * num_parts, len(train_data_loader),
-                                         log_avg_loss, np.exp(log_avg_loss),
+                                 .format(epoch_id, processed_batch_num * num_parts,
+                                         len(train_data_loader), log_avg_loss, np.exp(log_avg_loss),
                                          wps / 1000, log_wc / 1000, trainer.learning_rate))
                     log_start_time = time.time()
                     log_avg_loss = 0
@@ -492,18 +502,22 @@ def train(args):
                     log_wc = 0
                 if local_rank == 0 and \
                    (args.max_update > 0 and n_train_iters % args.save_interval_update == 0):
+                    n_update = n_train_iters // args.save_interval_update
                     model.save_parameters(os.path.join(args.save_dir,
-                                                       'update{:d}.params'.format(n_train_iters // args.save_interval_update)),
+                                                       'update{:d}.params'.format(n_update)),
                                           deduplicate=True)
+                    avg_valid_loss = validation(model, val_data_loader, ctx_l)
+                    logging.info('[Update {}] validation loss/ppl={:.4f}/{:.4f}'
+                                 .format(n_update, avg_valid_loss, np.exp(avg_valid_loss)))
                 if args.max_update > 0 and n_train_iters >= args.max_update:
                     break
-        if local_rank == 0 and args.epochs > 0:
+        if local_rank == 0:
             model.save_parameters(os.path.join(args.save_dir,
                                                'epoch{:d}.params'.format(epoch_id)),
                                   deduplicate=True)
-        avg_valid_loss = validation(model, val_data_loader, ctx_l)
-        logging.info('[Epoch {}] validation loss/ppl={:.4f}/{:.4f}'
-                     .format(epoch_id, avg_valid_loss, np.exp(avg_valid_loss)))
+            avg_valid_loss = validation(model, val_data_loader, ctx_l)
+            logging.info('[Epoch {}] validation loss/ppl={:.4f}/{:.4f}'
+                         .format(epoch_id, avg_valid_loss, np.exp(avg_valid_loss)))
 
         if args.max_update > 0 and n_train_iters >= args.max_update:
             break
@@ -517,7 +531,6 @@ def train(args):
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
-    os.environ['MXNET_USE_FUSION'] = '0'  # Manually disable pointwise fusion
     args = parse_args()
     np.random.seed(args.seed)
     mx.random.seed(args.seed)

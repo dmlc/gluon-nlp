@@ -9,7 +9,8 @@ from gluonnlp.layers import\
     BucketPositionalEmbedding, \
     AdaptiveEmbedding, \
     ProjectedAdaptiveLogSoftmaxWithLoss, \
-    get_activation
+    get_activation, \
+    get_norm_layer
 from gluonnlp.op import relative_position_bucket
 mx.npx.set_np()
 
@@ -247,3 +248,19 @@ def test_bucket_positional_embedding(units, num_buckets, bidirectional, max_dist
     out_of_bound_cnt = buckets[relative_positions > max_distance].sum()
     if out_of_bound_cnt.asnumpy() > 0:
         assert buckets[relative_positions > max_distance].std().asnumpy() == 0
+
+
+@pytest.mark.parametrize('normalization', ['layer_norm', 'no_norm', 'identity', 'batch_norm'])
+def test_get_norm_layer(normalization, ctx):
+    with ctx:
+        norm_layer = get_norm_layer(normalization=normalization,
+                                    in_channels=16)
+        net = mx.gluon.nn.HybridSequential()
+        net.add(mx.gluon.nn.Dense(16, in_units=16))
+        net.add(norm_layer)
+        net.add(mx.gluon.nn.Dense(16, in_units=16))
+        net.hybridize()
+        net.initialize()
+        data_in = mx.np.random.normal(0, 1, (8, 16))
+        out = net(data_in)
+        out_np = out.asnumpy()

@@ -1112,7 +1112,9 @@ class TransformerModel(HybridBlock):
                                           layout=layout)
         if tie_weights:
             self.tgt_final_layer = \
-                nn.Dense(tgt_vocab_size, flatten=False,
+                nn.Dense(units=tgt_vocab_size,
+                         flatten=False,
+                         in_units=self.dec_units,
                          bias_initializer=bias_initializer,
                          use_bias=False,
                          dtype=self._dtype)
@@ -1121,12 +1123,11 @@ class TransformerModel(HybridBlock):
             self.tgt_final_layer = \
                 nn.Dense(tgt_vocab_size,
                          flatten=False,
+                         in_units=self.dec_units,
                          weight_initializer=weight_initializer,
                          bias_initializer=bias_initializer,
                          use_bias=False,
                          dtype=self._dtype)
-        self.encoder.hybridize()
-        self.decoder.hybridize()
 
     @property
     def layout(self) -> str:

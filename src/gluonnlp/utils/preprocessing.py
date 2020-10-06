@@ -29,7 +29,7 @@ def get_trimmed_lengths(lengths: List[int],
     Returns
     -------
     trimmed_lengths
-        The trimmed lengths of the
+        The trimmed lengths of the sequences.
     """
     lengths = np.array(lengths)
     if do_merge:
@@ -96,6 +96,10 @@ def match_tokens_with_char_spans(token_offsets: np.ndarray,
         The token-level starts and ends. The end will also be used.
         Shape (#spans, 2)
     """
+    if not isinstance(token_offsets, np.ndarray):
+        token_offsets = np.array(token_offsets)
+    if not isinstance(spans, np.ndarray):
+        spans = np.array(spans)
     offsets_starts = token_offsets[:, 0]
     offsets_ends = token_offsets[:, 1]
     span_char_starts = spans[:, 0]

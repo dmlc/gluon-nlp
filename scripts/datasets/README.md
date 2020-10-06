@@ -9,11 +9,12 @@ reuse the scripts with your own data (as long as the structure/format matches).
 Thus, the typical workflow for running experiments:
 
 - Download and prepare data with scripts in [datasets](.).
-In case you will need to preprocess the dataset, there are toolkits in [preprocess](../preprocess).
+- In case you will need to preprocess the dataset, there are toolkits in [preprocess](../preprocess).
 - Run the experiments in [scripts](..)
 
 
 ## Available Datasets
+
 - [Machine Translation](./machine_translation)
     - [WMT](./machine_translation/README.md#wmt)
 - [Question Answering](./question_answering)
@@ -32,11 +33,12 @@ In case you will need to preprocess the dataset, there are toolkits in [preproce
     - [MAESTRO](./music_generation/README.md#maestro)
 - [Pretraining Corpus](./pretrain_corpus)
     - [Wikipedia](./pretrain_corpus/README.md#wikipedia)
-    - [BookCorpus](./pretrain_corpus/README.md#bookcorpus)
+    - [Gutenberg BookCorpus](./pretrain_corpus/README.md#gutenberg-bookcorpus)
     - [OpenWebText](./pretrain_corpus/README.md#openwebtext)
 - [General NLP Benchmarks](./general_nlp_benchmark)
     - [GLUE](./general_nlp_benchmark/README.md#glue-benchmark)
     - [SuperGLUE](./general_nlp_benchmark/README.md#superglue-benchmark)
+    - [Text Classification Benchmark](./general_nlp_benchmark/README.md#text-classification-benchmark)
 
 ## Contribution Guide
 
@@ -55,3 +57,13 @@ and include the new URLS + create the stats file that will store the hash keys. 
 ```bash
 python3 update_download_stats.py
 ```
+
+## Frequently Asked Questions
+- After installing GluonNLP, I cannot access the command line toolkits. It reports `nlp_data: command not found`.
+  
+  The reason is that you have installed glunonnlp to a folder that is not in `PATH`, e.g.,  
+  `~/.local/bin`. You can try to change the `PATH` variable to also include '~/.local/bin' via the following command:
+  
+  ```
+  export PATH=${PATH}:~/.local/bin
+  ```
