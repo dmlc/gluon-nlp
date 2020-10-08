@@ -107,36 +107,6 @@ RUN python3 -m pip install -U torch torchvision --user
 # Install Horovod
 RUN HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_GPU_BROADCAST=NCCL HOROVOD_WITHOUT_GLOO=1 \
     HOROVOD_WITH_MPI=1 HOROVOD_WITH_MXNET=1 HOROVOD_WITH_PYTORCH=1 \
-    HOROVOD_WITHOUT_TENSORFLOW=1 python3 -m pip install --no-cache-dir horovod==0.20.3 --user
+    HOROVOD_WITHOUT_TENSORFLOW=1 python3 -m pip install --no-cache-dir horovod --user
 # Debug horovod by default
 RUN echo NCCL_DEBUG=INFO >> /etc/nccl.conf
-
-RUN mkdir -p ${WORKDIR}/notebook
-RUN mkdir -p ${WORKDIR}/data
-RUN mkdir -p /.init
-RUN cd ${WORKDIR} \
-   && git clone https://github.com/dmlc/gluon-nlp \
-   && cd gluon-nlp \
-   && git checkout master \
-   && python3 -m pip install -U -e ."[extras]" --user
-
-COPY start_jupyter.sh /start_jupyter.sh
-COPY devel_entrypoint.sh /devel_entrypoint.sh
-COPY install /install
-RUN chmod +x /devel_entrypoint.sh
-
-EXPOSE 8888
-EXPOSE 8787
-EXPOSE 8786
-
-WORKDIR ${WORKDIR}
-
-# Install NodeJS + Tensorboard + TensorboardX
-RUN source /install/jupyter_lab_dev.sh
-
-# Add Tini
-ARG TINI_VERSION=v0.19.0
-ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
-RUN chmod +x /tini
-ENTRYPOINT [ "/tini", "--", "/devel_entrypoint.sh" ]
-CMD ["/bin/bash"]
