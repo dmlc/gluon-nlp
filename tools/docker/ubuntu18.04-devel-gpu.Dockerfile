@@ -108,6 +108,8 @@ RUN python3 -m pip install -U torch torchvision --user
 RUN HOROVOD_GPU_ALLREDUCE=NCCL HOROVOD_GPU_BROADCAST=NCCL HOROVOD_WITHOUT_GLOO=1 \
     HOROVOD_WITH_MPI=1 HOROVOD_WITH_MXNET=1 HOROVOD_WITH_PYTORCH=1 \
     HOROVOD_WITHOUT_TENSORFLOW=1 python3 -m pip install --no-cache-dir horovod --user
+# Debug horovod by default
+RUN echo NCCL_DEBUG=INFO >> /etc/nccl.conf
 
 RUN mkdir -p ${WORKDIR}/notebook
 RUN mkdir -p ${WORKDIR}/data
@@ -120,6 +122,7 @@ RUN cd ${WORKDIR} \
 
 COPY start_jupyter.sh /start_jupyter.sh
 COPY devel_entrypoint.sh /devel_entrypoint.sh
+COPY install /install
 RUN chmod +x /devel_entrypoint.sh
 
 EXPOSE 8888
@@ -128,31 +131,8 @@ EXPOSE 8786
 
 WORKDIR ${WORKDIR}
 
-# Debug horovod by default
-RUN echo NCCL_DEBUG=INFO >> /etc/nccl.conf
-
 # Install NodeJS + Tensorboard + TensorboardX
-RUN curl -sL https://deb.nodesource.com/setup_14.x | bash - \
-    && apt-get install -y nodejs
-
-RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-    libsndfile1-dev
-
-RUN pip3 install --no-cache --upgrade \
-    soundfile==0.10.2 \
-    ipywidgets==7.5.1 \
-    jupyter_tensorboard==0.2.0 \
-    widgetsnbextension==3.5.1 \
-    tensorboard==2.1.1 \
-    tensorboardX==2.1
-RUN jupyter labextension install jupyterlab_tensorboard \
-   && jupyter nbextension enable --py widgetsnbextension \
-   && jupyter labextension install @jupyter-widgets/jupyterlab-manager
-
-# Revise default shell to /bin/bash
-RUN jupyter notebook --generate-config \
-  && echo "c.NotebookApp.terminado_settings = { 'shell_command': ['/bin/bash'] }" >> /root/.jupyter/jupyter_notebook_config.py
+RUN source /install/jupyter_lab_dev.sh
 
 # Add Tini
 ARG TINI_VERSION=v0.19.0
