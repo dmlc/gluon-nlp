@@ -52,5 +52,25 @@ docker build -f ubuntu18.04-devel-cpu.Dockerfile -t gluonai/gluon-nlp:cpu-latest
 docker build -f ubuntu18.04-devel-gpu.Dockerfile -t gluonai/gluon-nlp:gpu-latest .
 ```
 
+In addition, to build the GPU docker, you will need to install the nvidia-docker2 and edit `/etc/docker/daemon.json` like the following:
+
+```
+{
+    "runtimes": {
+        "nvidia": {
+            "path": "nvidia-container-runtime",
+            "runtimeArgs": []
+        }
+    },
+    "default-runtime": "nvidia"
+}
+```
+
+After that, restart docker via `sudo systemctl restart docker.service`.
+
+For more details, you may refer to https://github.com/NVIDIA/nvidia-docker/issues/595. We need this additional setup
+because the horovod+mxnet integration identifies the library and include 
+path of MXNet by querying th MXNet runtime.
+
 ### Developers of GluonNLP
 You may try to login to your dockerhub account and push the image to dockerhub.
