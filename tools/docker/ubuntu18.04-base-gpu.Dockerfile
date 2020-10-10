@@ -34,3 +34,15 @@ RUN python3 -m pip install -U torch torchvision --user
 
 # Install Horovod
 RUN bash /install/install_horovod.sh
+
+RUN mkdir -p ${WORKDIR}/notebook
+RUN mkdir -p ${WORKDIR}/data
+RUN mkdir -p /.init
+RUN cd ${WORKDIR} \
+   && git clone https://github.com/dmlc/gluon-nlp \
+   && cd gluon-nlp \
+   && git checkout master \
+   && python3 -m pip install -U -e ."[extras]" --user
+
+WORKDIR ${WORKDIR}
+s
