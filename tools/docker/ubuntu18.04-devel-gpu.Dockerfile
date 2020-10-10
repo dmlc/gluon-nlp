@@ -17,14 +17,14 @@ ENV SHELL=/bin/bash
 
 RUN mkdir -p ${WORKDIR}
 
-RUN /install/install_ubuntu18.04_core.sh
+RUN bash /install/install_ubuntu18.04_core.sh
 
 # Install Open MPI
-RUN /install/install_openmpi.sh
+RUN bash /install/install_openmpi.sh
 ENV LD_LIBRARY_PATH=/usr/local/openmpi/lib:$LD_LIBRARY_PATH
 ENV PATH=/usr/local/openmpi/bin/:/usr/local/bin:/root/.local/bin:$PATH
 
-RUN /install/install_python_packages.sh
+RUN bash /install/install_python_packages.sh
 
 # Install MXNet
 RUN python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20200926" -f https://dist.mxnet.io/python --user
@@ -33,10 +33,10 @@ RUN python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20200926" -f https://dis
 RUN python3 -m pip install -U torch torchvision --user
 
 # Install Horovod
-RUN /install/install_horovod.sh
+RUN bash /install/install_horovod.sh
 
 # Install Jupyter Lab
-RUN /install/install_jupyter_lab.sh
+RUN bash /install/install_jupyter_lab.sh
 
 RUN mkdir -p ${WORKDIR}/notebook
 RUN mkdir -p ${WORKDIR}/data
