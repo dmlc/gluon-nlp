@@ -24,7 +24,7 @@ cd /usr
 git clone https://github.com/apache/incubator-tvm tvm --recursive
 cd /usr/tvm
 # checkout a hash-tag
-git checkout 4b13bf668edc7099b38d463e5db94ebc96c80470
+git checkout 6d0351a7f0e23eb5428c59a976edd2bfb8207c0d
 
 echo set\(USE_LLVM llvm-config-8\) >> config.cmake
 echo set\(USE_CUDA ON\) >> config.cmake
@@ -34,3 +34,8 @@ mkdir -p build
 cd build
 cmake ..
 make -j10
+
+# install python binding
+cd ..
+cd python
+python3 -m pip install -U -e . --user
