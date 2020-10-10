@@ -45,7 +45,6 @@ def get_parser():
     parser.add_argument('--save-path', type=str, default='squad')
     parser.add_argument('--cache-path', type=str, default=_BASE_DATASET_PATH,
                         help='The path to download the dataset.')
-    parser.add_argument('--overwrite', action='store_true')
     return parser
 
 
@@ -58,14 +57,16 @@ def main(args):
     download(dev_url, path=os.path.join(args.cache_path, dev_file_name))
     if not os.path.exists(args.save_path):
         os.makedirs(args.save_path)
-    if not os.path.exists(os.path.join(args.save_path, train_file_name))\
-            or (args.overwrite and args.save_path != args.cache_path):
+    if not os.path.exists(os.path.join(args.save_path, train_file_name)):
         os.symlink(os.path.join(args.cache_path, train_file_name),
                    os.path.join(args.save_path, train_file_name))
-    if not os.path.exists(os.path.join(args.save_path, dev_file_name))\
-            or (args.overwrite and args.save_path != args.cache_path):
+    else:
+        print(f'Found {os.path.join(args.save_path, train_file_name)}')
+    if not os.path.exists(os.path.join(args.save_path, dev_file_name)):
         os.symlink(os.path.join(args.cache_path, dev_file_name),
                    os.path.join(args.save_path, dev_file_name))
+    else:
+        print(f'Found {os.path.join(args.save_path, dev_file_name)}')
 
 
 def cli_main():
