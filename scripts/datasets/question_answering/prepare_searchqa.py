@@ -1,7 +1,7 @@
 import os
 import argparse
 from gluonnlp.utils.misc import download, load_checksum_stats
-from gluonnlp.base import get_data_home_dir
+from gluonnlp.base import get_data_home_dir, get_repo_url
 
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 _BASE_DATASET_PATH = os.path.join(get_data_home_dir(), 'searchqa')
@@ -20,9 +20,9 @@ _CITATIONS = """
 """
 
 _URLS = {
-    'train': 's3://gluonnlp-numpy-data/datasets/question_answering/searchqa/train.txt',
-    'val': 's3://gluonnlp-numpy-data/datasets/question_answering/searchqa/val.txt',
-    'test': 's3://gluonnlp-numpy-data/datasets/question_answering/searchqa/test.txt'
+    'train': get_repo_url() + 'datasets/question_answering/searchqa/train.txt',
+    'val': get_repo_url() + 'datasets/question_answering/searchqa/val.txt',
+    'test': get_repo_url() + 'datasets/question_answering/searchqa/test.txt'
 }
 
 

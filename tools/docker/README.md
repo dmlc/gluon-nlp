@@ -39,7 +39,7 @@ If you have a multi-GPU instance, e.g., [g4dn.12xlarge](https://aws.amazon.com/e
 of horovod + MXNet by running the question answering script
 
 ```
-docker run --gpus all --rm -it --shm-size=4g gluonai/gluon-nlp:gpu-latest \
+docker run --gpus all --rm -it --shm-size=4g gluonai/gluon-nlp:devel-gpu-latest \
     horovodrun -np 2 python3 -m pytest /workspace/horovod/horovod/test/test_mxnet.py
 ```
 
@@ -74,3 +74,6 @@ path of MXNet by querying th MXNet runtime.
 
 ### Developers of GluonNLP
 You may try to login to your dockerhub account and push the image to dockerhub.
+```
+docker push gluonai/gluon-nlp:devel-gpu-latest
+```
