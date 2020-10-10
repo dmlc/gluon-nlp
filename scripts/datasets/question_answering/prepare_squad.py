@@ -1,5 +1,6 @@
 import os
 import argparse
+import shutil
 from gluonnlp.utils.misc import download, load_checksum_stats
 from gluonnlp.base import get_data_home_dir
 
@@ -45,6 +46,7 @@ def get_parser():
     parser.add_argument('--save-path', type=str, default='squad')
     parser.add_argument('--cache-path', type=str, default=_BASE_DATASET_PATH,
                         help='The path to download the dataset.')
+    parser.add_argument('--overwrite', action='store_true')
     return parser
 
 
@@ -61,12 +63,25 @@ def main(args):
         os.symlink(os.path.join(args.cache_path, train_file_name),
                    os.path.join(args.save_path, train_file_name))
     else:
-        print(f'Found {os.path.join(args.save_path, train_file_name)}')
-    if not os.path.exists(os.path.join(args.save_path, dev_file_name)):
+        print(f'Found {os.path.join(args.save_path, train_file_name)}...')
+        if args.overwrite and args.save_path != args.cache_path:
+            print('Overwrite!')
+            shutil.copyfile(os.path.join(args.cache_path, train_file_name),
+                            os.path.join(args.save_path, train_file_name))
+        else:
+            print('Skip!')
+    if not os.path.exists(os.path.join(args.save_path, dev_file_name))\
+            or (args.overwrite and args.save_path != args.cache_path):
         os.symlink(os.path.join(args.cache_path, dev_file_name),
                    os.path.join(args.save_path, dev_file_name))
     else:
         print(f'Found {os.path.join(args.save_path, dev_file_name)}')
+        if args.overwrite and args.save_path != args.cache_path:
+            print('Overwrite!')
+            shutil.copyfile(os.path.join(args.cache_path, dev_file_name),
+                            os.path.join(args.save_path, dev_file_name))
+        else:
+            print('Skip!')
 
 
 def cli_main():
