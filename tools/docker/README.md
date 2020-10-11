@@ -42,7 +42,7 @@ of horovod + MXNet by running the question answering script
 cd gluon-nlp/scripts/question_answering
 
 docker run --gpus all --rm -it --shm-size=4g -v `pwd`:/workspace/data gluonai/gluon-nlp:gpu-latest \
-    bash /workspace/data/commands/run_squad2_albert_base.sh
+    cd /workspace/data && bash commands/run_squad2_albert_base.sh
 ```
 
 
