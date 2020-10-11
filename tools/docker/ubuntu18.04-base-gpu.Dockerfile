@@ -43,3 +43,4 @@ RUN cd ${WORKDIR} \
    && cd gluon-nlp \
    && git checkout master \
    && python3 -m pip install -U -e ."[extras]"
+CMD ["/bin/bash"]
