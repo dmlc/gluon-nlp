@@ -39,7 +39,7 @@ If you have a multi-GPU instance, e.g., [g4dn.12xlarge](https://aws.amazon.com/e
 of horovod + MXNet by running the question answering script
 
 ```
-docker run --gpus all --rm -it --shm-size=4g gluonai/gluon-nlp:devel-gpu-latest \
+docker run --gpus all --rm -it --shm-size=4g gluonai/gluon-nlp:gpu-latest \
     horovodrun -np 2 python3 -m pytest /workspace/horovod/horovod/test/test_mxnet.py
 ```
 
@@ -48,8 +48,8 @@ docker run --gpus all --rm -it --shm-size=4g gluonai/gluon-nlp:devel-gpu-latest 
 To build a docker image fom the dockerfile, you may use the following command:
 
 ```
-docker build -f ubuntu18.04-devel-cpu.Dockerfile -t gluonai/gluon-nlp:devel-cpu-latest .
-docker build -f ubuntu18.04-devel-gpu.Dockerfile -t gluonai/gluon-nlp:devel-gpu-latest .
+docker build -f ubuntu18.04-devel-cpu.Dockerfile -t gluonai/gluon-nlp:cpu-latest .
+docker build -f ubuntu18.04-devel-gpu.Dockerfile -t gluonai/gluon-nlp:gpu-latest .
 ```
 
 In addition, to build the GPU docker, you will need to install the nvidia-docker2 and edit `/etc/docker/daemon.json` like the following:
@@ -75,5 +75,5 @@ path of MXNet by querying th MXNet runtime.
 ### Developers of GluonNLP
 You may try to login to your dockerhub account and push the image to dockerhub.
 ```
-docker push gluonai/gluon-nlp:devel-gpu-latest
+docker push gluonai/gluon-nlp:gpu-latest
 ```
