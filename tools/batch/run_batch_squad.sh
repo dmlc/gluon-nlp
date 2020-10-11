@@ -1,4 +1,4 @@
-set -e
+set -exs
 
 USE_HOROVOD=${1:-0}
 VERSION=${2:-2.0}
