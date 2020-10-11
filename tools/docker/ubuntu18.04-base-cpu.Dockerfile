@@ -3,8 +3,6 @@ FROM ubuntu:18.04
 LABEL maintainer="GluonNLP Team"
 COPY install /install
 
-ARG DEBIAN_FRONTEND=noninteractive
-
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/lib" \

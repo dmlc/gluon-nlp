@@ -2,6 +2,8 @@ set -e
 set -u
 set -o pipefail
 
+export DEBIAN_FRONTEND=noninteractive
+
 apt-get update \
  && apt-get install -y --no-install-recommends \
     software-properties-common \
