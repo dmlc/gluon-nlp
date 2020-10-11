@@ -27,9 +27,6 @@ The folder structure of the docker image will be
 ```
 /workspace/
 ├── gluonnlp
-├── horovod
-├── mxnet
-├── notebooks
 ├── data
 ```
 

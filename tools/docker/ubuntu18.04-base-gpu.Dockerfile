@@ -38,7 +38,6 @@ RUN bash /install/install_horovod.sh
 # Install Jupyter Lab
 RUN bash /install/install_jupyter_lab.sh
 
-RUN mkdir -p ${WORKDIR}/notebook
 RUN mkdir -p ${WORKDIR}/data
 RUN mkdir -p /.init
 RUN cd ${WORKDIR} \
