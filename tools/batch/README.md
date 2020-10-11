@@ -13,11 +13,39 @@ python3 submit-job.py \
 --wait
 ```
 
+# Updating the Docker for AWS Batch.
+
+Our current batch job dockers are in 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1. To
+update the docker:
+- Update the Dockerfile
+- Make sure docker and docker-compose, as well as the docker python package are installed.
+- Export the AWS account credentials as environment variables
+- CD to the same folder as the Dockerfile and execute the following:
+
+```
+# this executes a command that logs into ECR.
+$(aws ecr get-login --no-include-email --region us-east-1)
+
+# builds the Dockerfile as gluon-nlp-1 docker.
+docker build -f ../docker/ubuntu18.04-ci-gpu.Dockerfile -t gluon-nlp-1:gpu .
+docker build -f ../docker/ubuntu18.04-ci-cpu.Dockerfile -t gluon-nlp-1:cpu .
+
+# tags the recent build as gluon-nlp-1:latest, which AWS batch pulls from.
+docker tag gluon-nlp-1:gpu 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:latest
+docker tag gluon-nlp-1:cpu 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:cpu-latest
+
+# pushes the change
+docker push 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:latest
+docker push 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:cpu-latest
+```
+
 ## Conversion Toolkits
-Following the instruction of [converting scripts](../../scripts/conversion_toolkits), several pre-trained models could be converted through the corresponding conversion tool as below command where `${MODEL_TYPE}` could be selected from `[albert, bert, electra, mobilebert, bart, robert, xmlr]`.
+Following the instruction of [converting scripts](../../scripts/conversion_toolkits), 
+several pre-trained models could be converted through the corresponding conversion tool as below command where `${MODEL_TYPE}` could be selected from `[albert, bert, electra, mobilebert, bart, robert, xmlr]`.
 ```bash
 bash run_batch_conversion ${MODEL_TYPE}
 ```
+
 ## Fine-tuning Downstream Tasks
 
 ### Question Answering
@@ -42,9 +70,3 @@ in which `${MODEL_NAME}` is the name of available pre-trained models listing as 
 | roberta_base       |
 | roberta_large      |
 | mobilebert         |
-
-### Machine Translation
-
-### Text Translation
-
-## Pre-trained Model Training

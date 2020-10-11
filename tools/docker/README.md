@@ -37,8 +37,12 @@ If you have a multi-GPU instance, e.g., [g4dn.12xlarge](https://aws.amazon.com/e
 of horovod + MXNet by running the question answering script
 
 ```
-docker run --gpus all --rm -it --shm-size=4g gluonai/gluon-nlp:gpu-latest \
-    horovodrun -np 2 python3 -m pytest /workspace/horovod/horovod/test/test_mxnet.py
+# Assume that you are currently in GluonNLP
+
+cd gluon-nlp/scripts/question_answering
+
+docker run --gpus all --rm -it --shm-size=4g -v `pwd`:/workspace/data gluonai/gluon-nlp:gpu-latest \
+    bash commands/run_squad2_albert_base.sh
 ```
 
 
