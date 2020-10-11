@@ -46,12 +46,14 @@ docker run --gpus all --rm -it --shm-size=4g gluonai/gluon-nlp:gpu-latest \
 To build a docker image fom the dockerfile, you may use the following command:
 
 ```
-# Build CPU Dockers
+# Build Base Dockers
 docker build -f ubuntu18.04-base-cpu.Dockerfile -t gluonai/gluon-nlp:cpu-base-latest .
+docker build -f ubuntu18.04-ci-cpu.Dockerfile -t gluonai/gluon-nlp:cpu-ci-latest .
 docker build -f ubuntu18.04-devel-cpu.Dockerfile -t gluonai/gluon-nlp:cpu-latest .
 
 # Build GPU Dockers
 docker build -f ubuntu18.04-base-gpu.Dockerfile -t gluonai/gluon-nlp:gpu-base-latest .
+docker build -f ubuntu18.04-ci-gpu.Dockerfile -t gluonai/gluon-nlp:gpu-ci-latest .
 docker build -f ubuntu18.04-devel-gpu.Dockerfile -t gluonai/gluon-nlp:gpu-latest .
 ```
 
@@ -79,7 +81,10 @@ path of MXNet by querying th MXNet runtime.
 You may try to login to your dockerhub account and push the image to dockerhub.
 ```
 docker push gluonai/gluon-nlp:cpu-base-latest
+docker push gluonai/gluon-nlp:cpu-ci-latest
 docker push gluonai/gluon-nlp:cpu-latest
+
 docker push gluonai/gluon-nlp:gpu-base-latest
+docker push gluonai/gluon-nlp:gpu-ci-latest
 docker push gluonai/gluon-nlp:gpu-latest
 ```
