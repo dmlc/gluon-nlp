@@ -49,13 +49,15 @@ bash run_batch_conversion ${MODEL_TYPE}
 ## Fine-tuning Downstream Tasks
 
 ### Question Answering
-We can quickly deploy an experiment via [squad fine-tuning scripts](../../scripts/question_answering#squad) as
+We can quickly run the squad finetuning via [squad fine-tuning scripts](../../scripts/question_answering#squad) and the AWS Batch job.
+
+The code is given in [run_batch_squad.sh](run_batch_squad.sh)
 
 ```bash
-bash run_batch_squad.sh ${MODEL_NAME}
+bash run_batch_squad.sh
 ```
 
-in which `${MODEL_NAME}` is the name of available pre-trained models listing as following:
+Internally, it will train the following models on SQuAD 2.0 dataset:
 |    MODEL_NAME      |
 |:------------------:|
 | uncased_bert_base  |
