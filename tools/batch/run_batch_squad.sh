@@ -16,11 +16,11 @@ for MODEL_NAME in albert_base \
 do
   python3 submit-job.py \
       --region us-east-1 \
-      --source-ref master \
+      --source-ref fix_docker \
       --job-type g4dn.12x \
       --save-path temp \
       --name test_squad2_${MODEL_NAME} \
       --work-dir scripts/question_answering \
-      --remote https://github.com/dmlc/gluon-nlp/ \
+      --remote https://github.com/sxjscience/gluon-nlp/ \
       --command 'bash commands/run_squad2_'${MODEL_NAME}'.sh ${USE_HOROVOD} ${VERSION} | tee stdout.log' >> ${LOG_PATH}
 done

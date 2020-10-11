@@ -54,8 +54,14 @@ We can quickly run the squad finetuning via [squad fine-tuning scripts](../../sc
 The code is given in [run_batch_squad.sh](run_batch_squad.sh)
 
 ```bash
+# AWS Batch training without horovod on SQuAD 2.0
 bash run_batch_squad.sh
+
+# AWS Batch training with horovod on SQuAD 2.0
+bash run_batch_squad.sh 1 2.0 submit_squad_v2_horovod.log
 ```
+
+
 
 Internally, it will train the following models on SQuAD 2.0 dataset:
 |    MODEL_NAME      |
