@@ -17,7 +17,13 @@ ENV SHELL=/bin/bash
 
 RUN mkdir -p ${WORKDIR}
 
+
 RUN bash /install/install_ubuntu18.04_core.sh
+
+# Install Open MPI
+RUN bash /install/install_openmpi.sh
+ENV LD_LIBRARY_PATH=/usr/local/openmpi/lib:$LD_LIBRARY_PATH
+ENV PATH=/usr/local/openmpi/bin/:/usr/local/bin:/root/.local/bin:$PATH
 
 RUN bash /install/install_python_packages.sh
 
