@@ -20,6 +20,7 @@ apt-get update \
     vim \
     wget \
     unzip \
+    less \
     libopenblas-dev \
     ninja-build \
     openssh-client \
