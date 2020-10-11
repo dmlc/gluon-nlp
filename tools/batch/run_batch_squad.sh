@@ -1,3 +1,5 @@
+set -e
+
 USE_HOROVOD=${1:-0}
 VERSION=${2:-2.0}
 LOG_PATH=${3:-submit_squad_v2.log}
@@ -22,5 +24,5 @@ do
       --name test_squad2_${MODEL_NAME} \
       --work-dir scripts/question_answering \
       --remote https://github.com/sxjscience/gluon-nlp/ \
-      --command 'bash commands/run_squad2_'${MODEL_NAME}'.sh ${USE_HOROVOD} ${VERSION} | tee stdout.log' >> ${LOG_PATH}
+      --command "bash commands/run_squad2_${MODEL_NAME}.sh ${USE_HOROVOD} ${VERSION} | tee stdout.log" >> ${LOG_PATH}
 done
