@@ -136,5 +136,5 @@ if __name__ == '__main__':
                          electra_base_cfg, electra_large_cfg, electra_small_cfg, mobilebert_cfg,
                          roberta_large_cfg, uncased_bert_base_cfg, uncased_bert_large_cfg]:
             prefix = cfg_func.__name__[:-len('_cfg')]
-            gen_command(cfg_func(), 'run_squad.template.sh',
+            gen_command(cfg_func(), 'run_squad.template',
                         f'run_squad2_{prefix}.sh')
