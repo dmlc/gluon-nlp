@@ -16,14 +16,12 @@ LAYERWISE_DECAY={{ layerwise_decay }}
 # Prepare the Data
 nlp_data prepare_squad --version ${VERSION}
 
-RUN_SQUAD_PATH=$(dirname "$0")/../run_squad.py
-
 # Run the script
 if [ ${USE_HOROVOD} -eq 0 ];
 then
-  RUN_COMMAND="python3 ${RUN_SQUAD_PATH} --gpus 0,1,2,3"
+  RUN_COMMAND="python3 run_squad.py --gpus 0,1,2,3"
 else
-  RUN_COMMAND="horovodrun -np 4 -H localhost:4 python3 ${RUN_SQUAD_PATH} --comm_backend horovod"
+  RUN_COMMAND="horovodrun -np 4 -H localhost:4 python3 run_squad.py --comm_backend horovod"
 fi
 ${RUN_COMMAND} \
     --model_name ${MODEL_NAME} \
