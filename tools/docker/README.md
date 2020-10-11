@@ -6,7 +6,7 @@ and try out to use GluonNLP to solve your problem.
 
 | Name | Description | Target User |
 |------|-------------|-------------|
-| `base` | Extends the CUDA image to include the basic functionalities, e.g., GluonNLP package, MXNet, PyTorch, Horovod. You can directly use the docker to run distributed training jobs. | Users that are willing to use GluonNLP to train models. |  
+| `base` | Extends the CUDA image to include the basic functionalities, e.g., GluonNLP package, MXNet, PyTorch, Horovod. You can directly use the docker to run distributed training jobs. | Users that are willing to use GluonNLP to train models. For example, you can use the docker image for distributed training. |  
 | `devel` | Extends the base image to include a development platform powered by Jupyter Lab. Some useful functionalities like Tensorboard are pre-installed. | Users that are willing to analyze NLP data and build models with GluonNLP. |
 
 
