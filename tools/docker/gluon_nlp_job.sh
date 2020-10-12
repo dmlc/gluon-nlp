@@ -1,4 +1,11 @@
 #!/bin/bash
+set -x
+
+# Due to the issue in https://forums.aws.amazon.com/thread.jspa?messageID=953912
+# We need to manually configure the shm to ensure that Horovod is runnable.
+umount shm
+mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime,size=2G shm /dev/shm
+
 date
 echo "Args: $@"
 env
