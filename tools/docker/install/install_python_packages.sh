@@ -18,4 +18,4 @@ pip3 install --no-cache --upgrade \
     mpi4py==3.0.2 \
     jupyterlab==2.2.4 \
     cmake \
-    awscli
+    awscli --user
