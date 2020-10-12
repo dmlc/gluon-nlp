@@ -23,7 +23,14 @@ RUN bash /install/install_openmpi.sh
 ENV LD_LIBRARY_PATH=/usr/local/openmpi/lib:$LD_LIBRARY_PATH
 ENV PATH=/usr/local/openmpi/bin/:/usr/local/bin:/root/.local/bin:$PATH
 
+# Install LLVM
+RUN bash /install/install_llvm.sh
+
+# Install Python Packages
 RUN bash /install/install_python_packages.sh
+
+# Install TVM
+RUN bash /install/install_tvm_gpu.sh
 
 # Install MXNet
 RUN python3 -m pip install -U --pre "mxnet>=2.0.0b20200926" -f https://dist.mxnet.io/python

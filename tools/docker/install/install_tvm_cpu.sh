@@ -20,9 +20,9 @@ set -e
 set -u
 set -o pipefail
 
-cd /usr
+cd ${WORKDIR}
 git clone https://github.com/apache/incubator-tvm tvm --recursive
-cd /usr/tvm
+cd ${WORKDIR}/tvm
 # checkout a hash-tag
 git checkout 6d0351a7f0e23eb5428c59a976edd2bfb8207c0d
 
