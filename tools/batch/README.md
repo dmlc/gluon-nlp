@@ -26,12 +26,10 @@ update the docker:
 # this executes a command that logs into ECR.
 $(aws ecr get-login --no-include-email --region us-east-1)
 
-# builds the Dockerfile as gluon-nlp-1 docker.
-docker build -f ../docker/ubuntu18.04-ci-gpu.Dockerfile -t gluon-nlp-1:gpu .
-docker build -f ../docker/ubuntu18.04-ci-cpu.Dockerfile -t gluon-nlp-1:cpu .
+# builds the docker image use the command in docker
 
 # tags the recent build as gluon-nlp-1:latest, which AWS batch pulls from.
-docker tag gluon-nlp-1:gpu 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:latest
+docker tag gluon-nlp:gpu-ci-latest 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:latest
 docker tag gluon-nlp-1:cpu 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:cpu-latest
 
 # pushes the change
