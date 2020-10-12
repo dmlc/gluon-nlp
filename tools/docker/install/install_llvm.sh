@@ -41,5 +41,5 @@ echo deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic main\
 echo deb-src http://apt.llvm.org/bionic/ llvm-toolchain-bionic main\
      >> /etc/apt/sources.list.d/llvm.list
 
-wget -q -O - http://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+wget -q -O - http://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 apt-get update && apt-get install -y llvm-9 llvm-10 llvm-11 clang-9 clang-10 clang-11
