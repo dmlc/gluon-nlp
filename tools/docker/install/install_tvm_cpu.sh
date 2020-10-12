@@ -26,7 +26,7 @@ cd ${WORKDIR}/tvm
 # checkout a hash-tag
 git checkout 6d0351a7f0e23eb5428c59a976edd2bfb8207c0d
 
-echo set\(USE_LLVM llvm-config-8\) >> config.cmake
+echo set\(USE_LLVM llvm-config-10\) >> config.cmake
 echo set\(USE_GRAPH_RUNTIME ON\) >> config.cmake
 echo set\(USE_BLAS openblas\) >> config.cmake
 mkdir -p build
