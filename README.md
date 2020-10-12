@@ -92,8 +92,13 @@ You may go to [tests](tests) to see how to run the unittests.
 You can use Docker to launch a JupyterLab development environment with GluonNLP installed.
 
 ```
+# GPU Instance
 docker pull gluonai/gluon-nlp:gpu-latest
 docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=4g gluonai/gluon-nlp:gpu-latest
+
+# CPU Instance
+docker pull gluonai/gluon-nlp:cpu-latest
+docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=4g gluonai/gluon-nlp:cpu-latest
 ``` 
 
 For more details, you can refer to the guidance in [tools/docker](tools/docker).
