@@ -22,6 +22,7 @@ apt-get update \
     unzip \
     less \
     libopenblas-dev \
+    gpg-agent \
     ninja-build \
     openssh-client \
     openssh-server \
