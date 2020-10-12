@@ -73,6 +73,5 @@ Internally, it will train the following models on SQuAD 2.0 dataset:
 | electra_small      |
 | electra_base       |
 | electra_large      |
-| roberta_base       |
 | roberta_large      |
 | mobilebert         |
