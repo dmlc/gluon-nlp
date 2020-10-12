@@ -33,10 +33,10 @@ RUN bash /install/install_python_packages.sh
 RUN bash /install/install_tvm_gpu.sh
 
 # Install MXNet
-RUN python3 -m pip install -U --pre "mxnet>=2.0.0b20200926" -f https://dist.mxnet.io/python
+RUN python3 -m pip install -U --pre "mxnet>=2.0.0b20200926" -f https://dist.mxnet.io/python --user
 
 # Install PyTorch
-RUN python3 -m pip install -U torch torchvision
+RUN python3 -m pip install -U torch torchvision --user
 
 # Install Jupyter Lab
 RUN bash /install/install_jupyter_lab.sh

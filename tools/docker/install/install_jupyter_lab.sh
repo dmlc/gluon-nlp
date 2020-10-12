@@ -13,7 +13,7 @@ pip3 install --no-cache --upgrade \
     jupyter_tensorboard==0.2.0 \
     widgetsnbextension==3.5.1 \
     tensorboard==2.1.1 \
-    tensorboardX==2.1
+    tensorboardX==2.1 --user
 jupyter labextension install jupyterlab_tensorboard \
    && jupyter nbextension enable --py widgetsnbextension \
    && jupyter labextension install @jupyter-widgets/jupyterlab-manager
