@@ -15,8 +15,13 @@ and try out to use GluonNLP to solve your problem.
 You can run the docker with the following command.
 
 ```
+# On GPU machine
 docker pull gluonai/gluon-nlp:gpu-latest
 docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=2g gluonai/gluon-nlp:gpu-latest
+
+# On CPU machine
+docker pull gluonai/gluon-nlp:cpu-latest
+docker run --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=2g gluonai/gluon-nlp:cpu-latest
 ```
 
 Here, we open the ports 8888, 8787, 8786, which are used for connecting to JupyterLab. 
@@ -41,7 +46,7 @@ of horovod + MXNet by running the question answering script
 
 cd gluon-nlp/scripts/question_answering
 
-docker run --gpus all --rm -it --shm-size=4g -v `pwd`:/workspace/data gluonai/gluon-nlp:gpu-latest \
+docker run --gpus all --rm -it --shm-size=2g -v `pwd`:/workspace/data gluonai/gluon-nlp:gpu-latest \
     bash -c 'cd /workspace/data && bash commands/run_squad2_albert_base.sh 1 2.0'
 ```
 
