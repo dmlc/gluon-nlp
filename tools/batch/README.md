@@ -29,12 +29,12 @@ $(aws ecr get-login --no-include-email --region us-east-1)
 # builds the docker image use the command in docker
 
 # tags the recent build as gluon-nlp-1:latest, which AWS batch pulls from.
-docker tag gluonai/gluon-nlp:gpu-ci-latest 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:latest
-docker tag gluonai/gluon-nlp:cpu-ci-latest 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:cpu-latest
+docker tag gluonai/gluon-nlp:gpu-ci-latest 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:gpu-ci-latest
+docker tag gluonai/gluon-nlp:cpu-ci-latest 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:cpu-ci-latest
 
 # pushes the change
-docker push 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:latest
-docker push 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:cpu-latest
+docker push 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:gpu-ci-latest
+docker push 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:cpu-ci-latest
 ```
 
 ## Conversion Toolkits
