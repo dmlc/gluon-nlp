@@ -1,10 +1,9 @@
 set -euo pipefail
 
+pip3 install --no-cache --upgrade wheel
 
-# install PyYAML==5.1.2 to avoid conflict with latest awscli
 # python-dateutil==2.8.0 to satisfy botocore associated with latest awscli
 pip3 install --no-cache --upgrade \
-    wheel \
     numpy==1.19.1 \
     pandas==0.25.1 \
     pytest \
