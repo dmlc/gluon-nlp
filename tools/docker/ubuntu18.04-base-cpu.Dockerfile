@@ -30,7 +30,7 @@ RUN bash /install/install_llvm.sh
 RUN bash /install/install_python_packages.sh
 
 # Install TVM
-RUN bash /install/install_tvm_gpu.sh
+RUN bash /install/install_tvm_cpu.sh
 
 # Install MXNet
 RUN python3 -m pip install -U --pre "mxnet>=2.0.0b20200926" -f https://dist.mxnet.io/python --user
