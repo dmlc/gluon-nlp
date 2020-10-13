@@ -1,13 +1,5 @@
 # Question Answering
 
-| Datasets  | #Train | #Valid | #Test | Leaderboard | Answerable | Long Context |
-|-----------|--------|--------|-------|-------------|------------|--------------|
-| SQuAD 2.0 | 
-| SQuAD 1.1 |
-| SearchQA  |
-| TriviaQA  |
-| HotpotQA  |
-
 
 ## SQuAD
 SQuAD datasets is distributed under the [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/legalcode) license.
