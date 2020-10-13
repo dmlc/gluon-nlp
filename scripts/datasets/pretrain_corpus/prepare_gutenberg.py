@@ -63,8 +63,7 @@ def main(args):
         for name in f.namelist():
             if name.endswith('.txt'):
                 filename = os.path.basename(name)
-                print(name, filename)
-            f.extract(name, os.path.join(save_dir, filename))
+                f.extract(name, os.path.join(save_dir, filename.replace(' ', '_')))
 
 
 def cli_main():
