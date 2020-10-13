@@ -18,7 +18,7 @@ Thus, we utilize the [Project Gutenberg](https://www.gutenberg.org/) as an alter
 You can use the following command to download and prepare the Gutenberg corpus.
 
 ```bash
-python3 prepare_gutenberg.py --save_dir .
+python3 prepare_gutenberg.py --save_dir gutenberg
 ```
 
 Also, you should follow the [license](https://www.gutenberg.org/wiki/Gutenberg:The_Project_Gutenberg_License) for using the data.
