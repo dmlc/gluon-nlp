@@ -84,7 +84,7 @@ After that, restart docker via `sudo systemctl restart docker.service`.
 
 For more details, you may refer to https://github.com/NVIDIA/nvidia-docker/issues/595. We need this additional setup
 because the horovod+mxnet integration identifies the library and include 
-path of MXNet by querying th MXNet runtime.
+path of MXNet by querying the MXNet runtime.
 
 ### Developers of GluonNLP
 You may try to login to your dockerhub account and push the image to dockerhub.
