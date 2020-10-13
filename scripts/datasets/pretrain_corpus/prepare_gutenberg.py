@@ -3,7 +3,7 @@ import argparse
 import zipfile
 from gluonnlp.base import get_data_home_dir
 from gluonnlp.utils.misc import download, load_checksum_stats
-
+import shutil
 
 _CITATIONS = r"""
 @InProceedings{lahiri:2014:SRW,
@@ -63,7 +63,9 @@ def main(args):
         for name in f.namelist():
             if name.endswith('.txt'):
                 filename = os.path.basename(name)
-                f.extract(name, os.path.join(save_dir, filename.replace(' ', '_')))
+                with f.open(name) as in_file:
+                    with open(os.path.join(save_dir, filename.replace(' ', '_')), 'wb') as out_file:
+                        shutil.copyfileobj(in_file, out_file)
 
 
 def cli_main():
