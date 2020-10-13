@@ -33,6 +33,7 @@ The folder structure of the docker image will be
 ```
 /workspace/
 ├── gluonnlp
+├── tvm
 ├── data
 ```
 
