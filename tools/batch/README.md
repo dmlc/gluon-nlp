@@ -15,27 +15,7 @@ python3 submit-job.py \
 
 # Updating the Docker for AWS Batch.
 
-Our current batch job dockers are in 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1. To
-update the docker:
-- Update the Dockerfile
-- Make sure docker and docker-compose, as well as the docker python package are installed.
-- Export the AWS account credentials as environment variables
-- CD to the same folder as the Dockerfile and execute the following:
-
-```
-# this executes a command that logs into ECR.
-$(aws ecr get-login --no-include-email --region us-east-1)
-
-# builds the docker image use the command in docker
-
-# tags the recent build as gluon-nlp-1:latest, which AWS batch pulls from.
-docker tag gluonai/gluon-nlp:gpu-ci-latest 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:gpu-ci-latest
-docker tag gluonai/gluon-nlp:cpu-ci-latest 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:cpu-ci-latest
-
-# pushes the change
-docker push 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:gpu-ci-latest
-docker push 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:cpu-ci-latest
-```
+You may refer to the instruction in [Docker](../docker) for more information. 
 
 ## Conversion Toolkits
 Following the instruction of [converting scripts](../../scripts/conversion_toolkits), 
@@ -58,8 +38,6 @@ bash run_batch_squad.sh
 # AWS Batch training with horovod on SQuAD 2.0
 bash run_batch_squad.sh 1 2.0 submit_squad_v2_horovod.log
 ```
-
-
 
 Internally, it will train the following models on SQuAD 2.0 dataset:
 |    MODEL_NAME      |
