@@ -10,39 +10,39 @@ from botocore.compat import total_seconds
 
 instance_type_info = {
     'g4dn.4x': {
-        'job_definition': 'gluon-nlp-g4dn_4xlarge:3',
+        'job_definition': 'gluon-nlp-g4dn_4xlarge:4',
         'job_queue': 'g4dn'
     },
     'g4dn.8x': {
-        'job_definition': 'gluon-nlp-g4dn_8xlarge:3',
+        'job_definition': 'gluon-nlp-g4dn_8xlarge:4',
         'job_queue': 'g4dn'
     },
     'g4dn.12x': {
-        'job_definition': 'gluon-nlp-g4dn_12xlarge:3',
+        'job_definition': 'gluon-nlp-g4dn_12xlarge:4',
         'job_queue': 'g4dn-multi-gpu'
     },
     'p3.2x': {
-        'job_definition': 'gluon-nlp-p3_2xlarge:3',
+        'job_definition': 'gluon-nlp-p3_2xlarge:4',
         'job_queue': 'p3'
     },
     'p3.8x': {
-        'job_definition': 'gluon-nlp-p3_8xlarge:3',
+        'job_definition': 'gluon-nlp-p3_8xlarge:4',
         'job_queue': 'p3-4gpu'
     },
     'p3.16x': {
-        'job_definition': 'gluon-nlp-p3_16xlarge:3',
+        'job_definition': 'gluon-nlp-p3_16xlarge:4',
         'job_queue': 'p3-8gpu'
     },
     'p3dn.24x': {
-        'job_definition': 'gluon-nlp-p3_24xlarge:3',
+        'job_definition': 'gluon-nlp-p3_24xlarge:4',
         'job_queue': 'p3dn-8gpu'
     },
     'c5n.4x': {
-        'job_definition': 'gluon-nlp-c5_4xlarge:1',
+        'job_definition': 'gluon-nlp-c5_4xlarge:2',
         'job_queue': 'c5n'
     },
     'c5n.18x': {
-        'job_definition': 'gluon-nlp-c5_18xlarge:1',
+        'job_definition': 'gluon-nlp-c5_18xlarge:2',
         'job_queue': 'c5n'
     }
 }
