@@ -61,14 +61,14 @@ def main(args):
         os.makedirs(args.save_path)
     if not os.path.exists(os.path.join(args.save_path, train_file_name)) \
             or (args.overwrite and args.save_path != args.cache_path):
-        shutil.copyfile(os.path.join(args.cache_path, train_file_name),
-                        os.path.join(args.save_path, train_file_name))
+        os.link(os.path.join(args.cache_path, train_file_name),
+                os.path.join(args.save_path, train_file_name))
     else:
         print(f'Found {os.path.join(args.save_path, train_file_name)}...skip')
     if not os.path.exists(os.path.join(args.save_path, dev_file_name)) \
             or (args.overwrite and args.save_path != args.cache_path):
-        shutil.copyfile(os.path.join(args.cache_path, dev_file_name),
-                        os.path.join(args.save_path, dev_file_name))
+        os.link(os.path.join(args.cache_path, dev_file_name),
+                os.path.join(args.save_path, dev_file_name))
     else:
         print(f'Found {os.path.join(args.save_path, dev_file_name)}...skip')
 
