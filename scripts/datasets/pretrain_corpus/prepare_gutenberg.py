@@ -59,6 +59,7 @@ def main(args):
     save_dir = args.dataset if args.save_dir is None else args.save_dir
     if not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
+    print(f'Save to {save_dir}')
     with zipfile.ZipFile(target_download_location) as f:
         for name in f.namelist():
             if name.endswith('.txt'):
