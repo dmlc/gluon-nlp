@@ -321,17 +321,29 @@ def export(prefix):
         arg_array['data2'] = mx.nd.ones((test_batch_size, ), dtype='float32')
         custom_sym = sym.optimize_for('custom_pass', arg_array, aux_params)
 
-        nheads = 12
-        if args.bert_model == 'bert_24_1024_16':
-            nheads = 24
-        for i in range(nheads):
-            basename = 'bertencoder0_transformer' + str(i) + '_dotproductselfattentioncell0'
-            arg_array.pop(basename + '_query_weight')
-            arg_array.pop(basename + '_key_weight')
-            arg_array.pop(basename + '_value_weight')
-            arg_array.pop(basename + '_query_bias')
-            arg_array.pop(basename + '_key_bias')
-            arg_array.pop(basename + '_value_bias')
+        is_mxnet_1_7 = (mx.__version__ == '1.7.0')
+        '''if not is_mxnet_1_7:
+          shape_dict = {'data0': (test_batch_size, seq_length),
+                        'data1': (test_batch_size, seq_length),
+                        'data2': (test_batch_size, )}
+          type_dict = {'data0': 'float32',
+                       'data1': 'float32',
+                       'data2': 'float32'}
+          custom_sym = sym.optimize_for('custom_pass', arg_params,
+                                        aux_params, shape_dict=shape_dict,
+                                        type_dict=type_dict)'''
+        if is_mxnet_1_7:
+            nheads = 12
+            if args.bert_model == 'bert_24_1024_16':
+                nheads = 24
+            for i in range(nheads):
+                basename = 'bertencoder0_transformer' + str(i) + '_dotproductselfattentioncell0'
+                arg_array.pop(basename + '_query_weight')
+                arg_array.pop(basename + '_key_weight')
+                arg_array.pop(basename + '_value_weight')
+                arg_array.pop(basename + '_query_bias')
+                arg_array.pop(basename + '_key_bias')
+                arg_array.pop(basename + '_value_bias')
         arg_array.pop('data0')
         arg_array.pop('data1')
         arg_array.pop('data2')
