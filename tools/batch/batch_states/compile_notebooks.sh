@@ -21,15 +21,15 @@ compile_notebook () {
     python3 tools/batch/submit-job.py --region us-east-1 \
             --wait \
             --timeout 3600 \
-            --saved-output ./examples \
+            --saved-output docs/examples \
             --name GluonNLP-Docs-${refs}-${prnumber}-${runnumber} \
             --save-path ${runnumber}/gluon-nlp/docs/examples \
-            --work-dir docs \
+            --work-dir . \
             --source-ref ${refs} \
             --remote https://github.com/${remote} \
             --command "python3 -m pip install --quiet nbformat notedown jupyter_client ipykernel && \
                        python3 -m nltk.downloader perluniprops nonbreaking_prefixes punkt && \
-                       python3 md2ipynb.py ${MDFILE}" 2>&1 | tee $LOGNAME >/dev/null
+                       python3 docs/md2ipynb.py ${MDFILE}" 2>&1 | tee $LOGNAME >/dev/null
 
     BATCH_EXIT_CODE=$?
 
