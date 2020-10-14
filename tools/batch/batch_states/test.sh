@@ -4,6 +4,6 @@ set -ex
 
 echo $PWD
 DIRNAME=$(dirname $0)
-REPODIR=$DIRNAME/../../..
+REPODIR=$DIRNAME/../../../
 
 python3 -m pytest --cov=$REPODIR --cov-config=$REPODIR/.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow $REPODIR/tests/
