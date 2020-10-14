@@ -6,9 +6,8 @@ and try out to use GluonNLP to solve your problem.
 
 | Name | Description | Target User |
 |------|-------------|-------------|
-| `cpu-base-latest` or `gpu-base-latest` | Extends the CUDA image to include the basic functionalities, e.g., GluonNLP package, MXNet, PyTorch, Horovod. You can directly configure other docker images based on this basic docker | The basic docker  |
-| `cpu-ci-latest` or `gpu-ci-latest`   | Image used in GluonNLP CI | GluonNLP Developers |  
-| `cpu-latest` or `gpu-latest` | Extends the base image to include a development platform powered by Jupyter Lab. Some useful functionalities like Tensorboard are pre-installed. | Users that are willing to solve NLP problems and also do distributed training with Horovod + GluonNLP. |
+| `cpu-ci-latest` or `gpu-ci-latest`   | Extends the CUDA image to include the basic functionalities, e.g., GluonNLP package, MXNet, PyTorch, Horovod. This is the image used in GluonNLP CI | GluonNLP Developers |  
+| `cpu-latest` or `gpu-latest` | It has more functionality than the CI image, including the a development platform powered by Jupyter Lab. Some useful functionalities like Tensorboard are pre-installed. | Users that are willing to solve NLP problems and also do distributed training with Horovod + GluonNLP. |
 
 
 ## Run Docker
@@ -57,14 +56,12 @@ To build a docker image from the dockerfile, you may use the following command:
 
 ```
 # Build Base Dockers
-docker build -f ubuntu18.04-base-cpu.Dockerfile -t gluonai/gluon-nlp:cpu-base-latest .
-docker build -f ubuntu18.04-ci-cpu.Dockerfile -t gluonai/gluon-nlp:cpu-ci-latest .
-docker build -f ubuntu18.04-devel-cpu.Dockerfile -t gluonai/gluon-nlp:cpu-latest .
+docker build -f ubuntu18.04-cpu.Dockerfile --target ci -t gluonai/gluon-nlp:cpu-ci-latest .
+docker build -f ubuntu18.04-cpu.Dockerfile --target devel -t gluonai/gluon-nlp:cpu-latest .
 
 # Build GPU Dockers
-docker build -f ubuntu18.04-base-gpu.Dockerfile -t gluonai/gluon-nlp:gpu-base-latest .
-docker build -f ubuntu18.04-ci-gpu.Dockerfile -t gluonai/gluon-nlp:gpu-ci-latest .
-docker build -f ubuntu18.04-devel-gpu.Dockerfile -t gluonai/gluon-nlp:gpu-latest .
+docker build -f ubuntu18.04-gpu.Dockerfile --target ci -t gluonai/gluon-nlp:gpu-ci-latest .
+docker build -f ubuntu18.04-gpu.Dockerfile --target devel -t gluonai/gluon-nlp:gpu-latest .
 ```
 
 In addition, to build the GPU docker, you will need to install the nvidia-docker2 and edit `/etc/docker/daemon.json` like the following:
@@ -90,11 +87,9 @@ path of MXNet by querying the MXNet runtime.
 ### Developers of GluonNLP
 You may try to login to your dockerhub account and push the image to dockerhub.
 ```
-docker push gluonai/gluon-nlp:cpu-base-latest
 docker push gluonai/gluon-nlp:cpu-ci-latest
 docker push gluonai/gluon-nlp:cpu-latest
 
-docker push gluonai/gluon-nlp:gpu-base-latest
 docker push gluonai/gluon-nlp:gpu-ci-latest
 docker push gluonai/gluon-nlp:gpu-latest
 ```

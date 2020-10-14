@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:18.04 as base
 
 LABEL maintainer="GluonNLP Team"
 COPY install /install
@@ -48,3 +48,30 @@ RUN cd ${WORKDIR} \
    && cd gluon-nlp \
    && git checkout master \
    && python3 -m pip install -U -e ."[extras]"
+
+
+# Stage-CI
+FROM base as ci
+WORKDIR ${WORKDIR}/gluon-nlp
+ADD gluon_nlp_job.sh .
+RUN chmod +x gluon_nlp_job.sh
+
+
+# Stage-Devel
+FROM base as devel
+COPY start_jupyter.sh /start_jupyter.sh
+COPY devel_entrypoint.sh /devel_entrypoint.sh
+RUN chmod +x /devel_entrypoint.sh
+
+EXPOSE 8888
+EXPOSE 8787
+EXPOSE 8786
+
+WORKDIR ${WORKDIR}
+
+# Add Tini
+ARG TINI_VERSION=v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+RUN chmod +x /tini
+ENTRYPOINT [ "/tini", "--", "/devel_entrypoint.sh" ]
+CMD ["/bin/bash"]
