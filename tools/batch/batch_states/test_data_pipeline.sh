@@ -1,3 +1,6 @@
+#!/bin/bash
+# Shell script for testing the data preprocessing on AWS Batch
+
 set -ex
 echo $PWD
 
