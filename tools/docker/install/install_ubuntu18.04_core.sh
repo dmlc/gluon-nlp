@@ -34,8 +34,4 @@ apt-get update \
  && apt-get clean \
  && rm -rf /var/lib/apt/lists/*
 
-python3 -m pip --no-cache-dir install --upgrade \
-    pip \
-    setuptools
-
 ln -s $(which python3) /usr/local/bin/python

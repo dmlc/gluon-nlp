@@ -3,8 +3,7 @@
 set -ex
 
 echo $PWD
+DIRNAME=$(dirname $0)
+REPODIR=$DIRNAME/../../..
 
-python3 -m pip install --user --quiet -upgrade pip
-python3 -m pip install --user --quiet setuptools pytest pytest-cov contextvars
-python3 -m pip install --upgrade --quiet cython
-python3 -m pytest --cov=../../gluon-nlp --cov-config=../../gluon-nlp/.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow ../../gluon-nlp/tests/
+python3 -m pytest --cov=$REPODIR --cov-config=$REPODIR/.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow $REPODIR/tests/
