@@ -7,8 +7,8 @@ to generate the dataset. Then, run `train_transformer.py` to train the model.
 In the following, we give the training script for WMT2014 EN-DE task with yttm tokenizer. 
 You may first run the following command in [datasets/machine_translation](../datasets/machine_translation).
 ```bash
-bash ../datasets/machine_translation/wmt2014_ende_base.sh yttm (For transformer_base config)
-bash ../datasets/machine_translation/wmt2014_ende.sh yttm (For transformer_wmt_en_de_big config)
+bash ../datasets/machine_translation/wmt2014_ende_base.sh yttm # (For transformer_base config)
+bash ../datasets/machine_translation/wmt2014_ende.sh yttm # (For transformer_wmt_en_de_big config)
 ```
 
 Then, you can run the experiment.
