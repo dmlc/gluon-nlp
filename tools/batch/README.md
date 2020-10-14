@@ -15,7 +15,7 @@ python3 submit-job.py \
 
 # Updating the Docker for AWS Batch.
 
-You may refer to the instruction in [Docker](../docker) for more information. 
+You may refer to the instruction in [GluonNLP Docker Support](../docker/README.md#ci-maintainer) for more information.
 
 ## Conversion Toolkits
 Following the instruction of [converting scripts](../../scripts/conversion_toolkits), 
