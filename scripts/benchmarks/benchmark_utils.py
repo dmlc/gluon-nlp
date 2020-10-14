@@ -792,7 +792,6 @@ class GluonNLPBackboneBenchmark:
             raise NotImplementedError
         timeit.repeat(train_step, repeat=1, number=3)
         mxnet.npx.waitall()
-        ctx.empty_cache()
         runtimes = timeit.repeat(train_step, repeat=self._repeat, number=3)
         mxnet.npx.waitall()
         ctx.empty_cache()
