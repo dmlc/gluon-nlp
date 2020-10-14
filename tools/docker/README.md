@@ -51,7 +51,7 @@ docker run --gpus all --rm -it --shm-size=2g -v `pwd`:/workspace/data gluonai/gl
 ```
 
 
-## Build your own Docker Image
+## Build by yourself
 To build a docker image from the dockerfile, you may use the following command:
 
 ```
