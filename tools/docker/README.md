@@ -55,7 +55,7 @@ docker run --gpus all --rm -it --shm-size=2g -v `pwd`:/workspace/data gluonai/gl
 To build a docker image from the dockerfile, you may use the following command:
 
 ```
-# Build Base Dockers
+# Build CPU Dockers
 docker build -f ubuntu18.04-cpu.Dockerfile --target ci -t gluonai/gluon-nlp:cpu-ci-latest .
 docker build -f ubuntu18.04-cpu.Dockerfile --target devel -t gluonai/gluon-nlp:cpu-latest .
 
