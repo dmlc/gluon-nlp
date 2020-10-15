@@ -2,8 +2,10 @@
 
 We provide a series of shared scripts for downloading/preparing the text corpus for pretraining NLP models.
 This helps create a unified text corpus for studying the performance of different pretraining algorithms.
-When releasing the datasets, we follow the [FAIR principle](https://www.go-fair.org/fair-principles/),
+When picking the datasets to support, we follow the [FAIR principle](https://www.go-fair.org/fair-principles/),
 i.e., the dataset needs to be findable, accessible, interoperable, and reusable.
+
+For all scripts, we can either use `nlp_data SCRIPT_NAME`, or directly call the script.
 
 ## Gutenberg BookCorpus
 Unfortunately, we are unable to provide the [Toronto BookCorpus dataset](https://yknzhu.wixsite.com/mbweb) due to licensing issues.
@@ -16,14 +18,14 @@ Thus, we utilize the [Project Gutenberg](https://www.gutenberg.org/) as an alter
 You can use the following command to download and prepare the Gutenberg corpus.
 
 ```bash
-python3 prepare_bookcorpus.py --dataset gutenberg
+python3 prepare_gutenberg.py --save_dir gutenberg
 ```
 
 Also, you should follow the [license](https://www.gutenberg.org/wiki/Gutenberg:The_Project_Gutenberg_License) for using the data.
 
 ## Wikipedia
 
-Please install [attardi/wikiextractor](https://github.com/attardi/wikiextractor) for preparing the data.
+We used the [attardi/wikiextractor](https://github.com/attardi/wikiextractor) package for preparing the data.
 
 ```bash
 # Download
@@ -33,7 +35,9 @@ python3 prepare_wikipedia.py --mode download --lang en --date latest -o ./
 python3 prepare_wikipedia.py --mode format -i [path-to-wiki.xml.bz2] -o ./
 
 ```
-The process of downloading and formatting is time consuming, and we offer an alternative solution to download the prepared raw text file from S3 bucket. This raw text file is in English and was dumped at 2020-06-20 being formated by the above very process (` --lang en --date 20200620`).
+The process of downloading and formatting is time consuming, and we offer an alternative 
+solution to download the prepared raw text file from S3 bucket. This raw text file is in English and 
+was dumped at 2020-06-20 being formatted by the above process (` --lang en --date 20200620`).
 
 ```bash
 python3 prepare_wikipedia.py --mode download_prepared -o ./

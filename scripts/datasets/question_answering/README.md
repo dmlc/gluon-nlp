@@ -1,5 +1,6 @@
 # Question Answering
 
+
 ## SQuAD
 SQuAD datasets is distributed under the [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/legalcode) license.
 
@@ -39,7 +40,7 @@ python3 prepare_searchqa.py
 nlp_data prepare_searchqa
 ```
 
-Directory structure of the searchqa dataset will be as follows
+Directory structure of the SearchQA dataset will be as follows
 ```
 searchqa
 ├── train.txt
@@ -48,9 +49,10 @@ searchqa
 ```
 
 ## TriviaQA
-[TriviaQA](https://nlp.cs.washington.edu/triviaqa/) is an open domain QA dataset. See more useful scripts in [Offical Github](https://github.com/mandarjoshi90/triviaqa)
+[TriviaQA](https://nlp.cs.washington.edu/triviaqa/) is an open domain QA dataset. 
+See more useful scripts in [Offical Github](https://github.com/mandarjoshi90/triviaqa).
 
-Run the following command to download triviaqa
+Run the following command to download TriviaQA
 
 ```bash
 python3 prepare_triviaqa.py --version rc         # Download TriviaQA version 1.0 for RC (2.5G)
