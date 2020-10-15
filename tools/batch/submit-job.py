@@ -8,6 +8,45 @@ from datetime import datetime
 import boto3
 from botocore.compat import total_seconds
 
+instance_type_info = {
+    'g4dn.4x': {
+        'job_definition': 'gluon-nlp-g4dn_4xlarge:5',
+        'job_queue': 'g4dn'
+    },
+    'g4dn.8x': {
+        'job_definition': 'gluon-nlp-g4dn_8xlarge:5',
+        'job_queue': 'g4dn'
+    },
+    'g4dn.12x': {
+        'job_definition': 'gluon-nlp-g4dn_12xlarge:5',
+        'job_queue': 'g4dn-multi-gpu'
+    },
+    'p3.2x': {
+        'job_definition': 'gluon-nlp-p3_2xlarge:5',
+        'job_queue': 'p3'
+    },
+    'p3.8x': {
+        'job_definition': 'gluon-nlp-p3_8xlarge:5',
+        'job_queue': 'p3-4gpu'
+    },
+    'p3.16x': {
+        'job_definition': 'gluon-nlp-p3_16xlarge:5',
+        'job_queue': 'p3-8gpu'
+    },
+    'p3dn.24x': {
+        'job_definition': 'gluon-nlp-p3_24xlarge:5',
+        'job_queue': 'p3dn-8gpu'
+    },
+    'c5n.4x': {
+        'job_definition': 'gluon-nlp-c5_4xlarge:3',
+        'job_queue': 'c5n'
+    },
+    'c5n.18x': {
+        'job_definition': 'gluon-nlp-c5_18xlarge:3',
+        'job_queue': 'c5n'
+    }
+}
+
 parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument('--profile', help='profile name of aws account.', type=str,
@@ -16,9 +55,7 @@ parser.add_argument('--region', help='Default region when creating new connectio
                     default=None)
 parser.add_argument('--name', help='name of the job', type=str, default='dummy')
 parser.add_argument('--job-type', help='type of job to submit.', type=str,
-                    choices=['g4dn.4x', 'g4dn.8x', 'g4dn.12x', 'g4dn.16x',
-                             'p3.2x', 'p3.8x', 'p3.16x', 'p3dn.24x',
-                             'c5n.18x', 'c5n.4x'], default='g4dn.4x')
+                    choices=instance_type_info.keys(), default='g4dn.4x')
 parser.add_argument('--source-ref',
                     help='ref in GluonNLP main github. e.g. master, refs/pull/500/head',
                     type=str, default='master')
@@ -76,41 +113,14 @@ def nowInMillis():
     return endTime
 
 
-job_definitions = {
-    'g4dn.4x': 'gluon-nlp-1-jobs:5',
-    'g4dn.8x': 'gluon-nlp-1-jobs:4',
-    'g4dn.12x': 'gluon-nlp-1-4gpu-jobs:1',
-    'g4dn.16x': 'gluon-nlp-1-jobs:3',
-    'p3.2x': 'gluon-nlp-1-jobs:11',
-    'p3.8x': 'gluon-nlp-1-4gpu-jobs:2',
-    'p3.16x': 'gluon-nlp-1-8gpu-jobs:1',
-    'p3dn.24x': 'gluon-nlp-1-8gpu-jobs:2',
-    'c5n.4x': 'gluon-nlp-1-cpu-jobs:3',
-    'c5n.18x': 'gluon-nlp-1-cpu-jobs:2',
-}
-
-job_queues = {
-    'g4dn.4x': 'g4dn',
-    'g4dn.8x': 'g4dn',
-    'g4dn.12x': 'g4dn-multi-gpu',
-    'g4dn.16x': 'g4dn',
-    'p3.2x': 'p3',
-    'p3.8x': 'p3-4gpu',
-    'p3.16x': 'p3-8gpu',
-    'p3dn.24x': 'p3dn-8gpu',
-    'c5n.4x': 'c5n',
-    'c5n.18x': 'c5n',
-}
-
-
 def main():
     spin = ['-', '/', '|', '\\', '-', '/', '|', '\\']
     logGroupName = '/aws/batch/job'
 
     jobName = re.sub('[^A-Za-z0-9_\-]', '', args.name)[:128]  # Enforce AWS Batch jobName rules
     jobType = args.job_type
-    jobQueue = job_queues[jobType]
-    jobDefinition = job_definitions[jobType]
+    jobQueue = instance_type_info[jobType]['job_queue']
+    jobDefinition = instance_type_info[jobType]['job_definition']
     command = args.command.split()
     wait = args.wait
 

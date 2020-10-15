@@ -1,9 +1,10 @@
 #!/bin/bash
 # Shell script for installing dependencies and running test on AWS Batch
+set -ex
 
 echo $PWD
+SCRIPTPATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
+REPODIR="$( readlink -f ${SCRIPTPATH}/../../../../gluon-nlp)"
 
-python3 -m pip install --user --quiet -upgrade pip
-python3 -m pip install --user --quiet setuptools pytest pytest-cov contextvars
-python3 -m pip install --upgrade --quiet cython
-python3 -m pytest --cov=/gluon-nlp --cov-config=/gluon-nlp/.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow /gluon-nlp/tests/
+python3 -m pip install --upgrade --user pytest pytest-cov contextvars
+python3 -m pytest --cov=$REPODIR --cov-config=$REPODIR/.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow $REPODIR/tests/

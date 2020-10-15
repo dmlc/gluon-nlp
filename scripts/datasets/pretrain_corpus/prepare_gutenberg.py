@@ -3,7 +3,7 @@ import argparse
 import zipfile
 from gluonnlp.base import get_data_home_dir
 from gluonnlp.utils.misc import download, load_checksum_stats
-
+import shutil
 
 _CITATIONS = r"""
 @InProceedings{lahiri:2014:SRW,
@@ -59,11 +59,14 @@ def main(args):
     save_dir = args.dataset if args.save_dir is None else args.save_dir
     if not os.path.exists(save_dir):
         os.makedirs(save_dir, exist_ok=True)
+    print(f'Save to {save_dir}')
     with zipfile.ZipFile(target_download_location) as f:
         for name in f.namelist():
             if name.endswith('.txt'):
                 filename = os.path.basename(name)
-            f.extract(name, os.path.join(save_dir, filename))
+                with f.open(name) as in_file:
+                    with open(os.path.join(save_dir, filename.replace(' ', '_')), 'wb') as out_file:
+                        shutil.copyfileobj(in_file, out_file)
 
 
 def cli_main():

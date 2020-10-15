@@ -1,7 +1,8 @@
+#!/bin/bash
+# Shell script for testing the data preprocessing on AWS Batch
+
 set -ex
 echo $PWD
-
-python3 -m pip install --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
 
 for MODEL in spm yttm
 do
