@@ -123,7 +123,8 @@ html_favicon = '_static/gluon.ico'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = ['_build', '**.ipynb_checkpoints', 'examples/*/*/**.rst', 'model_zoo/*/*/**.rst',
-                    'model_zoo/word_embeddings/tools/extern/*/**.md', 'examples/*/**.md', 'model_zoo/*/**.md']
+                    'model_zoo/word_embeddings/tools/extern/*/**.md', 'examples/*/**.md', 
+                    'model_zoo/*/**.md', 'model_zoo/*/*/**.md']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
