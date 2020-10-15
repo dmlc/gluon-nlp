@@ -41,11 +41,11 @@ docs: docs_local
 	sed -i.bak 's/2196f3/178dc9/g' docs/_build/html/_static/sphinx_materialdesign_theme.css;
 
 markdown:
-        for f in $(shell find scripts -type f -name 'README.md' -print) ; do \
-                CURDIR=$$(dirname $$f) ; \
-                TARGET=$$CURDIR/index.rst ; \
-                pandoc README.md --from markdown --to rst --wrap=none -s -o $$TARGET; \
-        done;
+	for f in $(shell find scripts -type f -name 'README.md' -print) ; do \
+		CURDIR=$$(dirname $$f) ; \
+		TARGET=$$CURDIR/index.rst ; \
+		pandoc README.md --from markdown --to rst --wrap=none -s -o $$TARGET; \
+	done;
 
 docs_local: markdown distribute
         make -C docs html SPHINXOPTS=-W
