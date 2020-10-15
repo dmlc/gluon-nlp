@@ -34,16 +34,16 @@ First of all, install the latest MXNet. You may use the following commands:
 
 ```bash
 # Install the version with CUDA 10.0
-python3 -m pip install -U --pre "mxnet-cu100>=2.0.0b20200802" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet-cu100>=2.0.0b20200926" -f https://dist.mxnet.io/python
 
 # Install the version with CUDA 10.1
-python3 -m pip install -U --pre "mxnet-cu101>=2.0.0b20200802" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet-cu101>=2.0.0b20200926" -f https://dist.mxnet.io/python
 
 # Install the version with CUDA 10.2
-python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20200802" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20200926" -f https://dist.mxnet.io/python
 
 # Install the cpu-only version
-python3 -m pip install -U --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet>=2.0.0b20200926" -f https://dist.mxnet.io/python
 ```
 
 
@@ -92,8 +92,13 @@ You may go to [tests](tests) to see how to run the unittests.
 You can use Docker to launch a JupyterLab development environment with GluonNLP installed.
 
 ```
+# GPU Instance
 docker pull gluonai/gluon-nlp:gpu-latest
-docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=4g gluonai/gluon-nlp:gpu-latest
+docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=2g gluonai/gluon-nlp:gpu-latest
+
+# CPU Instance
+docker pull gluonai/gluon-nlp:cpu-latest
+docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=2g gluonai/gluon-nlp:cpu-latest
 ``` 
 
 For more details, you can refer to the guidance in [tools/docker](tools/docker).

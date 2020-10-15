@@ -112,13 +112,13 @@ benchmarking. We select the classical datasets that are also used in
 
 | Dataset       | #Train  | #Test   | Columns         | Metrics         |
 |---------------|---------|---------|-----------------|-----------------|
-| AG            | 120000  | 7600    | content, label  | acc             |
-| IMDB          | 25000   | 25000   | content, label  | acc             |
-| DBpedia       | 560000  | 70000   | content, label  | acc             |
-| Yelp2         | 560000  | 38000   | content, label  | acc             |
-| Yelp5         | 650000  | 50000   | content, label  | acc             |
-| Amazon2       | 3600000 | 400000  | content, label  | acc             |
-| Amazon5       | 3000000 | 650000  | content, label  | acc             |
+| AG            | 120,000  | 7,600    | content, label  | acc             |
+| IMDB          | 25,000   | 25,000   | content, label  | acc             |
+| DBpedia       | 560,000  | 70,000   | content, label  | acc             |
+| Yelp2         | 560,000  | 38,000   | content, label  | acc             |
+| Yelp5         | 650,000  | 50,000   | content, label  | acc             |
+| Amazon2       | 3,600,000 | 400,000  | content, label  | acc             |
+| Amazon5       | 3,000,000 | 65,0000  | content, label  | acc             |
 
 To obtain the datasets, run:
 
