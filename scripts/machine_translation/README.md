@@ -7,7 +7,8 @@ to generate the dataset. Then, run `train_transformer.py` to train the model.
 In the following, we give the training script for WMT2014 EN-DE task with yttm tokenizer. 
 You may first run the following command in [datasets/machine_translation](../datasets/machine_translation).
 ```bash
-bash ../datasets/machine_translation/wmt2014_ende.sh yttm
+bash ../datasets/machine_translation/wmt2014_ende_base.sh yttm # (For transformer_base config)
+bash ../datasets/machine_translation/wmt2014_ende.sh yttm # (For transformer_wmt_en_de_big config)
 ```
 
 Then, you can run the experiment.
@@ -31,16 +32,19 @@ python3 train_transformer.py \
     --lr 0.002 \
     --sampler BoundedBudgetSampler \
     --max_num_tokens 2700 \
-    --max_update 15000 \
-    --save_interval_update 500 \
-    --warmup_steps 6000 \
+    --epochs 30 \
+    --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
     --seed 123 \
     --gpus 0,1,2,3
 ```
 
 Or training via horovod
+
 ```
+SUBWORD_ALGO=yttm
+SRC=en
+TGT=de
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
@@ -56,28 +60,27 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --lr 0.002 \
     --sampler BoundedBudgetSampler \
     --max_num_tokens 2700 \
-    --max_update 15000 \
-    --save_interval_update 500 \
-    --warmup_steps 6000 \
+    --epochs 30 \
+    --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
     --seed 123 \
     --gpus 0,1,2,3
 ```
 
-Use the average_checkpoint cli to average the last 10 checkpoints
+Use the average_checkpoint cli to average the last 5 checkpoints
 
 ```bash
 gluon_average_checkpoint --checkpoints transformer_base_wmt2014_en_de_${SUBWORD_ALGO}/epoch*.params \
-    --begin 30 \
-    --end 39 \
-    --save-path transformer_base_wmt2014_en_de_${SUBWORD_ALGO}/epoch_avg_30_39.params
+    --begin 25 \
+    --end 29 \
+    --save-path transformer_base_wmt2014_en_de_${SUBWORD_ALGO}/avg_25_29.params
 ```
 
 Use the following command to inference/evaluate the Transformer model:
 
 ```bash
 python3 evaluate_transformer.py \
-    --param_path transformer_base_wmt2014_en_de_${SUBWORD_ALGO}/epoch_avg_30_39.params \
+    --param_path transformer_base_wmt2014_en_de_${SUBWORD_ALGO}/avg_25_29.params \
     --src_lang en \
     --tgt_lang de \
     --cfg transformer_base_wmt2014_en_de_${SUBWORD_ALGO}/config.yml \
@@ -134,7 +137,7 @@ Use the following command to inference/evaluate the Transformer model:
 
 ```bash
 python3 evaluate_transformer.py \
-    --param_path transformer_big_wmt2014_en_de_${SUBWORD_ALGO}/average_21_30.params \
+    --param_path transformer_big_wmt2014_en_de_${SUBWORD_ALGO}/avg_21_30.params \
     --src_lang en \
     --tgt_lang de \
     --cfg transformer_big_wmt2014_en_de_${SUBWORD_ALGO}/config.yml \
@@ -154,17 +157,13 @@ Test BLEU score with 3 seeds (evaluated via sacre BLEU):
 - transformer_base
 
 (test bleu / valid bleu)
-| Subword Model | #Params    | Seed = 123  | Seed = 1234 | Seed = 12345 |  Mean±std   |
-|---------------|------------|-------------|-------------|--------------|-------------|
-| yttm          |            | 26.50/26.29 | -           |  -           |  -          |
-| hf_bpe        |            |  -          | -           |  -           |  -          |
-| spm           |            |  -          | -           |  -           |  -          |
+| Subword Model | Seed = 123  |
+|---------------|-------------|
+| yttm          | 26.78/25.96 |
 
 - transformer_wmt_en_de_big
 
 (test bleu / valid bleu)
-| Subword Model | #Params    | Seed = 123  | Seed = 1234 | Seed = 12345 |  Mean±std   |
-|---------------|------------|-------------|-------------|--------------|-------------|
-| yttm          |            | 27.93/26.82 | -           |  -           |  -          |
-| hf_bpe        |            |  -          | -           |  -           |  -          |
-| spm           |            |  -          | -           |  -           |  -          |
+| Subword Model | Seed = 123  |
+|---------------|-------------|
+| yttm          | 27.99/26.84 |

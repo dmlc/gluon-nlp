@@ -35,8 +35,9 @@ def test_get_backbone(name, ctx):
         elif 'bart' in name:
             out = net(inputs, valid_length, inputs, valid_length)
         elif 'gpt2' in name:
-            # Temporarily skip GPT-2 test
-            return
+            states = net.init_states(batch_size=batch_size, ctx=ctx)
+            out, new_states = net(inputs, states)
+            out_np = out.asnumpy()
         else:
             out = net(inputs, token_types, valid_length)
         mx.npx.waitall()

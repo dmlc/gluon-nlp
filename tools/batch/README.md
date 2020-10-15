@@ -13,21 +13,33 @@ python3 submit-job.py \
 --wait
 ```
 
+# Updating the Docker for AWS Batch.
+
+You may refer to the instruction in [GluonNLP Docker Support](../docker/README.md#ci-maintainer) for more information.
+
 ## Conversion Toolkits
-Following the instruction of [converting scripts](../../scripts/conversion_toolkits), several pre-trained models could be converted through the corresponding conversion tool as below command where `${MODEL_TYPE}` could be selected from `[albert, bert, electra, mobilebert, bart, robert, xmlr]`.
+Following the instruction of [converting scripts](../../scripts/conversion_toolkits), 
+several pre-trained models could be converted through the corresponding conversion tool as below command where `${MODEL_TYPE}` could be selected from `[albert, bert, electra, mobilebert, bart, robert, xmlr]`.
 ```bash
 bash run_batch_conversion ${MODEL_TYPE}
 ```
+
 ## Fine-tuning Downstream Tasks
 
 ### Question Answering
-We can quickly deploy an experiment via [squad fine-tuning scripts](../../scripts/question_answering#squad) as
+We can quickly run the squad finetuning via [squad fine-tuning scripts](../../scripts/question_answering#squad) and the AWS Batch job.
+
+The code is given in [run_batch_squad.sh](run_batch_squad.sh)
 
 ```bash
-bash run_batch_squad.sh ${MODEL_NAME}
+# AWS Batch training without horovod on SQuAD 2.0
+bash run_batch_squad.sh
+
+# AWS Batch training with horovod on SQuAD 2.0
+bash run_batch_squad.sh 1 2.0 submit_squad_v2_horovod.log
 ```
 
-in which `${MODEL_NAME}` is the name of available pre-trained models listing as following:
+Internally, it will train the following models on SQuAD 2.0 dataset:
 |    MODEL_NAME      |
 |:------------------:|
 | uncased_bert_base  |
@@ -39,12 +51,5 @@ in which `${MODEL_NAME}` is the name of available pre-trained models listing as 
 | electra_small      |
 | electra_base       |
 | electra_large      |
-| roberta_base       |
 | roberta_large      |
 | mobilebert         |
-
-### Machine Translation
-
-### Text Translation
-
-## Pre-trained Model Training

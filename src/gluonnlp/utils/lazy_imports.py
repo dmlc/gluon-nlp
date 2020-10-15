@@ -25,7 +25,8 @@ __all__ = ['try_import_sentencepiece',
            'try_import_fasttext',
            'try_import_langid',
            'try_import_boto3',
-           'try_import_jieba']
+           'try_import_jieba',
+           'try_import_tvm']
 
 
 def try_import_sentencepiece():
@@ -155,3 +156,12 @@ def try_import_jieba():
         raise ImportError('"jieba" is not installed. You must install jieba tokenizer. '
                           'You may try to use `pip install jieba`')
     return jieba
+
+
+def try_import_tvm():
+    try:
+        import tvm
+    except ImportError:
+        raise ImportError('"tvm" is not installed. You must install TVM to use the functionality. '
+                          'To install TVM, you may see the documentation in '
+                          'https://tvm.apache.org/ or try to use the docker of GluonNLP.')
