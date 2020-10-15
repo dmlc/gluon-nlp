@@ -44,7 +44,7 @@ markdown:
 	for f in $(shell find scripts -type f -name 'README.md' -print) ; do \
 		CURDIR=$$(dirname $$f) ; \
 		TARGET=$$CURDIR/index.rst ; \
-		pandoc README.md --from markdown --to rst --wrap=none -s -o $$TARGET; \
+		pandoc $$f --from markdown --to rst --wrap=none --column=999 -s -o $$TARGET; \
 	done;
 
 docs_local: markdown distribute
