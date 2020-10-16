@@ -71,13 +71,13 @@ jobs:
       - name: Copy docs to AWS S3(For push)
         if: ${{ (failure() || success()) && github.event_name == 'push' }}
         run: |
-          echo "Uploading docu to s3://gluon-nlp/${GITHUB_REF##*/}/"
+          echo "Uploading docs to s3://gluon-nlp/${GITHUB_REF##*/}/"
           aws s3 sync --delete ./docs/_build/html/ s3://gluon-nlp/${GITHUB_REF##*/}/ --acl public-read
 
       - name: Copy docs to AWS S3(For pull request)
         if: ${{ (failure() || success()) && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') }}
         run: |
-          echo "Uploading docu to s3://gluon-nlp-staging/PR${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/"
+          echo "Uploading docs to s3://gluon-nlp-staging/PR${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/"
           aws s3 sync --delete ./docs/_build/html/ s3://gluon-nlp-staging/PR${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/ --acl public-read
 
       - name: Upload Artifacts 
