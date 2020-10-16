@@ -123,7 +123,8 @@ html_favicon = '_static/gluon.ico'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 exclude_patterns = ['_build', '**.ipynb_checkpoints', 'examples/*/*/**.rst', 'model_zoo/*/*/**.rst',
-                    'model_zoo/word_embeddings/tools/extern/*/**.md', 'examples/*/**.md', 'model_zoo/*/**.md']
+                    'model_zoo/word_embeddings/tools/extern/*/**.md', 'examples/*/**.md', 
+                    'model_zoo/*/**.md', 'model_zoo/*/*/**.md', 'model_zoo/*/*/**.rst']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
@@ -171,10 +172,10 @@ html_theme_options = {
     'primary_color': 'blue',
     'accent_color': 'deep_orange',
     'header_links' : [
-        ('Install', 'install/install-more', False, ''),
-        ('API', 'api/index', False, ''),
-        ('Community', 'website/index', False, ''),
-        ('Contribute', 'website/contribute', False, ''),
+        ('Install', 'install/install-more', False, 'fas fa-download'),
+        ('API', 'api/index', False, 'fas fa-book'),
+        ('Community', 'website/index', False, 'fab fa-discourse'),
+        ('Contribute', 'website/contribute', False, 'fas fa-laptop-code'),
         ('GitHub', 'https://github.com/dmlc/gluon-nlp/', True, 'fab fa-github'),
     ],
 
