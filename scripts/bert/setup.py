@@ -27,13 +27,10 @@ def CompileBERTCustomPass():
     source = os.path.join(pass_path, input_pass_file)
     target = os.path.join(pass_path, out_lib_file)
     lib_api_cc = pathlib.Path.joinpath(mxnet_path, 'src/lib_api.cc')
-    is_mxnet_1_7 = (mxnet.__version__ == '1.7.0')
-    if is_mxnet_1_7:
-        os.system('g++ -shared -fPIC -std=c++11 ' + str(source) +
-                  ' -o ' + str(target) + ' -I ' + str(mxnet_include_path) + ' -DMXNET_1_7')
-    else:
-        os.system('g++ -shared -fPIC -std=c++11 ' + str(source) + ' ' + str(lib_api_cc) +
-                  ' -o ' + str(target) + ' -I ' + str(mxnet_include_path))
+    if (mxnet.__version__ > '1.7.0'):
+        source = source + ' ' + str(lib_api_cc)
+    os.system('g++ -shared -fPIC -std=c++11 ' + str(source) +
+              ' -o ' + str(target) + ' -I ' + str(mxnet_include_path))
 
 class CompileBERTPass(install):
     def run(self):

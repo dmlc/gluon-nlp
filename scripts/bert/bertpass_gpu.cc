@@ -30,7 +30,7 @@
 #include <functional>
 #include "mxnet/lib_api.h"
 
-#if MXNET_1_7
+#if MX_LIBRARY_VERSION <= 7
 class Node;
 struct NodeEntry {
   Node* node;
@@ -228,7 +228,7 @@ class Graph {
   using namespace mxnet::ext;
 #endif
 
-#if MXNET_1_7
+#if MX_LIBRARY_VERSION <= 7
 MXReturnValue custom_pass(const std::string& in_graph, const std::string** out_graph,
                           const std::unordered_map<std::string, std::string>& options,
                           const std::unordered_map<std::string, MXTensor>& args,
@@ -255,12 +255,12 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
       std::string base_name = n->name.substr(0, pos - 1);
 
       // remove Bias terms in FC
-      node_ffn1_fwd->attrs["no_bias"]="True";
+      node_ffn1_fwd->attrs["no_bias"] = "True";
       node_ffn1_fwd->inputs.pop_back();
 
       // create 4 new nodes: 2 expand_dims nodes to expand bias dimensions
       // a broadcast_like node, and BiasAdd
-#if MXNET_1_7
+#if MX_LIBRARY_VERSION <= 7
       Node* node_expand_1_bias = new Node();
       node_expand_1_bias->name = base_name + "_expand_1_bias";
       node_expand_1_bias->op = "expand_dims";
@@ -283,11 +283,11 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
       Node* node_bcst_like = g->addNode(base_name + "_broadcast_like", "broadcast_like");
       Node* node_add_bias = g->addNode(base_name + "_add_bias", "elemwise_add");
 #endif
-      node_expand_1_bias->attrs["axis"]="0";
+      node_expand_1_bias->attrs["axis"] = "0";
       node_expand_1_bias->inputs.resize(1);
       node_expand_1_bias->inputs[0].node = node_ffn1_bias;
       node_expand_1_bias->inputs[0].entry = 0;
-      node_expand_2_bias->attrs["axis"]="0";
+      node_expand_2_bias->attrs["axis"] = "0";
       node_expand_2_bias->inputs.resize(1);
       node_expand_2_bias->inputs[0].node = node_expand_1_bias;
       node_expand_2_bias->inputs[0].entry = 0;
@@ -317,7 +317,7 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
   int num_heads = 0;
   int head_dimension = 0;
   int shape0, shape1;
-#if MXNET_1_7
+#if MX_LIBRARY_VERSION <= 7
   for(Node* n : g->nodes) {
 #else
   for(int i=0; i < g->size(); i++) {
@@ -340,7 +340,7 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
   head_dimension = shape0 / num_heads;
 
   // find projection nodes and set new interleaved intputs
-#if MXNET_1_7
+#if MX_LIBRARY_VERSION <= 7
   for(Node* n : g->nodes) {
 #else
   for(int i=0; i < g->size(); i++) {
@@ -354,7 +354,7 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
       //////////////////// WEIGHTS ////////////////////
       // create new input node with interleaved weights
       std::string name_qkv_weights_interleaved = base_name + "_qkv_weights_interleaved";
-#if MXNET_1_7
+#if MX_LIBRARY_VERSION <= 7
       // create a new input Node
       Node* node_qkv_weights = new Node();
       node_qkv_weights->name = name_qkv_weights_interleaved;
@@ -370,14 +370,13 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
       float* query_w_data = query_w.data<float>();
       float* key_w_data = key_w.data<float>();
       float* value_w_data = value_w.data<float>();
-            //add a new node in graph, also as input
       g->nodes.push_back(node_qkv_weights);
       g->inputs.push_back(node_qkv_weights);
 #else
       Node* node_qkv_weights = g->addNode(name_qkv_weights_interleaved + "_input", "null");
       node_qkv_weights->alloc_arg({3 * shape0, shape1}, MXContext::CPU(0), kFloat32);
       float* qkv_w_data = node_qkv_weights->tensor->data<float>();
-      // look back for query, key value weights original data
+      // look back for query, key, and value weights: original data
       float *query_w_data, *key_w_data, *value_w_data;
       int found = 0;
       for (int j=i; j >= 0; j--) {
@@ -398,7 +397,7 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
           break;
       }
 #endif
-      // interleave weights
+      // set interleave weights
       for (int h=0; h<num_heads; ++h) {
         for (int e=0; e < head_dimension * shape1; ++e) {
           qkv_w_data[h * head_dimension * shape1 * 3 + e] =
@@ -420,7 +419,7 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
       //////////////////// BIAS ////////////////////
       // create new input node with all bias
       std::string name_qkv_bias = base_name + "_qkv_bias";
-#if MXNET_1_7
+#if MX_LIBRARY_VERSION <= 7
       Node* node_qkv_bias = new Node();
       node_qkv_bias->name = name_qkv_bias;
       node_qkv_bias->op = "null";
@@ -433,14 +432,13 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
       float* query_bias_data = query_bias.data<float>();
       float* key_bias_data = key_bias.data<float>();
       float* value_bias_data = value_bias.data<float>();
-      //add a new node in graph, also as input
       g->nodes.push_back(node_qkv_bias);
       g->inputs.push_back(node_qkv_bias);
 #else
       Node* node_qkv_bias = g->addNode(name_qkv_bias + "_input", "null");
       node_qkv_bias->alloc_arg({3 * shape0, }, MXContext::CPU(0), kFloat32);
       float* qkv_bias_data = node_qkv_bias->tensor->data<float>();
-      // look back for query, key value weights original data
+      // look back for query, key, and value bias: original data
       float *query_bias_data, *key_bias_data, *value_bias_data;
       found = 0;
       for (int j=i; j >= 0; j--) {
@@ -477,7 +475,7 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
     }
   }
 
-#if MXNET_1_7
+#if MX_LIBRARY_VERSION <= 7
   //convert back to JSON string from Graph/Node
   *out_graph = new std::string(g->toString());
 #endif
@@ -488,7 +486,6 @@ REGISTER_PASS(custom_pass)
 .setBody(custom_pass);
 
 MXReturnValue initialize(int version) {
-  printf("VERSION %i\n", version);
   if (version >= 10700) {
     std::cout << "MXNet version " << version << " supported" << std::endl;
     return MX_SUCCESS;
