@@ -1,3 +1,5 @@
+#Generation
+
 Some of the examples below may include Unicode text characters. Set the environment variable:
 ```bash
 export PYTHONIOENCODING=UTF-8
