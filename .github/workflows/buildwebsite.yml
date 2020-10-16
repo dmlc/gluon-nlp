@@ -32,7 +32,9 @@ jobs:
       - name: Install Other Dependencies
         run: |
           python -m pip install --quiet --upgrade pip
-          python -m pip install pandoc setuptools ipython sphinx>=1.5.5 sphinx-gallery nbsphinx sphinx_rtd_theme mxtheme sphinx-autodoc-typehints matplotlib Image recommonmark
+          python -m pip install --upgrade cython
+          python -m pip install --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
+          python -m pip install setuptools ipython sphinx>=1.5.5 sphinx-gallery nbsphinx sphinx_rtd_theme mxtheme sphinx-autodoc-typehints matplotlib Image recommonmark
 
       - name: Checkout repository(For push)
         if: ${{ github.event_name == 'push' }}
@@ -66,10 +68,17 @@ jobs:
         run: |
           make docs_local
 
+      - name: Copy docs to AWS S3(For push)
+        if: ${{ (failure() || success()) && github.event_name == 'push' }}
+        run: |
+          echo "Uploading docu to s3://gluon-nlp/${GITHUB_REF##*/}/"
+          aws s3 sync --delete ./docs/_build/html/ s3://gluon-nlp/${GITHUB_REF##*/}/ --acl public-read
+
       - name: Copy docs to AWS S3(For pull request)
         if: ${{ (failure() || success()) && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') }}
         run: |
-          aws s3 sync --delete ./docs/_build/html/ s3://gluon-nlp-dev/PR${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/ --acl public-read
+          echo "Uploading docu to s3://gluon-nlp-staging/PR${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/"
+          aws s3 sync --delete ./docs/_build/html/ s3://gluon-nlp-staging/PR${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/ --acl public-read
 
       - name: Upload Artifacts 
         if: ${{ failure() || success() }}
@@ -84,4 +93,4 @@ jobs:
         with: 
           issue-number: ${{ github.event.number }}
           body: |
-            The documentation website for preview: http://gluon-nlp-dev.s3-accelerate.amazonaws.com/PR${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/index.html
+            The documentation website for preview: http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/PR${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/index.html
