@@ -67,6 +67,7 @@ def test_get_backbone(name, ctx):
                     reason='TVM is not supported. So this test is skipped.')
 def test_tvm_integration(model_name, batch_size, seq_length, ctx):
     tvm = try_import_tvm()
+    from tvm import relay
     opt_level = 3
     required_pass = ["FastMath"]
     instance_info = {
@@ -130,11 +131,11 @@ def test_tvm_integration(model_name, batch_size, seq_length, ctx):
     params = {}
     for k, v in model.collect_params().items():
         params[v._var_name] = tvm.nd.array(v.data().asnumpy())
-    mod, params = tvm.relay.frontend.from_mxnet(sym, shape=shape_dict, dtype=dtype_dict, arg_params=params)
+    mod, params = relay.frontend.from_mxnet(sym, shape=shape_dict, dtype=dtype_dict, arg_params=params)
     target = info['target']
     use_gpu = info['use_gpu']
-    with tvm.relay.build_config(opt_level=opt_level, required_pass=required_pass):
-        graph, lib, cparams = tvm.relay.build(mod, target, params=params)
+    with tvm.transform.PassContext(opt_level=opt_level, required_pass=required_pass):
+        graph, lib, cparams = relay.build(mod, target, params=params)
     if use_gpu:
         ctx = tvm.gpu()
     else:
