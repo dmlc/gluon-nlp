@@ -55,7 +55,6 @@ def test_get_backbone(name, ctx):
         net.export(os.path.join(root, 'model'))
 
 
-@pytest.mark.slow
 @pytest.mark.parametrize('model_name',
                          ['google_albert_base_v2',
                           'google_en_cased_bert_base',
