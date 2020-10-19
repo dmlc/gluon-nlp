@@ -24,15 +24,17 @@ cd ${WORKDIR}
 git clone https://github.com/apache/incubator-tvm tvm --recursive
 cd ${WORKDIR}/tvm
 # checkout a hash-tag
-git checkout 6d0351a7f0e23eb5428c59a976edd2bfb8207c0d
+git checkout 28e9ab7a8d8faf8bb043994766caf9aa511968b0s
 
-echo set\(USE_LLVM llvm-config-10\) >> config.cmake
-echo set\(USE_GRAPH_RUNTIME ON\) >> config.cmake
-echo set\(USE_BLAS openblas\) >> config.cmake
 mkdir -p build
+cp cmake/config.cmake build
+echo set\(USE_LLVM llvm-config-10\) >> build/config.cmake
+echo set\(USE_GRAPH_RUNTIME ON\) >> build/config.cmake
+echo set\(USE_BLAS openblas\) >> build/config.cmake
+
 cd build
-cmake ..
-make -j10
+cmake .. -GNinja
+ninja
 
 # install python binding
 cd ..
