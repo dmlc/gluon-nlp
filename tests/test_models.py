@@ -63,9 +63,10 @@ def test_get_backbone(name, ctx):
                           'fairseq_roberta_base',
                           'fairseq_bart_base'])
 @pytest.mark.parametrize('batch_size,seq_length', [(2, 32), (1, 64)])
+@pytest.mark.parametrize('layout', ['NT', 'TN'])
 @pytest.mark.skipif(not tvm_enabled(),
                     reason='TVM is not supported. So this test is skipped.')
-def test_tvm_integration(model_name, batch_size, seq_length, ctx):
+def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
     tvm = try_import_tvm()
     from tvm import relay
     import tvm.contrib.graph_runtime as runtime
@@ -84,6 +85,9 @@ def test_tvm_integration(model_name, batch_size, seq_length, ctx):
     else:
         raise NotImplementedError
     model_cls, cfg, tokenizer, backbone_param_path, _ = get_backbone(model_name)
+    cfg.defrost()
+    cfg.MODEL.layout = layout
+    cfg.freeze()
     model = model_cls.from_cfg(cfg)
     model.load_parameters(backbone_param_path)
     model.hybridize()
