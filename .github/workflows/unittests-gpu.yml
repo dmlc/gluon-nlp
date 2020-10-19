@@ -59,7 +59,7 @@ jobs:
                                              --job-type g4dn.4x \
                                              --name GluonNLP-GPU-Test-PR#${{ github.event.number }} \
                                              --source-ref ${{ github.event.pull_request.head.ref }} \
-                                             --work-dir tools/batch \
+                                             --work-dir . \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
                                              --command "python3 -m pytest --cov=. --cov-config=./.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow ./tests/" \
