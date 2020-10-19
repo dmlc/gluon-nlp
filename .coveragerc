@@ -1,8 +1,8 @@
 # .coveragerc to control coverage.py
 [run]
 omit =
-    $PWD/tests/*
-    $PWD/scripts/*
+    tests/*
+    scripts/*
 concurrency =
     multiprocessing
     thread
