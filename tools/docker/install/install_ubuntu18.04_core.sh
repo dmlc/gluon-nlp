@@ -4,8 +4,8 @@ set -o pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 
-rm -rf /var/lib/apt/lists/*
-apt-get clean \
+rm -rf /var/lib/apt/lists/* \
+ && apt-get clean \
  && apt-get update \
  && apt-get install -y --no-install-recommends \
     software-properties-common \
