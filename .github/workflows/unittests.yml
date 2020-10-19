@@ -26,6 +26,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+      - name: Compilation cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.ccache
+          # We include the commit sha in the cache key, as new cache entries are
+          # only created if there is no existing entry for the key yet.
+          key: ${{ runner.os }}-ccache-${{ github.sha }}
+          # Restore any ccache cache entry, if none for
+          # ${{ runner.os }}-ccache-${{ github.sha }} exists
+          restore-keys: |
+            ${{ runner.os }}-ccache
+
       # Install OS specific dependencies
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
