@@ -4,7 +4,7 @@ set -o pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 
-rm -vf /var/lib/apt/lists/*
+rm -rf /var/lib/apt/lists/*
 apt-get clean \
  && apt-get update \
  && apt-get install -y --no-install-recommends \
