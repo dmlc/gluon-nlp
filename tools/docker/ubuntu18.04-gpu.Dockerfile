@@ -21,7 +21,6 @@ RUN rm /etc/apt/sources.list.d/cuda.list && rm /etc/apt/sources.list.d/nvidia-ml
 
 # Install Open MPI
 RUN bash /install/install_openmpi.sh
-RUN apt-get update && apt-get install -y --no-install-recommends
 ENV LD_LIBRARY_PATH=/usr/local/openmpi/lib:$LD_LIBRARY_PATH
 ENV PATH=/usr/local/openmpi/bin/:/usr/local/bin:/root/.local/bin:/usr/bin:$PATH
 
