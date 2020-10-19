@@ -68,6 +68,7 @@ def test_get_backbone(name, ctx):
 def test_tvm_integration(model_name, batch_size, seq_length, ctx):
     tvm = try_import_tvm()
     from tvm import relay
+    import tvm.contrib.graph_runtime as runtime
     opt_level = 3
     required_pass = ["FastMath"]
     instance_info = {
@@ -140,7 +141,7 @@ def test_tvm_integration(model_name, batch_size, seq_length, ctx):
         ctx = tvm.gpu()
     else:
         ctx = tvm.cpu()
-    rt = tvm.runtime.create(graph, lib, ctx)
+    rt = runtime.create(graph, lib, ctx)
     rt.set_input(**cparams)
     if 'bart' in model_name:
         rt.set_input(data0=token_ids, data1=valid_length, data2=token_ids, data3=valid_length)
