@@ -38,7 +38,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-ccache
 
-      # Install OS specific dependencies
+      # Install Linux specific dependencies
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
         # TODO https://github.com/apache/incubator-mxnet/issues/18293
@@ -59,6 +59,7 @@ jobs:
           python -m pip install --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
           python -m pip install -U -e .[extras]
       - name: Build and Install TVM
+        if: matrix.os == 'ubuntu-latest'
         run: |
           git clone https://github.com/apache/incubator-tvm tvm --recursive
           cd tvm
