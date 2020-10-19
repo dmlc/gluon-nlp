@@ -19,6 +19,7 @@ RUN bash /install/install_ubuntu18.04_core.sh
 
 # Install Open MPI
 RUN bash /install/install_openmpi.sh
+RUN echo `which wget`
 ENV LD_LIBRARY_PATH=/usr/local/openmpi/lib:$LD_LIBRARY_PATH
 ENV PATH=/usr/local/openmpi/bin/:/usr/local/bin:/root/.local/bin:/usr/bin:$PATH
 
