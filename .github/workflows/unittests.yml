@@ -30,7 +30,9 @@ jobs:
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-latest'
         # TODO https://github.com/apache/incubator-mxnet/issues/18293
-        run: sudo apt-get install libopenblas-dev
+        run: |
+          sudo apt-get install libopenblas-dev ninja-build libedit-dev libxml2-dev
+          sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
 
       - name: Setup python
         uses: actions/setup-python@v2
@@ -44,6 +46,19 @@ jobs:
           python -m pip install --upgrade cython
           python -m pip install --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
           python -m pip install -U -e .[extras]
+      - name: Build and Install TVM
+        run: |
+          git clone https://github.com/apache/incubator-tvm tvm --recursive
+          cd tvm
+          mkdir -p build
+          cp cmake/config.cmake build
+          echo set\(USE_GRAPH_RUNTIME ON\) >> build/config.cmake
+          echo set\(USE_BLAS openblas\) >> build/config.cmake
+          cd build
+          cmake .. -G Ninja
+          ninja
+          cd ../python
+          python -m pip install -U -e .
       - name: Run Unittests
         run: |
           python -m pytest --cov=./ --cov-report=xml --device="cpu" --durations=50 tests/
