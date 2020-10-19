@@ -24,7 +24,7 @@ cd ${WORKDIR}
 git clone https://github.com/apache/incubator-tvm tvm --recursive
 cd ${WORKDIR}/tvm
 # checkout a hash-tag
-git checkout 28e9ab7a8d8faf8bb043994766caf9aa511968b0s
+git checkout 28e9ab7a8d8faf8bb043994766caf9aa511968b0
 
 mkdir -p build
 cp cmake/config.cmake build
