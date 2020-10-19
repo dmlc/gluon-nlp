@@ -68,7 +68,7 @@ def test_get_backbone(name, ctx):
 def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
     tvm = try_import_tvm()
     from tvm import relay
-    import tvm.contrib.graph_runtime as runtime
+    from tvm.contrib import graph_runtime
     opt_level = 3
     required_pass = ["FastMath"]
     instance_info = {
@@ -146,13 +146,12 @@ def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
     target = info['target']
     use_gpu = info['use_gpu']
     with tvm.transform.PassContext(opt_level=opt_level, required_pass=required_pass):
-        graph, lib, cparams = relay.build(mod, target, params=params)
+        lib = relay.build(mod, target, params=params)
     if use_gpu:
         ctx = tvm.gpu()
     else:
         ctx = tvm.cpu()
-    rt = runtime.create(graph, lib, ctx)
-    rt.set_input(**cparams)
+    rt = graph_runtime.GraphModule(lib["default"](ctx))
     if 'bart' in model_name:
         rt.set_input(data0=token_ids, data1=valid_length, data2=token_ids, data3=valid_length)
     elif 'roberta' in model_name:
