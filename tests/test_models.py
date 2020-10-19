@@ -61,7 +61,7 @@ def test_get_backbone(name, ctx):
                           'google_electra_small',
                           'fairseq_roberta_base',
                           'fairseq_bart_base'])
-@pytest.mark.parametrize('batch_size,seq_length', [(2, 32), (1, 64)])
+@pytest.mark.parametrize('batch_size,seq_length', [(2, 16), (1, 32)])
 @pytest.mark.parametrize('layout', ['NT', 'TN'])
 @pytest.mark.skipif(not tvm_enabled(),
                     reason='TVM is not supported. So this test is skipped.')
