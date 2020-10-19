@@ -15,7 +15,9 @@ ENV SHELL=/bin/bash
 
 RUN mkdir -p ${WORKDIR}
 
-RUN bash /install/install_ubuntu18.04_core.sh
+# Need to rm the list due to the issue similar to https://github.com/NVIDIA/nvidia-docker/issues/658
+RUN rm /etc/apt/sources.list.d/cuda.list && rm /etc/apt/sources.list.d/nvidia-ml.list && \
+    bash /install/install_ubuntu18.04_core.sh
 
 # Install Open MPI
 RUN bash /install/install_openmpi.sh

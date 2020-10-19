@@ -4,8 +4,6 @@ set -o pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 
-rm /etc/apt/sources.list.d/cuda.list && rm /etc/apt/sources.list.d/nvidia-ml.list
-
 rm -rf /var/lib/apt/lists/* \
  && apt-get clean \
  && apt-get update \
