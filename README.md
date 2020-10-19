@@ -98,7 +98,7 @@ docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size
 
 # CPU Instance
 docker pull gluonai/gluon-nlp:cpu-latest
-docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=2g gluonai/gluon-nlp:cpu-latest
+docker run --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=2g gluonai/gluon-nlp:cpu-latest
 ``` 
 
 For more details, you can refer to the guidance in [tools/docker](tools/docker).
