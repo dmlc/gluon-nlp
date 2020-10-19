@@ -1,8 +1,9 @@
 # .coveragerc to control coverage.py
 [run]
+source = .
 omit =
-    tests/*
-    scripts/*
+    ./tests/*
+    ./scripts/*
 concurrency =
     multiprocessing
     thread
