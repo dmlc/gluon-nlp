@@ -73,7 +73,7 @@ def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
     if ctx.device_type == 'gpu':
         flags = tvm_recommended_flags['g4']
     elif ctx.device_type == 'cpu':
-        flags = tvm_recommended_flags['c5']
+        flags = tvm_recommended_flags['c4']
     else:
         raise NotImplementedError
     model_cls, cfg, tokenizer, backbone_param_path, _ = get_backbone(model_name)

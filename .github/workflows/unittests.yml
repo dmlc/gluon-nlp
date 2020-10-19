@@ -43,7 +43,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         # TODO https://github.com/apache/incubator-mxnet/issues/18293
         run: |
-          sudo apt-get install libopenblas-dev ninja-build libedit-dev libxml2-dev
+          sudo apt-get install -y libopenblas-dev ninja-build libedit-dev libxml2-dev
           sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
 
       - name: Setup python
