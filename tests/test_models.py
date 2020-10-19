@@ -5,7 +5,7 @@ import os
 import numpy as np
 import numpy.testing as npt
 from gluonnlp.models import get_backbone, list_backbone_names
-from gluonnlp.utils.misc import count_parameters
+from gluonnlp.utils.misc import count_parameters, ec2_tvm_recommended_flags
 from gluonnlp.utils.lazy_imports import try_import_tvm
 mx.npx.set_np()
 
@@ -69,18 +69,11 @@ def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
     tvm = try_import_tvm()
     from tvm import relay
     from tvm.contrib import graph_runtime
-    opt_level = 3
-    required_pass = ["FastMath"]
-    instance_info = {
-        'g4': {'target': "cuda -model=t4", 'use_gpu': True},
-        'c4': {'target': 'llvm -mcpu=core-avx2 -libs=cblas', 'use_gpu': False},
-        'c5': {'target': 'llvm -mcpu=skylake-avx512 -libs=cblas', 'use_gpu': False},
-        'p3': {'target': 'cuda -model=v100', 'use_gpu': True}
-    }
+    tvm_recommended_flags = ec2_tvm_recommended_flags()
     if ctx.device_type == 'gpu':
-        info = instance_info['g4']
+        flags = tvm_recommended_flags['g4']
     elif ctx.device_type == 'cpu':
-        info = instance_info['c5']
+        flags = tvm_recommended_flags['c5']
     else:
         raise NotImplementedError
     model_cls, cfg, tokenizer, backbone_param_path, _ = get_backbone(model_name)
@@ -143,8 +136,10 @@ def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
     for k, v in model.collect_params().items():
         params[v._var_name] = tvm.nd.array(v.data().asnumpy())
     mod, params = relay.frontend.from_mxnet(sym, shape=shape_dict, dtype=dtype_dict, arg_params=params)
-    target = info['target']
-    use_gpu = info['use_gpu']
+    target = flags['target']
+    use_gpu = flags['use_gpu']
+    opt_level = flags['opt_level']
+    required_pass = flags['required_pass']
     with tvm.transform.PassContext(opt_level=opt_level, required_pass=required_pass):
         lib = relay.build(mod, target, params=params)
     if use_gpu:
