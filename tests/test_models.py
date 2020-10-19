@@ -90,11 +90,18 @@ def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
     model = model_cls.from_cfg(cfg)
     model.load_parameters(backbone_param_path)
     model.hybridize()
-    token_ids = mx.np.random.randint(0, cfg.MODEL.vocab_size, (batch_size, seq_length),
-                                     dtype=np.int32)
-    token_types = mx.np.random.randint(0, 2, (batch_size, seq_length), dtype=np.int32)
-    valid_length = mx.np.random.randint(seq_length // 2, seq_length, (batch_size,),
-                                        dtype=np.int32)
+    if layout == 'NT':
+        token_ids = mx.np.random.randint(0, cfg.MODEL.vocab_size, (batch_size, seq_length),
+                                         dtype=np.int32)
+        token_types = mx.np.random.randint(0, 2, (batch_size, seq_length), dtype=np.int32)
+        valid_length = mx.np.random.randint(seq_length // 2, seq_length, (batch_size,),
+                                            dtype=np.int32)
+    else:
+        token_ids = mx.np.random.randint(0, cfg.MODEL.vocab_size, (seq_length, batch_size),
+                                         dtype=np.int32)
+        token_types = mx.np.random.randint(0, 2, (seq_length, batch_size), dtype=np.int32)
+        valid_length = mx.np.random.randint(seq_length // 2, seq_length, (batch_size,),
+                                            dtype=np.int32)
     if 'bart' in model_name:
         mx_out = model(token_ids, valid_length, token_ids, valid_length)
         shape_dict = {
