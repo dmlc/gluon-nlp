@@ -1,15 +1,18 @@
 # .coveragerc to control coverage.py
 [run]
-source = .
 omit =
-    ./tests/*
-    ./scripts/*
+    tests/*
+    scripts/*
 concurrency =
     multiprocessing
     thread
 
 [report]
 ignore_errors = True
+omit = 
+    tests/*
+    scripts/*
+    tools/batch/*
 
 [html]
 directory = coverage_html_report
