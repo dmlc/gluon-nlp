@@ -675,7 +675,7 @@ def get_mxnet_visible_ctx():
 
 
 def ec2_tvm_recommended_flags() -> Dict[str, Dict]:
-    """Return the recommended flags for TVM compilation in AWS EC2 instances.
+    r"""Return the recommended flags for TVM compilation in AWS EC2 instances.
 
     Including C4, C5, G4, P3.
 
@@ -687,6 +687,7 @@ def ec2_tvm_recommended_flags() -> Dict[str, Dict]:
         A dictionary that contains the mapping between instance type and the
         corresponding compilation flags.
         Each element includes:
+
         - target
             The compilation target
         - use_gpu
