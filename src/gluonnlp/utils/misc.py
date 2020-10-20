@@ -656,10 +656,10 @@ def init_comm(backend, gpus):
 def get_mxnet_visible_ctx():
     """Get the visible contexts in MXNet.
 
-    - If GPU is available it will return all the visible GPUs,
-    which can be controlled via "CUDA_VISIBLE_DEVICES".
-
-    - If no GPU is available, it will return the cpu device.
+    - If GPU is available
+        it will return all the visible GPUs, which can be controlled via "CUDA_VISIBLE_DEVICES".
+    - If no GPU is available
+        it will return the cpu device.
 
     Returns
     -------
