@@ -16,16 +16,10 @@ process the text data, and train models.
 
 # Features
 
-For NLP Practitioners
-- Easy-to-use Text Processing Tools
-- Automatically Train Models via AutoNLP (TODO)
-
-For Researchers
+- Easy-to-use Text Processing Tools and APIs
 - Pretrained Model Zoo
 - Write Models with Numpy-like API
-
-For Engineers
-- Fast Inference via [TVM](https://tvm.apache.org/) (TODO)
+- Fast Inference via [TVM](https://tvm.apache.org/)
 - AWS Integration via [SageMaker](https://aws.amazon.com/sagemaker/)
 
 
