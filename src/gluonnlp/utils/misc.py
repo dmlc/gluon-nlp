@@ -699,7 +699,7 @@ def get_ec2_tvm_flags() -> Dict[str, Dict]:
             Additional graph passes for further improvement.
     """
     instance_info = {
-        'g4': {'target': "cuda -model=t4",
+        'g4': {'target': "cuda -model=t4 -libs=cublas,cudnn",
                'use_gpu': True,
                'opt_level': 3,
                'required_pass': ["FastMath"]},
@@ -711,7 +711,7 @@ def get_ec2_tvm_flags() -> Dict[str, Dict]:
                'use_gpu': False,
                'opt_level': 3,
                'required_pass': ["FastMath"]},
-        'p3': {'target': 'cuda -model=v100',
+        'p3': {'target': 'cuda -model=v100 -libs=cublas,cudnn',
                'use_gpu': True,
                'opt_level': 3,
                'required_pass': ["FastMath"]}
