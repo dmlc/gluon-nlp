@@ -54,12 +54,17 @@ def get_parser():
                         help='The layout of the computation')
     parser.add_argument('--compute_layout', type=str, default=None,
                         help='The compute layout of the computation')
+    parser.add_argument('--use_tvm', action='store_true',
+                        help='Whether to use TVM for inference/training')
+    parser.add_argument('--instance_type', choices=['c4', 'c5', 'g4', 'p3'], default='g4',
+                        help='The instance type that the profiling script will be run on.')
     parser.add_argument('--mode', type=str, default='train',
                         choices=['train', 'inference'])
     return parser
 
 
-def run_benchmark(workload, model_name, out_file_name, is_train):
+def run_benchmark(workload, model_name, out_file_name, is_train,
+                  use_tvm, instance_type):
     if is_train:
         benchmark = GluonNLPBackboneBenchmark(
             workloads=workload,
@@ -75,6 +80,8 @@ def run_benchmark(workload, model_name, out_file_name, is_train):
             model_names=model_name,
             profile_inference=True,
             profile_train=False,
+            use_tvm=use_tvm,
+            instance_type=instance_type,
             to_csv=True,
             inference_out_csv_file=out_file_name)
         benchmark.run()
@@ -93,7 +100,7 @@ if __name__ == '__main__':
         else:
             profile_models = [ele for ele in MODELS]
         if args.mode == 'inference':
-            out_dir = 'infer_fp32_{}_{}'.format(layout, compute_layout)
+            out_dir = 'infer_fp32_{}_{}_tvm{}'.format(layout, compute_layout, args.use_tvm)
             df = pd.DataFrame(columns=['model', 'batch_size', 'sequence_length',
                                        'latency', 'memory'])
             os.makedirs(out_dir, exist_ok=True)
@@ -103,12 +110,15 @@ if __name__ == '__main__':
                                                                            workload[1]))
                     process = Process(
                         target=run_benchmark,
-                        args=(workload, model_name, out_path, False))
+                        args=(workload, model_name, out_path, False,
+                              args.use_tvm, args.instance_type))
                     process.start()
                     process.join()
                     new_df = pd.read_csv(out_path)
                     df = df.append(new_df, ignore_index=True)
-                    df.to_csv('gluonnlp_infer_fp32_{}_{}.csv'.format(layout, compute_layout))
+                    df.to_csv('gluonnlp_infer_fp32_{}_{}_tvm{}.csv'.format(layout,
+                                                                           compute_layout,
+                                                                           args.use_tvm))
         elif args.mode == 'train':
             out_dir = 'train_fp32_{}_{}'.format(layout, compute_layout)
             df = pd.DataFrame(columns=['model', 'batch_size', 'sequence_length',

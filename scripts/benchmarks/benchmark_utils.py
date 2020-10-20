@@ -17,7 +17,8 @@ import timeit
 import numpy as np
 import gluonnlp
 from gluonnlp.models import get_backbone
-from gluonnlp.utils.misc import logging_config
+from gluonnlp.utils.misc import logging_config, get_ec2_tvm_flags
+from gluonnlp.utils.lazy_imports import try_import_tvm
 from collections import defaultdict, namedtuple
 from datetime import datetime
 import multiprocessing as mp
@@ -602,22 +603,127 @@ def bytes_to_mega_bytes(memory_amount: int) -> int:
     return memory_amount >> 20
 
 
+_TVM_RT_CACHE = dict()
+
+
+def compile_tvm_graph_runtime(model, model_name, layout, compute_layout,
+                              batch_size, seq_length, dtype, instance_type):
+    key = (model_name, layout, compute_layout, batch_size, seq_length, dtype, instance_type)
+    if key in _TVM_RT_CACHE:
+        return _TVM_RT_CACHE[key]
+    flags = get_ec2_tvm_flags()[instance_type]
+    tvm = try_import_tvm()
+    from tvm import relay
+    from tvm.contrib import graph_runtime
+    token_ids_shape = (batch_size, seq_length) if layout == 'NT' else (seq_length, batch_size)
+    valid_length_shape = (batch_size,)
+    if 'bart' in model_name:
+        shape_dict = {
+            'data0': token_ids_shape,
+            'data1': valid_length_shape,
+            'data2': token_ids_shape,
+            'data3': valid_length_shape,
+        }
+        dtype_dict = {
+            'data0': 'int32',
+            'data1': 'int32',
+            'data2': 'int32',
+            'data3': 'int32',
+        }
+    elif 'roberta' in model_name or 'xlmr' in model_name:
+        shape_dict = {
+            'data0': token_ids_shape,
+            'data1': valid_length_shape,
+        }
+        dtype_dict = {
+            'data0': 'int32',
+            'data1': 'int32',
+        }
+    else:
+        shape_dict = {
+            'data0': token_ids_shape,
+            'data1': token_ids_shape,
+            'data2': valid_length_shape,
+        }
+        dtype_dict = {
+            'data0': 'int32',
+            'data1': 'int32',
+            'data2': 'int32'
+        }
+    sym = model._cached_graph[1]
+    params = {}
+    for k, v in model.collect_params().items():
+        params[v._var_name] = tvm.nd.array(v.data().asnumpy())
+    mod, params = relay.frontend.from_mxnet(sym, shape=shape_dict, dtype=dtype_dict, arg_params=params)
+    target = flags['target']
+    use_gpu = flags['use_gpu']
+    opt_level = flags['opt_level']
+    required_pass = flags['required_pass']
+    with tvm.transform.PassContext(opt_level=opt_level, required_pass=required_pass):
+        lib = relay.build(mod, target, params=params)
+    if use_gpu:
+        ctx = tvm.gpu()
+    else:
+        ctx = tvm.cpu()
+    rt = graph_runtime.GraphModule(lib["default"](ctx))
+    _TVM_RT_CACHE[key] = rt
+    return rt
+
+
 class GluonNLPBackboneBenchmark:
-    """
-    Benchmarks is a simple but feature-complete benchmarking script
+    """Benchmarks is a simple but feature-complete benchmarking script
     to compare memory and time performance of models in Transformers.
     """
     def __init__(self, workloads, model_names, use_fp16=False,
-                 repeat=3, use_gpu=True, device_idx=0,
+                 repeat=3, use_gpu=True,
+                 device_idx=0,
                  profile_inference=True,
                  profile_train=True,
                  env_print=True,
                  to_csv=False,
+                 use_tvm=False,
+                 instance_type=None,
                  layout='NT',
                  compute_layout='auto',
                  inference_out_csv_file='inference_time_memory.csv',
                  train_out_csv_file='train_time_memory.csv',
                  env_info_file='env_info.csv'):
+        """
+
+        Parameters
+        ----------
+        workloads
+            List of workloads to profile
+        model_names
+            List of model names to profile
+        use_fp16
+            Whether to use fp16
+        repeat
+            The number of repeat
+        use_gpu
+            Whether to use GPU
+        device_idx
+            The GPU ID
+        profile_inference
+            Whether to profile inference
+        profile_train
+            Whether to profile training
+        env_print
+            Whether to print the environment
+        to_csv
+            Whether to dump to csv file
+        use_tvm
+            Whether to use TVM to accelerate the
+        instance_type
+            Type of the instance. This will only be used to set the
+        layout
+            The input + output layout
+        compute_layout
+            The computation layout
+        inference_out_csv_file
+        train_out_csv_file
+        env_info_file
+        """
         self._workloads = workloads
         if not isinstance(workloads, list):
             workloads = [workloads]
@@ -634,6 +740,8 @@ class GluonNLPBackboneBenchmark:
         self._profile_train = profile_train
         self._env_print = env_print
         self._to_csv = to_csv
+        self._use_tvm = use_tvm
+        self._instance_type = instance_type
         self._layout = layout
         self._compute_layout = compute_layout
         self._inference_out_csv_file = inference_out_csv_file
@@ -698,9 +806,40 @@ class GluonNLPBackboneBenchmark:
             else:
                 out.wait_to_read()
 
-        timeit.repeat(run_forward, repeat=1, number=3)
-        runtimes = timeit.repeat(run_forward, repeat=self._repeat, number=3)
-        mxnet.npx.waitall()
+        if self._use_tvm:
+            tvm = try_import_tvm()
+            run_forward()
+            if self._use_gpu:
+                ctx = tvm.gpu()
+            else:
+                ctx = tvm.cpu()
+            rt = compile_tvm_graph_runtime(model=model, model_name=model_name,
+                                           layout=self._layout, compute_layout=self._compute_layout,
+                                           batch_size=batch_size, seq_length=sequence_length,
+                                           instance_type=self._instance_type,
+                                           dtype='float32' if not self._use_fp16 else 'float16')
+            tvm_input_ids = tvm.nd.array(input_ids, ctx=ctx)
+            tvm_token_types = tvm.nd.array(token_types, ctx=ctx)
+            tvm_valid_length = tvm.nd.array(valid_length, ctx=ctx)
+
+            def run_tvm_forward():
+                if 'roberta' in model_name or 'xlmr' in model_name:
+                    rt.set_input(data0=tvm_input_ids, data1=tvm_valid_length)
+                elif 'bart' in model_name:
+                    rt.set_input(data0=tvm_input_ids, data1=tvm_valid_length)
+                else:
+                    rt.set_input(data0=tvm_input_ids, data1=tvm_token_types,
+                                 data2=tvm_valid_length)
+                rt.run()
+                for i in range(rt.get_num_outputs()):
+                    out = rt.get_output(i)
+            # Warmup
+            timeit.repeat(run_tvm_forward, repeat=1, number=2)
+            runtimes = timeit.repeat(run_tvm_forward, repeat=self._repeat, number=3)
+        else:
+            timeit.repeat(run_forward, repeat=1, number=3)
+            runtimes = timeit.repeat(run_forward, repeat=self._repeat, number=3)
+            mxnet.npx.waitall()
         # Profile memory
         if self._use_gpu:
             nvml.nvmlInit()
