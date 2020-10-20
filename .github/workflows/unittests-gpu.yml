@@ -44,10 +44,10 @@ jobs:
                                              --job-type g4dn.4x \
                                              --name GluonNLP-GPU-Test-${{ github.ref }} \
                                              --source-ref ${{ github.ref }} \
-                                             --work-dir tools/batch \
+                                             --work-dir . \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.repository }} \
-                                             --command "./batch_states/test.sh" \
+                                             --command "python3 -m pytest --cov=. --cov-config=./.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow ./tests/" \
                                              --wait | tee > batch_job.log  
 
 
@@ -59,10 +59,10 @@ jobs:
                                              --job-type g4dn.4x \
                                              --name GluonNLP-GPU-Test-PR#${{ github.event.number }} \
                                              --source-ref ${{ github.event.pull_request.head.ref }} \
-                                             --work-dir tools/batch \
+                                             --work-dir . \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
-                                             --command "./batch_states/test.sh" \
+                                             --command "python3 -m pytest --cov=. --cov-config=./.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow ./tests/" \
                                              --wait | tee > batch_job.log
 
       - name: Wait for job and copy files from AWS s3
