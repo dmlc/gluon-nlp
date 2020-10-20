@@ -53,7 +53,7 @@ bash benchmark_gluonnlp_tvm.sh
 ```
 
 ```
-├── gluonnlp_infer_fp32_NT_NT_tvm0.csv
-├── gluonnlp_infer_fp32_NT_TN_tvm0.csv
-├── gluonnlp_infer_fp32_TN_TN_tvm0.csv
+├── gluonnlp_infer_fp32_NT_NT_tvm1.csv
+├── gluonnlp_infer_fp32_NT_TN_tvm1.csv
+├── gluonnlp_infer_fp32_TN_TN_tvm1.csv
 ```
