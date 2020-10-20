@@ -10,7 +10,6 @@ import collections
 
 import mxnet as mx
 import numpy as np
-from mxnet.lr_scheduler import PolyScheduler
 
 from pretraining_utils import get_pretrain_data_npz, get_pretrain_data_text, MaskedAccuracy
 from gluonnlp.utils.misc import repeat, grouper, set_seed, init_comm, logging_config, naming_convention
@@ -99,6 +98,9 @@ def parse_args():
                         help='Whether or not to cache the last processed training dataset.')
     parser.add_argument('--num_max_dataset_cached', type=int, default=0,
                         help='Maximum number of cached processed training dataset.')
+    # phase 2
+    parser.add_argument('--phase2', action='store_true', help='phase 2 training')
+    parser.add_argument('--phase1_num_steps', type=int, help='number of steps for phase 1')
     # communication
     parser.add_argument('--comm_backend', type=str, default='device',
                         choices=['byteps', 'horovod', 'dist_sync_device', 'device'],
@@ -111,16 +113,11 @@ def parse_args():
     return args
 
 
-def get_pretraining_model(model_name, ctx_l, max_seq_length=512):
+def get_pretraining_model(model_name, ctx_l):
     cfg, tokenizer, _, _ = get_pretrained_bert(
         model_name, load_backbone=False, load_mlm=False)
     cfg = BertModel.get_cfg().clone_merge(cfg)
-    cfg.defrost()
-    cfg.MODEL.max_length = max_seq_length
-    cfg.freeze()
     model = BertForPretrain(cfg)
-    model.initialize(ctx=ctx_l)
-    model.hybridize()
     return cfg, tokenizer, model
 
 
@@ -142,7 +139,7 @@ def final_save(model, save_dir, tokenizer, cfg):
         logging.info('\t{}/{} {} {}'.format(save_dir, new_name, long_hash, file_size))
 
 
-def parameters_option(step_num, model, ckpt_dir, option='Saving'):
+def parameters_option(step_num, model, ckpt_dir, option='Saving', ctx_l=None):
     """Save or load the model parameter, marked by step_num."""
     param_path = os.path.join(
         ckpt_dir, '{}.params'.format(str(step_num).zfill(7)))
@@ -151,7 +148,7 @@ def parameters_option(step_num, model, ckpt_dir, option='Saving'):
     if option == 'Saving':
         model.save_parameters(param_path)
     elif option == 'Loading':
-        model.load_parameters(param_path)
+        model.load_parameters(param_path, ctx=ctx_l)
     else:
         raise NotImplementedError('Unknown Option: {}'.format(option))
 
@@ -184,7 +181,13 @@ def train(args):
     logging.info('Training info: num_buckets: {}, '
                  'num_workers: {}, rank: {}'.format(
                      args.num_buckets, num_workers, rank))
-    cfg, tokenizer, model = get_pretraining_model(args.model_name, ctx_l, args.max_seq_length)
+    cfg, tokenizer, model = get_pretraining_model(args.model_name, ctx_l)
+    if args.start_step:
+        logging.info('Restart training from {}'.format(args.start_step))
+        parameters_option(args.start_step, model, args.ckpt_dir, 'Loading', ctx_l)
+    else:
+        model.initialize(ctx=ctx_l)
+    model.hybridize()
 
     if args.raw:
         get_dataset_fn = functools.partial(get_pretrain_data_text,
@@ -227,17 +230,7 @@ def train(args):
     save_interval = args.ckpt_interval
     logging.info('#Total Training Steps={}, Warmup Steps={}, Save Interval={}'
                  .format(num_steps, warmup_steps, save_interval))
-    lr_scheduler = PolyScheduler(max_update=num_steps,
-                                 base_lr=args.lr,
-                                 warmup_begin_lr=0,
-                                 pwr=1,
-                                 final_lr=0,
-                                 warmup_steps=warmup_steps,
-                                 warmup_mode='linear')
-    optimizer_params = {'learning_rate': args.lr,
-                        'wd': args.wd,
-                        'lr_scheduler': lr_scheduler,
-                        }
+    optimizer_params = {'learning_rate': args.lr, 'wd': args.wd}
     if args.optimizer == 'adamw':
         optimizer_params.update({'beta1': 0.9,
                                  'beta2': 0.999,
@@ -253,12 +246,11 @@ def train(args):
                                    update_on_kvstore=False)
     if args.start_step:
         logging.info('Restart training from {}'.format(args.start_step))
-        parameters_option(args.start_step, model, args.ckpt_dir, 'Loading')
         states_option(args.start_step, trainer, args.ckpt_dir, local_rank, 'Loading')
 
+    # backend specific implementation
     if args.comm_backend == 'byteps':
         trainer._init_params()
-    # backend specific implementation
     if args.comm_backend == 'horovod':
         # Horovod: fetch and broadcast parameters
         hvd.broadcast_parameters(param_dict, root_rank=0)
@@ -275,6 +267,9 @@ def train(args):
     nsp_metric.reset()
 
     step_num = args.start_step
+    if args.phase2:
+        step_num -= args.phase1_num_steps
+
     running_mlm_loss, running_nsp_loss = 0., 0.
     running_num_tks = 0
 
@@ -283,6 +278,7 @@ def train(args):
     # start training
     train_loop_dataloader = grouper(repeat(data_train), len(ctx_l))
     while step_num < num_steps:
+        step_num += 1
         for _ in range(num_accumulated):
             sample_l = next(train_loop_dataloader)
             mlm_loss_l = []
@@ -342,19 +338,29 @@ def train(args):
             params, args.max_grad_norm * num_workers)
         total_norm = total_norm / num_workers
 
+        # update learning rate
+        scheduled_lr = args.lr
+        if step_num <= warmup_steps:
+            scheduled_lr *= step_num / warmup_steps
+        else:
+            offset = (num_steps - step_num) / (num_steps - warmup_steps)
+            scheduled_lr *= max(offset, 0)
+        trainer.set_learning_rate(scheduled_lr)
+
         if args.comm_backend == 'horovod' or args.comm_backend == 'byteps':
             # Note that horovod.trainer._scale is default to num_workers,
-            # thus trainer.update(1) will scale the gradients by 1./num_workers
+            # thus trainer.update(1) will scale the gradients by 1./num_workers.
+            # *num_workers* of Horovod is the number of GPUs.
             trainer.update(1, ignore_stale_grad=True)
         else:
-            # gluon.trainer._scale is default to 1
+            # gluon.trainer._scale is default to 1.
+            # *num_workers* of Trainer is the number of machines.
             trainer.update(num_workers, ignore_stale_grad=True)
 
         if num_accumulated > 1:
             # set grad to zero for gradient accumulation
             model.zero_grad()
 
-        step_num += 1
         # saving
         if step_num % save_interval == 0 or step_num >= num_steps:
             states_option(step_num, trainer, args.ckpt_dir, local_rank, 'Saving')
