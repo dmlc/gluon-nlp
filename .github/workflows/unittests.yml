@@ -65,6 +65,7 @@ jobs:
           cd tvm
           mkdir -p build
           cp cmake/config.cmake build
+          echo set\(USE_LLVM ON\) >> build/config.cmake
           echo set\(USE_GRAPH_RUNTIME ON\) >> build/config.cmake
           echo set\(USE_BLAS openblas\) >> build/config.cmake
           cd build
