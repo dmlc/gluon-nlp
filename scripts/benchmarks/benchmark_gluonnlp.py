@@ -100,7 +100,7 @@ if __name__ == '__main__':
         else:
             profile_models = [ele for ele in MODELS]
         if args.mode == 'inference':
-            out_dir = 'infer_fp32_{}_{}_tvm{}'.format(layout, compute_layout, args.use_tvm)
+            out_dir = 'infer_fp32_{}_{}_tvm{}'.format(layout, compute_layout, int(args.use_tvm))
             df = pd.DataFrame(columns=['model', 'batch_size', 'sequence_length',
                                        'latency', 'memory'])
             os.makedirs(out_dir, exist_ok=True)
@@ -118,7 +118,7 @@ if __name__ == '__main__':
                     df = df.append(new_df, ignore_index=True)
                     df.to_csv('gluonnlp_infer_fp32_{}_{}_tvm{}.csv'.format(layout,
                                                                            compute_layout,
-                                                                           args.use_tvm))
+                                                                           int(args.use_tvm)))
         elif args.mode == 'train':
             out_dir = 'train_fp32_{}_{}'.format(layout, compute_layout)
             df = pd.DataFrame(columns=['model', 'batch_size', 'sequence_length',
