@@ -51,3 +51,9 @@ Install TVM as described in https://tvm.apache.org/docs/install/index.html
 ```bash
 bash benchmark_gluonnlp_tvm.sh
 ```
+
+```
+├── gluonnlp_infer_fp32_NT_NT_tvm0.csv
+├── gluonnlp_infer_fp32_NT_TN_tvm0.csv
+├── gluonnlp_infer_fp32_TN_TN_tvm0.csv
+```
