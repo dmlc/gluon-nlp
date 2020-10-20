@@ -675,7 +675,7 @@ def get_mxnet_visible_ctx():
     return ctx_l
 
 
-def ec2_tvm_recommended_flags() -> Dict[str, Dict]:
+def get_ec2_tvm_flags() -> Dict[str, Dict]:
     r"""Return the recommended flags for TVM compilation in AWS EC2 instances.
 
     Including C4, C5, G4, P3.

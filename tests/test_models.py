@@ -5,7 +5,7 @@ import os
 import numpy as np
 import numpy.testing as npt
 from gluonnlp.models import get_backbone, list_backbone_names
-from gluonnlp.utils.misc import count_parameters, ec2_tvm_recommended_flags
+from gluonnlp.utils.misc import count_parameters, get_ec2_tvm_flags
 from gluonnlp.utils.lazy_imports import try_import_tvm
 mx.npx.set_np()
 
@@ -69,7 +69,7 @@ def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
     tvm = try_import_tvm()
     from tvm import relay
     from tvm.contrib import graph_runtime
-    tvm_recommended_flags = ec2_tvm_recommended_flags()
+    tvm_recommended_flags = get_ec2_tvm_flags()
     if ctx.device_type == 'gpu':
         flags = tvm_recommended_flags['g4']
     elif ctx.device_type == 'cpu':
@@ -163,4 +163,4 @@ def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
             mx_out_gt = mx_out.asnumpy()
         else:
             mx_out_gt = mx_out[i].asnumpy()
-        npt.assert_allclose(out.asnumpy(), mx_out_gt, rtol=1e-3, atol=5e-2)
+        npt.assert_allclose(out.asnumpy(), mx_out_gt, rtol=1e-3, atol=8e-2)
