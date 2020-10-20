@@ -818,9 +818,9 @@ class GluonNLPBackboneBenchmark:
                                            batch_size=batch_size, seq_length=sequence_length,
                                            instance_type=self._instance_type,
                                            dtype='float32' if not self._use_fp16 else 'float16')
-            tvm_input_ids = tvm.nd.array(input_ids, ctx=ctx)
-            tvm_token_types = tvm.nd.array(token_types, ctx=ctx)
-            tvm_valid_length = tvm.nd.array(valid_length, ctx=ctx)
+            tvm_input_ids = tvm.nd.array(input_ids.asnumpy(), ctx=ctx)
+            tvm_token_types = tvm.nd.array(token_types.asnumpy(), ctx=ctx)
+            tvm_valid_length = tvm.nd.array(valid_length.asnumpy(), ctx=ctx)
 
             def run_tvm_forward():
                 if 'roberta' in model_name or 'xlmr' in model_name:
