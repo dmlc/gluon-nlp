@@ -31,6 +31,7 @@ cp cmake/config.cmake build
 echo set\(USE_LLVM llvm-config-10\) >> build/config.cmake
 echo set\(USE_CUDA ON\) >> build/config.cmake
 echo set\(USE_CUDNN ON\) >> build/config.cmake
+echo set\(USE_CUBLAS ON\) >> build/config.cmake
 echo set\(USE_GRAPH_RUNTIME ON\) >> build/config.cmake
 echo set\(USE_BLAS openblas\) >> build/config.cmake
 
