@@ -184,3 +184,39 @@ For reference, we have also included the results of original version from Google
 |Google ELECTRA large      |      -/89.7     |     -/88.1   |
 |Google MobileBERT         |   90.0/82.9	|   79.2/76.2   |
 |Fairseq RoBERTa large     |   94.6/88.9    |	89.4/86.5   |
+
+### Run with AWS Batch
+We can quickly run the squad finetuning via the [AWS Batch support](../../tools/batch).
+
+The code is given in [run_batch_squad.sh](run_batch_squad.sh)
+
+```bash
+# AWS Batch training without horovod on SQuAD 2.0
+bash batch/run_batch_squad.sh 0 2.0 submit_squad_v2.log
+
+# AWS Batch training with horovod on SQuAD 2.0
+bash batch/run_batch_squad.sh 1 2.0 submit_squad_v2_horovod.log
+
+# AWS Batch training with horovod on SQuAD 1.1
+bash batch/run_batch_squad.sh 1 1.1 submit_squad_v1_horovod.log
+```
+Also, after you have submitted the jobs, you may sync the results via
+```bash
+bash batch/sync_batch_result.sh submit_squad_v2.log squad_v2_no_horovod
+bash batch/sync_batch_result.sh submit_squad_v2_horovod.log squad_v2_horovod
+```
+
+Internally, it will train the following models on SQuAD 2.0 dataset:
+|    MODEL_NAME      |
+|:------------------:|
+| uncased_bert_base  |
+| uncased_bert_large |
+| albert_base        |
+| albert_large       |
+| albert_xlarge      |  
+| albert_xxlarge     |
+| electra_small      |
+| electra_base       |
+| electra_large      |
+| roberta_large      |
+| mobilebert         |

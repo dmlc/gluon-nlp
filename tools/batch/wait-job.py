@@ -10,12 +10,14 @@ parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFo
 
 parser.add_argument('--profile', help='profile name of aws account.', type=str,
                     default=None)
+parser.add_argument('--region', help='Default region when creating new connections', type=str,
+                    default=None)
 parser.add_argument('--job-id', help='job id to check status and wait.', type=str,
                     default=None)
 
 args = parser.parse_args()
 
-session = boto3.Session(profile_name=args.profile)
+session = boto3.Session(profile_name=args.profile, region_name=args.region)
 batch, cloudwatch = [session.client(service_name=sn) for sn in ['batch', 'logs']]
 
 def printLogs(logGroupName, logStreamName, startTime):

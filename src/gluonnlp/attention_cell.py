@@ -120,6 +120,7 @@ def gen_self_attn_mask(F, data,
     Returns
     -------
     mask
+        A boolean mask
         Shape (batch_size, seq_length, seq_length)
     """
     if layout == 'NT':
@@ -139,26 +140,27 @@ def gen_self_attn_mask(F, data,
             mask = mask1 * mask2
         else:
             # TODO(sxjscience) optimize
-            seq_len_ones = F.np.ones_like(F.npx.arange_like(data, axis=time_axis))  # (seq_length,)
-            batch_ones = F.np.ones_like(F.npx.arange_like(data, axis=batch_axis))   # (batch_size,)
+            seq_len_ones = F.np.ones_like(F.npx.arange_like(data, axis=time_axis),
+                                          dtype=np.bool)  # (seq_length,)
+            batch_ones = F.np.ones_like(F.npx.arange_like(data, axis=batch_axis),
+                                        dtype=np.bool)   # (batch_size,)
             mask = batch_ones.reshape((-1, 1, 1)) * seq_len_ones.reshape((1, -1, 1))\
                    * seq_len_ones.reshape((1, 1, -1))
     elif attn_type == 'causal':
         steps = F.npx.arange_like(data, axis=time_axis)
         # mask: (seq_length, seq_length)
         # batch_mask: (batch_size, seq_length)
-        mask = (F.np.expand_dims(steps, axis=0) <= F.np.expand_dims(steps, axis=1)).astype(dtype)
+        mask = F.np.expand_dims(steps, axis=0) <= F.np.expand_dims(steps, axis=1)
         if valid_length is not None:
             valid_length = valid_length.astype(dtype)
-            batch_mask = (F.np.expand_dims(steps, axis=0) < F.np.expand_dims(valid_length, axis=-1)).astype(dtype)
+            batch_mask = F.np.expand_dims(steps, axis=0) < F.np.expand_dims(valid_length, axis=-1)
             mask = mask * F.np.expand_dims(batch_mask, axis=-1)
         else:
             batch_ones = F.np.ones_like(F.npx.arange_like(data, axis=batch_axis),
-                                        dtype=dtype)  # (batch_size,)
+                                        dtype=np.bool)  # (batch_size,)
             mask = mask * batch_ones.reshape((-1, 1, 1))
     else:
         raise NotImplementedError
-    mask = mask.astype(dtype)
     return mask
 
 
@@ -231,15 +233,14 @@ def gen_mem_attn_mask(F, mem, mem_valid_length, data, data_valid_length=None,
     mem_valid_length = mem_valid_length.astype(dtype)
     mem_steps = F.npx.arange_like(mem, axis=time_axis)  # (mem_length,)
     data_steps = F.npx.arange_like(data, axis=time_axis)  # (query_length,)
-    mem_mask = (F.npx.reshape(mem_steps, (1, 1, -1))
-                < F.npx.reshape(mem_valid_length, (-2, 1, 1))).astype(dtype)  # (B, 1, mem_length)
+    mem_mask = F.npx.reshape(mem_steps, (1, 1, -1)) < F.npx.reshape(mem_valid_length, (-2, 1, 1))
     if data_valid_length is not None:
         data_valid_length = data_valid_length.astype(dtype)
-        data_mask = (F.npx.reshape(data_steps, (1, -1, 1))
-                     < F.npx.reshape(data_valid_length, (-2, 1, 1))).astype(dtype)  # (B, query_length, 1)
+        data_mask = F.npx.reshape(data_steps, (1, -1, 1))\
+                    < F.npx.reshape(data_valid_length, (-2, 1, 1))  # (B, query_length, 1)
         mask = mem_mask * data_mask
     else:
-        query_length_ones = F.np.ones_like(data_steps)
+        query_length_ones = F.np.ones_like(data_steps, dtype=np.bool)
         mask = query_length_ones.reshape((1, -1, 1)) * mem_mask
     return mask
 
@@ -274,7 +275,7 @@ def masked_softmax(F, att_score, mask, dtype=np.float32, axis: int = -1):
         else:
             try:
                 # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
-                from mxnet.contrib import amp
+                from mxnet import amp
                 if amp.amp._amp_initialized:
                     neg = -1e4
             except ImportError:

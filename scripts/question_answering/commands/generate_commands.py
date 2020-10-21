@@ -12,7 +12,7 @@ def base_cfg():
     cfg.lr = 2e-5
     cfg.warmup_ratio = 0.1
     cfg.wd = 0.01
-    cfg.max_grad_norm = 0.1
+    cfg.max_grad_norm = 1.0
     cfg.max_seq_length = 512
     cfg.layerwise_decay = -1
     return cfg

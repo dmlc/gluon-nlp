@@ -106,10 +106,15 @@ def verify_nmt_inference(train_model, inference_model,
     Parameters
     ----------
     train_model
+        The training model
     inference_model
+        The inference model
     batch_size
+        Batch size
     src_seq_length
+        Length of the source sequence
     tgt_seq_length
+        Length of the target sequence
     atol
         Absolute tolerance
     rtol
@@ -161,3 +166,72 @@ def verify_nmt_inference(train_model, inference_model,
                                 partial_out[:, :partial_batch_size].asnumpy(), atol, rtol)
     else:
         raise NotImplementedError
+
+
+def _match_struct_output(lhs, rhs, atol=1E-2, rtol=1E-2):
+    if isinstance(lhs, (list, tuple)):
+        for lhs_ele, rhs_ele in zip(lhs, rhs):
+            _match_struct_output(lhs_ele, rhs_ele, atol=atol, rtol=rtol)
+    else:
+        npt.assert_allclose(lhs.asnumpy(), rhs.asnumpy(), atol=atol, rtol=rtol)
+
+
+def test_backbone_fp16(model_cls, cfg, ctx, inputs,
+                       atol=1E-2, rtol=1E-2, check_amp=True,
+                       model_fp32=None):
+    """Test whether the backbone model has the comparable parameter gradient +
+
+    Parameters
+    ----------
+    model_cls
+        The modeling class
+    cfg
+        The configuration
+    ctx
+        The context
+    inputs
+        The input tensors of the model. We will
+    atol
+        The absolute tolerance
+    rtol
+        The relative tolerance
+    check_amp
+        Whether to check the AMP process. You will need to ensure that there is no
+        randomness in the model when it is turned on.
+    model_fp32
+        The float32 model.
+
+    """
+    if check_amp:
+        from mxnet import amp
+        amp.init()
+
+    if model_fp32 is None:
+        model_fp32 = model_cls.from_cfg(cfg, dtype='float32')
+        model_fp32.initialize(ctx=ctx)
+        model_fp32.hybridize()
+    # Check forward
+    outputs_fp32 = model_fp32(*(mx.np.array(ele, ctx=ctx) for ele in inputs))
+    model_fp16 = model_cls.from_cfg(cfg, dtype='float16')
+    model_fp16.share_parameters(model_fp32.collect_params())
+    model_fp16.cast('float16')
+    model_fp16.hybridize()
+    for param in model_fp16.collect_params().values():
+        assert param.dtype == 'float16'
+    outputs_fp16 = model_fp16(*(mx.np.array(ele, ctx=ctx) for ele in inputs))
+    _match_struct_output(outputs_fp16, outputs_fp32)
+    if check_amp:
+        trainer = mx.gluon.Trainer(model_fp16.collect_params(), 'adam',
+                                   {'learning_rate': 1E-3, 'wd': 1E-4},
+                                   update_on_kvstore=False)
+        amp.init_trainer(trainer)
+        with mx.autograd.record():
+            outputs_fp16 = model_fp16(*[mx.np.array(ele, ctx=ctx) for ele in inputs])
+            if not isinstance(outputs_fp16, (tuple, list)):
+                loss = outputs_fp16.mean()
+            else:
+                loss = sum([ele.mean() for ele in outputs_fp16])
+            with amp.scale_loss(loss, trainer) as scaled_loss:
+                mx.autograd.backward(scaled_loss)
+        trainer.step(1)
+        mx.npx.waitall()
