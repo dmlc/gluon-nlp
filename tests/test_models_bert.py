@@ -4,6 +4,7 @@ import mxnet as mx
 import tempfile
 from gluonnlp.models.bert import BertModel, BertForMLM, BertForPretrain,\
     list_pretrained_bert, get_pretrained_bert
+from gluonnlp.utils.testing import verify_backbone_fp16
 mx.npx.set_np()
 
 
@@ -55,15 +56,8 @@ def test_bert_small_cfg(compute_layout, ctx):
         # Test BertModel FP16
         device_type = ctx.device_type
         if device_type == 'gpu':
-            bert_model_fp16 = BertModel.from_cfg(cfg, dtype='float16')
-            bert_model_fp16.share_parameters(bert_model.collect_params())
-            bert_model_fp16.cast('float16')
-            bert_model_fp16.hybridize()
-            contextual_embedding_fp16, pooled_out_fp16 = bert_model_fp16(inputs,\
-                    token_types, valid_length)
-            assert_allclose(contextual_embedding_fp16.asnumpy(),
-                            mx.np.swapaxes(contextual_embedding_tn, 0, 1).asnumpy(),
-                            1E-2, 1E-2)
+            verify_backbone_fp16(model_cls=BertModel, cfg=cfg, ctx=ctx,
+                                 inputs=[inputs, token_types, valid_length])
 
         # Test for BertForMLM
         bert_mlm_model = BertForMLM(cfg)

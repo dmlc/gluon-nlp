@@ -527,7 +527,7 @@ def train(args):
                         'wd': args.wd,
                         'lr_scheduler': lr_scheduler,
                         }
-    adam_betas = eval(args.adam_betas)
+    adam_betas = json.loads(args.adam_betas.replace('(', '[').replace(')', ']'))
     if args.optimizer == 'adamw':
         optimizer_params.update({'beta1': adam_betas[0],
                                  'beta2': adam_betas[1],

@@ -6,6 +6,7 @@ import tempfile
 from gluonnlp.models.electra import ElectraModel, ElectraDiscriminator,\
     ElectraGenerator,\
     list_pretrained_electra, get_pretrained_electra, get_generator_cfg
+from gluonnlp.utils.testing import verify_backbone_fp16
 mx.npx.set_np()
 
 
@@ -52,6 +53,11 @@ def test_electra_model(compute_layout, ctx):
         electra_model.initialize()
         electra_model.hybridize()
         contextual_embedding, pooled_out = electra_model(inputs, token_types, valid_length)
+        # Verify Float16
+        if ctx.device_type == 'gpu':
+            verify_backbone_fp16(model_cls=ElectraModel, cfg=cfg, ctx=ctx,
+                                 inputs=[inputs, token_types, valid_length])
+
         electra_model_tn = ElectraModel.from_cfg(cfg_tn)
         electra_model_tn.share_parameters(electra_model.collect_params())
         electra_model_tn.hybridize()

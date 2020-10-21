@@ -130,7 +130,8 @@ if __name__ == '__main__':
                                                                            workload[1]))
                     process = Process(
                         target=run_benchmark,
-                        args=(workload, model_name, out_path, True))
+                        args=(workload, model_name, out_path, True, False,
+                              args.instance_type))
                     process.start()
                     process.join()
                     new_df = pd.read_csv(out_path)

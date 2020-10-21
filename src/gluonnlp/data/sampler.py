@@ -266,20 +266,25 @@ class SortedSampler(BaseSampler):
 
 
 class BoundedBudgetSampler(BaseSampler):
-    r"""Assign each data sample to bounded budget batches. Samples will be sorted by length before batchfy
-    see https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
+    r"""Assign each data sample to bounded budget batches.
+    We will ensure that within the batch,
+    the total number of tokens is smaller than the provided max_num_tokens,
+    and the total number of sentences is smaller than the provided max_num_sentences.
+
+    Samples will be sorted by length before batchify
+    See Also https://github.com/pytorch/fairseq/blob/master/fairseq/data/data_utils_fast.pyx
 
     Parameters
     ----------
     lengths
         The length of the sequences in the input data sample.
     max_num_tokens
-        max tokens num of each batch
+        Max number of tokens of each batch
     max_num_sentences
-        max sentences num of each batch
+        Max number of sentences of each batch
     required_batch_size_multiple
-        require batch size to be a multiple of N (default: 1).
-        better throughput in GPU.
+        Require batch size to be a multiple of N (default: 1).
+        This will generally have better throughput in GPU.
     shuffle
         Whether to shuffle the batches.
     seed
@@ -295,7 +300,7 @@ class BoundedBudgetSampler(BaseSampler):
         self._lengths = np.array(lengths)
         if self._lengths.ndim == 2:
             self._lengths = self._lengths.max(axis=1)
-        self._indices = np.array(range(len(lengths)))
+        self._indices = np.arange(len(lengths))
         self._max_num_tokens = max_num_tokens
         self._max_num_sentences = max_num_sentences
         self._batches = []
@@ -313,11 +318,11 @@ class BoundedBudgetSampler(BaseSampler):
             batch_num_tokens = batch_num_sentences * batch_max_sample_len
             if (self._max_num_sentences > 0 and batch_num_sentences > self._max_num_sentences) or \
                (self._max_num_tokens > 0 and batch_num_tokens > self._max_num_tokens):
-                # moded_bs = len(batch) % required_batch_size_multiple when len(batch) < required_batch_size_multiple
-                moded_bs = max(
-                    required_batch_size_multiple * (len(batch) // required_batch_size_multiple),
-                    len(batch) % required_batch_size_multiple
-                )
+                if len(batch) < required_batch_size_multiple:
+                    moded_bs = len(batch)
+                else:
+                    moded_bs = required_batch_size_multiple\
+                               * (len(batch) // required_batch_size_multiple)
                 self._batches.append(np.array(batch[:moded_bs]))
                 batch = batch[moded_bs:]
                 batch_max_sample_len = max(

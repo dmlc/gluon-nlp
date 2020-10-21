@@ -274,12 +274,18 @@ def masked_softmax(F, att_score, mask, dtype=np.float32, axis: int = -1):
         else:
             try:
                 # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
-                from mxnet.contrib import amp
+                from mxnet import amp
                 if amp.amp._amp_initialized:
                     neg = -1e4
             except ImportError:
-                pass
-
+                try:
+                    from mxnet.contrib import amp
+                except ImportError:
+                    amp = None
+                    pass
+            if amp is not None:
+                if amp.amp._amp_initialized:
+                    neg = -1e4
         att_score = F.np.where(mask, att_score, neg)
         logits = F.npx.softmax(att_score, axis=axis) * mask
     else:

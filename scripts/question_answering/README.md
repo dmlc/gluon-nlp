@@ -145,16 +145,16 @@ Performance are shown in the table below, in which the SQuAD1.1 are evaluated wi
 Notice that the standard metrics of SQuAD are `EM/F1`. The former is an exact match score between predictions and references, 
 while the latter is a token-level F1 score in which the common tokens are considered as True Positives.
 
-|Reproduced ALBERT Models (F1/EM)  | SQuAD 1.1 dev | SQuAD 2.0 dev | SQuAD 2.0 Results File | Log | Command |
-|----------------------------------|---------------|---------------|------|-----| --------|
-|ALBERT base                       | 90.55/83.83   | 82.09/79.40   |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_base_v2_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_base_v2_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_albert_base.sh) |
-|ALBERT large                      | 92.66/86.43   | 84.98/82.19   |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_large_v2_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_large_v2_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_albert_large.sh) |
-|ALBERT xlarge                     | 93.85/87.71   | 87.92/85.04   |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_xlarge_v2_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_xlarge_v2_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_albert_xlarge.sh) |
-|ALBERT xxlarge                    | 95.00/89.01   | 89.91/86.87    |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_xxlarge_v2_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_albert_xxlarge_v2_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_albert_xxlarge.sh) |
+|Reproduced ALBERT Models (F1/EM)  | SQuAD 1.1 dev | SQuAD 2.0 dev | SQuAD 2.0 Results File | Log | Command | Weight |
+|----------------------------------|---------------|---------------|------|-----|---------|----------|
+|ALBERT base                       | 90.55/83.83   | 82.57/79.75   |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_albert_base/fintune_google_albert_base_v2_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_albert_base/fintune_google_albert_base_v2_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_albert_base.sh) | [weight](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_albert_base/fintune_google_albert_base_v2_squad_2.0/google_albert_base_v2_squad2.0_8163.params) |
+|ALBERT large                      | 92.66/86.43   | 85.21/82.50   |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_albert_large/fintune_google_albert_large_v2_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_albert_large/fintune_google_albert_large_v2_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_albert_large.sh) | [weight](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_albert_large/fintune_google_albert_large_v2_squad_2.0/google_albert_large_v2_squad2.0_8163.params) |
+|ALBERT xlarge                     | 93.85/87.71   | 87.73/84.83   |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_albert_xlarge/fintune_google_albert_xlarge_v2_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_albert_xlarge/fintune_google_albert_xlarge_v2_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_albert_xlarge.sh) | [weight](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_albert_xlarge/fintune_google_albert_xlarge_v2_squad_2.0/google_albert_xlarge_v2_squad2.0_8163.params) |
+|ALBERT xxlarge                    | 95.00/89.01   | 89.84/86.79   |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_albert_xxlarge/fintune_google_albert_xxlarge_v2_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_albert_xxlarge/fintune_google_albert_xxlarge_v2_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_albert_xxlarge.sh) | [weight](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_albert_xxlarge/fintune_google_albert_xxlarge_v2_squad_2.0/google_albert_xxlarge_v2_squad2.0_8163.params) |
 
 For reference, we've included the results from Google's Original Experiments
 
-| Model Name | SQuAD 1.1 dev | SQuAD 2.0 dev|
+| Model Name (F1/EM) | SQuAD 1.1 dev | SQuAD 2.0 dev|
 |------------|---------------|--------------|
 |ALBERT base (googleresearch/albert)    | 90.2/83.2     | 82.1/79.3    |
 |ALBERT large (googleresearch/albert)   | 91.8/85.2     | 84.9/81.8    |
@@ -163,19 +163,19 @@ For reference, we've included the results from Google's Original Experiments
 
 For the reset pretrained models, the results on SQuAD1.1 and SQuAD2.0 are given as follows.
 
-| Model Name    | SQuAD1.1 dev  | SQuAD2.0 dev | SQuAD 2.0 Results File | Log | Command |
-|--------------------------|---------------|--------------|------|-----|--------|
-|BERT base                 | 88.40/81.24   | 76.43/73.59  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_en_uncased_bert_base_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_en_uncased_bert_base_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_uncased_bert_base.sh) |
-|BERT large                | 90.45/83.55   | 81.41/78.46  | [json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_en_uncased_bert_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_en_uncased_bert_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_uncased_bert_large.sh) |
-|ELECTRA small             | 85.42/78.95   | 73.93/71.36  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_small_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_small_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_small.sh) |      
-|ELECTRA base              | 92.63/87.34   | 86.65/83.95  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_base_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_base_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_small.sh) |
-|ELECTRA large             | 94.95/89.94   | 90.67/88.32  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_electra_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_base.sh) |
-|MobileBERT                | 89.87/83.26 | 80.54/77.81  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_google_uncased_mobilebert_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_mobilebert.sh) |
-|RoBERTa large             | 94.58/88.86   | 89.69/86.80  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_fairseq_roberta_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/fintune_fairseq_roberta_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_large.sh) |
+| Model Name (F1/EM)    | SQuAD1.1 dev  | SQuAD2.0 dev | SQuAD 2.0 Results File | Log | Command | Weight |
+|--------------------------|---------------|--------------|------|-----|--------|---------|
+|BERT base                 | 88.44/81.54   | 76.32/73.64  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_uncased_bert_base/fintune_google_en_uncased_bert_base_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_uncased_bert_base/fintune_google_en_uncased_bert_base_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_uncased_bert_base.sh) | [weight](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_uncased_bert_base/fintune_google_en_uncased_bert_base_squad_2.0/google_en_uncased_bert_base_squad2.0_8160.params) |
+|BERT large                | 90.65/84.02   | 81.22/78.22  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_uncased_bert_large/fintune_google_en_uncased_bert_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_uncased_bert_large/fintune_google_en_uncased_bert_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_uncased_bert_large.sh) | [weight](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_uncased_bert_large/fintune_google_en_uncased_bert_large_squad_2.0/google_en_uncased_bert_large_squad2.0_8159.params) |
+|ELECTRA small             | 85.76/79.16   | 74.07/71.56  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_electra_small/fintune_google_electra_small_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_electra_small/fintune_google_electra_small_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_small.sh) | [weight](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_electra_small/fintune_google_electra_small_squad_2.0/google_electra_small_squad2.0_8160.params) |
+|ELECTRA base              | 92.64/86.99   | 86.33/83.67  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_electra_base/fintune_google_electra_base_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_electra_base/fintune_google_electra_base_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_base.sh) | [weight](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_electra_base/fintune_google_electra_base_squad_2.0/google_electra_base_squad2.0_8160.params) |
+|ELECTRA large             | 94.79/89.52   | 90.55/88.24  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_electra_large/fintune_google_electra_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_electra_large/fintune_google_electra_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_large.sh) | [weight](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_electra_large/fintune_google_electra_large_squad_2.0/google_electra_large_squad2.0_8159.params) |
+|MobileBERT                | 89.69/82.88   | 80.27/77.60  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_mobilebert/fintune_google_uncased_mobilebert_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_mobilebert/fintune_google_uncased_mobilebert_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_mobilebert.sh) | [weight](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_mobilebert/fintune_google_uncased_mobilebert_squad_2.0/google_uncased_mobilebert_squad2.0_20615.params) |
+|RoBERTa large             | 94.57/88.88   | 89.70/86.79  |[json](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_roberta_large/fintune_fairseq_roberta_large_squad_2.0/best_results.json) | [log](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_roberta_large/fintune_fairseq_roberta_large_squad_2.0/finetune_squad2.0.log) | [command](./commands/run_squad2_electra_large.sh) | [weight](https://gluon-nlp-log.s3.amazonaws.com/squad_training_log/20201025/test_squad2_roberta_large/fintune_fairseq_roberta_large_squad_2.0/fairseq_roberta_large_squad2.0_8160.params) |
 
 For reference, we have also included the results of original version from Google and Fairseq
 
-| Model Name               | SQuAD1.1 dev   | SQuAD2.0 dev  |
+| Model Name (F1/EM)       | SQuAD1.1 dev   | SQuAD2.0 dev  |
 |--------------------------|----------------|---------------|
 |Google BERT base          |   88.5/80.8    |     - / -     |
 |Google BERT large         |   90.9/84.1    |     - / -     |
@@ -184,3 +184,39 @@ For reference, we have also included the results of original version from Google
 |Google ELECTRA large      |      -/89.7     |     -/88.1   |
 |Google MobileBERT         |   90.0/82.9	|   79.2/76.2   |
 |Fairseq RoBERTa large     |   94.6/88.9    |	89.4/86.5   |
+
+### Run with AWS Batch
+We can quickly run the squad finetuning via the [AWS Batch support](../../tools/batch).
+
+The code is given in [run_batch_squad.sh](run_batch_squad.sh)
+
+```bash
+# AWS Batch training without horovod on SQuAD 2.0
+bash batch/run_batch_squad.sh 0 2.0 submit_squad_v2.log
+
+# AWS Batch training with horovod on SQuAD 2.0
+bash batch/run_batch_squad.sh 1 2.0 submit_squad_v2_horovod.log
+
+# AWS Batch training with horovod on SQuAD 1.1
+bash batch/run_batch_squad.sh 1 1.1 submit_squad_v1_horovod.log
+```
+Also, after you have submitted the jobs, you may sync the results via
+```bash
+bash batch/sync_batch_result.sh submit_squad_v2.log squad_v2_no_horovod
+bash batch/sync_batch_result.sh submit_squad_v2_horovod.log squad_v2_horovod
+```
+
+Internally, it will train the following models on SQuAD 2.0 dataset:
+|    MODEL_NAME      |
+|:------------------:|
+| uncased_bert_base  |
+| uncased_bert_large |
+| albert_base        |
+| albert_large       |
+| albert_xlarge      |  
+| albert_xxlarge     |
+| electra_small      |
+| electra_base       |
+| electra_large      |
+| roberta_large      |
+| mobilebert         |

@@ -23,33 +23,3 @@ several pre-trained models could be converted through the corresponding conversi
 ```bash
 bash run_batch_conversion ${MODEL_TYPE}
 ```
-
-## Fine-tuning Downstream Tasks
-
-### Question Answering
-We can quickly run the squad finetuning via [squad fine-tuning scripts](../../scripts/question_answering#squad) and the AWS Batch job.
-
-The code is given in [run_batch_squad.sh](run_batch_squad.sh)
-
-```bash
-# AWS Batch training without horovod on SQuAD 2.0
-bash run_batch_squad.sh
-
-# AWS Batch training with horovod on SQuAD 2.0
-bash run_batch_squad.sh 1 2.0 submit_squad_v2_horovod.log
-```
-
-Internally, it will train the following models on SQuAD 2.0 dataset:
-|    MODEL_NAME      |
-|:------------------:|
-| uncased_bert_base  |
-| uncased_bert_large |
-| albert_base        |
-| albert_large       |
-| albert_xlarge      |  
-| albert_xxlarge     |
-| electra_small      |
-| electra_base       |
-| electra_large      |
-| roberta_large      |
-| mobilebert         |
