@@ -38,7 +38,7 @@ if not any([i in input_fn for i in ignore_execution]):
 
 # write
 # need to add language info to for syntax highlight
-notebook['metadata'].update({'language_info': {'name': 'python'}})
+notebook['metadata'].update({'language_info': {'name': 'ipython', 'version': 3}})
 
 notebook_json = nbformat.writes(notebook)
 

@@ -51,7 +51,7 @@ def read_tsv_glue(tsv_file, num_skip=1, keep_column_names=False):
     if keep_column_names:
         assert num_skip == 1
     column_names = None
-    with open(tsv_file, 'r') as f:
+    with open(tsv_file, 'r', encoding="utf8") as f:
         for i, line in enumerate(f):
             line = line.strip()
             if i < num_skip:

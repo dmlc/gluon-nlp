@@ -580,7 +580,7 @@ def train(args):
                     sel_answerable_logits = answerable_logits[batch_idx, is_impossible]
                     span_loss = - 0.5 * (sel_start_logits + sel_end_logits).mean()
                     answerable_loss = -0.5 * sel_answerable_logits.mean()
-                    loss = span_loss + answerable_loss
+                    loss = (span_loss + answerable_loss) / (len(ctx_l) * num_accumulated)
                     loss_l.append(loss)
                     span_loss_l.append(span_loss)
                     answerable_loss_l.append(answerable_loss)

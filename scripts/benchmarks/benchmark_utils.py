@@ -222,6 +222,58 @@ class MemorySummary(NamedTuple):
 
 MemoryTrace = List[UsedMemoryState]
 
+def get_cpu_memory(process_id: int) -> int:
+    """
+        measures current cpu memory usage of a given `process_id`
+
+        Args:
+            - `process_id`: (`int`)
+                process_id for which to measure memory
+
+        Returns
+            - `memory`: (`int`)
+                cosumed memory in Bytes
+    """
+    process = psutil.Process(process_id)
+    try:
+        meminfo_attr = "memory_info" if hasattr(process, "memory_info") else "get_memory_info"
+        memory = getattr(process, meminfo_attr)()[0]
+    except psutil.AccessDenied:
+        raise ValueError("Error with Psutil.")
+    return memory
+
+
+class MemoryMeasureProcess(Process):
+
+    """
+        `MemoryMeasureProcess` inherits from `Process` and overwrites
+        its `run()` method. Used to measure the memory usage of a process
+    """
+
+    def __init__(self, process_id: int, child_connection: Connection, interval: float):
+        super().__init__()
+        self.process_id = process_id
+        self.interval = interval
+        self.connection = child_connection
+        self.num_measurements = 1
+        self.mem_usage = get_cpu_memory(self.process_id)
+
+    def run(self):
+        self.connection.send(0)
+        stop = False
+        while True:
+            self.mem_usage = max(self.mem_usage, get_cpu_memory(self.process_id))
+            self.num_measurements += 1
+
+            if stop:
+                break
+
+            stop = self.connection.poll(self.interval)
+
+        # send cresults to parent pipe
+        self.connection.send(self.mem_usage)
+        self.connection.send(self.num_measurements)
+
 
 def measure_peak_memory_cpu(function: Callable[[], None], interval=0.5, device_idx=None) -> int:
     """
@@ -246,26 +298,6 @@ def measure_peak_memory_cpu(function: Callable[[], None], interval=0.5, device_i
                 cosumed memory peak in Bytes
     """
 
-    def get_cpu_memory(process_id: int) -> int:
-        """
-            measures current cpu memory usage of a given `process_id`
-
-            Args:
-                - `process_id`: (`int`)
-                    process_id for which to measure memory
-
-            Returns
-                - `memory`: (`int`)
-                    cosumed memory in Bytes
-        """
-        process = psutil.Process(process_id)
-        try:
-            meminfo_attr = "memory_info" if hasattr(process, "memory_info") else "get_memory_info"
-            memory = getattr(process, meminfo_attr)()[0]
-        except psutil.AccessDenied:
-            raise ValueError("Error with Psutil.")
-        return memory
-
     if not is_psutil_available():
         logger.warning(
             "Psutil not installed, we won't log CPU memory usage. "
@@ -273,37 +305,6 @@ def measure_peak_memory_cpu(function: Callable[[], None], interval=0.5, device_i
         )
         max_memory = "N/A"
     else:
-
-        class MemoryMeasureProcess(Process):
-
-            """
-                `MemoryMeasureProcess` inherits from `Process` and overwrites
-                its `run()` method. Used to measure the memory usage of a process
-            """
-
-            def __init__(self, process_id: int, child_connection: Connection, interval: float):
-                super().__init__()
-                self.process_id = process_id
-                self.interval = interval
-                self.connection = child_connection
-                self.num_measurements = 1
-                self.mem_usage = get_cpu_memory(self.process_id)
-
-            def run(self):
-                self.connection.send(0)
-                stop = False
-                while True:
-                    self.mem_usage = max(self.mem_usage, get_cpu_memory(self.process_id))
-                    self.num_measurements += 1
-
-                    if stop:
-                        break
-
-                    stop = self.connection.poll(self.interval)
-
-                # send results to parent pipe
-                self.connection.send(self.mem_usage)
-                self.connection.send(self.num_measurements)
 
         while True:
             # create child, parent connection
