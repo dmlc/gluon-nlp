@@ -594,11 +594,13 @@ class AlbertForMLM(HybridBlock):
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
+
             - layout = 'TN'
                 Shape (seq_length, batch_size)
         token_types
             - layout = 'NT'
                 Shape (batch_size, seq_length)
+
             - layout = 'TN'
                 Shape (seq_length, batch_size)
             The type of the token. For example, if the inputs contain two sequences,
@@ -615,6 +617,7 @@ class AlbertForMLM(HybridBlock):
         contextual_embedding
             - layout = 'NT'
                 Shape (batch_size, seq_length, units)
+
             - layout = 'TN'
                 Shape (seq_length, batch_size, units)
         pooled_out
