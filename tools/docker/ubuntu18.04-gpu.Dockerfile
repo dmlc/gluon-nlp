@@ -15,7 +15,6 @@ ENV SHELL=/bin/bash
 
 RUN mkdir -p ${WORKDIR}
 
-# Need to rm the list due to the issue similar to https://github.com/NVIDIA/nvidia-docker/issues/658
 RUN bash /install/install_ubuntu18.04_core.sh
 
 # Install Open MPI
