@@ -26,6 +26,8 @@ cd ${WORKDIR}/tvm
 # checkout a hash-tag
 git checkout ef6e52f191888ee2a5f2221bde3b69391766903f
 
+export CUDA_CUBLAS_LIBRARY=/usr/lib/x86_64-linux-gnu/libcublas.so
+
 mkdir -p build
 cp cmake/config.cmake build
 echo set\(USE_LLVM llvm-config-10\) >> build/config.cmake
