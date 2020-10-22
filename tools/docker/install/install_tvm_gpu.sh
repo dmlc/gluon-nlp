@@ -26,7 +26,6 @@ cd ${WORKDIR}/tvm
 # checkout a hash-tag
 git checkout ef6e52f191888ee2a5f2221bde3b69391766903f
 
-export CUDA_CUBLAS_LIBRARY=/usr/lib/x86_64-linux-gnu/libcublas.so
 
 mkdir -p build
 cp cmake/config.cmake build
@@ -38,7 +37,7 @@ echo set\(USE_GRAPH_RUNTIME ON\) >> build/config.cmake
 echo set\(USE_BLAS openblas\) >> build/config.cmake
 
 cd build
-cmake .. -GNinja
+cmake -GNinja -DCUDA_CUBLAS_LIBRARY=/usr/lib/x86_64-linux-gnu/libcublas.so ..
 ninja
 
 # install python binding
