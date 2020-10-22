@@ -61,7 +61,8 @@ def electra_large_cfg():
     cfg.model_name = 'google_electra_large'
     cfg.batch_size = 2
     cfg.num_accumulated = 4
-    cfg.lr = 1e-5
+    cfg.lr = 5e-5
+    cfg.max_grad_norm = 1
     cfg.layerwise_decay = 0.9
     return cfg
 
