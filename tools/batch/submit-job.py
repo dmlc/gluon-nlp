@@ -11,7 +11,7 @@ from botocore.compat import total_seconds
 instance_type_info = {
     'g4dn.4x': {
         'job_definition': 'gluon-nlp-g4dn_4xlarge:5',
-        'job_queue': 'g4dn-250g-test'
+        'job_queue': 'g4dn'
     },
     'g4dn.8x': {
         'job_definition': 'gluon-nlp-g4dn_8xlarge:5',
