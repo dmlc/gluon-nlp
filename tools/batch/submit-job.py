@@ -11,7 +11,7 @@ from botocore.compat import total_seconds
 instance_type_info = {
     'g4dn.4x': {
         'job_definition': 'gluon-nlp-g4dn_4xlarge:5',
-        'job_queue': 'g4dn'
+        'job_queue': 'g4dn-250g-test'
     },
     'g4dn.8x': {
         'job_definition': 'gluon-nlp-g4dn_8xlarge:5',
@@ -91,7 +91,7 @@ def printLogs(logGroupName, logStreamName, startTime):
               'startTime': startTime,
               'startFromHead': True}
 
-    lastTimestamp = 0
+    lastTimestamp = startTime - 1
     while True:
         logEvents = cloudwatch.get_log_events(**kwargs)
 
@@ -155,10 +155,10 @@ def main():
         describeJobsResponse = batch.describe_jobs(jobs=[jobId])
         status = describeJobsResponse['jobs'][0]['status']
         if status == 'SUCCEEDED' or status == 'FAILED':
-            print('=' * 80)
-            print('Job [{} - {}] {}'.format(jobName, jobId, status))
             if logStreamName:
                 startTime = printLogs(logGroupName, logStreamName, startTime) + 1
+            print('=' * 80)
+            print('Job [{} - {}] {}'.format(jobName, jobId, status))
             sys.exit(status == 'FAILED')
 
         elif status == 'RUNNING':

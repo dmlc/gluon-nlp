@@ -26,8 +26,8 @@ jobs:
 
       - name: Install Other Dependencies
         run: |
-          python -m pip install --user --quiet --upgrade pip
-          python -m pip install --user --quiet -e .[extras]
+          python -m pip install --quiet --upgrade pip
+          python -m pip install --quiet boto3
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -45,10 +45,11 @@ jobs:
                                              --name GluonNLP-GPU-Test-${{ github.ref }} \
                                              --source-ref ${{ github.ref }} \
                                              --work-dir . \
+                                             --saved-output coverage.xml \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.repository }} \
                                              --command "python3 -m pytest --cov=. --cov-config=./.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow ./tests/" \
-                                             --wait | tee > batch_job.log  
+                                             --wait | tee batch_job.log  
 
 
       - name: Test project on AWS Batch(For pull request)
@@ -60,10 +61,11 @@ jobs:
                                              --name GluonNLP-GPU-Test-PR#${{ github.event.number }} \
                                              --source-ref ${{ github.event.pull_request.head.ref }} \
                                              --work-dir . \
+                                             --saved-output coverage.xml \
                                              --save-path temp \
                                              --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
                                              --command "python3 -m pytest --cov=. --cov-config=./.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow ./tests/" \
-                                             --wait | tee > batch_job.log
+                                             --wait | tee batch_job.log
 
       - name: Wait for job and copy files from AWS s3
         if: ${{ failure() || success() }}
