@@ -46,7 +46,7 @@ jobs:
                                              --source-ref ${{ github.ref }} \
                                              --work-dir . \
                                              --saved-output coverage.xml \
-                                             --save-path temp \
+                                             --save-path coverage.xml \
                                              --remote https://github.com/${{ github.repository }} \
                                              --command "python3 -m pytest --cov=. --cov-config=./.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow ./tests/" \
                                              --wait | tee batch_job.log  
@@ -62,7 +62,7 @@ jobs:
                                              --source-ref ${{ github.event.pull_request.head.ref }} \
                                              --work-dir . \
                                              --saved-output coverage.xml \
-                                             --save-path temp \
+                                             --save-path coverage.xml \
                                              --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
                                              --command "python3 -m pytest --cov=. --cov-config=./.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow ./tests/" \
                                              --wait | tee batch_job.log
@@ -78,8 +78,8 @@ jobs:
           cat jobid.log | xargs -i python ./tools/batch/wait-job.py --job-id {}
 
           echo "Copy Codecov file"
-          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/temp/coverage.xml
-          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/temp/coverage.xml ./coverage.xml
+          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/coverage.xml
+          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/coverage.xml ./coverage.xml
 
       - name: Upload coverage to Codecov
         run: |
