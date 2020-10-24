@@ -91,7 +91,7 @@ def printLogs(logGroupName, logStreamName, startTime):
               'startTime': startTime,
               'startFromHead': True}
 
-    lastTimestamp = 0
+    lastTimestamp = startTime - 1
     while True:
         logEvents = cloudwatch.get_log_events(**kwargs)
 
@@ -155,10 +155,10 @@ def main():
         describeJobsResponse = batch.describe_jobs(jobs=[jobId])
         status = describeJobsResponse['jobs'][0]['status']
         if status == 'SUCCEEDED' or status == 'FAILED':
-            print('=' * 80)
-            print('Job [{} - {}] {}'.format(jobName, jobId, status))
             if logStreamName:
                 startTime = printLogs(logGroupName, logStreamName, startTime) + 1
+            print('=' * 80)
+            print('Job [{} - {}] {}'.format(jobName, jobId, status))
             sys.exit(status == 'FAILED')
 
         elif status == 'RUNNING':
