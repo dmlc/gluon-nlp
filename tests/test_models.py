@@ -164,4 +164,4 @@ def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
                 mx_out_gt = mx_out.asnumpy()
             else:
                 mx_out_gt = mx_out[i].asnumpy()
-            npt.assert_allclose(out.asnumpy(), mx_out_gt, rtol=1e-3, atol=8e-2)
+            npt.assert_allclose(out.asnumpy(), mx_out_gt, rtol=1e-3, atol=1e-1)
