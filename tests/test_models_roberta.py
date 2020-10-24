@@ -80,6 +80,7 @@ def test_roberta(model_name):
         # test backbone
         roberta_model = RobertaModel.from_cfg(cfg)
         roberta_model.load_parameters(params_path)
+        roberta_model.hybridize()
         # test mlm model
         roberta_mlm_model = RobertaForMLM(cfg)
         if mlm_params_path is not None:
