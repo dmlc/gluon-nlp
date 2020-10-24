@@ -328,7 +328,6 @@ class AlbertModel(HybridBlock):
             dtype=dtype,
             layout=self._compute_layout
         )
-        self.encoder.hybridize()
         # Construct word embedding
         self.word_embed = nn.Embedding(input_dim=vocab_size,
                                        output_dim=embed_size,
@@ -578,7 +577,6 @@ class AlbertForMLM(HybridBlock):
                                       flatten=False,
                                       bias_initializer=bias_initializer))
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
-        self.mlm_decoder.hybridize()
 
     @property
     def layout(self):
@@ -674,7 +672,6 @@ class AlbertForPretrain(HybridBlock):
                                       flatten=False,
                                       bias_initializer=bias_initializer))
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
-        self.mlm_decoder.hybridize()
 
     @property
     def layout(self):

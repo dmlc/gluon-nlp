@@ -303,7 +303,6 @@ class RobertaModel(HybridBlock):
             output_all_encodings=self._output_all_encodings,
             layout=self._compute_layout,
         )
-        self.encoder.hybridize()
 
         if self.use_pooler and self.classifier_activation:
             # Construct pooler
@@ -482,7 +481,6 @@ class RobertaForMLM(HybridBlock):
                 flatten=False,
                 bias_initializer=bias_initializer))
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
-        self.mlm_decoder.hybridize()
 
     def hybrid_forward(self, F, inputs, valid_length, masked_positions):
         """Getting the scores of the masked positions.
