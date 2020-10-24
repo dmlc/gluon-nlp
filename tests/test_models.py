@@ -59,7 +59,7 @@ def test_get_backbone(name, ctx):
                          ['google_albert_base_v2',
                           'google_en_cased_bert_base',
                           'google_electra_small',
-                          'fairseq_roberta_base',
+                          #'fairseq_roberta_base',
                           'fairseq_bart_base'])
 @pytest.mark.parametrize('batch_size,seq_length', [(2, 8), (1, 8)])
 @pytest.mark.parametrize('layout', ['NT', 'TN'])
