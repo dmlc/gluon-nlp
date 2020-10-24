@@ -561,7 +561,6 @@ class MobileBertModel(HybridBlock):
             dtype=dtype,
             layout=self._compute_layout,
         )
-        self.encoder.hybridize()
         # Construct word embedding
         self.word_embed = nn.Embedding(input_dim=vocab_size,
                                        output_dim=embed_size,
@@ -824,7 +823,6 @@ class MobileBertForMLM(HybridBlock):
         # use basic layer normalization for pretaining
         self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
                                           in_channels=self.backbone_model.units))
-        self.mlm_decoder.hybridize()
         # only load the dense weights with a re-initialized bias
         # parameters are stored in 'word_embed_bias' which is
         # not used in original embedding
@@ -935,7 +933,6 @@ class MobileBertForPretrain(HybridBlock):
         # use basic layer normalization for pretaining
         self.mlm_decoder.add(nn.LayerNorm(epsilon=self.backbone_model.layer_norm_eps,
                                           in_channels=self.backbone_model.units))
-        self.mlm_decoder.hybridize()
         # only load the dense weights with a re-initialized bias
         # parameters are stored in 'word_embed_bias' which is
         # not used in original embedding

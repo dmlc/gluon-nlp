@@ -4,7 +4,9 @@ set -o pipefail
 
 export DEBIAN_FRONTEND=noninteractive
 
-apt-get update \
+rm -rf /var/lib/apt/lists/* \
+ && apt-get clean \
+ && apt-get update \
  && apt-get install -y --no-install-recommends \
     software-properties-common \
     build-essential \

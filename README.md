@@ -16,16 +16,10 @@ process the text data, and train models.
 
 # Features
 
-For NLP Practitioners
-- Easy-to-use Text Processing Tools
-- Automatically Train Models via AutoNLP (TODO)
-
-For Researchers
+- Easy-to-use Text Processing Tools and APIs
 - Pretrained Model Zoo
 - Write Models with Numpy-like API
-
-For Engineers
-- Fast Inference via [TVM](https://tvm.apache.org/) (TODO)
+- Fast Inference via [TVM](https://tvm.apache.org/)
 - AWS Integration via [SageMaker](https://aws.amazon.com/sagemaker/)
 
 
@@ -98,7 +92,7 @@ docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size
 
 # CPU Instance
 docker pull gluonai/gluon-nlp:cpu-latest
-docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=2g gluonai/gluon-nlp:cpu-latest
+docker run --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=2g gluonai/gluon-nlp:cpu-latest
 ``` 
 
 For more details, you can refer to the guidance in [tools/docker](tools/docker).

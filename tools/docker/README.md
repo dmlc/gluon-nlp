@@ -98,8 +98,7 @@ docker push gluonai/gluon-nlp:gpu-latest
 
 Our current batch job dockers are in 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1. To
 update the docker:
-- Update the Dockerfile as described above
-- Make sure docker and docker-compose, as well as the docker python package are installed.
+- Build the docker image, or update the Dockerfile as described above
 - Export the AWS account credentials as environment variables
 - CD to the same folder as the Dockerfile and execute the following:
 

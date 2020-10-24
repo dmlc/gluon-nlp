@@ -52,7 +52,7 @@ parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFo
 parser.add_argument('--profile', help='profile name of aws account.', type=str,
                     default=None)
 parser.add_argument('--region', help='Default region when creating new connections', type=str,
-                    default=None)
+                    default='us-east-1')
 parser.add_argument('--name', help='name of the job', type=str, default='dummy')
 parser.add_argument('--job-type', help='type of job to submit.', type=str,
                     choices=instance_type_info.keys(), default='g4dn.4x')

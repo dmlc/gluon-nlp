@@ -165,3 +165,4 @@ def try_import_tvm():
         raise ImportError('"tvm" is not installed. You must install TVM to use the functionality. '
                           'To install TVM, you may see the documentation in '
                           'https://tvm.apache.org/ or try to use the docker of GluonNLP.')
+    return tvm

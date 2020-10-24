@@ -374,7 +374,6 @@ class ElectraModel(HybridBlock):
             dtype=dtype,
             layout=self._compute_layout,
         )
-        self.encoder.hybridize()
 
         self.word_embed = nn.Embedding(input_dim=vocab_size,
                                        output_dim=embed_size,
@@ -647,7 +646,6 @@ class ElectraDiscriminator(HybridBlock):
                                       flatten=False,
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer))
-        self.rtd_encoder.hybridize()
 
     def hybrid_forward(self, F, inputs, token_types, valid_length):
         """Getting the scores of the replaced token detection of the whole sentence
@@ -737,7 +735,6 @@ class ElectraGenerator(HybridBlock):
                 flatten=False,
                 bias_initializer=bias_initializer))
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
-        self.mlm_decoder.hybridize()
 
     # TODO(sxjscience,zheyu) Should design a better API
     def tie_embeddings(self, word_embed_params=None,
@@ -878,7 +875,6 @@ class ElectraForPretrain(HybridBlock):
                                               self.disc_backbone.token_type_embed.collect_params(),
                                               self.disc_backbone.token_pos_embed.collect_params(),
                                               self.disc_backbone.embed_layer_norm.collect_params())
-            self.generator.hybridize()
 
         elif tied_generator:
             # Reuse the weight of the discriminator backbone model
@@ -887,12 +883,9 @@ class ElectraForPretrain(HybridBlock):
                                               bias_initializer=bias_initializer)
             # TODO(sxjscience, zheyu) Verify
             self.generator.backbone_model = self.disc_backbone
-            self.generator.hybridize()
         elif uniform_generator:
             # get the mlm_scores randomly over vocab
             self.generator = None
-
-        self.discriminator.hybridize()
 
     def hybrid_forward(self, F, inputs, token_types, valid_length,
                        original_tokens, masked_positions):

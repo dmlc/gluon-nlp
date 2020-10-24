@@ -39,7 +39,21 @@ It will generate csv files with `gluonnlp_` as the prefix
 ├── gluonnlp_train_fp32_NT_NT.csv
 ├── gluonnlp_train_fp32_NT_TN.csv
 ├── gluonnlp_train_fp32_TN_TN.csv
-├── gluonnlp_infer_fp32_NT_NT.csv
-├── gluonnlp_infer_fp32_NT_TN.csv
-├── gluonnlp_infer_fp32_TN_TN.csv
+├── gluonnlp_infer_fp32_NT_NT_tvm0.csv
+├── gluonnlp_infer_fp32_NT_TN_tvm0.csv
+├── gluonnlp_infer_fp32_TN_TN_tvm0.csv
+```
+
+## GluonNLP + TVM for Inference
+
+Install TVM as described in https://tvm.apache.org/docs/install/index.html
+
+```bash
+bash benchmark_gluonnlp_tvm.sh
+```
+
+```
+├── gluonnlp_infer_fp32_NT_NT_tvm1.csv
+├── gluonnlp_infer_fp32_NT_TN_tvm1.csv
+├── gluonnlp_infer_fp32_TN_TN_tvm1.csv
 ```
