@@ -19,7 +19,7 @@ process the text data, and train models.
 - Easy-to-use Text Processing Tools and APIs
 - Pretrained Model Zoo
 - Write Models with Numpy-like API
-- Fast Inference via [TVM](https://tvm.apache.org/) (Experimental)
+- Fast Inference via [Apache TVM (incubating)](https://tvm.apache.org/) (Experimental)
 - AWS Integration via [SageMaker](https://aws.amazon.com/sagemaker/)
 
 
