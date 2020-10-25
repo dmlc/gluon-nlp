@@ -241,7 +241,7 @@ def gen_mem_attn_mask(F, mem, mem_valid_length, data, data_valid_length=None,
     else:
         query_length_ones = F.np.ones_like(data_steps)
         mask = query_length_ones.reshape((1, -1, 1)) * mem_mask
-    return mask
+    return mask.astype(np.bool)
 
 
 # TODO(sxjscience) Directly implement a kernel for masked softmax
