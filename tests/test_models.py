@@ -56,6 +56,7 @@ def test_get_backbone(name, ctx):
 
 
 @pytest.mark.serial
+@pytest.mark.seed(123)
 @pytest.mark.parametrize('model_name',
                          ['google_albert_base_v2',
                           'google_en_cased_bert_base',
