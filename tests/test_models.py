@@ -15,11 +15,11 @@ def test_list_backbone_names():
 
 
 def tvm_enabled():
-    try:
-        tvm = try_import_tvm()
-        return True
-    except:
-        return False
+    #try:
+    #    tvm = try_import_tvm()
+    #    return True
+    #except:
+    return False
 
 
 @pytest.mark.slow
