@@ -6,7 +6,8 @@ from mxnet.gluon import HybridBlock
 from gluonnlp.attention_cell import\
     multi_head_dot_attn, gen_self_attn_mask, gen_mem_attn_mask,\
     MultiHeadAttentionCell,\
-    RelAttentionScoreCell
+    RelAttentionScoreCell,\
+    MultiHeadSlidingWindowAttentionCell
 from gluonnlp.utils.parameter import grad_global_norm
 mx.npx.set_np()
 
@@ -458,8 +459,7 @@ def test_multi_head_sliding_window_dot_attention_cell():
 
     for symmetric in [True, False]:
         for d in [1, 2, 3]:
-            test_impl(32, 128, 12, 64, 16, symmetric, d)
+            test_impl(4, 128, 12, 64, 16, symmetric, d)
             test_impl(1, 8, 2, 3, 2, symmetric, d)
-
 
 

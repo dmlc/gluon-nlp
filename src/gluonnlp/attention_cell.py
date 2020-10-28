@@ -673,7 +673,7 @@ class MultiHeadAttentionCell(HybridBlock):
 
 
 def multi_head_sliding_window_dot_attn(F, query, key, value, dilation, valid_length,
-                                       w: int, symmetric: bool = True,
+                                       window_size: int, symmetric: bool = True,
                                        dropout: float = 0.0, scaled: bool = True,
                                        normalized: bool = False, eps: float = 1E-6,
                                        query_head_units: Optional[int] = None,
@@ -701,10 +701,10 @@ def multi_head_sliding_window_dot_attn(F, query, key, value, dilation, valid_len
         Dilation. The shape is (num_heads,)
     valid_length
         Valid length. The shape is (batch_size,)
-    w
+    window_size
         The one-sided window length.
     symmetric
-        Whether to use the causal attention mode.
+        If False, each token can only attend to itself and the previous tokens.
     dropout
         Dropout rate
     scaled
@@ -744,7 +744,8 @@ def multi_head_sliding_window_dot_attn(F, query, key, value, dilation, valid_len
     # 1. Calculate the attention weights
     # scores' shape  (batch_size, seq_length, num_heads, w + w + 1) if symmetric else
     #                (batch_size, seq_length, num_heads, w + 1)
-    scores = F.npx.sldwin_atten_score(query, key, dilation, w=w, symmetric=symmetric)
+    scores = F.npx.sldwin_atten_score(query, key, dilation,
+                                      w=window_size, symmetric=symmetric)
     if scaled:
         if query_head_units is None:
             query_shape = F.npx.shape_array(query)
@@ -753,13 +754,13 @@ def multi_head_sliding_window_dot_attn(F, query, key, value, dilation, valid_len
             scores = scores / math.sqrt(query_head_units)
     # mask's shape is the same as scores
     mask = F.npx.sldwin_atten_mask_like(scores, dilation, valid_length.astype(np.int32),
-                                        w=w, symmetric=symmetric)
+                                        w=window_size, symmetric=symmetric)
     attn_weights = masked_softmax(F, scores, mask, dtype=dtype)
     attn_weights = F.npx.dropout(attn_weights, p=dropout)
     # 2. Calculate the context vector
     # (batch_size, seq_length, num_heads, num_head_units)
     context_vec = F.npx.sldwin_atten_context(attn_weights, value, dilation,
-                                             w=w, symmetric=symmetric)
+                                             w=window_size, symmetric=symmetric)
     # (batch_size, seq_length, num_units)
     context_vec = F.npx.reshape(context_vec, (-2, -2, -1))
 
@@ -767,12 +768,12 @@ def multi_head_sliding_window_dot_attn(F, query, key, value, dilation, valid_len
 
 
 class MultiHeadSlidingWindowAttentionCell(HybridBlock):
-    def __init__(self, w, symmetric=True, query_units=None, num_heads=None,
+    def __init__(self, window_size, symmetric=True, query_units=None, num_heads=None,
                  attention_dropout=0.0, scaled: bool = True, normalized: bool = False,
                  eps: float = 1E-6, dtype='float32', layout='NTK'):
         super().__init__()
         self._query_units = query_units
-        self._w = w
+        self._window_size = window_size
         self._symmetric = symmetric
         self._num_heads = num_heads
         self._attention_dropout = attention_dropout
@@ -794,8 +795,9 @@ class MultiHeadSlidingWindowAttentionCell(HybridBlock):
         return self._layout
 
     def hybrid_forward(self, F, query, key, value, dilation, valid_length):
-        return multi_head_sliding_window_dot_attn(F, query=query, key=key, value=value,
-                    dilation=dilation, valid_length=valid_length, w=self._w,
+        return multi_head_sliding_window_dot_attn(F, query=query, key=key,
+                    value=value, dilation=dilation,
+                    valid_length=valid_length, window_size=self._window_size,
                     symmetric=self._symmetric, dropout=self._attention_dropout,
                     scaled=self._scaled, normalized=self._normalized, eps=self._eps,
                     query_head_units=self._query_head_units, layout=self._layout,
@@ -803,7 +805,7 @@ class MultiHeadSlidingWindowAttentionCell(HybridBlock):
 
     def __repr__(self):
         s = '{name}(\n' \
-            '   w={w},\n' \
+            '   window_size={window_size},\n' \
             '   symmetric={symmetric},\n' \
             '   query_units={query_units},\n' \
             '   num_heads={num_heads},\n' \
@@ -814,7 +816,7 @@ class MultiHeadSlidingWindowAttentionCell(HybridBlock):
             '   dtype={dtype}\n' \
             ')'
         return s.format(name=self.__class__.__name__,
-                        w=self._w,
+                        window_size=self._window_size,
                         symmetric=self._symmetric,
                         query_units=self._query_units,
                         num_heads=self._num_heads,
