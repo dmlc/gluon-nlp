@@ -32,13 +32,12 @@ import os
 from typing import Tuple, Optional, List
 
 import mxnet as mx
-import numpy as np
-from mxnet import use_np
+from mxnet import use_np, np, npx
 from mxnet.gluon import HybridBlock, nn
 from ..registry import BACKBONE_REGISTRY
 from ..op import gumbel_softmax, select_vectors_by_position, add_vectors_by_position, update_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
-from ..layers import PositionalEmbedding, get_activation
+from ..layers import PositionalEmbedding, get_activation, HybridSequential
 from .transformer import TransformerEncoderLayer
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
@@ -228,7 +227,7 @@ class ElectraEncoder(HybridBlock):
         self._output_attention = output_attention
         self._output_all_encodings = output_all_encodings
 
-        self.all_encoder_layers = nn.HybridSequential()
+        self.all_encoder_layers = HybridSequential()
         for layer_idx in range(num_layers):
             self.all_encoder_layers.add(
                 TransformerEncoderLayer(units=units,
@@ -247,7 +246,7 @@ class ElectraEncoder(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, data, valid_length):
+    def forward(self, data, valid_length):
         """
         Generate the representation given the inputs.
 
@@ -277,7 +276,7 @@ class ElectraEncoder(HybridBlock):
         else:
             time_axis, batch_axis = 0, 1
         # 1. Embed the data
-        attn_mask = gen_self_attn_mask(F, data, valid_length,
+        attn_mask = gen_self_attn_mask(data, valid_length,
                                        dtype=self._dtype,
                                        layout=self._layout,
                                        attn_type='full')
@@ -290,7 +289,7 @@ class ElectraEncoder(HybridBlock):
             # out : [batch_size, seq_len, units]
             # attention_weights : [batch_size, num_heads, seq_len, seq_len]
             if self._output_all_encodings:
-                out = F.npx.sequence_mask(out,
+                out = npx.sequence_mask(out,
                                           sequence_length=valid_length,
                                           use_sequence_length=True,
                                           axis=time_axis)
@@ -301,7 +300,7 @@ class ElectraEncoder(HybridBlock):
 
         if not self._output_all_encodings:
             # if self._output_all_encodings, SequenceMask is already applied above
-            out = F.npx.sequence_mask(out, sequence_length=valid_length,
+            out = npx.sequence_mask(out, sequence_length=valid_length,
                                       use_sequence_length=True, axis=time_axis)
             return out, additional_outputs
         else:
@@ -402,7 +401,7 @@ class ElectraModel(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length=None):
+    def forward(self, inputs, token_types, valid_length=None):
         # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
@@ -438,7 +437,7 @@ class ElectraModel(HybridBlock):
         pooled_output
             This is optional. Shape (batch_size, units)
         """
-        initial_embedding = self.get_initial_embedding(F, inputs, token_types)
+        initial_embedding = self.get_initial_embedding(inputs, token_types)
         # Projecting the embedding into units
         prev_out = initial_embedding
         if self.embed_size != self.units:
@@ -446,9 +445,9 @@ class ElectraModel(HybridBlock):
         outputs = []
         if self._compute_layout != self._layout:
             # Swap the axes if the compute_layout and layout mismatch
-            contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(prev_out, 0, 1),
+            contextual_embeddings, additional_outputs = self.encoder(np.swapaxes(prev_out, 0, 1),
                                                                      valid_length)
-            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
+            contextual_embeddings = np.swapaxes(contextual_embeddings, 0, 1)
         else:
             contextual_embeddings, additional_outputs = self.encoder(prev_out, valid_length)
         outputs.append(contextual_embeddings)
@@ -465,7 +464,7 @@ class ElectraModel(HybridBlock):
         return tuple(outputs) if len(outputs) > 1 else outputs[0]
 
     #TODO(sxjscience) Move to a `common.py`
-    def get_initial_embedding(self, F, inputs, token_types=None):
+    def get_initial_embedding(self, inputs, token_types=None):
         """Get the initial token embeddings that considers the token type and positional embeddings
 
         Parameters
@@ -498,12 +497,12 @@ class ElectraModel(HybridBlock):
             time_axis, batch_axis = 0, 1
         embedding = self.word_embed(inputs)
         if token_types is None:
-            token_types = F.np.zeros_like(inputs)
+            token_types = np.zeros_like(inputs)
         type_embedding = self.token_type_embed(token_types)
         embedding = embedding + type_embedding
         if self.pos_embed_type is not None:
-            positional_embedding = self.token_pos_embed(F.npx.arange_like(inputs, axis=time_axis))
-            positional_embedding = F.np.expand_dims(positional_embedding, axis=batch_axis)
+            positional_embedding = self.token_pos_embed(npx.arange_like(inputs, axis=time_axis))
+            positional_embedding = np.expand_dims(positional_embedding, axis=batch_axis)
             embedding = embedding + positional_embedding
         # Extra layer normalization plus dropout
         embedding = self.embed_layer_norm(embedding)
@@ -633,7 +632,7 @@ class ElectraDiscriminator(HybridBlock):
             weight_initializer = self.backbone_model.weight_initializer
         if bias_initializer is None:
             bias_initializer = self.backbone_model.bias_initializer
-        self.rtd_encoder = nn.HybridSequential()
+        self.rtd_encoder = HybridSequential()
         # Extra non-linear layer
         self.rtd_encoder.add(nn.Dense(units=self.backbone_model.units,
                                       in_units=self.backbone_model.units,
@@ -647,7 +646,7 @@ class ElectraDiscriminator(HybridBlock):
                                       weight_initializer=weight_initializer,
                                       bias_initializer=bias_initializer))
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length):
+    def forward(self, inputs, token_types, valid_length):
         """Getting the scores of the replaced token detection of the whole sentence
         based on the corrupted tokens produced from a generator.
 
@@ -715,7 +714,7 @@ class ElectraGenerator(HybridBlock):
             weight_initializer = self.backbone_model.weight_initializer
         if bias_initializer is None:
             bias_initializer = self.backbone_model.bias_initializer
-        self.mlm_decoder = nn.HybridSequential()
+        self.mlm_decoder = HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
                                       in_units=self.backbone_model.units,
@@ -757,7 +756,7 @@ class ElectraGenerator(HybridBlock):
         self.backbone_model.token_pos_embed.share_parameters(token_pos_embed_params)
         self.backbone_model.embed_layer_norm.share_parameters(embed_layer_norm_params)
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length, masked_positions):
+    def forward(self, inputs, token_types, valid_length, masked_positions):
         """Getting the scores of the masked positions.
 
         Parameters
@@ -797,9 +796,9 @@ class ElectraGenerator(HybridBlock):
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
         if self.backbone_model.layout == 'NT':
-            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+            mlm_features = select_vectors_by_position(contextual_embeddings, masked_positions)
         else:
-            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+            mlm_features = select_vectors_by_position(np.swapaxes(contextual_embeddings, 0, 1),
                                                       masked_positions)
         mlm_scores = self.mlm_decoder(mlm_features)
         return contextual_embeddings, pooled_out, mlm_scores
@@ -887,8 +886,8 @@ class ElectraForPretrain(HybridBlock):
             # get the mlm_scores randomly over vocab
             self.generator = None
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length,
-                       original_tokens, masked_positions):
+    def forward(self, inputs, token_types, valid_length,
+                original_tokens, masked_positions):
         """Getting the mlm scores of each masked positions from a generator,
         then produces the corrupted tokens sampling from a gumbel distribution.
         We also get the ground-truth and scores of the replaced token detection
@@ -949,21 +948,21 @@ class ElectraForPretrain(HybridBlock):
         """
         if self._uniform_generator:
             # generate the corrupt tokens randomly with a mlm_scores vector whose value is all 0
-            zero_logits = F.np.zeros((1, 1, self.vocab_size), dtype=self._dtype)
-            mlm_scores = F.np.expand_dims(F.np.zeros_like(masked_positions, dtype=self._dtype),
+            zero_logits = np.zeros((1, 1, self.vocab_size), dtype=self._dtype)
+            mlm_scores = np.expand_dims(np.zeros_like(masked_positions, dtype=self._dtype),
                                           axis=-1)
             mlm_scores = mlm_scores + zero_logits
         else:
             _, _, mlm_scores = self.generator(inputs, token_types, valid_length, masked_positions)
 
         corrupted_tokens, fake_data, labels = self.get_corrupted_tokens(
-            F, inputs, original_tokens, masked_positions, mlm_scores)
+            inputs, original_tokens, masked_positions, mlm_scores)
         # The discriminator takes the same input as the generator and the token_ids are
         # replaced with fake data
         _, _, rtd_scores = self.discriminator(fake_data, token_types, valid_length)
         return mlm_scores, rtd_scores, corrupted_tokens, labels
 
-    def get_corrupted_tokens(self, F, inputs, original_tokens, masked_positions, logits):
+    def get_corrupted_tokens(self, inputs, original_tokens, masked_positions, logits):
         """
         Sample from the generator to create corrupted input.
 
@@ -1004,7 +1003,7 @@ class ElectraForPretrain(HybridBlock):
 
         if self._disallow_correct:
             # TODO(sxjscience), Revise the implementation
-            disallow = F.npx.one_hot(masked_positions, depth=self.vocab_size, dtype=self._dtype)
+            disallow = npx.one_hot(masked_positions, depth=self.vocab_size, dtype=self._dtype)
             logits = logits - 1000.0 * disallow
         # gumbel_softmax() samples from the logits with a noise of Gumbel distribution
         prob = gumbel_softmax(
@@ -1013,7 +1012,7 @@ class ElectraForPretrain(HybridBlock):
             temperature=self._temperature,
             eps=self._gumbel_eps,
             use_np_gumbel=False)
-        corrupted_tokens = F.np.argmax(prob, axis=-1).astype(np.int32)
+        corrupted_tokens = np.argmax(prob, axis=-1).astype(np.int32)
 
         if self.disc_backbone.layout == 'TN':
             inputs = inputs.T
@@ -1021,12 +1020,12 @@ class ElectraForPretrain(HybridBlock):
             inputs, original_tokens, masked_positions)
         fake_data = update_vectors_by_position(F,
             inputs, corrupted_tokens, masked_positions)
-        updates_mask = add_vectors_by_position(F, F.np.zeros_like(inputs),
-                F.np.ones_like(masked_positions), masked_positions)
+        updates_mask = add_vectors_by_position(np.zeros_like(inputs),
+                np.ones_like(masked_positions), masked_positions)
         # Dealing with multiple zeros in masked_positions which
         # results in a non-zero value in the first index [CLS]
-        updates_mask = F.np.minimum(updates_mask, 1)
-        labels = updates_mask * F.np.not_equal(fake_data, original_data)
+        updates_mask = np.minimum(updates_mask, 1)
+        labels = updates_mask * np.not_equal(fake_data, original_data)
         if self.disc_backbone.layout == 'TN':
             return corrupted_tokens, fake_data.T, labels.T
         else:

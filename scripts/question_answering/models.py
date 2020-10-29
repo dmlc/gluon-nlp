@@ -1,7 +1,7 @@
 import mxnet as mx
 from mxnet.gluon import nn, HybridBlock
 from mxnet.util import use_np
-from gluonnlp.layers import get_activation
+from gluonnlp.layers import get_activation, HybridSequential
 from gluonnlp.op import select_vectors_by_position
 from gluonnlp.attention_cell import masked_logsoftmax, masked_softmax
 
@@ -34,7 +34,7 @@ class ModelForQABasic(HybridBlock):
                                    weight_initializer=weight_initializer,
                                    bias_initializer=bias_initializer)
 
-    def hybrid_forward(self, F, tokens, token_types, valid_length, p_mask):
+    def forward(self, tokens, token_types, valid_length, p_mask):
         """
 
         Parameters
@@ -70,8 +70,8 @@ class ModelForQABasic(HybridBlock):
         scores = self.qa_outputs(contextual_embeddings)
         start_scores = scores[:, :, 0]
         end_scores = scores[:, :, 1]
-        start_logits = masked_logsoftmax(F, start_scores, mask=p_mask, axis=-1)
-        end_logits = masked_logsoftmax(F, end_scores, mask=p_mask, axis=-1)
+        start_logits = masked_logsoftmax(start_scores, mask=p_mask, axis=-1)
+        end_logits = masked_logsoftmax(end_scores, mask=p_mask, axis=-1)
         return start_logits, end_logits
 
     def inference(self, tokens, token_types, valid_length, p_mask,
@@ -162,7 +162,7 @@ class ModelForQAConditionalV1(HybridBlock):
         self.start_scores = nn.Dense(1, flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer)
-        self.end_scores = nn.HybridSequential()
+        self.end_scores = HybridSequential()
         self.end_scores.add(nn.Dense(units, flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer))
@@ -171,7 +171,7 @@ class ModelForQAConditionalV1(HybridBlock):
         self.end_scores.add(nn.Dense(1, flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer))
-        self.answerable_scores = nn.HybridSequential()
+        self.answerable_scores = HybridSequential()
         self.answerable_scores.add(nn.Dense(units, flatten=False,
                                             weight_initializer=weight_initializer,
                                             bias_initializer=bias_initializer))
@@ -181,7 +181,7 @@ class ModelForQAConditionalV1(HybridBlock):
                                             weight_initializer=weight_initializer,
                                             bias_initializer=bias_initializer))
 
-    def get_start_logits(self, F, contextual_embedding, p_mask):
+    def get_start_logits(self, contextual_embedding, p_mask):
         """
 
         Parameters
@@ -196,10 +196,10 @@ class ModelForQAConditionalV1(HybridBlock):
             Shape (batch_size, sequence_length)
         """
         start_scores = F.np.squeeze(self.start_scores(contextual_embedding), -1)
-        start_logits = masked_logsoftmax(F, start_scores, mask=p_mask, axis=-1)
+        start_logits = masked_logsoftmax(start_scores, mask=p_mask, axis=-1)
         return start_logits
 
-    def get_end_logits(self, F, contextual_embedding, start_positions, p_mask):
+    def get_end_logits(self, contextual_embedding, start_positions, p_mask):
         """
 
         Parameters
@@ -220,7 +220,7 @@ class ModelForQAConditionalV1(HybridBlock):
         """
         # Select the features at the start_positions
         # start_feature will have shape (batch_size, N, C)
-        start_features = select_vectors_by_position(F, contextual_embedding, start_positions)
+        start_features = select_vectors_by_position(contextual_embedding, start_positions)
         # Concatenate the start_feature and the contextual_embedding
         contextual_embedding = F.np.expand_dims(contextual_embedding, axis=1)  # (B, 1, T, C)
         start_features = F.np.expand_dims(start_features, axis=2)  # (B, N, 1, C)
@@ -231,11 +231,11 @@ class ModelForQAConditionalV1(HybridBlock):
                                            axis=-1)  # (B, N, T, 2C)
         end_scores = self.end_scores(concat_features)
         end_scores = F.np.squeeze(end_scores, -1)
-        end_logits = masked_logsoftmax(F, end_scores, mask=F.np.expand_dims(p_mask, axis=1),
+        end_logits = masked_logsoftmax(end_scores, mask=F.np.expand_dims(p_mask, axis=1),
                                        axis=-1)
         return end_logits
 
-    def get_answerable_logits(self, F, contextual_embedding, p_mask):
+    def get_answerable_logits(self, contextual_embedding, p_mask):
         """Get the answerable logits.
 
         Parameters
@@ -256,7 +256,7 @@ class ModelForQAConditionalV1(HybridBlock):
         """
         # Shape (batch_size, sequence_length)
         start_scores = F.np.squeeze(self.start_scores(contextual_embedding), -1)
-        start_score_weights = masked_softmax(F, start_scores, p_mask, axis=-1)
+        start_score_weights = masked_softmax(start_scores, p_mask, axis=-1)
         start_agg_feature = F.npx.batch_dot(F.np.expand_dims(start_score_weights, axis=1),
                                             contextual_embedding)
         start_agg_feature = F.np.squeeze(start_agg_feature, 1)
@@ -266,7 +266,7 @@ class ModelForQAConditionalV1(HybridBlock):
         answerable_logits = F.npx.log_softmax(answerable_scores, axis=-1)
         return answerable_logits
 
-    def hybrid_forward(self, F, tokens, token_types, valid_length, p_mask, start_position):
+    def forward(self, tokens, token_types, valid_length, p_mask, start_position):
         """
 
         Parameters
@@ -295,12 +295,12 @@ class ModelForQAConditionalV1(HybridBlock):
             contextual_embeddings = self.backbone(tokens, token_types, valid_length)
         else:
             contextual_embeddings = self.backbone(tokens, valid_length)
-        start_logits = self.get_start_logits(F, contextual_embeddings, p_mask)
-        end_logits = self.get_end_logits(F, contextual_embeddings,
+        start_logits = self.get_start_logits(contextual_embeddings, p_mask)
+        end_logits = self.get_end_logits(contextual_embeddings,
                                          F.np.expand_dims(start_position, axis=1),
                                          p_mask)
         end_logits = F.np.squeeze(end_logits, axis=1)
-        answerable_logits = self.get_answerable_logits(F, contextual_embeddings, p_mask)
+        answerable_logits = self.get_answerable_logits(contextual_embeddings, p_mask)
         return start_logits, end_logits, answerable_logits
 
     def inference(self, tokens, token_types, valid_length, p_mask,

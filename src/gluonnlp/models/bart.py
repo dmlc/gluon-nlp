@@ -195,7 +195,7 @@ class BartModel(TransformerModel):
                                    bias_initializer=self.bias_initializer,
                                    dtype=self._dtype)
 
-    def hybrid_forward(self, F, src_data, src_valid_length, tgt_data, tgt_valid_length):
+    def forward(self, src_data, src_valid_length, tgt_data, tgt_valid_length):
         """
 
         Parameters
@@ -235,12 +235,12 @@ class BartModel(TransformerModel):
                 - layout = 'TN'
                     Shape (tgt_length, batch_size, tgt_vocab_size)
         """
-        enc_out = self.encode(F, src_data, src_valid_length)
-        contextual_embedding = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out,
+        enc_out = self.encode(src_data, src_valid_length)
+        contextual_embedding = self.decode_seq(tgt_data, tgt_valid_length, enc_out,
                                                src_valid_length)
         if self.extract_feature:
             if self.use_pooler:
-                pooled_output = self.apply_pooling(F, contextual_embedding, tgt_valid_length)
+                pooled_output = self.apply_pooling(contextual_embedding, tgt_valid_length)
                 return contextual_embedding, pooled_output
             else:
                 return contextual_embedding
@@ -248,7 +248,7 @@ class BartModel(TransformerModel):
             dec_out = self.tgt_final_layer(contextual_embedding)
             return dec_out
 
-    def apply_pooling(self, F, sequence, valid_length):
+    def apply_pooling(self, sequence, valid_length):
         """Generate the representation given the inputs.
 
         This is used for pre-training or fine-tuning a BART model.

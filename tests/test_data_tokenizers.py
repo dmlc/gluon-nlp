@@ -6,6 +6,7 @@ from uuid import uuid4
 import os
 import unicodedata
 import tempfile
+from pkg_resources import parse_version
 import gluonnlp
 from gluonnlp.data.tokenizers import WhitespaceTokenizer, MosesTokenizer, JiebaTokenizer,\
     SpacyTokenizer, SubwordNMTTokenizer, YTTMTokenizer, SentencepieceTokenizer, \
@@ -640,6 +641,8 @@ def test_huggingface_wordpiece_tokenizer():
         os.remove(hf_vocab_path)
 
 
+@pytest.mark.skipif(parse_version(gluonnlp.utils.lazy_imports.try_import_huggingface_tokenizers().__version__)
+                    >= parse_version('0.9.0.dev0'), reason="Test is only valid for tokenizers 0.8.x")
 def test_huggingface_wordpiece_tokenizer_v08():
     """Test for huggingface tokenizer >=0.8"""
     with tempfile.TemporaryDirectory() as dir_path:
@@ -686,6 +689,8 @@ def test_huggingface_wordpiece_tokenizer_v08():
         verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
 
 
+@pytest.mark.skipif(parse_version(gluonnlp.utils.lazy_imports.try_import_huggingface_tokenizers().__version__)
+                    >= parse_version('0.9.0.dev0'), reason="Test is only valid for tokenizers 0.8.x")
 def test_huggingface_bpe_tokenizer_v08():
     """Test for huggingface BPE tokenizer >=0.8"""
     with tempfile.TemporaryDirectory() as dir_path:
@@ -729,6 +734,8 @@ def test_huggingface_bpe_tokenizer_v08():
         verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
 
 
+@pytest.mark.skipif(parse_version(gluonnlp.utils.lazy_imports.try_import_huggingface_tokenizers().__version__)
+                    >= parse_version('0.9.0.dev0'), reason="Test is only valid for tokenizers 0.8.x")
 def test_huggingface_bytebpe_tokenizer_v08():
     """Test for huggingface bytebpe tokenizer >=0.8"""
     with tempfile.TemporaryDirectory() as dir_path:
