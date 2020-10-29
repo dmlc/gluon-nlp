@@ -37,6 +37,9 @@ python3 prepare_wikipedia.py --mode download --lang hi --date latest
 # Properly format the text files
 python3 prepare_wikipedia.py --mode format -i wikicorpus/download/hi/latest/wikicorpus.xml.bz2
 
+# In addition, you may supress the logging by adding `--quiet`
+python3 prepare_wikipedia.py --mode format -i wikicorpus/download/hi/latest/wikicorpus.xml.bz2 --quiet
+
 ```
 The process of downloading and formatting is time consuming, and we offer an alternative 
 solution to download the prepared raw text file from S3 bucket. This raw text file is in English and 
