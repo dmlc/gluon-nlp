@@ -23,14 +23,14 @@ git fetch origin $SOURCE_REF:working
 git checkout working
 
 if [ $DEVICE == "cpu" ]; then
-  python3 -m pip install -U --quiet --pre "mxnet==2.0.0b20201016" -f https://dist.mxnet.io/python --user
+  python3 -m pip install -U --quiet --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python --user
 else
   # Due to the issue in https://forums.aws.amazon.com/thread.jspa?messageID=953912
   # We need to manually configure the shm to ensure that Horovod is runnable.
   # The reason that we need a larger shm is described in https://github.com/NVIDIA/nccl/issues/290
   umount shm
   mount -t tmpfs -o rw,nosuid,nodev,noexec,relatime,size=2G shm /dev/shm
-  python3 -m pip install -U --quiet --pre "mxnet-cu102==2.0.0b20201016" -f https://dist.mxnet.io/python --user
+  python3 -m pip install -U --quiet --pre "mxnet-cu102>=2.0.0b20200802" -f https://dist.mxnet.io/python --user
 fi
 
 python3 -m pip install --quiet -e .[extras]
