@@ -226,7 +226,8 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
     _match_struct_output(outputs_fp16, outputs_fp32, atol=atol, rtol=rtol)
     if check_amp:
         trainer = mx.gluon.Trainer(model_fp16.collect_params(), 'adam',
-                                   {'learning_rate': 1E-3, 'wd': 1E-4},
+                                   {'learning_rate': 1E-3, 'wd': 1E-4,
+                                    'multi_precision': True},
                                    update_on_kvstore=False)
         amp.init_trainer(trainer)
         with mx.autograd.record():
