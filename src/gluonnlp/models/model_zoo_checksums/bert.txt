@@ -28,3 +28,5 @@ google_en_cased_bert_wwm_large/vocab-c1defaaa.json       c1defaaa483849fee978058
 google_en_uncased_bert_wwm_large/model-cb3ad3c2.params   cb3ad3c2c365bc7ef8af0ac1618fbc574d939ea1   1340591288
 google_en_uncased_bert_wwm_large/model-d0c37dcc.yml      d0c37dcc55a8b523386a2a8f63a45607bdc41f42   403
 google_en_uncased_bert_wwm_large/vocab-e6d2b21d.json     e6d2b21d910ccb356aa18f27a1c7d70660edc058   323235
+gluon_en_cased_bert_base_v1/model-c9645538.params    c9645538c9a94c1ae02441d39df34c47c26c8a51   433253136
+gluon_en_cased_bert_base_v1/vocab-c1defaaa.json    c1defaaa483849fee9780586b66070d275ce8892   300599
