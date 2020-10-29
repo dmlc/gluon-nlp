@@ -172,7 +172,7 @@ class TextPredictionNet(nn.HybridBlock):
                                  units=out_units,
                                  flatten=False)
 
-    def hybrid_forward(self, F, data, token_types, valid_length):
+    def forward(self, data, token_types, valid_length):
         _, pooled_out = self.backbone(data, token_types, valid_length)
         out = self.out_proj(pooled_out)
         return out

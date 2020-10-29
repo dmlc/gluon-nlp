@@ -1,7 +1,5 @@
 #!/bin/bash
 # Shell script for submitting AWS Batch jobs to compile notebooks
-set -ex
-
 
 prnumber=$1
 runnumber=$2
@@ -41,7 +39,7 @@ compile_notebook () {
 
     if [ $BATCH_EXIT_CODE -ne 0 ]; then
         echo Compiling $BASENAME Failed, please download Notebook_Logs in build Artifacts for more details.
-        EXIT_CODE=$BATCH_EXIT_CODE 
+        EXIT_CODE=1
     else
         echo Compiling $BASENAME Succeeded
         aws s3api wait object-exists --bucket gluon-nlp-dev \
