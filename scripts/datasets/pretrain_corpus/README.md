@@ -27,12 +27,15 @@ Also, you should follow the [license](https://www.gutenberg.org/wiki/Gutenberg:T
 
 We used the [attardi/wikiextractor](https://github.com/attardi/wikiextractor) package for preparing the data.
 
+The following is an example that downloads and formats the hindi wikicorpus.
+
 ```bash
-# Download
-python3 prepare_wikipedia.py --mode download --lang en --date latest -o ./
+# Download. 
+# By default, it will download to wikicorpus/download/lang/date/wikicorpus.xml.bz2
+python3 prepare_wikipedia.py --mode download --lang hi --date latest
 
 # Properly format the text files
-python3 prepare_wikipedia.py --mode format -i [path-to-wiki.xml.bz2] -o ./
+python3 prepare_wikipedia.py --mode format -i wikicorpus/download/lang/date/wikicorpus.xml.bz2
 
 ```
 The process of downloading and formatting is time consuming, and we offer an alternative 
