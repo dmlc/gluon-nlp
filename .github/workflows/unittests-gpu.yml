@@ -49,7 +49,7 @@ jobs:
                                              --save-path coverage.xml \
                                              --remote https://github.com/${{ github.repository }} \
                                              --command "python3 -m pip install pytest-forked && python3 -m pytest --forked --cov=. --cov-config=./.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow ./tests/" \
-                                             --wait | tee -a batch_job.log  
+                                             --wait | tee batch_job.log  
 
 
       - name: Test project on AWS Batch(For pull request)
@@ -65,7 +65,7 @@ jobs:
                                              --save-path coverage.xml \
                                              --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
                                              --command "python3 -m pip install pytest-forked && python3 -m pytest --forked --cov=. --cov-config=./.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow ./tests/" \
-                                             --wait | tee -a batch_job.log
+                                             --wait | tee batch_job.log
 
       - name: Wait for job and copy files from AWS s3
         if: ${{ failure() || success() }}

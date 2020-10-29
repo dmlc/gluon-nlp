@@ -64,7 +64,6 @@ jobs:
                  "${{ github.event.pull_request.head.repo.full_name }}" "${{ github.event.pull_request.head.ref }}"
 
       - name: Build Website local
-        if: ${{ failure() || success() }}
         run: |
           make docs_local
 

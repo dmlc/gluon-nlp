@@ -6,6 +6,7 @@ runnumber=$2
 remote=$3
 refs=$4
 
+EXIT_CODE=0
 
 compile_notebook () {
     local MDFILE=$1
@@ -37,7 +38,8 @@ compile_notebook () {
     JOBID=$(cat "$JOBIDLOG")
 
     if [ $BATCH_EXIT_CODE -ne 0 ]; then
-        echo Compiling $BASENAME Failed
+        echo Compiling $BASENAME Failed, please download Notebook_Logs in build Artifacts for more details.
+        EXIT_CODE=$BATCH_EXIT_CODE 
     else
         echo Compiling $BASENAME Succeeded
         aws s3api wait object-exists --bucket gluon-nlp-dev \
@@ -52,3 +54,5 @@ for f in $(find docs/examples -type f -name '*.md' -print); do \
 done;
 
 wait;
+
+exit $EXIT_CODE
