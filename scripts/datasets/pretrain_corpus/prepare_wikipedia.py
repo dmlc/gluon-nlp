@@ -161,7 +161,7 @@ def format_wikicorpus(input, output, bytes, num_process, num_out_files):
 
     # Use WikiExtractor to extract the content
     wikiextractor = try_import_wikiextractor()
-    from wikiextractor import WikiExtrafctor
+    from wikiextractor import WikiExtractor
     wiki_path = os.path.join(output, 'extracted')
     # Overwrite the sys.argv
     sys.argv = ['prog', '-b', bytes, '-o', wiki_path, input]
