@@ -35,7 +35,7 @@ The following is an example that downloads and formats the hindi wikicorpus.
 python3 prepare_wikipedia.py --mode download --lang hi --date latest
 
 # Properly format the text files
-python3 prepare_wikipedia.py --mode format -i wikicorpus/download/lang/date/wikicorpus.xml.bz2
+python3 prepare_wikipedia.py --mode format -i wikicorpus/download/hi/latest/wikicorpus.xml.bz2
 
 ```
 The process of downloading and formatting is time consuming, and we offer an alternative 
