@@ -28,7 +28,7 @@ compile_notebook () {
             --remote https://github.com/${remote} \
             --command "python3 -m pip install --quiet nbformat notedown jupyter_client ipykernel \
                        ipykernel matplotlib termcolor && \
-                       python3 docs/md2ipynb.py ${MDFILE}" | tee $LOGNAME >/dev/null
+                       python3 docs/md2ipynb.py ${MDFILE}"
 
     BATCH_EXIT_CODE=$?
 
