@@ -55,4 +55,6 @@ done;
 
 wait;
 
+echo $EXIT_CODE
+
 exit $EXIT_CODE

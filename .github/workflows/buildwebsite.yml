@@ -66,6 +66,7 @@ jobs:
           exit $?
 
       - name: Build Website local
+        if: ${{ failure() || success() }}
         run: |
           make docs_local
 
