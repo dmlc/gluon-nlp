@@ -41,6 +41,9 @@ python3 prepare_wikipedia.py --mode format -i wikicorpus/download/hi/latest/wiki
 python3 prepare_wikipedia.py --mode format -i wikicorpus/download/hi/latest/wikicorpus.xml.bz2 --quiet
 
 ```
+After formatting, it will create a folder called `prepare_wikipedia`. The processed text files 
+are chunked. 
+
 The process of downloading and formatting is time consuming, and we offer an alternative 
 solution to download the prepared raw text file from S3 bucket. This raw text file is in English and 
 was dumped at 2020-06-20 being formatted by the above process (` --lang en --date 20200620`).
