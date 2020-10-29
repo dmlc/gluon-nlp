@@ -26,10 +26,9 @@ compile_notebook () {
             --work-dir . \
             --source-ref ${refs} \
             --remote https://github.com/${remote} \
-            --wait \
             --command "python3 -m pip install --quiet nbformat notedown jupyter_client ipykernel \
                        ipykernel matplotlib termcolor && \
-                       python3 docs/md2ipynb.py ${MDFILE}" 2>&1 | tee $LOGNAME >/dev/null
+                       python3 docs/md2ipynb.py ${MDFILE}" | tee $LOGNAME >/dev/null
 
     BATCH_EXIT_CODE=$?
 
@@ -43,7 +42,7 @@ compile_notebook () {
         echo Compiling $BASENAME Succeeded
         aws s3api wait object-exists --bucket gluon-nlp-dev \
             --key batch/$JOBID/${runnumber}/gluon-nlp/$TARGETNAME
-        aws s3 cp s3://gluon-nlp-dev/batch/$JOBID/${runnumber}/gluon-nlp/$TARGETNAME $TARGETNAME
+        aws s3 cp s3://gluon-nlp-dev/batch/$JOBID/${runnumber}/gluon-nlp/$TARGETNAME $TARGETNAME --quiet
     fi
     exit $BATCH_EXIT_CODE
 }
