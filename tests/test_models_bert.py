@@ -73,8 +73,8 @@ def test_bert_small_cfg(compute_layout, ctx):
         assert_allclose(contextual_embedding.asnumpy(),
                         mx.np.swapaxes(contextual_embedding_tn, 0, 1).asnumpy(),
                         1E-4, 1E-4)
-        assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
-        assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-4, 1E-4)
+        assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-3, 1E-3)
+        assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-3, 1E-3)
 
         # Test for BertForPretrain
         bert_pretrain_model = BertForPretrain(cfg)
@@ -89,10 +89,10 @@ def test_bert_small_cfg(compute_layout, ctx):
             bert_pretrain_model_tn(inputs.T, token_types.T, valid_length, masked_positions)
         assert_allclose(contextual_embedding.asnumpy(),
                         mx.np.swapaxes(contextual_embedding_tn, 0, 1).asnumpy(),
-                        1E-4, 1E-4)
-        assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
-        assert_allclose(nsp_score.asnumpy(), nsp_score_tn.asnumpy(), 1E-4, 1E-4)
-        assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-4, 1E-4)
+                        1E-3, 1E-3)
+        assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-3, 1E-3)
+        assert_allclose(nsp_score.asnumpy(), nsp_score_tn.asnumpy(), 1E-3, 1E-3)
+        assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-3, 1E-3)
 
 
 @pytest.mark.slow
