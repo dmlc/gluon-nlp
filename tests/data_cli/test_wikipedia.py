@@ -1,5 +1,6 @@
 import os
 import pytest
+import tempfile
 from gluonnlp.cli.data.pretrain_corpus import prepare_wikipedia
 
 
@@ -8,6 +9,7 @@ from gluonnlp.cli.data.pretrain_corpus import prepare_wikipedia
 @pytest.mark.parametrize('lang', ['zh-classical', 'hi'])
 def test_download_format(lang):
     parser = prepare_wikipedia.get_parser()
-    download_args = parser.parse_args(['--mode', 'download', '--lang', lang, '--date', 'latest',
-                                       '-'])
-    prepare_wikipedia.main(download_args)
+    with tempfile.TemporaryDirectory() as root:
+        download_args = parser.parse_args(['--mode', 'download', '--lang', lang,
+                                           '--date', 'latest', '-o', root])
+        prepare_wikipedia.main(download_args)
