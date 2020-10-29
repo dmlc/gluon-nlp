@@ -37,8 +37,6 @@ compile_notebook () {
 
     JOBID=$(cat "$JOBIDLOG")
 
-    python3 tools/batch/wait-job.py --job-id $JOBID
-
     if [ $BATCH_EXIT_CODE -ne 0 ]; then
         echo Compiling $BASENAME Failed
     else
