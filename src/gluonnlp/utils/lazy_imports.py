@@ -26,7 +26,8 @@ __all__ = ['try_import_sentencepiece',
            'try_import_langid',
            'try_import_boto3',
            'try_import_jieba',
-           'try_import_tvm']
+           'try_import_tvm',
+           'try_import_wikiextractor']
 
 
 def try_import_sentencepiece():
@@ -166,3 +167,15 @@ def try_import_tvm():
                           'To install TVM, you may see the documentation in '
                           'https://tvm.apache.org/ or try to use the docker of GluonNLP.')
     return tvm
+
+
+def try_import_wikiextractor():
+    try:
+        import wikiextractor
+    except ImportError:
+        raise ImportError('"wikiextractor" is not installed. You must install wikiextractor '
+                          'to use the functionality. '
+                          'To install the package, you may use `pip install wikiextractor`, or '
+                          'refer to the official guide in '
+                          'https://github.com/attardi/wikiextractor.')
+    return wikiextractor

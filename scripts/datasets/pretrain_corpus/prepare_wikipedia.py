@@ -8,6 +8,7 @@ import tarfile
 import argparse
 import multiprocessing
 from gluonnlp.utils.misc import download, load_checksum_stats
+from gluonnlp.utils.lazy_imports import try_import_wikiextractor
 from gluonnlp.base import get_repo_url
 
 _CITATION = """\
@@ -63,24 +64,6 @@ _URLS = {
 def get_url(lang, date):
     return _BASE_URL_TMPL.format(lang=lang, date=date)
 
-
-def try_import_wikiextractor():
-    try:
-        sys.path.append(_CURR_DIR)
-        import WikiExtractor
-    except ImportError:
-        try:
-            download(
-                'https://raw.githubusercontent.com/attardi/wikiextractor/master/WikiExtractor.py',
-                path=os.path.join(_CURR_DIR, 'WikiExtractor.py'),
-                sha1_hash='3c4896a837b75c476d23c037e8d6c7fdfd9a29eb')
-            sys.path.append(_CURR_DIR)
-            import WikiExtractor
-        except BaseException:
-            raise ImportError('Cannot import WikiExtractor! You can download the "WikiExtractor.py"'
-                              ' in https://github.com/attardi/wikiextractor to {}'
-                              .format(_CURR_DIR))
-    return WikiExtractor
 
 
 def get_formatting_list(wiki_path, recursive=False):
@@ -177,10 +160,11 @@ def format_wikicorpus(input, output, bytes, num_process, num_out_files):
         os.makedirs(output)
 
     # Use WikiExtractor to extract the content
-    WikiExtractor = try_import_wikiextractor()
+    wikiextractor = try_import_wikiextractor()
     wiki_path = os.path.join(output, 'extracted')
+    # Overwrite the sys.argv
     sys.argv = ['prog', '-b', bytes, '-o', wiki_path, input]
-    WikiExtractor.main()
+    wikiextractor.WikiExtractor.main()
 
     # Merge extracted content into txt files
     prepared_path = os.path.join(output, 'prepared_wikipedia')
