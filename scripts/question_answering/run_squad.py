@@ -8,6 +8,7 @@ import json
 import time
 import logging
 import argparse
+import ast
 import functools
 import collections
 from multiprocessing import Pool, cpu_count
@@ -527,7 +528,7 @@ def train(args):
                         'wd': args.wd,
                         'lr_scheduler': lr_scheduler,
                         }
-    adam_betas = json.loads(args.adam_betas.replace('(', '[').replace(')', ']'))
+    adam_betas = ast.literal_eval(args.adam_betas)
     if args.optimizer == 'adamw':
         optimizer_params.update({'beta1': adam_betas[0],
                                  'beta2': adam_betas[1],
