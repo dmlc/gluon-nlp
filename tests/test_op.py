@@ -19,8 +19,8 @@ def test_select_vectors_by_position(batch_size, seq_length, num_sel_positions,
     positions = mx.np.random.randint(0, seq_length, (batch_size, num_sel_positions), dtype=np.int32)
 
     class Foo(gluon.HybridBlock):
-        def hybrid_forward(self, F, p_data, p_positions):
-            return select_vectors_by_position(F, p_data, p_positions)
+        def forward(self, p_data, p_positions):
+            return select_vectors_by_position(p_data, p_positions)
     foo = Foo()
     if hybridized:
         foo.hybridize()
@@ -46,8 +46,8 @@ def test_add_vectors_by_position(batch_size, seq_length, num_sel_positions,
     increment = mx.np.random.uniform(-1, 1, (batch_size, num_sel_positions) + increment_shape)
 
     class Foo(gluon.HybridBlock):
-        def hybrid_forward(self, F, p_data, p_increment, p_positions):
-            return add_vectors_by_position(F, p_data, p_increment, p_positions)
+        def forward(self, p_data, p_increment, p_positions):
+            return add_vectors_by_position(p_data, p_increment, p_positions)
 
     foo = Foo()
     if hybridized:
@@ -80,8 +80,8 @@ def test_update_vectors_by_position(batch_size, seq_length, num_sel_positions,
         positions[i, :] = np.random.choice(seq_length, num_sel_positions, replace=False)
 
     class Foo(gluon.HybridBlock):
-        def hybrid_forward(self, F, p_data, p_val, p_positions):
-            return update_vectors_by_position(F, p_data, p_val, p_positions)
+        def forward(self, p_data, p_val, p_positions):
+            return update_vectors_by_position(p_data, p_val, p_positions)
 
     foo = Foo()
     if hybridized:
@@ -98,7 +98,7 @@ def test_update_vectors_by_position(batch_size, seq_length, num_sel_positions,
 def test_gumbel_softmax(shape):
     # Here, we just verify that it will generate one-hot vectors and will have gradient
     logits = mx.np.random.uniform(-2, -1, shape)
-    ret = gumbel_softmax(mx, logits)
+    ret = gumbel_softmax(logits)
     assume_allones = (ret == 1).sum(axis=-1).asnumpy()
     assert_allclose(assume_allones, np.ones_like(assume_allones))
 
@@ -109,5 +109,5 @@ def test_trunc_gumbel():
     #  It's generally difficult to test whether the samples are generated from a truncated gumbel
     #  distribution. Thus, we just verify that the samples are smaller than the provided threshold
     for i in range(1000):
-        samples = trunc_gumbel(mx, mx.np.ones((10,)), 1.0).asnumpy()
+        samples = trunc_gumbel(mx.np.ones((10,)), 1.0).asnumpy()
         assert (samples < 1.0).all()

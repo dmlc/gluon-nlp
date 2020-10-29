@@ -16,8 +16,9 @@
 # under the License.
 """Attention cells."""
 import math
-import numpy as np
 import mxnet as mx
+from mxnet import np, npx
+import numpy as _np
 from mxnet.gluon.block import HybridBlock
 from mxnet.gluon import nn
 from .op import l2_normalize
@@ -30,7 +31,7 @@ from typing import Optional
 # TODO(sxjscience)
 #  We can optimize the whole function by writing a custom-op,
 #  or automatically fuse these operators.
-def gen_self_attn_mask(F, data,
+def gen_self_attn_mask(data,
                        valid_length=None,
                        dtype: type = np.float32,
                        attn_type: str = 'full',
@@ -131,29 +132,29 @@ def gen_self_attn_mask(F, data,
     if attn_type == 'full':
         if valid_length is not None:
             valid_length = valid_length.astype(dtype)
-            steps = F.npx.arange_like(data, axis=time_axis)  # (seq_length,)
-            mask1 = (F.npx.reshape(steps, (1, 1, -1))
-                     < F.npx.reshape(valid_length, (-2, 1, 1)))
-            mask2 = (F.npx.reshape(steps, (1, -1, 1))
-                     < F.npx.reshape(valid_length, (-2, 1, 1)))
+            steps = npx.arange_like(data, axis=time_axis)  # (seq_length,)
+            mask1 = (npx.reshape(steps, (1, 1, -1))
+                     < npx.reshape(valid_length, (-2, 1, 1)))
+            mask2 = (npx.reshape(steps, (1, -1, 1))
+                     < npx.reshape(valid_length, (-2, 1, 1)))
             mask = mask1 * mask2
         else:
             # TODO(sxjscience) optimize
-            seq_len_ones = F.np.ones_like(F.npx.arange_like(data, axis=time_axis))  # (seq_length,)
-            batch_ones = F.np.ones_like(F.npx.arange_like(data, axis=batch_axis))   # (batch_size,)
+            seq_len_ones = np.ones_like(npx.arange_like(data, axis=time_axis))  # (seq_length,)
+            batch_ones = np.ones_like(npx.arange_like(data, axis=batch_axis))   # (batch_size,)
             mask = batch_ones.reshape((-1, 1, 1)) * seq_len_ones.reshape((1, -1, 1))\
                    * seq_len_ones.reshape((1, 1, -1))
     elif attn_type == 'causal':
-        steps = F.npx.arange_like(data, axis=time_axis)
+        steps = npx.arange_like(data, axis=time_axis)
         # mask: (seq_length, seq_length)
         # batch_mask: (batch_size, seq_length)
-        mask = (F.np.expand_dims(steps, axis=0) <= F.np.expand_dims(steps, axis=1)).astype(dtype)
+        mask = (np.expand_dims(steps, axis=0) <= np.expand_dims(steps, axis=1)).astype(dtype)
         if valid_length is not None:
             valid_length = valid_length.astype(dtype)
-            batch_mask = (F.np.expand_dims(steps, axis=0) < F.np.expand_dims(valid_length, axis=-1)).astype(dtype)
-            mask = mask * F.np.expand_dims(batch_mask, axis=-1)
+            batch_mask = (np.expand_dims(steps, axis=0) < np.expand_dims(valid_length, axis=-1)).astype(dtype)
+            mask = mask * np.expand_dims(batch_mask, axis=-1)
         else:
-            batch_ones = F.np.ones_like(F.npx.arange_like(data, axis=batch_axis),
+            batch_ones = np.ones_like(npx.arange_like(data, axis=batch_axis),
                                         dtype=dtype)  # (batch_size,)
             mask = mask * batch_ones.reshape((-1, 1, 1))
     else:
@@ -162,7 +163,7 @@ def gen_self_attn_mask(F, data,
     return mask
 
 
-def gen_mem_attn_mask(F, mem, mem_valid_length, data, data_valid_length=None,
+def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
                       dtype=np.float32, layout: str = 'NT'):
     """Generate the mask used for the decoder. All query slots are attended to the memory slots.
 
@@ -197,7 +198,6 @@ def gen_mem_attn_mask(F, mem, mem_valid_length, data, data_valid_length=None,
 
     Parameters
     ----------
-    F :
     mem
        - layout = 'NT'
             Shape (batch_size, mem_length, C_mem)
@@ -229,28 +229,27 @@ def gen_mem_attn_mask(F, mem, mem_valid_length, data, data_valid_length=None,
     else:
         raise NotImplementedError('Unsupported layout={}'.format(layout))
     mem_valid_length = mem_valid_length.astype(dtype)
-    mem_steps = F.npx.arange_like(mem, axis=time_axis)  # (mem_length,)
-    data_steps = F.npx.arange_like(data, axis=time_axis)  # (query_length,)
-    mem_mask = (F.npx.reshape(mem_steps, (1, 1, -1))
-                < F.npx.reshape(mem_valid_length, (-2, 1, 1))).astype(dtype)  # (B, 1, mem_length)
+    mem_steps = npx.arange_like(mem, axis=time_axis)  # (mem_length,)
+    data_steps = npx.arange_like(data, axis=time_axis)  # (query_length,)
+    mem_mask = (npx.reshape(mem_steps, (1, 1, -1))
+                < npx.reshape(mem_valid_length, (-2, 1, 1))).astype(dtype)  # (B, 1, mem_length)
     if data_valid_length is not None:
         data_valid_length = data_valid_length.astype(dtype)
-        data_mask = (F.npx.reshape(data_steps, (1, -1, 1))
-                     < F.npx.reshape(data_valid_length, (-2, 1, 1))).astype(dtype)  # (B, query_length, 1)
+        data_mask = (npx.reshape(data_steps, (1, -1, 1))
+                     < npx.reshape(data_valid_length, (-2, 1, 1))).astype(dtype)  # (B, query_length, 1)
         mask = mem_mask * data_mask
     else:
-        query_length_ones = F.np.ones_like(data_steps)
+        query_length_ones = np.ones_like(data_steps)
         mask = query_length_ones.reshape((1, -1, 1)) * mem_mask
     return mask
 
 
 # TODO(sxjscience) Directly implement a kernel for masked softmax
-def masked_softmax(F, att_score, mask, dtype=np.float32, axis: int = -1):
+def masked_softmax(att_score, mask, dtype=np.float32, axis: int = -1):
     """Ignore the masked elements when calculating the softmax. The mask can be broadcastable.
 
     Parameters
     ----------
-    F : symbol or ndarray
     att_score : Symborl or NDArray
         Shape (..., length, ...)
     mask : Symbol or NDArray or None
@@ -269,7 +268,7 @@ def masked_softmax(F, att_score, mask, dtype=np.float32, axis: int = -1):
     if mask is not None:
         # Fill in the masked scores with a very small value
         neg = -1e18
-        if np.dtype(dtype) == np.float16:
+        if _np.dtype(dtype) == np.float16:
             neg = -1e4
         else:
             try:
@@ -278,28 +277,21 @@ def masked_softmax(F, att_score, mask, dtype=np.float32, axis: int = -1):
                 if amp.amp._amp_initialized:
                     neg = -1e4
             except ImportError:
-                try:
-                    from mxnet.contrib import amp
-                except ImportError:
-                    amp = None
-                    pass
-            if amp is not None:
-                if amp.amp._amp_initialized:
-                    neg = -1e4
-        att_score = F.np.where(mask, att_score, neg)
-        logits = F.npx.softmax(att_score, axis=axis) * mask
+                pass
+
+        att_score = np.where(mask, att_score, neg)
+        logits = npx.softmax(att_score, axis=axis) * mask
     else:
-        logits = F.npx.softmax(att_score, axis=axis)
+        logits = npx.softmax(att_score, axis=axis)
     return logits
 
 
 # TODO(sxjscience) Directly implement a kernel for masked logsoftmax
-def masked_logsoftmax(F, att_score, mask, dtype=np.float32, axis: int = -1):
+def masked_logsoftmax(att_score, mask, dtype=np.float32, axis: int = -1):
     """Ignore the masked elements when calculating the softmax. The mask can be broadcastable.
 
     Parameters
     ----------
-    F : symbol or ndarray
     att_score : Symborl or NDArray
         Shape (..., length, ...)
     mask : Symbol or NDArray or None
@@ -329,16 +321,16 @@ def masked_logsoftmax(F, att_score, mask, dtype=np.float32, axis: int = -1):
                     neg = -1e4
             except ImportError:
                 pass
-        att_score = F.np.where(mask, att_score, neg)
-        logits = F.np.where(mask, F.npx.log_softmax(att_score, axis=axis), -np.inf)
+        att_score = np.where(mask, att_score, neg)
+        logits = np.where(mask, npx.log_softmax(att_score, axis=axis), -np.inf)
     else:
-        logits = F.npx.log_softmax(att_score, axis=axis)
+        logits = npx.log_softmax(att_score, axis=axis)
     return logits
 
 
 # TODO(sxjscience) Default to einsum. Current it is not the default because
 #   1) einsum is super-slow: https://github.com/apache/incubator-mxnet/issues/18043
-def dot_attn_score(F, query, key, scaled=True, normalized=False, eps=1E-6,
+def dot_attn_score(query, key, scaled=True, normalized=False, eps=1E-6,
                    layout='NT'):
     """The inner function call to calculate the score used in dot-product attention.
 
@@ -355,7 +347,6 @@ def dot_attn_score(F, query, key, scaled=True, normalized=False, eps=1E-6,
 
     Parameters
     ----------
-    F : mx.sym or mx.nd
     query : symbol or ndarray
         - layout is 'NT'
             (B0, ..., BN, query_length, query_dim)
@@ -383,23 +374,23 @@ def dot_attn_score(F, query, key, scaled=True, normalized=False, eps=1E-6,
         (B0, ..., BN, query_length, key_length)
     """
     if normalized:
-        query = l2_normalize(F, query, -1, eps=eps)
-        key = l2_normalize(F, key, -1, eps=eps)
+        query = l2_normalize(query, -1, eps=eps)
+        key = l2_normalize(key, -1, eps=eps)
     if scaled:
-        query_shape = F.npx.shape_array(query)
+        query_shape = npx.shape_array(query)
         # TODO(sxjscience) Remove .astype(np.float32).
         #  Wait for https://github.com/apache/incubator-mxnet/issues/18084
         query_units = query_shape[-1].astype(np.float32)
-        query = query / F.np.sqrt(query_units)
+        query = query / np.sqrt(query_units)
     if layout == 'NT':
-        scores = F.npx.batch_dot(query, key, transpose_b=True)
+        scores = npx.batch_dot(query, key, transpose_b=True)
     else:
         raise NotImplementedError('layout={} is not supported.'
                                   ' Currently, only layout = "NT" is implemented!'.format(layout))
     return scores
 
 
-def multi_head_dot_attn(F, query, key, value,
+def multi_head_dot_attn(query, key, value,
                         mask=None,
                         edge_scores=None,
                         dropout: float = 0.0,
@@ -424,7 +415,6 @@ def multi_head_dot_attn(F, query, key, value,
 
     Parameters
     ----------
-    F
     query
         Query. The shape depends on the layout
         - layout is 'NKT'
@@ -494,12 +484,12 @@ def multi_head_dot_attn(F, query, key, value,
     """
     # TODO(sxjscience) Profile layout
     if normalized:
-        query = l2_normalize(F, query, axis=-1, eps=eps)
-        key = l2_normalize(F, key, axis=-1, eps=eps)
+        query = l2_normalize(query, axis=-1, eps=eps)
+        key = l2_normalize(key, axis=-1, eps=eps)
     if scaled:
         if query_head_units is None:
-            query_shape = F.npx.shape_array(query)
-            scale = F.np.sqrt(query_shape[-1])
+            query_shape = npx.shape_array(query)
+            scale = np.sqrt(query_shape[-1])
         else:
             scale = math.sqrt(query_head_units)
     else:
@@ -508,54 +498,54 @@ def multi_head_dot_attn(F, query, key, value,
         # 1. Expand the dimension of the mask:
         #   (B, L_query, L_mem) --> (B, 1, L_query, L_mem)
         if mask is not None:
-            mask = F.np.expand_dims(mask, axis=1)
+            mask = np.expand_dims(mask, axis=1)
         # 2. Calculate the attention weights
         #   Score: (B, N, L_query, C_Q) X (B, N, L_mem, C_Q) --> (B, N, L_query, L_mem)
-        scores = F.npx.batch_dot(query, key, transpose_b=True)
+        scores = npx.batch_dot(query, key, transpose_b=True)
         if edge_scores is not None:
             scores = scores + edge_scores
         if scaled:
             scores = scores / scale
-        attn_weights = masked_softmax(F, scores, mask, dtype=dtype, axis=-1)
-        attn_weights = F.npx.dropout(attn_weights, p=dropout)
+        attn_weights = masked_softmax(scores, mask, dtype=dtype, axis=-1)
+        attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (B, N, L_mem, C_V) --> (B, L_query, N * C_V)
         if use_einsum:
-            context_vec = F.np.einsum('bnij,bnjc->binc', attn_weights, value)
+            context_vec = np.einsum('bnij,bnjc->binc', attn_weights, value)
         else:
-            context_vec = F.npx.batch_dot(attn_weights, value).transpose((0, 2, 1, 3))
-        context_vec = F.npx.reshape(context_vec, (-2, -2, -1))
+            context_vec = npx.batch_dot(attn_weights, value).transpose((0, 2, 1, 3))
+        context_vec = npx.reshape(context_vec, (-2, -2, -1))
     elif layout == 'NTK':
         # 1. Expand the dimension of the mask:
         #   (B, L_query, L_mem) --> (B, 1, L_query, L_mem)
         if mask is not None:
-            mask = F.np.expand_dims(mask, axis=1)
+            mask = np.expand_dims(mask, axis=1)
         # 2. Calculate the attention weights
         #   Score: (B, L_query, N, C_Q) X (B, L_mem, N, C_Q) --> (B, N, L_query, L_mem)
         if use_einsum:
-            scores = F.np.einsum('binc,bjnc->bnij', query, key)
+            scores = np.einsum('binc,bjnc->bnij', query, key)
         else:
-            scores = F.npx.batch_dot(F.np.swapaxes(query, 1, 2), F.np.swapaxes(key, 1, 2),
+            scores = npx.batch_dot(np.swapaxes(query, 1, 2), np.swapaxes(key, 1, 2),
                                      transpose_b=True)
         if edge_scores is not None:
             scores = scores + edge_scores
         if scaled:
             scores = scores / scale
-        attn_weights = masked_softmax(F, scores, mask, dtype=dtype)
-        attn_weights = F.npx.dropout(attn_weights, p=dropout)
+        attn_weights = masked_softmax(scores, mask, dtype=dtype)
+        attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (B, L_mem, N, C_V) --> (B, L_query, N * C_V)
         if use_einsum:
-            context_vec = F.np.einsum('bnij,bjnc->binc', attn_weights, value)
+            context_vec = np.einsum('bnij,bjnc->binc', attn_weights, value)
         else:
-            context_vec = F.npx.batch_dot(attn_weights,
-                                          F.np.swapaxes(value, 1, 2)).transpose((0, 2, 1, 3))
-        context_vec = F.npx.reshape(context_vec, (-2, -2, -1))
+            context_vec = npx.batch_dot(attn_weights,
+                                          np.swapaxes(value, 1, 2)).transpose((0, 2, 1, 3))
+        context_vec = npx.reshape(context_vec, (-2, -2, -1))
     elif layout == 'TNK':
         # 1. Expand the dimension of the mask:
         #   (B, L_query, L_mem) --> (B, 1, L_query, L_mem)
         if mask is not None:
-            mask = F.np.expand_dims(mask, axis=1)
+            mask = np.expand_dims(mask, axis=1)
         # 2. Calculate the attention weights
         #   Score: (L_query, B, N, C_Q) X (L_mem, B, N, C_Q) --> (B, N, L_query, L_mem)
         #   This layout structure can be implemented very efficiently because B, N are consecutive
@@ -564,27 +554,27 @@ def multi_head_dot_attn(F, query, key, value,
         #       out[i, j, :, :] = query[:, i, j, :] X key[:, i, j, :].T, which is just one GEMM call
         #   We can thus implement the whole kernel via a single call of batched GEMM with stride.
         if use_einsum:
-            scores = F.np.einsum('ibnc,jbnc->bnij', query, key)
+            scores = np.einsum('ibnc,jbnc->bnij', query, key)
         else:
-            scores = F.npx.batch_dot(query.transpose((1, 2, 0, 3)),
+            scores = npx.batch_dot(query.transpose((1, 2, 0, 3)),
                                      key.transpose((1, 2, 3, 0)))
         if edge_scores is not None:
             scores = scores + edge_scores
         if scaled:
             scores = scores / scale
-        attn_weights = masked_softmax(F, scores, mask, dtype=dtype)
-        attn_weights = F.npx.dropout(attn_weights, p=dropout)
+        attn_weights = masked_softmax(scores, mask, dtype=dtype)
+        attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (L_mem, B, N, C_V) --> (L_query, B, N * C_V)
         # Again, we can implement it via a single call to batched GEMM with stride.
 
         # Shape (B, N, L_query, C_V)
         if use_einsum:
-            context_vec = F.np.einsum('bnij,jbnc->ibnc', attn_weights, value)
+            context_vec = np.einsum('bnij,jbnc->ibnc', attn_weights, value)
         else:
-            context_vec = F.npx.batch_dot(attn_weights,
+            context_vec = npx.batch_dot(attn_weights,
                                           value.transpose((1, 2, 0, 3))).transpose((2, 0, 1, 3))
-        context_vec = F.npx.reshape(context_vec, (-2, -2, -1))
+        context_vec = npx.reshape(context_vec, (-2, -2, -1))
     else:
         raise NotImplementedError('layout="{}" is not supported! '
                                   'We only support layout = "NKT", "NTK", and "TNK".'
@@ -644,8 +634,8 @@ class MultiHeadAttentionCell(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, query, key, value, mask=None, edge_scores=None):
-        return multi_head_dot_attn(F, query=query, key=key, value=value,
+    def forward(self, query, key, value, mask=None, edge_scores=None):
+        return multi_head_dot_attn(query=query, key=key, value=value,
                                    mask=mask, edge_scores=edge_scores,
                                    dropout=self._attention_dropout,
                                    scaled=self._scaled, normalized=self._normalized,
@@ -809,7 +799,7 @@ class RelAttentionScoreCell(HybridBlock):
         """Layout of the cell"""
         return self._layout
 
-    def hybrid_forward(self, F, rel_positions, query=None):
+    def forward(self, rel_positions, query=None):
         """
 
         Parameters
@@ -834,62 +824,62 @@ class RelAttentionScoreCell(HybridBlock):
             assert query is not None, 'Must specify query if method={}'.format(self._method)
             if self._bidirectional:
                 if self._max_distance is not None:
-                    rel_positions = F.np.clip(rel_positions,
+                    rel_positions = np.clip(rel_positions,
                                               a_min=-self._max_distance, a_max=self._max_distance)
             else:
                 if self._max_distance is not None:
-                    rel_positions = F.np.clip(rel_positions,
+                    rel_positions = np.clip(rel_positions,
                                               a_min=0, a_max=self._max_distance)
             # uniq_rel.shape = (#uniq,), rev_index.shape = (L_q, L_m)
-            uniq_rel, rev_index = F.np.unique(rel_positions, return_inverse=True)
+            uniq_rel, rev_index = np.unique(rel_positions, return_inverse=True)
 
             uniq_rel_pos_embed = self._rel_pos_embed(uniq_rel)
             if self._method == 'transformer_xl':
                 uniq_rel_pos_embed = self._rel_proj(self._dropout_layer(uniq_rel_pos_embed))
             # Shape (#uniq, K, C_q)
-            uniq_rel_pos_embed = F.npx.reshape(uniq_rel_pos_embed,
+            uniq_rel_pos_embed = npx.reshape(uniq_rel_pos_embed,
                                                (-2, self._num_heads, self._head_query_units))
             # Calculate the dot-product between query and the relative positional embeddings.
             # After the calculation, rel_score.shape = (L_q, #uniq, N, K)
             if self._layout == 'NKT':
                 # query_for_rel: (N, K, L_q, C_q)
                 if self._use_einsum:
-                    rel_score = F.np.einsum('bnid,jnd->ijbn', query, uniq_rel_pos_embed)
+                    rel_score = np.einsum('bnid,jnd->ijbn', query, uniq_rel_pos_embed)
                 else:
-                    rel_score = F.np.transpose(
-                        F.np.matmul(query,
-                                    F.np.transpose(uniq_rel_pos_embed, (1, 2, 0))),
+                    rel_score = np.transpose(
+                        np.matmul(query,
+                                    np.transpose(uniq_rel_pos_embed, (1, 2, 0))),
                         (2, 3, 0, 1)
                     )
             elif self._layout == 'NTK':
                 # query_for_rel: (N, L_q, K, C_q)
                 if self._use_einsum:
-                    rel_score = F.np.einsum('bind,jnd->ijbn', query, uniq_rel_pos_embed)
+                    rel_score = np.einsum('bind,jnd->ijbn', query, uniq_rel_pos_embed)
                 else:
-                    rel_score = F.np.transpose(
-                        F.np.matmul(F.np.swapaxes(query, 1, 2),
-                                    F.np.transpose(uniq_rel_pos_embed, (1, 2, 0))),
+                    rel_score = np.transpose(
+                        np.matmul(np.swapaxes(query, 1, 2),
+                                    np.transpose(uniq_rel_pos_embed, (1, 2, 0))),
                         (2, 3, 0, 1)
                     )
             elif self._layout == 'TNK':
                 # query_for_rel: (L_q, N, K, C_q)
                 if self._use_einsum:
-                    rel_score = F.np.einsum('ibnd,jnd->ijbn', query, uniq_rel_pos_embed)
+                    rel_score = np.einsum('ibnd,jnd->ijbn', query, uniq_rel_pos_embed)
                 else:
-                    rel_score = F.np.transpose(
-                        F.np.matmul(F.np.transpose(query, (1, 2, 0, 3)),
-                                    F.np.transpose(uniq_rel_pos_embed, (1, 2, 0))),
+                    rel_score = np.transpose(
+                        np.matmul(np.transpose(query, (1, 2, 0, 3)),
+                                    np.transpose(uniq_rel_pos_embed, (1, 2, 0))),
                         (2, 3, 0, 1)
                     )
             else:
                 raise NotImplementedError
             # We use gather_nd to select the elements
             # TODO(sxjscience) Use advanced indexing once available
-            rev_index = F.npx.reshape_like(rev_index, rel_positions).astype(np.int32)
-            query_idx = F.np.expand_dims(F.npx.arange_like(rel_positions, axis=0).astype(np.int32),
-                                         axis=-1) + F.np.zeros_like(rev_index)
-            rel_score = F.npx.gather_nd(rel_score, F.np.stack([query_idx, rev_index]))
-            rel_score = F.np.transpose(rel_score, (2, 3, 0, 1))
+            rev_index = npx.reshape_like(rev_index, rel_positions).astype(np.int32)
+            query_idx = np.expand_dims(npx.arange_like(rel_positions, axis=0).astype(np.int32),
+                                         axis=-1) + np.zeros_like(rev_index)
+            rel_score = npx.gather_nd(rel_score, np.stack([query_idx, rev_index]))
+            rel_score = np.transpose(rel_score, (2, 3, 0, 1))
         elif self._method == 't5':
             # shape is (K, L_q, L_m)
             rel_score = self._rel_pos_embed(rel_positions).transpose((2, 0, 1))

@@ -476,7 +476,7 @@ class ElectraMasker(HybridBlock):
         self.vocab = tokenizer.vocab
         self._replace_prob = replace_prob
 
-    def dynamic_masking(self, F, input_ids, valid_lengths):
+    def dynamic_masking(self, input_ids, valid_lengths):
         # TODO(zheyuye), two additional flag `disallow_from_mask` and `already_masked`
         # that control the masking status for each positions in the sequence.
         """
@@ -542,7 +542,7 @@ class ElectraMasker(HybridBlock):
             sequence_length=valid_lengths,
             use_sequence_length=True, axis=1, value=0)
         unmasked_tokens = select_vectors_by_position(
-            F, input_ids, masked_positions) * masked_weights
+            input_ids, masked_positions) * masked_weights
         masked_weights = masked_weights.astype(np.float32)
         replaced_positions = (
             F.np.random.uniform(
@@ -556,7 +556,7 @@ class ElectraMasker(HybridBlock):
             self.vocab.cls_id).astype(
             np.int32)
         # Masking token by replacing with [MASK]
-        masked_input_ids = update_vectors_by_position(F, input_ids, filled, replaced_positions)
+        masked_input_ids = update_vectors_by_position(input_ids, filled, replaced_positions)
 
         # Note: It is likely have multiple zero values in masked_positions if number of masked of
         # positions not reached the maximum. However, this example hardly exists since valid_length

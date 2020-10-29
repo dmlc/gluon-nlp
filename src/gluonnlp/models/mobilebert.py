@@ -31,13 +31,13 @@ import os
 from typing import Tuple, Optional
 
 import mxnet as mx
-import numpy as np
-from mxnet import use_np
+from mxnet import use_np, np, npx
 from mxnet.gluon import HybridBlock, nn
 
 from ..op import select_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
-from ..layers import InitializerType, PositionwiseFFN, PositionalEmbedding, get_norm_layer, get_activation
+from ..layers import InitializerType, PositionwiseFFN, PositionalEmbedding, get_norm_layer, \
+                     get_activation, HybridSequential
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
@@ -262,7 +262,7 @@ class MobileBertEncoderLayer(HybridBlock):
                                          in_channels=real_units,
                                          epsilon=layer_norm_eps)
 
-        self.stacked_ffn = nn.HybridSequential()
+        self.stacked_ffn = HybridSequential()
         for ffn_idx in range(num_stacked_ffn):
             is_last_ffn = (ffn_idx == (num_stacked_ffn - 1))
             # only apply dropout on last ffn layer if use bottleneck
@@ -283,7 +283,7 @@ class MobileBertEncoderLayer(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, data, attn_mask):
+    def forward(self, data, attn_mask):
         """
 
         Parameters
@@ -336,9 +336,9 @@ class MobileBertEncoderLayer(HybridBlock):
             key = data
             value = data
 
-        query = F.npx.reshape(self.attn_query(query), (-2, -2, self._num_heads, -1))
-        key = F.npx.reshape(self.attn_key(key), (-2, -2, self._num_heads, -1))
-        value = F.npx.reshape(self.attn_value(value), (-2, -2, self._num_heads, -1))
+        query = npx.reshape(self.attn_query(query), (-2, -2, self._num_heads, -1))
+        key = npx.reshape(self.attn_key(key), (-2, -2, self._num_heads, -1))
+        value = npx.reshape(self.attn_value(value), (-2, -2, self._num_heads, -1))
         out, [_, attn_weight] = self.attention_cell(query, key, value, attn_mask)
         out = self.attention_proj(out)
         if not self._use_bottleneck:
@@ -394,7 +394,7 @@ class MobileBertTransformer(HybridBlock):
             'by the number of heads. Received real_units={}, num_heads={}' \
             .format(real_units, num_heads)
 
-        self.all_layers = nn.HybridSequential()
+        self.all_layers = HybridSequential()
         for layer_idx in range(num_layers):
             self.all_layers.add(
                 MobileBertEncoderLayer(use_bottleneck=use_bottleneck,
@@ -417,7 +417,7 @@ class MobileBertTransformer(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, data, valid_length):
+    def forward(self, data, valid_length):
         """
         Generate the representation given the inputs.
 
@@ -450,7 +450,7 @@ class MobileBertTransformer(HybridBlock):
             raise NotImplementedError('Received layout="{}". '
                                       'Only "NT" and "TN" are supported.'.format(self._layout))
         # 1. Embed the data
-        attn_mask = gen_self_attn_mask(F, data, valid_length,
+        attn_mask = gen_self_attn_mask(data, valid_length,
                                        dtype=self._dtype,
                                        layout=self._layout,
                                        attn_type='full')
@@ -464,7 +464,7 @@ class MobileBertTransformer(HybridBlock):
             # out : [batch_size, seq_len, units]
             # attention_weights : [batch_size, num_heads, seq_len, seq_len]
             if self._output_all_encodings:
-                out = F.npx.sequence_mask(out,
+                out = npx.sequence_mask(out,
                                           sequence_length=valid_length,
                                           use_sequence_length=True,
                                           axis=time_axis)
@@ -475,7 +475,7 @@ class MobileBertTransformer(HybridBlock):
 
         if not self._output_all_encodings:
             # if self._output_all_encodings, SequenceMask is already applied above
-            out = F.npx.sequence_mask(out, sequence_length=valid_length,
+            out = npx.sequence_mask(out, sequence_length=valid_length,
                                       use_sequence_length=True,
                                       axis=time_axis)
             return out, additional_outputs
@@ -608,7 +608,7 @@ class MobileBertModel(HybridBlock):
     def dtype(self):
         return self._dtype
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length):
+    def forward(self, inputs, token_types, valid_length):
         # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
@@ -640,12 +640,12 @@ class MobileBertModel(HybridBlock):
         pooled_output :
             This is optional. Shape (batch_size, units)
         """
-        embedding = self.get_initial_embedding(F, inputs, token_types)
+        embedding = self.get_initial_embedding(inputs, token_types)
 
         if self._compute_layout != self._layout:
-            contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(embedding, 0, 1),
+            contextual_embeddings, additional_outputs = self.encoder(np.swapaxes(embedding, 0, 1),
                                                                      valid_length)
-            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
+            contextual_embeddings = np.swapaxes(contextual_embeddings, 0, 1)
         else:
             contextual_embeddings, additional_outputs = self.encoder(embedding, valid_length)
         if self.use_pooler:
@@ -654,7 +654,7 @@ class MobileBertModel(HybridBlock):
         else:
             return contextual_embeddings
 
-    def get_initial_embedding(self, F, inputs, token_types=None):
+    def get_initial_embedding(self, inputs, token_types=None):
         """Get the initial token embeddings that considers the token type and positional embeddings
 
         Parameters
@@ -687,15 +687,15 @@ class MobileBertModel(HybridBlock):
 
         if self.trigram_embed:
             if self._layout == 'NT':
-                word_embedding = F.np.concatenate(
-                    [F.np.pad(word_embedding[:, 1:], ((0, 0), (0, 1), (0, 0))),
+                word_embedding = np.concatenate(
+                    [np.pad(word_embedding[:, 1:], ((0, 0), (0, 1), (0, 0))),
                      word_embedding,
-                     F.np.pad(word_embedding[:, :-1], ((0, 0), (1, 0), (0, 0)))], axis=-1)
+                     np.pad(word_embedding[:, :-1], ((0, 0), (1, 0), (0, 0)))], axis=-1)
             elif self._layout == 'TN':
-                word_embedding = F.np.concatenate(
-                    [F.np.pad(word_embedding[1:, :], ((0, 1), (0, 0), (0, 0))),
+                word_embedding = np.concatenate(
+                    [np.pad(word_embedding[1:, :], ((0, 1), (0, 0), (0, 0))),
                      word_embedding,
-                     F.np.pad(word_embedding[:-1, :], ((1, 0), (0, 0), (0, 0)))], axis=-1)
+                     np.pad(word_embedding[:-1, :], ((1, 0), (0, 0), (0, 0)))], axis=-1)
             else:
                 raise NotImplementedError
         # Projecting the embedding into units only for word embedding
@@ -703,13 +703,13 @@ class MobileBertModel(HybridBlock):
             word_embedding = self.embed_factorized_proj(word_embedding)
 
         if token_types is None:
-            token_types = F.np.zeros_like(inputs)
+            token_types = np.zeros_like(inputs)
         type_embedding = self.token_type_embed(token_types)
         embedding = word_embedding + type_embedding
         if self.pos_embed_type is not None:
             positional_embedding =\
-                self.token_pos_embed(F.npx.arange_like(embedding, axis=time_axis))
-            positional_embedding = F.np.expand_dims(positional_embedding, axis=batch_axis)
+                self.token_pos_embed(npx.arange_like(embedding, axis=time_axis))
+            positional_embedding = np.expand_dims(positional_embedding, axis=batch_axis)
             embedding = embedding + positional_embedding
         # Extra layer normalization plus dropout
         embedding = self.embed_layer_norm(embedding)
@@ -811,7 +811,7 @@ class MobileBertForMLM(HybridBlock):
             weight_initializer = self.backbone_model.weight_initializer
         if bias_initializer is None:
             bias_initializer = self.backbone_model.bias_initializer
-        self.mlm_decoder = nn.HybridSequential()
+        self.mlm_decoder = HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
                                       in_units=self.backbone_model.units,
@@ -840,7 +840,7 @@ class MobileBertForMLM(HybridBlock):
                 in_units=self.backbone_model.units - self.backbone_model.embed_size,
                 flatten=False)
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length,
+    def forward(self, inputs, token_types, valid_length,
                        masked_positions):
         """Getting the scores of the masked positions.
 
@@ -880,10 +880,10 @@ class MobileBertForMLM(HybridBlock):
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
         if self.backbone_model.layout == 'TN':
-            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+            mlm_features = select_vectors_by_position(np.swapaxes(contextual_embeddings, 0, 1),
                                                       masked_positions)
         else:
-            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+            mlm_features = select_vectors_by_position(contextual_embeddings, masked_positions)
         intermediate_output = self.mlm_decoder(mlm_features)
         if self.backbone_model.embed_size != self.backbone_model.units:
             scores = self.embedding_table(
@@ -921,7 +921,7 @@ class MobileBertForPretrain(HybridBlock):
                                        in_units=self.backbone_model.units,
                                        weight_initializer=weight_initializer,
                                        dtype=self.backbone_model.dtype)
-        self.mlm_decoder = nn.HybridSequential()
+        self.mlm_decoder = HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
                                       in_units=self.backbone_model.units,
@@ -953,7 +953,7 @@ class MobileBertForPretrain(HybridBlock):
                 bias_initializer=bias_initializer,
                 dtype=self.backbone_model.dtype)
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length,
+    def forward(self, inputs, token_types, valid_length,
                        masked_positions):
         """Generate the representation given the inputs.
 
@@ -999,9 +999,9 @@ class MobileBertForPretrain(HybridBlock):
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
         nsp_score = self.nsp_classifier(pooled_out)
         if self.backbone_model.layout == 'NT':
-            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+            mlm_features = select_vectors_by_position(contextual_embeddings, masked_positions)
         else:
-            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+            mlm_features = select_vectors_by_position(np.swapaxes(contextual_embeddings, 0, 1),
                                                       masked_positions)
         intermediate_output = self.mlm_decoder(mlm_features)
         if self.backbone_model.embed_size != self.backbone_model.units:

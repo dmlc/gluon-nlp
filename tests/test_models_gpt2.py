@@ -31,7 +31,7 @@ def test_gpt2_small_config(compute_layout, ctx):
     cfg_tn.defrost()
     cfg_tn.MODEL.layout = 'TN'
     cfg_tn.freeze()
-    
+
     with ctx:
         batch_size = 4
         sequence_length = 16

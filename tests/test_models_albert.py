@@ -85,6 +85,7 @@ def test_albert_backbone(static_alloc, static_shape, compute_layout):
 
 
 @pytest.mark.parametrize('compute_layout', ['auto', 'NT', 'TN'])
+@mx.use_np
 def test_albert_for_mlm_model(compute_layout):
     batch_size = 3
     cfg = get_test_cfg()
