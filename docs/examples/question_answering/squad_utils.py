@@ -216,7 +216,7 @@ class ModelForQAConditionalV1(HybridBlock):
             Shape (batch_size, sequence_length)
         """
         start_scores = F.np.squeeze(self.start_scores(contextual_embedding), -1)
-        start_logits = masked_logsoftmax(F, start_scores, mask=p_mask, axis=-1)
+        start_logits = masked_logsoftmax(start_scores, mask=p_mask, axis=-1)
         return start_logits
 
     def get_end_logits(self, F, contextual_embedding, start_positions, p_mask):

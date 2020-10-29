@@ -1,5 +1,7 @@
 #!/bin/bash
 # Shell script for submitting AWS Batch jobs to compile notebooks
+set -ex
+
 
 prnumber=$1
 runnumber=$2
