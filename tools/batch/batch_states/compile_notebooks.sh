@@ -1,6 +1,5 @@
 #!/bin/bash
 # Shell script for submitting AWS Batch jobs to compile notebooks
-set -ex
 
 prnumber=$1
 runnumber=$2
@@ -27,6 +26,7 @@ compile_notebook () {
             --work-dir . \
             --source-ref ${refs} \
             --remote https://github.com/${remote} \
+            --wait \
             --command "python3 -m pip install --quiet nbformat notedown jupyter_client ipykernel \
                        ipykernel matplotlib termcolor && \
                        python3 docs/md2ipynb.py ${MDFILE}" 2>&1 | tee $LOGNAME >/dev/null
