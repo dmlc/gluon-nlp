@@ -196,7 +196,7 @@ PRETRAINED_URL = {
         'mlm_params': None,
         'lowercase': True,
     },
-    'gluon_en_cased_bert_base': {
+    'gluon_en_cased_bert_base_v1': {
         'cfg': google_en_cased_bert_base(),
         'vocab': 'gluon_en_cased_bert_base_v1/vocab-c1defaaa.json',
         'params': 'gluon_en_cased_bert_base_v1/model-c9645538.params',
