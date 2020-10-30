@@ -311,7 +311,7 @@ def masked_logsoftmax(att_score, mask, dtype=np.float32, axis: int = -1):
     if mask is not None:
         # Fill in the masked scores with a very small value
         neg = -1e18
-        if np.dtype(dtype) == np.float16:
+        if _np.dtype(dtype) == np.float16:
             neg = -1e4
         else:
             try:
