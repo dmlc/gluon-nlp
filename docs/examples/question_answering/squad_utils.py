@@ -207,7 +207,6 @@ class ModelForQAConditionalV1(HybridBlock):
 
         Parameters
         ----------
-        F
         contextual_embedding
             Shape (batch_size, sequence_length, C)
 
@@ -225,7 +224,6 @@ class ModelForQAConditionalV1(HybridBlock):
 
         Parameters
         ----------
-        F
         contextual_embedding
             Shape (batch_size, sequence_length, C)
         start_positions
@@ -261,7 +259,6 @@ class ModelForQAConditionalV1(HybridBlock):
 
         Parameters
         ----------
-        F
         contextual_embedding
             Shape (batch_size, sequence_length, C)
         p_mask
@@ -292,7 +289,6 @@ class ModelForQAConditionalV1(HybridBlock):
 
         Parameters
         ----------
-        F
         tokens
             Shape (batch_size, sequence_length)
         token_types
