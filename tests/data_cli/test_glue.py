@@ -22,7 +22,7 @@ def test_glue(task):
 def test_glue(task):
     parser = prepare_glue.get_parser()
     with tempfile.TemporaryDirectory() as root:
-        args = parser.parse_args(['--benchmark', 'glue',
+        args = parser.parse_args(['--benchmark', 'superglue',
                                   '--tasks', task,
                                   '--data_dir', root])
         prepare_glue.main(args)
