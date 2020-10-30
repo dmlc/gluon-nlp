@@ -46,7 +46,6 @@ compile_notebook () {
             --key batch/$JOBID/${runnumber}/gluon-nlp/$TARGETNAME
         aws s3 cp s3://gluon-nlp-dev/batch/$JOBID/${runnumber}/gluon-nlp/$TARGETNAME $TARGETNAME --quiet
     fi
-    exit $BATCH_EXIT_CODE
 }
 
 for f in $(find docs/examples -type f -name '*.md' -print); do \
