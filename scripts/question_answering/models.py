@@ -117,7 +117,7 @@ class ModelForQABasic(HybridBlock):
         scores = self.qa_outputs(contextual_embeddings)
         start_scores = scores[:, :, 0]
         end_scores = scores[:, :, 1]
-        start_logits = masked_logsoftmax(tart_scores, mask=p_mask, axis=-1)
+        start_logits = masked_logsoftmax(start_scores, mask=p_mask, axis=-1)
         end_logits = masked_logsoftmax(end_scores, mask=p_mask, axis=-1)
         # The shape of start_top_index will be (..., start_top_n)
         start_top_logits, start_top_index = mx.npx.topk(start_logits, k=start_top_n, axis=-1,
