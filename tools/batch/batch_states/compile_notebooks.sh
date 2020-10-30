@@ -6,7 +6,7 @@ runnumber=$2
 remote=$3
 refs=$4
 
-EXIT_CODE=0
+FAIL=0
 
 compile_notebook () {
     local MDFILE=$1
@@ -39,19 +39,28 @@ compile_notebook () {
 
     if [ $BATCH_EXIT_CODE -ne 0 ]; then
         echo Compiling $BASENAME Failed, please download Notebook_Logs in build Artifacts for more details.
-        EXIT_CODE=1
     else
         echo Compiling $BASENAME Succeeded
         aws s3api wait object-exists --bucket gluon-nlp-dev \
             --key batch/$JOBID/${runnumber}/gluon-nlp/$TARGETNAME
         aws s3 cp s3://gluon-nlp-dev/batch/$JOBID/${runnumber}/gluon-nlp/$TARGETNAME $TARGETNAME --quiet
     fi
+    exit $BATCH_EXIT_CODE
 }
 
-for f in $(find docs/examples -type f -name '*.md' -print); do \
-    compile_notebook "$f" & \
+pids=()
+
+for f in $(find docs/examples -type f -name '*.md' -print); do
+    compile_notebook "$f" &
+    pids+=($!)
 done;
 
-wait;
+for pid in "${pids[@]}"; do
+    wait "$pid" || let "FAIL+=1"
+done;
 
-exit $EXIT_CODE
+if [ "$FAIL" == "0" ]; then
+    exit 0
+else
+    exit 1
+fi

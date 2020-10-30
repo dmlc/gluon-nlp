@@ -241,7 +241,7 @@ class ModelForQAConditionalV1(HybridBlock):
         """
         # Select the features at the start_positions
         # start_feature will have shape (batch_size, N, C)
-        start_features = select_vectors_by_position(F, contextual_embedding, start_positions)
+        start_features = select_vectors_by_position(contextual_embedding, start_positions)
         # Concatenate the start_feature and the contextual_embedding
         contextual_embedding = np.expand_dims(contextual_embedding, axis=1)  # (B, 1, T, C)
         start_features = np.expand_dims(start_features, axis=2)  # (B, N, 1, C)
