@@ -8,6 +8,7 @@ import tarfile
 import argparse
 import multiprocessing
 from gluonnlp.utils.misc import download, load_checksum_stats
+from gluonnlp.utils.lazy_imports import try_import_wikiextractor
 from gluonnlp.base import get_repo_url
 
 _CITATION = """\
@@ -63,24 +64,6 @@ _URLS = {
 def get_url(lang, date):
     return _BASE_URL_TMPL.format(lang=lang, date=date)
 
-
-def try_import_wikiextractor():
-    try:
-        sys.path.append(_CURR_DIR)
-        import WikiExtractor
-    except ImportError:
-        try:
-            download(
-                'https://raw.githubusercontent.com/attardi/wikiextractor/master/WikiExtractor.py',
-                path=os.path.join(_CURR_DIR, 'WikiExtractor.py'),
-                sha1_hash='3c4896a837b75c476d23c037e8d6c7fdfd9a29eb')
-            sys.path.append(_CURR_DIR)
-            import WikiExtractor
-        except BaseException:
-            raise ImportError('Cannot import WikiExtractor! You can download the "WikiExtractor.py"'
-                              ' in https://github.com/attardi/wikiextractor to {}'
-                              .format(_CURR_DIR))
-    return WikiExtractor
 
 
 def get_formatting_list(wiki_path, recursive=False):
@@ -149,6 +132,8 @@ def get_parser():
     parser.add_argument("--num_out_files", type=int, default=1000,
                         help="Number of desired output files, where each is processed"
                              " independently by a worker.")
+    parser.add_argument("-q", "--quiet", action="store_true",
+                        help="suppress reporting progress info")
     return parser
 
 
@@ -168,7 +153,7 @@ def download_wikicorpus(lang, date, output):
     return output_file
 
 
-def format_wikicorpus(input, output, bytes, num_process, num_out_files):
+def format_wikicorpus(input, output, bytes, num_process, num_out_files, quiet):
     if input is None:
         raise ValueError('input file is empty.')
     if not input.endswith('xml.bz2'):
@@ -177,10 +162,14 @@ def format_wikicorpus(input, output, bytes, num_process, num_out_files):
         os.makedirs(output)
 
     # Use WikiExtractor to extract the content
-    WikiExtractor = try_import_wikiextractor()
+    wikiextractor = try_import_wikiextractor()
+    from wikiextractor import WikiExtractor
     wiki_path = os.path.join(output, 'extracted')
+    # Overwrite the sys.argv
     sys.argv = ['prog', '-b', bytes, '-o', wiki_path, input]
-    WikiExtractor.main()
+    if quiet:
+        sys.argv.append('--quiet')
+    wikiextractor.WikiExtractor.main()
 
     # Merge extracted content into txt files
     prepared_path = os.path.join(output, 'prepared_wikipedia')
@@ -218,10 +207,12 @@ def main(args):
     if args.mode == 'download':
         download_wikicorpus(args.lang, args.date, args.output)
     elif args.mode == 'format':
-        format_wikicorpus(args.input, args.output, args.bytes, num_process, args.num_out_files)
+        format_wikicorpus(args.input, args.output, args.bytes, num_process,
+                          args.num_out_files, args.quiet)
     elif args.mode == 'download+format':
         downloaded_file = download_wikicorpus(args.lang, args.date, args.output)
-        format_wikicorpus(downloaded_file, args.output, args.bytes, num_process, args.num_out_files)
+        format_wikicorpus(downloaded_file, args.output, args.bytes, num_process,
+                          args.num_out_files, args.quiet)
     elif args.mode == 'download_prepared':
         url = _URLS['wikipedia-en-20200620']
         file_hash = _URL_FILE_STATS[url]
