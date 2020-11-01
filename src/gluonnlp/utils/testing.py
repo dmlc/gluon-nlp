@@ -1,6 +1,7 @@
 __all__ = ['is_match_states_batch_size', 'verify_nmt_model', 'verify_nmt_inference']
 
 import numpy.testing as npt
+import numpy as np
 import mxnet as mx
 from mxnet.util import use_np
 
@@ -175,6 +176,32 @@ def _match_struct_output(lhs, rhs, atol=1E-2, rtol=1E-2):
     else:
         npt.assert_allclose(lhs.asnumpy().astype('float32'),
                             rhs.asnumpy().astype('float32'), atol=atol, rtol=rtol)
+
+
+def _cast_nested_to_fp16(nested_dat):
+    """Cast the nested input to fp16
+
+    Parameters
+    ----------
+    dat
+        The input nested data structure
+
+    Returns
+    -------
+    output
+        The casted output data
+    """
+    if isinstance(nested_dat, (mx.np.ndarray, np.ndarray)):
+        if nested_dat.dtype == np.float32:
+            return nested_dat.astype(np.float16)
+        else:
+            return nested_dat
+    elif isinstance(nested_dat, list):
+        return [_cast_nested_to_fp16(ele) for ele in nested_dat]
+    elif isinstance(nested_dat, tuple):
+        return tuple([_cast_nested_to_fp16(ele) for ele in nested_dat])
+    else:
+        raise NotImplementedError('Type is not supported!')
 
 
 def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
