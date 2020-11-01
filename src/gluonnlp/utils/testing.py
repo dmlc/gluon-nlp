@@ -249,7 +249,7 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
     model_fp16.hybridize()
     for param in model_fp16.collect_params().values():
         assert param.dtype == 'float16'
-    outputs_fp16 = model_fp16(*(mx.np.array(ele, ctx=ctx) for ele in inputs))
+    outputs_fp16 = model_fp16(*(mx.np.array(ele, ctx=ctx) for ele in _cast_nested_to_fp16(inputs)))
     _match_struct_output(outputs_fp16, outputs_fp32, atol=atol, rtol=rtol)
     if check_amp:
         trainer = mx.gluon.Trainer(model_fp16.collect_params(), 'adam',
