@@ -50,8 +50,8 @@ def test_mobilebert_model_small_cfg(compute_layout, ctx):
                                                                       token_types.T, valid_length)
         assert_allclose(contextual_embedding.asnumpy(),
                         np.swapaxes(contextual_embedding_tn.asnumpy(), 0, 1),
-                        1E-4, 1E-4)
-        assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
+                        1E-3, 1E-3)
+        assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-3, 1E-3)
 
         # Test for fp16
         if ctx.device_type == 'gpu':
@@ -72,9 +72,9 @@ def test_mobilebert_model_small_cfg(compute_layout, ctx):
             mobile_bert_mlm_model_tn(inputs.T, token_types.T, valid_length, masked_positions)
         assert_allclose(contextual_embedding.asnumpy(),
                         np.swapaxes(contextual_embedding_tn.asnumpy(), 0, 1),
-                        1E-4, 1E-4)
-        assert_allclose(pooled_out_tn.asnumpy(), pooled_out.asnumpy(), 1E-4, 1E-4)
-        assert_allclose(mlm_scores_tn.asnumpy(), mlm_scores.asnumpy(), 1E-4, 1E-4)
+                        1E-3, 1E-3)
+        assert_allclose(pooled_out_tn.asnumpy(), pooled_out.asnumpy(), 1E-3, 1E-3)
+        assert_allclose(mlm_scores_tn.asnumpy(), mlm_scores.asnumpy(), 1E-3, 1E-3)
 
         # Test for MobileBertForPretrain
         mobile_bert_pretrain_model = MobileBertForPretrain(cfg)
@@ -89,10 +89,10 @@ def test_mobilebert_model_small_cfg(compute_layout, ctx):
             mobile_bert_pretrain_model_tn(inputs.T, token_types.T, valid_length, masked_positions)
         assert_allclose(contextual_embedding.asnumpy(),
                         np.swapaxes(contextual_embedding_tn.asnumpy(), 0, 1),
-                        1E-4, 1E-4)
-        assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
-        assert_allclose(nsp_score.asnumpy(), nsp_score_tn.asnumpy(), 1E-4, 1E-4)
-        assert_allclose(mlm_scores.asnumpy(), mlm_scores_tn.asnumpy(), 1E-4, 1E-4)
+                        1E-3, 1E-3)
+        assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-3, 1E-3)
+        assert_allclose(nsp_score.asnumpy(), nsp_score_tn.asnumpy(), 1E-3, 1E-3)
+        assert_allclose(mlm_scores.asnumpy(), mlm_scores_tn.asnumpy(), 1E-3, 1E-3)
 
 
 @pytest.mark.remote_required
