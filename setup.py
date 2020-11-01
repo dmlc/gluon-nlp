@@ -85,6 +85,7 @@ setup(
             'nltk',
             'h5py>=2.10',
             'scipy',
+            'wikiextractor',
             'tqdm'
         ],
         'dev': [

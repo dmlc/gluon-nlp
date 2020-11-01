@@ -114,3 +114,5 @@ docker tag gluonai/gluon-nlp:cpu-ci-latest 747303060528.dkr.ecr.us-east-1.amazon
 docker push 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:gpu-ci-latest
 docker push 747303060528.dkr.ecr.us-east-1.amazonaws.com/gluon-nlp-1:cpu-ci-latest
 ```
+
+After updating the docker, please create a pull request to commit your changes on the docker files or some scripts. 

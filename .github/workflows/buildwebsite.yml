@@ -47,6 +47,7 @@ jobs:
           ./tools/batch/batch_states/compile_notebooks.sh \
                  "push" "${{ github.run_number }}" \
                  "${{ github.repository }}" "${{ github.ref }}"
+          exit $?
 
       - name: Checkout Pull Request Repository(For pull request)
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
@@ -62,6 +63,7 @@ jobs:
           ./tools/batch/batch_states/compile_notebooks.sh \
                  "#PR-${{ github.event.number }}" "${{ github.run_number }}" \
                  "${{ github.event.pull_request.head.repo.full_name }}" "${{ github.event.pull_request.head.ref }}"
+          exit $?
 
       - name: Build Website local
         if: ${{ failure() || success() }}
