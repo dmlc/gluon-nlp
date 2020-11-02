@@ -51,7 +51,7 @@ bart_cfg_reg = Registry('bart_cfg')
 
 
 @bart_cfg_reg.register()
-def bart_base():
+def fairseq_bart_base():
     cfg = CN()
     # Config for the bart base model
     cfg.MODEL = CN()
@@ -104,8 +104,8 @@ def bart_base():
 
 
 @bart_cfg_reg.register()
-def bart_large():
-    cfg = bart_base()
+def fairseq_bart_large():
+    cfg = fairseq_bart_base()
     cfg.defrost()
     cfg.MODEL.vocab_size = 50265
     cfg.MODEL.ENCODER.units = 1024
@@ -122,14 +122,14 @@ def bart_large():
 
 PRETRAINED_URL = {
     'fairseq_bart_base': {
-        'cfg': bart_base(),
+        'cfg': fairseq_bart_base(),
         'merges': 'fairseq_bart_base/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_bart_base/gpt2-f4dedacb.vocab',
         'params': 'fairseq_bart_base/model-8f4929b5.params',
         'lowercase': False,
     },
     'fairseq_bart_large': {
-        'cfg': bart_large(),
+        'cfg': fairseq_bart_large(),
         'merges': 'fairseq_bart_large/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_bart_large/gpt2-f1335494.vocab',
         'params': 'fairseq_bart_large/model-862277b1.params',
