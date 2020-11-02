@@ -235,7 +235,8 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
         try:
             from mxnet import amp
         except ImportError:
-            from mxnet.contrib import amp
+            raise ImportError('amp is not supported! Please ensure that you have upgraded mxnet '
+                              'to the latest version (>=2.0.0)!')
         amp.init()
 
     if model_fp32 is None:
