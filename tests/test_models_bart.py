@@ -59,13 +59,13 @@ def test_bart_cfg(cfg_key, ctx):
         src_valid_length = mx.np.random.randint(src_length // 2, src_length, (batch_size,))
         tgt_data = mx.np.random.randint(0, cfg.MODEL.vocab_size, (batch_size, tgt_length))
         tgt_valid_length = mx.np.random.randint(tgt_length // 2, tgt_length, (batch_size, ))
-        model = BartModel.from_cfg(cfg)
+        model = BartModel.from_cfg(cfg, extract_feature=True)
         model.initialize()
         model.hybridize()
 
         contextual_embedding, pooled_output = model(src_data, src_valid_length,
                                                     tgt_data, tgt_valid_length)
-        model_tn = BartModel.from_cfg(cfg_tn)
+        model_tn = BartModel.from_cfg(cfg_tn, extract_feature=True)
         model_tn.share_parameters(model.collect_params())
         model_tn.hybridize()
         contextual_embedding_tn, pooled_out_tn = model_tn(src_data.T, src_valid_length,
