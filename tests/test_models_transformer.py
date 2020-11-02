@@ -1,3 +1,4 @@
+import numpy as np
 import mxnet as mx
 import pytest
 from numpy.testing import assert_allclose
@@ -7,6 +8,9 @@ from gluonnlp.models.transformer import\
     transformer_cfg_reg
 from gluonnlp.attention_cell import gen_mem_attn_mask, gen_self_attn_mask
 from gluonnlp.utils.testing import verify_nmt_model, verify_nmt_inference
+from gluonnlp.utils.testing import verify_backbone_fp16
+
+
 mx.npx.set_np()
 
 
@@ -172,3 +176,69 @@ def test_transformer_cfg(cfg_key):
     model_tn.share_parameters(model.collect_params())
     model_tn.hybridize()
     mx.npx.waitall()
+
+
+@pytest.mark.parametrize('enc_pre_norm,dec_pre_norm',
+                         [(False, False), (True, True)])
+@pytest.mark.parametrize('enc_num_layers,dec_num_layers,enc_units,dec_units',
+                         [(2, 2, 24, 24),
+                          (2, 3, 16, 24)])
+@pytest.mark.parametrize('enc_recurrent', [False, True])
+@pytest.mark.parametrize('dec_recurrent', [False, True])
+@pytest.mark.parametrize('tie_weights,layout', [(False, 'NT'), (True, 'NT'), (True, 'TN')])
+def test_transformer_fp16_amp(enc_pre_norm, dec_pre_norm,
+                              enc_units, dec_units,
+                              enc_num_layers, dec_num_layers,
+                              enc_recurrent, dec_recurrent, tie_weights,
+                              layout, ctx):
+    if ctx.device_type != 'gpu':
+        # Only test amp when running on GPU.
+        return
+    # Generate configuration for testing
+    cfg = TransformerModel.get_cfg()
+    cfg.defrost()
+    cfg.MODEL.src_vocab_size = 32
+    cfg.MODEL.tgt_vocab_size = 32
+    cfg.MODEL.max_src_length = 20
+    cfg.MODEL.max_tgt_length = 15
+    cfg.MODEL.tie_weights = tie_weights
+    cfg.MODEL.layout = layout
+
+    # Encoder config
+    cfg.MODEL.ENCODER.pre_norm = enc_pre_norm
+    cfg.MODEL.ENCODER.units = enc_units
+    cfg.MODEL.ENCODER.num_layers = enc_num_layers
+    cfg.MODEL.ENCODER.recurrent = enc_recurrent
+
+    # Decoder config
+    cfg.MODEL.DECODER.pre_norm = dec_pre_norm
+    cfg.MODEL.ENCODER.units = dec_units
+    cfg.MODEL.ENCODER.num_layers = dec_num_layers
+    cfg.MODEL.ENCODER.recurrent = dec_recurrent
+    cfg.freeze()
+
+    batch_size = 4
+    seq_length = 16
+    with ctx:
+        if layout == 'NT':
+            src_data = mx.np.random.randint(0, cfg.MODEL.src_vocab_size,
+                                            (batch_size, seq_length), dtype=np.int32)
+            src_valid_length = mx.np.random.randint(seq_length // 2, seq_length,
+                                                    (batch_size,), dtype=np.int32)
+            tgt_data = mx.np.random.randint(0, cfg.MODEL.tgt_vocab_size,
+                                            (batch_size, seq_length), dtype=np.int32)
+            tgt_valid_length = mx.np.random.randint(seq_length // 2, seq_length,
+                                                    (batch_size,), dtype=np.int32)
+        elif layout == 'TN':
+            src_data = mx.np.random.randint(0, cfg.MODEL.src_vocab_size,
+                                            (seq_length, batch_size), dtype=np.int32)
+            src_valid_length = mx.np.random.randint(seq_length // 2, seq_length,
+                                                    (batch_size,), dtype=np.int32)
+            tgt_data = mx.np.random.randint(0, cfg.MODEL.tgt_vocab_size,
+                                            (seq_length, batch_size), dtype=np.int32)
+            tgt_valid_length = mx.np.random.randint(seq_length // 2, seq_length,
+                                                    (batch_size,), dtype=np.int32)
+        else:
+            raise NotImplementedError
+        verify_backbone_fp16(TransformerModel, cfg, ctx,
+                             inputs=[src_data, src_valid_length, tgt_data, tgt_valid_length])

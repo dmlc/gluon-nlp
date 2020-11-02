@@ -1227,7 +1227,6 @@ class TransformerModel(HybridBlock):
 
         Parameters
         ----------
-        F
         src_data
             - layout = 'NT'
                 Shape (batch_size, src_length)

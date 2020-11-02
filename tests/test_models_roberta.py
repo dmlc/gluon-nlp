@@ -53,11 +53,6 @@ def test_robert_small_config(compute_layout, ctx):
                         contextual_embeddings.asnumpy(), 1E-3, 1E-3)
         assert_allclose(pooled_out_tn.asnumpy(), pooled_out.asnumpy(), 1E-3, 1E-3)
 
-        # Test for fp16
-        if ctx.device_type == 'gpu':
-            verify_backbone_fp16(model_cls=RobertaModel, cfg=cfg, ctx=ctx,
-                                 inputs=[inputs, valid_length])
-
         # Test for RobertaForMLM
         roberta_mlm_model = RobertaForMLM(cfg)
         roberta_mlm_model.initialize()
@@ -73,6 +68,11 @@ def test_robert_small_config(compute_layout, ctx):
                         contextual_embedding.asnumpy(), 1E-3, 1E-3)
         assert_allclose(pooled_out_tn.asnumpy(), pooled_out.asnumpy(), 1E-3, 1E-3)
         assert_allclose(mlm_scores_tn.asnumpy(), mlm_scores.asnumpy(), 1E-3, 1E-3)
+
+        # Test for fp16
+        if ctx.device_type == 'gpu':
+            verify_backbone_fp16(model_cls=RobertaModel, cfg=cfg, ctx=ctx,
+                                 inputs=[inputs, valid_length])
 
 
 @pytest.mark.slow
