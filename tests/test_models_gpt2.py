@@ -82,7 +82,6 @@ def test_gpt2_small_config(compute_layout, ctx):
                                          gpt2_model.init_states(batch_size, ctx)])
 
 
-
 def test_gpt2_incremental_states(ctx):
     with ctx:
         batch_size = 4
@@ -116,7 +115,8 @@ def test_gpt2_incremental_states(ctx):
 
 @pytest.mark.slow
 @pytest.mark.remote_required
-@pytest.mark.parametrize('model_name', ['gpt2_124M', 'gpt2_355M', 'gpt2_774M'])
+# Just run forward test with the small model to reduce the time cost.
+@pytest.mark.parametrize('model_name', ['gpt2_124M'])
 def test_gpt2(model_name, ctx):
     # test from pretrained
     assert len(list_pretrained_gpt2()) > 0
