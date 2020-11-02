@@ -115,8 +115,6 @@ def test_transformer_nmt_model(train_hybridize, inference_hybridize,
                                enc_num_layers, dec_num_layers,
                                enc_recurrent, dec_recurrent, tie_weights,
                                layout):
-    # if inference_hybridize:
-    #     pytest.skip('inference model hybridization is not working')
     src_seq_length = 20
     tgt_seq_length = 15
     src_vocab_size = 32
