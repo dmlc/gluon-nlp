@@ -182,7 +182,7 @@ def test_transformer_cfg(cfg_key):
                          [(False, False), (True, True)])
 @pytest.mark.parametrize('enc_num_layers,dec_num_layers,enc_units,dec_units',
                          [(2, 2, 24, 24),
-                          (2, 3, 16, 24)])
+                          (2, 3, 16, 16)])
 @pytest.mark.parametrize('enc_recurrent', [False, True])
 @pytest.mark.parametrize('dec_recurrent', [False, True])
 @pytest.mark.parametrize('tie_weights,layout', [(False, 'NT'), (True, 'NT'), (True, 'TN')])
@@ -192,8 +192,7 @@ def test_transformer_fp16_amp(enc_pre_norm, dec_pre_norm,
                               enc_recurrent, dec_recurrent, tie_weights,
                               layout, ctx):
     if ctx.device_type != 'gpu':
-        # Only test amp when running on GPU.
-        return
+        pytest.skip('Only test amp when running on GPU.')
     # Generate configuration for testing
     cfg = TransformerModel.get_cfg()
     cfg.defrost()
