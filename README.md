@@ -16,7 +16,7 @@ process the text data, and train models.
 
 # Features
 
-- Easy-to-use Text Processing Tools and APIs
+- Easy-to-use Text Processing Tools and Modular APIs
 - Pretrained Model Zoo
 - Write Models with Numpy-like API
 - Fast Inference via [Apache TVM (incubating)](https://tvm.apache.org/) (Experimental)
