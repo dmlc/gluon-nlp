@@ -75,8 +75,8 @@ def test_bart_cfg(cfg_key, ctx):
         contextual_embedding_tn, pooled_out_tn = model_tn(src_data.T, src_valid_length,
                                                           tgt_data.T, tgt_valid_length)
         npt.assert_allclose(contextual_embedding.asnumpy(),
-                            np.transpose(contextual_embedding_tn.asnumpy(), (1, 0, 2)), 1E-3, 1E-3)
-        npt.assert_allclose(pooled_out_tn.asnumpy(), pooled_output.asnumpy(), 1E-3, 1E-3)
+                            np.transpose(contextual_embedding_tn.asnumpy(), (1, 0, 2)), 5E-3, 5E-3)
+        npt.assert_allclose(pooled_out_tn.asnumpy(), pooled_output.asnumpy(), 5E-3, 5E-3)
         mx.npx.waitall()
 
         # Verify Float16
