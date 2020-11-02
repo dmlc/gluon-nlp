@@ -53,11 +53,6 @@ def test_mobilebert_model_small_cfg(compute_layout, ctx):
                         1E-3, 1E-3)
         assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-3, 1E-3)
 
-        # Test for fp16
-        if ctx.device_type == 'gpu':
-            verify_backbone_fp16(model_cls=MobileBertModel, cfg=cfg, ctx=ctx,
-                                 inputs=[inputs, token_types, valid_length])
-
         # Test for MobileBertForMLM
         mobile_bert_mlm_model = MobileBertForMLM(cfg)
         mobile_bert_mlm_model.initialize()
@@ -93,6 +88,11 @@ def test_mobilebert_model_small_cfg(compute_layout, ctx):
         assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-3, 1E-3)
         assert_allclose(nsp_score.asnumpy(), nsp_score_tn.asnumpy(), 1E-3, 1E-3)
         assert_allclose(mlm_scores.asnumpy(), mlm_scores_tn.asnumpy(), 1E-3, 1E-3)
+
+        # Test for fp16
+        if ctx.device_type == 'gpu':
+            verify_backbone_fp16(model_cls=MobileBertModel, cfg=cfg, ctx=ctx,
+                                 inputs=[inputs, token_types, valid_length])
 
 
 @pytest.mark.remote_required

@@ -231,14 +231,6 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
         The float32 model.
 
     """
-    if check_amp:
-        try:
-            from mxnet import amp
-        except ImportError:
-            raise ImportError('amp is not supported! Please ensure that you have upgraded mxnet '
-                              'to the latest version (>=2.0.0)!')
-        amp.init()
-
     if model_fp32 is None:
         model_fp32 = model_cls.from_cfg(cfg, dtype='float32')
         model_fp32.initialize(ctx=ctx)
@@ -256,17 +248,19 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
     outputs_fp16 = model_fp16(*fp16_inputs)
     _match_struct_output(outputs_fp16, outputs_fp32, atol=atol, rtol=rtol)
     if check_amp:
-        trainer = mx.gluon.Trainer(model_fp16.collect_params(), 'adam',
+        from mxnet import amp
+        amp.init()
+        trainer = mx.gluon.Trainer(model_fp32.collect_params(), 'adam',
                                    {'learning_rate': 1E-3, 'wd': 1E-4,
                                     'multi_precision': True},
                                    update_on_kvstore=False)
         amp.init_trainer(trainer)
         with mx.autograd.record():
-            outputs_fp16 = model_fp16(*fp16_inputs)
-            if not isinstance(outputs_fp16, (tuple, list)):
-                loss = outputs_fp16.mean()
+            outputs_amp = model_fp32(*fp32_inputs)
+            if not isinstance(outputs_amp, (tuple, list)):
+                loss = outputs_amp.mean()
             else:
-                loss = sum([ele.mean() for ele in outputs_fp16])
+                loss = sum([ele.mean() for ele in outputs_amp])
             with amp.scale_loss(loss, trainer) as scaled_loss:
                 mx.autograd.backward(scaled_loss)
         trainer.step(1)

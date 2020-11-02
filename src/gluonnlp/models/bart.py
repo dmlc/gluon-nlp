@@ -272,10 +272,10 @@ class BartModel(TransformerModel):
             Shape (batch_size, units)
         """
         if self._layout == 'NT':
-            batch_indices = F.npx.arange_like(sequence, axis=0).astype(mx.np.int32)
+            batch_indices = mx.npx.arange_like(sequence, axis=0).astype(mx.np.int32)
             outputs = sequence[batch_indices, valid_length - 1]
         elif self._layout == 'TN':
-            batch_indices = F.npx.arange_like(sequence, axis=1).astype(mx.np.int32)
+            batch_indices = mx.npx.arange_like(sequence, axis=1).astype(mx.np.int32)
             outputs = sequence[valid_length - 1, batch_indices]
         else:
             raise NotImplementedError

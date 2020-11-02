@@ -53,12 +53,6 @@ def test_bert_small_cfg(compute_layout, ctx):
                         1E-4, 1E-4)
         assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
 
-        # Test BertModel FP16
-        device_type = ctx.device_type
-        if device_type == 'gpu':
-            verify_backbone_fp16(model_cls=BertModel, cfg=cfg, ctx=ctx,
-                                 inputs=[inputs, token_types, valid_length])
-
         # Test for BertForMLM
         bert_mlm_model = BertForMLM(cfg)
         bert_mlm_model.initialize()
@@ -93,6 +87,12 @@ def test_bert_small_cfg(compute_layout, ctx):
         assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-3, 1E-3)
         assert_allclose(nsp_score.asnumpy(), nsp_score_tn.asnumpy(), 1E-3, 1E-3)
         assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-3, 1E-3)
+
+        # Test BertModel FP16
+        device_type = ctx.device_type
+        if device_type == 'gpu':
+            verify_backbone_fp16(model_cls=BertModel, cfg=cfg, ctx=ctx,
+                                 inputs=[inputs, token_types, valid_length])
 
 
 @pytest.mark.slow

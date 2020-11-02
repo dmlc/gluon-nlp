@@ -53,10 +53,6 @@ def test_electra_model(compute_layout, ctx):
         electra_model.initialize()
         electra_model.hybridize()
         contextual_embedding, pooled_out = electra_model(inputs, token_types, valid_length)
-        # Verify Float16
-        if ctx.device_type == 'gpu':
-            verify_backbone_fp16(model_cls=ElectraModel, cfg=cfg, ctx=ctx,
-                                 inputs=[inputs, token_types, valid_length])
 
         electra_model_tn = ElectraModel.from_cfg(cfg_tn)
         electra_model_tn.share_parameters(electra_model.collect_params())
@@ -67,6 +63,12 @@ def test_electra_model(compute_layout, ctx):
                         1E-4, 1E-4)
         assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(),
                         1E-4, 1E-4)
+
+        # Verify Float16
+        if ctx.device_type == 'gpu':
+            verify_backbone_fp16(model_cls=ElectraModel, cfg=cfg, ctx=ctx,
+                                 inputs=[inputs, token_types, valid_length])
+
 
 
 @pytest.mark.slow
