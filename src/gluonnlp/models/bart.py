@@ -295,7 +295,7 @@ class BartModel(TransformerModel):
     @classmethod
     def get_cfg(cls, key=None):
         if key is None:
-            return bart_base()
+            return fairseq_bart_base()
         else:
             return bart_cfg_reg.create(key)
 
