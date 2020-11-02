@@ -238,6 +238,7 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
     # Check forward
     fp32_inputs = move_to_ctx(inputs, ctx=ctx)
     outputs_fp32 = model_fp32(*fp32_inputs)
+    mx.npx.waitall()
     model_fp16 = model_cls.from_cfg(cfg, dtype='float16')
     model_fp16.share_parameters(model_fp32.collect_params())
     model_fp16.cast('float16')
@@ -246,6 +247,7 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
         assert param.dtype == 'float16'
     fp16_inputs = move_to_ctx(_cast_nested_to_fp16(inputs), ctx=ctx)
     outputs_fp16 = model_fp16(*fp16_inputs)
+    mx.npx.waitall()
     _match_struct_output(outputs_fp16, outputs_fp32, atol=atol, rtol=rtol)
     if check_amp:
         from mxnet import amp
