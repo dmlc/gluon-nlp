@@ -4,6 +4,7 @@ import numpy.testing as npt
 import numpy as np
 import mxnet as mx
 from mxnet.util import use_np
+from .parameter import move_to_ctx
 
 
 def is_match_states_batch_size(states, states_batch_axis, batch_size) -> bool:
@@ -242,14 +243,16 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
         model_fp32.initialize(ctx=ctx)
         model_fp32.hybridize()
     # Check forward
-    outputs_fp32 = model_fp32(*(mx.np.array(ele, ctx=ctx) for ele in inputs))
+    fp32_inputs = move_to_ctx(inputs, ctx=ctx)
+    outputs_fp32 = model_fp32(*fp32_inputs)
     model_fp16 = model_cls.from_cfg(cfg, dtype='float16')
     model_fp16.share_parameters(model_fp32.collect_params())
     model_fp16.cast('float16')
     model_fp16.hybridize()
     for param in model_fp16.collect_params().values():
         assert param.dtype == 'float16'
-    outputs_fp16 = model_fp16(*(mx.np.array(ele, ctx=ctx) for ele in _cast_nested_to_fp16(inputs)))
+    fp16_inputs = move_to_ctx(_cast_nested_to_fp16(inputs), ctx=ctx)
+    outputs_fp16 = model_fp16(*fp16_inputs)
     _match_struct_output(outputs_fp16, outputs_fp32, atol=atol, rtol=rtol)
     if check_amp:
         trainer = mx.gluon.Trainer(model_fp16.collect_params(), 'adam',
@@ -258,7 +261,7 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
                                    update_on_kvstore=False)
         amp.init_trainer(trainer)
         with mx.autograd.record():
-            outputs_fp16 = model_fp16(*[mx.np.array(ele, ctx=ctx) for ele in inputs])
+            outputs_fp16 = model_fp16(*fp16_inputs)
             if not isinstance(outputs_fp16, (tuple, list)):
                 loss = outputs_fp16.mean()
             else:
