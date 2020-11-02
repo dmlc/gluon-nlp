@@ -55,10 +55,14 @@ def test_bart_cfg(cfg_key, ctx):
     tgt_length = 16
 
     with ctx:
-        src_data = mx.np.random.randint(0, cfg.MODEL.vocab_size, (batch_size, src_length))
-        src_valid_length = mx.np.random.randint(src_length // 2, src_length, (batch_size,))
-        tgt_data = mx.np.random.randint(0, cfg.MODEL.vocab_size, (batch_size, tgt_length))
-        tgt_valid_length = mx.np.random.randint(tgt_length // 2, tgt_length, (batch_size, ))
+        src_data = mx.np.random.randint(0, cfg.MODEL.vocab_size, (batch_size, src_length),
+                                        dtype=np.int32)
+        src_valid_length = mx.np.random.randint(src_length // 2, src_length, (batch_size,),
+                                                dtype=np.int32)
+        tgt_data = mx.np.random.randint(0, cfg.MODEL.vocab_size, (batch_size, tgt_length),
+                                        dtype=np.int32)
+        tgt_valid_length = mx.np.random.randint(tgt_length // 2, tgt_length, (batch_size, ),
+                                                dtype=np.int32)
         model = BartModel.from_cfg(cfg, extract_feature=True)
         model.initialize()
         model.hybridize()
