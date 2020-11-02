@@ -77,10 +77,10 @@ def test_robert_small_config(compute_layout, ctx):
 
 @pytest.mark.slow
 @pytest.mark.remote_required
-@pytest.mark.parametrize('model_name', list_pretrained_roberta())
+# Just test the fairseq_roberta_base to reduce the time
+@pytest.mark.parametrize('model_name', ['fairseq_roberta_base'])
 def test_roberta(model_name):
     # test from pretrained
-    assert len(list_pretrained_roberta()) > 0
     with tempfile.TemporaryDirectory() as root:
         cfg, tokenizer, params_path, mlm_params_path =\
             get_pretrained_roberta(model_name, load_backbone=True, load_mlm=True, root=root)
@@ -116,7 +116,7 @@ def test_roberta(model_name):
             ),
             dtype=np.int32
         )
-        contextual_embeddings, pooled_out = roberta_model(input_ids, valid_length)
+        roberta_model(input_ids, valid_length)
         mx.npx.waitall()
         # test backward
         label_smooth_loss = LabelSmoothCrossEntropyLoss(num_labels=vocab_size)
