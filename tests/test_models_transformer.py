@@ -209,9 +209,9 @@ def test_transformer_fp16_amp(enc_pre_norm, dec_pre_norm,
 
     # Decoder config
     cfg.MODEL.DECODER.pre_norm = dec_pre_norm
-    cfg.MODEL.ENCODER.units = dec_units
-    cfg.MODEL.ENCODER.num_layers = dec_num_layers
-    cfg.MODEL.ENCODER.recurrent = dec_recurrent
+    cfg.MODEL.DECODER.units = dec_units
+    cfg.MODEL.DECODER.num_layers = dec_num_layers
+    cfg.MODEL.DECODER.recurrent = dec_recurrent
     cfg.freeze()
 
     batch_size = 4
