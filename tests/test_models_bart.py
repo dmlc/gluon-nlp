@@ -38,7 +38,7 @@ def test_bart_cfg_registry():
     assert len(bart_cfg_reg.list_keys()) > 0
 
 
-@pytest.mark.parametrize('cfg_key', bart_cfg_reg.list_keys())
+@pytest.mark.parametrize('cfg_key', ['fairseq_bart_base'])
 def test_bart_cfg(cfg_key, ctx):
     cfg = BartModel.get_cfg(cfg_key)
     cfg.defrost()
