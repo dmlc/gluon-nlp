@@ -46,7 +46,6 @@ from ..attention_cell import gen_self_attn_mask
 from ..layers import get_activation, PositionalEmbedding
 from ..op import select_vectors_by_position
 from ..data.tokenizers import SentencepieceTokenizer
-from ..layers import HybridSequential
 
 albert_cfg_reg = Registry('albert_cfg')
 
@@ -192,7 +191,7 @@ class AlbertEncoder(HybridBlock):
         self._layout = layout
 
 
-        self.all_encoder_groups = HybridSequential()
+        self.all_encoder_groups = nn.HybridSequential()
         for group_idx in range(num_groups):
             self.all_encoder_groups.add(
                 TransformerEncoderLayer(units=units,
@@ -561,7 +560,7 @@ class AlbertForMLM(HybridBlock):
             weight_initializer = self.backbone_model.weight_initializer
         if bias_initializer is None:
             bias_initializer = self.backbone_model.bias_initializer
-        self.mlm_decoder = HybridSequential()
+        self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
                                       in_units=self.backbone_model.units,
@@ -656,7 +655,7 @@ class AlbertForPretrain(HybridBlock):
         self.sop_classifier = nn.Dense(units=2,
                                        in_units=self.backbone_model.units,
                                        weight_initializer=weight_initializer)
-        self.mlm_decoder = HybridSequential()
+        self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
                                       in_units=self.backbone_model.units,

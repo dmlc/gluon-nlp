@@ -74,57 +74,6 @@ def get_norm_layer(normalization: str = 'layer_norm',
         raise NotImplementedError('The type of normalization must be str')
 
 
-class HybridSequential(HybridBlock):
-    """Stacks HybridBlocks sequentially.
-
-    Example::
-
-        net = nn.HybridSequential()
-        net.add(nn.Dense(10, activation='relu'))
-        net.add(nn.Dense(20))
-        net.hybridize()
-    """
-    def __init__(self):
-        super(HybridSequential, self).__init__()
-        self._layers = []
-
-    def add(self, *blocks):
-        """Adds block on top of the stack."""
-        for block in blocks:
-            self._layers.append(block)
-            self.register_child(block)
-
-    def forward(self, x, *args):
-        for block in self._children.values():
-            x = block()(x, *args)
-            args = []
-            if isinstance(x, (tuple, list)):
-                args = x[1:]
-                x = x[0]
-        if args:
-            x = tuple([x] + list(args))
-        return x
-
-    def __repr__(self):
-        s = '{name}(\n{modstr}\n)'
-        modstr = '\n'.join(['  ({key}): {block}'.format(key=key,
-                                                        block=_indent(block().__repr__(), 2))
-                            for key, block in self._children.items()])
-        return s.format(name=self.__class__.__name__, modstr=modstr)
-
-    def __getitem__(self, key):
-        layers = list(self._children.values())[key]
-        if isinstance(layers, list):
-            net = type(self)()
-            net.add(*(l() for l in layers))
-            return net
-        else:
-            return layers()
-
-    def __len__(self):
-        return len(self._children)
-
-
 @use_np
 class NoNorm(HybridBlock):
     r"""
@@ -726,7 +675,7 @@ class AdaptiveEmbedding(HybridBlock):
             else:
                 self.proj_layers = None
         else:
-            self.proj_layers = HybridSequential()
+            self.proj_layers = nn.HybridSequential()
             for i, (l_idx, r_idx) in enumerate(zip([0] + cutoffs, cutoffs + [vocab_size])):
                 inner_embed_size = int(embed_size / div_val**i)
                 if inner_embed_size == 0:
@@ -887,8 +836,8 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
                                                     use_bias=use_bias,
                                                     weight_initializer=weight_initializer,
                                                     bias_initializer=bias_initializer)
-        self.inter_proj_l = HybridSequential()
-        self.out_proj_l = HybridSequential()
+        self.inter_proj_l = nn.HybridSequential()
+        self.out_proj_l = nn.HybridSequential()
         if div_val == 1.0:
             if in_units != embed_size:
                 self.inter_proj_l.add(nn.Dense(in_units=in_units,

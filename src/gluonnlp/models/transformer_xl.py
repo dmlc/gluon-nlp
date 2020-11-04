@@ -4,7 +4,7 @@ from mxnet.gluon import nn, Block, HybridBlock, Parameter
 from ..attention_cell import multi_head_dot_attn, gen_self_attn_mask, gen_mem_attn_mask,\
     RelAttentionScoreCell, MultiHeadAttentionCell
 from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN,\
-    AdaptiveEmbedding, ProjectedAdaptiveLogSoftmaxWithLoss, HybridSequential
+    AdaptiveEmbedding, ProjectedAdaptiveLogSoftmaxWithLoss
 from ..utils.config import CfgNode as CN
 from ..sequence_sampler import BaseStepDecoder
 __all__ = ['TransformerXLDecoderLayer', 'TransformerXLDecoder', 'TransformerXLForLM',
@@ -180,7 +180,7 @@ class TransformerXLDecoder(HybridBlock):
                                       shape=(num_heads, units // num_heads),
                                       init=bias_initializer,
                                       allow_deferred_init=True)
-        self.decoder_layers = HybridSequential()
+        self.decoder_layers = nn.HybridSequential()
         for i in range(num_layers):
             self.decoder_layers.add(
                 TransformerXLDecoderLayer(units=units,
