@@ -11,6 +11,8 @@ import argparse
 import ast
 import functools
 import collections
+import dataclasses
+from dataclasses import dataclass
 from multiprocessing import Pool, cpu_count
 
 import mxnet as mx
@@ -151,6 +153,19 @@ def parse_args():
     return args
 
 
+ChunkFeature = collections.namedtuple('ChunkFeature',
+                                      ['qas_id',
+                                       'data',
+                                       'valid_length',
+                                       'segment_ids',
+                                       'masks',
+                                       'is_impossible',
+                                       'gt_start',
+                                       'gt_end',
+                                       'context_offset',
+                                       'chunk_start',
+                                       'chunk_length'])
+
 class SquadDatasetProcessor:
 
     def __init__(self, tokenizer, doc_stride, max_seq_length, max_query_length):
@@ -179,19 +194,7 @@ class SquadDatasetProcessor:
         self.sep_id = vocab.eos_id if 'sep_token' not in vocab.special_token_keys else vocab.sep_id
 
         # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
-        self.ChunkFeature = collections.namedtuple('ChunkFeature',
-                                              ['qas_id',
-                                               'data',
-                                               'valid_length',
-                                               'segment_ids',
-                                               'masks',
-                                               'is_impossible',
-                                               'gt_start',
-                                               'gt_end',
-                                               'context_offset',
-                                               'chunk_start',
-                                               'chunk_length'])
-        self.BatchifyFunction = bf.NamedTuple(self.ChunkFeature,
+        self.BatchifyFunction = bf.NamedTuple(ChunkFeature,
                                          {'qas_id': bf.List(),
                                           'data': bf.Pad(val=self.pad_id),
                                           'valid_length': bf.Stack(),
@@ -269,17 +272,17 @@ class SquadDatasetProcessor:
                 # Here, we increase the start and end because we put query before context
                 start_pos = chunk.gt_start_pos + context_offset
                 end_pos = chunk.gt_end_pos + context_offset
-            chunk_feature = self.ChunkFeature(qas_id=feature.qas_id,
-                                              data=data,
-                                              valid_length=valid_length,
-                                              segment_ids=segment_ids,
-                                              masks=masks,
-                                              is_impossible=chunk.is_impossible,
-                                              gt_start=start_pos,
-                                              gt_end=end_pos,
-                                              context_offset=context_offset,
-                                              chunk_start=chunk.start,
-                                              chunk_length=chunk.length)
+            chunk_feature = ChunkFeature(qas_id=feature.qas_id,
+                                         data=data,
+                                         valid_length=valid_length,
+                                         segment_ids=segment_ids,
+                                         masks=masks,
+                                         is_impossible=chunk.is_impossible,
+                                         gt_start=start_pos,
+                                         gt_end=end_pos,
+                                         context_offset=context_offset,
+                                         chunk_start=chunk.start,
+                                         chunk_length=chunk.length)
             ret.append(chunk_feature)
         return ret
 

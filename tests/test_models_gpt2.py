@@ -79,7 +79,10 @@ def test_gpt2_small_config(compute_layout, ctx):
         if ctx.device_type == 'gpu':
             verify_backbone_fp16(model_cls=GPT2Model, cfg=cfg, ctx=ctx,
                                  inputs=[inputs,
-                                         gpt2_model.init_states(batch_size, ctx)])
+                                         gpt2_model.init_states(batch_size, ctx)],
+                                 check_amp=False)
+            pytest.skip('GPT-2 test has been turned off. '
+                        'Issue: https://github.com/apache/incubator-mxnet/issues/19463')
 
 
 def test_gpt2_incremental_states(ctx):
