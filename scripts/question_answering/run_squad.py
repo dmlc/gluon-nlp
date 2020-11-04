@@ -143,8 +143,10 @@ def parse_args():
                              'instead of only last one')
     parser.add_argument('--max_saved_ckpt', type=int, default=5,
                         help='The maximum number of saved checkpoints')
-    parser.add_argument('--eval_dtype', type=str, default='float32',
-                        help='Data type used for evaluation. Either float32 or float16')
+    parser.add_argument('--dtype', type=str, default='float32',
+                        help='Data type used for evaluation. Either float32 or float16. When you '
+                             'use --dtype float16, amp will be turned on in the training phase and '
+                             'fp16 will be used in evaluation.')
     args = parser.parse_args()
     return args
 
@@ -979,6 +981,10 @@ if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
     args = parse_args()
     if args.do_train:
+        if args.dtype == 'float16':
+            # Initialize amp if it's fp16 training
+            from mxnet import amp
+            amp.init()
         train(args)
     if args.do_eval:
         evaluate(args, last=not args.all_evaluate)
