@@ -654,7 +654,6 @@ def train(args):
             log_answerable_loss = 0
             log_total_loss = 0
             log_sample_num = 0
-            num_samples_per_update = 0
 
         if (step_num + 1) >= num_train_steps:
             toc = time.time()
