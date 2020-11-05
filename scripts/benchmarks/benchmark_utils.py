@@ -777,7 +777,7 @@ class GluonNLPBackboneBenchmark:
             model = model_cls.from_cfg(cfg, extract_feature=True, dtype=dtype)
         else:
             model = model_cls.from_cfg(cfg, dtype=dtype)
-        model.load_parameters(backbone_param_path, ctx=ctx)
+        model.load_parameters(backbone_param_path, ctx=ctx, cast_dtype=True)
         model.cast(dtype)
         model.hybridize()
         vocab_size = cfg.MODEL.vocab_size
@@ -872,7 +872,6 @@ class GluonNLPBackboneBenchmark:
         else:
             ctx = mxnet.cpu()
         model_cls, cfg, tokenizer, backbone_param_path, _ = get_backbone(model_name)
-        # TODO Support fp16 profiling
         cfg.defrost()
         cfg.MODEL.layout = self._layout
         if model_cls.__name__ not in ['BartModel']:
