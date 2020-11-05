@@ -228,33 +228,38 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
         randomness in the model when it is turned on.
 
     """
-    model = model_cls.from_cfg(cfg, dtype='float32')
-    model.initialize(ctx=ctx)
-    model.hybridize()
+    model_fp32 = model_cls.from_cfg(cfg, dtype='float32')
+    model_fp32.initialize(ctx=ctx)
+    model_fp32.hybridize()
     # Check forward
     fp32_inputs = move_to_ctx(inputs, ctx=ctx)
-    outputs_fp32 = model(*fp32_inputs)
+    outputs_fp32 = model_fp32(*fp32_inputs)
     mx.npx.waitall()
-    model.cast('float16')
-    model.hybridize()
-    for param in model.collect_params().values():
+    # Check forward of fp16
+    model_fp16 = model_cls.from_cfg(cfg, dtype='float16')
+    model_fp16.share_parameters(model_fp32.collect_params())
+    model_fp16.cast('float16')
+    model_fp16.hybridize()
+    for param in model_fp16.collect_params().values():
         assert param.dtype == 'float16'
     fp16_inputs = move_to_ctx(_cast_nested_to_fp16(inputs), ctx=ctx)
-    outputs_fp16 = model(*fp16_inputs)
+    outputs_fp16 = model_fp16(*fp16_inputs)
     mx.npx.waitall()
     _match_struct_output(outputs_fp16, outputs_fp32, atol=atol, rtol=rtol)
-    model.cast('float32')
-    model.hybridize()
     if check_amp:
         from mxnet import amp
         amp.init()
-        trainer = mx.gluon.Trainer(model.collect_params(), 'adam',
+        # Reconstruct the fp32 model
+        model_fp32 = model_cls.from_cfg(cfg, dtype='float32')
+        model_fp32.initialize(ctx=ctx)
+        model_fp32.hybridize()
+        trainer = mx.gluon.Trainer(model_fp32.collect_params(), 'adam',
                                    {'learning_rate': 1E-3, 'wd': 1E-4,
                                     'multi_precision': True},
                                    update_on_kvstore=False)
         amp.init_trainer(trainer)
         with mx.autograd.record():
-            outputs_amp = model(*fp32_inputs)
+            outputs_amp = model_fp32(*fp32_inputs)
             if not isinstance(outputs_amp, (tuple, list)):
                 loss = outputs_amp.mean()
             else:
