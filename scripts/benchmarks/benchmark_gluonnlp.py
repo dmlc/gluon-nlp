@@ -121,7 +121,8 @@ if __name__ == '__main__':
                     process.join()
                     new_df = pd.read_csv(out_path)
                     df = df.append(new_df, ignore_index=True)
-                    df.to_csv('gluonnlp_infer_fp32_{}_{}_tvm{}.csv'.format(layout,
+                    df.to_csv('gluonnlp_infer_{}_{}_{}_tvm{}.csv'.format(dtype,
+                                                                         layout,
                                                                            compute_layout,
                                                                            int(args.use_tvm)))
         elif args.mode == 'train':
