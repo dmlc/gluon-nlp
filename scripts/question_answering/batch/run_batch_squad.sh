@@ -4,8 +4,8 @@ set -ex
 
 USE_HOROVOD=${1:-0}
 VERSION=${2:-2.0}
-DTYPE=${3:-float32}
-LOG_PATH=${4:-submit_squad_v2.log}
+LOG_PATH=${3:-submit_squad_v2.log}
+DTYPE=${4:-float32}
 SUBMIT_SCRIPT_PATH=$(dirname "$0")/../../../tools/batch/submit-job.py
 
 
