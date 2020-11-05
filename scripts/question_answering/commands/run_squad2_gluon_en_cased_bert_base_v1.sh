@@ -3,16 +3,16 @@
 USE_HOROVOD=${1:-0}  # Horovod flag. 0 --> not use horovod, 1 --> use horovod
 VERSION=${2:-2.0}   # SQuAD Version
 DTYPE=${3:-float32}   # Default training data type
-MODEL_NAME=google_electra_base
-BATCH_SIZE=8
-NUM_ACCUMULATED=1
-EPOCHS=2
-LR=0.0001
+MODEL_NAME=gluon_en_cased_bert_base_v1
+BATCH_SIZE=6
+NUM_ACCUMULATED=2
+EPOCHS=3
+LR=3e-05
 WARMUP_RATIO=0.1
-WD=0
+WD=0.01
 MAX_SEQ_LENGTH=512
 MAX_GRAD_NORM=1.0
-LAYERWISE_DECAY=0.8
+LAYERWISE_DECAY=-1
 
 # Prepare the Data
 nlp_data prepare_squad --version ${VERSION}
