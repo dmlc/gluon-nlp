@@ -600,12 +600,12 @@ def train(args):
                     with amp.scale_loss(loss_l, trainer) as loss_l:
                         for loss in loss_l:
                             loss.backward()
-                    norm_clip = args.max_grad_norm * num_workers * trainer._amp_loss_scaler.loss_scale
+                norm_clip_mult = num_workers * trainer._amp_loss_scaler.loss_scale
             else:
                 with mx.autograd.record():
                     for loss in loss_l:
                         loss.backward()
-                norm_clip = args.max_grad_norm * num_workers
+                norm_clip_mult = num_workers
 
             # All Reduce the Step Loss
             log_span_loss += sum([ele.as_in_ctx(ctx_l[0]) for ele in span_loss_l]).asnumpy()
@@ -617,7 +617,8 @@ def train(args):
         trainer.allreduce_grads()
 
         if args.max_grad_norm > 0:
-            total_norm, ratio, is_finite = clip_grad_global_norm(params, norm_clip)
+            total_norm, ratio, is_finite = clip_grad_global_norm(
+                params, args.max_grad_norm * norm_clip_mult)
         else:
             total_norm = grad_global_norm(params)
 
@@ -629,7 +630,7 @@ def train(args):
             # gluon.trainer._scale is default to 1
             trainer.update(num_workers, ignore_stale_grad=True)
 
-        total_norm = total_norm / num_workers
+        total_norm = total_norm / norm_clip_mult
         if args.num_accumulated > 1:
             # set grad to zero for gradient accumulation
             qa_net.zero_grad()
