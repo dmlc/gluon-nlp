@@ -58,13 +58,14 @@ def get_parser():
                         help='Whether to use TVM for inference/training')
     parser.add_argument('--instance_type', choices=['c4', 'c5', 'g4', 'p3'], default='g4',
                         help='The instance type that the profiling script will be run on.')
+    parser.add_argument('--use_fp16', action='store_true')
     parser.add_argument('--mode', type=str, default='train',
                         choices=['train', 'inference'])
     return parser
 
 
 def run_benchmark(workload, model_name, out_file_name, is_train,
-                  use_tvm, instance_type):
+                  use_tvm, instance_type, use_fp16):
     if is_train:
         benchmark = GluonNLPBackboneBenchmark(
             workloads=workload,
@@ -72,6 +73,7 @@ def run_benchmark(workload, model_name, out_file_name, is_train,
             profile_inference=False,
             profile_train=True,
             to_csv=True,
+            use_fp16=use_fp16,
             train_out_csv_file=out_file_name)
         benchmark.run()
     else:
@@ -83,6 +85,7 @@ def run_benchmark(workload, model_name, out_file_name, is_train,
             use_tvm=use_tvm,
             instance_type=instance_type,
             to_csv=True,
+            use_fp16=use_fp16,
             inference_out_csv_file=out_file_name)
         benchmark.run()
     return
@@ -94,13 +97,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.compute_layout is None:
         args.compute_layout = args.layout
+    dtype = 'float32' if not args.use_fp16 else 'float16'
     for layout, compute_layout in [(args.layout, args.compute_layout)]:
         if compute_layout != layout:
             profile_models = [ele for ele in MODELS if 'bart' not in ele]
         else:
             profile_models = [ele for ele in MODELS]
         if args.mode == 'inference':
-            out_dir = 'infer_fp32_{}_{}_tvm{}'.format(layout, compute_layout, int(args.use_tvm))
+            out_dir = 'infer_{}_{}_{}_tvm{}'.format(dtype, layout, compute_layout,
+                                                    int(args.use_tvm))
             df = pd.DataFrame(columns=['model', 'batch_size', 'sequence_length',
                                        'latency', 'memory'])
             os.makedirs(out_dir, exist_ok=True)
@@ -111,7 +116,7 @@ if __name__ == '__main__':
                     process = Process(
                         target=run_benchmark,
                         args=(workload, model_name, out_path, False,
-                              args.use_tvm, args.instance_type))
+                              args.use_tvm, args.instance_type, args.use_fp16))
                     process.start()
                     process.join()
                     new_df = pd.read_csv(out_path)
@@ -120,7 +125,7 @@ if __name__ == '__main__':
                                                                            compute_layout,
                                                                            int(args.use_tvm)))
         elif args.mode == 'train':
-            out_dir = 'train_fp32_{}_{}'.format(layout, compute_layout)
+            out_dir = 'train_{}_{}_{}'.format(dtype, layout, compute_layout)
             df = pd.DataFrame(columns=['model', 'batch_size', 'sequence_length',
                                        'latency', 'memory'])
             os.makedirs(out_dir, exist_ok=True)
@@ -131,11 +136,11 @@ if __name__ == '__main__':
                     process = Process(
                         target=run_benchmark,
                         args=(workload, model_name, out_path, True, False,
-                              args.instance_type))
+                              args.instance_type, args.use_fp16))
                     process.start()
                     process.join()
                     new_df = pd.read_csv(out_path)
                     df = df.append(new_df, ignore_index=True)
-                    df.to_csv('gluonnlp_train_fp32_{}_{}.csv'.format(layout, compute_layout))
+                    df.to_csv('gluonnlp_train_{}_{}_{}.csv'.format(dtype, layout, compute_layout))
         else:
             raise NotImplementedError
