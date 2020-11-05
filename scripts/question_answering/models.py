@@ -2,7 +2,7 @@ import mxnet as mx
 from mxnet import np, npx
 from mxnet.gluon import nn, HybridBlock
 from mxnet.util import use_np
-from gluonnlp.layers import get_activation, HybridSequential
+from gluonnlp.layers import get_activation
 from gluonnlp.op import select_vectors_by_position
 from gluonnlp.attention_cell import masked_logsoftmax, masked_softmax
 
@@ -162,7 +162,7 @@ class ModelForQAConditionalV1(HybridBlock):
         self.start_scores = nn.Dense(1, flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer)
-        self.end_scores = HybridSequential()
+        self.end_scores = nn.HybridSequential()
         self.end_scores.add(nn.Dense(units, flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer))
@@ -171,7 +171,7 @@ class ModelForQAConditionalV1(HybridBlock):
         self.end_scores.add(nn.Dense(1, flatten=False,
                                      weight_initializer=weight_initializer,
                                      bias_initializer=bias_initializer))
-        self.answerable_scores = HybridSequential()
+        self.answerable_scores = nn.HybridSequential()
         self.answerable_scores.add(nn.Dense(units, flatten=False,
                                             weight_initializer=weight_initializer,
                                             bias_initializer=bias_initializer))

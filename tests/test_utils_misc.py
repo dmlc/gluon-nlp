@@ -12,7 +12,6 @@ import numpy as np
 from numpy.testing import assert_allclose
 from gluonnlp.utils.misc import AverageSGDTracker, download, sha1sum, logging_config,\
     get_mxnet_visible_ctx
-from gluonnlp.layers import HybridSequential
 mx.npx.set_np()
 
 
@@ -23,7 +22,7 @@ def test_average_sgd_tracker():
     moving_avg_param = None
     net_final_moving_avg_param = None
     for use_moving_avg in [False, True]:
-        net = HybridSequential()
+        net = nn.HybridSequential()
         net.add(nn.Dense(10), nn.Dense(3))
         net.initialize(init=mx.init.One())
         net.hybridize()

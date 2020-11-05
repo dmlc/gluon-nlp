@@ -39,7 +39,7 @@ from ..utils.misc import load_checksum_stats, download
 from ..utils.registry import Registry
 from ..initializer import TruncNorm
 from ..attention_cell import MultiHeadAttentionCell
-from ..layers import get_activation, PositionalEmbedding, HybridSequential
+from ..layers import get_activation, PositionalEmbedding
 from ..data.tokenizers import HuggingFaceByteBPETokenizer
 
 
@@ -443,7 +443,7 @@ class GPT2Model(HybridBlock):
             dtype=self._dtype,
             method=pos_embed_type
         )
-        self._layers = HybridSequential()
+        self._layers = nn.HybridSequential()
         for layer_idx in range(self._num_layers):
             self._layers.add(
                 GPT2Layer(

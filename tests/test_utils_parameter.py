@@ -2,7 +2,6 @@ import pytest
 import mxnet as mx
 import numpy as np
 from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm
-from gluonnlp.layers import HybridSequential
 from mxnet.test_utils import assert_almost_equal
 mx.npx.set_np()
 
@@ -22,7 +21,7 @@ def test_clip_grad_norm(max_norm, check_isfinite):
         return np.sqrt(ret)
 
     contexts = [mx.cpu(0), mx.cpu(1)]
-    net = HybridSequential()
+    net = mx.gluon.nn.HybridSequential()
     # Create a network with 8 layers
     for _ in range(8):
         net.add(mx.gluon.nn.Dense(1, weight_initializer='ones', bias_initializer='ones'))

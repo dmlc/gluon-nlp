@@ -39,7 +39,7 @@ from mxnet.gluon import HybridBlock, nn
 from ..op import select_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, \
                    get_model_zoo_checksum_dir
-from ..layers import PositionalEmbedding, get_activation, HybridSequential
+from ..layers import PositionalEmbedding, get_activation
 from ..registry import BACKBONE_REGISTRY
 from ..utils.misc import download, load_checksum_stats
 from ..utils.registry import Registry
@@ -147,7 +147,7 @@ class RobertaEncoder(HybridBlock):
         self._layout = layout
         self._output_all_encodings = output_all_encodings
         self._output_attention = output_attention
-        self.all_layers = HybridSequential()
+        self.all_layers = nn.HybridSequential()
         for layer_idx in range(self.num_layers):
             self.all_layers.add(
                 TransformerEncoderLayer(
@@ -461,7 +461,7 @@ class RobertaForMLM(HybridBlock):
         if bias_initializer is None:
             bias_initializer = self.backbone_model.bias_initializer
         self.units = self.backbone_model.units
-        self.mlm_decoder = HybridSequential()
+        self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.units,
                                       in_units=self.units,
