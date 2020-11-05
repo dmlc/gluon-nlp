@@ -433,7 +433,9 @@ def setup_logging(args, local_rank):
     set_seed(args.seed)
     logging.debug('Random seed set to {}'.format(args.seed))
 
+
 def train(args):
+    use_amp = args.dtype == 'float16'
     store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
         args.comm_backend, args.gpus)
     setup_logging(args, local_rank)
@@ -545,14 +547,15 @@ def train(args):
                                  'beta2': adam_betas[1],
                                  'epsilon': args.adam_epsilon,
                                  })
-    if args.dtype == 'float16':
+    if use_amp:
         optimizer_params.update({'multi_precision': True})
     if args.comm_backend == 'horovod':
         trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optimizer_params)
     else:
         trainer = mx.gluon.Trainer(param_dict, args.optimizer, optimizer_params,
                                    update_on_kvstore=False)
-
+    if use_amp:
+        amp.init_trainer(trainer)
     log_span_loss = 0
     log_answerable_loss = 0
     log_total_loss = 0
@@ -592,9 +595,16 @@ def train(args):
                     loss_l.append(loss)
                     span_loss_l.append(span_loss)
                     answerable_loss_l.append(answerable_loss)
+            if use_amp:
+                with amp.scale_loss(loss_l, trainer) as loss_l:
+                    for loss in loss_l:
+                        loss.backward()
+                norm_clip = args.max_grad_norm * num_workers * trainer._amp_loss_scaler.loss_scale
+            else:
+                for loss in loss_l:
+                    loss.backward()
+                norm_clip = args.max_grad_norm * num_workers
 
-            for loss in loss_l:
-                loss.backward()
             # All Reduce the Step Loss
             log_span_loss += sum([ele.as_in_ctx(ctx_l[0]) for ele in span_loss_l]).asnumpy()
             log_total_loss += sum([ele.as_in_ctx(ctx_l[0])
@@ -605,8 +615,7 @@ def train(args):
         trainer.allreduce_grads()
 
         if args.max_grad_norm > 0:
-            total_norm, ratio, is_finite = clip_grad_global_norm(
-                params, args.max_grad_norm * num_workers)
+            total_norm, ratio, is_finite = clip_grad_global_norm(params, norm_clip)
         else:
             total_norm = grad_global_norm(params)
 
