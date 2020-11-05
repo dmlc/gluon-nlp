@@ -80,15 +80,14 @@ class AdamW(optimizer.Optimizer):
     def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-6,
                  correct_bias=True, use_fused_step=True, **kwargs):
         super().__init__(use_fused_step=use_fused_step,
-                                    learning_rate=learning_rate,
-                                    **kwargs)
+                         learning_rate=learning_rate,
+                         **kwargs)
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
         self.correct_bias = correct_bias
         self.aggregate_num = max(1, min(50,
                                         int(os.getenv('MXNET_OPTIMIZER_AGGREGATION_SIZE', '4'))))
-        assert self.multi_precision is False, 'Currently we do not support multi-precision.'
 
     def create_state(self, index, weight):
         """state creation function."""
