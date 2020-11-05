@@ -148,12 +148,3 @@ if __name__ == '__main__':
         prefix = cfg_func.__name__[:-len('_cfg')]
         gen_command(cfg_func(), 'run_squad.template',
                     f'run_squad2_{prefix}.sh')
-    os.makedirs('fp16')
-    for cfg_func in [albert_base_cfg, albert_large_cfg, albert_xlarge_cfg, albert_xxlarge_cfg,
-                     electra_base_cfg, electra_large_cfg, electra_small_cfg,
-                     roberta_large_cfg, uncased_bert_base_cfg, uncased_bert_large_cfg,
-                     gluon_en_cased_bert_base_v1_cfg]:
-        prefix = cfg_func.__name__[:-len('_cfg')]
-        cfg = cfg_func()
-        cfg.dtype = 'float16'
-        gen_command(cfg, 'run_squad.template', os.path.join('fp16', f'run_squad2_{prefix}.sh'))
