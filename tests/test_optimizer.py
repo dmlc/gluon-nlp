@@ -31,4 +31,4 @@ def test_adam(dtype, ctx):
                 continue
             compare_optimizer(opt1(use_fused_step=False, **kwarg),
                               opt2(use_fused_step=True, **kwarg), shapes, dtype,
-                              rtol=1e-4, atol=2e-5)
+                              rtol=1e-3, atol=2e-3)
