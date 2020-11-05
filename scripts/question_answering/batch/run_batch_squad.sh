@@ -24,12 +24,12 @@ for MODEL_NAME in albert_base \
 do
   python3 ${SUBMIT_SCRIPT_PATH} \
       --region us-east-1 \
-      --source-ref amp \
+      --source-ref master \
       --job-type g4dn.12x \
       --save-path temp \
       --name test_squad2_${MODEL_NAME} \
       --work-dir scripts/question_answering \
-      --remote https://github.com/sxjscience/gluon-nlp/ \
+      --remote https://github.com/dmlc/gluon-nlp/ \
       --command "bash commands/run_squad2_${MODEL_NAME}.sh ${USE_HOROVOD} ${VERSION} ${DTYPE} | tee stdout.log" \
       | perl -pe 's/Submitted job \[([0-9|a-z|_].+)\] to the job queue .+/$1/' \
       | sed -e 's/ - / /g' >> ${LOG_PATH}
