@@ -37,7 +37,7 @@ from mxnet.gluon import HybridBlock, nn
 from ..op import select_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..layers import InitializerType, PositionwiseFFN, PositionalEmbedding, get_norm_layer, \
-                     get_activation, HybridSequential
+                     get_activation
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
@@ -262,7 +262,7 @@ class MobileBertEncoderLayer(HybridBlock):
                                          in_channels=real_units,
                                          epsilon=layer_norm_eps)
 
-        self.stacked_ffn = HybridSequential()
+        self.stacked_ffn = nn.HybridSequential()
         for ffn_idx in range(num_stacked_ffn):
             is_last_ffn = (ffn_idx == (num_stacked_ffn - 1))
             # only apply dropout on last ffn layer if use bottleneck
@@ -394,7 +394,7 @@ class MobileBertTransformer(HybridBlock):
             'by the number of heads. Received real_units={}, num_heads={}' \
             .format(real_units, num_heads)
 
-        self.all_layers = HybridSequential()
+        self.all_layers = nn.HybridSequential()
         for layer_idx in range(num_layers):
             self.all_layers.add(
                 MobileBertEncoderLayer(use_bottleneck=use_bottleneck,
@@ -811,7 +811,7 @@ class MobileBertForMLM(HybridBlock):
             weight_initializer = self.backbone_model.weight_initializer
         if bias_initializer is None:
             bias_initializer = self.backbone_model.bias_initializer
-        self.mlm_decoder = HybridSequential()
+        self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
                                       in_units=self.backbone_model.units,
@@ -921,7 +921,7 @@ class MobileBertForPretrain(HybridBlock):
                                        in_units=self.backbone_model.units,
                                        weight_initializer=weight_initializer,
                                        dtype=self.backbone_model.dtype)
-        self.mlm_decoder = HybridSequential()
+        self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
                                       in_units=self.backbone_model.units,

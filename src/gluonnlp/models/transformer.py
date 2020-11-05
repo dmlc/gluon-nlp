@@ -8,7 +8,7 @@ from mxnet.gluon import nn, HybridBlock
 from typing import Optional, Tuple, List
 from ..utils.registry import Registry
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask, gen_mem_attn_mask
-from ..layers import PositionalEmbedding, PositionwiseFFN, InitializerType, HybridSequential
+from ..layers import PositionalEmbedding, PositionwiseFFN, InitializerType
 from ..utils.config import CfgNode as CN
 from ..sequence_sampler import BaseStepDecoder
 __all__ = ['TransformerEncoderLayer', 'TransformerDecoderLayer',
@@ -313,7 +313,7 @@ class TransformerEncoder(HybridBlock):
             self.ln_data = nn.LayerNorm(epsilon=layer_norm_eps,
                                         in_channels=units)
         # Construct the intermediate layers
-        self.layers = HybridSequential()
+        self.layers = nn.HybridSequential()
         real_num_layers = 1 if recurrent else num_layers
         for i in range(real_num_layers):
             self.layers.add(TransformerEncoderLayer(
@@ -740,7 +740,7 @@ class TransformerDecoder(HybridBlock):
             self.ln_final = nn.LayerNorm(epsilon=layer_norm_eps,
                                          in_channels=units)
         # Construct the intermediate layers
-        self.layers = HybridSequential()
+        self.layers = nn.HybridSequential()
         real_num_layers = 1 if recurrent else num_layers
         for i in range(real_num_layers):
             self.layers.add(TransformerDecoderLayer(units=units,

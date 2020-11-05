@@ -37,7 +37,7 @@ from mxnet.gluon import HybridBlock, nn
 from ..registry import BACKBONE_REGISTRY
 from ..op import gumbel_softmax, select_vectors_by_position, add_vectors_by_position, update_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
-from ..layers import PositionalEmbedding, get_activation, HybridSequential
+from ..layers import PositionalEmbedding, get_activation
 from .transformer import TransformerEncoderLayer
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
@@ -227,7 +227,7 @@ class ElectraEncoder(HybridBlock):
         self._output_attention = output_attention
         self._output_all_encodings = output_all_encodings
 
-        self.all_encoder_layers = HybridSequential()
+        self.all_encoder_layers = nn.HybridSequential()
         for layer_idx in range(num_layers):
             self.all_encoder_layers.add(
                 TransformerEncoderLayer(units=units,
@@ -632,7 +632,7 @@ class ElectraDiscriminator(HybridBlock):
             weight_initializer = self.backbone_model.weight_initializer
         if bias_initializer is None:
             bias_initializer = self.backbone_model.bias_initializer
-        self.rtd_encoder = HybridSequential()
+        self.rtd_encoder = nn.HybridSequential()
         # Extra non-linear layer
         self.rtd_encoder.add(nn.Dense(units=self.backbone_model.units,
                                       in_units=self.backbone_model.units,
@@ -714,7 +714,7 @@ class ElectraGenerator(HybridBlock):
             weight_initializer = self.backbone_model.weight_initializer
         if bias_initializer is None:
             bias_initializer = self.backbone_model.bias_initializer
-        self.mlm_decoder = HybridSequential()
+        self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.embed_size,
                                       in_units=self.backbone_model.units,

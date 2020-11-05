@@ -42,8 +42,7 @@ from ..utils.misc import load_checksum_stats, download
 from ..utils.registry import Registry
 from ..initializer import TruncNorm
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask
-from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN, InitializerType, \
-                     HybridSequential
+from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN, InitializerType
 from ..op import select_vectors_by_position
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 
@@ -238,7 +237,7 @@ class BertTransformer(HybridBlock):
         self._output_all_encodings = output_all_encodings
         self._layout = layout
 
-        self.all_layers = HybridSequential()
+        self.all_layers = nn.HybridSequential()
         for layer_idx in range(num_layers):
             self.all_layers.add(
               TransformerEncoderLayer(units=units,
@@ -590,7 +589,7 @@ class BertForMLM(HybridBlock):
             weight_initializer = self.backbone_model.weight_initializer
         if bias_initializer is None:
             bias_initializer = self.backbone_model.bias_initializer
-        self.mlm_decoder = HybridSequential()
+        self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
                                       in_units=self.backbone_model.units,
@@ -686,7 +685,7 @@ class BertForPretrain(HybridBlock):
         self.nsp_classifier = nn.Dense(units=2,
                                        in_units=self.backbone_model.units,
                                        weight_initializer=weight_initializer)
-        self.mlm_decoder = HybridSequential()
+        self.mlm_decoder = nn.HybridSequential()
         # Extra non-linear layer
         self.mlm_decoder.add(nn.Dense(units=self.backbone_model.units,
                                       in_units=self.backbone_model.units,
