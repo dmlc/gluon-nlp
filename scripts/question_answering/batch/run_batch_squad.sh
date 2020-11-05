@@ -4,7 +4,8 @@ set -ex
 
 USE_HOROVOD=${1:-0}
 VERSION=${2:-2.0}
-LOG_PATH=${3:-submit_squad_v2.log}
+DTYPE=${3:-float32}
+LOG_PATH=${4:-submit_squad_v2.log}
 SUBMIT_SCRIPT_PATH=$(dirname "$0")/../../../tools/batch/submit-job.py
 
 
@@ -18,6 +19,7 @@ for MODEL_NAME in albert_base \
                   roberta_large \
                   uncased_bert_base \
                   uncased_bert_large \
+                  gluon_en_cased_bert_base_v1 \
                   mobilebert
 do
   python3 ${SUBMIT_SCRIPT_PATH} \
@@ -28,7 +30,7 @@ do
       --name test_squad2_${MODEL_NAME} \
       --work-dir scripts/question_answering \
       --remote https://github.com/sxjscience/gluon-nlp/ \
-      --command "bash commands/run_squad2_${MODEL_NAME}.sh ${USE_HOROVOD} ${VERSION} | tee stdout.log" \
+      --command "bash commands/run_squad2_${MODEL_NAME}.sh ${USE_HOROVOD} ${VERSION} ${DTYPE} | tee stdout.log" \
       | perl -pe 's/Submitted job \[([0-9|a-z|_].+)\] to the job queue .+/$1/' \
       | sed -e 's/ - / /g' >> ${LOG_PATH}
 done
