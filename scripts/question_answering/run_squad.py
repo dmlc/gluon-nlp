@@ -545,6 +545,8 @@ def train(args):
                                  'beta2': adam_betas[1],
                                  'epsilon': args.adam_epsilon,
                                  })
+    if args.dtype == 'float16':
+        optimizer_params.update({'multi_precision': True})
     if args.comm_backend == 'horovod':
         trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optimizer_params)
     else:
