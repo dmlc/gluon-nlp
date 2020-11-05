@@ -748,7 +748,6 @@ class GluonNLPBackboneBenchmark:
         self._inference_out_csv_file = inference_out_csv_file
         self._train_out_csv_file = train_out_csv_file
         self._env_info_file = env_info_file
-        assert use_fp16 is False, 'Currently fp16 benchmark has not been supported yet.'
 
     @property
     def model_names(self):
@@ -760,6 +759,10 @@ class GluonNLPBackboneBenchmark:
 
     def _inference_speed_memory(self, model_name: str, batch_size: int, sequence_length: int)\
             -> Tuple[float, Memory]:
+        if self._use_fp16:
+            dtype = 'float16'
+        else:
+            dtype = 'float32'
         if self._use_gpu:
             ctx = mxnet.gpu()
         else:
@@ -771,11 +774,11 @@ class GluonNLPBackboneBenchmark:
             cfg.MODEL.compute_layout = self._compute_layout
         cfg.freeze()
         if model_cls.__name__ in ['BartModel']:
-            model = model_cls.from_cfg(cfg, extract_feature=True)
+            model = model_cls.from_cfg(cfg, extract_feature=True, dtype=dtype)
         else:
-            model = model_cls.from_cfg(cfg)
-        if
+            model = model_cls.from_cfg(cfg, dtype=dtype)
         model.load_parameters(backbone_param_path, ctx=ctx)
+        model.cast(dtype)
         model.hybridize()
         vocab_size = cfg.MODEL.vocab_size
         if self._layout == 'NT':
@@ -860,6 +863,10 @@ class GluonNLPBackboneBenchmark:
 
     def _train_speed_memory(self, model_name: str, batch_size: int, sequence_length: int)\
             -> Tuple[float, Memory]:
+        if self._use_fp16:
+            from mxnet import amp
+            amp.init()
+
         if self._use_gpu:
             ctx = mxnet.gpu()
         else:
