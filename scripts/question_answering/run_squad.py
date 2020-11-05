@@ -194,12 +194,13 @@ class SquadDatasetProcessor:
         self.sep_id = vocab.eos_id if 'sep_token' not in vocab.special_token_keys else vocab.sep_id
 
         # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
+        # Here, we use round_to=8 to improve the throughput.
         self.BatchifyFunction = bf.NamedTuple(ChunkFeature,
                                          {'qas_id': bf.List(),
-                                          'data': bf.Pad(val=self.pad_id),
+                                          'data': bf.Pad(val=self.pad_id, round_to=8),
                                           'valid_length': bf.Stack(),
                                           'segment_ids': bf.Pad(),
-                                          'masks': bf.Pad(val=1),
+                                          'masks': bf.Pad(val=1, round_to=8),
                                           'is_impossible': bf.Stack(),
                                           'gt_start': bf.Stack(),
                                           'gt_end': bf.Stack(),
