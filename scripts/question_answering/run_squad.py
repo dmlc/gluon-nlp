@@ -596,13 +596,15 @@ def train(args):
                     span_loss_l.append(span_loss)
                     answerable_loss_l.append(answerable_loss)
             if use_amp:
-                with amp.scale_loss(loss_l, trainer) as loss_l:
+                with mx.autograd.record():
+                    with amp.scale_loss(loss_l, trainer) as loss_l:
+                        for loss in loss_l:
+                            loss.backward()
+                    norm_clip = args.max_grad_norm * num_workers * trainer._amp_loss_scaler.loss_scale
+            else:
+                with mx.autograd.record():
                     for loss in loss_l:
                         loss.backward()
-                norm_clip = args.max_grad_norm * num_workers * trainer._amp_loss_scaler.loss_scale
-            else:
-                for loss in loss_l:
-                    loss.backward()
                 norm_clip = args.max_grad_norm * num_workers
 
             # All Reduce the Step Loss
