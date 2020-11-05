@@ -815,7 +815,7 @@ def evaluate(args, last=True):
             str(ctx_l)))
 
     cfg, tokenizer, qa_net, use_segmentation = get_network(
-        args.model_name, ctx_l, args.classifier_dropout, dtype=args.eval_dtype)
+        args.model_name, ctx_l, args.classifier_dropout, dtype=args.dtype)
     if args.dtype == 'float16':
         qa_net.cast('float16')
         qa_net.hybridize()
