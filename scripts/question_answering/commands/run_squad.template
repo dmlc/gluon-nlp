@@ -2,7 +2,7 @@
 
 USE_HOROVOD=${1:-0}  # Horovod flag. 0 --> not use horovod, 1 --> use horovod
 VERSION=${2:-2.0}   # SQuAD Version
-DTYPE=${3:{{ dtype }}}   # Default training data type
+DTYPE=${3:-{{ dtype }}}   # Default training data type
 MODEL_NAME={{ model_name }}
 BATCH_SIZE={{ batch_size }}
 NUM_ACCUMULATED={{ num_accumulated }}
