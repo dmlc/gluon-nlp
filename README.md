@@ -16,7 +16,7 @@ process the text data, and train models.
 
 # Features
 
-- Easy-to-use Text Processing Tools and APIs
+- Easy-to-use Text Processing Tools and Modular APIs
 - Pretrained Model Zoo
 - Write Models with Numpy-like API
 - Fast Inference via [Apache TVM (incubating)](https://tvm.apache.org/) (Experimental)
@@ -28,16 +28,16 @@ First of all, install the latest MXNet. You may use the following commands:
 
 ```bash
 # Install the version with CUDA 10.0
-python3 -m pip install -U --pre "mxnet-cu100>=2.0.0b20200926" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet-cu100>=2.0.0b20201101" -f https://dist.mxnet.io/python
 
 # Install the version with CUDA 10.1
-python3 -m pip install -U --pre "mxnet-cu101>=2.0.0b20200926" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet-cu101>=2.0.0b20201101" -f https://dist.mxnet.io/python
 
 # Install the version with CUDA 10.2
-python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20200926" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20201101" -f https://dist.mxnet.io/python
 
 # Install the cpu-only version
-python3 -m pip install -U --pre "mxnet>=2.0.0b20200926" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet>=2.0.0b20201101" -f https://dist.mxnet.io/python
 ```
 
 

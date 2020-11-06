@@ -24,19 +24,33 @@ several pre-trained models could be converted through the corresponding conversi
 bash run_batch_conversion ${MODEL_TYPE}
 ```
 
-## Fine-tuning Downstream Tasks
+## SQuAD Training
 
-### Question Answering
-We can quickly run the squad finetuning via [squad fine-tuning scripts](../../scripts/question_answering#squad) and the AWS Batch job.
-
-The code is given in [run_batch_squad.sh](run_batch_squad.sh)
+The code is given in [question_answering/run_batch_squad.sh](question_answering/run_batch_squad.sh)
 
 ```bash
 # AWS Batch training without horovod on SQuAD 2.0
-bash run_batch_squad.sh
+bash question_answering/run_batch_squad.sh 0 2.0 submit_squad_v2_fp32.log float32
 
 # AWS Batch training with horovod on SQuAD 2.0
-bash run_batch_squad.sh 1 2.0 submit_squad_v2_horovod.log
+bash question_answering/run_batch_squad.sh 1 2.0 submit_squad_v2_horovod_fp32.log float32
+
+# AWS Batch training with horovod on SQuAD 1.1
+bash question_answering/run_batch_squad.sh 1 1.1 submit_squad_v1_horovod_fp32.log float32
+```
+
+```bash
+# AWS Batch training with horovod on SQuAD 2.0 + FP16
+bash question_answering/run_batch_squad.sh 1 2.0 submit_squad_v2_horovod_fp16.log float16
+
+# AWS Batch training with horovod on SQuAD 1.1 + FP16
+bash question_answering/run_batch_squad.sh 1 1.1 submit_squad_v1_horovod_fp16.log float16
+```
+
+Also, after you have submitted the jobs, you may sync the results via
+```bash
+bash question_answering/sync_batch_result.sh submit_squad_v2.log squad_v2_no_horovod
+bash question_answering/sync_batch_result.sh submit_squad_v2_horovod.log squad_v2_horovod
 ```
 
 Internally, it will train the following models on SQuAD 2.0 dataset:
@@ -52,4 +66,5 @@ Internally, it will train the following models on SQuAD 2.0 dataset:
 | electra_base       |
 | electra_large      |
 | roberta_large      |
+| gluon_en_cased_bert_base_v1    |
 | mobilebert         |

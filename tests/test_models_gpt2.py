@@ -6,6 +6,7 @@ from numpy.testing import assert_allclose
 from gluonnlp.models.gpt2 import GPT2Model, GPT2ForLM, \
     list_pretrained_gpt2, get_pretrained_gpt2
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
+from gluonnlp.utils.testing import verify_backbone_fp16
 
 mx.npx.set_np()
 
@@ -43,6 +44,7 @@ def test_gpt2_small_config(compute_layout, ctx):
             inputs,
             gpt2_model.init_states(batch_size, ctx)
         )
+
         gpt2_model_tn = GPT2Model.from_cfg(cfg_tn)
         gpt2_model_tn.share_parameters(gpt2_model.collect_params())
         gpt2_model_tn.hybridize()
@@ -72,6 +74,15 @@ def test_gpt2_small_config(compute_layout, ctx):
                         logits.asnumpy(), 1E-4, 1E-4)
         assert_allclose(np.swapaxes(states_tn.asnumpy(), 2, 3),
                         states.asnumpy(), 1E-4, 1E-4)
+
+        # Verify Float16
+        if ctx.device_type == 'gpu':
+            verify_backbone_fp16(model_cls=GPT2Model, cfg=cfg, ctx=ctx,
+                                 inputs=[inputs,
+                                         gpt2_model.init_states(batch_size, ctx)],
+                                 check_amp=False)
+            pytest.skip('GPT-2 test has been turned off. '
+                        'Issue: https://github.com/apache/incubator-mxnet/issues/19463')
 
 
 def test_gpt2_incremental_states(ctx):
@@ -107,7 +118,8 @@ def test_gpt2_incremental_states(ctx):
 
 @pytest.mark.slow
 @pytest.mark.remote_required
-@pytest.mark.parametrize('model_name', ['gpt2_124M', 'gpt2_355M', 'gpt2_774M'])
+# Just run forward test with the small model to reduce the time cost.
+@pytest.mark.parametrize('model_name', ['gpt2_124M'])
 def test_gpt2(model_name, ctx):
     # test from pretrained
     assert len(list_pretrained_gpt2()) > 0

@@ -2,6 +2,7 @@
 
 USE_HOROVOD=${1:-0}  # Horovod flag. 0 --> not use horovod, 1 --> use horovod
 VERSION=${2:-2.0}   # SQuAD Version
+DTYPE=${3:-float32}   # Default training data type
 MODEL_NAME=google_albert_base_v2
 BATCH_SIZE=4
 NUM_ACCUMULATED=3
@@ -10,7 +11,7 @@ LR=2e-05
 WARMUP_RATIO=0.1
 WD=0.01
 MAX_SEQ_LENGTH=512
-MAX_GRAD_NORM=0.1
+MAX_GRAD_NORM=1.0
 LAYERWISE_DECAY=-1
 
 # Prepare the Data
@@ -41,4 +42,5 @@ ${RUN_COMMAND} \
     --wd ${WD} \
     --max_seq_length ${MAX_SEQ_LENGTH} \
     --max_grad_norm ${MAX_GRAD_NORM} \
+    --dtype ${DTYPE} \
     --overwrite_cache

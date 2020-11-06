@@ -30,6 +30,7 @@ python3 train_transformer.py \
     --save_dir transformer_base_wmt2014_en_de_${SUBWORD_ALGO} \
     --cfg transformer_base \
     --lr 0.002 \
+    --num_accumulated 32 \
     --sampler BoundedBudgetSampler \
     --max_num_tokens 2700 \
     --epochs 30 \

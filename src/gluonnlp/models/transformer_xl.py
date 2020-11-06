@@ -347,8 +347,14 @@ class TransformerXLForLM(Block):
         return config
 
     @classmethod
-    def from_cfg(cls, cfg):
-        return cls(cfg=cfg)
+    def from_cfg(cls, cfg, dtype=None):
+        if dtype is not None:
+            new_cfg = cfg.clone()
+            new_cfg.defrost()
+            new_cfg.MODEL.dtype = dtype
+            return cls(cfg=new_cfg)
+        else:
+            return cls(cfg=cfg)
 
     @property
     def state_batch_axis(self):

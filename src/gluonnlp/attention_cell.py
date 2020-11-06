@@ -160,7 +160,7 @@ def gen_self_attn_mask(data,
     else:
         raise NotImplementedError
     mask = mask.astype(dtype)
-    return mask
+    return mask.astype(np.bool)
 
 
 def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
@@ -241,7 +241,7 @@ def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
     else:
         query_length_ones = np.ones_like(data_steps)
         mask = query_length_ones.reshape((1, -1, 1)) * mem_mask
-    return mask
+    return mask.astype(np.bool)
 
 
 # TODO(sxjscience) Directly implement a kernel for masked softmax
@@ -273,7 +273,7 @@ def masked_softmax(att_score, mask, dtype=np.float32, axis: int = -1):
         else:
             try:
                 # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
-                from mxnet.contrib import amp
+                from mxnet import amp
                 if amp.amp._amp_initialized:
                     neg = -1e4
             except ImportError:

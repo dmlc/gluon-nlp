@@ -2,6 +2,7 @@
 
 USE_HOROVOD=${1:-0}  # Horovod flag. 0 --> not use horovod, 1 --> use horovod
 VERSION=${2:-2.0}   # SQuAD Version
+DTYPE=${3:-float32}   # Default training data type
 MODEL_NAME=google_albert_xlarge_v2
 BATCH_SIZE=1
 NUM_ACCUMULATED=12
@@ -41,4 +42,5 @@ ${RUN_COMMAND} \
     --wd ${WD} \
     --max_seq_length ${MAX_SEQ_LENGTH} \
     --max_grad_norm ${MAX_GRAD_NORM} \
+    --dtype ${DTYPE} \
     --overwrite_cache

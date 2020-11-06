@@ -558,7 +558,7 @@ class GPT2Model(HybridBlock):
         embedding = self._embed_dropout(embedding)
         return embedding
 
-    def init_states(self, batch_size, ctx):
+    def init_states(self, batch_size, ctx, dtype=None):
         """Initialize the states required for incremental decoding
 
         Returns
@@ -569,10 +569,12 @@ class GPT2Model(HybridBlock):
             - layout = 'TN'
                 Shape (num_layers, 2, 0, batch_size, C_in)
         """
+        if dtype is None:
+            dtype = self._dtype
         return mx.np.zeros(shape=(self._num_layers, 2, batch_size, 0,
-                                  self._units), ctx=ctx, dtype=self._dtype) if self.layout == 'NT' else \
+                                  self._units), ctx=ctx, dtype=dtype) if self.layout == 'NT' else \
                mx.np.zeros(shape=(self._num_layers, 2, 0, batch_size,
-                                  self._units), ctx=ctx, dtype=self._dtype)
+                                  self._units), ctx=ctx, dtype=dtype)
 
     @staticmethod
     def get_cfg(key=None):

@@ -2,6 +2,7 @@
 
 USE_HOROVOD=${1:-0}  # Horovod flag. 0 --> not use horovod, 1 --> use horovod
 VERSION=${2:-2.0}   # SQuAD Version
+DTYPE=${3:-float32}   # Default training data type
 MODEL_NAME=google_electra_small
 BATCH_SIZE=8
 NUM_ACCUMULATED=1
@@ -10,7 +11,7 @@ LR=0.0003
 WARMUP_RATIO=0.1
 WD=0
 MAX_SEQ_LENGTH=512
-MAX_GRAD_NORM=0.1
+MAX_GRAD_NORM=1.0
 LAYERWISE_DECAY=0.8
 
 # Prepare the Data
@@ -41,4 +42,5 @@ ${RUN_COMMAND} \
     --wd ${WD} \
     --max_seq_length ${MAX_SEQ_LENGTH} \
     --max_grad_norm ${MAX_GRAD_NORM} \
+    --dtype ${DTYPE} \
     --overwrite_cache

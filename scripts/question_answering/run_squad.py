@@ -8,8 +8,11 @@ import json
 import time
 import logging
 import argparse
+import ast
 import functools
 import collections
+import dataclasses
+from dataclasses import dataclass
 from multiprocessing import Pool, cpu_count
 
 import mxnet as mx
@@ -142,11 +145,26 @@ def parse_args():
                              'instead of only last one')
     parser.add_argument('--max_saved_ckpt', type=int, default=5,
                         help='The maximum number of saved checkpoints')
-    parser.add_argument('--eval_dtype', type=str, default='float32',
-                        help='Data type used for evaluation. Either float32 or float16')
+    parser.add_argument('--dtype', type=str, default='float32',
+                        help='Data type used for evaluation. Either float32 or float16. When you '
+                             'use --dtype float16, amp will be turned on in the training phase and '
+                             'fp16 will be used in evaluation.')
     args = parser.parse_args()
     return args
 
+
+ChunkFeature = collections.namedtuple('ChunkFeature',
+                                      ['qas_id',
+                                       'data',
+                                       'valid_length',
+                                       'segment_ids',
+                                       'masks',
+                                       'is_impossible',
+                                       'gt_start',
+                                       'gt_end',
+                                       'context_offset',
+                                       'chunk_start',
+                                       'chunk_length'])
 
 class SquadDatasetProcessor:
 
@@ -176,24 +194,13 @@ class SquadDatasetProcessor:
         self.sep_id = vocab.eos_id if 'sep_token' not in vocab.special_token_keys else vocab.sep_id
 
         # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
-        self.ChunkFeature = collections.namedtuple('ChunkFeature',
-                                              ['qas_id',
-                                               'data',
-                                               'valid_length',
-                                               'segment_ids',
-                                               'masks',
-                                               'is_impossible',
-                                               'gt_start',
-                                               'gt_end',
-                                               'context_offset',
-                                               'chunk_start',
-                                               'chunk_length'])
-        self.BatchifyFunction = bf.NamedTuple(self.ChunkFeature,
+        # Here, we use round_to=8 to improve the throughput.
+        self.BatchifyFunction = bf.NamedTuple(ChunkFeature,
                                          {'qas_id': bf.List(),
-                                          'data': bf.Pad(val=self.pad_id),
+                                          'data': bf.Pad(val=self.pad_id, round_to=8),
                                           'valid_length': bf.Stack(),
                                           'segment_ids': bf.Pad(),
-                                          'masks': bf.Pad(val=1),
+                                          'masks': bf.Pad(val=1, round_to=8),
                                           'is_impossible': bf.Stack(),
                                           'gt_start': bf.Stack(),
                                           'gt_end': bf.Stack(),
@@ -266,17 +273,17 @@ class SquadDatasetProcessor:
                 # Here, we increase the start and end because we put query before context
                 start_pos = chunk.gt_start_pos + context_offset
                 end_pos = chunk.gt_end_pos + context_offset
-            chunk_feature = self.ChunkFeature(qas_id=feature.qas_id,
-                                              data=data,
-                                              valid_length=valid_length,
-                                              segment_ids=segment_ids,
-                                              masks=masks,
-                                              is_impossible=chunk.is_impossible,
-                                              gt_start=start_pos,
-                                              gt_end=end_pos,
-                                              context_offset=context_offset,
-                                              chunk_start=chunk.start,
-                                              chunk_length=chunk.length)
+            chunk_feature = ChunkFeature(qas_id=feature.qas_id,
+                                         data=data,
+                                         valid_length=valid_length,
+                                         segment_ids=segment_ids,
+                                         masks=masks,
+                                         is_impossible=chunk.is_impossible,
+                                         gt_start=start_pos,
+                                         gt_end=end_pos,
+                                         context_offset=context_offset,
+                                         chunk_start=chunk.start,
+                                         chunk_length=chunk.length)
             ret.append(chunk_feature)
         return ret
 
@@ -427,7 +434,9 @@ def setup_logging(args, local_rank):
     set_seed(args.seed)
     logging.debug('Random seed set to {}'.format(args.seed))
 
+
 def train(args):
+    use_amp = args.dtype == 'float16'
     store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
         args.comm_backend, args.gpus)
     setup_logging(args, local_rank)
@@ -527,7 +536,7 @@ def train(args):
                         'wd': args.wd,
                         'lr_scheduler': lr_scheduler,
                         }
-    adam_betas = eval(args.adam_betas)
+    adam_betas = ast.literal_eval(args.adam_betas)
     if args.optimizer == 'adamw':
         optimizer_params.update({'beta1': adam_betas[0],
                                  'beta2': adam_betas[1],
@@ -539,12 +548,15 @@ def train(args):
                                  'beta2': adam_betas[1],
                                  'epsilon': args.adam_epsilon,
                                  })
+    if use_amp:
+        optimizer_params.update({'multi_precision': True})
     if args.comm_backend == 'horovod':
         trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optimizer_params)
     else:
         trainer = mx.gluon.Trainer(param_dict, args.optimizer, optimizer_params,
                                    update_on_kvstore=False)
-
+    if use_amp:
+        amp.init_trainer(trainer)
     log_span_loss = 0
     log_answerable_loss = 0
     log_total_loss = 0
@@ -584,9 +596,18 @@ def train(args):
                     loss_l.append(loss)
                     span_loss_l.append(span_loss)
                     answerable_loss_l.append(answerable_loss)
+            if use_amp:
+                with mx.autograd.record():
+                    with amp.scale_loss(loss_l, trainer) as loss_l:
+                        for loss in loss_l:
+                            loss.backward()
+                norm_clip_mult = num_workers * trainer._amp_loss_scaler.loss_scale
+            else:
+                with mx.autograd.record():
+                    for loss in loss_l:
+                        loss.backward()
+                norm_clip_mult = num_workers
 
-            for loss in loss_l:
-                loss.backward()
             # All Reduce the Step Loss
             log_span_loss += sum([ele.as_in_ctx(ctx_l[0]) for ele in span_loss_l]).asnumpy()
             log_total_loss += sum([ele.as_in_ctx(ctx_l[0])
@@ -598,7 +619,7 @@ def train(args):
 
         if args.max_grad_norm > 0:
             total_norm, ratio, is_finite = clip_grad_global_norm(
-                params, args.max_grad_norm * num_workers)
+                params, args.max_grad_norm * norm_clip_mult)
         else:
             total_norm = grad_global_norm(params)
 
@@ -610,7 +631,7 @@ def train(args):
             # gluon.trainer._scale is default to 1
             trainer.update(num_workers, ignore_stale_grad=True)
 
-        total_norm = total_norm / num_workers
+        total_norm = total_norm / norm_clip_mult
         if args.num_accumulated > 1:
             # set grad to zero for gradient accumulation
             qa_net.zero_grad()
@@ -651,7 +672,6 @@ def train(args):
             log_answerable_loss = 0
             log_total_loss = 0
             log_sample_num = 0
-            num_samples_per_update = 0
 
         if (step_num + 1) >= num_train_steps:
             toc = time.time()
@@ -808,8 +828,8 @@ def evaluate(args, last=True):
             str(ctx_l)))
 
     cfg, tokenizer, qa_net, use_segmentation = get_network(
-        args.model_name, ctx_l, args.classifier_dropout, dtype=args.eval_dtype)
-    if args.eval_dtype == 'float16':
+        args.model_name, ctx_l, args.classifier_dropout, dtype=args.dtype)
+    if args.dtype == 'float16':
         qa_net.cast('float16')
         qa_net.hybridize()
 
@@ -978,6 +998,10 @@ if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
     args = parse_args()
     if args.do_train:
+        if args.dtype == 'float16':
+            # Initialize amp if it's fp16 training
+            from mxnet import amp
+            amp.init()
         train(args)
     if args.do_eval:
         evaluate(args, last=not args.all_evaluate)

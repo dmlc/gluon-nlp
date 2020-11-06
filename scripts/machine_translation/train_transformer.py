@@ -441,8 +441,10 @@ def train(args):
             for sample_data, ctx in zip(sample_data_l, ctx_l):
                 if sample_data is None:
                     continue
-                src_token_ids, tgt_token_ids, src_valid_length, tgt_valid_length, sample_ids = sample_data
-                src_wc, tgt_wc, bs = src_valid_length.sum(), tgt_valid_length.sum(), src_token_ids.shape[0]
+                src_token_ids, tgt_token_ids, src_valid_length,\
+                tgt_valid_length, sample_ids = sample_data
+                src_wc, tgt_wc, bs = src_valid_length.sum(),\
+                                     tgt_valid_length.sum(), src_token_ids.shape[0]
                 loss_denom += tgt_wc - bs
                 log_loss_denom += tgt_wc - bs
                 log_wc += src_wc + tgt_wc
