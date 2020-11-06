@@ -15,7 +15,7 @@ args = parser.parse_args()
 if args.save_path is None:
     args.save_path = os.path.basename(args.dir) + '.csv'
 
-base_dir = 'squad_v2_horovod_fp16_rescale_20201105'
+base_dir = args.dir
 prefix = 'test_squad2_'
 
 dat_l = []
@@ -24,15 +24,16 @@ datetime_parser = '%Y-%m-%d %H:%M:%S,%f'
 for folder in sorted(os.listdir(base_dir)):
     if folder.startswith(prefix):
         model_name = folder[len(prefix):]
-        log_path = glob.glob(os.path.join(base_dir, folder, 'fintune*/finetune*.log'))[0]
+        log_path_l = glob.glob(os.path.join(base_dir, folder, 'fintune*/finetune*.log'))
         param_path_l = sorted(glob.glob(os.path.join(base_dir, folder, 'fintune*/*.params')))
-        if len(param_path_l) == 0:
+        if len(param_path_l) == 0 or len(log_path_l) == 0:
             best_f1_threshold = math.nan
             best_exact_threshold = math.nan
             best_f1 = math.nan
             best_em = math.nan
             time_spent_in_hours = math.nan
         else:
+            log_path = log_path_l[0]
             result_file = glob.glob(os.path.join(base_dir, folder, 'fintune*/best_results.json'))[0]
             with open(result_file, 'r') as in_f:
                 result_dat = json.load(in_f)
@@ -56,4 +57,5 @@ for folder in sorted(os.listdir(base_dir)):
                       'time_spent_in_hours': time_spent_in_hours})
 df = pd.DataFrame(dat_l)
 print(df)
+print('Saving to {}'.format(args.save_path))
 df.to_csv(args.save_path)
