@@ -49,8 +49,9 @@ bash question_answering/run_batch_squad.sh 1 1.1 submit_squad_v1_horovod_fp16.lo
 
 Also, after you have submitted the jobs, you may sync the results via
 ```bash
-bash question_answering/sync_batch_result.sh submit_squad_v2.log squad_v2_no_horovod
-bash question_answering/sync_batch_result.sh submit_squad_v2_horovod.log squad_v2_horovod
+bash question_answering/sync_batch_result.sh submit_squad_v2_fp32.log squad_v2_no_horovod
+bash question_answering/sync_batch_result.sh submit_squad_v2_horovod_fp32.log squad_v2_horovod_fp32
+bash question_answering/sync_batch_result.sh submit_squad_v2_horovod_fp16.log squad_v2_horovod_fp16
 ```
 
 Internally, it will train the following models on SQuAD 2.0 dataset:
