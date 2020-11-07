@@ -37,8 +37,14 @@ for folder in sorted(os.listdir(base_dir)):
             result_file = glob.glob(os.path.join(base_dir, folder, 'fintune*/best_results.json'))[0]
             with open(result_file, 'r') as in_f:
                 result_dat = json.load(in_f)
-            best_f1_threshold = result_dat['best_f1_thresh']
-            best_exact_threshold = result_dat['best_exact_thresh']
+            if 'best_f1_thresh' in result_dat:
+                best_f1_threshold = result_dat['best_f1_thresh']
+            else:
+                best_f1_threshold = math.nan
+            if 'best_exact_thresh' in result_dat:
+                best_exact_threshold = result_dat['best_exact_thresh']
+            else:
+                best_exact_threshold = math.nan
             best_f1 = result_dat['best_f1']
             best_em = result_dat['best_exact']
             with open(log_path, 'r') as in_f:
