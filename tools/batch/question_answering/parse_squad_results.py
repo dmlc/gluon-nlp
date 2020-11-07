@@ -39,14 +39,14 @@ for folder in sorted(os.listdir(base_dir)):
                 result_dat = json.load(in_f)
             if 'best_f1_thresh' in result_dat:
                 best_f1_threshold = result_dat['best_f1_thresh']
+                best_exact_threshold = result_dat['best_exact_thresh']
+                best_f1 = result_dat['best_f1']
+                best_em = result_dat['best_exact']
             else:
                 best_f1_threshold = math.nan
-            if 'best_exact_thresh' in result_dat:
-                best_exact_threshold = result_dat['best_exact_thresh']
-            else:
                 best_exact_threshold = math.nan
-            best_f1 = result_dat['best_f1']
-            best_em = result_dat['best_exact']
+                best_f1 = result_dat['f1']
+                best_em = result_dat['exact']
             with open(log_path, 'r') as in_f:
                 log_lines = in_f.readlines()
                 start_time_str = ' '.join(log_lines[0].split()[0:2])
