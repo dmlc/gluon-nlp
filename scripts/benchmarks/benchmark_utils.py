@@ -760,6 +760,7 @@ class GluonNLPBackboneBenchmark:
     def _inference_speed_memory(self, model_name: str, batch_size: int, sequence_length: int)\
             -> Tuple[float, Memory]:
         if self._use_fp16:
+            os.environ['export MXNET_FC_TRUE_FP16'] = '1'
             dtype = 'float16'
         else:
             dtype = 'float32'
