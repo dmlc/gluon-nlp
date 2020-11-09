@@ -328,7 +328,9 @@ for epoch_id in range(num_epochs):
 ```
 
 ```{.python .input}
-!rm -rf nsmc # clean up
+# clean up data
+import shutil
+shutil.rmtree('nsmc', True)
 ```
 
 So far, we've implemented a sentiment classifier of Naver movie review dataset
