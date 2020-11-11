@@ -5,7 +5,7 @@
 2. Phase 1 training with sequence length 128
 
 ```bash
-python run_pretraining.py \
+python3 run_pretraining.py \
   --model_name google_en_cased_bert_base \
   --optimizer adamw \
   --lr 1e-4 \
@@ -23,7 +23,7 @@ python run_pretraining.py \
 3. Phase 2 training with sequence length 512
 
 ```bash
-python run_pretraining.py \
+python3 run_pretraining.py \
   --model_name google_en_cased_bert_base \
   --optimizer adamw \
   --lr 1e-4 \
@@ -50,9 +50,4 @@ gluon_en_cased_bert_base
 ├── model-{short_hash}.yml    
 ```
 
-The pretrained model has been finetuned on SQUAD 2.0, obtaining 77.89/74.72.
-
-
-
-
-
+The pretrained model has been finetuned on SQUAD 2.0, obtaining F1/EM as 78.50/75.57. See also [question_answering](../../question_answering) for more details on the finetuning results.
