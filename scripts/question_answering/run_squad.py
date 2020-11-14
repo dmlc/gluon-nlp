@@ -199,7 +199,7 @@ class SquadDatasetProcessor:
                                          {'qas_id': bf.List(),
                                           'data': bf.Pad(val=self.pad_id, round_to=8),
                                           'valid_length': bf.Stack(),
-                                          'segment_ids': bf.Pad(),
+                                          'segment_ids': bf.Pad(round_to=8),
                                           'masks': bf.Pad(val=1, round_to=8),
                                           'is_impossible': bf.Stack(),
                                           'gt_start': bf.Stack(),
