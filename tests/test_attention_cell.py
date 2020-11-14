@@ -272,6 +272,9 @@ def test_gen_attn_mask(ctx):
 @pytest.mark.parametrize('method', ['transformer_xl', 'shaw', 't5'])
 @pytest.mark.parametrize('bidirectional', [False, True])
 @pytest.mark.parametrize('hybridize', [False, True])
+@pytest.mark.skip('Skip due to the MXNet Issue: '
+                  'https://github.com/apache/incubator-mxnet/issues/19524. '
+                  'We need to enable soon.')
 @pytest.mark.seed(123)
 def test_multi_head_rel_attn_score(num_heads, method, bidirectional, hybridize, ctx):
     batch_size = 6
