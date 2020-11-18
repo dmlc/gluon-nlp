@@ -60,7 +60,7 @@ def test_get_backbone(name, ctx):
 @pytest.mark.serial
 @pytest.mark.seed(123)
 @pytest.mark.parametrize('model_name',
-                         ['google_albert_base_v2',
+                         [# 'google_albert_base_v2',
                           'google_en_cased_bert_base',
                           'google_electra_small',
                           'fairseq_bart_base'])
@@ -68,7 +68,7 @@ def test_get_backbone(name, ctx):
 @pytest.mark.parametrize('layout', ['NT', 'TN'])
 @pytest.mark.skipif(not tvm_enabled(),
                     reason='TVM is not supported. So this test is skipped.')
-@pytest.mark.skip('TVM issue https://github.com/dmlc/gluon-nlp/issues/1425.')
+# google_albert_base_v2 is not working, tracked at https://github.com/dmlc/gluon-nlp/issues/1425
 def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
     tvm = try_import_tvm()
     from tvm import relay
