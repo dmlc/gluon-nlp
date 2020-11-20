@@ -73,7 +73,7 @@ if not os.path.exists(CACHE_PATH):
     os.makedirs(CACHE_PATH, exist_ok=True)
 
 
-def parse_args():
+def get_parser():
     parser = argparse.ArgumentParser(description='Transformer for Neural Machine Translation.')
     parser.add_argument('--train_src_corpus', type=str,
                         help='The source training corpus.')
@@ -175,12 +175,7 @@ def parse_args():
                         help='Communication backend.')
     parser.add_argument('--gpus', type=str,
                         help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
-    args = parser.parse_args()
-    if args.max_update > 0:
-        args.epochs = -1
-    logging_config(args.save_dir, console=True)
-    logging.info(args)
-    return args
+    return parser
 
 
 def validation(model, data_loader, ctx_l):
@@ -542,7 +537,12 @@ def train(args):
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
-    args = parse_args()
+    parser = get_parser()
+    args = parser.parse_args()
+    if args.max_update > 0:
+        args.epochs = -1
+    logging_config(args.save_dir, console=True)
+    logging.info(args)
     np.random.seed(args.seed)
     mx.random.seed(args.seed)
     random.seed(args.seed)
