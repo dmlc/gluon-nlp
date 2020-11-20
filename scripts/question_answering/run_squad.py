@@ -598,8 +598,8 @@ def train(args):
                     answerable_loss_l.append(answerable_loss)
             if use_amp:
                 with mx.autograd.record():
-                    with amp.scale_loss(loss_l, trainer) as loss_l:
-                        for loss in loss_l:
+                    with amp.scale_loss(loss_l, trainer) as amp_loss_l:
+                        for loss in amp_loss_l:
                             loss.backward()
                 norm_clip_mult = num_workers * trainer._amp_loss_scaler.loss_scale
             else:

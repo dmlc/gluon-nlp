@@ -705,6 +705,8 @@ class ShardedIterator(BaseSampler):
             self._part_len = part_len
 
     def __iter__(self):
+        # TODO(?), When the number of samples is large. We should improve the logic here.
+        #  Since the python list can cost lots of memory
         batches = list(self._sampler)
         part_batches = batches[self._start:self._end]
         if self._even_size and len(part_batches) < self._part_len:
@@ -718,7 +720,7 @@ class ShardedIterator(BaseSampler):
     
     def __repr__(self):
         ret = '{name}(\n' \
-            '  batch_num={batch_num},\n' \
+            '  total_batch_num={batch_num},\n' \
             '  part_batch_num={part_batch_num},\n' \
             '  num_parts={num_parts},\n' \
             '  part_index={part_index},\n' \

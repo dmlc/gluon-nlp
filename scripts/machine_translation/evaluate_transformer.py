@@ -29,6 +29,13 @@ def parse_args():
                         help='The source corpus for evaluation.')
     parser.add_argument('--tgt_corpus', type=str, default=None,
                         help='The target corpus for evaluation.')
+    parser.add_argument('--src_normalizer', choices=['no', 'moses'],
+                        default='moses', help='The sentence normalizer that will be '
+                                              'used to normalize the source sentence.')
+    parser.add_argument('--src_base_tokenizer', choices=['whitespace', 'moses',
+                                                         'no'],
+                        default='moses', help='The base tokenizer to tokenize the target '
+                                              'sentence into a list of tokens.')
     parser.add_argument('--src_tokenizer', choices=['spm',
                                                     'subword_nmt',
                                                     'yttm',
@@ -36,7 +43,15 @@ def parse_args():
                                                     'hf_wordpiece',
                                                     'hf_bpe'],
                         required=True, type=str,
-                        help='The source tokenizer. Only supports online encoding at present.')
+                        help='The source subword tokenizer. '
+                             'Only supports online encoding at present.')
+    parser.add_argument('--tgt_normalizer', choices=['no', 'moses'],
+                        default='moses', help='The sentence normalizer that will be '
+                                              'used to normalize the target sentence.')
+    parser.add_argument('--tgt_base_tokenizer', choices=['whitespace', 'moses',
+                                                         'no'],
+                        default='moses', help='The base tokenizer to tokenize the source '
+                                              'sentence into a list of tokens.')
     parser.add_argument('--tgt_tokenizer', choices=['spm',
                                                     'subword_nmt',
                                                     'yttm',
@@ -131,13 +146,45 @@ def create_tokenizer(tokenizer_type, model_path, vocab_path):
         raise NotImplementedError
 
 
+def get_normalizer(normalize_method, lang):
+    if normalize_method == 'moses':
+        return MosesNormalizer(lang)
+    elif normalize_method == 'no':
+        return lambda x: x
+    else:
+        raise NotImplementedError
+
+
+def get_base_tokenizer(method, lang):
+    """The base tokenization method
+
+    Parameters
+    ----------
+    method
+
+    lang
+
+    Returns
+    -------
+
+    """
+    if method == 'moses':
+        return tokenizers.create('moses', lang)
+    elif method == 'whitespace':
+        return tokenizers.create('whitespace')
+    elif method == 'no':
+        return None
+    else:
+        raise NotImplementedError
+
+
 def evaluate(args):
     ctx_l = [mx.cpu()] if args.gpus is None or args.gpus == '' else [mx.gpu(int(x)) for x in
                                                                      args.gpus.split(',')]
-    src_normalizer = MosesNormalizer(args.src_lang)
-    tgt_normalizer = MosesNormalizer(args.tgt_lang)
-    base_src_tokenizer = tokenizers.create('moses', args.src_lang)
-    base_tgt_tokenizer = tokenizers.create('moses', args.tgt_lang)
+    src_normalizer = get_normalizer(args.src_normalizer, args.src_lang)
+    tgt_normalizer = get_normalizer(args.src_normalizer, args.tgt_lang)
+    base_src_tokenizer = get_base_tokenizer(args.src_base_tokenizer, args.src_lang)
+    base_tgt_tokenizer = get_base_tokenizer(args.tgt_base_tokenizer, args.tgt_lang)
 
     src_tokenizer = create_tokenizer(args.src_tokenizer,
                                      args.src_subword_model_path,

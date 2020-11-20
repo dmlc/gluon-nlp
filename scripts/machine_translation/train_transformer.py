@@ -44,7 +44,7 @@ import mxnet as mx
 from mxnet import gluon
 from gluonnlp.models.transformer import TransformerModel
 from gluonnlp.utils.misc import logging_config, AverageSGDTracker, count_parameters,\
-    md5sum, grouper, init_comm
+    md5sum, grouper, init_comm, repeat
 from gluonnlp.data.sampler import (
     ConstWidthBucket,
     LinearWidthBucket,
@@ -53,6 +53,7 @@ from gluonnlp.data.sampler import (
     BoundedBudgetSampler,
     ShardedIterator
 )
+from tensorboardX import SummaryWriter
 import gluonnlp.data.batchify as bf
 from gluonnlp.data import Vocab
 from gluonnlp.data import tokenizers
@@ -72,7 +73,7 @@ if not os.path.exists(CACHE_PATH):
     os.makedirs(CACHE_PATH, exist_ok=True)
 
 
-def parse_args():
+def get_parser():
     parser = argparse.ArgumentParser(description='Transformer for Neural Machine Translation.')
     parser.add_argument('--train_src_corpus', type=str,
                         help='The source training corpus.')
@@ -174,12 +175,7 @@ def parse_args():
                         help='Communication backend.')
     parser.add_argument('--gpus', type=str,
                         help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
-    args = parser.parse_args()
-    if args.max_update > 0:
-        args.epochs = -1
-    logging_config(args.save_dir, console=True)
-    logging.info(args)
-    return args
+    return parser
 
 
 def validation(model, data_loader, ctx_l):
@@ -236,7 +232,6 @@ def load_dataset_with_cache(src_corpus_path: str,
                             tgt_tokenizer: BaseTokenizerWithVocab,
                             overwrite_cache: bool,
                             local_rank: int):
-    # TODO online h5py multi processing encode (Tao)
     src_md5sum = md5sum(src_corpus_path)
     tgt_md5sum = md5sum(tgt_corpus_path)
     cache_filepath = os.path.join(CACHE_PATH,
@@ -298,6 +293,9 @@ def create_tokenizer(tokenizer_type, model_path, vocab_path):
 def train(args):
     _, num_parts, rank, local_rank, _, ctx_l = init_comm(
         args.comm_backend, args.gpus)
+    use_amp = args.fp16
+    if use_amp:
+        from mxnet import amp
     src_tokenizer = create_tokenizer(args.src_tokenizer,
                                      args.src_subword_model_path,
                                      args.src_vocab_path)
@@ -332,9 +330,6 @@ def train(args):
     cfg.defrost()
     cfg.MODEL.src_vocab_size = len(src_vocab)
     cfg.MODEL.tgt_vocab_size = len(tgt_vocab)
-    if args.fp16:
-        raise NotImplementedError
-#        cfg.MODEL.dtype = 'float16'
     cfg.freeze()
     model = TransformerModel.from_cfg(cfg)
     model.initialize(mx.init.Xavier(magnitude=args.magnitude),
@@ -348,8 +343,7 @@ def train(args):
                                                     alpha=args.label_smooth_alpha,
                                                     from_logits=False)
     label_smooth_loss.hybridize()
-    rescale_loss = 100.0
-    
+
     if args.comm_backend == 'horovod':
         hvd.broadcast_parameters(model.collect_params(), root_rank=0)
     
@@ -361,22 +355,22 @@ def train(args):
         base_lr = args.lr
     lr_scheduler = InverseSquareRootScheduler(warmup_steps=args.warmup_steps, base_lr=base_lr,
                                               warmup_init_lr=args.warmup_init_lr)
-    trainer_settings = (model.collect_params(), 'adam',
-                        {'learning_rate': args.lr, 'beta1': 0.9,
-                         'beta2': 0.98, 'epsilon': 1e-9, 'lr_scheduler': lr_scheduler})
+    optimizer_params = {'learning_rate': args.lr, 'beta1': 0.9,
+                        'beta2': 0.98, 'epsilon': 1e-9,
+                        'lr_scheduler': lr_scheduler}
+    if args.fp16:
+        optimizer_params.update({'multi_precision': True})
     if args.comm_backend == 'horovod':
-        trainer = hvd.DistributedTrainer(*trainer_settings)
+        trainer = hvd.DistributedTrainer(model.collect_params(), 'adam', optimizer_params)
     else:
-        trainer = gluon.Trainer(*trainer_settings)
+        trainer = gluon.Trainer(model.collect_params(), 'adam', optimizer_params,
+                                update_on_kvstore=False)
     # Load Data
     if args.sampler == 'BoundedBudgetSampler':
         train_batch_sampler = BoundedBudgetSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
                                                    max_num_tokens=args.max_num_tokens,
                                                    max_num_sentences=args.max_num_sentences,
                                                    seed=args.seed)
-        if num_parts > 1:
-            train_batch_sampler = ShardedIterator(train_batch_sampler, num_parts=num_parts,
-                                                  part_index=rank)
     elif args.sampler == 'FixedBucketSampler':
         if args.comm_backend == 'horovod':
             raise NotImplementedError('FixedBucketSampler does not support horovod at present')
@@ -401,6 +395,15 @@ def train(args):
     else:
         raise NotImplementedError
 
+    num_updates_per_epoch = int(len(train_batch_sampler)
+                                / (num_parts * len(ctx_l)) / args.num_accumulated)
+
+    # Convert the batch sampler to multiple shards
+    if num_parts > 1:
+        train_batch_sampler = ShardedIterator(train_batch_sampler,
+                                              num_parts=num_parts,
+                                              part_index=rank)
+
     logging.info(train_batch_sampler)
 
     batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
@@ -422,36 +425,50 @@ def train(args):
     log_start_time = time.time()
     num_params, num_fixed_params = None, None
     # TODO(sxjscience) Add a log metric class
-    accum_count = 0
-    loss_denom = 0
-    n_train_iters = 0
-    log_wc = 0
-    log_avg_loss = 0.0
-    log_loss_denom = 0
-    epoch_id = 0
-    while (args.epochs < 0 or epoch_id < args.epochs): # when args.epochs < 0, the model will keep training
-        n_epoch_train_iters = 0
-        processed_batch_num = 0
-        train_multi_data_loader = grouper(train_data_loader, len(ctx_l))
-        is_last_batch = False
-        sample_data_l = next(train_multi_data_loader)
-        while not is_last_batch:
-            processed_batch_num += len(sample_data_l)
+    log_avg_loss_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
+    log_avg_loss_counter = 0
+    log_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
+
+    if local_rank == 0:
+        writer = SummaryWriter(logdir=os.path.join(args.save_dir, 'tensorboard'))
+    if use_amp:
+        amp.init_trainer(trainer)
+    train_multi_data_loader = grouper(repeat(train_data_loader), len(ctx_l))
+    # when args.epochs < 0, the model will keep training
+    if args.epochs < 0:
+        if args.max_update > 0:
+            total_train_iters = args.max_update
+            if args.num_averages > 0:
+                assert args.num_averages <= total_train_iters // args.save_iterval_update
+                avg_start_iter = (total_train_iters // args.save_iterval_update
+                                  - args.num_averages) * args.save_iterval_update
+            else:
+                avg_start_iter = -1
+        else:
+            total_train_iters = np.inf
+            avg_start_iter = -1
+    else:
+        total_train_iters = args.epochs * num_updates_per_epoch
+        if args.num_averages > 0:
+            assert args.num_averages <= args.epochs
+            avg_start_iter = (args.epochs - args.num_average) * num_updates_per_epoch
+        else:
+            avg_start_iter = -1
+    for train_iter in range(total_train_iters):
+        model.zero_grad()
+        for i in range(args.num_accumulated):
             loss_l = []
-            for sample_data, ctx in zip(sample_data_l, ctx_l):
-                if sample_data is None:
-                    continue
+            sample_data_l = next(train_multi_data_loader)
+            for j, (sample_data, ctx) in enumerate(zip(sample_data_l, ctx_l)):
                 src_token_ids, tgt_token_ids, src_valid_length,\
                 tgt_valid_length, sample_ids = sample_data
-                src_wc, tgt_wc, bs = src_valid_length.sum(),\
-                                     tgt_valid_length.sum(), src_token_ids.shape[0]
-                loss_denom += tgt_wc - bs
-                log_loss_denom += tgt_wc - bs
-                log_wc += src_wc + tgt_wc
                 src_token_ids = src_token_ids.as_in_ctx(ctx)
                 tgt_token_ids = tgt_token_ids.as_in_ctx(ctx)
                 src_valid_length = src_valid_length.as_in_ctx(ctx)
                 tgt_valid_length = tgt_valid_length.as_in_ctx(ctx)
+                src_wc, tgt_wc, bs = src_valid_length.sum(), \
+                                     tgt_valid_length.sum(), src_token_ids.shape[0]
+                log_wc_l[j] += src_wc + tgt_wc
                 with mx.autograd.record():
                     tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
                                      tgt_valid_length - 1)
@@ -461,69 +478,76 @@ def train(args):
                                                 sequence_length=tgt_valid_length - 1,
                                                 use_sequence_length=True,
                                                 axis=1)
-                    loss_l.append(loss.sum() / rescale_loss)
-            for l in loss_l:
-                l.backward()
-            accum_count += 1
-            try:
-                sample_data_l = next(train_multi_data_loader)
-            except StopIteration:
-                is_last_batch = True
-            if local_rank == 0 and num_params is None:
-                num_params, num_fixed_params = count_parameters(model.collect_params())
-                logging.info('Total Number of Parameters (not-fixed/fixed): {}/{}'
-                             .format(num_params, num_fixed_params))
-            sum_loss = sum([l.as_in_ctx(mx.cpu()) for l in loss_l]) * rescale_loss
-            log_avg_loss += sum_loss
-            mx.npx.waitall()
-            if accum_count == args.num_accumulated or is_last_batch:
-                # Update the parameters
-                n_train_iters += 1
-                n_epoch_train_iters += 1
-                trainer.step(loss_denom.asnumpy() / rescale_loss)
-                accum_count = 0
-                loss_denom = 0
-                model.zero_grad()
-                if (args.epochs > 0 and epoch_id >= args.epochs - args.num_averages) or \
-                   (args.max_update > 0 and n_train_iters >= args.max_update - args.num_averages * args.save_interval_update):
-                    model_averager.step()
-                if local_rank == 0 and \
-                   (n_epoch_train_iters % args.log_interval == 0 or is_last_batch):
-                    log_end_time = time.time()
-                    log_wc = log_wc.asnumpy()
-                    wps = log_wc / (log_end_time - log_start_time)
-                    log_avg_loss = (log_avg_loss / log_loss_denom).asnumpy()
-                    logging.info('[Epoch {} Batch {}/{}] loss={:.4f}, ppl={:.4f}, '
-                                 'throughput={:.2f}K wps, wc={:.2f}K, LR={}'
-                                 .format(epoch_id, processed_batch_num * num_parts,
-                                         len(train_data_loader), log_avg_loss, np.exp(log_avg_loss),
-                                         wps / 1000, log_wc / 1000, trainer.learning_rate))
-                    log_start_time = time.time()
-                    log_avg_loss = 0
-                    log_loss_denom = 0
-                    log_wc = 0
-                if local_rank == 0 and \
-                   (args.max_update > 0 and n_train_iters % args.save_interval_update == 0):
-                    n_update = n_train_iters // args.save_interval_update
-                    model.save_parameters(os.path.join(args.save_dir,
-                                                       'update{:d}.params'.format(n_update)),
-                                          deduplicate=True)
-                    avg_valid_loss = validation(model, val_data_loader, ctx_l)
-                    logging.info('[Update {}] validation loss/ppl={:.4f}/{:.4f}'
-                                 .format(n_update, avg_valid_loss, np.exp(avg_valid_loss)))
-                if args.max_update > 0 and n_train_iters >= args.max_update:
-                    break
-        if local_rank == 0:
-            model.save_parameters(os.path.join(args.save_dir,
-                                               'epoch{:d}.params'.format(epoch_id)),
-                                  deduplicate=True)
-            avg_valid_loss = validation(model, val_data_loader, ctx_l)
-            logging.info('[Epoch {}] validation loss/ppl={:.4f}/{:.4f}'
-                         .format(epoch_id, avg_valid_loss, np.exp(avg_valid_loss)))
+                    loss_l.append(loss.sum() / (tgt_valid_length - 1).sum())
+            if use_amp:
+                with mx.autograd.record():
+                    with amp.scale_loss(loss_l, trainer) as amp_loss_l:
+                        for loss in amp_loss_l:
+                            loss.backward()
+            else:
+                with mx.autograd.record():
+                    for loss in loss_l:
+                        loss.backward()
+            log_avg_loss_counter += 1
+            for j, loss in enumerate(loss_l):
+                log_avg_loss_l[j] += loss
+        # Print the total number of parameters
+        if local_rank == 0 and num_params is None:
+            num_params, num_fixed_params = count_parameters(model.collect_params())
+            logging.info('Total Number of Parameters (not-fixed/fixed): {}/{}'
+                         .format(num_params, num_fixed_params))
+        # Update the parameters
+        trainer.allreduce_grads()
+        trainer.update(len(ctx_l) * args.num_accumulated, ignore_stale_grad=True)
 
-        if args.max_update > 0 and n_train_iters >= args.max_update:
-            break
-        epoch_id += 1
+        if avg_start_iter > 0 and train_iter >= avg_start_iter:
+            model_averager.step()
+        if ((train_iter + 1) % args.log_interval == 0 or train_iter + 1 == total_train_iters):
+            if num_parts > 1:
+                # Use allreduce to get the gradients
+                log_wc = hvd.allreduce(log_wc_l[0], average=False)
+                log_wc = log_wc.asnumpy()
+                log_avg_loss = hvd.allreduce(log_avg_loss_l[0] / log_avg_loss_counter, average=True)
+                log_avg_loss = log_avg_loss.asnumpy()
+            else:
+                log_wc = sum([ele.asnumpy() for ele in log_wc_l])
+                log_avg_loss = sum([ele.asnumpy() / log_avg_loss_counter
+                                    for ele in log_avg_loss_l]) / len(log_avg_loss_l)
+            if local_rank == 0:
+                log_end_time = time.time()
+                wps = log_wc / (log_end_time - log_start_time)
+                epoch_id = train_iter // num_updates_per_epoch
+                logging.info('[Epoch {} Iter {}/{}] loss={:.4f}, ppl={:.4f}, '
+                             'throughput={:.2f}K wps, wc={:.2f}K, LR={}'
+                             .format(epoch_id, train_iter % num_updates_per_epoch + 1,
+                                     num_updates_per_epoch,
+                                     log_avg_loss, np.exp(log_avg_loss),
+                                     wps / 1000, log_wc / 1000, trainer.learning_rate))
+                writer.add_scalar('train_loss', log_avg_loss, train_iter)
+                writer.add_scalar('lr', trainer.learning_rate, train_iter)
+            # Reinitialize the log variables
+            log_start_time = time.time()
+            log_avg_loss_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
+            log_avg_loss_counter = 0
+            log_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
+        if local_rank == 0 and\
+                ((args.max_update > 0 and (train_iter + 1) % args.save_interval_update == 0)\
+                 or ((train_iter + 1) % num_updates_per_epoch == 0)\
+                 or train_iter + 1 == total_train_iters):
+            epoch_id = (train_iter + 1) // num_updates_per_epoch
+            if args.max_update <= 0:
+                model.save_parameters(os.path.join(args.save_dir,
+                                                   'epoch{}.params'.format(epoch_id)),
+                                      deduplicate=True)
+            else:
+                model.save_parameters(os.path.join(args.save_dir,
+                                                   'iter{}.params'.format(train_iter + 1)),
+                                      deduplicate=True)
+            avg_valid_loss = validation(model, val_data_loader, ctx_l)
+            logging.info('[Epoch {}][Iter {}/{}] validation loss/ppl={:.4f}/{:.4f}'
+                         .format(epoch_id, train_iter, total_train_iters,
+                                 avg_valid_loss, np.exp(avg_valid_loss)))
+            writer.add_scalar('valid_loss', avg_valid_loss, train_iter)
 
     if args.num_averages > 0:
         model_averager.copy_back(model.collect_params())  # TODO(sxjscience) Rewrite using update
@@ -533,8 +557,17 @@ def train(args):
 
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
-    args = parse_args()
+    parser = get_parser()
+    args = parser.parse_args()
+    if args.max_update > 0:
+        args.epochs = -1
+    logging_config(args.save_dir, console=True)
+    logging.info(args)
     np.random.seed(args.seed)
     mx.random.seed(args.seed)
     random.seed(args.seed)
+    if args.fp16:
+        # Initialize amp if it's fp16 training
+        from mxnet import amp
+        amp.init()
     train(args)

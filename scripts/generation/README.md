@@ -1,5 +1,7 @@
-#Generation
+#Sequence Generation
 
+
+## Generate Sequences from GPT-2
 Some of the examples below may include Unicode text characters. Set the environment variable:
 ```bash
 export PYTHONIOENCODING=UTF-8

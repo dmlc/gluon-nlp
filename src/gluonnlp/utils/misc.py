@@ -610,12 +610,16 @@ def init_comm(backend, gpus):
     Parameters
     ----------
     backend
+        The communication backend
     gpus
+
 
     Returns
     -------
     store
+        The kvstore
     num_workers
+        The total number of workers
     rank
     local_rank
     is_master_node
