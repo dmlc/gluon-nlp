@@ -53,6 +53,7 @@ from gluonnlp.data.sampler import (
     BoundedBudgetSampler,
     ShardedIterator
 )
+from tensorboardX import SummaryWriter
 import gluonnlp.data.batchify as bf
 from gluonnlp.data import Vocab
 from gluonnlp.data import tokenizers
@@ -236,7 +237,6 @@ def load_dataset_with_cache(src_corpus_path: str,
                             tgt_tokenizer: BaseTokenizerWithVocab,
                             overwrite_cache: bool,
                             local_rank: int):
-    # TODO online h5py multi processing encode (Tao)
     src_md5sum = md5sum(src_corpus_path)
     tgt_md5sum = md5sum(tgt_corpus_path)
     cache_filepath = os.path.join(CACHE_PATH,
@@ -429,7 +429,11 @@ def train(args):
     log_avg_loss = 0.0
     log_loss_denom = 0
     epoch_id = 0
-    while (args.epochs < 0 or epoch_id < args.epochs): # when args.epochs < 0, the model will keep training
+    if local_rank == 0:
+        writer = SummaryWriter()
+
+    # when args.epochs < 0, the model will keep training
+    while args.epochs < 0 or epoch_id < args.epochs:
         n_epoch_train_iters = 0
         processed_batch_num = 0
         train_multi_data_loader = grouper(train_data_loader, len(ctx_l))
@@ -498,6 +502,9 @@ def train(args):
                                  .format(epoch_id, processed_batch_num * num_parts,
                                          len(train_data_loader), log_avg_loss, np.exp(log_avg_loss),
                                          wps / 1000, log_wc / 1000, trainer.learning_rate))
+                    writer.add_scalar('train/variables', {'train_loss': log_avg_loss,
+                                                          'lr': trainer.learning_rate},
+                                      n_train_iters)
                     log_start_time = time.time()
                     log_avg_loss = 0
                     log_loss_denom = 0
@@ -511,6 +518,8 @@ def train(args):
                     avg_valid_loss = validation(model, val_data_loader, ctx_l)
                     logging.info('[Update {}] validation loss/ppl={:.4f}/{:.4f}'
                                  .format(n_update, avg_valid_loss, np.exp(avg_valid_loss)))
+                    writer.add_scalar('train/variables', {'avg_valid_loss': avg_valid_loss},
+                                      n_train_iters)
                 if args.max_update > 0 and n_train_iters >= args.max_update:
                     break
         if local_rank == 0:
