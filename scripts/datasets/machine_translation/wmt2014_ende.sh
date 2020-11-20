@@ -16,15 +16,12 @@ sacrebleu -t wmt14/full -l ${SRC}-${TGT} --echo src > ${SAVE_PATH}/test.raw.${SR
 sacrebleu -t wmt14/full -l ${SRC}-${TGT} --echo ref > ${SAVE_PATH}/test.raw.${TGT}
 
 
-# Clean and tokenize the training + dev corpus
+# Clean and tokenize the training + dev + test corpus
 cd ${SAVE_PATH}
 nlp_process clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus train.raw.${SRC} \
                       --tgt-corpus train.raw.${TGT} \
-                      --min-num-words 1 \
-                      --max-num-words 100 \
-                      --max-ratio 1.5 \
                       --src-save-path train.tok.${SRC} \
                       --tgt-save-path train.tok.${TGT}
 
@@ -32,13 +29,9 @@ nlp_process clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus dev.raw.${SRC} \
                       --tgt-corpus dev.raw.${TGT} \
-                      --min-num-words 1 \
-                      --max-num-words 100 \
-                      --max-ratio 1.5 \
                       --src-save-path dev.tok.${SRC} \
                       --tgt-save-path dev.tok.${TGT}
 
-# For test corpus, we will just tokenize the data
 nlp_process clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus test.raw.${SRC} \
@@ -60,19 +53,55 @@ nlp_process apply_subword --model ${SUBWORD_ALGO}\
                              --model-path ${SUBWORD_ALGO}.model \
                              --vocab-path ${SUBWORD_ALGO}.vocab \
                              --corpus train.tok.${LANG} \
-                             --save-path train.tok.${SUBWORD_ALGO}.${LANG}
+                             --save-path train.tok.${SUBWORD_ALGO}.${LANG}.unclean
 done
 
-# Apply the learned codes to the dev/test set
+# In addition, trim the source and target sentence of the training set to 1 - 250
+nlp_process clean_tok_para_corpus --src-lang ${SRC} \
+                      --tgt-lang ${TGT} \
+                      --src-tokenizer whitespace \
+                      --tgt-tokenizer whitespace \
+                      --src-corpus train.tok.${SUBWORD_ALGO}.${SRC}.unclean \
+                      --tgt-corpus train.tok.${SUBWORD_ALGO}.${TGT}.unclean \
+                      --src-save-path train.tok.${SUBWORD_ALGO}.${SRC} \
+                      --tgt-save-path train.tok.${SUBWORD_ALGO}.${TGT} \
+                      --min-num-words 1 \
+                      --max-num-words 250 \
+                      --max-ratio 1.5
+
+# Apply the learned codes to the dev set
 for LANG in ${SRC} ${TGT}
 do
-  for SPLIT in dev test
-  do
-    nlp_process apply_subword --model ${SUBWORD_ALGO} \
-                                 --output-type subword \
-                                 --model-path ${SUBWORD_ALGO}.model \
-                                 --vocab-path ${SUBWORD_ALGO}.vocab \
-                                 --corpus ${SPLIT}.tok.${LANG} \
-                                 --save-path ${SPLIT}.tok.${SUBWORD_ALGO}.${LANG}
-  done
+  nlp_process apply_subword --model ${SUBWORD_ALGO} \
+                               --output-type subword \
+                               --model-path ${SUBWORD_ALGO}.model \
+                               --vocab-path ${SUBWORD_ALGO}.vocab \
+                               --corpus dev.tok.${LANG} \
+                               --save-path dev.tok.${SUBWORD_ALGO}.${LANG}.unclean
+
+done
+# Trim the source and target sentence of the dev set to 1 - 250
+nlp_process clean_tok_para_corpus --src-lang ${SRC} \
+                      --tgt-lang ${TGT} \
+                      --src-tokenizer whitespace \
+                      --tgt-tokenizer whitespace \
+                      --src-corpus dev.tok.${SUBWORD_ALGO}.${SRC}.unclean \
+                      --tgt-corpus dev.tok.${SUBWORD_ALGO}.${TGT}.unclean \
+                      --src-save-path dev.tok.${SUBWORD_ALGO}.${SRC} \
+                      --tgt-save-path dev.tok.${SUBWORD_ALGO}.${TGT} \
+                      --min-num-words 1 \
+                      --max-num-words 250 \
+                      --max-ratio 1.5
+
+
+# Apply the learned codes to the test set
+for LANG in ${SRC} ${TGT}
+do
+  nlp_process apply_subword --model ${SUBWORD_ALGO} \
+                               --output-type subword \
+                               --model-path ${SUBWORD_ALGO}.model \
+                               --vocab-path ${SUBWORD_ALGO}.vocab \
+                               --corpus test.tok.${LANG} \
+                               --save-path test.tok.${SUBWORD_ALGO}.${LANG}
+
 done
