@@ -316,7 +316,7 @@ def masked_logsoftmax(att_score, mask, dtype=np.float32, axis: int = -1):
         else:
             try:
                 # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
-                from mxnet.contrib import amp
+                from mxnet import amp
                 if amp.amp._amp_initialized:
                     neg = -1e4
             except ImportError:
