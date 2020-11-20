@@ -502,9 +502,9 @@ def train(args):
                                  .format(epoch_id, processed_batch_num * num_parts,
                                          len(train_data_loader), log_avg_loss, np.exp(log_avg_loss),
                                          wps / 1000, log_wc / 1000, trainer.learning_rate))
-                    writer.add_scalar('train/variables', {'train_loss': log_avg_loss,
-                                                          'lr': trainer.learning_rate},
-                                      n_train_iters)
+                    writer.add_scalars('train/variables', {'train_loss': log_avg_loss,
+                                                           'lr': trainer.learning_rate},
+                                       n_train_iters)
                     log_start_time = time.time()
                     log_avg_loss = 0
                     log_loss_denom = 0
@@ -518,8 +518,8 @@ def train(args):
                     avg_valid_loss = validation(model, val_data_loader, ctx_l)
                     logging.info('[Update {}] validation loss/ppl={:.4f}/{:.4f}'
                                  .format(n_update, avg_valid_loss, np.exp(avg_valid_loss)))
-                    writer.add_scalar('train/variables', {'avg_valid_loss': avg_valid_loss},
-                                      n_train_iters)
+                    writer.add_scalars('train/variables', {'avg_valid_loss': avg_valid_loss},
+                                       n_train_iters)
                 if args.max_update > 0 and n_train_iters >= args.max_update:
                     break
         if local_rank == 0:
