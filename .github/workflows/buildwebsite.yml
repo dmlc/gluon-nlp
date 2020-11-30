@@ -33,7 +33,7 @@ jobs:
         run: |
           python -m pip install --quiet --upgrade pip
           python -m pip install --upgrade cython
-          python -m pip install --pre "mxnet>=2.0.0b20201130" -f https://dist.mxnet.io/python
+          python -m pip install --pre "mxnet>=2.0.0b20201127" -f https://dist.mxnet.io/python
           python -m pip install setuptools ipython sphinx>=1.5.5 sphinx-gallery nbsphinx sphinx_rtd_theme mxtheme sphinx-autodoc-typehints matplotlib Image recommonmark
 
       - name: Checkout repository(For push)
