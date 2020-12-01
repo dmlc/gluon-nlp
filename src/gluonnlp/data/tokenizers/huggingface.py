@@ -152,11 +152,11 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
         # Verify all tokens exist
         for token, idx in hf_vocab.items():
             assert self._vocab[token] == idx
-        if self._model_info['model']['type'] == 'BPE':
+        if self._model_info['decoder']['type'] == 'BPEDecoder':
             self._last_subtoken_id_set =\
                 frozenset([i for i, ele in enumerate(self._vocab.all_tokens)
                            if ele.endswith('</w>')])
-        elif self._model_info['model']['type'] == 'WordPiece':
+        elif self._model_info['decoder']['type'] == 'WordPiece':
             self._first_subtoken_id_set =\
                 frozenset([i for i, ele in enumerate(self._vocab.all_tokens)
                            if not ele.startswith('##')])
@@ -175,7 +175,7 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
 
     @property
     def model_type(self):
-        return self._model_info['model']['type']
+        return self._model_info['decoder']['type']
 
     @property
     def model_info(self):
@@ -197,7 +197,7 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
         ret
             The results
         """
-        assert self.model_type == 'BPE',\
+        assert self.model_type == 'BPEDecoder',\
             'Only supports BPE model. The model_type={}'.format(self.model_type)
         if isinstance(tokens, str):
             return tokens.endswith('</w>')
@@ -262,7 +262,7 @@ class HuggingFaceTokenizer(BaseTokenizerWithVocab):
               '   normalizer = {}\n' \
               '   vocab = {}\n' \
               ')'.format(self.__class__.__name__,
-                         self._model_info['model']['type'],
+                         self._model_info['decoder']['type'],
                          self._model_path,
                          self._model_info['normalizer'],
                          self._vocab)
@@ -417,8 +417,8 @@ class HuggingFaceBPETokenizer(LegacyHuggingFaceTokenizer):
             raise exp
         assert self._unk_token == self._vocab.unk_token
         self._model = tokenizers.CharBPETokenizer(
-            vocab_file=temp_hf_vocab_file if temp_hf_vocab_file else self._vocab_file,
-            merges_file=self._merges_file,
+            vocab=temp_hf_vocab_file if temp_hf_vocab_file else self._vocab_file,
+            merges=self._merges_file,
             unk_token=self._unk_token, suffix=self._suffix, dropout=self._dropout,
             lowercase=self._lowercase)
         if temp_hf_vocab_file:
@@ -513,8 +513,8 @@ class HuggingFaceByteBPETokenizer(LegacyHuggingFaceTokenizer):
             self._vocab = Vocab(all_tokens)
             temp_hf_vocab_file = None
         self._model = tokenizers.ByteLevelBPETokenizer(
-            vocab_file=temp_hf_vocab_file if temp_hf_vocab_file else self._vocab_file,
-            merges_file=self._merges_file,
+            vocab=temp_hf_vocab_file if temp_hf_vocab_file else self._vocab_file,
+            merges=self._merges_file,
             add_prefix_space=self._add_prefix_space, lowercase=self._lowercase,
             dropout=self._dropout, unicode_normalizer=self._unicode_normalizer,
             continuing_subword_prefix=self._continuing_subword_prefix,
@@ -655,7 +655,7 @@ class HuggingFaceWordPieceTokenizer(LegacyHuggingFaceTokenizer):
                [self._vocab.unk_token, self._vocab.sep_token, self._vocab.cls_token,
                 self._vocab.pad_token, self._vocab.mask_token]
         self._model = tokenizers.BertWordPieceTokenizer(
-            vocab_file=temp_hf_vocab_file if temp_hf_vocab_file else self._vocab_file,
+            vocab=temp_hf_vocab_file if temp_hf_vocab_file else self._vocab_file,
             unk_token=self._unk_token,
             sep_token=self._sep_token,
             cls_token=self._cls_token,

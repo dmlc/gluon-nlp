@@ -12,8 +12,7 @@ def get_parser():
                         '--checkpoints folder/epoch*.params or --checkpoints folder/update*.param')
     parser.add_argument('--begin', type=int, required=True, help='begin number of checkpoints')
     parser.add_argument('--end', type=int, required=True, help='end number of checkpoints')
-    parser.add_argument('--save-path', type=str, required=True,
-                        help='Path of the output file')
+    parser.add_argument('--save-path', type=str, required=True, help='Path of the output file')
     return parser
 
 
@@ -21,7 +20,7 @@ def main(args):
     assert args.begin >= 0
     assert args.end >= args.begin
     args.range = list(range(args.begin, args.end + 1))
-    
+
     ckpt_epochs_regexp = re.compile(r'(.*\/)?epoch(\d+)\.params')
     ckpt_updates_regexp = re.compile(r'(.*\/)?update(\d+)\.params')
     ckpt_path = args.checkpoints[0]
@@ -31,7 +30,7 @@ def main(args):
         ckpt_regexp = ckpt_updates_regexp
     else:
         raise Exception('Wrong checkpoints path format: {}'.format(ckpt_path))
-    
+
     ckpt_paths = []
     for path in args.checkpoints:
         m = ckpt_regexp.fullmatch(path)
@@ -50,7 +49,7 @@ def main(args):
             res[key] += ckpt[key]
     for key in keys:
         res[key] /= len(ckpt_paths)
-    mx.npx.save(args.save_path, res)
+    mx.npx.savez(args.save_path, **res)
 
 
 def cli_main():
