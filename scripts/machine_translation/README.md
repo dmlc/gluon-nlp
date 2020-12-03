@@ -238,3 +238,8 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --seed 123 \
     --fp16
 ```
+
+(test bleu)
+| Subword Model | Seed = 123  |
+|---------------|-------------|
+| yttm          | 26.81 |
