@@ -128,7 +128,7 @@ SRC=en
 TGT=de
 lr=0.0008
 num_accumulated=2
-max_num_tokens=5120
+max_num_tokens=4096
 epochs=30
 SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
