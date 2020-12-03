@@ -126,11 +126,11 @@ For "transformer_wmt_en_de_big" configuration
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.001
-num_accumulated=32
-max_num_tokens=3584
-max_update=15000
-SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}
+lr=0.0008
+num_accumulated=2
+max_num_tokens=5120
+epochs=30
+SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
@@ -145,8 +145,7 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --cfg transformer_wmt_en_de_big \
     --lr ${lr} \
     --sampler BoundedBudgetSampler \
-    --max_num_tokens ${max_num_tokens} \
-    --max_update ${max_update} \
+    --epochs ${epochs} \
     --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
     --seed 123 \
