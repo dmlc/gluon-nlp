@@ -130,7 +130,7 @@ lr=0.0008
 num_accumulated=2
 max_num_tokens=5120
 epochs=30
-SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_
+SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
@@ -144,6 +144,8 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --save_dir ${SAVE_DIR} \
     --cfg transformer_wmt_en_de_big \
     --lr ${lr} \
+    --num_accumulated ${num_accumulated} \
+    --max_num_tokens ${max_num_tokens} \
     --sampler BoundedBudgetSampler \
     --epochs ${epochs} \
     --warmup_steps 4000 \
