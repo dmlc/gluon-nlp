@@ -57,7 +57,7 @@ def get_model_zoo_checksum_dir():
 def get_repo_url():
     """Return the base URL for Gluon dataset and model repository """
     # TODO(sxjscience) Revise later by calling gluon.utils._get_repo_url
-    default_repo = 'https://gluonnlp-numpy-data.s3-accelerate.amazonaws.com/'
+    default_repo = 'https://gluonnlp-data.s3-accelerate.amazonaws.com/'
     repo_url = os.environ.get('MXNET_GLUON_REPO', default_repo)
     if repo_url[-1] != '/':
         repo_url = repo_url + '/'
