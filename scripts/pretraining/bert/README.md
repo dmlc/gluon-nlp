@@ -10,7 +10,7 @@ python3 run_pretraining.py \
   --optimizer adamw \
   --lr 1e-4 \
   --wd 0.01 \
-  --data_dir /BookCorpus/books1/epubtxt \
+  --data_dir BookCorpus/books1/epubtxt \
   --raw \
   --batch_size 32 \
   --num_dataset_workers 2 \

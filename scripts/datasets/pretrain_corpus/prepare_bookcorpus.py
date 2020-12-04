@@ -1,16 +1,10 @@
 """Prepare the bookcorpus dataset that contains raw text file."""
 
 import os
-import sys
-import glob
-import math
 import time
 import tarfile
 import argparse
-import multiprocessing
-from gluonnlp.utils.misc import download, load_checksum_stats
-from gluonnlp.utils.lazy_imports import try_import_wikiextractor
-from gluonnlp.base import get_repo_url
+from gluonnlp.utils.misc import download
 
 _DOWNLOAD_URL\
     = "https://the-eye.eu/public/AI/pile_preliminary_components/books1.tar.gz"
