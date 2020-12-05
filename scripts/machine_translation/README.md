@@ -157,10 +157,10 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
 Use the average_checkpoint cli to average the last 10 checkpoints
 
 ```bash
-gluon_average_checkpoint --checkpoints transformer_big_wmt2014_en_de_${SUBWORD_ALGO}/update*.params \
+gluon_average_checkpoint --checkpoints ${SAVE_DIR}/epoch*.params \
     --begin 21 \
     --end 30 \
-    --save-path transformer_big_wmt2014_en_de_${SUBWORD_ALGO}/avg_21_30.params
+    --save-path ${SAVE_DIR}/avg_21_30.params
 ```
 
 
@@ -168,10 +168,10 @@ Use the following command to inference/evaluate the Transformer model:
 
 ```bash
 python3 evaluate_transformer.py \
-    --param_path transformer_big_wmt2014_en_de_${SUBWORD_ALGO}/avg_21_30.params \
+    --param_path ${SAVE_DIR}/avg_21_30.params \
     --src_lang en \
     --tgt_lang de \
-    --cfg transformer_big_wmt2014_en_de_${SUBWORD_ALGO}/config.yml \
+    --cfg ${SAVE_DIR}/config.yml \
     --src_tokenizer ${SUBWORD_ALGO} \
     --tgt_tokenizer ${SUBWORD_ALGO} \
     --src_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
@@ -183,7 +183,7 @@ python3 evaluate_transformer.py \
 ```
 
 
-Test BLEU score with 3 seeds (evaluated via sacre BLEU):
+Test BLEU score (evaluated via SacreBLEU):
 
 - transformer_base
 
