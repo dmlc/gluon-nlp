@@ -52,12 +52,8 @@ __LANGUAGES_BANK = [
 _BASE_URL_TMPL\
     = "https://dumps.wikimedia.org/{lang}wiki/{date}/{lang}wiki-{date}-pages-articles.xml.bz2"
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
-print(_CURR_DIR)
-#exit()
 _URL_FILE_STATS_PATH = os.path.join(_CURR_DIR, '..', 'url_checksums', 'wikipedia.txt')
 _URL_FILE_STATS = load_checksum_stats(_URL_FILE_STATS_PATH)
-print(_URL_FILE_STATS)
-exit()
 
 _URLS = {
     'wikipedia-en-20200620':
