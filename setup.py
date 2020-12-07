@@ -44,7 +44,7 @@ requirements = [
     'sentencepiece==0.1.91',
     'protobuf',
     'pandas',
-    'tokenizers==0.8.1',
+    'tokenizers==0.9.4',
     'dataclasses;python_version<"3.7"',  # Dataclass for python <= 3.6
     'click>=7.0',  # Dependency of youtokentome
     'youtokentome>=1.0.6',
@@ -85,7 +85,7 @@ setup(
             'nltk',
             'h5py>=2.10',
             'scipy',
-            'wikiextractor',
+            'wikiextractor<3.0.0',
             'tqdm'
         ],
         'dev': [
