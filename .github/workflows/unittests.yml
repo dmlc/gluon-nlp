@@ -55,7 +55,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install setuptools pytest pytest-cov contextvars
           python -m pip install --upgrade cython
-          python -m pip install numpy==1.19.1
+          python -m pip install numpy==1.19.4
           python -m pip install --pre "mxnet>=2.0.0b20200802" -f https://dist.mxnet.io/python
           python -m pip install -U -e .[extras]
       - name: Build and Install TVM
