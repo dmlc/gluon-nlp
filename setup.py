@@ -76,6 +76,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'extras': [
+            'numpy<1.20.0'
             'boto3',
             'tqdm',
             'jieba',
