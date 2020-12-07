@@ -76,7 +76,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'extras': [
-            'numpy==1.19.4'
+            'numpy==1.19.4',
             'boto3',
             'tqdm',
             'jieba',
