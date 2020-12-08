@@ -54,7 +54,6 @@ _BASE_URL_TMPL\
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 _URL_FILE_STATS_PATH = os.path.join(_CURR_DIR, '..', 'url_checksums', 'wikipedia.txt')
 _URL_FILE_STATS = load_checksum_stats(_URL_FILE_STATS_PATH)
-
 _URLS = {
     'wikipedia-en-20200620':
         get_repo_url() + 'pretrain_corpus/wikipedia-en-20200620.tar.gz',
@@ -216,6 +215,8 @@ def main(args):
     elif args.mode == 'download_prepared':
         url = _URLS['wikipedia-en-20200620']
         file_hash = _URL_FILE_STATS[url]
+        print(file_hash)
+        exit()
         target_download_location = os.path.join(args.output,
                                                 os.path.basename(url))
         download(url, target_download_location, sha1_hash=file_hash)
