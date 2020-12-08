@@ -215,8 +215,6 @@ def main(args):
     elif args.mode == 'download_prepared':
         url = _URLS['wikipedia-en-20200620']
         file_hash = _URL_FILE_STATS[url]
-        print(file_hash)
-        exit()
         target_download_location = os.path.join(args.output,
                                                 os.path.basename(url))
         download(url, target_download_location, sha1_hash=file_hash)
