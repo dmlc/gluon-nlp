@@ -23,9 +23,9 @@ For "transformer_base" configuration
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.0016
-num_accumulated=32
-max_num_tokens=2700
+lr=0.002
+num_accumulated=16
+max_num_tokens=4096
 epochs=30
 SAVE_DIR=transformer_base_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${num_accumulated}_${max_num_tokens}_${epochs}
 python3 train_transformer.py \

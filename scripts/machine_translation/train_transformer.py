@@ -469,7 +469,7 @@ def train(args):
     # Since we will need to use the dynamic scaling in amp, we will manually call amp.unscale().
     # A scale that is larger than 1.0 can be problematic in this case.
     trainer._scale = 1.0
-    const_scale = 1000
+    const_scale = 10000
 
     for train_iter in range(total_train_iters):
         model.zero_grad()
