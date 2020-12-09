@@ -412,7 +412,7 @@ def multi_head_dot_attn(query, key, value,
         # 1. Expand the dimension of the mask:
         #   (B, L_query, L_mem) --> (B, 1, L_query, L_mem)
         if mask is not None:
-            mask = np.expand_dims(mask, axis=1)
+            mask = np.expand_dims(mask, axis=1).astype(np.bool)
         # 2. Calculate the attention weights
         #   Score: (B, N, L_query, C_Q) X (B, N, L_mem, C_Q) --> (B, N, L_query, L_mem)
         scores = npx.batch_dot(query, key, transpose_b=True)
@@ -433,7 +433,7 @@ def multi_head_dot_attn(query, key, value,
         # 1. Expand the dimension of the mask:
         #   (B, L_query, L_mem) --> (B, 1, L_query, L_mem)
         if mask is not None:
-            mask = np.expand_dims(mask, axis=1)
+            mask = np.expand_dims(mask, axis=1).astype(np.bool)
         # 2. Calculate the attention weights
         #   Score: (B, L_query, N, C_Q) X (B, L_mem, N, C_Q) --> (B, N, L_query, L_mem)
         if use_einsum:
@@ -459,7 +459,7 @@ def multi_head_dot_attn(query, key, value,
         # 1. Expand the dimension of the mask:
         #   (B, L_query, L_mem) --> (B, 1, L_query, L_mem)
         if mask is not None:
-            mask = np.expand_dims(mask, axis=1)
+            mask = np.expand_dims(mask, axis=1).astype(np.bool)
         # 2. Calculate the attention weights
         #   Score: (L_query, B, N, C_Q) X (L_mem, B, N, C_Q) --> (B, N, L_query, L_mem)
         #   This layout structure can be implemented very efficiently because B, N are consecutive
