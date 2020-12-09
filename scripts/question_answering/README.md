@@ -71,6 +71,19 @@ python3 run_squad.py \
     --overwrite_cache \
 ```
 
+In addition, to train models with pre-chosen hyper-parameters, you can try out the scripts in [commands](./commands).
+
+```
+# Run FP32 training on SQuAD 2.0
+bash commands/run_squad2_albert_base.sh 0 2.0 float32
+
+# Run HOROVOD + FP32 training on SQuAD 2.0
+bash commands/run_squad2_albert_base.sh 1 2.0 float32
+
+# Run HOROVOD + AMP on SQuAD 2.0
+bash commands/run_squad2_albert_base.sh 1 2.0 float16
+```
+
 ### Using Horovod
 
 We could speed up multi-GPU training via [Horovod](https://github.com/horovod/horovod).
