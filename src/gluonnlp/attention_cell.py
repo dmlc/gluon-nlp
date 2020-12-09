@@ -159,8 +159,7 @@ def gen_self_attn_mask(data,
             mask = mask * batch_ones.reshape((-1, 1, 1))
     else:
         raise NotImplementedError
-    mask = mask.astype(dtype)
-    return mask.astype(np.int32)
+    return mask.astype(np.bool)
 
 
 def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
@@ -241,7 +240,7 @@ def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
     else:
         query_length_ones = np.ones_like(data_steps)
         mask = query_length_ones.reshape((1, -1, 1)) * mem_mask
-    return mask.astype(np.int32)
+    return mask.astype(np.bool)
 
 
 # TODO(sxjscience) Default to einsum. Current it is not the default because
