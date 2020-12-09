@@ -13,7 +13,6 @@ from gluonnlp.data.tokenizers import BaseTokenizerWithVocab
 from gluonnlp.utils.preprocessing import match_tokens_with_char_spans
 from gluonnlp.layers import get_activation
 from gluonnlp.op import select_vectors_by_position
-from gluonnlp.attention_cell import masked_logsoftmax, masked_softmax
 import string
 import re
 import json
@@ -216,7 +215,7 @@ class ModelForQAConditionalV1(HybridBlock):
             Shape (batch_size, sequence_length)
         """
         start_scores = np.squeeze(self.start_scores(contextual_embedding), -1)
-        start_logits = masked_logsoftmax(start_scores, mask=p_mask, axis=-1)
+        start_logits = npx.masked_logsoftmax(start_scores, p_mask, axis=-1)
         return start_logits
 
     def get_end_logits(self, contextual_embedding, start_positions, p_mask):
@@ -250,8 +249,8 @@ class ModelForQAConditionalV1(HybridBlock):
                                            axis=-1)  # (B, N, T, 2C)
         end_scores = self.end_scores(concat_features)
         end_scores = np.squeeze(end_scores, -1)
-        end_logits = masked_logsoftmax(end_scores, mask=np.expand_dims(p_mask, axis=1),
-                                       axis=-1)
+        end_logits = npx.masked_logsoftmax(end_scores, mask=np.expand_dims(p_mask, axis=1),
+                                           axis=-1)
         return end_logits
 
     def get_answerable_logits(self, contextual_embedding, p_mask):
@@ -274,13 +273,13 @@ class ModelForQAConditionalV1(HybridBlock):
         """
         # Shape (batch_size, sequence_length)
         start_scores = np.squeeze(self.start_scores(contextual_embedding), -1)
-        start_score_weights = masked_softmax(start_scores, p_mask, axis=-1)
+        start_score_weights = npx.masked_softmax(start_scores, p_mask, axis=-1)
         start_agg_feature = npx.batch_dot(np.expand_dims(start_score_weights, axis=1),
                                             contextual_embedding)
         start_agg_feature = np.squeeze(start_agg_feature, 1)
         cls_feature = contextual_embedding[:, 0, :]
         answerable_scores = self.answerable_scores(np.concatenate([start_agg_feature,
-                                                                     cls_feature], axis=-1))
+                                                                   cls_feature], axis=-1))
         answerable_logits = npx.log_softmax(answerable_scores, axis=-1)
         return answerable_logits
 

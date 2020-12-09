@@ -244,90 +244,6 @@ def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
     return mask.astype(np.int32)
 
 
-# TODO(sxjscience) Directly implement a kernel for masked softmax
-def masked_softmax(att_score, mask, dtype=np.float32, axis: int = -1):
-    """Ignore the masked elements when calculating the softmax. The mask can be broadcastable.
-
-    Parameters
-    ----------
-    att_score : Symborl or NDArray
-        Shape (..., length, ...)
-    mask : Symbol or NDArray or None
-        Shape (..., length, ...)
-        1 --> The element is not masked
-        0 --> The element is masked
-    dtype
-        data type
-    axis
-        The axis to calculate the softmax. att_score.shape[axis] must be the same as mask.shape[axis]
-    Returns
-    -------
-    att_weights : Symborl or NDArray
-        Shape (..., length, ...)
-    """
-    if mask is not None:
-        # Fill in the masked scores with a very small value
-        neg = -1e18
-        if _np.dtype(dtype) == np.float16:
-            neg = -1e4
-        else:
-            try:
-                # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
-                from mxnet import amp
-                if amp.amp._amp_initialized:
-                    neg = -1e4
-            except ImportError:
-                pass
-
-        att_score = np.where(mask, att_score, neg)
-        logits = npx.softmax(att_score, axis=axis) * mask
-    else:
-        logits = npx.softmax(att_score, axis=axis)
-    return logits
-
-
-# TODO(sxjscience) Directly implement a kernel for masked logsoftmax
-def masked_logsoftmax(att_score, mask, dtype=np.float32, axis: int = -1):
-    """Ignore the masked elements when calculating the softmax. The mask can be broadcastable.
-
-    Parameters
-    ----------
-    att_score : Symborl or NDArray
-        Shape (..., length, ...)
-    mask : Symbol or NDArray or None
-        Shape (..., length, ...)
-        mask = 1 --> not masked
-        mask = 0 --> masked
-    dtype
-        data type
-    axis
-        The axis to calculate the softmax. att_score.shape[axis] must be the same as mask.shape[axis]
-    Returns
-    -------
-    logits : Symborl or NDArray
-        Shape (..., length, ...)
-        The masked values will be all zero
-    """
-    if mask is not None:
-        # Fill in the masked scores with a very small value
-        neg = -1e18
-        if _np.dtype(dtype) == np.float16:
-            neg = -1e4
-        else:
-            try:
-                # if AMP (automatic mixed precision) is enabled, -1e18 will cause NaN.
-                from mxnet import amp
-                if amp.amp._amp_initialized:
-                    neg = -1e4
-            except ImportError:
-                pass
-        att_score = np.where(mask, att_score, neg)
-        logits = np.where(mask, npx.log_softmax(att_score, axis=axis), -np.inf)
-    else:
-        logits = npx.log_softmax(att_score, axis=axis)
-    return logits
-
-
 # TODO(sxjscience) Default to einsum. Current it is not the default because
 #   1) einsum is super-slow: https://github.com/apache/incubator-mxnet/issues/18043
 def dot_attn_score(query, key, scaled=True, normalized=False, eps=1E-6,
@@ -506,7 +422,7 @@ def multi_head_dot_attn(query, key, value,
             scores = scores + edge_scores
         if scaled:
             scores = scores / scale
-        attn_weights = masked_softmax(scores, mask, dtype=dtype, axis=-1)
+        attn_weights = npx.masked_softmax(scores, mask, axis=-1)
         attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (B, N, L_mem, C_V) --> (B, L_query, N * C_V)
@@ -526,12 +442,12 @@ def multi_head_dot_attn(query, key, value,
             scores = np.einsum('binc,bjnc->bnij', query, key)
         else:
             scores = npx.batch_dot(np.swapaxes(query, 1, 2), np.swapaxes(key, 1, 2),
-                                     transpose_b=True)
+                                   transpose_b=True)
         if edge_scores is not None:
             scores = scores + edge_scores
         if scaled:
             scores = scores / scale
-        attn_weights = masked_softmax(scores, mask, dtype=dtype)
+        attn_weights = npx.masked_softmax(scores, mask, axis=-1)
         attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (B, L_mem, N, C_V) --> (B, L_query, N * C_V)
@@ -562,7 +478,7 @@ def multi_head_dot_attn(query, key, value,
             scores = scores + edge_scores
         if scaled:
             scores = scores / scale
-        attn_weights = masked_softmax(scores, mask, dtype=dtype)
+        attn_weights = npx.masked_softmax(scores, mask, axis=-1)
         attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (L_mem, B, N, C_V) --> (L_query, B, N * C_V)
