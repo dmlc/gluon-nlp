@@ -69,8 +69,8 @@ class ModelForQABasic(HybridBlock):
         scores = self.qa_outputs(contextual_embeddings)
         start_scores = scores[:, :, 0]
         end_scores = scores[:, :, 1]
-        start_logits = npx.masked_logsoftmax(start_scores, mask=p_mask, axis=-1)
-        end_logits = npx.masked_logsoftmax(end_scores, mask=p_mask, axis=-1)
+        start_logits = npx.masked_logsoftmax(start_scores, mask=p_mask.astype(np.bool), axis=-1)
+        end_logits = npx.masked_logsoftmax(end_scores, mask=p_mask.astype(np.bool), axis=-1)
         return start_logits, end_logits
 
     def inference(self, tokens, token_types, valid_length, p_mask,
@@ -116,8 +116,8 @@ class ModelForQABasic(HybridBlock):
         scores = self.qa_outputs(contextual_embeddings)
         start_scores = scores[:, :, 0]
         end_scores = scores[:, :, 1]
-        start_logits = npx.masked_logsoftmax(start_scores, mask=p_mask, axis=-1)
-        end_logits = npx.masked_logsoftmax(end_scores, mask=p_mask, axis=-1)
+        start_logits = npx.masked_logsoftmax(start_scores, mask=p_mask.astype(np.bool), axis=-1)
+        end_logits = npx.masked_logsoftmax(end_scores, mask=p_mask.astype(np.bool), axis=-1)
         # The shape of start_top_index will be (..., start_top_n)
         start_top_logits, start_top_index = mx.npx.topk(start_logits, k=start_top_n, axis=-1,
                                                         ret_typ='both')
@@ -194,7 +194,7 @@ class ModelForQAConditionalV1(HybridBlock):
             Shape (batch_size, sequence_length)
         """
         start_scores = np.squeeze(self.start_scores(contextual_embedding), -1)
-        start_logits = npx.masked_logsoftmax(start_scores, mask=p_mask, axis=-1)
+        start_logits = npx.masked_logsoftmax(start_scores, mask=p_mask.astype(np.bool), axis=-1)
         return start_logits
 
     def get_end_logits(self, contextual_embedding, start_positions, p_mask):
@@ -228,7 +228,8 @@ class ModelForQAConditionalV1(HybridBlock):
                                            axis=-1)  # (B, N, T, 2C)
         end_scores = self.end_scores(concat_features)
         end_scores = np.squeeze(end_scores, -1)
-        end_logits = npx.masked_logsoftmax(end_scores, mask=np.expand_dims(p_mask, axis=1),
+        end_logits = npx.masked_logsoftmax(end_scores,
+                                           mask=np.expand_dims(p_mask, axis=1).astype(np.bool),
                                            axis=-1)
         return end_logits
 
@@ -252,7 +253,7 @@ class ModelForQAConditionalV1(HybridBlock):
         """
         # Shape (batch_size, sequence_length)
         start_scores = np.squeeze(self.start_scores(contextual_embedding), -1)
-        start_score_weights = npx.masked_softmax(start_scores, p_mask, axis=-1)
+        start_score_weights = npx.masked_softmax(start_scores, p_mask.astype(np.bool), axis=-1)
         start_agg_feature = npx.batch_dot(np.expand_dims(start_score_weights, axis=1),
                                           contextual_embedding)
         start_agg_feature = np.squeeze(start_agg_feature, 1)

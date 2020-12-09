@@ -312,8 +312,7 @@ def multi_head_dot_attn(query, key, value,
                         scaled: bool = True, normalized: bool = False,
                         eps: float = 1E-6, query_head_units: Optional[int] = None,
                         layout: str = 'NKT',
-                        use_einsum: bool = False,
-                        dtype=np.float32):
+                        use_einsum: bool = False):
     """Multihead dot product attention between the query, key, value.
 
     scaled is False, normalized is False:
@@ -556,8 +555,7 @@ class MultiHeadAttentionCell(HybridBlock):
                                    scaled=self._scaled, normalized=self._normalized,
                                    eps=self._eps,
                                    query_head_units=self._query_head_units,
-                                   layout=self._layout, use_einsum=self._use_einsum,
-                                   dtype=self._dtype)
+                                   layout=self._layout, use_einsum=self._use_einsum)
 
     def __repr__(self):
         s = '{name}(\n' \
