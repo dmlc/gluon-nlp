@@ -522,7 +522,7 @@ def train(args):
         if args.comm_backend == 'horovod':
             # All-Reduce the loss_denom_l
             assert len(loss_denom_l) == 1
-            loss_denom = hvd.allreduce(loss_denom_l[0], average=False)
+            loss_denom = hvd.allreduce(loss_denom_l[0], average=False).asnumpy()
         else:
             loss_denom = sum([ele.asnumpy() for ele in loss_denom_l])
         if use_amp:
