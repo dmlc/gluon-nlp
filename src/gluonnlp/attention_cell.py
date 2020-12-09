@@ -290,7 +290,8 @@ def masked_logsoftmax(att_score, mask, axis: int = -1):
     if mask is None:
         return npx.log_softmax(att_score, axis=axis)
     else:
-        return npx.masked_log_softmax(att_score, mask.astype(np.bool), axis=axis)
+        mask = mask.astype(np.bool)
+        return np.where(mask, npx.masked_log_softmax(att_score, mask, axis=axis), -np.inf)
 
 
 # TODO(sxjscience) Default to einsum. Current it is not the default because
