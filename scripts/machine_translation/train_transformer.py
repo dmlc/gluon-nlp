@@ -469,7 +469,7 @@ def train(args):
     # Since we will need to use the dynamic scaling in amp, we will manually call amp.unscale().
     # A scale that is larger than 1.0 can be problematic in this case.
     trainer._scale = 1.0
-    const_scale = 100
+    const_scale = 1000
 
     for train_iter in range(total_train_iters):
         model.zero_grad()
@@ -569,11 +569,12 @@ def train(args):
                 wps = log_wc / (log_end_time - log_start_time)
                 epoch_id = train_iter // num_updates_per_epoch
                 logging.info('[Epoch {} Iter {}/{}] loss={:.4f}, ppl={:.4f}, '
-                             'throughput={:.2f}K wps, wc={:.2f}K, LR={}'
+                             'throughput={:.2f}K wps, wc={:.2f}K, LR={}, gnorm={:.4f}'
                              .format(epoch_id, train_iter % num_updates_per_epoch + 1,
                                      num_updates_per_epoch,
                                      log_avg_loss, np.exp(log_avg_loss),
-                                     wps / 1000, log_wc / 1000, trainer.learning_rate))
+                                     wps / 1000, log_wc / 1000, trainer.learning_rate,
+                                     log_avg_grad_norm))
                 writer.add_scalar('train_loss', log_avg_loss, train_iter)
                 writer.add_scalar('lr', trainer.learning_rate, train_iter)
                 writer.add_scalar('grad_norm', log_avg_grad_norm, train_iter)
