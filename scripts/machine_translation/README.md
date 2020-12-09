@@ -211,7 +211,7 @@ To train with Pre-LN, you can specify the [transformer_base_pre_ln.yml](./transf
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.002
+lr=0.0016
 num_accumulated=16
 max_num_tokens=4096
 epochs=60
