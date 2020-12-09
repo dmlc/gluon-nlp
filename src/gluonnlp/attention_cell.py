@@ -243,6 +243,56 @@ def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
     return mask.astype(np.bool)
 
 
+def masked_softmax(att_score, mask, axis: int = -1):
+    """Ignore the masked elements when calculating the softmax. The mask can be broadcastable.
+    Parameters
+    ----------
+    att_score : Symborl or NDArray
+        Shape (..., length, ...)
+    mask : Symbol or NDArray or None
+        Shape (..., length, ...)
+        1 --> The element is not masked
+        0 --> The element is masked
+    axis
+        The axis to calculate the softmax. att_score.shape[axis] must be the same as mask.shape[axis]
+
+    Returns
+    -------
+    att_weights : Symborl or NDArray
+        Shape (..., length, ...)
+    """
+    if mask is None:
+        return npx.softmax(att_score, axis=axis)
+    else:
+        return npx.masked_softmax(att_score, mask.astype(np.bool), axis=axis)
+
+
+def masked_logsoftmax(att_score, mask, axis: int = -1):
+    """Ignore the masked elements when calculating the softmax. The mask can be broadcastable.
+
+    Parameters
+    ----------
+    att_score : Symborl or NDArray
+        Shape (..., length, ...)
+    mask : Symbol or NDArray or None
+        Shape (..., length, ...)
+        mask = 1 --> not masked
+        mask = 0 --> masked
+    axis
+        The axis to calculate the softmax. att_score.shape[axis] must be the same as mask.shape[axis]
+
+    Returns
+    -------
+    logits : Symborl or NDArray
+        Shape (..., length, ...)
+        The masked values will be all zero
+    """
+    if mask is None:
+        return npx.log_softmax(att_score, axis=axis)
+    else:
+        return npx.masked_log_softmax(att_score, mask.astype(np.bool), axis=axis)
+
+
 # TODO(sxjscience) Default to einsum. Current it is not the default because
 #   1) einsum is super-slow: https://github.com/apache/incubator-mxnet/issues/18043
 def dot_attn_score(query, key, scaled=True, normalized=False, eps=1E-6,
