@@ -61,6 +61,7 @@ class ModelForQABasic(HybridBlock):
             Shape (batch_size, sequence_length)
             The log-softmax scores that the position is the end position.
         """
+        p_mask = p_mask.astype(np.bool)
         # Get contextual embedding with the shape (batch_size, sequence_length, C)
         if self.use_segmentation:
             contextual_embeddings = self.backbone(tokens, token_types, valid_length)
@@ -69,8 +70,8 @@ class ModelForQABasic(HybridBlock):
         scores = self.qa_outputs(contextual_embeddings)
         start_scores = scores[:, :, 0]
         end_scores = scores[:, :, 1]
-        start_logits = npx.masked_logsoftmax(start_scores, mask=p_mask.astype(np.bool), axis=-1)
-        end_logits = npx.masked_logsoftmax(end_scores, mask=p_mask.astype(np.bool), axis=-1)
+        start_logits = npx.masked_logsoftmax(start_scores, mask=p_mask, axis=-1)
+        end_logits = npx.masked_logsoftmax(end_scores, mask=p_mask, axis=-1)
         return start_logits, end_logits
 
     def inference(self, tokens, token_types, valid_length, p_mask,
@@ -109,6 +110,7 @@ class ModelForQABasic(HybridBlock):
             Shape (batch_size, end_top_n)
         """
         # Shape (batch_size, sequence_length, C)
+        p_mask = p_mask.astype(np.bool)
         if self.use_segmentation:
             contextual_embeddings = self.backbone(tokens, token_types, valid_length)
         else:
@@ -116,8 +118,8 @@ class ModelForQABasic(HybridBlock):
         scores = self.qa_outputs(contextual_embeddings)
         start_scores = scores[:, :, 0]
         end_scores = scores[:, :, 1]
-        start_logits = npx.masked_logsoftmax(start_scores, mask=p_mask.astype(np.bool), axis=-1)
-        end_logits = npx.masked_logsoftmax(end_scores, mask=p_mask.astype(np.bool), axis=-1)
+        start_logits = npx.masked_logsoftmax(start_scores, mask=p_mask, axis=-1)
+        end_logits = npx.masked_logsoftmax(end_scores, mask=p_mask, axis=-1)
         # The shape of start_top_index will be (..., start_top_n)
         start_top_logits, start_top_index = mx.npx.topk(start_logits, k=start_top_n, axis=-1,
                                                         ret_typ='both')
