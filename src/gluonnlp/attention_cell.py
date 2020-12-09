@@ -470,7 +470,7 @@ def multi_head_dot_attn(query, key, value,
             scores = scores + edge_scores
         if scaled:
             scores = scores / scale
-        attn_weights = npx.masked_softmax(scores, mask, axis=-1)
+        attn_weights = masked_softmax(scores, mask, axis=-1)
         attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (B, N, L_mem, C_V) --> (B, L_query, N * C_V)
@@ -495,7 +495,7 @@ def multi_head_dot_attn(query, key, value,
             scores = scores + edge_scores
         if scaled:
             scores = scores / scale
-        attn_weights = npx.masked_softmax(scores, mask, axis=-1)
+        attn_weights = masked_softmax(scores, mask, axis=-1)
         attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (B, L_mem, N, C_V) --> (B, L_query, N * C_V)
@@ -526,7 +526,7 @@ def multi_head_dot_attn(query, key, value,
             scores = scores + edge_scores
         if scaled:
             scores = scores / scale
-        attn_weights = npx.masked_softmax(scores, mask, axis=-1)
+        attn_weights = masked_softmax(scores, mask, axis=-1)
         attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (L_mem, B, N, C_V) --> (L_query, B, N * C_V)
