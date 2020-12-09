@@ -24,9 +24,9 @@ SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
 lr=0.0016
-num_accumulated=16
-max_num_tokens=4096
-epochs=60
+num_accumulated=32
+max_num_tokens=2700
+epochs=30
 SAVE_DIR=transformer_base_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${num_accumulated}_${max_num_tokens}_${epochs}
 python3 train_transformer.py \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
@@ -45,7 +45,7 @@ python3 train_transformer.py \
     --max_num_tokens ${max_num_tokens} \
     --epochs ${epochs} \
     --warmup_steps 4000 \
-    --warmup_init_lr 1e-07 \
+    --warmup_init_lr 0.0 \
     --seed 123 \
     --fp16 \
     --gpus 0,1,2,3
@@ -62,9 +62,9 @@ For example, with horovod + amp training, the previous command will become
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.0016
-num_accumulated=16
-max_num_tokens=4096
+lr=0.0008
+num_accumulated=32
+max_num_tokens=3584
 epochs=60
 SAVE_DIR=transformer_base_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${num_accumulated}_${max_num_tokens}_${epochs}
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
@@ -85,7 +85,7 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --max_num_tokens ${max_num_tokens} \
     --epochs ${epochs} \
     --warmup_steps 4000 \
-    --warmup_init_lr 1e-07 \
+    --warmup_init_lr 0.0 \
     --seed 123 \
     --fp16
 ```

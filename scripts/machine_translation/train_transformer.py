@@ -560,7 +560,7 @@ def train(args):
             else:
                 log_wc = sum([ele.asnumpy() for ele in log_wc_l])
                 log_avg_loss =\
-                    sum([log_avg_loss_l[i].asnumpy() / log_avg_loss_denom_l[i]
+                    sum([log_avg_loss_l[i].asnumpy() / log_avg_loss_denom_l[i].asnumpy()
                          for i in range(len(log_avg_loss_l))]) / len(log_avg_loss_l)
                 log_avg_grad_norm = sum(log_avg_grad_norm_l) / len(log_avg_grad_norm_l)
 
