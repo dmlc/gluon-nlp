@@ -401,8 +401,8 @@ def train(args):
     else:
         raise NotImplementedError
 
-    num_updates_per_epoch = int(len(train_batch_sampler)
-                                / (num_parts * len(ctx_l)) / args.num_accumulated)
+    num_updates_per_epoch = int(math.ceil(len(train_batch_sampler)
+                                          / (num_parts * len(ctx_l)) / args.num_accumulated))
     # Convert the batch sampler to multiple shards
     if num_parts > 1:
         train_batch_sampler = ShardedIterator(train_batch_sampler,
