@@ -60,6 +60,9 @@ from gluonnlp.data import tokenizers
 from gluonnlp.data.tokenizers import BaseTokenizerWithVocab, huggingface
 from gluonnlp.lr_scheduler import InverseSquareRootScheduler
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
+from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm
+
+
 try:
     import horovod.mxnet as hvd
 except ImportError:
@@ -131,6 +134,9 @@ def get_parser():
                         help='Batch size. Number of tokens per gpu in a minibatch.')
     parser.add_argument('--val_batch_size', type=int, default=16,
                         help='Batch size for evaluation.')
+    parser.add_argument('--max_grad_norm', type=float, default=None,
+                        help='Max gradient norm. When not specified, the gradient '
+                             'clipping will not be used.')
     parser.add_argument('--num_buckets', type=int, default=20, help='Bucket number.')
     parser.add_argument('--bucket_scheme', type=str, default='exp',
                         help='Strategy for generating bucket keys. It supports: '
@@ -397,7 +403,6 @@ def train(args):
 
     num_updates_per_epoch = int(len(train_batch_sampler)
                                 / (num_parts * len(ctx_l)) / args.num_accumulated)
-
     # Convert the batch sampler to multiple shards
     if num_parts > 1:
         train_batch_sampler = ShardedIterator(train_batch_sampler,
@@ -420,14 +425,17 @@ def train(args):
     for v in model.collect_params().values():
         if v.grad_req != 'null':
             v.grad_req = 'add'
-    model.zero_grad()
+    params = [p for p in model.collect_params().values() if p.grad_req != 'null']
     model_averager = AverageSGDTracker(model.collect_params())
     log_start_time = time.time()
     num_params, num_fixed_params = None, None
+
     # TODO(sxjscience) Add a log metric class
     log_avg_loss_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
-    log_avg_loss_counter = 0
+    # Maintain the denominator of the loss.
+    log_avg_loss_denom_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
     log_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
+    log_avg_grad_norm_l = []
 
     if local_rank == 0:
         writer = SummaryWriter(logdir=os.path.join(args.save_dir, 'tensorboard'))
@@ -454,8 +462,18 @@ def train(args):
             avg_start_iter = (args.epochs - args.num_average) * num_updates_per_epoch
         else:
             avg_start_iter = -1
+
+    # Here, we are manually setting up the scale to 1.0 because
+    # in horovod, the scale can be the number of workers:
+    # See the code here: https://github.com/horovod/horovod/blob/125115583b7029196e2ec530decd4209459d5479/horovod/mxnet/__init__.py#L141
+    # Since we will need to use the dynamic scaling in amp, we will manually call amp.unscale().
+    # A scale that is larger than 1.0 can be problematic in this case.
+    trainer._scale = 1.0
+    const_scale = 100
+
     for train_iter in range(total_train_iters):
         model.zero_grad()
+        loss_denom_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
         for i in range(args.num_accumulated):
             loss_l = []
             sample_data_l = next(train_multi_data_loader)
@@ -469,6 +487,9 @@ def train(args):
                 src_wc, tgt_wc, bs = src_valid_length.sum(), \
                                      tgt_valid_length.sum(), src_token_ids.shape[0]
                 log_wc_l[j] += src_wc + tgt_wc
+                token_count = (tgt_valid_length - 1).sum()
+                loss_denom_l[j] += token_count / const_scale
+                log_avg_loss_denom_l[j] += token_count / const_scale
                 with mx.autograd.record():
                     tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
                                      tgt_valid_length - 1)
@@ -478,7 +499,9 @@ def train(args):
                                                 sequence_length=tgt_valid_length - 1,
                                                 use_sequence_length=True,
                                                 axis=1)
-                    loss_l.append(loss.sum() / (tgt_valid_length - 1).sum())
+                    loss = loss.sum() / const_scale
+                    loss_l.append(loss)
+                log_avg_loss_l[j] += loss
             if use_amp:
                 with mx.autograd.record():
                     with amp.scale_loss(loss_l, trainer) as amp_loss_l:
@@ -488,31 +511,59 @@ def train(args):
                 with mx.autograd.record():
                     for loss in loss_l:
                         loss.backward()
-            log_avg_loss_counter += 1
-            for j, loss in enumerate(loss_l):
-                log_avg_loss_l[j] += loss
+
         # Print the total number of parameters
         if local_rank == 0 and num_params is None:
             num_params, num_fixed_params = count_parameters(model.collect_params())
             logging.info('Total Number of Parameters (not-fixed/fixed): {}/{}'
                          .format(num_params, num_fixed_params))
-        # Update the parameters
+        # All-Reduce the gradient
         trainer.allreduce_grads()
-        trainer.update(len(ctx_l) * args.num_accumulated, ignore_stale_grad=True)
+        if args.comm_backend == 'horovod':
+            # All-Reduce the loss_denom_l
+            assert len(loss_denom_l) == 1
+            loss_denom = hvd.allreduce(loss_denom_l[0], average=False)
+        else:
+            loss_denom = sum([ele.asnumpy() for ele in loss_denom_l])
+        if use_amp:
+            # We need to first unscale the gradient and then perform allreduce.
+            grad_scale = trainer.amp_loss_scale * loss_denom
+        else:
+            grad_scale = loss_denom
+        if args.max_grad_norm is not None:
+            total_norm, ratio, is_finite\
+                = clip_grad_global_norm(params, args.max_grad_norm * grad_scale)
+            total_norm = total_norm / grad_scale
+        else:
+            total_norm = grad_global_norm(params)
+            total_norm = total_norm / grad_scale
+        log_avg_grad_norm_l.append(total_norm)
+
+        trainer.update(grad_scale, ignore_stale_grad=True)
 
         if avg_start_iter > 0 and train_iter >= avg_start_iter:
             model_averager.step()
+
         if ((train_iter + 1) % args.log_interval == 0 or train_iter + 1 == total_train_iters):
-            if num_parts > 1:
-                # Use allreduce to get the gradients
+            if args.comm_backend == 'horovod':
+                # Use allreduce to get the total number of tokens and loss
                 log_wc = hvd.allreduce(log_wc_l[0], average=False)
                 log_wc = log_wc.asnumpy()
-                log_avg_loss = hvd.allreduce(log_avg_loss_l[0] / log_avg_loss_counter, average=True)
+                log_avg_loss = hvd.allreduce(log_avg_loss_l[0] / log_avg_loss_denom_l[0],
+                                             average=True)
                 log_avg_loss = log_avg_loss.asnumpy()
+
+                # All-reduce the gradient norm
+                log_avg_grad_norm = mx.np.array(sum(log_avg_grad_norm_l)
+                                                / len(log_avg_grad_norm_l), ctx=ctx_l[0])
+                log_avg_grad_norm = hvd.allreduce(log_avg_grad_norm, average=True).asnumpy()
             else:
                 log_wc = sum([ele.asnumpy() for ele in log_wc_l])
-                log_avg_loss = sum([ele.asnumpy() / log_avg_loss_counter
-                                    for ele in log_avg_loss_l]) / len(log_avg_loss_l)
+                log_avg_loss =\
+                    sum([log_avg_loss_l[i].asnumpy() / log_avg_loss_denom_l[i]
+                         for i in range(len(log_avg_loss_l))]) / len(log_avg_loss_l)
+                log_avg_grad_norm = sum(log_avg_grad_norm_l) / len(log_avg_grad_norm_l)
+
             if local_rank == 0:
                 log_end_time = time.time()
                 wps = log_wc / (log_end_time - log_start_time)
@@ -525,11 +576,14 @@ def train(args):
                                      wps / 1000, log_wc / 1000, trainer.learning_rate))
                 writer.add_scalar('train_loss', log_avg_loss, train_iter)
                 writer.add_scalar('lr', trainer.learning_rate, train_iter)
+                writer.add_scalar('grad_norm', log_avg_grad_norm, train_iter)
             # Reinitialize the log variables
             log_start_time = time.time()
             log_avg_loss_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
-            log_avg_loss_counter = 0
+            log_avg_loss_denom_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
+            log_avg_grad_norm_l = []
             log_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
+
         if local_rank == 0 and\
                 ((args.max_update > 0 and (train_iter + 1) % args.save_interval_update == 0)\
                  or ((train_iter + 1) % num_updates_per_epoch == 0)\
@@ -543,6 +597,8 @@ def train(args):
                 model.save_parameters(os.path.join(args.save_dir,
                                                    'iter{}.params'.format(train_iter + 1)),
                                       deduplicate=True)
+
+            # TODO(?) One way to improve the current validation is to support multi-node validation.
             avg_valid_loss = validation(model, val_data_loader, ctx_l)
             logging.info('[Epoch {}][Iter {}/{}] validation loss/ppl={:.4f}/{:.4f}'
                          .format(epoch_id, train_iter, total_train_iters,
