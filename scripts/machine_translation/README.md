@@ -62,10 +62,10 @@ For example, with horovod + amp training, the previous command will become
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.0008
-num_accumulated=32
-max_num_tokens=3584
-epochs=60
+lr=0.002
+num_accumulated=16
+max_num_tokens=4096
+epochs=30
 SAVE_DIR=transformer_base_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${num_accumulated}_${max_num_tokens}_${epochs}
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
