@@ -243,7 +243,7 @@ def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
     return mask.astype(np.bool)
 
 
-def masked_softmax(att_score, mask, axis: int = -1, scale=None):
+def masked_softmax(att_score, mask, axis: int = -1, temperature=None):
     """Ignore the masked elements when calculating the softmax. The mask can be broadcastable.
 
     Parameters
@@ -256,8 +256,8 @@ def masked_softmax(att_score, mask, axis: int = -1, scale=None):
         0 --> The element is masked
     axis
         The axis to calculate the softmax. att_score.shape[axis] must be the same as mask.shape[axis]
-    scale
-        The scale factor. It scales down the scores before applying the softmax.
+    temperature
+        The temperature. It scales down the scores before applying the softmax.
 
     Returns
     -------
@@ -265,14 +265,10 @@ def masked_softmax(att_score, mask, axis: int = -1, scale=None):
         Shape (..., length, ...)
     """
     if mask is None:
-        ret = npx.softmax(att_score, axis=axis)
-        if scale is None:
-            return ret
-        else:
-            return ret / scale
+        return npx.softmax(att_score, axis=axis, temperature=temperature)
     else:
         return npx.masked_softmax(att_score, mask=mask.astype(np.bool),
-                                  axis=axis, temperature=scale)
+                                  axis=axis, temperature=temperature)
 
 
 def masked_logsoftmax(att_score, mask, axis: int = -1):
@@ -415,7 +411,7 @@ def multi_head_dot_attn(query, key, value,
         scores = npx.batch_dot(query, key, transpose_b=True)
         if edge_scores is not None:
             scores = scores + edge_scores
-        attn_weights = masked_softmax(scores, mask, axis=-1, scale=scale)
+        attn_weights = masked_softmax(scores, mask, axis=-1, temperature=scale)
         attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (B, N, L_mem, C_V) --> (B, L_query, N * C_V)
@@ -438,7 +434,7 @@ def multi_head_dot_attn(query, key, value,
                                    transpose_b=True)
         if edge_scores is not None:
             scores = scores + edge_scores
-        attn_weights = masked_softmax(scores, mask, axis=-1, scale=scale)
+        attn_weights = masked_softmax(scores, mask, axis=-1, temperature=scale)
         attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (B, L_mem, N, C_V) --> (B, L_query, N * C_V)
@@ -467,7 +463,7 @@ def multi_head_dot_attn(query, key, value,
                                      key.transpose((1, 2, 3, 0)))
         if edge_scores is not None:
             scores = scores + edge_scores
-        attn_weights = masked_softmax(scores, mask, axis=-1, scale=scale)
+        attn_weights = masked_softmax(scores, mask, axis=-1, temperature=scale)
         attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (L_mem, B, N, C_V) --> (L_query, B, N * C_V)
