@@ -248,7 +248,7 @@ def masked_softmax(att_score, mask, axis: int = -1, scale=None):
 
     Parameters
     ----------
-    att_score : Symborl or NDArray
+    att_score : Symbol or NDArray
         Shape (..., length, ...)
     mask : Symbol or NDArray or None
         Shape (..., length, ...)
@@ -271,8 +271,8 @@ def masked_softmax(att_score, mask, axis: int = -1, scale=None):
         else:
             return ret / scale
     else:
-        return npx.masked_softmax(att_score, mask.astype(np.bool),
-                                  axis=axis, scale_factor=scale)
+        return npx.masked_softmax(att_score, mask=mask.astype(np.bool),
+                                  axis=axis, temperature=scale)
 
 
 def masked_logsoftmax(att_score, mask, axis: int = -1):
