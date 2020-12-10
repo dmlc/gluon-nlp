@@ -502,7 +502,7 @@ def train(args):
                                                 sequence_length=tgt_valid_length - 1,
                                                 use_sequence_length=True,
                                                 axis=1)
-                    loss = loss.sum() / const_scale
+                    loss = loss.sum()
                     loss_l.append(loss)
                 log_avg_loss_l[j] += loss
             if use_amp:
@@ -520,6 +520,7 @@ def train(args):
             num_params, num_fixed_params = count_parameters(model.collect_params())
             logging.info('Total Number of Parameters (not-fixed/fixed): {}/{}'
                          .format(num_params, num_fixed_params))
+
         # All-Reduce the gradient
         trainer.allreduce_grads()
         if args.comm_backend == 'horovod':
@@ -542,7 +543,7 @@ def train(args):
             total_norm = total_norm / grad_scale
         log_avg_grad_norm_l.append(total_norm)
 
-        trainer.update(grad_scale, ignore_stale_grad=True)
+        trainer.update(loss_denom, ignore_stale_grad=True)
 
         if avg_start_iter > 0 and train_iter >= avg_start_iter:
             model_averager.step()
