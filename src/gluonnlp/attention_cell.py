@@ -395,8 +395,7 @@ def multi_head_dot_attn(query, key, value,
         key = l2_normalize(key, axis=-1, eps=eps)
     if scaled:
         if query_head_units is None:
-            query_shape = npx.shape_array(query)
-            scale = np.sqrt(query_shape[-1])
+            raise NotImplementedError('You will need to specify query_head_units!')
         else:
             scale = math.sqrt(query_head_units)
     else:
