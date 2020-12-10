@@ -104,7 +104,7 @@ Use the following command to inference/evaluate the Transformer model:
 ```bash
 SUBWORD_ALGO=yttm
 python3 evaluate_transformer.py \
-    --param_path transformer_base_wmt2014_en_de_${SUBWORD_ALGO}/avg_25_29.params \
+    --param_path ${SAVE_DIR}/avg_25_29.params \
     --src_lang en \
     --tgt_lang de \
     --cfg transformer_base_wmt2014_en_de_${SUBWORD_ALGO}/config.yml \
