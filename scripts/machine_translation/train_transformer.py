@@ -502,7 +502,7 @@ def train(args):
                                                 sequence_length=tgt_valid_length - 1,
                                                 use_sequence_length=True,
                                                 axis=1)
-                    loss = loss.sum()
+                    loss = loss.sum() / const_scale
                     loss_l.append(loss)
                 log_avg_loss_l[j] += loss
             if use_amp:
