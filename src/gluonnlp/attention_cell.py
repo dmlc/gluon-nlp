@@ -243,8 +243,9 @@ def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
     return mask.astype(np.bool)
 
 
-def masked_softmax(att_score, mask, axis: int = -1):
+def masked_softmax(att_score, mask, axis: int = -1, scale=None):
     """Ignore the masked elements when calculating the softmax. The mask can be broadcastable.
+
     Parameters
     ----------
     att_score : Symborl or NDArray
@@ -255,6 +256,8 @@ def masked_softmax(att_score, mask, axis: int = -1):
         0 --> The element is masked
     axis
         The axis to calculate the softmax. att_score.shape[axis] must be the same as mask.shape[axis]
+    scale
+        The scale factor. It scales down the scores before applying the softmax.
 
     Returns
     -------
@@ -262,9 +265,14 @@ def masked_softmax(att_score, mask, axis: int = -1):
         Shape (..., length, ...)
     """
     if mask is None:
-        return npx.softmax(att_score, axis=axis)
+        ret = npx.softmax(att_score, axis=axis)
+        if scale is None:
+            return ret
+        else:
+            return ret / scale
     else:
-        return npx.masked_softmax(att_score, mask.astype(np.bool), axis=axis)
+        return npx.masked_softmax(att_score, mask.astype(np.bool),
+                                  axis=axis, scale_factor=scale)
 
 
 def masked_logsoftmax(att_score, mask, axis: int = -1):
@@ -292,68 +300,6 @@ def masked_logsoftmax(att_score, mask, axis: int = -1):
     else:
         mask = mask.astype(np.bool)
         return np.where(mask, npx.masked_log_softmax(att_score, mask, axis=axis), -np.inf)
-
-
-# TODO(sxjscience) Default to einsum. Current it is not the default because
-#   1) einsum is super-slow: https://github.com/apache/incubator-mxnet/issues/18043
-def dot_attn_score(query, key, scaled=True, normalized=False, eps=1E-6,
-                   layout='NT'):
-    """The inner function call to calculate the score used in dot-product attention.
-
-    We support multiple leading batch dimensions.
-
-    scaled is True:
-        D(h_q, h_k) = <h_q, h_k> / sqrt(dim_q)
-
-    normalized is True:
-            D(h_q, h_k) = <h_q / ||h_q||, h_k / ||h_k||>
-
-    both scaled and normalized:
-            D(h_q, h_k) = <h_q / ||h_q||, h_k / ||h_k||> / sqrt(dim_q)
-
-    Parameters
-    ----------
-    query : symbol or ndarray
-        - layout is 'NT'
-            (B0, ..., BN, query_length, query_dim)
-        - layout is 'TN'
-            (query_length, B0, ..., BN, query_dim)
-    key : symbol or ndarray
-        - layout is 'NT'
-            (B0, ..., BN, key_length, key_dim)
-        - layout is 'TN'
-            (key_length, B0, ..., BN, key_dim)
-    scaled : bool
-        Whether to divide the query by the square-root of the query_dim
-        If True: D(h_q, h_k) = <h_q, h_k> / sqrt(dim_q)
-    normalized : bool
-        Whether to normalize the query and the key embeddings
-        If True: D(h_q, h_k) = <h_q / ||h_q||, h_k / ||h_k||>
-    eps : float
-        The epsilon used in the normalization
-    layout
-        The layout of the layer. Can be 'TN' or 'NT'.
-
-    Returns
-    -------
-    scores : symbol or ndarray
-        (B0, ..., BN, query_length, key_length)
-    """
-    if normalized:
-        query = l2_normalize(query, -1, eps=eps)
-        key = l2_normalize(key, -1, eps=eps)
-    if scaled:
-        query_shape = npx.shape_array(query)
-        # TODO(sxjscience) Remove .astype(np.float32).
-        #  Wait for https://github.com/apache/incubator-mxnet/issues/18084
-        query_units = query_shape[-1].astype(np.float32)
-        query = query / np.sqrt(query_units)
-    if layout == 'NT':
-        scores = npx.batch_dot(query, key, transpose_b=True)
-    else:
-        raise NotImplementedError('layout={} is not supported.'
-                                  ' Currently, only layout = "NT" is implemented!'.format(layout))
-    return scores
 
 
 def multi_head_dot_attn(query, key, value,
@@ -469,9 +415,7 @@ def multi_head_dot_attn(query, key, value,
         scores = npx.batch_dot(query, key, transpose_b=True)
         if edge_scores is not None:
             scores = scores + edge_scores
-        if scaled:
-            scores = scores / scale
-        attn_weights = masked_softmax(scores, mask, axis=-1)
+        attn_weights = masked_softmax(scores, mask, axis=-1, scale=scale)
         attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (B, N, L_mem, C_V) --> (B, L_query, N * C_V)
@@ -494,9 +438,7 @@ def multi_head_dot_attn(query, key, value,
                                    transpose_b=True)
         if edge_scores is not None:
             scores = scores + edge_scores
-        if scaled:
-            scores = scores / scale
-        attn_weights = masked_softmax(scores, mask, axis=-1)
+        attn_weights = masked_softmax(scores, mask, axis=-1, scale=scale)
         attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (B, L_mem, N, C_V) --> (B, L_query, N * C_V)
@@ -525,9 +467,7 @@ def multi_head_dot_attn(query, key, value,
                                      key.transpose((1, 2, 3, 0)))
         if edge_scores is not None:
             scores = scores + edge_scores
-        if scaled:
-            scores = scores / scale
-        attn_weights = masked_softmax(scores, mask, axis=-1)
+        attn_weights = masked_softmax(scores, mask, axis=-1, scale=scale)
         attn_weights = npx.dropout(attn_weights, p=dropout)
         # 3. Calculate the context vector
         # (B, N, L_query, L_mem) X (L_mem, B, N, C_V) --> (L_query, B, N * C_V)
