@@ -107,7 +107,7 @@ python3 evaluate_transformer.py \
     --param_path ${SAVE_DIR}/avg_25_29.params \
     --src_lang en \
     --tgt_lang de \
-    --cfg transformer_base_wmt2014_en_de_${SUBWORD_ALGO}/config.yml \
+    --cfg ${SAVE_DIR}/config.yml \
     --src_tokenizer ${SUBWORD_ALGO} \
     --tgt_tokenizer ${SUBWORD_ALGO} \
     --src_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
