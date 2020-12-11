@@ -605,6 +605,7 @@ def train(args):
             log_avg_loss_denom_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
             log_avg_grad_norm = 0
             log_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
+            log_iter_num = 0
 
         if local_rank == 0 and\
                 ((args.max_update > 0 and (train_iter + 1) % args.save_interval_update == 0)\
