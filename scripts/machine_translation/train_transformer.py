@@ -407,7 +407,8 @@ def train(args):
     if num_parts > 1:
         train_batch_sampler = ShardedIterator(train_batch_sampler,
                                               num_parts=num_parts,
-                                              part_index=rank)
+                                              part_index=rank,
+                                              even_size=True)
 
     logging.info(train_batch_sampler)
 
@@ -521,7 +522,6 @@ def train(args):
             num_params, num_fixed_params = count_parameters(model.collect_params())
             logging.info('Total Number of Parameters (not-fixed/fixed): {}/{}'
                          .format(num_params, num_fixed_params))
-
         # All-Reduce the gradient
         trainer.allreduce_grads()
         if args.comm_backend == 'horovod':

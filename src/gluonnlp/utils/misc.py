@@ -322,7 +322,22 @@ def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return itertools.zip_longest(*args, fillvalue=fillvalue)
 
+
 def repeat(iterable, count=None):
+    """Repeat a basic iterator for multiple rounds
+
+    Parameters
+    ----------
+    iterable
+        The basic iterable
+    count
+        Repeat the basic iterable for "count" times. If it is None, it will be an infinite iterator.
+
+    Returns
+    -------
+    new_iterable
+        A new iterable in which the basic iterator has been repeated for multiple rounds.
+    """
     if count is None:
         while True:
             for sample in iterable:
@@ -331,6 +346,7 @@ def repeat(iterable, count=None):
         for i in range(count):
             for sample in iterable:
                 yield sample
+
 
 def parse_ctx(data_str):
     import mxnet as mx

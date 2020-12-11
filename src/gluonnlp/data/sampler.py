@@ -682,12 +682,14 @@ class ShardedIterator(BaseSampler):
     def __init__(self, sampler: BaseSampler,
                  num_parts: int = 1,
                  part_index: int = 0,
-                 even_size: bool = False):
+                 even_size: bool = False,
+                 seed: Optional[int] = None):
         assert part_index < num_parts, 'part_index should be less than num_parts'
         self._sampler = sampler
         self._num_parts = num_parts
         self._part_index = part_index
         self._even_size = even_size
+        self._rng = np.random.RandomState(seed)
 
         length = len(sampler)
         if not even_size:
@@ -710,7 +712,7 @@ class ShardedIterator(BaseSampler):
         batches = list(self._sampler)
         part_batches = batches[self._start:self._end]
         if self._even_size and len(part_batches) < self._part_len:
-            candidates = random.sample(batches, k=self._part_len-len(part_batches))
+            candidates = self._rng.choice(batches, size=self._part_len-len(part_batches))
             part_batches.extend(candidates)
         for batch in part_batches:
             yield batch
