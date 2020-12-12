@@ -468,11 +468,11 @@ def train(args):
     # in horovod, the scale can be the number of workers:
     # See the code here: https://github.com/horovod/horovod/blob/125115583b7029196e2ec530decd4209459d5479/horovod/mxnet/__init__.py#L141
     # To ensure that the code works for both
-    # trainer._scale = 1.0
     # if args.max_num_tokens > 0:
     #     const_scale = args.max_num_tokens * args.num_accumulated
     # else:
     #     const_scale = 10000
+    trainer._scale = 1.0
     const_scale = 1.0
 
     for train_iter in range(total_train_iters):
@@ -539,7 +539,7 @@ def train(args):
         if args.comm_backend == 'horovod':
             # In horovod, the scale is the number of workers:
             # See the code here: https://github.com/horovod/horovod/blob/125115583b7029196e2ec530decd4209459d5479/horovod/mxnet/__init__.py#L141
-            update_scale = 1
+            update_scale = len(ctx_l) * num_parts
         else:
             update_scale = len(ctx_l) * num_parts
 
