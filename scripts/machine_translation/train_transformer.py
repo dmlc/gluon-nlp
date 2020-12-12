@@ -526,7 +526,7 @@ def train(args):
         for p in params:
             if p.grad_req != 'null':
                 for j, ctx in enumerate(ctx_l):
-                    grad = p.grad()
+                    grad = p.grad(ctx=ctx)
                     grad /= loss_denom_l[j]
         # All-Reduce the gradient
         trainer.allreduce_grads()
