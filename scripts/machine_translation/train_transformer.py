@@ -587,7 +587,7 @@ def train(args):
             if local_rank == 0:
                 log_end_time = time.time()
                 wps = log_wc / (log_end_time - log_start_time)
-                wpb = log_wc / log_iter_num / num_parts
+                wpb = log_wc / log_iter_num / num_parts / len(ctx_l)
                 epoch_id = train_iter // num_updates_per_epoch
                 logging.info('[Epoch {} Iter {}/{}] loss={:.4f}, ppl={:.4f}, '
                              'throughput={:.2f}K wps, wc={:.2f}K, wpb={:.2f}K, LR={}, gnorm={:.4f}'
