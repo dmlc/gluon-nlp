@@ -437,6 +437,7 @@ def train(args):
     # Maintain the denominator of the loss.
     log_avg_loss_denom_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
     log_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
+    log_tgt_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
     log_avg_grad_norm = 0
     log_iter_num = 0
 
@@ -494,6 +495,7 @@ def train(args):
                 src_wc, tgt_wc, bs = src_valid_length.sum(), \
                                      tgt_valid_length.sum(), src_token_ids.shape[0]
                 log_wc_l[j] += src_wc + tgt_wc
+                log_tgt_wc_l[j] += tgt_wc
                 token_count = (tgt_valid_length - 1).sum()
                 loss_denom_l[j] += token_count / const_scale
                 log_avg_loss_denom_l[j] += token_count / const_scale
@@ -555,13 +557,14 @@ def train(args):
         if ((train_iter + 1) % args.log_interval == 0 or train_iter + 1 == total_train_iters):
             if args.comm_backend == 'horovod':
                 # Use allreduce to get the total number of tokens and loss
-                log_wc = hvd.allreduce(log_wc_l[0], average=False)
-                log_wc = log_wc.asnumpy()
+                log_wc = hvd.allreduce(log_wc_l[0], average=False).asnumpy()
+                log_tgt_wc = hvd.allreduce(log_tgt_wc_l[0], average=False).asnumpy()
                 log_avg_loss = hvd.allreduce(log_avg_loss_l[0] / log_avg_loss_denom_l[0],
                                              average=True)
                 log_avg_loss = log_avg_loss.asnumpy()
             else:
                 log_wc = sum([ele.asnumpy() for ele in log_wc_l])
+                log_tgt_wc = sum([ele.asnumpy() for ele in log_tgt_wc_l])
                 log_avg_loss =\
                     sum([log_avg_loss_l[i].asnumpy() / log_avg_loss_denom_l[i].asnumpy()
                          for i in range(len(log_avg_loss_l))]) / len(log_avg_loss_l)
@@ -571,13 +574,13 @@ def train(args):
                 wps = log_wc / (log_end_time - log_start_time)
                 epoch_id = train_iter // num_updates_per_epoch
                 logging.info('[Epoch {} Iter {}/{}] loss={:.4f}, ppl={:.4f}, '
-                             'throughput={:.2f}K wps, total wc={:.2f}K, wc per update={:.2f}K,'
+                             'throughput={:.2f}K wps, total wc={:.2f}K, wpb={:.2f}K,'
                              ' LR={}, gnorm={:.4f}'
                              .format(epoch_id, train_iter % num_updates_per_epoch + 1,
                                      num_updates_per_epoch,
                                      log_avg_loss, np.exp(log_avg_loss),
                                      wps / 1000, log_wc / 1000,
-                                     log_wc / 1000 / log_iter_num,
+                                     log_tgt_wc / 1000 / log_iter_num,
                                      trainer.learning_rate,
                                      log_avg_grad_norm))
                 writer.add_scalar('train_loss', log_avg_loss, train_iter)
