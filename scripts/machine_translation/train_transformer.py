@@ -583,7 +583,7 @@ def train(args):
                                      log_tgt_wc / 1000 / log_iter_num,
                                      trainer.learning_rate,
                                      log_avg_grad_norm))
-                writer.add_scalar('throughput (wps)', wps, train_iter)
+                writer.add_scalar('throughput_wps', wps, train_iter)
                 writer.add_scalar('train_loss', log_avg_loss, train_iter)
                 writer.add_scalar('lr', trainer.learning_rate, train_iter)
                 writer.add_scalar('grad_norm', log_avg_grad_norm, train_iter)
