@@ -726,10 +726,12 @@ class ShardedIterator(BaseSampler):
             '  part_batch_num={part_batch_num},\n' \
             '  num_parts={num_parts},\n' \
             '  part_index={part_index},\n' \
+            '  rng={rng}\n' \
             ')'\
             .format(name=self.__class__.__name__,
                     batch_num=len(self._sampler),
                     part_batch_num=self._part_len,
                     num_parts=self._num_parts,
-                    part_index=self._part_index)
+                    part_index=self._part_index,
+                    rng=self._rng)
         return ret

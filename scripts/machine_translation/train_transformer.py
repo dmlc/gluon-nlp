@@ -375,6 +375,7 @@ def train(args):
         train_batch_sampler = BoundedBudgetSampler(lengths=[(ele[2], ele[3]) for ele in data_train],
                                                    max_num_tokens=args.max_num_tokens,
                                                    max_num_sentences=args.max_num_sentences,
+                                                   shuffle=True,
                                                    seed=args.seed)
     elif args.sampler == 'FixedBucketSampler':
         if args.comm_backend == 'horovod':
@@ -401,13 +402,14 @@ def train(args):
         raise NotImplementedError
 
     num_updates_per_epoch = int(math.ceil(len(train_batch_sampler)
-                                          / (num_parts * len(ctx_l)) / args.num_accumulated))
+                                          / (num_parts * len(ctx_l) * args.num_accumulated)))
     # Convert the batch sampler to multiple shards
     if num_parts > 1:
         train_batch_sampler = ShardedIterator(train_batch_sampler,
                                               num_parts=num_parts,
                                               part_index=rank,
-                                              even_size=True)
+                                              even_size=True,
+                                              seed=args.seed + 1000 * rank)
 
     logging.info(train_batch_sampler)
 
@@ -467,18 +469,18 @@ def train(args):
     # Here, we are manually setting up the scale to 1.0 because
     # in horovod, the scale can be the number of workers:
     # See the code here: https://github.com/horovod/horovod/blob/125115583b7029196e2ec530decd4209459d5479/horovod/mxnet/__init__.py#L141
-    # To ensure that the code works for both
-    # if args.max_num_tokens > 0:
-    #     const_scale = args.max_num_tokens * args.num_accumulated
-    # else:
-    #     const_scale = 10000
+    # Since we will need to use the dynamic scaling in amp, we will manually call amp.unscale().
+    # A scale that is larger than 1.0 can be problematic in this case.
     trainer._scale = 1.0
-    const_scale = 1.0
+    if args.max_num_tokens > 0:
+        const_scale = args.max_num_tokens
+    else:
+        const_scale = 100
+
 
     for train_iter in range(total_train_iters):
         model.zero_grad()
         loss_denom_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
-
         for i in range(args.num_accumulated):
             loss_l = []
             sample_data_l = next(train_multi_data_loader)
@@ -522,34 +524,19 @@ def train(args):
             num_params, num_fixed_params = count_parameters(model.collect_params())
             logging.info('Total Number of Parameters (not-fixed/fixed): {}/{}'
                          .format(num_params, num_fixed_params))
-        # Scale the individual gradient of each local device before doing all reduce.
-        for p in params:
-            if p.grad_req != 'null':
-                for j, ctx in enumerate(ctx_l):
-                    grad = p.grad(ctx=ctx)
-                    grad /= loss_denom_l[j]
         # All-Reduce the gradient
         trainer.allreduce_grads()
-        # if args.comm_backend == 'horovod':
-        #     # All-Reduce the loss_denom_l
-        #     assert len(loss_denom_l) == 1
-        #     loss_denom = hvd.allreduce(loss_denom_l[0], average=False).asnumpy()
-        # else:
-        #     loss_denom = sum([ele.asnumpy() for ele in loss_denom_l])
         if args.comm_backend == 'horovod':
-            # In horovod, the scale is the number of workers:
-            # See the code here: https://github.com/horovod/horovod/blob/125115583b7029196e2ec530decd4209459d5479/horovod/mxnet/__init__.py#L141
-            update_scale = len(ctx_l) * num_parts
+            # All-Reduce the loss denominator
+            assert len(loss_denom_l) == 1
+            loss_denom = hvd.allreduce(loss_denom_l[0], average=False).asnumpy()
         else:
-            update_scale = len(ctx_l) * num_parts
-
+            loss_denom = sum([ele.asnumpy() for ele in loss_denom_l])
         if use_amp:
-            # For amp, the loss will be scaled to
-            # trainer.amp_loss_scale * loss
-            # Thus, we will need to set the grad scale accordingly
-            grad_scale = trainer.amp_loss_scale * update_scale
+            # We need to first unscale the gradient and then perform allreduce.
+            grad_scale = trainer.amp_loss_scale * loss_denom
         else:
-            grad_scale = update_scale
+            grad_scale = loss_denom
         if args.max_grad_norm is not None:
             total_norm, ratio, is_finite\
                 = clip_grad_global_norm(params, args.max_grad_norm * grad_scale)
@@ -558,9 +545,10 @@ def train(args):
             total_norm = grad_global_norm(params)
             total_norm = total_norm / grad_scale
         log_avg_grad_norm += total_norm
-
-        trainer.update(update_scale, ignore_stale_grad=True)
         log_iter_num += 1
+
+        trainer.update(loss_denom, ignore_stale_grad=True)
+
         if avg_start_iter > 0 and train_iter >= avg_start_iter:
             model_averager.step()
 
@@ -572,30 +560,26 @@ def train(args):
                 log_avg_loss = hvd.allreduce(log_avg_loss_l[0] / log_avg_loss_denom_l[0],
                                              average=True)
                 log_avg_loss = log_avg_loss.asnumpy()
-
-                # All-reduce the gradient norm
-                log_avg_grad_norm /= log_iter_num
-                log_avg_grad_norm = hvd.allreduce(mx.np.array(log_avg_grad_norm, ctx=ctx_l[0]),
-                                                  average=True).asnumpy()
             else:
                 log_wc = sum([ele.asnumpy() for ele in log_wc_l])
                 log_avg_loss =\
                     sum([log_avg_loss_l[i].asnumpy() / log_avg_loss_denom_l[i].asnumpy()
                          for i in range(len(log_avg_loss_l))]) / len(log_avg_loss_l)
-                log_avg_grad_norm /= log_iter_num
-
+            log_avg_grad_norm = log_avg_grad_norm / log_iter_num
             if local_rank == 0:
                 log_end_time = time.time()
                 wps = log_wc / (log_end_time - log_start_time)
-                wpb = log_wc / log_iter_num / num_parts / len(ctx_l)
                 epoch_id = train_iter // num_updates_per_epoch
                 logging.info('[Epoch {} Iter {}/{}] loss={:.4f}, ppl={:.4f}, '
-                             'throughput={:.2f}K wps, wc={:.2f}K, wpb={:.2f}K, LR={}, gnorm={:.4f}'
+                             'throughput={:.2f}K wps, total wc={:.2f}K, wc per update={:.2f}K,'
+                             ' LR={}, gnorm={:.4f}'
                              .format(epoch_id, train_iter % num_updates_per_epoch + 1,
                                      num_updates_per_epoch,
                                      log_avg_loss, np.exp(log_avg_loss),
-                                     wps / 1000, log_wc / 1000, wpb / 1000,
-                                     trainer.learning_rate, log_avg_grad_norm))
+                                     wps / 1000, log_wc / 1000,
+                                     log_wc / 1000 / log_iter_num,
+                                     trainer.learning_rate,
+                                     log_avg_grad_norm))
                 writer.add_scalar('train_loss', log_avg_loss, train_iter)
                 writer.add_scalar('lr', trainer.learning_rate, train_iter)
                 writer.add_scalar('grad_norm', log_avg_grad_norm, train_iter)
@@ -604,8 +588,8 @@ def train(args):
             log_avg_loss_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
             log_avg_loss_denom_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
             log_avg_grad_norm = 0
-            log_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
             log_iter_num = 0
+            log_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
 
         if local_rank == 0 and\
                 ((args.max_update > 0 and (train_iter + 1) % args.save_interval_update == 0)\
