@@ -134,6 +134,12 @@ def get_parser():
     parser.add_argument('--sampler', type=str, choices=['BoundedBudgetSampler',
                                                         'FixedBucketSampler'],
                         default='FixedBucketSampler', help='Type of sampler')
+    parser.add_argument('--max_src_length', type=int, default=400,
+                        help='Maximum source length. We will trim the tokens in the source '
+                             'sentence if it is longer than this number.')
+    parser.add_argument('--max_tgt_length', type=int, default=400,
+                        help='Maximum target length. We will trim the tokens in the target '
+                             'sentence if it is longer than this number.')
     parser.add_argument('--batch_size', type=int, default=2700,
                         help='Batch size. Number of tokens per gpu in a minibatch.')
     parser.add_argument('--val_batch_size', type=int, default=16,
@@ -241,7 +247,9 @@ def load_dataset_with_cache(src_corpus_path: str,
                             src_tokenizer: BaseTokenizerWithVocab,
                             tgt_tokenizer: BaseTokenizerWithVocab,
                             overwrite_cache: bool,
-                            local_rank: int):
+                            local_rank: int,
+                            max_src_length: int = None,
+                            max_tgt_length: int = None):
     src_md5sum = md5sum(src_corpus_path)
     tgt_md5sum = md5sum(tgt_corpus_path)
     cache_filepath = os.path.join(CACHE_PATH,
@@ -263,13 +271,18 @@ def load_dataset_with_cache(src_corpus_path: str,
         # TODO(sxjscience) Optimize the speed of converting to cache
         with open(src_corpus_path) as f:
             for line in f:
-                sample = np.array(src_tokenizer.encode(line.strip(), output_type=int) +
-                                  [src_tokenizer.vocab.eos_id], dtype=np.int32)
+                src_tokens = src_tokenizer.encode(line.strip(), output_type=int)
+                if max_src_length is not None:
+                    src_tokens = src_tokens[:max_src_length]
+                sample = np.array(src_tokens + [src_tokenizer.vocab.eos_id], dtype=np.int32)
                 src_data.append(sample)
         with open(tgt_corpus_path) as f:
             for line in f:
+                tgt_tokens = tgt_tokenizer.encode(line.strip(), output_type=int)
+                if max_tgt_length is not None:
+                    tgt_tokens = tgt_tokens[:max_tgt_length]
                 sample = np.array([tgt_tokenizer.vocab.bos_id] +
-                                  tgt_tokenizer.encode(line.strip(), output_type=int) +
+                                  tgt_tokens +
                                   [tgt_tokenizer.vocab.eos_id], dtype=np.int32)
                 tgt_data.append(sample)
         src_data = np.array(src_data)
@@ -319,7 +332,9 @@ def train(args):
                                                              src_tokenizer,
                                                              tgt_tokenizer,
                                                              args.overwrite_cache,
-                                                             local_rank)
+                                                             local_rank,
+                                                             max_src_length=args.max_src_length,
+                                                             max_tgt_length=args.max_tgt_length)
     dev_src_data, dev_tgt_data = load_dataset_with_cache(args.dev_src_corpus,
                                                          args.dev_tgt_corpus,
                                                          src_tokenizer,
