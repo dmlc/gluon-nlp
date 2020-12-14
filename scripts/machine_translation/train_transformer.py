@@ -37,7 +37,7 @@ import time
 import random
 import os
 import logging
-import itertools
+import json
 import math
 import numpy as np
 import mxnet as mx
@@ -115,6 +115,10 @@ def get_parser():
     parser.add_argument('--tgt_vocab_path', type=str,
                         help='Path to the target vocab.')
     parser.add_argument('--seed', type=int, default=100, help='The random seed.')
+    parser.add_argument('--optimizer', type=str, default='adam', help='The optimizer.')
+    parser.add_argument('--optimizer_params', type=str,
+                        default='{"beta1": 0.9, "beta2": 0.997, "epsilon": 1e-09}',
+                        help='The optimizer parameters.')
     parser.add_argument('--epochs', type=int, default=30, help='Upper epoch limit, '
                         'the model will keep training when epochs < 0 and max_update < 0.')
     parser.add_argument('--max_update', type=int, default=-1,
@@ -361,8 +365,11 @@ def train(args):
     lr_scheduler = InverseSquareRootScheduler(warmup_steps=args.warmup_steps, base_lr=base_lr,
                                               warmup_init_lr=args.warmup_init_lr)
     optimizer_params = {'learning_rate': args.lr, 'beta1': 0.9,
-                        'beta2': 0.98, 'epsilon': 1e-9,
+                        'beta2': 0.997, 'epsilon': 1e-9,
                         'lr_scheduler': lr_scheduler}
+    user_provided_ptimizer_params = json.loads(args.optimizer_params)
+    optimizer_params.update(user_provided_ptimizer_params)
+
     if args.fp16:
         optimizer_params.update({'multi_precision': True})
     if args.comm_backend == 'horovod':
