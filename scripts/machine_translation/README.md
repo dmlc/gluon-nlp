@@ -23,6 +23,9 @@ bash ../datasets/machine_translation/wmt2014_ende.sh yttm
 ```
 
 Then, you can run the experiment.
+
+### Transformer Base
+
 For "transformer_base" configuration
 
 ```bash
@@ -30,7 +33,7 @@ SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
 lr=0.002
-num_accumulated=16
+num_accumulated=8
 max_num_tokens=4096
 epochs=30
 SAVE_DIR=transformer_base_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${num_accumulated}_${max_num_tokens}_${epochs}
@@ -69,7 +72,7 @@ SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
 lr=0.002
-num_accumulated=16
+num_accumulated=8
 max_num_tokens=4096
 epochs=30
 SAVE_DIR=transformer_base_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${num_accumulated}_${max_num_tokens}_${epochs}
@@ -100,9 +103,9 @@ Use the average_checkpoint cli to average the last 5 checkpoints
 
 ```bash
 gluon_average_checkpoint --checkpoints ${SAVE_DIR}/epoch*.params \
-    --begin 50 \
-    --end 60 \
-    --save-path ${SAVE_DIR}/avg_50_60.params
+    --begin 21 \
+    --end 30 \
+    --save-path ${SAVE_DIR}/avg_21_30.params
 ```
 
 Use the following command to inference/evaluate the Transformer model:
@@ -124,7 +127,7 @@ python3 evaluate_transformer.py \
     --tgt_corpus wmt2014_ende/test.raw.de
 ```
 
-
+### Transformer Big
 
 For "transformer_wmt_en_de_big" configuration
 
@@ -133,7 +136,7 @@ SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
 lr=0.0008
-num_accumulated=16
+num_accumulated=4
 max_num_tokens=4096
 epochs=30
 SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}
@@ -206,7 +209,7 @@ Test BLEU score (evaluated via SacreBLEU):
 | yttm          | 27.99/26.84 |
 
 
-## Train with customized configuration
+### Train with customized configuration
 
 For example, pre-LayerNormalization (Pre-LN) has been shown to be more stable than the Post-LN 
 (See also ["On Layer Normalization in the Transformer Architecture"](https://proceedings.icml.cc/static/paper_files/icml/2020/328-Paper.pdf)). 

@@ -446,6 +446,7 @@ class BeamSearchSampler(HybridBlock):
     min_length
         The minimum length of the generated sequences.
     temperature
+        The temperature.
     stochastic
         Whether to use stochastic sampler,
         see [ICML2019] "Stochastic Beams and Where to Find Them" for detail.
@@ -504,15 +505,25 @@ class BeamSearchSampler(HybridBlock):
         self._sampling_topk = sampling_topk
         self._early_return = early_return
         if sampling:
-            self._updater = _MultinomialStepUpdate(
-                beam_size=beam_size,
-                vocab_size=vocab_size,
-                eos_id=eos_id,
-                state_batch_axis=decoder.state_batch_axis,
-                sampling_topp=sampling_topp,
-                sampling_topk=sampling_topk,
-                temperature=temperature
-            )
+            if not stochastic:
+                self._updater = _MultinomialStepUpdate(
+                    beam_size=beam_size,
+                    vocab_size=vocab_size,
+                    eos_id=eos_id,
+                    state_batch_axis=decoder.state_batch_axis,
+                    sampling_topp=sampling_topp,
+                    sampling_topk=sampling_topk,
+                    temperature=temperature
+                )
+            else:
+                self._updater = _BeamSearchStepUpdate(
+                    beam_size=beam_size,
+                    vocab_size=vocab_size,
+                    eos_id=eos_id,
+                    scorer=scorer,
+                    state_batch_axis=decoder.state_batch_axis,
+                    stochastic=True
+                )
         else:
             self._updater = _BeamSearchStepUpdate(
                 beam_size=beam_size,
@@ -520,7 +531,7 @@ class BeamSearchSampler(HybridBlock):
                 eos_id=eos_id,
                 scorer=scorer,
                 state_batch_axis=decoder.state_batch_axis,
-                stochastic=stochastic
+                stochastic=False
             )
 
         if not stochastic:
