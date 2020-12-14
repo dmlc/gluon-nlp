@@ -6,6 +6,12 @@ To run the scripts, you are recommended to install [tensorboardX](https://github
 python3 -m pip install tensorboardX
 ```
 
+Also, to install horovod, you can try out the following command:
+
+```
+HOROVOD_GPU_OPERATIONS=NCCL HOROVOD_WITHOUT_GLOO=1 HOROVOD_WITH_MPI=1 HOROVOD_WITH_MXNET=1 HOROVOD_WITH_PYTORCH=1 HOROVOD_WITHOUT_TENSORFLOW=1 HOROVOD_NCCL_HOME=/opt/nccl/build CUDA_HOME=/usr/local/cuda pip install --no-cache-dir horovod
+```
+
 ## Train a Transformer from scratch
 First, use the script described in [datasets/machine_translation](../datasets/machine_translation) 
 to generate the dataset. Then, run `train_transformer.py` to train the model. 
