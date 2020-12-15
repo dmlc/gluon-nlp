@@ -165,6 +165,7 @@ def test_dot_product_attention(scaled, normalized, ctx):
         value = mx.np.random.normal(0, 1, (batch_size, num_heads, mem_length, num_channel))
         mask = mx.np.random.randint(0, 2, (batch_size, query_length, mem_length))
         out, [score, attn_weights] = multi_head_dot_attn(query, key, value, mask,
+                                                         query_head_units=num_channel,
                                                          scaled=scaled, normalized=normalized)
         assert out.shape == (batch_size, query_length, num_heads * num_channel)
         for i in range(num_heads):
