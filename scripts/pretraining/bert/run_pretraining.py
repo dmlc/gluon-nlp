@@ -413,3 +413,4 @@ if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
     args = parse_args()
     train(args)
+
