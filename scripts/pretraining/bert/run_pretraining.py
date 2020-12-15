@@ -31,8 +31,10 @@ mx.npx.set_np()
 
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--ckpt_dir', type=str, default='/store/ckpt_dir',
+    parser.add_argument('--ckpt_dir', type=str, default='./ckpt_dir',
                         help='Path to checkpoint directory')
+    parser.add_argument('--data_dir', type=str, default=None,
+                        help='Path to raw data, required if --raw set True')
     parser.add_argument('--log_interval', type=int, default=250, help='Report interval')
     parser.add_argument('--ckpt_interval', type=int, default=25000, help='Checkpoint interval')
     # model
@@ -40,8 +42,6 @@ def parse_args():
                         help='Name of the pretrained model.')
     # training
     parser.add_argument('--seed', type=int, default=100, help='Random seed')
-    parser.add_argument('--data_dir', type=str, default=None,
-                        help='Path to raw data, required if --raw set True')
     parser.add_argument('--data', type=str, default=None,
                         help='Path to pretraining corpus file. File name with wildcard such as'
                         ' dir/*.npz is accepted. Or file name with wildcard such as dir/*.txt if'
@@ -103,8 +103,6 @@ def parse_args():
     # phase 2
     parser.add_argument('--phase2', action='store_true', help='phase 2 training')
     parser.add_argument('--phase1_num_steps', type=int, help='number of steps for phase 1')
-    #use amp
-    parser.add_argument('--use_amp', action='store_true', help='use amp')
     # communication
     parser.add_argument('--comm_backend', type=str, default='device',
                         choices=['byteps', 'horovod', 'dist_sync_device', 'device'],
@@ -112,8 +110,6 @@ def parse_args():
     parser.add_argument('--gpus', type=str, default=None,
                         help='List of gpus to run when device or dist_sync_device is used for '
                              'communication, e.g. 0 or 0,2,5. empty means using cpu.')
-
-
 
     args = parser.parse_args()
     return args
@@ -193,10 +189,6 @@ def train(args):
         parameters_option(args.start_step, model, args.ckpt_dir, 'Loading', ctx_l)
     else:
         model.initialize(ctx=ctx_l)
-    '''
-    if args.use_amp:
-        model.cast('float16')
-    '''
     model.hybridize()
 
     if args.raw:
@@ -214,12 +206,13 @@ def train(args):
                                            num_max_dataset_cached=args.num_max_dataset_cached)
     else:
         get_dataset_fn = get_pretrain_data_npz
+
     if args.raw:
         names=os.listdir(args.data_dir)
         for i in range(len(names)):
             names[i]=os.path.join(args.data_dir, names[i])
         args.data=','.join(names)
-    #print(args.data)
+
 
     data_train = get_dataset_fn(args.data, args.batch_size, shuffle=True,
                                 num_buckets=args.num_buckets, vocab=tokenizer.vocab,
@@ -253,8 +246,6 @@ def train(args):
                                  'epsilon': 1e-6,
                                  'correct_bias': False,
                                  })
-    if args.use_amp:
-        optimizer_params.update({'multi_precision': True})
     if args.comm_backend == 'horovod':
         trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optimizer_params)
     elif args.comm_backend == 'byteps':
@@ -267,8 +258,6 @@ def train(args):
         states_option(args.start_step, trainer, args.ckpt_dir, local_rank, 'Loading')
 
     # backend specific implementation
-    if args.use_amp:
-        amp.init_trainer(trainer)
     if args.comm_backend == 'byteps':
         trainer._init_params()
     if args.comm_backend == 'horovod':
@@ -341,21 +330,10 @@ def train(args):
                     ns_pred_list.append(nsp_score)
 
                 running_num_tks += valid_length.sum().as_in_ctx(mx.cpu())
-            if args.use_amp:
-                with mx.autograd.record():
-                    with amp.scale_loss(loss_l, trainer) as loss_l:
-                        for loss in loss_l:
-                            loss.backward()
-                norm_clip_mult = num_workers * trainer._amp_loss_scaler.loss_scale
-            else:
-                with mx.autograd.record():
-                    for loss in loss_l:
-                        loss.backward()
-                norm_clip_mult = num_workers
-            '''  
+
             for loss in loss_l:
                 loss.backward()
-            '''
+
             running_mlm_loss += sum([ele.as_in_ctx(mx.cpu())
                                     for ele in mlm_loss_l]).asnumpy().item()
             running_nsp_loss += sum([ele.as_in_ctx(mx.cpu())
@@ -366,12 +344,8 @@ def train(args):
         trainer.allreduce_grads()
 
         total_norm, ratio, is_finite = clip_grad_global_norm(
-            params, args.max_grad_norm * norm_clip_mult)
-        '''
-        total_norm, ratio, is_finite = clip_grad_global_norm(
             params, args.max_grad_norm * num_workers)
-        '''
-        total_norm = total_norm / norm_clip_mult
+        total_norm = total_norm / num_workers
 
         # update learning rate
         scheduled_lr = args.lr
@@ -438,8 +412,4 @@ def train(args):
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
     args = parse_args()
-    if args.use_amp:
-        from mxnet import amp
-        amp.init()
     train(args)
-
