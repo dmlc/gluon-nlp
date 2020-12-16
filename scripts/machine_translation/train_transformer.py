@@ -316,6 +316,14 @@ def create_tokenizer(tokenizer_type, model_path, vocab_path):
 def train(args):
     _, num_parts, rank, local_rank, _, ctx_l = init_comm(
         args.comm_backend, args.gpus)
+    if args.comm_backend == 'horovod':
+        logging_config(args.save_dir,
+                       name=f'train_transformer_rank{local_rank}_{rank}',
+                       console=(rank == local_rank))
+        logging.info(args)
+    else:
+        logging_config(args.save_dir, name='train_transformer', console=True)
+        logging.info(args)
     use_amp = args.fp16
     if use_amp:
         from mxnet import amp
@@ -591,20 +599,20 @@ def train(args):
                     sum([log_avg_loss_l[i].asnumpy() / log_avg_loss_denom_l[i].asnumpy()
                          for i in range(len(log_avg_loss_l))]) / len(log_avg_loss_l)
             log_avg_grad_norm = log_avg_grad_norm / log_iter_num
+            log_end_time = time.time()
+            wps = log_wc / (log_end_time - log_start_time)
+            epoch_id = train_iter // num_updates_per_epoch
+            logging.info('[Epoch {} Iter {}/{}] loss={:.4f}, ppl={:.4f}, '
+                         'throughput={:.2f}K wps, total wc={:.2f}K, wpb={:.2f}K,'
+                         ' LR={}, gnorm={:.4f}'
+                         .format(epoch_id, train_iter % num_updates_per_epoch + 1,
+                                 num_updates_per_epoch,
+                                 log_avg_loss, np.exp(log_avg_loss),
+                                 wps / 1000, log_wc / 1000,
+                                 log_tgt_wc / 1000 / log_iter_num,
+                                 trainer.learning_rate,
+                                 log_avg_grad_norm))
             if local_rank == 0:
-                log_end_time = time.time()
-                wps = log_wc / (log_end_time - log_start_time)
-                epoch_id = train_iter // num_updates_per_epoch
-                logging.info('[Epoch {} Iter {}/{}] loss={:.4f}, ppl={:.4f}, '
-                             'throughput={:.2f}K wps, total wc={:.2f}K, wpb={:.2f}K,'
-                             ' LR={}, gnorm={:.4f}'
-                             .format(epoch_id, train_iter % num_updates_per_epoch + 1,
-                                     num_updates_per_epoch,
-                                     log_avg_loss, np.exp(log_avg_loss),
-                                     wps / 1000, log_wc / 1000,
-                                     log_tgt_wc / 1000 / log_iter_num,
-                                     trainer.learning_rate,
-                                     log_avg_grad_norm))
                 writer.add_scalar('throughput_wps', wps, train_iter)
                 writer.add_scalar('train_loss', log_avg_loss, train_iter)
                 writer.add_scalar('lr', trainer.learning_rate, train_iter)
@@ -651,8 +659,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if args.max_update > 0:
         args.epochs = -1
-    logging_config(args.save_dir, console=True)
-    logging.info(args)
     np.random.seed(args.seed)
     mx.random.seed(args.seed)
     random.seed(args.seed)

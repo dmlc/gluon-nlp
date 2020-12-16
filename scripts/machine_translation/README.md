@@ -32,10 +32,10 @@ For "transformer_base" configuration
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.002
-num_accumulated=8
+lr=0.0008
+num_accumulated=4
 max_num_tokens=4096
-epochs=30
+epochs=60
 SAVE_DIR=transformer_base_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${num_accumulated}_${max_num_tokens}_${epochs}
 python3 train_transformer.py \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
@@ -47,6 +47,7 @@ python3 train_transformer.py \
     --tgt_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
     --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --save_dir ${SAVE_DIR} \
+    --optimizer_params "{\"beta1\": 0.9, \"beta2\": 0.98}" \
     --cfg transformer_base \
     --lr ${lr} \
     --num_accumulated ${num_accumulated} \
