@@ -318,8 +318,8 @@ def train(args):
         args.comm_backend, args.gpus)
     if args.comm_backend == 'horovod':
         logging_config(args.save_dir,
-                       name=f'train_transformer_rank{local_rank}_{rank}',
-                       console=(rank == local_rank))
+                       name=f'train_transformer_rank{rank}_{num_parts}',
+                       console=(rank == 0))
         logging.info(args)
     else:
         logging_config(args.save_dir, name='train_transformer', console=True)

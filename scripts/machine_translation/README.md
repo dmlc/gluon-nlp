@@ -32,8 +32,8 @@ For "transformer_base" configuration
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.0008
-num_accumulated=4
+lr=0.0016
+num_accumulated=8
 max_num_tokens=4096
 epochs=60
 SAVE_DIR=transformer_base_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${num_accumulated}_${max_num_tokens}_${epochs}
@@ -136,11 +136,11 @@ For "transformer_wmt_en_de_big" configuration
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.0008
+lr=0.0012
 num_accumulated=4
 max_num_tokens=4096
-epochs=30
-SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}
+epochs=60
+SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}_20201216
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
