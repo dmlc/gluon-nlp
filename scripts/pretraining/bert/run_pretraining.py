@@ -207,11 +207,21 @@ def train(args):
     else:
         get_dataset_fn = get_pretrain_data_npz
 
+    raw_datas=[]
+
     if args.raw:
-        names=os.listdir(args.data_dir)
-        for i in range(len(names)):
-            names[i]=os.path.join(args.data_dir, names[i])
-        args.data=','.join(names)
+        datasets_dir=args.data_dir.split(',')
+        for dataset_dir in datasets_dir:
+            names=os.listdir(dataset_dir)
+            for i in range(len(names)):
+                names[i]=os.path.join(dataset_dir, names[i])
+            raw_datas.append(','.join(names))
+            #print(raw_datas)
+    if args.raw:
+        raw_data = ','.join(raw_datas)
+        #print(raw_data)
+        #exit()
+        args.data = raw_data
 
 
     data_train = get_dataset_fn(args.data, args.batch_size, shuffle=True,
@@ -288,6 +298,8 @@ def train(args):
     train_loop_dataloader = grouper(repeat(data_train), len(ctx_l))
     while step_num < num_steps:
         step_num += 1
+        if (step_num+1)%100==0:
+            exit()
         for _ in range(num_accumulated):
             sample_l = next(train_loop_dataloader)
             mlm_loss_l = []
@@ -304,6 +316,7 @@ def train(args):
                 masked_position = masked_position.as_in_ctx(ctx)
                 masked_weight = masked_weight.as_in_ctx(ctx)
                 next_sentence_label = next_sentence_label.as_in_ctx(ctx)
+                #print('next', next_sentence_label)
                 segment_id = segment_id.as_in_ctx(ctx)
                 valid_length = valid_length.as_in_ctx(ctx)
 

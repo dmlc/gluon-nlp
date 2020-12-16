@@ -264,9 +264,11 @@ def create_training_instances(x):
                 for line in tokenized_result:
                     if not line:
                         if all_documents[-1]:
+
                             all_documents.append([])
                     else:
                         all_documents[-1].append(line)
+
 
     # remove the empty document if any
     all_documents = [x for x in all_documents if x]
@@ -349,8 +351,10 @@ def create_instances_from_document(x):
     current_chunk = []
     current_length = 0
     i = 0
+    #print('doc: ',len(document) )
     while i < len(document):  # pylint: disable=R1702
         segment = document[i]
+        #print(segment)
         current_chunk.append(segment)
         current_length += len(segment)
         if i == len(document) - 1 or current_length >= target_seq_length:
