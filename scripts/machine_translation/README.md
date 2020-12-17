@@ -97,9 +97,9 @@ For "transformer_wmt_en_de_big" configuration
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.0012
-num_accumulated=4
-max_num_tokens=4096
+lr=0.0008
+num_accumulated=32
+max_num_tokens=3584
 epochs=60
 SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}_20201216
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
@@ -198,6 +198,7 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --tgt_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
     --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --save_dir ${SAVE_DIR} \
+    --optimizer_params "{\"beta1\": 0.9, \"beta2\": 0.98}" \
     --cfg transformer_base_pre_ln.yml \
     --lr ${lr} \
     --num_accumulated ${num_accumulated} \

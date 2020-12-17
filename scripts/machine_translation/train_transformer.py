@@ -134,10 +134,10 @@ def get_parser():
     parser.add_argument('--sampler', type=str, choices=['BoundedBudgetSampler',
                                                         'FixedBucketSampler'],
                         default='FixedBucketSampler', help='Type of sampler')
-    parser.add_argument('--max_src_length', type=int, default=400,
+    parser.add_argument('--max_src_length', type=int, default=None,
                         help='Maximum source length. We will trim the tokens in the source '
                              'sentence if it is longer than this number.')
-    parser.add_argument('--max_tgt_length', type=int, default=400,
+    parser.add_argument('--max_tgt_length', type=int, default=None,
                         help='Maximum target length. We will trim the tokens in the target '
                              'sentence if it is longer than this number.')
     parser.add_argument('--batch_size', type=int, default=2700,
