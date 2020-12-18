@@ -41,7 +41,7 @@ def get_parser():
         - `nlp_process learn_subword --model spm --corpus CORPUS --vocab-size SIZE \
                                      --disable-bos --disable-eos \
                                      --custom-special-tokens "cls_token=[CLS]" "sep_token=[SEP]" "mask_token=[MASK]"`
-            Train with the sentencepiece model and set cls token to "[CLS]" and sep token to "[SEP]".
+            Train with the sentencepiece model and set cls token to "[CLS]", sep token to "[SEP]", and mask token to "[MASK]".
     '''),
         prog='learn_subword'
     )
