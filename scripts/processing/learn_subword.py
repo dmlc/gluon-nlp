@@ -163,10 +163,10 @@ def main(args):
         corpus_path = ','.join(corpus_path_list)
         script = '--input={} --model_prefix={} --vocab_size={} --character_coverage={} --input_sentence_size={}' \
                  .format(corpus_path, model_prefix, args.vocab_size, args.coverage, args.input_sentence_size)
-        script += (' --unk_id=' + str(special_tokens_kv.keys().index('unk_token')))
-        script += (' --bos_id=' + ('-1' if args.disable_bos else str(special_tokens_kv.keys().index('bos_token'))))
-        script += (' --eos_id=' + ('-1' if args.disable_eos else str(special_tokens_kv.keys().index('eos_token'))))
-        script += (' --pad_id=' + ('-1' if args.disable_pad else str(special_tokens_kv.keys().index('pad_token'))))
+        script += (' --unk_id=' + str(list(special_tokens_kv.keys()).index('unk_token')))
+        script += (' --bos_id=' + ('-1' if args.disable_bos else str(list(special_tokens_kv.keys()).index('bos_token'))))
+        script += (' --eos_id=' + ('-1' if args.disable_eos else str(list(special_tokens_kv.keys()).index('eos_token'))))
+        script += (' --pad_id=' + ('-1' if args.disable_pad else str(list(special_tokens_kv.keys()).index('pad_token'))))
         if len(additional_custom_special_token) > 0:
             script += (' --control_symbols=' + ','.join(list(additional_custom_special_token.values())))
         print(script)
