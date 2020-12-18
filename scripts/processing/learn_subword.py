@@ -15,7 +15,7 @@ from gluonnlp.data import Vocab
 def get_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent('''
+        description=textwrap.dedent(r'''
     Learn BPE based on different implementations.
 
     We support the following models:
