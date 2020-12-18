@@ -20,23 +20,28 @@ def get_parser():
 
     We support the following models:
 
-        - "nlp_process learn_subword --model spm --corpus CORPUS --vocab-size SIZE"
+        - `nlp_process learn_subword --model spm --corpus CORPUS --vocab-size SIZE`
             Train a Sentencepiece Model on raw text.
 
-        - "nlp_process learn_subword --model subword_nmt --corpus CORPUS --vocab-size SIZE"
+        - `nlp_process learn_subword --model subword_nmt --corpus CORPUS --vocab-size SIZE`
             Train with the subword-nmt package:
 
-        - "nlp_process learn_subword --model yttm --corpus CORPUS --vocab-size SIZE"
+        - `nlp_process learn_subword --model yttm --corpus CORPUS --vocab-size SIZE`
             Train with YouTokenToMe:
 
-        - "nlp_process learn_subword --model hf_bytebpe --corpus CORPUS --vocab-size SIZE"
+        - `nlp_process learn_subword --model hf_bytebpe --corpus CORPUS --vocab-size SIZE`
             Train with the Byte-level BPE Tokenizer Implemented by Huggingface.
 
-        - "nlp_process learn_subword --model hf_wordpiece --corpus CORPUS --vocab-size SIZE"
+        - `nlp_process learn_subword --model hf_wordpiece --corpus CORPUS --vocab-size SIZE`
             Train with the Wordpiece Tokenizer Implementated by Huggingface.
 
-        - "nlp_process learn_subword --model hf_bpe --corpus CORPUS --vocab-size SIZE"
+        - `nlp_process learn_subword --model hf_bpe --corpus CORPUS --vocab-size SIZE`
             Train with the BPE Tokenizer Implemented by Huggingface.
+        
+        - `nlp_process learn_subword --model spm --corpus CORPUS --vocab-size SIZE \
+                                     --disable-bos --disable-eos \
+                                     --custom-special-tokens "cls_token=<cls>" "sep_token=<sep>"`
+            Train with the sentencepiece model and set cls token to "<cls>" and sep token to "<sep>".
     '''),
         prog='learn_subword'
     )
@@ -90,7 +95,7 @@ def get_parser():
     parser.add_argument('--custom-special-tokens', type=str, nargs='*', default=[], 
                         help='Specified special tokens key value pairs besides unk, '
                              'bos, eos and pad, for example: '
-                             '--custom special tokens cls_token=<cls> sep_token=<sep>, '
+                             '--custom-special-tokens "cls_token=<cls>" "sep_token=<sep>", '
                              'this is not applicable to yttm')
     return parser
 
@@ -122,6 +127,7 @@ def main(args):
     # split custom special tokens
     if args.model in ['yttm'] and len(args.custom_special_tokens) > 0:
         raise ValueError('model {} do not support custom_special_tokens'.format(args.model))
+    additional_custom_special_token = OrderedDict()
     for custom_special_token in args.custom_special_tokens:
         kv = custom_special_token.split('=')
         if not len(kv) == 2:
@@ -131,6 +137,7 @@ def main(args):
             raise ValueError('There are overlaps between the custom special tokens and the'
                              ' unk, bos, eos, pad tokens')
         special_tokens_kv[k] = v
+        additional_custom_special_token[k] = v
     if args.model == 'hf_wordpiece':
         tokenizers = try_import_huggingface_tokenizers()
         if 'unk_token' not in special_tokens_kv or special_tokens_kv['unk_token'] != '[UNK]':
@@ -159,9 +166,8 @@ def main(args):
         script += (' --bos_id=' + ('-1' if args.disable_bos else str(special_tokens.index(Vocab.BOS_TOKEN))))
         script += (' --eos_id=' + ('-1' if args.disable_eos else str(special_tokens.index(Vocab.EOS_TOKEN))))
         script += (' --pad_id=' + ('-1' if args.disable_pad else str(special_tokens.index(Vocab.PAD_TOKEN))))
-        if len(args.custom_special_tokens) > 0:
-            ids_in_script = script.count('_id')
-            script += (' --control_symbols=' + ','.join(special_tokens[ids_in_script:]))
+        if len(additional_custom_special_token) > 0:
+            script += (' --control_symbols=' + ','.join(list(additional_custom_special_token.values())))
         print(script)
         spm.SentencePieceTrainer.Train(script)
         if 'bos_token' in special_tokens_kv:
