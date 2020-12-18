@@ -16,14 +16,9 @@ To save time, we will use the first 10000 sentences for training the subword mod
 ```
 
 ```{.shell .input}
-!nlp_data prepare_wikipedia --mode download+format --lang zh-classical --date latest --quiet -o wikicorpus_zh_classical
-```
-
-
-```{.shell .input}
 !nlp_process learn_subword --model spm --corpus train_corpus.txt --vocab-size 10000 \
                            --disable-bos --disable-eos \
-                           --custom-special-tokens "cls_token=<cls>" "sep_token=<sep>"
+                           --custom-special-tokens "cls_token=[CLS]" "sep_token=[SEP]" "mask_token=[MASK]"
 ```
 
 The model are saved in "spm" folder.

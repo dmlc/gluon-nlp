@@ -40,8 +40,8 @@ def get_parser():
         
         - `nlp_process learn_subword --model spm --corpus CORPUS --vocab-size SIZE \
                                      --disable-bos --disable-eos \
-                                     --custom-special-tokens "cls_token=<cls>" "sep_token=<sep>"`
-            Train with the sentencepiece model and set cls token to "<cls>" and sep token to "<sep>".
+                                     --custom-special-tokens "cls_token=[CLS]" "sep_token=[SEP]" "mask_token=[MASK]"`
+            Train with the sentencepiece model and set cls token to "[CLS]" and sep token to "[SEP]".
     '''),
         prog='learn_subword'
     )
@@ -134,8 +134,9 @@ def main(args):
             raise ValueError('parameter {} has wrong format'.format(custom_special_token))
         k, v = kv[0], kv[1]
         if k in special_tokens_kv:
-            raise ValueError('There are overlaps between the custom special tokens and the'
-                             ' unk, bos, eos, pad tokens')
+            warnings.warn(f'There are overlaps between the custom special tokens and the'
+                          f' unk, bos, eos, pad tokens. Currently, we will overwrite the '
+                          f'default tokens. We will overwrite "{k}" to "{v}"')
         special_tokens_kv[k] = v
         additional_custom_special_token[k] = v
     if args.model == 'hf_wordpiece':
@@ -162,10 +163,10 @@ def main(args):
         corpus_path = ','.join(corpus_path_list)
         script = '--input={} --model_prefix={} --vocab_size={} --character_coverage={} --input_sentence_size={}' \
                  .format(corpus_path, model_prefix, args.vocab_size, args.coverage, args.input_sentence_size)
-        script += (' --unk_id=' + str(special_tokens.index(Vocab.UNK_TOKEN)))
-        script += (' --bos_id=' + ('-1' if args.disable_bos else str(special_tokens.index(Vocab.BOS_TOKEN))))
-        script += (' --eos_id=' + ('-1' if args.disable_eos else str(special_tokens.index(Vocab.EOS_TOKEN))))
-        script += (' --pad_id=' + ('-1' if args.disable_pad else str(special_tokens.index(Vocab.PAD_TOKEN))))
+        script += (' --unk_id=' + str(special_tokens_kv.keys().index('unk_token')))
+        script += (' --bos_id=' + ('-1' if args.disable_bos else str(special_tokens_kv.keys().index('bos_token'))))
+        script += (' --eos_id=' + ('-1' if args.disable_eos else str(special_tokens_kv.keys().index('eos_token'))))
+        script += (' --pad_id=' + ('-1' if args.disable_pad else str(special_tokens_kv.keys().index('pad_token'))))
         if len(additional_custom_special_token) > 0:
             script += (' --control_symbols=' + ','.join(list(additional_custom_special_token.values())))
         print(script)
