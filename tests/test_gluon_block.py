@@ -51,7 +51,8 @@ def test_gluon_nonzero_hybridize():
     out.wait_to_read()
 
 
-@pytest.mark.skip('Skip due to MXNet bug https://github.com/apache/incubator-mxnet/issues/19659')
+@pytest.mark.xfail(reason='Expected to fail due to MXNet bug https://github.com/apache/'
+                          'incubator-mxnet/issues/19659')
 def test_gluon_boolean_mask():
     class Foo(HybridBlock):
         def forward(self, data, indices):
