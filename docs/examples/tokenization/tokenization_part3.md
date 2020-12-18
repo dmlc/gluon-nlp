@@ -25,7 +25,6 @@ The model are saved in "spm" folder.
 
 ```{.shell .input}
 !ls spm
-!less spm/spm.vocab
 ```
 
 ## Build the Tokenizer with the Saved Model
