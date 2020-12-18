@@ -120,10 +120,9 @@ def test_subword_algorithms_zh(model):
                          ['spm', 'subword_nmt', 'hf_bpe', 'hf_bytebpe', 'hf_wordpiece'])
 def test_subword_custom_token(model):
     parser = learn_subword.get_parser()
-    apply_parser = apply_subword.get_parser()
     corpus_path = os.path.join(_CURR_DIR, 'data', 'wmt19-test-zh-en.zh.jieba')
     with tempfile.TemporaryDirectory() as tempdir:
-        dir_path = tempdir.name
+        dir_path = tempdir
         arguments = ['--corpus'] + [corpus_path] + \
                     ['--model', model, '--vocab-size', '5000',
                      '--save-dir', dir_path,
