@@ -4,7 +4,6 @@ In this tutorial, we will download the Wikipedia classical Chinese dataset with 
 
 ## Download Data
 
-
 ```{.shell .input}
 !nlp_data prepare_wikipedia --mode download+format --lang zh-classical --date latest --quiet -o wiki_zh_classical
 ```
