@@ -272,10 +272,10 @@ class _BeamSearchStepUpdate(HybridBlock):
         assert eos_id is None or eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
     def gumbel_with_maximum(self, phi, T, dim=-1):
-        """
+        """Calculate the Gumbel with maximum.
+
         Parameters
         ----------
-        F
         phi : mx.np.ndarray
             Shape (batch_size, beam_size, L).
         T : mx.np.ndarray
@@ -288,9 +288,9 @@ class _BeamSearchStepUpdate(HybridBlock):
 
     def shift_gumbel_maximum(self, g_phi, T, dim=-1, Z=None):
         """
+
         Parameters
         ----------
-        F
         g_phi : mx.np.ndarray
             Shape (batch_size, beam_size, L).
         T : mx.np.ndarray
@@ -300,7 +300,7 @@ class _BeamSearchStepUpdate(HybridBlock):
             Z = g_phi.max(dim)
         T_ = mx.npx.reshape(T, (-4, 1))
         Z_ = mx.npx.reshape(Z, (-4, 1))
-        u = T_ - g_phi + mx.np.log1p(-mx.np.exp(g_phi - Z_)+1e-5)
+        u = T_ - g_phi + mx.np.log1p(-mx.np.exp(g_phi - Z_) + 1e-5)
         return T_ - self.activation(u) - mx.np.log1p(mx.np.exp(-mx.np.abs(u)))
 
     def forward(self, samples, valid_length, outputs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
@@ -437,7 +437,6 @@ class BeamSearchSampler(HybridBlock):
     scorer : BeamSearchScorer, default BeamSearchScorer(alpha=1.0, K=5)
         The score function used in beam search.
     max_length_a
-        TODO(sxjscience) We can potentially make it more general.
         The `a` value in the formula `a * x + b`. Generate sequences of maximum length `a * x + b`,
         where `x` is the maximum source length.
     max_length_b
