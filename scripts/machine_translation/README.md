@@ -100,8 +100,9 @@ TGT=de
 lr=0.0005
 num_accumulated=16
 max_num_tokens=3584
+adam_epsilon=1e-6
 epochs=60
-SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}_20201216
+SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}_eps${adam_epsilon}_20201220
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
@@ -113,6 +114,7 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --tgt_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
     --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --save_dir ${SAVE_DIR} \
+    --optimizer_params "{\"epsilon\": ${adam_epsilon}}" \
     --cfg transformer_wmt_en_de_big \
     --lr ${lr} \
     --num_accumulated ${num_accumulated} \
@@ -185,7 +187,7 @@ SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
 lr=5e-4
-wd=0.01
+wd=0.0
 num_accumulated=4
 max_num_tokens=4096
 epochs=60
@@ -201,7 +203,7 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --tgt_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
     --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --save_dir ${SAVE_DIR} \
-    --optimizer adamw \
+    --optimizer adam \
     --optimizer_params "{\"beta1\": 0.9, \"beta2\": 0.98, \"epsilon\": 1e-6}" \
     --cfg transformer_base_pre_ln_enc12_dec1.yml \
     --lr ${lr} \
