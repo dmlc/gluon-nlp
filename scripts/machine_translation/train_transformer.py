@@ -607,10 +607,11 @@ def train(args):
             log_end_time = time.time()
             wps = log_wc / (log_end_time - log_start_time)
             epoch_id = train_iter // num_updates_per_epoch
-            logging.info('[Epoch {} Iter {}/{}] loss={:.4f}, ppl={:.4f}, '
+            logging.info('[Epoch {} Iter {}/{}, Overall {}/{}] loss={:.4f}, ppl={:.4f}, '
                          'throughput={:.2f}K wps, total wc={:.2f}K, wpb={:.2f}K,'
                          ' LR={}, gnorm={:.4f}'
                          .format(epoch_id, train_iter % num_updates_per_epoch + 1,
+                                 train_iter, total_train_iters,
                                  num_updates_per_epoch,
                                  log_avg_loss, np.exp(log_avg_loss),
                                  wps / 1000, log_wc / 1000,
