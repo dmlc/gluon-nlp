@@ -131,6 +131,7 @@ def get_parser():
                              'You may select a yml file or use the prebuild configurations.')
     parser.add_argument('--label_smooth_alpha', type=float, default=0.1,
                         help='Weight of label smoothing')
+    parser.add_argument('--wd', type=float, default=0.0, help='Weight decay')
     parser.add_argument('--sampler', type=str, choices=['BoundedBudgetSampler',
                                                         'FixedBucketSampler'],
                         default='FixedBucketSampler', help='Type of sampler')
@@ -145,7 +146,7 @@ def get_parser():
     parser.add_argument('--val_batch_size', type=int, default=16,
                         help='Batch size for evaluation.')
     parser.add_argument('--max_grad_norm', type=float, default=None,
-                        help='Max gradient norm. When not specified, the gradient '
+                        help='Max gradient norm. when not specified, the gradient '
                              'clipping will not be used.')
     parser.add_argument('--num_buckets', type=int, default=20, help='Bucket number.')
     parser.add_argument('--bucket_scheme', type=str, default='exp',
@@ -389,7 +390,8 @@ def train(args):
                                               warmup_init_lr=args.warmup_init_lr)
     optimizer_params = {'learning_rate': args.lr, 'beta1': 0.9,
                         'beta2': 0.997, 'epsilon': 1e-9,
-                        'lr_scheduler': lr_scheduler}
+                        'lr_scheduler': lr_scheduler,
+                        'wd': args.wd}
     user_provided_ptimizer_params = json.loads(args.optimizer_params)
     optimizer_params.update(user_provided_ptimizer_params)
 
@@ -457,6 +459,9 @@ def train(args):
     for v in model.collect_params().values():
         if v.grad_req != 'null':
             v.grad_req = 'add'
+    # Do not apply weight decay to all the LayerNorm and bias
+    for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
+        v.wd_mult = 0.0
     params = [p for p in model.collect_params().values() if p.grad_req != 'null']
     model_averager = AverageSGDTracker(model.collect_params())
     log_start_time = time.time()

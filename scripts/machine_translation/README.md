@@ -173,20 +173,23 @@ Test BLEU score (evaluated via SacreBLEU):
 
 ### Train with customized configuration
 
-For example, pre-LayerNormalization (Pre-LN) has been shown to be more stable than the Post-LN 
+For example, pre-layer normalization (Pre-LN) has been shown to be more stable than the post layer-normalization. 
 (See also ["On Layer Normalization in the Transformer Architecture"](https://proceedings.icml.cc/static/paper_files/icml/2020/328-Paper.pdf)). 
-Post-LN has been the default architecture used in `transformer-base` and `transformer-large`. 
-To train with Pre-LN, you can specify the [transformer_base_pre_ln.yml](./transformer_base_pre_ln.yml) and train with the configuration.
+Post-LN has been the default architecture used in `transformer-base` and `transformer-large`. In addition, it has been shown that we can use a deep encoder and
+a shallow decoder to improve the performance as in
+["Deep Encoder, Shallow Decoder:Reevaluating the Speed-Quality Tradeoff in Machine Translation"](https://arxiv.org/pdf/2006.10369.pdf)
+To train with Pre-LN + Deep-Shallow architecture, you can specify the [transformer_base_pre_ln_enc12_dec1.yml](transformer_base_pre_ln_enc12_dec1.yml) and train with the configuration.
 
 ```
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.0016
-num_accumulated=16
+lr=5e-4
+wd=0.01
+num_accumulated=8
 max_num_tokens=4096
 epochs=60
-SAVE_DIR=transformer_base_ende_prenorm_${SUBWORD_ALGO}_${lr}_${num_accumulated}_${max_num_tokens}_${epochs}
+SAVE_DIR=transformer_base_ende_prenorm_enc12_dec1_${SUBWORD_ALGO}_${lr}_${wd}_${num_accumulated}_${max_num_tokens}_${epochs}
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
@@ -198,8 +201,9 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --tgt_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
     --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --save_dir ${SAVE_DIR} \
-    --optimizer_params "{\"beta1\": 0.9, \"beta2\": 0.98}" \
-    --cfg transformer_base_pre_ln.yml \
+    --optimizer adamw \
+    --optimizer_params "{\"beta1\": 0.9, \"beta2\": 0.98, \"epsilon\": 1e-6}" \
+    --cfg transformer_base_pre_ln_enc12_dec1.yml \
     --lr ${lr} \
     --num_accumulated ${num_accumulated} \
     --sampler BoundedBudgetSampler \
