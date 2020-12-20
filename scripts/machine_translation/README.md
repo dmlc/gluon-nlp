@@ -97,8 +97,8 @@ For "transformer_wmt_en_de_big" configuration
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.0008
-num_accumulated=32
+lr=0.0005
+num_accumulated=16
 max_num_tokens=3584
 epochs=60
 SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}_20201216
