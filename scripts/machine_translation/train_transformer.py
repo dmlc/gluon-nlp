@@ -611,8 +611,8 @@ def train(args):
                          'throughput={:.2f}K wps, total wc={:.2f}K, wpb={:.2f}K,'
                          ' LR={}, gnorm={:.4f}'
                          .format(epoch_id, train_iter % num_updates_per_epoch + 1,
-                                 train_iter, total_train_iters,
                                  num_updates_per_epoch,
+                                 train_iter, total_train_iters,
                                  log_avg_loss, np.exp(log_avg_loss),
                                  wps / 1000, log_wc / 1000,
                                  log_tgt_wc / 1000 / log_iter_num,
