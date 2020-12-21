@@ -254,7 +254,10 @@ def load_dataset_with_cache(src_corpus_path: str,
     src_md5sum = md5sum(src_corpus_path)
     tgt_md5sum = md5sum(tgt_corpus_path)
     cache_filepath = os.path.join(CACHE_PATH,
-                                  '{}_{}.cache.npz'.format(src_md5sum[:6], tgt_md5sum[:6]))
+                                  '{}_{}_{}_{}.cache.npz'.format(src_md5sum[:6],
+                                                                 tgt_md5sum[:6],
+                                                                 max_src_length,
+                                                                 max_tgt_length))
     if os.path.exists(cache_filepath) and not overwrite_cache:
         if local_rank == 0:
             logging.info('Load cache from {}'.format(cache_filepath))
