@@ -213,7 +213,7 @@ def get_parser():
 
 
 def validation(model, data_loader, inference_model, sequence_sampler,
-               base_tgt_tokenizer, tgt_tokenizer, ctx_l):
+               tgt_tokenizer, ctx_l):
     """Validate the model on the dataset
 
     Parameters
@@ -226,27 +226,29 @@ def validation(model, data_loader, inference_model, sequence_sampler,
         The model for inference
     sequence_sampler:
         The sequence sampler for doing beam search
-    base_tgt_tokenizer
-        The base target tokenizer
     tgt_tokenizer
         The target tokenizer
     ctx_l : list
         List of mx.ctx.Context
 
-
     Returns
     -------
     avg_nll_loss : float
         The average negative log-likelihood loss
-    pred_sentences_detok
-        The detokenized sentences
-    pred_sentences_bpe
-        The predictions that are only detokenized via BPE
+    ntokens : int
+        The total number of tokens
+    pred_sentences
+        The predicted sentences. Each element will be a numpy array.
+    pred_lengths
+        The length of the predicted sentences.
+    sentence_ids
+        IDs of the predicted sentences.
     """
     avg_nll_loss = mx.np.array(0, dtype=np.float32, ctx=mx.cpu())
     ntokens = 0
-    pred_sentences_bpe = []
-    pred_sentences_detok = []
+    pred_sentences = []
+    sentence_ids = []
+    pred_lengths = []
     for sample_data_l in grouper(data_loader, len(ctx_l)):
         loss_l = []
         ntokens += sum([ele[3].sum().asnumpy() - ele[0].shape[0] for ele in sample_data_l
@@ -269,22 +271,24 @@ def validation(model, data_loader, inference_model, sequence_sampler,
                                         use_sequence_length=True,
                                         axis=1)
             loss_l.append(loss.sum())
-            init_input = mx.np.array([tgt_tokenizer.vocab.bos_id for _ in range(src_token_ids.shape[0])],
-                                     ctx=ctx)
+            init_input = mx.np.array(
+                [tgt_tokenizer.vocab.bos_id for _ in range(src_token_ids.shape[0])],
+                ctx=ctx)
 
             # Perform beam search
             states = inference_model.init_states(src_token_ids, src_valid_length)
             samples, scores, sample_valid_length = sequence_sampler(init_input, states, src_valid_length)
+            samples = samples.asnumpy()
+            sample_valid_length = sample_valid_length.asnumpy()
             for j in range(samples.shape[0]):
-                pred_tok_ids = samples[j, 0, :sample_valid_length[j, 0].asnumpy()].asnumpy().tolist()
-                bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
-                pred_sentences_bpe.append(bpe_decode_line)
-                pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
-                pred_sentences_detok.append(pred_sentence)
+                pred_sentences.append(samples[j, 0, :sample_valid_length[j, 0]])
+                pred_lengths.append(sample_valid_length[j, 0])
+            sentence_ids.append(sample_ids.asnumpy())
         avg_nll_loss += sum([loss.as_in_ctx(mx.cpu()) for loss in loss_l])
         mx.npx.waitall()
     avg_loss = avg_nll_loss.asnumpy() / ntokens
-    return avg_loss, pred_sentences_bpe, pred_sentences_detok
+    pred_lengths = np.array(pred_lengths)
+    return avg_loss, ntokens, pred_sentences, pred_lengths, sentence_ids
 
 
 def load_dataset_with_cache(src_corpus_path: str,
@@ -470,9 +474,13 @@ def train(args):
     if args.fp16:
         optimizer_params.update({'multi_precision': True})
     if args.comm_backend == 'horovod':
-        trainer = hvd.DistributedTrainer(model.collect_params(), 'adam', optimizer_params)
+        trainer = hvd.DistributedTrainer(model.collect_params(),
+                                         args.optimizer,
+                                         optimizer_params)
     else:
-        trainer = gluon.Trainer(model.collect_params(), 'adam', optimizer_params,
+        trainer = gluon.Trainer(model.collect_params(),
+                                args.optimizer,
+                                optimizer_params,
                                 update_on_kvstore=False)
     # Load Data
     if args.sampler == 'BoundedBudgetSampler':
@@ -704,34 +712,61 @@ def train(args):
             log_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
             log_tgt_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
 
-        if local_rank == 0 and\
-                ((args.max_update > 0 and (train_iter + 1) % args.save_interval_update == 0)
-                 or ((train_iter + 1) % num_updates_per_epoch == 0)
-                 or train_iter + 1 == total_train_iters):
+        if (args.max_update > 0 and (train_iter + 1) % args.save_interval_update == 0) \
+            or ((train_iter + 1) % num_updates_per_epoch == 0) \
+            or train_iter + 1 == total_train_iters:
             epoch_id = (train_iter + 1) // num_updates_per_epoch
-            if args.max_update <= 0:
-                model.save_parameters(os.path.join(args.save_dir,
-                                                   'epoch{}.params'.format(epoch_id)),
-                                      deduplicate=True)
-            else:
-                model.save_parameters(os.path.join(args.save_dir,
-                                                   'iter{}.params'.format(train_iter + 1)),
-                                      deduplicate=True)
+            if local_rank == 0:
+                if args.max_update <= 0:
+                    model.save_parameters(os.path.join(args.save_dir,
+                                                       'epoch{}.params'.format(epoch_id)),
+                                          deduplicate=True)
+                else:
+                    model.save_parameters(os.path.join(args.save_dir,
+                                                       'iter{}.params'.format(train_iter + 1)),
+                                          deduplicate=True)
 
-            avg_valid_loss, pred_sentences_detok, pred_sentences_bpe\
+            avg_val_loss, ntokens, pred_sentences, pred_lengths, sentence_ids\
                 = validation(model, val_data_loader, inference_model, beam_search_sampler,
-                             base_tgt_tokenizer, tgt_tokenizer, [ctx_l[0]])
-            bpe_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_bpe,
+                             tgt_tokenizer, ctx_l)
+            if args.comm_backend == 'horovod':
+                flatten_pred_sentences = np.concatenate(pred_sentences, axis=0)
+                all_val_loss = hvd.allgather(mx.np.array([avg_val_loss * ntokens], ctx=ctx_l[0]))
+                all_ntokens = hvd.allgather(mx.np.array([ntokens], ctx=ctx_l[0]))
+                flatten_pred_sentences = hvd.allgather(mx.np.array(flatten_pred_sentences,
+                                                                   ctx=ctx_l[0]))
+                pred_lengths = hvd.allgather(mx.np.array(pred_lengths, ctx=ctx_l[0]))
+                sentence_ids = hvd.allgather(mx.np.array(sentence_ids, ctx=ctx_l[0]))
+                avg_val_loss = all_val_loss.asnumpy().sum() / all_ntokens.asnumpy().sum()
+                flatten_pred_sentences = flatten_pred_sentences.asnumpy()
+                pred_lengths = pred_lengths.asnumpy()
+                sentence_ids = sentence_ids.asnumpy()
+                pred_sentences = [None for _ in range(len(sentence_ids))]
+                ptr = 0
+                assert sentence_ids.min() == 0 and sentence_ids.max() == len(sentence_ids) - 1
+                for sentence_id, length in zip(sentence_ids, pred_lengths):
+                    pred_sentences[sentence_id] = flatten_pred_sentences[ptr:(ptr + length)]
+                    ptr += length
+            # Perform detokenization
+            pred_sentences_bpe_decode = []
+            pred_sentences_raw = []
+            for sentence in pred_sentences:
+                bpe_decode_sentence = tgt_tokenizer.decode(sentence.tolist())
+                raw_sentence = base_tgt_tokenizer.decode(bpe_decode_sentence.split())
+                pred_sentences_bpe_decode.append(bpe_decode_sentence)
+                pred_sentences_raw.append(raw_sentence)
+            bpe_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_bpe_decode,
                                                       ref_streams=[tgt_bpe_sentences])
-            raw_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_detok,
+            raw_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_raw,
                                                       ref_streams=[tgt_raw_sentences])
-            logging.info('[Epoch {}][Iter {}/{}] validation loss/ppl={:.4f}/{:.4f}, '
-                         'Raw SacreBlEU={}, BPE SacreBLUE={}'
-                         .format(epoch_id, train_iter, total_train_iters,
-                                 avg_valid_loss, np.exp(avg_valid_loss),
-                                 raw_sacrebleu_out.score,
-                                 bpe_sacrebleu_out.score))
-            writer.add_scalar('valid_loss', avg_valid_loss, train_iter)
+            if local_rank == 0:
+                logging.info('[Epoch {}][Iter {}/{}] validation loss/ppl={:.4f}/{:.4f}, '
+                             'Raw SacreBlEU={}, BPE SacreBLUE={}'
+                             .format(epoch_id, train_iter, total_train_iters,
+                                     avg_val_loss, np.exp(avg_val_loss),
+                                     raw_sacrebleu_out.score,
+                                     bpe_sacrebleu_out.score))
+                writer.add_scalar('valid_loss', avg_val_loss, train_iter)
 
     if args.num_averages > 0:
         model_averager.copy_back(model.collect_params())  # TODO(sxjscience) Rewrite using update
