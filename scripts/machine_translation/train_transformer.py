@@ -180,6 +180,10 @@ def get_parser():
                         help='The alpha value in the length penalty term')
     parser.add_argument('--lp_k', type=int, default=5,
                         help='The K value in the length penalty term.')
+    parser.add_argument('--max_length_a', type=int, default=1,
+                        help='The a in the a * x + b formula of beam search')
+    parser.add_argument('--max_length_b', type=int, default=50,
+                        help='The b in the a * x + b formula of beam search')
     parser.add_argument('--warmup_steps', type=int, default=4000,
                         help='number of warmup steps used in NOAM\'s stepsize schedule')
     parser.add_argument('--warmup_init_lr', type=float, default=0.0,
@@ -441,7 +445,7 @@ def train(args):
                                             vocab_size=len(tgt_vocab),
                                             eos_id=tgt_vocab.eos_id,
                                             scorer=scorer,
-                                            stochastic=args.stochastic,
+                                            stochastic=False,
                                             max_length_a=args.max_length_a,
                                             max_length_b=args.max_length_b)
 
