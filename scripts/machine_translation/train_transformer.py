@@ -720,9 +720,12 @@ def train(args):
                                                       ref_streams=[tgt_bpe_sentences])
             raw_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_detok,
                                                       ref_streams=[tgt_raw_sentences])
-            logging.info('[Epoch {}][Iter {}/{}] validation loss/ppl={:.4f}/{:.4f}'
+            logging.info('[Epoch {}][Iter {}/{}] validation loss/ppl={:.4f}/{:.4f}, '
+                         'Raw SacreBlEU={}, BPE SacreBLUE={}'
                          .format(epoch_id, train_iter, total_train_iters,
-                                 avg_valid_loss, np.exp(avg_valid_loss)))
+                                 avg_valid_loss, np.exp(avg_valid_loss),
+                                 raw_sacrebleu_out.score,
+                                 bpe_sacrebleu_out.score))
             writer.add_scalar('valid_loss', avg_valid_loss, train_iter)
 
     if args.num_averages > 0:
