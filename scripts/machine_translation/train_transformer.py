@@ -41,6 +41,7 @@ import json
 import math
 import numpy as np
 import mxnet as mx
+import sacrebleu
 from mxnet import gluon
 from gluonnlp.models.transformer import TransformerModel, TransformerNMTInference
 from gluonnlp.sequence_sampler import BeamSearchSampler, BeamSearchScorer
@@ -58,7 +59,7 @@ from tensorboardX import SummaryWriter
 import gluonnlp.data.batchify as bf
 from gluonnlp.data import Vocab
 from gluonnlp.data import tokenizers
-from gluonnlp.data.tokenizers import BaseTokenizerWithVocab, huggingface
+from gluonnlp.data.tokenizers import BaseTokenizerWithVocab, huggingface, MosesTokenizer
 from gluonnlp.lr_scheduler import InverseSquareRootScheduler
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
 from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm
@@ -87,6 +88,8 @@ def get_parser():
                         help='The source dev corpus.')
     parser.add_argument('--dev_tgt_corpus', type=str,
                         help='The target dev corpus after BPE tokenization.')
+    parser.add_argument('--dev_tgt_raw_corpus', type=str,
+                        help='The target dev corpus before any tokenization (raw corpus).')
     parser.add_argument('--src_tokenizer', choices=['spm',
                                                     'subword_nmt',
                                                     'yttm',
@@ -107,6 +110,10 @@ def get_parser():
                                                     'whitespace'],
                         default='whitespace', type=str,
                         help='The target tokenizer.')
+    parser.add_argument('--src_lang', required=True,
+                        help='The source language')
+    parser.add_argument('--tgt_lang', required=True,
+                        help='The target language')
     parser.add_argument('--src_subword_model_path', type=str,
                         help='Path to the source subword model.')
     parser.add_argument('--src_vocab_path', type=str,
@@ -369,6 +376,7 @@ def train(args):
     tgt_tokenizer = create_tokenizer(args.tgt_tokenizer,
                                      args.tgt_subword_model_path,
                                      args.tgt_vocab_path)
+    base_tgt_tokenizer = MosesTokenizer(args.tgt_lang)
     src_vocab = src_tokenizer.vocab
     tgt_vocab = tgt_tokenizer.vocab
     train_src_data, train_tgt_data = load_dataset_with_cache(args.train_src_corpus,
@@ -385,6 +393,14 @@ def train(args):
                                                          tgt_tokenizer,
                                                          args.overwrite_cache,
                                                          local_rank)
+    tgt_bpe_sentences = []
+    tgt_raw_sentences = []
+    with open(args.dev_tgt_corpus, 'r') as in_f:
+        for line in in_f:
+            tgt_bpe_sentences.append(tgt_tokenizer.decode(line.split()))
+    with open(args.dev_tgt_raw_corpus, 'r') as in_f:
+        for line in in_f:
+            tgt_raw_sentences.append(line.strip())
     data_train = gluon.data.SimpleDataset(
         [(src_tokens, tgt_tokens, len(src_tokens), len(tgt_tokens), i)
          for i, (src_tokens, tgt_tokens) in enumerate(zip(train_src_data, train_tgt_data))])
@@ -698,7 +714,12 @@ def train(args):
                                       deduplicate=True)
 
             avg_valid_loss, pred_sentences_detok, pred_sentences_bpe\
-                = validation(model, val_data_loader, [ctx_l[0]])
+                = validation(model, val_data_loader, inference_model, beam_search_sampler,
+                             [ctx_l[0]])
+            bpe_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_bpe,
+                                                      ref_streams=[tgt_bpe_sentences])
+            raw_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_detok,
+                                                      ref_streams=[tgt_raw_sentences])
             logging.info('[Epoch {}][Iter {}/{}] validation loss/ppl={:.4f}/{:.4f}'
                          .format(epoch_id, train_iter, total_train_iters,
                                  avg_valid_loss, np.exp(avg_valid_loss)))

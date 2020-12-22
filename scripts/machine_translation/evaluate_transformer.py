@@ -299,7 +299,8 @@ def evaluate(args):
             of.write('\n'.join(pred_sentences))
             of.write('\n')
 
-        sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences, ref_streams=[all_tgt_lines])        
+        sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences,
+                                              ref_streams=[all_tgt_lines])
         logging.info('Time Spent: {}, #Sent={}, SacreBlEU={} '
                      '({:2.1f} {:2.1f} {:2.1f} {:2.1f}) '
                      '(BP={:.3f}, ratio={:.3f}, syslen={}, reflen={}), '
