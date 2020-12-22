@@ -32,9 +32,6 @@ nlp_process clean_tok_para_corpus --src-lang ${SRC} \
                       --tgt-lang ${TGT} \
                       --src-corpus dev.raw.${SRC} \
                       --tgt-corpus dev.raw.${TGT} \
-                      --min-num-words 1 \
-                      --max-num-words 100 \
-                      --max-ratio 1.5 \
                       --src-save-path dev.tok.${SRC} \
                       --tgt-save-path dev.tok.${TGT}
 

@@ -42,7 +42,8 @@ import math
 import numpy as np
 import mxnet as mx
 from mxnet import gluon
-from gluonnlp.models.transformer import TransformerModel
+from gluonnlp.models.transformer import TransformerModel, TransformerNMTInference
+from gluonnlp.sequence_sampler import BeamSearchSampler, BeamSearchScorer
 from gluonnlp.utils.misc import logging_config, AverageSGDTracker, count_parameters,\
     md5sum, grouper, init_comm, repeat
 from gluonnlp.data.sampler import (
@@ -85,7 +86,7 @@ def get_parser():
     parser.add_argument('--dev_src_corpus', type=str,
                         help='The source dev corpus.')
     parser.add_argument('--dev_tgt_corpus', type=str,
-                        help='The target dev corpus.')
+                        help='The target dev corpus after BPE tokenization.')
     parser.add_argument('--src_tokenizer', choices=['spm',
                                                     'subword_nmt',
                                                     'yttm',
@@ -167,6 +168,10 @@ def get_parser():
                              ' 1.0 / sqrt(d_model) / sqrt(warmup_steps). '
                              'Otherwise, we will use the given lr as the final learning rate in '
                              'the warmup phase.')
+    parser.add_argument('--lp_alpha', type=float, default=1.0,
+                        help='The alpha value in the length penalty term')
+    parser.add_argument('--lp_k', type=int, default=5,
+                        help='The K value in the length penalty term.')
     parser.add_argument('--warmup_steps', type=int, default=4000,
                         help='number of warmup steps used in NOAM\'s stepsize schedule')
     parser.add_argument('--warmup_init_lr', type=float, default=0.0,
@@ -195,7 +200,8 @@ def get_parser():
     return parser
 
 
-def validation(model, data_loader, ctx_l):
+def validation(model, data_loader, inference_model, sequence_sampler,
+               base_tgt_tokenizer, tgt_tokenizer, ctx_l):
     """Validate the model on the dataset
 
     Parameters
@@ -204,6 +210,14 @@ def validation(model, data_loader, ctx_l):
         The transformer model
     data_loader : DataLoader
         DataLoader
+    inference_model
+        The model for inference
+    sequence_sampler:
+        The sequence sampler for doing beam search
+    base_tgt_tokenizer
+        The base target tokenizer
+    tgt_tokenizer
+        The target tokenizer
     ctx_l : list
         List of mx.ctx.Context
 
@@ -212,9 +226,15 @@ def validation(model, data_loader, ctx_l):
     -------
     avg_nll_loss : float
         The average negative log-likelihood loss
+    pred_sentences_detok
+        The detokenized sentences
+    pred_sentences_bpe
+        The predictions that are only detokenized via BPE
     """
     avg_nll_loss = mx.np.array(0, dtype=np.float32, ctx=mx.cpu())
     ntokens = 0
+    pred_sentences_bpe = []
+    pred_sentences_detok = []
     for sample_data_l in grouper(data_loader, len(ctx_l)):
         loss_l = []
         ntokens += sum([ele[3].sum().asnumpy() - ele[0].shape[0] for ele in sample_data_l
@@ -237,10 +257,22 @@ def validation(model, data_loader, ctx_l):
                                         use_sequence_length=True,
                                         axis=1)
             loss_l.append(loss.sum())
+            init_input = mx.np.array([tgt_tokenizer.vocab.bos_id for _ in range(src_token_ids.shape[0])],
+                                     ctx=ctx)
+
+            # Perform beam search
+            states = inference_model.init_states(src_token_ids, src_valid_length)
+            samples, scores, sample_valid_length = sequence_sampler(init_input, states, src_valid_length)
+            for j in range(samples.shape[0]):
+                pred_tok_ids = samples[j, 0, :sample_valid_length[j, 0].asnumpy()].asnumpy().tolist()
+                bpe_decode_line = tgt_tokenizer.decode(pred_tok_ids[1:-1])
+                pred_sentences_bpe.append(bpe_decode_line)
+                pred_sentence = base_tgt_tokenizer.decode(bpe_decode_line.split(' '))
+                pred_sentences_detok.append(pred_sentence)
         avg_nll_loss += sum([loss.as_in_ctx(mx.cpu()) for loss in loss_l])
         mx.npx.waitall()
     avg_loss = avg_nll_loss.asnumpy() / ntokens
-    return avg_loss
+    return avg_loss, pred_sentences_bpe, pred_sentences_detok
 
 
 def load_dataset_with_cache(src_corpus_path: str,
@@ -372,6 +404,8 @@ def train(args):
     model.initialize(mx.init.Xavier(magnitude=args.magnitude),
                      ctx=ctx_l)
     model.hybridize()
+    inference_model = TransformerNMTInference(model=model)
+    inference_model.hybridize()
     if local_rank == 0:
         logging.info(model)
     with open(os.path.join(args.save_dir, 'config.yml'), 'w') as cfg_f:
@@ -381,6 +415,20 @@ def train(args):
                                                     from_logits=False)
     label_smooth_loss.hybridize()
 
+    # Construct the beam search sampler
+    scorer = BeamSearchScorer(alpha=args.lp_alpha,
+                              K=args.lp_k,
+                              from_logits=False)
+    beam_search_sampler = BeamSearchSampler(beam_size=args.beam_size,
+                                            decoder=inference_model,
+                                            vocab_size=len(tgt_vocab),
+                                            eos_id=tgt_vocab.eos_id,
+                                            scorer=scorer,
+                                            stochastic=args.stochastic,
+                                            max_length_a=args.max_length_a,
+                                            max_length_b=args.max_length_b)
+
+    logging.info(beam_search_sampler)
     if args.comm_backend == 'horovod':
         hvd.broadcast_parameters(model.collect_params(), root_rank=0)
     
@@ -649,8 +697,8 @@ def train(args):
                                                    'iter{}.params'.format(train_iter + 1)),
                                       deduplicate=True)
 
-            # TODO(?) One way to improve the current validation is to support multi-node validation.
-            avg_valid_loss = validation(model, val_data_loader, ctx_l)
+            avg_valid_loss, pred_sentences_detok, pred_sentences_bpe\
+                = validation(model, val_data_loader, [ctx_l[0]])
             logging.info('[Epoch {}][Iter {}/{}] validation loss/ppl={:.4f}/{:.4f}'
                          .format(epoch_id, train_iter, total_train_iters,
                                  avg_valid_loss, np.exp(avg_valid_loss)))
