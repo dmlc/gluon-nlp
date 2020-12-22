@@ -720,7 +720,7 @@ def train(args):
 
             avg_valid_loss, pred_sentences_detok, pred_sentences_bpe\
                 = validation(model, val_data_loader, inference_model, beam_search_sampler,
-                             [ctx_l[0]])
+                             base_tgt_tokenizer, tgt_tokenizer, [ctx_l[0]])
             bpe_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_bpe,
                                                       ref_streams=[tgt_bpe_sentences])
             raw_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_detok,
