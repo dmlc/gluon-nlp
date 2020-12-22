@@ -175,6 +175,7 @@ def get_parser():
                              ' 1.0 / sqrt(d_model) / sqrt(warmup_steps). '
                              'Otherwise, we will use the given lr as the final learning rate in '
                              'the warmup phase.')
+    parser.add_argument('--beam-size', type=int, default=4, help='Number of beams')
     parser.add_argument('--lp_alpha', type=float, default=1.0,
                         help='The alpha value in the length penalty term')
     parser.add_argument('--lp_k', type=int, default=5,
