@@ -413,9 +413,14 @@ def train(args):
     data_train = gluon.data.SimpleDataset(
         [(src_tokens, tgt_tokens, len(src_tokens), len(tgt_tokens), i)
          for i, (src_tokens, tgt_tokens) in enumerate(zip(train_src_data, train_tgt_data))])
-    data_val = gluon.data.SimpleDataset(
-        [(src_tokens, tgt_tokens, len(src_tokens), len(tgt_tokens), i)
-         for i, (src_tokens, tgt_tokens) in enumerate(zip(dev_src_data, dev_tgt_data))])
+    val_samples = [(src_tokens, tgt_tokens, len(src_tokens), len(tgt_tokens), i)
+                   for i, (src_tokens, tgt_tokens) in enumerate(zip(dev_src_data, dev_tgt_data))]
+    if args.comm_backend == 'horovod':
+        slice_begin = rank * (len(val_samples) // num_parts) * num_parts
+        slice_end = min((rank + 1) * (len(val_samples) // num_parts) * num_parts, len(val_samples))
+        data_val = gluon.data.SimpleDataset(val_samples[slice_begin:slice_end])
+    else:
+        data_val = gluon.data.SimpleDataset(val_samples)
     # Construct the model + loss function
     if args.cfg.endswith('.yml'):
         cfg = TransformerModel.get_cfg().clone_merge(args.cfg)
