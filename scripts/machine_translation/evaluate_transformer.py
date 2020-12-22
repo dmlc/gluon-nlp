@@ -206,6 +206,7 @@ def evaluate(args):
     cfg.freeze()
     model = TransformerModel.from_cfg(cfg)
     model.hybridize()
+    model.cast('float16')
     model.load_parameters(args.param_path, ctx=ctx_l, cast_dtype=True)
     inference_model = TransformerNMTInference(model=model)
     inference_model.hybridize()
