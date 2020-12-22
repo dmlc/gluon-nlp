@@ -712,8 +712,9 @@ class ShardedIterator(BaseSampler):
         batches = list(self._sampler)
         part_batches = batches[self._start:self._end]
         if self._even_size and len(part_batches) < self._part_len:
-            candidates = self._rng.choice(batches, size=self._part_len-len(part_batches))
-            part_batches.extend(candidates)
+            candidates = self._rng.choice(len(batches), size=self._part_len-len(part_batches))
+            for idx in candidates:
+                part_batches.append(batches[idx])
         for batch in part_batches:
             yield batch
     
