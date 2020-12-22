@@ -1,7 +1,5 @@
 MODEL:
   DECODER:
     pre_norm: true
-    num_layers: 1
   ENCODER:
     pre_norm: true
-    num_layers: 12

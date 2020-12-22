@@ -69,9 +69,9 @@ After we have trained the model, we can use the average_checkpoint cli to averag
 
 ```bash
 gluon_average_checkpoint --checkpoints ${SAVE_DIR}/epoch*.params \
-    --begin 21 \
-    --end 30 \
-    --save-path ${SAVE_DIR}/avg_21_30.params
+    --begin 51 \
+    --end 60 \
+    --save-path ${SAVE_DIR}/avg_51_60.params
 ```
 
 Use the following command to inference/evaluate the Transformer model:
@@ -79,7 +79,7 @@ Use the following command to inference/evaluate the Transformer model:
 ```bash
 SUBWORD_ALGO=yttm
 python3 evaluate_transformer.py \
-    --param_path ${SAVE_DIR}/avg_21_30.params \
+    --param_path ${SAVE_DIR}/avg_51_60.params \
     --src_lang en \
     --tgt_lang de \
     --cfg ${SAVE_DIR}/config.yml \
@@ -112,8 +112,11 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
     --train_tgt_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
+    --src_lang ${SRC} \
+    --tgt_lang ${TGT} \
     --dev_src_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
     --dev_tgt_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${TGT} \
+    --dev_tgt_raw_corpus wmt2014_ende/dev.raw.${TGT} \
     --src_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
     --src_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --tgt_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
@@ -137,9 +140,9 @@ Use the average_checkpoint cli to average the last 10 checkpoints
 
 ```bash
 gluon_average_checkpoint --checkpoints ${SAVE_DIR}/epoch*.params \
-    --begin 21 \
-    --end 30 \
-    --save-path ${SAVE_DIR}/avg_21_30.params
+    --begin 51 \
+    --end 60 \
+    --save-path ${SAVE_DIR}/avg_51_60.params
 ```
 
 
@@ -147,7 +150,7 @@ Use the following command to inference/evaluate the Transformer model:
 
 ```bash
 python3 evaluate_transformer.py \
-    --param_path ${SAVE_DIR}/avg_21_30.params \
+    --param_path ${SAVE_DIR}/avg_51_60.params \
     --src_lang en \
     --tgt_lang de \
     --cfg ${SAVE_DIR}/config.yml \
@@ -158,7 +161,8 @@ python3 evaluate_transformer.py \
     --src_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --src_corpus wmt2014_ende/test.raw.en \
-    --tgt_corpus wmt2014_ende/test.raw.de
+    --tgt_corpus wmt2014_ende/test.raw.de \
+    --fp16
 ```
 
 
@@ -183,10 +187,7 @@ Test BLEU score (evaluated via SacreBLEU):
 
 For example, pre-layer normalization (Pre-LN) has been shown to be more stable than the post layer-normalization. 
 (See also ["On Layer Normalization in the Transformer Architecture"](http://proceedings.mlr.press/v119/xiong20b/xiong20b.pdf)). 
-Post-LN has been the default architecture used in `transformer-base` and `transformer-large`. In addition, it has been shown that we can use a deep encoder and
-a shallow decoder to improve the performance as in
-["Deep Encoder, Shallow Decoder:Reevaluating the Speed-Quality Tradeoff in Machine Translation"](https://arxiv.org/pdf/2006.10369.pdf)
-To train with Pre-LN + Deep-Shallow architecture, you can specify the [transformer_base_pre_ln_enc12_dec1.yml](transformer_base_pre_ln_enc12_dec1.yml) and train with the configuration.
+Post-LN has been the default architecture used in `transformer-base` and `transformer-large`. To train with Pre-LN
 
 ```
 SUBWORD_ALGO=yttm
@@ -197,7 +198,7 @@ num_accumulated=8
 max_num_tokens=4096
 wd=0.0
 epochs=60
-SAVE_DIR=transformer_base_ende_prenorm_enc12_dec1_${SUBWORD_ALGO}_${lr}_${wd}_${num_accumulated}_${max_num_tokens}_${epochs}
+SAVE_DIR=transformer_base_{SRC}-{TGT}_enc20_dec2_${SUBWORD_ALGO}_${lr}_${wd}_${num_accumulated}_${max_num_tokens}_${epochs}
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
@@ -211,8 +212,49 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --save_dir ${SAVE_DIR} \
     --optimizer adam \
     --wd ${wd} \
-    --optimizer_params "{\"beta1\": 0.9, \"beta2\": 0.98, \"epsilon\": 1e-8}" \
-    --cfg transformer_base_pre_ln_enc12_dec1.yml \
+    --cfg transformer_base_pre_ln.yml \
+    --lr ${lr} \
+    --num_accumulated ${num_accumulated} \
+    --sampler BoundedBudgetSampler \
+    --max_num_tokens ${max_num_tokens} \
+    --epochs ${epochs} \
+    --warmup_steps 4000 \
+    --warmup_init_lr 1e-07 \
+    --seed 123 \
+    --max_grad_norm 1.0 \
+    --fp16
+```
+
+
+In addition, it has been shown that we can use a deep encoder and
+a shallow decoder to improve the performance as in
+["Deep Encoder, Shallow Decoder:Reevaluating the Speed-Quality Tradeoff in Machine Translation"](https://arxiv.org/pdf/2006.10369.pdf)
+To train with Pre-LN + Deep-Shallow architecture, you can specify the [transformer_base_pre_ln_enc12_dec1.yml](transformer_enc20_dec2.yml) and train with the configuration.
+
+```
+SUBWORD_ALGO=yttm
+SRC=en
+TGT=de
+lr=0.0016
+num_accumulated=8
+max_num_tokens=4096
+wd=0.0
+epochs=60
+SAVE_DIR=transformer_base_{SRC}-{TGT}_enc20_dec2_${SUBWORD_ALGO}_${lr}_${wd}_${num_accumulated}_${max_num_tokens}_${epochs}
+horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
+    --comm_backend horovod \
+    --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
+    --train_tgt_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
+    --dev_src_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
+    --dev_tgt_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${TGT} \
+    --src_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
+    --src_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --tgt_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
+    --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --save_dir ${SAVE_DIR} \
+    --optimizer adam \
+    --wd ${wd} \
+    --cfg transformer_enc20_dec2.yml \
     --lr ${lr} \
     --num_accumulated ${num_accumulated} \
     --sampler BoundedBudgetSampler \
