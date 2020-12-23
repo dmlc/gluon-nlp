@@ -207,6 +207,10 @@ def get_parser():
     parser.add_argument('--comm_backend', type=str, default='device',
                         choices=['horovod', 'dist_sync_device', 'device'],
                         help='Communication backend.')
+    parser.add_argument('--tokenize', action="store_true",
+                        help='Whether to tokenize the input, By default, we assume all input has '
+                             'been pretokenized. '
+                             'When set the flag, we will tokenize the samples.')
     parser.add_argument('--gpus', type=str,
                         help='list of gpus to run, e.g. 0 or 0,2,5. empty means using cpu.')
     return parser
@@ -302,7 +306,8 @@ def load_dataset_with_cache(src_corpus_path: str,
                             overwrite_cache: bool,
                             local_rank: int,
                             max_src_length: int = None,
-                            max_tgt_length: int = None):
+                            max_tgt_length: int = None,
+                            pretokenized=True):
     src_md5sum = md5sum(src_corpus_path)
     tgt_md5sum = md5sum(tgt_corpus_path)
     cache_filepath = os.path.join(CACHE_PATH,
@@ -327,14 +332,20 @@ def load_dataset_with_cache(src_corpus_path: str,
         # TODO(sxjscience) Optimize the speed of converting to cache
         with open(src_corpus_path) as f:
             for line in f:
-                src_tokens = src_tokenizer.encode(line.strip(), output_type=int)
+                if pretokenized:
+                    src_tokens = src_tokenizer.vocab[line.strip().split()]
+                else:
+                    src_tokens = src_tokenizer.encode(line.strip(), output_type=int)
                 if max_src_length is not None:
                     src_tokens = src_tokens[:max_src_length]
                 sample = np.array(src_tokens + [src_tokenizer.vocab.eos_id], dtype=np.int32)
                 src_data.append(sample)
         with open(tgt_corpus_path) as f:
             for line in f:
-                tgt_tokens = tgt_tokenizer.encode(line.strip(), output_type=int)
+                if pretokenized:
+                    tgt_tokens = tgt_tokenizer.vocab[line.strip().split()]
+                else:
+                    tgt_tokens = tgt_tokenizer.encode(line.strip(), output_type=int)
                 if max_tgt_length is not None:
                     tgt_tokens = tgt_tokens[:max_tgt_length]
                 sample = np.array([tgt_tokenizer.vocab.bos_id] +
@@ -399,13 +410,15 @@ def train(args):
                                                              args.overwrite_cache,
                                                              local_rank,
                                                              max_src_length=args.max_src_length,
-                                                             max_tgt_length=args.max_tgt_length)
+                                                             max_tgt_length=args.max_tgt_length,
+                                                             pretokenized=not args.tokenize)
     dev_src_data, dev_tgt_data = load_dataset_with_cache(args.dev_src_corpus,
                                                          args.dev_tgt_corpus,
                                                          src_tokenizer,
                                                          tgt_tokenizer,
                                                          args.overwrite_cache,
-                                                         local_rank)
+                                                         local_rank,
+                                                         pretokenized=not args.tokenize)
     tgt_bpe_sentences = []
     tgt_raw_sentences = []
     with open(args.dev_tgt_corpus, 'r') as in_f:

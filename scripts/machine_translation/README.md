@@ -43,6 +43,8 @@ horovodrun -np 4 -H localhost:4 python3  train_transformer.py \
     --train_tgt_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
     --src_lang ${SRC} \
     --tgt_lang ${TGT} \
+    --src_tokenizer ${SUBWORD_ALGO} \
+    --tgt_tokenizer ${SUBWORD_ALGO} \
     --dev_src_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
     --dev_tgt_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${TGT} \
     --dev_tgt_raw_corpus wmt2014_ende/dev.raw.${TGT} \
