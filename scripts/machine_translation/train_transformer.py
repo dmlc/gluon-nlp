@@ -790,7 +790,8 @@ def train(args):
                 raw_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_raw,
                                                           ref_streams=[tgt_raw_sentences])
                 with open(os.path.join(args.save_dir, f'epoch{epoch_id}_dev_prediction.txt'), 'w') as of:
-                    of.writelines(pred_sentences_raw)
+                    for line in pred_sentences_raw:
+                        of.write(line + '\n')
                 logging.info('[Epoch {}][Iter {}/{}] validation loss/ppl={:.4f}/{:.4f}, '
                              'Raw SacreBlEU={}, BPE SacreBLUE={}'
                              .format(epoch_id, train_iter, total_train_iters,
