@@ -289,6 +289,7 @@ def validation(model, data_loader, inference_model, sequence_sampler,
         mx.npx.waitall()
     avg_loss = avg_nll_loss.asnumpy() / ntokens
     pred_lengths = np.array(pred_lengths)
+    sentence_ids = np.concatenate(sentence_ids, axis=0)
     return avg_loss, ntokens, pred_sentences, pred_lengths, sentence_ids
 
 
