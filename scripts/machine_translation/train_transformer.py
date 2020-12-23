@@ -419,11 +419,12 @@ def train(args):
                                                          args.overwrite_cache,
                                                          local_rank,
                                                          pretokenized=not args.tokenize)
-    tgt_bpe_sentences = []
+    tgt_detok_sentences = []
     tgt_raw_sentences = []
     with open(args.dev_tgt_corpus, 'r') as in_f:
         for line in in_f:
-            tgt_bpe_sentences.append(tgt_tokenizer.decode(line.split()))
+            tgt_detok_sentences.append(base_tgt_tokenizer.decode(
+                tgt_tokenizer.decode(line.split()).split()))
     with open(args.dev_tgt_raw_corpus, 'r') as in_f:
         for line in in_f:
             tgt_raw_sentences.append(line.strip())
@@ -785,19 +786,19 @@ def train(args):
                     raw_sentence = base_tgt_tokenizer.decode(bpe_decode_sentence.split())
                     pred_sentences_bpe_decode.append(bpe_decode_sentence)
                     pred_sentences_raw.append(raw_sentence)
-                bpe_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_bpe_decode,
-                                                          ref_streams=[tgt_bpe_sentences])
+                detok_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_bpe_decode,
+                                                            ref_streams=[tgt_detok_sentences])
                 raw_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_raw,
                                                           ref_streams=[tgt_raw_sentences])
                 with open(os.path.join(args.save_dir, f'epoch{epoch_id}_dev_prediction.txt'), 'w') as of:
                     for line in pred_sentences_raw:
                         of.write(line + '\n')
                 logging.info('[Epoch {}][Iter {}/{}] validation loss/ppl={:.4f}/{:.4f}, '
-                             'Raw SacreBlEU={}, BPE SacreBLUE={}'
+                             'SacreBlEU={}, Detok SacreBLUE={}'
                              .format(epoch_id, train_iter, total_train_iters,
                                      avg_val_loss, np.exp(avg_val_loss),
                                      raw_sacrebleu_out.score,
-                                     bpe_sacrebleu_out.score))
+                                     detok_sacrebleu_out.score))
                 writer.add_scalar('valid_loss', avg_val_loss, train_iter)
 
     if args.num_averages > 0:
