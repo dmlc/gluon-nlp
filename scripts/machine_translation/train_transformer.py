@@ -277,7 +277,8 @@ def validation(model, data_loader, inference_model, sequence_sampler,
 
             # Perform beam search
             states = inference_model.init_states(src_token_ids, src_valid_length)
-            samples, scores, sample_valid_length = sequence_sampler(init_input, states, src_valid_length)
+            samples, scores, sample_valid_length = sequence_sampler(init_input, states,
+                                                                    src_valid_length)
             samples = samples.asnumpy()
             sample_valid_length = sample_valid_length.asnumpy()
             for j in range(samples.shape[0]):
@@ -416,8 +417,8 @@ def train(args):
     val_samples = [(src_tokens, tgt_tokens, len(src_tokens), len(tgt_tokens), i)
                    for i, (src_tokens, tgt_tokens) in enumerate(zip(dev_src_data, dev_tgt_data))]
     if args.comm_backend == 'horovod':
-        slice_begin = rank * (len(val_samples) // num_parts) * num_parts
-        slice_end = min((rank + 1) * (len(val_samples) // num_parts) * num_parts, len(val_samples))
+        slice_begin = rank * (len(val_samples) // num_parts)
+        slice_end = min((rank + 1) * (len(val_samples) // num_parts), len(val_samples))
         data_val = gluon.data.SimpleDataset(val_samples[slice_begin:slice_end])
     else:
         data_val = gluon.data.SimpleDataset(val_samples)
