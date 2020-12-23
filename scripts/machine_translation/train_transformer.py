@@ -763,19 +763,21 @@ def train(args):
                 for sentence_id, length in zip(sentence_ids, pred_lengths):
                     pred_sentences[sentence_id] = flatten_pred_sentences[ptr:(ptr + length)]
                     ptr += length
-            # Perform detokenization
-            pred_sentences_bpe_decode = []
-            pred_sentences_raw = []
-            for sentence in pred_sentences:
-                bpe_decode_sentence = tgt_tokenizer.decode(sentence.tolist())
-                raw_sentence = base_tgt_tokenizer.decode(bpe_decode_sentence.split())
-                pred_sentences_bpe_decode.append(bpe_decode_sentence)
-                pred_sentences_raw.append(raw_sentence)
-            bpe_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_bpe_decode,
-                                                      ref_streams=[tgt_bpe_sentences])
-            raw_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_raw,
-                                                      ref_streams=[tgt_raw_sentences])
             if local_rank == 0:
+                # Perform detokenization
+                pred_sentences_bpe_decode = []
+                pred_sentences_raw = []
+                for sentence in pred_sentences:
+                    bpe_decode_sentence = tgt_tokenizer.decode(sentence.tolist())
+                    raw_sentence = base_tgt_tokenizer.decode(bpe_decode_sentence.split())
+                    pred_sentences_bpe_decode.append(bpe_decode_sentence)
+                    pred_sentences_raw.append(raw_sentence)
+                bpe_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_bpe_decode,
+                                                          ref_streams=[tgt_bpe_sentences])
+                raw_sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences_raw,
+                                                          ref_streams=[tgt_raw_sentences])
+                with open(os.path.join(args.save_dir, f'epoch{epoch_id}_dev_prediction.txt'), 'w') as of:
+                    of.writelines(pred_sentences_raw)
                 logging.info('[Epoch {}][Iter {}/{}] validation loss/ppl={:.4f}/{:.4f}, '
                              'Raw SacreBlEU={}, BPE SacreBLUE={}'
                              .format(epoch_id, train_iter, total_train_iters,
