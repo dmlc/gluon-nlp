@@ -32,7 +32,7 @@ For "transformer_base" configuration, we provide the script that uses horovod + 
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.0016
+lr=0.002
 num_accumulated=8
 max_num_tokens=4096
 epochs=60

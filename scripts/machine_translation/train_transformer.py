@@ -282,8 +282,10 @@ def validation(model, data_loader, inference_model, sequence_sampler,
             samples = samples.asnumpy()
             sample_valid_length = sample_valid_length.asnumpy()
             for j in range(samples.shape[0]):
-                pred_sentences.append(samples[j, 0, :sample_valid_length[j, 0]])
-                pred_lengths.append(sample_valid_length[j, 0])
+                valid_length = sample_valid_length[j, 0]
+                # Ignore the BOS + EOS tokens
+                pred_sentences.append(samples[j, 0, 1:(valid_length - 1)])
+                pred_lengths.append(valid_length - 2)
             sentence_ids.append(sample_ids.asnumpy())
         avg_nll_loss += sum([loss.as_in_ctx(mx.cpu()) for loss in loss_l])
         mx.npx.waitall()
