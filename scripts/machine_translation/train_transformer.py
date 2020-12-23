@@ -737,12 +737,19 @@ def train(args):
                              tgt_tokenizer, ctx_l)
             if args.comm_backend == 'horovod':
                 flatten_pred_sentences = np.concatenate(pred_sentences, axis=0)
-                all_val_loss = hvd.allgather(mx.np.array([avg_val_loss * ntokens], ctx=ctx_l[0]))
-                all_ntokens = hvd.allgather(mx.np.array([ntokens], ctx=ctx_l[0]))
+                all_val_loss = hvd.allgather(mx.np.array([avg_val_loss * ntokens],
+                                                         dtype=np.float32,
+                                                         ctx=ctx_l[0]))
+                all_ntokens = hvd.allgather(mx.np.array([ntokens],
+                                                        dtype=np.int64,
+                                                        ctx=ctx_l[0]))
                 flatten_pred_sentences = hvd.allgather(mx.np.array(flatten_pred_sentences,
+                                                                   dtype=np.int32,
                                                                    ctx=ctx_l[0]))
-                pred_lengths = hvd.allgather(mx.np.array(pred_lengths, ctx=ctx_l[0]))
-                sentence_ids = hvd.allgather(mx.np.array(sentence_ids, ctx=ctx_l[0]))
+                pred_lengths = hvd.allgather(mx.np.array(pred_lengths,
+                                                         dtype=np.int64, ctx=ctx_l[0]))
+                sentence_ids = hvd.allgather(mx.np.array(sentence_ids,
+                                                         dtype=np.int64, ctx=ctx_l[0]))
                 avg_val_loss = all_val_loss.asnumpy().sum() / all_ntokens.asnumpy().sum()
                 flatten_pred_sentences = flatten_pred_sentences.asnumpy()
                 pred_lengths = pred_lengths.asnumpy()
