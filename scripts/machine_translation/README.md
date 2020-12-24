@@ -32,7 +32,7 @@ For "transformer_base" configuration, we provide the script that uses horovod + 
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.002
+lr=0.0018
 num_accumulated=8
 max_num_tokens=4096
 epochs=60
@@ -104,7 +104,7 @@ For "transformer_wmt_en_de_big" configuration
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.0005
+lr=0.0006
 num_accumulated=16
 max_num_tokens=3584
 adam_epsilon=1e-9
@@ -116,6 +116,8 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --train_tgt_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
     --src_lang ${SRC} \
     --tgt_lang ${TGT} \
+    --src_tokenizer ${SUBWORD_ALGO} \
+    --tgt_tokenizer ${SUBWORD_ALGO} \
     --dev_src_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
     --dev_tgt_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${TGT} \
     --dev_tgt_raw_corpus wmt2014_ende/dev.raw.${TGT} \
