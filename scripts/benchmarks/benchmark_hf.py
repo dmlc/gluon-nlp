@@ -2,24 +2,37 @@ import argparse
 import pandas as pd
 import math
 import os
+import multiprocessing as mp
 from multiprocessing import Process
 import torch
 from typing import Callable
-from transformers import HfArgumentParser, PyTorchBenchmark, PyTorchBenchmarkArguments
+from transformers import HfArgumentParser
+from transformers.benchmark.benchmark import PyTorchBenchmark, PyTorchBenchmarkArguments
 import logging
 import timeit
 logger = logging.getLogger()
 
 
 class CustomizedPyTorchBenchmark(PyTorchBenchmark):
-    def _prepare_train_func(self, model_name: str, batch_size: int, sequence_length: int) -> Callable[[], None]:
+    def _prepare_train_func(self, model_name: str, batch_size: int, sequence_length: int):
         _train = super(CustomizedPyTorchBenchmark, self)._prepare_train_func(model_name,
                                                                              batch_size,
                                                                              sequence_length)
+
         def train_fn():
             _train()
             torch.cuda.synchronize()
         return train_fn
+
+    def _prepare_inference_func(self, model_name: str, batch_size: int, sequence_length: int):
+        _inference = super(CustomizedPyTorchBenchmark, self)._prepare_inference_func(model_name,
+                                                                                     batch_size,
+                                                                                     sequence_length)
+
+        def infer_fn():
+            _inference()
+            torch.cuda.synchronize()
+        return infer_fn
 
     def _measure_speed(self, func) -> float:
         try:
@@ -27,7 +40,7 @@ class CustomizedPyTorchBenchmark(PyTorchBenchmark):
                 # run additional 10 times to stabilize compilation for tpu and torchscript
                 logger.info("Do inference on TPU or torchscript. Running model 5 times to stabilize compilation")
                 timeit.repeat(
-                    func, repeat=1, number=3,
+                    func, repeat=1, number=5,
                 )
 
             # as written in https://docs.python.org/2/library/timeit.html#timeit.Timer.repeat, min should be taken rather than the average
@@ -84,8 +97,7 @@ inference_workloads = [
 ]
 
 
-if __name__ == '__main__':
-    # Profile PyTorch
+def main():
     parser = HfArgumentParser(PyTorchBenchmarkArguments)
     # Benchmark Training
     for use_fp16 in [False, True]:
@@ -99,16 +111,23 @@ if __name__ == '__main__':
                         '--sequence_lengths', '{}'.format(seq_length),
                         '--train_time_csv_file', '{}.train_time.csv'.format(prefix),
                         '--train_memory_csv_file', '{}.train_memory.csv'.format(prefix),
-                        '--no_env_print',
                         '--repeat', '3',
-                        '--save_to_csv', '--training', '--no_inference']
+                        '--save_to_csv', '--training',
+                        '--no_inference',
+                        '--no_multi_process']
                 if use_fp16:
                     args.append('--fp16')
                 benchmark_args = parser.parse_args_into_dataclasses(args)[0]
                 benchmark = CustomizedPyTorchBenchmark(args=benchmark_args)
+                benchmark.run()
                 p = Process(target=benchmark.run)
                 p.start()
                 p.join()
+                # try:
+                #     benchmark.run()
+                # except Exception as exp:
+                #     logging.info(exp)
+
                 try:
                     train_time_df = pd.read_csv('{}.train_time.csv'.format(prefix))
                     train_memory_df = pd.read_csv('{}.train_memory.csv'.format(prefix))
@@ -124,6 +143,7 @@ if __name__ == '__main__':
                                        'sequence_length': [seq_length],
                                        'latency': [latency],
                                        'memory': [memory]})
+                print(new_df)
                 df = df.append(new_df, ignore_index=True)
                 if use_fp16:
                     df.to_csv('pytorch_train_fp16.csv')
@@ -146,18 +166,24 @@ if __name__ == '__main__':
                             '--sequence_lengths', '{}'.format(seq_length),
                             '--inference_time_csv_file', '{}.inference_time.csv'.format(prefix),
                             '--inference_memory_csv_file', '{}.inference_memory.csv'.format(prefix),
-                            '--no_env_print',
                             '--repeat', '3',
-                            '--save_to_csv']
+                            '--save_to_csv',
+                            '--no_multi_process']
                     if use_fp16:
                         args.append('--fp16')
                     if torch_script:
                         args.append('--torchscript')
                     benchmark_args = parser.parse_args_into_dataclasses(args)[0]
-                    benchmark = PyTorchBenchmark(args=benchmark_args)
+                    benchmark = CustomizedPyTorchBenchmark(args=benchmark_args)
                     p = Process(target=benchmark.run)
                     p.start()
                     p.join()
+                    # try:
+                    #     benchmark.run()
+                    # except Exception as exp:
+                    #     print(exp)
+                    #     logging.info(exp)
+
                     try:
                         inference_time_df = pd.read_csv('{}.inference_time.csv'.format(prefix))
                         inference_memory_df = pd.read_csv('{}.inference_memory.csv'.format(prefix))
@@ -173,6 +199,7 @@ if __name__ == '__main__':
                                            'sequence_length': [seq_length],
                                            'latency': [latency],
                                            'memory': [memory]})
+                    print(new_df)
                     df = df.append(new_df, ignore_index=True)
                     if use_fp16 and torch_script:
                         df.to_csv('pytorch_infer_fp16_ts.csv')
@@ -182,3 +209,9 @@ if __name__ == '__main__':
                         df.to_csv('pytorch_infer_fp32_ts.csv')
                     else:
                         df.to_csv('pytorch_infer_fp32.csv')
+
+
+if __name__ == '__main__':
+    mp.set_start_method('spawn')
+    # Profile PyTorch
+    main()
