@@ -151,7 +151,7 @@ def get_parser():
                              'sentence if it is longer than this number.')
     parser.add_argument('--batch_size', type=int, default=2700,
                         help='Batch size. Number of tokens per gpu in a minibatch.')
-    parser.add_argument('--val_batch_size', type=int, default=16,
+    parser.add_argument('--val_batch_size', type=int, default=4,
                         help='Batch size for evaluation.')
     parser.add_argument('--max_grad_norm', type=float, default=None,
                         help='Max gradient norm. when not specified, the gradient '
@@ -553,7 +553,6 @@ def train(args):
                                               batch_sampler=train_batch_sampler,
                                               batchify_fn=batchify_fn,
                                               num_workers=0)
-
     val_data_loader = gluon.data.DataLoader(data_val,
                                             batch_size=args.val_batch_size,
                                             batchify_fn=batchify_fn,
