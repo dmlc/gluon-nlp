@@ -119,7 +119,6 @@ def main():
                     args.append('--fp16')
                 benchmark_args = parser.parse_args_into_dataclasses(args)[0]
                 benchmark = CustomizedPyTorchBenchmark(args=benchmark_args)
-                benchmark.run()
                 p = Process(target=benchmark.run)
                 p.start()
                 p.join()
