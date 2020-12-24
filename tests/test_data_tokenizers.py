@@ -357,6 +357,8 @@ def test_yttm_tokenizer():
             assert int_decode == ele_gt_int_decode
             assert str_decode == ele_gt_str_decode
         os.remove(model_path)
+        assert tokenizer.decode([]) == ''
+        assert tokenizer.decode([[]]) == ['']
 
 
 @pytest.mark.seed(123)
