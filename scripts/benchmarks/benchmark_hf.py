@@ -123,10 +123,6 @@ def main():
                 p = Process(target=benchmark.run)
                 p.start()
                 p.join()
-                # try:
-                #     benchmark.run()
-                # except Exception as exp:
-                #     logging.info(exp)
 
                 try:
                     train_time_df = pd.read_csv('{}.train_time.csv'.format(prefix))
@@ -178,11 +174,6 @@ def main():
                     p = Process(target=benchmark.run)
                     p.start()
                     p.join()
-                    # try:
-                    #     benchmark.run()
-                    # except Exception as exp:
-                    #     print(exp)
-                    #     logging.info(exp)
 
                     try:
                         inference_time_df = pd.read_csv('{}.inference_time.csv'.format(prefix))
