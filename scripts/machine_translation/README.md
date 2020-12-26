@@ -177,7 +177,8 @@ Results (evaluated via SacreBLEU):
 
 | Subword Model | Beam Search | Seed | Test BLEU | Tensorboard | Weights | Log | Config |
 |---------------|-------------|------|-----------|-------------|---------|-----|--------|
-| yttm          | lp_alpha=0.6, lp_k=5, beam=4  | 123 | 27.0  | [tensorboard](https://tensorboard.dev/experiment/8dAIKQBPQmqTw4Qal30BZQ/) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/avg_51_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/config.yml) |
+| yttm          | lp_alpha=0.6, lp_k=5, beam=4  | 123 | 27.03  | [tensorboard](https://tensorboard.dev/experiment/8dAIKQBPQmqTw4Qal30BZQ/) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/avg_51_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/config.yml) |
+| -             | stochastic beam search (with --stochastic)  |  -  | 27.08  | - | - | - | - |
 
 The sacreBLEU hash is
 ```

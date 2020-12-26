@@ -503,6 +503,7 @@ class BeamSearchSampler(HybridBlock):
         self._sampling_topp = sampling_topp
         self._sampling_topk = sampling_topk
         self._early_return = early_return
+        self._stochastic = stochastic
         if sampling:
             if not stochastic:
                 self._updater = _MultinomialStepUpdate(
@@ -629,6 +630,7 @@ class BeamSearchSampler(HybridBlock):
               '  max_length_b={max_length_b}\n' \
               '  scorer={scorer}\n' \
               '  sampling={sampling}\n' \
+              '  stochastic_beam_search={stochastic}\n' \
               '  sampling_topp={sampling_topp}\n' \
               '  sampling_topk={sampling_topk}\n' \
               ')' \
@@ -640,6 +642,7 @@ class BeamSearchSampler(HybridBlock):
                     max_length_b=self._max_length_b,
                     scorer=self._scorer,
                     sampling=self._sampling,
+                    stochastic=self._stochastic,
                     sampling_topp=self._sampling_topp,
                     sampling_topk=self._sampling_topk)
         return ret
