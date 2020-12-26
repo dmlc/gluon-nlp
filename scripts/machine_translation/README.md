@@ -188,10 +188,9 @@ BLEU+c.mixed+#.1+s.exp+tok.13a+v.1.4.14 = 27.0 57.9/32.5/20.7/13.7 (BP = 1.000 r
 
 - transformer_wmt_en_de_big
 
-(test bleu / valid bleu)
-| Subword Model | Seed = 123  |
-|---------------|-------------|
-| yttm          | 27.99/26.84 |
+| Subword Model | Beam Search | Seed  | Test BLEU | Tensorboard |
+|---------------|-------------|-------|-----------|-------------|
+| yttm          | lp_alpha=0.6, lp_k=5, beam=4 | 123 | 27.99/26.84 | [tensorboard](https://tensorboard.dev/experiment/zBOkrLIOS4SMtGnuZILpdw) |
 
 
 ### Train with customized configuration
