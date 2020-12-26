@@ -256,8 +256,11 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
     --train_tgt_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
+    --src_lang ${SRC} \
+    --tgt_lang ${TGT} \
     --dev_src_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
     --dev_tgt_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${TGT} \
+    --dev_tgt_raw_corpus wmt2014_ende/dev.raw.${TGT} \
     --src_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
     --src_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --tgt_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
