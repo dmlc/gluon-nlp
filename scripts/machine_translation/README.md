@@ -204,33 +204,37 @@ Post-LN has been the default architecture used in `transformer-base` and `transf
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.0016
-num_accumulated=8
-max_num_tokens=4096
-wd=0.0
+lr=0.0006
+num_accumulated=2
+max_num_tokens=5120
+adam_epsilon=1e-9
 epochs=60
-SAVE_DIR=transformer_base_{SRC}-{TGT}_enc20_dec2_${SUBWORD_ALGO}_${lr}_${wd}_${num_accumulated}_${max_num_tokens}_${epochs}
+SAVE_DIR=transformer_big_t2t_wmt2014_${SRC}_${TGT}_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}_eps${adam_epsilon}_norm_clip_20201225
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
     --train_tgt_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
+    --src_lang ${SRC} \
+    --tgt_lang ${TGT} \
+    --src_tokenizer ${SUBWORD_ALGO} \
+    --tgt_tokenizer ${SUBWORD_ALGO} \
     --dev_src_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
     --dev_tgt_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${TGT} \
+    --dev_tgt_raw_corpus wmt2014_ende/dev.raw.${TGT} \
     --src_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
     --src_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --tgt_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
     --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --save_dir ${SAVE_DIR} \
-    --optimizer adam \
-    --wd ${wd} \
-    --cfg transformer_base_pre_ln.yml \
+    --optimizer_params "{\"epsilon\": ${adam_epsilon}}" \
+    --cfg transformer_wmt_en_de_big_t2t \
     --lr ${lr} \
     --num_accumulated ${num_accumulated} \
-    --sampler BoundedBudgetSampler \
     --max_num_tokens ${max_num_tokens} \
+    --sampler BoundedBudgetSampler \
     --epochs ${epochs} \
     --warmup_steps 4000 \
-    --warmup_init_lr 1e-07 \
+    --warmup_init_lr 0.0 \
     --seed 123 \
     --max_grad_norm 1.0 \
     --fp16
@@ -250,7 +254,7 @@ lr=5e-4
 num_accumulated=4
 max_num_tokens=4096
 wd=0.0
-epochs=60
+epochs=120
 SAVE_DIR=transformer_base_${SRC}-${TGT}_enc12_dec1_${SUBWORD_ALGO}_${lr}_${wd}_${num_accumulated}_${max_num_tokens}_${epochs}
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \

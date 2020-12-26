@@ -1,5 +1,0 @@
-MODEL:
-  DECODER:
-    pre_norm: true
-  ENCODER:
-    pre_norm: true
