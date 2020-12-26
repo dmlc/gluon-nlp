@@ -96,6 +96,22 @@ python3 evaluate_transformer.py \
     --fp16
 ```
 
+#### Results
+
+We evaluate the results via SacreBLEU:
+
+| Subword Model | Beam Search | Seed | Test BLEU | Tensorboard | Weights | Log | Config |
+|---------------|-------------|------|-----------|-------------|---------|-----|--------|
+| yttm          | lp_alpha=0.6, lp_k=5, beam=4  | 123 | 27.03  | [tensorboard](https://tensorboard.dev/experiment/8dAIKQBPQmqTw4Qal30BZQ/) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/avg_51_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/config.yml) |
+| -             | stochastic beam (with --stochastic)  |  -  | 27.08  | - | - | - | - |
+
+The sacreBLEU hash is
+```
+# lp_alph=0.6, lp_k=5, beam=4
+BLEU+c.mixed+#.1+s.exp+tok.13a+v.1.4.14 = 27.0 57.9/32.5/20.7/13.7 (BP = 1.000 ratio = 1.030 hyp_len = 64599 ref_len = 62688)
+```
+
+
 ### Transformer Big
 
 For "transformer_wmt_en_de_big" configuration
@@ -140,17 +156,18 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --fp16
 ```
 
-Use the average_checkpoint cli to average the 5 checkpoints with the highest dev bleu score. 
-In our example, it is the  
+Use the average_checkpoint cli to average the last 15 checkpoints. 
 
 ```bash
 gluon_average_checkpoint --checkpoints ${SAVE_DIR}/epoch*.params \
-    --ids 45 59 49 52 46 \
-    --save-path ${SAVE_DIR}/avg_best5.params
+    --begin 46 \
+    --end 60 \
+    --save-path ${SAVE_DIR}/avg_51_60.params
 ```
 
 
-Use the following command to inference/evaluate the Transformer model:
+Use the following command to inference/evaluate the Transformer model. 
+We use the [Stochastic BeamSearch](https://arxiv.org/pdf/1903.06059.pdf) to generate the samples.
 
 ```bash
 python3 evaluate_transformer.py \
@@ -166,38 +183,30 @@ python3 evaluate_transformer.py \
     --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --src_corpus wmt2014_ende/test.raw.en \
     --tgt_corpus wmt2014_ende/test.raw.de \
+    --stochastic \
     --fp16
 ```
 
+#### Results
 
-Results (evaluated via SacreBLEU):
-
-- transformer_base
-
-
-| Subword Model | Beam Search | Seed | Test BLEU | Tensorboard | Weights | Log | Config |
-|---------------|-------------|------|-----------|-------------|---------|-----|--------|
-| yttm          | lp_alpha=0.6, lp_k=5, beam=4  | 123 | 27.03  | [tensorboard](https://tensorboard.dev/experiment/8dAIKQBPQmqTw4Qal30BZQ/) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/avg_51_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/config.yml) |
-| -             | stochastic beam search (with --stochastic)  |  -  | 27.08  | - | - | - | - |
+| Subword Model | Beam Search | Seed  | Test BLEU | Tensorboard | Weights | Log | Config |
+|---------------|-------------|-------|-----------|-------------|---------|-----|--------|
+| yttm          | lp_alpha=1.0, beam=4 | 123 | 28.15 | [tensorboard](https://tensorboard.dev/experiment/zBOkrLIOS4SMtGnuZILpdw) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201224/avg_46_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201224/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201224/config.yml) |
+| -             | stochastic beam (with --stochastic)      | - | 28.27 | - | - | - | - |
 
 The sacreBLEU hash is
 ```
-BLEU+c.mixed+#.1+s.exp+tok.13a+v.1.4.14 = 27.0 57.9/32.5/20.7/13.7 (BP = 1.000 ratio = 1.030 hyp_len = 64599 ref_len = 62688)
+# with stochastic beam search
+BLEU+case.mixed+lang.en-de+numrefs.1+smooth.exp+test.wmt14/full+tok.13a+version.1.4.14 = 28.3 59.2/33.9/21.8/14.6 (BP = 1.000 ratio = 1.020 hyp_len = 63941 ref_len = 62688)
 ```
 
+### Customized configuration
 
-- transformer_wmt_en_de_big
+#### Pre-layer normalization
 
-| Subword Model | Beam Search | Seed  | Test BLEU | Tensorboard |
-|---------------|-------------|-------|-----------|-------------|
-| yttm          | lp_alpha=0.6, lp_k=5, beam=4 | 123 | 27.99/26.84 | [tensorboard](https://tensorboard.dev/experiment/zBOkrLIOS4SMtGnuZILpdw) |
-
-
-### Train with customized configuration
-
-For example, pre-layer normalization (Pre-LN) has been shown to be more stable than the post layer-normalization. 
+Pre-layer normalization (Pre-LN) has been shown to be more stable than the post layer-normalization. 
 (See also ["On Layer Normalization in the Transformer Architecture"](http://proceedings.mlr.press/v119/xiong20b/xiong20b.pdf)). 
-Post-LN has been the default architecture used in `transformer-base` and `transformer-large`. To train with Pre-LN
+Post-LN has been the default architecture used in `transformer-base` and `transformer-large`. We  train with Pre-LN
 
 ```
 SUBWORD_ALGO=yttm
@@ -239,6 +248,8 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --fp16
 ```
 
+
+#### Deep Encoder, Shallow Decoder
 
 In addition, it has been shown that we can use a deep encoder and
 a shallow decoder to improve the performance as in
