@@ -799,6 +799,7 @@ def train(args):
                                      raw_sacrebleu_out.score,
                                      detok_sacrebleu_out.score))
                 writer.add_scalar('valid_loss', avg_val_loss, train_iter)
+                writer.add_scalar('valid_bleu', raw_sacrebleu_out.score, train_iter)
 
     if args.num_averages > 0:
         model_averager.copy_back(model.collect_params())  # TODO(sxjscience) Rewrite using update

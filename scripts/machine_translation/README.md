@@ -170,14 +170,20 @@ python3 evaluate_transformer.py \
 ```
 
 
-Test BLEU score (evaluated via SacreBLEU):
+Results (evaluated via SacreBLEU):
 
 - transformer_base
 
-(test bleu / valid bleu)
-| Subword Model | Seed = 123  |
-|---------------|-------------|
-| yttm          | 26.95/25.85 |
+
+| Subword Model | Beam Search | Seed | Test BLEU | Tensorboard | Weights | Log | Config |
+|---------------|-------------|------|-----------|-------------|---------|-----|--------|
+| yttm          | lp_alpha=0.6, lp_k=5, beam=4  | 123 | 27.0  | [tensorboard](https://tensorboard.dev/experiment/8dAIKQBPQmqTw4Qal30BZQ/) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/avg_51_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/config.yml) |
+
+The sacreBLEU hash is
+```
+BLEU+c.mixed+#.1+s.exp+tok.13a+v.1.4.14 = 27.0 57.9/32.5/20.7/13.7 (BP = 1.000 ratio = 1.030 hyp_len = 64599 ref_len = 62688)
+```
+
 
 - transformer_wmt_en_de_big
 
