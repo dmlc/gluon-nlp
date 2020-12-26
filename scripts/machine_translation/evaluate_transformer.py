@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import os
+import json
 import mxnet as mx
 from mxnet import gluon
 import argparse
@@ -311,6 +312,10 @@ def evaluate(args):
                              sacrebleu_out.bp, sacrebleu_out.sys_len / sacrebleu_out.ref_len,
                              sacrebleu_out.sys_len, sacrebleu_out.ref_len,
                              avg_nll_loss, np.exp(avg_nll_loss)))
+        results = {'sacrebleu': sacrebleu_out.score,
+                   'nll': avg_nll_loss}
+        with open(os.path.join(args.save_dir, 'results.json'), 'w') as of:
+            json.dump(results, of)
     # inference only
     else:
         with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
