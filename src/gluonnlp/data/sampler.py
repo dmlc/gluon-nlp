@@ -278,6 +278,7 @@ class BoundedBudgetSampler(BaseSampler):
     ----------
     lengths
         The length of the sequences in the input data sample.
+        For example, can be [500, 100, 200], or [[100, 102], [200, 100], [500, 12]]
     max_num_tokens
         Max number of tokens of each batch
     max_num_sentences
@@ -298,21 +299,30 @@ class BoundedBudgetSampler(BaseSampler):
         assert max_num_tokens > 0 or max_num_sentences > 0, \
                'One of max_num_tokens and max_num_sentences must be larger than 0'
         self._lengths = np.array(lengths)
-        if self._lengths.ndim == 2:
-            self._lengths = self._lengths.max(axis=1)
-        self._indices = np.arange(len(lengths))
         self._max_num_tokens = max_num_tokens
         self._max_num_sentences = max_num_sentences
         self._batches = []
         self._shuffle = shuffle
         self._rng = np.random.RandomState(seed)
         # sort
-        self._indices = self._indices[np.argsort(self._lengths, kind='mergesort')]
+        if self._shuffle:
+            self._indices = self._rng.permutation(len(lengths))
+        else:
+            self._indices = np.arange(len(lengths))
+        if self._lengths.ndim == 2:
+            for i in range(self._lengths.shape[1] - 1, -1, -1):
+                self._indices = self._indices[np.argsort(self._lengths[:, i], kind='mergesort')]
+        else:
+            self._indices = self._indices[np.argsort(self._lengths, kind='mergesort')]
+        if self._lengths.ndim == 2:
+            self._max_lengths = self._lengths.max(axis=1)
+        else:
+            self._max_lengths = self._lengths
         batch = []
         # max len in a batch
         batch_max_sample_len = 0
         for index in self._indices:
-            batch_max_sample_len = max(batch_max_sample_len, self._lengths[index])
+            batch_max_sample_len = max(batch_max_sample_len, self._max_lengths[index])
             # try to insert new sample to the batch
             batch_num_sentences = len(batch) + 1
             batch_num_tokens = batch_num_sentences * batch_max_sample_len
@@ -326,8 +336,8 @@ class BoundedBudgetSampler(BaseSampler):
                 self._batches.append(np.array(batch[:moded_bs]))
                 batch = batch[moded_bs:]
                 batch_max_sample_len = max(
-                    self._lengths[batch].max() if len(batch) > 0 else 0,
-                    self._lengths[index]
+                    self._max_lengths[batch].max() if len(batch) > 0 else 0,
+                    self._max_lengths[index]
                 )
             batch.append(index)
         if len(batch) > 0:
@@ -341,6 +351,14 @@ class BoundedBudgetSampler(BaseSampler):
 
     def __len__(self):
         return len(self._batches)
+
+    @property
+    def rng(self):
+        """Access the internal random number generator. This helps with reproducible research."""
+        return self._rng
+
+    def lengths(self):
+        return self._lengths
 
     def __repr__(self):
         ret = '{name}(\n' \
@@ -589,6 +607,11 @@ class SortedBucketSampler(BaseSampler):
                 batch_end = min(batch_begin + self._batch_size, len(sorted_sample_ids))
                 yield sorted_sample_ids[batch_begin:batch_end]
 
+    @property
+    def rng(self):
+        """Access the internal random number generator. This helps with reproducible research."""
+        return self._rng
+
     def __len__(self):
         return (len(self._sort_keys) + self._batch_size - 1) // self._batch_size
 
@@ -705,6 +728,11 @@ class ShardedIterator(BaseSampler):
             self._start = self._start if self._start < length else length
             self._end = self._end if self._end < length else length
             self._part_len = part_len
+
+    @property
+    def rng(self):
+        """Access the internal random number generator. This helps with reproducible research."""
+        return self._rng
 
     def __iter__(self):
         # TODO(?), When the number of samples is large. We should improve the logic here.
