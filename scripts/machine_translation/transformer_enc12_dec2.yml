@@ -4,4 +4,4 @@ MODEL:
     num_layers: 2
   ENCODER:
     pre_norm: false
-    num_layers: 20
+    num_layers: 12

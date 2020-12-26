@@ -240,14 +240,14 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
 In addition, it has been shown that we can use a deep encoder and
 a shallow decoder to improve the performance as in
 ["Deep Encoder, Shallow Decoder:Reevaluating the Speed-Quality Tradeoff in Machine Translation"](https://arxiv.org/pdf/2006.10369.pdf)
-To train with Pre-LN + Deep-Shallow architecture, you can specify the [transformer_base_pre_ln_enc12_dec1.yml](transformer_enc20_dec2.yml) and train with the configuration.
+To train with Pre-LN + Deep-Shallow architecture, you can specify the [transformer_base_pre_ln_enc12_dec1.yml](transformer_enc12_dec2.yml) and train with the configuration.
 
 ```
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
 lr=0.0016
-num_accumulated=8
+num_accumulated=16
 max_num_tokens=4096
 wd=0.0
 epochs=60
@@ -265,7 +265,7 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --save_dir ${SAVE_DIR} \
     --optimizer adam \
     --wd ${wd} \
-    --cfg transformer_enc20_dec2.yml \
+    --cfg transformer_enc12_dec2.yml \
     --lr ${lr} \
     --num_accumulated ${num_accumulated} \
     --sampler BoundedBudgetSampler \
