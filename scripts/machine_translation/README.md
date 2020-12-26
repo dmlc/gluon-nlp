@@ -140,13 +140,13 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --fp16
 ```
 
-Use the average_checkpoint cli to average the last 10 checkpoints
+Use the average_checkpoint cli to average the 5 checkpoints with the highest dev bleu score. 
+In our example, it is the  
 
 ```bash
 gluon_average_checkpoint --checkpoints ${SAVE_DIR}/epoch*.params \
-    --begin 51 \
-    --end 60 \
-    --save-path ${SAVE_DIR}/avg_51_60.params
+    --ids 45 59 49 52 46 \
+    --save-path ${SAVE_DIR}/avg_best5.params
 ```
 
 

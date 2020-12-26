@@ -24,8 +24,6 @@ def get_parser():
 
 
 def main(args):
-    assert args.begin >= 0
-    assert args.end >= args.begin
     args.range = list(range(args.begin, args.end + 1))
     if args.begin is not None or args.end is not None or args.ids is not None:
         print(f'Before filtering, the checkpoints are {args.checkpoints}')
@@ -40,6 +38,8 @@ def main(args):
         else:
             assert args.begin is not None and args.end is not None, \
                 'Must specify both begin and end if you want to select a range!'
+            assert args.begin >= 0
+            assert args.end >= args.begin
             for ele in checkpoint_id_l:
                 if ele >= args.begin and ele <= args.end:
                     ckpt_paths.append(f'{prefix}{ele}{postfix}')
