@@ -264,7 +264,7 @@ lr=5e-4
 num_accumulated=4
 max_num_tokens=4096
 wd=0.0
-epochs=120
+epochs=60
 SAVE_DIR=transformer_base_${SRC}-${TGT}_enc12_dec1_${SUBWORD_ALGO}_${lr}_${wd}_${num_accumulated}_${max_num_tokens}_${epochs}
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
