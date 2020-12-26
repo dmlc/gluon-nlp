@@ -240,24 +240,26 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
 In addition, it has been shown that we can use a deep encoder and
 a shallow decoder to improve the performance as in
 ["Deep Encoder, Shallow Decoder:Reevaluating the Speed-Quality Tradeoff in Machine Translation"](https://arxiv.org/pdf/2006.10369.pdf)
-To train with Pre-LN + Deep-Shallow architecture, you can specify the [transformer_base_pre_ln_enc12_dec1.yml](transformer_enc12_dec2.yml) and train with the configuration.
+To train with Pre-LN + Deep-Shallow architecture, you can specify the [transformer_base_pre_ln_enc12_dec1.yml](transformer_enc12_dec1.yml) and train with the configuration.
 
 ```
 SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
-lr=0.0016
-num_accumulated=16
+lr=5e-4
+num_accumulated=4
 max_num_tokens=4096
 wd=0.0
 epochs=60
-SAVE_DIR=transformer_base_{SRC}-{TGT}_enc20_dec2_${SUBWORD_ALGO}_${lr}_${wd}_${num_accumulated}_${max_num_tokens}_${epochs}
+SAVE_DIR=transformer_base_${SRC}-${TGT}_enc12_dec1_${SUBWORD_ALGO}_${lr}_${wd}_${num_accumulated}_${max_num_tokens}_${epochs}
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
     --train_tgt_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${TGT} \
     --src_lang ${SRC} \
     --tgt_lang ${TGT} \
+    --src_tokenizer ${SUBWORD_ALGO} \
+    --tgt_tokenizer ${SUBWORD_ALGO} \
     --dev_src_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${SRC} \
     --dev_tgt_corpus wmt2014_ende/dev.tok.${SUBWORD_ALGO}.${TGT} \
     --dev_tgt_raw_corpus wmt2014_ende/dev.raw.${TGT} \
@@ -268,7 +270,7 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --save_dir ${SAVE_DIR} \
     --optimizer adam \
     --wd ${wd} \
-    --cfg transformer_enc12_dec2.yml \
+    --cfg transformer_enc12_dec1.yml \
     --lr ${lr} \
     --num_accumulated ${num_accumulated} \
     --sampler BoundedBudgetSampler \
