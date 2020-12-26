@@ -24,7 +24,6 @@ def get_parser():
 
 
 def main(args):
-    args.range = list(range(args.begin, args.end + 1))
     if args.begin is not None or args.end is not None or args.ids is not None:
         print(f'Before filtering, the checkpoints are {args.checkpoints}')
         prefix = os.path.commonprefix(args.checkpoints)
