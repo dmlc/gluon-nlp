@@ -25,10 +25,10 @@ from eval_utils import squad_eval
 from squad_utils import SquadFeature, get_squad_examples, convert_squad_example_to_feature
 from gluonnlp.models import get_backbone
 from gluonnlp.utils.misc import repeat, grouper, set_seed, init_comm, \
-    logging_config, count_parameters, parse_ctx
+    logging_config, parse_ctx
 from gluonnlp.initializer import TruncNorm
 from gluonnlp.data.sampler import SplitSampler
-from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm
+from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm, count_parameters
 
 try:
     import horovod.mxnet as hvd

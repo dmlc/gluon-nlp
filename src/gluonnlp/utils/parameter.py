@@ -15,7 +15,8 @@
 # specific language governing permissions and limitations
 # under the License.
 """Utility functions for trainer and parameters."""
-__all__ = ['grad_global_norm', 'clip_grad_global_norm', 'deduplicate_param_dict']
+__all__ = ['grad_global_norm',
+           'clip_grad_global_norm', 'deduplicate_param_dict', 'count_parameters']
 
 
 import warnings
@@ -201,3 +202,41 @@ def deduplicate_param_dict(param_dict):
             dedup_param_dict[k] = v
             param_set.add(v)
     return dedup_param_dict
+
+
+# TODO(sxjscience) Consider to move it into the official MXNet gluon package
+#  Also currently we have not printed the grad_req flag in Parameters, i.e.,
+#  print(net.collect_params()) will not print the grad_req flag.
+def count_parameters(params) -> Tuple[int, int]:
+    """
+
+    Parameters
+    ----------
+    params
+        The input parameter dict
+
+    Returns
+    -------
+    num_params
+        The number of parameters that requires gradient
+    num_fixed_params
+        The number of parameters that does not require gradient
+    """
+    # TODO(sxjscience), raise warning if there are -1/0s in the parameters
+    num_params = 0
+    num_fixed_params = 0
+    for k, v in params.items():
+        if v.grad_req != 'null':
+            if v._data is None:
+                warnings.warn('"{}" is not initialized! The total parameter count '
+                              'will not be correct.'.format(k))
+            else:
+                num_params += np.prod(v.shape)
+        else:
+            if v._data is None:
+                warnings.warn('"{}" is not initialized! The total fixed parameter count '
+                              'will not be correct.'.format(k))
+            else:
+                num_fixed_params += np.prod(v.shape)
+    return num_params, num_fixed_params
+
