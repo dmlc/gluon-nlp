@@ -197,7 +197,7 @@ def deduplicate_param_dict(param_dict):
     """
     dedup_param_dict = dict()
     param_set = set()
-    for k, v in param_dict:
+    for k, v in param_dict.items():
         if v not in param_set:
             dedup_param_dict[k] = v
             param_set.add(v)
