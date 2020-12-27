@@ -266,22 +266,37 @@ def validation(model, data_loader, inference_model, sequence_sampler,
             tgt_token_ids = tgt_token_ids.as_in_ctx(ctx)
             src_valid_length = src_valid_length.as_in_ctx(ctx)
             tgt_valid_length = tgt_valid_length.as_in_ctx(ctx)
-            tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
-                             tgt_valid_length - 1)
-            tgt_labels = tgt_token_ids[:, 1:]
-            tgt_pred_logits = mx.npx.log_softmax(tgt_pred, axis=-1)
-            nll_loss = - mx.npx.pick(tgt_pred_logits, tgt_labels, axis=-1)
-            loss = mx.npx.sequence_mask(nll_loss,
-                                        sequence_length=tgt_valid_length - 1,
-                                        use_sequence_length=True,
-                                        axis=1)
-            loss_l.append(loss.sum())
+            if model.layout == 'NT':
+                tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
+                                 tgt_valid_length - 1)
+                tgt_labels = tgt_token_ids[:, 1:]
+                tgt_pred_logits = mx.npx.log_softmax(tgt_pred, axis=-1)
+                nll_loss = - mx.npx.pick(tgt_pred_logits, tgt_labels, axis=-1)
+                loss = mx.npx.sequence_mask(nll_loss,
+                                            sequence_length=tgt_valid_length - 1,
+                                            use_sequence_length=True,
+                                            axis=1)
+                loss_l.append(loss.sum())
+            elif model.layout == 'TN':
+                tgt_pred = model(src_token_ids.T, src_valid_length, tgt_token_ids.T[:-1, :],
+                                 tgt_valid_length - 1)
+                tgt_labels = tgt_token_ids.T[1:, :]
+                tgt_pred_logits = mx.npx.log_softmax(tgt_pred, axis=-1)
+                nll_loss = - mx.npx.pick(tgt_pred_logits, tgt_labels, axis=-1)
+                loss = mx.npx.sequence_mask(nll_loss,
+                                            sequence_length=tgt_valid_length - 1,
+                                            use_sequence_length=True,
+                                            axis=0)
+                loss_l.append(loss.sum())
             init_input = mx.np.array(
                 [tgt_tokenizer.vocab.bos_id for _ in range(src_token_ids.shape[0])],
                 ctx=ctx)
 
             # Perform beam search
-            states = inference_model.init_states(src_token_ids, src_valid_length)
+            if model.layout == 'NT':
+                states = inference_model.init_states(src_token_ids, src_valid_length)
+            elif model.layout == 'TN':
+                states = inference_model.init_states(src_token_ids.T, src_valid_length)
             samples, scores, sample_valid_length = sequence_sampler(init_input, states,
                                                                     src_valid_length)
             samples = samples.asnumpy()
