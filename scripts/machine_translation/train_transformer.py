@@ -557,9 +557,7 @@ def train(args):
 
     logging.info(train_batch_sampler)
 
-    batchify_fn = bf.Tuple(bf.Pad(round_to=8),
-                           bf.Pad(round_to=8),
-                           bf.Stack(), bf.Stack(), bf.Stack())
+    batchify_fn = bf.Tuple(bf.Pad(), bf.Pad(), bf.Stack(), bf.Stack(), bf.Stack())
     train_data_loader = gluon.data.DataLoader(data_train,
                                               batch_sampler=train_batch_sampler,
                                               batchify_fn=batchify_fn,
