@@ -292,11 +292,14 @@ class BoundedBudgetSampler(BaseSampler):
             We sort the indices based on the individual lengths.
             For example, each sample has (src_length, tgt_length).
             We will sort them as
-            indices = indices[argsort(lengths[1])]
-            indices = indices[argsort(lengths[0])]
+            indices = indices[argsort(lengths[:, 1])]
+            indices = indices[argsort(lengths[:, 0])]
         - max:
             Take the max of the lengths and sort by the max value.
             indices = indices[argsort(lengths.max(axis=-1)]
+        - first:
+            Just sort with the first length
+            indices = indices[argsort(lengths[:, 0]]
     shuffle
         Whether to shuffle the batches.
     seed
