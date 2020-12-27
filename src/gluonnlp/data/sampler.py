@@ -286,6 +286,17 @@ class BoundedBudgetSampler(BaseSampler):
     required_batch_size_multiple
         Require batch size to be a multiple of N (default: 1).
         This will generally have better throughput in GPU.
+    sort_type
+        The way we sort the sample.
+        - one_by_one:
+            We sort the indices based on the individual lengths.
+            For example, each sample has (src_length, tgt_length).
+            We will sort them as
+            indices = indices[argsort(lengths[1])]
+            indices = indices[argsort(lengths[0])]
+        - max:
+            Take the max of the lengths and sort by the max value.
+            indices = indices[argsort(lengths.max(axis=-1)]
     shuffle
         Whether to shuffle the batches.
     seed
@@ -294,6 +305,7 @@ class BoundedBudgetSampler(BaseSampler):
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_num_tokens: int = -1, max_num_sentences: int = -1,
                  required_batch_size_multiple: int = 1,
+                 sort_type: str = 'max',
                  shuffle: bool = True, seed: Optional[int] = None):
         assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
         assert max_num_tokens > 0 or max_num_sentences > 0, \
@@ -304,14 +316,24 @@ class BoundedBudgetSampler(BaseSampler):
         self._batches = []
         self._shuffle = shuffle
         self._rng = np.random.RandomState(seed)
+        self._sort_type = sort_type
         # sort
         if self._shuffle:
             self._indices = self._rng.permutation(len(lengths))
         else:
             self._indices = np.arange(len(lengths))
         if self._lengths.ndim == 2:
-            for i in range(self._lengths.shape[1] - 1, -1, -1):
-                self._indices = self._indices[np.argsort(self._lengths[:, i], kind='mergesort')]
+            if self._sort_type == 'one_by_one':
+                for i in range(self._lengths.shape[1] - 1, -1, -1):
+                    self._indices = self._indices[np.argsort(self._lengths[:, i],
+                                                             kind='mergesort')]
+            elif self._sort_type == 'max':
+                for i in range(self._lengths.shape[1] - 1, -1, -1):
+                    self._indices = self._indices[np.argsort(self._lengths.max(axis=-1),
+                                                             kind='mergesort')]
+            else:
+                raise NotImplementedError
+
         else:
             self._indices = self._indices[np.argsort(self._lengths, kind='mergesort')]
         if self._lengths.ndim == 2:
