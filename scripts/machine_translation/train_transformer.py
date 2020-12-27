@@ -724,8 +724,8 @@ def train(args):
                                  log_tgt_wc / 1000 / log_iter_num,
                                  trainer.learning_rate,
                                  log_avg_grad_norm,
-                                 (log_end_time - train_start_time)
-                                 / (train_iter + 1) * total_train_iters / 3600))
+                                 (log_end_time - log_start_time)
+                                 / log_iter_num * total_train_iters / 3600))
             if local_rank == 0:
                 writer.add_scalar('throughput_wps', wps, train_iter)
                 writer.add_scalar('train_loss', log_avg_loss, train_iter)
