@@ -25,6 +25,7 @@ import random
 import warnings
 import numpy as np
 import abc
+import logging
 from typing import Union, Sequence, Optional, List
 from ..base import INT_TYPES
 
@@ -370,6 +371,7 @@ class BoundedBudgetSampler(BaseSampler):
 
     def __iter__(self):
         if self._shuffle:
+            logging.info('In BoundedBudgetSampler. Reshuffle batches.')
             self._rng.shuffle(self._batches)
         for batch in self._batches:
             yield batch
@@ -768,6 +770,7 @@ class ShardedIterator(BaseSampler):
             candidates = self._rng.choice(len(batches), size=self._part_len-len(part_batches))
             for idx in candidates:
                 part_batches.append(batches[idx])
+        logging.info('In ShardedIterator. Constructed part batches!')
         for batch in part_batches:
             yield batch
     
