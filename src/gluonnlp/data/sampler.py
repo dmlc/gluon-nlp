@@ -289,7 +289,7 @@ class BoundedBudgetSampler(BaseSampler):
         This will generally have better throughput in GPU.
     sort_type
         The way we sort the sample.
-        - one_by_one:
+        - sequential:
             We sort the indices based on the individual lengths.
             For example, each sample has (src_length, tgt_length).
             We will sort them as
@@ -309,7 +309,7 @@ class BoundedBudgetSampler(BaseSampler):
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_num_tokens: int = -1, max_num_sentences: int = -1,
                  required_batch_size_multiple: int = 1,
-                 sort_type: str = 'one_by_one',
+                 sort_type: str = 'sequential',
                  shuffle: bool = True, seed: Optional[int] = None):
         assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
         assert max_num_tokens > 0 or max_num_sentences > 0, \
@@ -327,7 +327,7 @@ class BoundedBudgetSampler(BaseSampler):
         else:
             self._indices = np.arange(len(lengths))
         if self._lengths.ndim == 2:
-            if self._sort_type == 'one_by_one':
+            if self._sort_type == 'sequential':
                 for i in range(self._lengths.shape[1] - 1, -1, -1):
                     self._indices = self._indices[np.argsort(self._lengths[:, i],
                                                              kind='mergesort')]
