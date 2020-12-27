@@ -329,17 +329,20 @@ class BoundedBudgetSampler(BaseSampler):
         if self._lengths.ndim == 2:
             if self._sort_type == 'sequential':
                 for i in range(self._lengths.shape[1] - 1, -1, -1):
-                    self._indices = self._indices[np.argsort(self._lengths[:, i],
-                                                             kind='mergesort')]
+                    self._indices = self._indices[
+                        np.argsort(self._lengths[self._indices, i],
+                                   kind='mergesort')]
             elif self._sort_type == 'max':
                 for i in range(self._lengths.shape[1] - 1, -1, -1):
-                    self._indices = self._indices[np.argsort(self._lengths.max(axis=-1),
-                                                             kind='mergesort')]
+                    self._indices = self._indices[
+                        np.argsort(self._lengths.max(axis=-1)[self._indices],
+                                   kind='mergesort')]
             else:
                 raise NotImplementedError
 
         else:
-            self._indices = self._indices[np.argsort(self._lengths, kind='mergesort')]
+            self._indices = self._indices[np.argsort(self._lengths[self._indices],
+                                                     kind='mergesort')]
         if self._lengths.ndim == 2:
             self._max_lengths = self._lengths.max(axis=1)
         else:
