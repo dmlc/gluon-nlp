@@ -642,16 +642,28 @@ def train(args):
                 loss_denom_l[j] += token_count / const_scale
                 log_avg_loss_denom_l[j] += token_count / const_scale
                 with mx.autograd.record():
-                    tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
-                                     tgt_valid_length - 1)
-                    tgt_labels = tgt_token_ids[:, 1:]
-                    loss = label_smooth_loss(tgt_pred, tgt_labels)
-                    loss = mx.npx.sequence_mask(loss,
-                                                sequence_length=tgt_valid_length - 1,
-                                                use_sequence_length=True,
-                                                axis=1)
-                    loss = loss.sum() / const_scale
-                    loss_l.append(loss)
+                    if model.layout == 'NT':
+                        tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
+                                         tgt_valid_length - 1)
+                        tgt_labels = tgt_token_ids[:, 1:]
+                        loss = label_smooth_loss(tgt_pred, tgt_labels)
+                        loss = mx.npx.sequence_mask(loss,
+                                                    sequence_length=tgt_valid_length - 1,
+                                                    use_sequence_length=True,
+                                                    axis=1)
+                        loss = loss.sum() / const_scale
+                        loss_l.append(loss)
+                    elif model.layout == 'TN':
+                        tgt_pred = model(src_token_ids.T, src_valid_length, tgt_token_ids.T[:-1, :],
+                                         tgt_valid_length - 1)
+                        tgt_labels = tgt_token_ids.T[1:, :]
+                        loss = label_smooth_loss(tgt_pred, tgt_labels)
+                        loss = mx.npx.sequence_mask(loss,
+                                                    sequence_length=tgt_valid_length - 1,
+                                                    use_sequence_length=True,
+                                                    axis=0)
+                        loss = loss.sum() / const_scale
+                        loss_l.append(loss)
                 log_avg_loss_l[j] += loss
             if use_amp:
                 with mx.autograd.record():
