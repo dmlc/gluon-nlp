@@ -372,9 +372,11 @@ class BoundedBudgetSampler(BaseSampler):
     def __iter__(self):
         if self._shuffle:
             logging.info('In BoundedBudgetSampler. Reshuffle batches.')
-            self._rng.shuffle(self._batches)
-        for batch in self._batches:
-            yield batch
+            indices = self._rng.permutation(len(self._batches))
+        else:
+            indices = range(len(self._batches))
+        for idx in indices:
+            yield self._batches[idx]
 
     def __len__(self):
         return len(self._batches)
