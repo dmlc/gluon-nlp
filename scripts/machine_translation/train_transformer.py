@@ -45,7 +45,7 @@ import sacrebleu
 from mxnet import gluon
 from gluonnlp.models.transformer import TransformerModel, TransformerNMTInference
 from gluonnlp.sequence_sampler import BeamSearchSampler, BeamSearchScorer
-from gluonnlp.utils.misc import logging_config, AverageSGDTracker,\
+from gluonnlp.utils.misc import logging_config,\
     md5sum, grouper, init_comm, repeat
 from gluonnlp.data.sampler import (
     ConstWidthBucket,
@@ -63,7 +63,7 @@ from gluonnlp.data.tokenizers import BaseTokenizerWithVocab, huggingface, MosesT
 from gluonnlp.lr_scheduler import InverseSquareRootScheduler
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
 from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm,\
-    deduplicate_param_dict, count_parameters
+    deduplicate_param_dict, count_parameters, AverageSGDTracker
 
 
 try:

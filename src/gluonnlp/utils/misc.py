@@ -17,8 +17,7 @@ try:
 except ImportError:
     tqdm = None
 from .lazy_imports import try_import_boto3
-from mxnet.gluon.utils import shape_is_known, replace_file
-from collections import OrderedDict
+from mxnet.gluon.utils import replace_file
 import glob as _glob
 
 
@@ -43,90 +42,6 @@ def glob(url, separator=','):
     for pattern in patterns:
         result.extend(_glob.glob(os.path.expanduser(pattern.strip())))
     return result
-
-
-class AverageSGDTracker(object):
-    def __init__(self, params=None):
-        """Maintain a set of shadow variables "v" that is calculated by
-
-            v[:] = (1 - 1/t) v + 1/t \theta
-
-        The t is the number of training steps.
-
-        It is also known as "Polyak-Rupert averaging" applied to SGD and was rediscovered in
-        "Towards Optimal One Pass Large Scale Learning withAveraged Stochastic Gradient Descent"
-         Wei Xu (2011).
-
-        The idea is to average the parameters obtained by stochastic gradient descent.
-
-
-        Parameters
-        ----------
-        params : ParameterDict
-            The parameters that we are going to track.
-        """
-        self._track_params = None
-        self._average_params = None
-        self._initialized = False
-        self._n_steps = 0
-        if params is not None:
-            self.apply(params)
-
-    @property
-    def n_steps(self):
-        return self._n_steps
-
-    @property
-    def average_params(self):
-        return self._average_params
-
-    @property
-    def initialized(self):
-        return self._initialized
-
-    def apply(self, params):
-        """ Tell the moving average tracker which parameters we are going to track.
-
-        Parameters
-        ----------
-        params : ParameterDict
-            The parameters that we are going to track and calculate the moving average.
-        """
-        assert self._track_params is None, 'The MovingAverageTracker is already initialized and'\
-                                           ' is not allowed to be initialized again. '
-        self._track_params = params
-        self._n_steps = 0
-
-    def step(self):
-        assert self._track_params is not None, 'You will need to use `.apply(params)`' \
-                                               ' to initialize the MovingAverageTracker.'
-        for k, v in self._track_params.items():
-            assert shape_is_known(v.shape),\
-                'All shapes of the tracked parameters must be given.' \
-                ' The shape of {} is {}, and it has not been fully initialized.' \
-                ' You should call step after the first forward of the model.'.format(k, v.shape)
-        ctx = next(iter(self._track_params.values())).list_ctx()[0]
-        if self._average_params is None:
-            self._average_params = OrderedDict([(k, v.data(ctx).copy()) for k, v in self._track_params.items()])
-        self._n_steps += 1
-        decay = 1.0 / self._n_steps
-        for name, average_param in self._average_params.items():
-            average_param += decay * (self._track_params[name].data(ctx) - average_param)
-
-    def copy_back(self, params=None):
-        """ Copy the average parameters back to the given parameters
-
-        Parameters
-        ----------
-        params : ParameterDict
-            The parameters that we will copy tha average params to.
-            If it is not given, the tracked parameters will be updated
-
-        """
-        if params is None:
-            params = self._track_params
-        for k, v in params.items():
-            v.set_data(self._average_params[k])
 
 
 def file_line_number(path: str) -> int:

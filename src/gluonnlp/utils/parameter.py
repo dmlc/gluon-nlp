@@ -16,7 +16,8 @@
 # under the License.
 """Utility functions for trainer and parameters."""
 __all__ = ['grad_global_norm',
-           'clip_grad_global_norm', 'deduplicate_param_dict', 'count_parameters']
+           'clip_grad_global_norm', 'deduplicate_param_dict',
+           'count_parameters', 'AverageSGDTracker']
 
 
 import warnings
@@ -27,6 +28,93 @@ from collections import defaultdict
 from mxnet.gluon import Parameter
 from mxnet.util import use_np
 from typing import Iterable, Optional, Tuple
+from collections import OrderedDict
+from mxnet.gluon.utils import shape_is_known
+
+
+class AverageSGDTracker(object):
+    def __init__(self, params=None):
+        """Maintain a set of shadow variables "v" that is calculated by
+
+            v[:] = (1 - 1/t) v + 1/t \theta
+
+        The t is the number of training steps.
+
+        It is also known as "Polyak-Rupert averaging" applied to SGD and was rediscovered in
+        "Towards Optimal One Pass Large Scale Learning withAveraged Stochastic Gradient Descent"
+         Wei Xu (2011).
+
+        The idea is to average the parameters obtained by stochastic gradient descent.
+
+
+        Parameters
+        ----------
+        params : ParameterDict
+            The parameters that we are going to track.
+        """
+        self._track_params = None
+        self._average_params = None
+        self._initialized = False
+        self._n_steps = 0
+        if params is not None:
+            self.apply(params)
+
+    @property
+    def n_steps(self):
+        return self._n_steps
+
+    @property
+    def average_params(self):
+        return self._average_params
+
+    @property
+    def initialized(self):
+        return self._initialized
+
+    def apply(self, params):
+        """ Tell the moving average tracker which parameters we are going to track.
+
+        Parameters
+        ----------
+        params : ParameterDict
+            The parameters that we are going to track and calculate the moving average.
+        """
+        assert self._track_params is None, 'The MovingAverageTracker is already initialized and'\
+                                           ' is not allowed to be initialized again. '
+        self._track_params = deduplicate_param_dict(params)
+        self._n_steps = 0
+
+    def step(self):
+        assert self._track_params is not None, 'You will need to use `.apply(params)`' \
+                                               ' to initialize the MovingAverageTracker.'
+        for k, v in self._track_params.items():
+            assert shape_is_known(v.shape),\
+                'All shapes of the tracked parameters must be given.' \
+                ' The shape of {} is {}, and it has not been fully initialized.' \
+                ' You should call step after the first forward of the model.'.format(k, v.shape)
+        ctx = next(iter(self._track_params.values())).list_ctx()[0]
+        if self._average_params is None:
+            self._average_params = OrderedDict([(k, v.data(ctx).copy())
+                                                for k, v in self._track_params.items()])
+        self._n_steps += 1
+        decay = 1.0 / self._n_steps
+        for name, average_param in self._average_params.items():
+            average_param += decay * (self._track_params[name].data(ctx) - average_param)
+
+    def copy_back(self, params=None):
+        """ Copy the average parameters back to the given parameters
+
+        Parameters
+        ----------
+        params : ParameterDict
+            The parameters that we will copy tha average params to.
+            If it is not given, the tracked parameters will be updated
+
+        """
+        if params is None:
+            params = self._track_params
+        for k, v in self._average_params.items():
+            params[k].set_data(v)
 
 
 def grad_global_norm(parameters: Iterable[Parameter]) -> float:
@@ -68,7 +156,11 @@ def grad_global_norm(parameters: Iterable[Parameter]) -> float:
     arrays = defaultdict(list)
     sum_norms = []
     num_ctx = None
+    param_uuid_set = set()
     for p in parameters:
+        if p._uuid in param_uuid_set:
+            continue
+        param_uuid_set.add(p._uuid)
         if p.grad_req != 'null':
             p_grads = p.list_grad()
             if num_ctx is None:
@@ -152,7 +244,11 @@ def clip_grad_global_norm(parameters: Iterable[Parameter],
             stacklevel=2)
         return total_norm, ratio, is_finite
     scale = 1 / ratio
+    param_uuid_set = set()
     for p in parameters:
+        if p._uuid in param_uuid_set:
+            continue
+        param_uuid_set.add(p._uuid)
         if p.grad_req != 'null':
             for arr in p.list_grad():
                 arr *= scale
@@ -196,11 +292,12 @@ def deduplicate_param_dict(param_dict):
     dedup_param_dict
     """
     dedup_param_dict = dict()
-    param_set = set()
+    param_uuid_set = set()
     for k, v in param_dict.items():
-        if v not in param_set:
-            dedup_param_dict[k] = v
-            param_set.add(v)
+        if v._uuid in param_uuid_set:
+            continue
+        dedup_param_dict[k] = v
+        param_uuid_set.add(v._uuid)
     return dedup_param_dict
 
 
@@ -222,10 +319,13 @@ def count_parameters(params) -> Tuple[int, int]:
     num_fixed_params
         The number of parameters that does not require gradient
     """
-    # TODO(sxjscience), raise warning if there are -1/0s in the parameters
     num_params = 0
     num_fixed_params = 0
+    param_uuid_set = set()
     for k, v in params.items():
+        if v._uuid in param_uuid_set:
+            continue
+        param_uuid_set.add(v._uuid)
         if v.grad_req != 'null':
             if v._data is None:
                 warnings.warn('"{}" is not initialized! The total parameter count '
