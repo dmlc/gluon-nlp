@@ -448,6 +448,7 @@ def train(args):
     cfg.defrost()
     cfg.MODEL.src_vocab_size = len(src_vocab)
     cfg.MODEL.tgt_vocab_size = len(tgt_vocab)
+    cfg.MODEL.layout = 'TN'
     cfg.freeze()
     model = TransformerModel.from_cfg(cfg)
     model.initialize(mx.init.Xavier(magnitude=args.magnitude),
