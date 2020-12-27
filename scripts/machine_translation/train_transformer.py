@@ -618,6 +618,7 @@ def train(args):
     else:
         const_scale = 100
 
+    train_start_time = time.time()
 
     for train_iter in range(total_train_iters):
         model.zero_grad()
@@ -714,7 +715,7 @@ def train(args):
             epoch_id = train_iter // num_updates_per_epoch
             logging.info('[Epoch {} Iter {}/{}, Overall {}/{}] loss={:.4f}, ppl={:.4f}, '
                          'throughput={:.2f}K wps, total wc={:.2f}K, wpb={:.2f}K,'
-                         ' LR={}, gnorm={:.4f}'
+                         ' LR={}, gnorm={:.4f}, ETA={:.2f}h'
                          .format(epoch_id, train_iter % num_updates_per_epoch + 1,
                                  num_updates_per_epoch,
                                  train_iter + 1, total_train_iters,
@@ -722,7 +723,9 @@ def train(args):
                                  wps / 1000, log_wc / 1000,
                                  log_tgt_wc / 1000 / log_iter_num,
                                  trainer.learning_rate,
-                                 log_avg_grad_norm))
+                                 log_avg_grad_norm,
+                                 (log_end_time - train_start_time)
+                                 / (train_iter + 1) * total_train_iters / 3600))
             if local_rank == 0:
                 writer.add_scalar('throughput_wps', wps, train_iter)
                 writer.add_scalar('train_loss', log_avg_loss, train_iter)
