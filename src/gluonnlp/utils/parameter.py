@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Utility functions for trainer and parameters."""
-__all__ = ['grad_global_norm', 'clip_grad_global_norm']
+__all__ = ['grad_global_norm', 'clip_grad_global_norm', 'deduplicate_param_dict']
 
 
 import warnings
@@ -180,3 +180,24 @@ def move_to_ctx(arr, ctx):
         return [move_to_ctx(ele, ctx) for ele in arr]
     else:
         return None if arr is None else arr.as_in_ctx(ctx)
+
+
+def deduplicate_param_dict(param_dict):
+    """Get a parameter dict that has been deduplicated
+
+    Parameters
+    ----------
+    param_dict
+        The parameter dict returned by `model.collect_params()`
+
+    Returns
+    -------
+    dedup_param_dict
+    """
+    dedup_param_dict = dict()
+    param_set = set()
+    for k, v in param_dict:
+        if v not in param_set:
+            dedup_param_dict[k] = v
+            param_set.add(v)
+    return dedup_param_dict

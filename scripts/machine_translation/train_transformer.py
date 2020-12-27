@@ -62,7 +62,7 @@ from gluonnlp.data import tokenizers
 from gluonnlp.data.tokenizers import BaseTokenizerWithVocab, huggingface, MosesTokenizer
 from gluonnlp.lr_scheduler import InverseSquareRootScheduler
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
-from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm
+from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm, deduplicate_param_dict
 
 
 try:
@@ -452,6 +452,14 @@ def train(args):
     model.initialize(mx.init.Xavier(magnitude=args.magnitude),
                      ctx=ctx_l)
     model.hybridize()
+    for v in model.collect_params().values():
+        if v.grad_req != 'null':
+            v.grad_req = 'add'
+    # Do not apply weight decay to all the LayerNorm and bias
+    for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
+        v.wd_mult = 0.0
+    param_dict = deduplicate_param_dict(model.collect_params())
+
     inference_model = TransformerNMTInference(model=model)
     inference_model.hybridize()
     if local_rank == 0:
@@ -478,7 +486,7 @@ def train(args):
 
     logging.info(beam_search_sampler)
     if args.comm_backend == 'horovod':
-        hvd.broadcast_parameters(model.collect_params(), root_rank=0)
+        hvd.broadcast_parameters(param_dict, root_rank=0)
     
     # Construct the trainer
     if args.lr is None:
@@ -497,11 +505,11 @@ def train(args):
     if args.fp16:
         optimizer_params.update({'multi_precision': True})
     if args.comm_backend == 'horovod':
-        trainer = hvd.DistributedTrainer(model.collect_params(),
+        trainer = hvd.DistributedTrainer(param_dict,
                                          args.optimizer,
                                          optimizer_params)
     else:
-        trainer = gluon.Trainer(model.collect_params(),
+        trainer = gluon.Trainer(param_dict,
                                 args.optimizer,
                                 optimizer_params,
                                 update_on_kvstore=False)
@@ -558,14 +566,8 @@ def train(args):
                                             batchify_fn=batchify_fn,
                                             num_workers=0,
                                             shuffle=False)
-    for v in model.collect_params().values():
-        if v.grad_req != 'null':
-            v.grad_req = 'add'
-    # Do not apply weight decay to all the LayerNorm and bias
-    for _, v in model.collect_params('.*beta|.*gamma|.*bias').items():
-        v.wd_mult = 0.0
-    params = [p for p in model.collect_params().values() if p.grad_req != 'null']
-    model_averager = AverageSGDTracker(model.collect_params())
+    params = [p for p in param_dict.values() if p.grad_req != 'null']
+    model_averager = AverageSGDTracker(param_dict)
     log_start_time = time.time()
     num_params, num_fixed_params = None, None
 
@@ -660,7 +662,7 @@ def train(args):
 
         # Print the total number of parameters
         if local_rank == 0 and num_params is None:
-            num_params, num_fixed_params = count_parameters(model.collect_params())
+            num_params, num_fixed_params = count_parameters(param_dict)
             logging.info('Total Number of Parameters (not-fixed/fixed): {}/{}'
                          .format(num_params, num_fixed_params))
         # All-Reduce the gradient
@@ -802,7 +804,7 @@ def train(args):
                 writer.add_scalar('valid_bleu', raw_sacrebleu_out.score, train_iter)
 
     if args.num_averages > 0:
-        model_averager.copy_back(model.collect_params())  # TODO(sxjscience) Rewrite using update
+        model_averager.copy_back(param_dict)  # TODO(sxjscience) Rewrite using update
         model.save_parameters(os.path.join(args.save_dir, 'average.params'),
                               deduplicate=True)
 
