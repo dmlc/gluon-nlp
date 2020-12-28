@@ -96,6 +96,12 @@ python3 evaluate_transformer.py \
     --fp16
 ```
 
+In addition, to analyze the test/dev scores of models saved at different epochs, you can use
+
+```bash
+bash evaluate_epochs_wmt2014_ende.sh ${SAVE_DIR}
+```
+
 #### Results
 
 We evaluate the results via SacreBLEU:
