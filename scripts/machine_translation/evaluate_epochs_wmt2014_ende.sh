@@ -8,7 +8,7 @@ LP_K=${7:-5}
 BEAM_SIZE=${8:-4}
 
 
-for epoch in {${EPOCH_BEGIN}..${EPOCH_END}}
+for epoch in $( seq ${EPOCH_BEGIN} ${EPOCH_END})
 do
     python3 evaluate_transformer.py \
         --param_path ${SAVE_DIR}/epoch${epoch}.params \
