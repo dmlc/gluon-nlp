@@ -248,14 +248,15 @@ def evaluate(args):
             add_bos=True,
             add_eos=True
         )
-    else: # when applying inference, populate the fake tgt tokens
+    else:
+        # when applying inference, populate the fake tgt tokens
         all_tgt_token_ids = all_tgt_lines = [[] for i in range(len(all_src_token_ids))]
     test_dataloader = gluon.data.DataLoader(
         list(zip(all_src_token_ids,
                  [len(ele) for ele in all_src_token_ids],
                  all_tgt_token_ids,
                  [len(ele) for ele in all_tgt_token_ids])),
-        batch_size=32,
+        batch_size=64,
         batchify_fn=Tuple(Pad(), Stack(), Pad(), Stack()),
         shuffle=False)
 
