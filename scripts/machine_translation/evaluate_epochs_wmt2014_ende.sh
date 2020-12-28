@@ -26,7 +26,7 @@ do
         --lp_alpha ${LP_ALPHA} \
         --lp_k ${LP_K} \
         --beam-size ${BEAM_SIZE} \
-        --save_dir ${SAVE_DIR}/epoch${epoch}_evaluation_alpha${LP_ALPHA}_K${LP_K} \
+        --save_dir ${SAVE_DIR}/epoch${epoch}_evaluation_alpha${LP_ALPHA}_K${LP_K}_beam${BEAM_SIZE} \
         --fp16
 
     python3 evaluate_transformer.py \
@@ -45,6 +45,6 @@ do
         --lp_alpha ${LP_ALPHA} \
         --lp_k ${LP_K} \
         --beam-size ${BEAM_SIZE} \
-        --save_dir ${SAVE_DIR}/epoch${epoch}_evaluation_dev_alpha${LP_ALPHA}_K${LP_K} \
+        --save_dir ${SAVE_DIR}/epoch${epoch}_evaluation_dev_alpha${LP_ALPHA}_K${LP_K}_beam${BEAM_SIZE} \
         --fp16
 done
