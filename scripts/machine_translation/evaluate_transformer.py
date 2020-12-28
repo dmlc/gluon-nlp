@@ -256,7 +256,7 @@ def evaluate(args):
                  [len(ele) for ele in all_src_token_ids],
                  all_tgt_token_ids,
                  [len(ele) for ele in all_tgt_token_ids])),
-        batch_size=64,
+        batch_size=32,
         batchify_fn=Tuple(Pad(), Stack(), Pad(), Stack()),
         shuffle=False)
 
