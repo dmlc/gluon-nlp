@@ -285,7 +285,7 @@ def evaluate(args):
                 tgt_pred = model(src_token_ids.T, src_valid_length, tgt_token_ids.T[:-1, :],
                                  tgt_valid_length - 1)
                 pred_logits = mx.npx.log_softmax(tgt_pred, axis=-1)
-                nll = - mx.npx.pick(pred_logits, tgt_token_ids[1:, :])
+                nll = - mx.npx.pick(pred_logits, tgt_token_ids.T[1:, :])
                 avg_nll_loss += mx.npx.sequence_mask(nll,
                                                      sequence_length=tgt_valid_length - 1,
                                                      use_sequence_length=True,
