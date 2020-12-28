@@ -272,16 +272,34 @@ def evaluate(args):
             src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
             tgt_token_ids = mx.np.array(tgt_token_ids, ctx=ctx, dtype=np.int32)
             tgt_valid_length = mx.np.array(tgt_valid_length, ctx=ctx, dtype=np.int32)
-            tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
-                            tgt_valid_length - 1)
-            pred_logits = mx.npx.log_softmax(tgt_pred, axis=-1)
-            nll = - mx.npx.pick(pred_logits, tgt_token_ids[:, 1:])
-            avg_nll_loss += mx.npx.sequence_mask(nll,
-                                                sequence_length=tgt_valid_length - 1,
-                                                use_sequence_length=True, axis=1).sum().asnumpy()
+            if model.layout == 'NT':
+                tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
+                                tgt_valid_length - 1)
+                pred_logits = mx.npx.log_softmax(tgt_pred, axis=-1)
+                nll = - mx.npx.pick(pred_logits, tgt_token_ids[:, 1:])
+                avg_nll_loss += mx.npx.sequence_mask(nll,
+                                                     sequence_length=tgt_valid_length - 1,
+                                                     use_sequence_length=True,
+                                                     axis=1).sum().asnumpy()
+            elif model.layout == 'TN':
+                tgt_pred = model(src_token_ids.T, src_valid_length, tgt_token_ids.T[:-1, :],
+                                 tgt_valid_length - 1)
+                pred_logits = mx.npx.log_softmax(tgt_pred, axis=-1)
+                nll = - mx.npx.pick(pred_logits, tgt_token_ids[1:, :])
+                avg_nll_loss += mx.npx.sequence_mask(nll,
+                                                     sequence_length=tgt_valid_length - 1,
+                                                     use_sequence_length=True,
+                                                     axis=0).sum().asnumpy()
+            else:
+                raise NotImplementedError
             ntokens += int((tgt_valid_length - 1).sum().asnumpy())
             init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
-            states = inference_model.init_states(src_token_ids, src_valid_length)
+            if model.layout == 'NT':
+                states = inference_model.init_states(src_token_ids, src_valid_length)
+            elif model.layout == 'TN':
+                states = inference_model.init_states(src_token_ids.T, src_valid_length)
+            else:
+                raise NotImplementedError
             samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
             for j in range(samples.shape[0]):
                 pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
@@ -324,7 +342,12 @@ def evaluate(args):
                 src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
                 src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
                 init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
-                states = inference_model.init_states(src_token_ids, src_valid_length)
+                if model.layout == 'NT':
+                    states = inference_model.init_states(src_token_ids, src_valid_length)
+                elif model.layout == 'TN':
+                    states = inference_model.init_states(src_token_ids.T, src_valid_length)
+                else:
+                    raise NotImplementedError
                 samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
                 for j in range(samples.shape[0]):
                     pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
