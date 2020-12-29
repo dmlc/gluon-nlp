@@ -131,7 +131,7 @@ num_accumulated=16
 max_num_tokens=3584
 adam_epsilon=1e-9
 epochs=60
-SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}_eps${adam_epsilon}_norm_clip_20201220
+SAVE_DIR=transformer_big_wmt2014_en_de_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}_eps${adam_epsilon}_norm_clip
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
@@ -198,13 +198,12 @@ python3 evaluate_transformer.py \
 
 | Subword Model | Beam Search | Seed  | Test BLEU | Tensorboard | Weights | Log | Config |
 |---------------|-------------|-------|-----------|-------------|---------|-----|--------|
-| yttm          | lp_alpha=1.0, beam=4 | 123 | 28.15 | [tensorboard](https://tensorboard.dev/experiment/zBOkrLIOS4SMtGnuZILpdw) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201224/avg_46_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201224/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201224/config.yml) |
-| -             | stochastic beam (with --stochastic)      | - | 28.27 | - | - | - | - |
+| yttm          | stochastic beam (with --stochastic)  | 123 | 28.01 | [tensorboard](https://tensorboard.dev/experiment/jm4bs3f3Q9CRYN3SxLBi9Q) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201227/avg_46_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201227/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201227/config.yml) |
 
 The sacreBLEU hash is
 ```
 # with stochastic beam search
-BLEU+case.mixed+lang.en-de+numrefs.1+smooth.exp+test.wmt14/full+tok.13a+version.1.4.14 = 28.3 59.2/33.9/21.8/14.6 (BP = 1.000 ratio = 1.020 hyp_len = 63941 ref_len = 62688)
+BLEU+case.mixed+lang.en-de+numrefs.1+smooth.exp+test.wmt14/full+tok.13a+version.1.4.14 = 28.0 58.9/33.7/21.6/14.4 (BP = 1.000 ratio = 1.023 hyp_len = 64110 ref_len = 62688)
 ```
 
 ### Other configurations
