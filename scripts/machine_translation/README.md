@@ -221,11 +221,11 @@ SUBWORD_ALGO=yttm
 SRC=en
 TGT=de
 lr=0.0006
-num_accumulated=16
-max_num_tokens=3200
+num_accumulated=4
+max_num_tokens=2560
 adam_epsilon=1e-9
 epochs=60
-SAVE_DIR=transformer_big_t2t_wmt2014_${SRC}_${TGT}_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}_eps${adam_epsilon}_norm_clip_20201228
+SAVE_DIR=transformer_big_t2t_wmt2014_${SRC}_${TGT}_${SUBWORD_ALGO}_${lr}_${max_num_tokens}_${num_accumulated}_${epochs}_eps${adam_epsilon}
 horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --comm_backend horovod \
     --train_src_corpus wmt2014_ende/train.tok.${SUBWORD_ALGO}.${SRC} \
@@ -252,7 +252,6 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
     --seed 123 \
-    --max_grad_norm 1.0 \
     --fp16
 ```
 

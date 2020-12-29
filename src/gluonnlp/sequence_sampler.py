@@ -268,7 +268,6 @@ class _BeamSearchStepUpdate(HybridBlock):
         self._scorer = scorer
         self._state_batch_axis = state_batch_axis
         self.stochastic = stochastic
-        self.activation = get_activation('relu')
         assert eos_id is None or eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
 
     def gumbel_with_maximum(self, phi, T, dim=-1):
@@ -286,7 +285,7 @@ class _BeamSearchStepUpdate(HybridBlock):
         g = self.shift_gumbel_maximum(g_phi, T, dim, Z=Z)
         return g
 
-    def shift_gumbel_maximum(self, g_phi, T, dim=-1, Z=None):
+    def shift_gumbel_maximum(self, g_phi, T, axis=-1, Z=None):
         """
 
         Parameters
@@ -295,13 +294,17 @@ class _BeamSearchStepUpdate(HybridBlock):
             Shape (batch_size, beam_size, L).
         T : mx.np.ndarray
             The previous scores. Shape (batch_size, beam_size)
+        axis
+            The axis
+        Z
+            The Z value
         """
         if Z is None:
-            Z = g_phi.max(dim)
+            Z = g_phi.max(axis=axis)
         T_ = mx.npx.reshape(T, (-4, 1))
         Z_ = mx.npx.reshape(Z, (-4, 1))
         u = T_ - g_phi + mx.np.log1p(-mx.np.exp(g_phi - Z_) + 1e-5)
-        return T_ - self.activation(u) - mx.np.log1p(mx.np.exp(-mx.np.abs(u)))
+        return T_ - mx.npx.relu(u) - mx.np.log1p(mx.np.exp(-mx.np.abs(u)))
 
     def forward(self, samples, valid_length, outputs, scores, step, beam_alive_mask,   # pylint: disable=arguments-differ
                 states, batch_shift):
@@ -369,12 +372,11 @@ class _BeamSearchStepUpdate(HybridBlock):
         # The resulting candidate score will have shape (batch_size, beam_size * |V| + beam_size)
         candidate_scores = mx.np.where(beam_alive_mask_bcast,
                                        candidate_scores,
-                                       mx.np.full_like(candidate_scores,
-                                                     LARGE_NEGATIVE_FLOAT))
+                                       mx.np.full_like(candidate_scores, LARGE_NEGATIVE_FLOAT))
         finished_scores = mx.np.where(beam_alive_mask,
                                       mx.np.full_like(scores,
                                                       LARGE_NEGATIVE_FLOAT),
-                                     scores)
+                                      scores)
         candidate_scores = mx.np.concatenate([mx.npx.reshape(candidate_scores, (-2, -1)),
                                               finished_scores],
                                               axis=1)
@@ -447,7 +449,7 @@ class BeamSearchSampler(HybridBlock):
     temperature
         The temperature.
     stochastic
-        Whether to use stochastic sampler,
+        Whether to use stochastic beam search,
         see [ICML2019] "Stochastic Beams and Where to Find Them" for detail.
         https://arxiv.org/abs/1903.06059
     sampling
@@ -504,8 +506,17 @@ class BeamSearchSampler(HybridBlock):
         self._sampling_topk = sampling_topk
         self._early_return = early_return
         self._stochastic = stochastic
-        if sampling:
-            if not stochastic:
+        if stochastic:
+            self._updater = _BeamSearchStepUpdate(
+                beam_size=beam_size,
+                vocab_size=vocab_size,
+                eos_id=eos_id,
+                scorer=scorer,
+                state_batch_axis=decoder.state_batch_axis,
+                stochastic=True
+            )
+        else:
+            if sampling:
                 self._updater = _MultinomialStepUpdate(
                     beam_size=beam_size,
                     vocab_size=vocab_size,
@@ -522,17 +533,8 @@ class BeamSearchSampler(HybridBlock):
                     eos_id=eos_id,
                     scorer=scorer,
                     state_batch_axis=decoder.state_batch_axis,
-                    stochastic=True
+                    stochastic=False
                 )
-        else:
-            self._updater = _BeamSearchStepUpdate(
-                beam_size=beam_size,
-                vocab_size=vocab_size,
-                eos_id=eos_id,
-                scorer=scorer,
-                state_batch_axis=decoder.state_batch_axis,
-                stochastic=False
-            )
 
         if not stochastic:
             self._updater.hybridize()
@@ -647,6 +649,7 @@ class BeamSearchSampler(HybridBlock):
                     sampling_topk=self._sampling_topk)
         return ret
 
+
 class _MultinomialStepUpdate(HybridBlock):
     def __init__(self, beam_size, vocab_size, eos_id, state_batch_axis,
                  sampling_topp=-1.0, sampling_topk=-1, temperature=1.0):
@@ -658,9 +661,10 @@ class _MultinomialStepUpdate(HybridBlock):
         self._sampling_topp = sampling_topp
         self._sampling_topk = sampling_topk
         self._temperature = temperature
-        self.activation = get_activation('relu')
-        assert eos_id is None or eos_id >= 0, 'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
-        assert sampling_topp <= 0 or sampling_topk <= 0, 'sampling_topp conflicts with sampling_topk'
+        assert eos_id is None or eos_id >= 0,\
+            'eos_id cannot be negative! Received eos_id={}'.format(eos_id)
+        assert sampling_topp <= 0 or sampling_topk <= 0,\
+            'sampling_topp conflicts with sampling_topk'
 
     def forward(self, samples, valid_length, outputs, scores, step, beam_alive_mask,
                 states, batch_shift):
@@ -668,7 +672,6 @@ class _MultinomialStepUpdate(HybridBlock):
 
         Parameters
         ----------
-        F
         samples : mx.np.ndarray
             The current samples generated by beam search.
             Shape (batch_size, beam_size, L).
@@ -722,7 +725,7 @@ class _MultinomialStepUpdate(HybridBlock):
         elif self._sampling_topk > 0:
             topk_probs = mx.npx.topk(probs, axis=2, k=self._sampling_topk, ret_typ='value')
             # choose the k max prob
-            k_prob = topk_probs[:,:,-1]
+            k_prob = topk_probs[:, :, -1]
             k_prob = mx.np.expand_dims(k_prob, axis=-1)
             probs = mx.np.where(
                 probs >= k_prob,
@@ -758,7 +761,8 @@ class _MultinomialStepUpdate(HybridBlock):
         )
         new_states = states
         if self._eos_id is not None:
-            beam_alive_mask = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(mx.np.int32)
+            beam_alive_mask\
+                = beam_alive_mask * (chosen_word_ids != self._eos_id).astype(mx.np.int32)
 
         return new_samples, new_valid_length, new_scores, chosen_word_ids,\
                beam_alive_mask, new_states
