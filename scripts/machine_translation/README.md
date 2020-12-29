@@ -258,14 +258,18 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
 
 Similarly, we will average the checkpoints and run evaluation (as described in [Transformer Big](#transformer-big))
 
-We evaluated with 
+We evaluated with SacreBLEU and also attached the hash
+
+```
+cat pred_sentences.txt | sacrebleu -t wmt14/full -l en-de
+```
 
 | Subword Model | Beam Search | Seed  | Test BLEU | Tensorboard | Weights | Log | Config |
 |---------------|-------------|-------|-----------|-------------|---------|-----|--------|
 | yttm          | stochastic beam (with --stochastic) | 123 | 27.98 | [tensorboard](https://tensorboard.dev/experiment/FViOeiMQS56qK4bzRvcvEA) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_t2t_wmt2014_en_de_yttm_0.0006_2560_4_60_eps1e-9_20201226/avg_46_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_t2t_wmt2014_en_de_yttm_0.0006_2560_4_60_eps1e-9_20201226/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_t2t_wmt2014_en_de_yttm_0.0006_2560_4_60_eps1e-9_20201226/config.yml) |
 
 ```
-BLEU+case.mixed+numrefs.1+smooth.exp+tok.13a+version.1.4.14 = 28.0 58.8/33.6/21.5/14.4 (BP = 1.000 ratio = 1.021 hyp_len = 64018 ref_len = 62688)
+BLEU+case.mixed+lang.en-de+numrefs.1+smooth.exp+test.wmt14/full+tok.13a+version.1.4.14 = 28.0 58.8/33.6/21.5/14.4 (BP = 1.000 ratio = 1.021 hyp_len = 64018 ref_len = 62688)
 ```
 
 #### Deep Encoder, Shallow Decoder
