@@ -9,7 +9,7 @@ python3 -m pip install tensorboardX
 Also, to install horovod, you can try out the following command:
 
 ```
-HOROVOD_GPU_OPERATIONS=NCCL HOROVOD_WITHOUT_GLOO=1 HOROVOD_WITH_MPI=1 HOROVOD_WITH_MXNET=1 HOROVOD_WITH_PYTORCH=1 HOROVOD_WITHOUT_TENSORFLOW=1 HOROVOD_NCCL_HOME=/opt/nccl/build CUDA_HOME=/usr/local/cuda pip install --no-cache-dir horovod
+HOROVOD_GPU_OPERATIONS=NCCL HOROVOD_WITHOUT_GLOO=1 HOROVOD_WITH_MPI=1 HOROVOD_WITH_MXNET=1 HOROVOD_WITHOUT_TENSORFLOW=1 pip install --no-cache-dir horovod
 ```
 
 ## Train a Transformer from scratch
@@ -211,7 +211,8 @@ BLEU+case.mixed+lang.en-de+numrefs.1+smooth.exp+test.wmt14/full+tok.13a+version.
 #### Pre-layer normalization
 
 Pre-layer normalization (Pre-LN) has been shown to be more stable than the post layer-normalization. 
-(See also ["On Layer Normalization in the Transformer Architecture"](http://proceedings.mlr.press/v119/xiong20b/xiong20b.pdf)). 
+(See also ["On Layer Normalization in the Transformer Architecture"](http://proceedings.mlr.press/v119/xiong20b/xiong20b.pdf), 
+and ["Understanding the Difficulty of Training Transformers"](https://www.aclweb.org/anthology/2020.emnlp-main.463.pdf)). 
 Post-LN has been the default architecture used in `transformer-base` and `transformer-large`. 
 To use the pre-norm variant, we can use the big-architecture implemented in Tensor2tensor: `transformer_wmt_en_de_big_t2t`.
 
