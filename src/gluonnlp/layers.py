@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Layers."""
-__all__ = ['MultiHeadDense', 'PositionalEmbedding', 'SinusoidalPositionalEmbedding',
+__all__ = ['PositionalEmbedding', 'SinusoidalPositionalEmbedding',
            'LearnedPositionalEmbedding', 'BucketPositionalEmbedding', 'AdaptiveEmbedding',
            'PositionwiseFFN', 'ProjectedAdaptiveLogSoftmaxWithLoss']
 

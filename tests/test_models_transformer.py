@@ -242,9 +242,9 @@ def test_transformer_fp16_amp(enc_pre_norm, dec_pre_norm,
                              inputs=[src_data, src_valid_length, tgt_data, tgt_valid_length])
 
 
-@pytest.mark.parameterize('cfg_name,gt_num_params,gt_num_fixed_params',
-                          [('transformer_base', 60897280, 512),
-                           ('transformer_wmt_en_de_big', 209874944, 1024)])
+@pytest.mark.parametrize('cfg_name,gt_num_params,gt_num_fixed_params',
+                         [('transformer_base', 60897280, 512),
+                          ('transformer_wmt_en_de_big', 209874944, 1024)])
 def test_transformer_param_number(cfg_name, gt_num_params, gt_num_fixed_params):
     cfg = TransformerModel.get_cfg(cfg_name)
     cfg.defrost()
@@ -253,6 +253,9 @@ def test_transformer_param_number(cfg_name, gt_num_params, gt_num_fixed_params):
     cfg.freeze()
     model = TransformerModel.from_cfg(cfg)
     model.initialize()
-    num_params, num_fixed_params = count_parameters(deduplicate_param_dict(model.collect_params()))
+    num_params, num_fixed_params = count_parameters(model.collect_params())
     assert num_params == gt_num_params
     assert num_fixed_params == gt_num_fixed_params
+    num_params2, num_fixed_params2 = count_parameters(deduplicate_param_dict(model.collect_params()))
+    assert num_params2 == gt_num_params
+    assert num_fixed_params2 == gt_num_fixed_params
