@@ -319,8 +319,3 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --max_grad_norm 1.0 \
     --fp16
 ```
-
-(test bleu)
-| Subword Model | Seed = 123  |
-|---------------|-------------|
-| yttm          | 26.81 |
