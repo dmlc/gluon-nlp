@@ -154,8 +154,7 @@ ALBERT Version 2 are pre-trained without the dropout mechanism but with extra tr
 
 Fine-tuning the listed models with hyper-parameter learning rate 2e-5, epochs 3, warmup ratio 0.1 and max gradient norm 0.1 (as shown in command). Notice that the `batch_size` is set for each GPU and the global batch size is 48 for all experiments, besides that gradient accumulation (`num_accumulated`) is supported in the case of out of memory.
 
-Performance are shown in the table below, in which the SQuAD1.1 are evaluated with SQuAD2.0 checkpoints.
-Notice that the standard metrics of SQuAD are `EM/F1`. The former is an exact match score between predictions and references, 
+Performance are shown in the table below. Notice that the standard metrics of SQuAD are `EM/F1`. The former is an exact match score between predictions and references, 
 while the latter is a token-level F1 score in which the common tokens are considered as True Positives.
 
 |Reproduced ALBERT Models (F1/EM)  | SQuAD 1.1 dev | SQuAD 2.0 dev | SQuAD 2.0 Results | Log | Command | SQuAD 2.0 Weight | SQuAD 1.0 Weight |
