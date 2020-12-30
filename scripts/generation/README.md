@@ -1,4 +1,4 @@
-#Sequence Generation
+# Sequence Generation
 
 
 ## Generate Sequences from GPT-2
