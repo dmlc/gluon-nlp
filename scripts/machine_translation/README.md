@@ -93,6 +93,7 @@ python3 evaluate_transformer.py \
     --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --src_corpus wmt2014_ende/test.raw.en \
     --tgt_corpus wmt2014_ende/test.raw.de \
+    --lp_alpha 0.0 \
     --fp16
 ```
 
@@ -104,17 +105,20 @@ bash evaluate_epochs_wmt2014_ende.sh ${SAVE_DIR}
 
 #### Results
 
-We evaluate the results via SacreBLEU:
+We evaluate the results via SacreBLEU and attach the result + hash.
+l
+
+```
+cat pred_sentences.txt | sacrebleu -t wmt14/full -l en-de
+```
 
 | Subword Model | Beam Search | Seed | Test BLEU | Tensorboard | Weights | Log | Config |
 |---------------|-------------|------|-----------|-------------|---------|-----|--------|
-| yttm          | lp_alpha=0.6, lp_k=5, beam=4  | 123 | 27.03  | [tensorboard](https://tensorboard.dev/experiment/8dAIKQBPQmqTw4Qal30BZQ/) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/avg_51_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201224/config.yml) |
-| -             | stochastic beam (with --stochastic)  |  -  | 27.08  | - | - | - | - |
+| yttm          | lp_alpha=0.0, beam=4  | 123 | 27.06  | [tensorboard](https://tensorboard.dev/experiment/14F0u9V0SDGL2LSpNyo1hw/) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201228/avg_51_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201228/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_wmt2014_en_de_yttm_0.0016_16_4096_60_20201228/config.yml) |
 
 The sacreBLEU hash is
 ```
-# lp_alph=0.6, lp_k=5, beam=4
-BLEU+c.mixed+#.1+s.exp+tok.13a+v.1.4.14 = 27.0 57.9/32.5/20.7/13.7 (BP = 1.000 ratio = 1.030 hyp_len = 64599 ref_len = 62688)
+BLEU+case.mixed+lang.en-de+numrefs.1+smooth.exp+test.wmt14/full+tok.13a+version.1.4.14 = 27.1 58.2/32.7/20.7/13.6 (BP = 1.000 ratio = 1.025 hyp_len = 64226 ref_len = 62688)
 ```
 
 
@@ -173,7 +177,6 @@ gluon_average_checkpoint --checkpoints ${SAVE_DIR}/epoch*.params \
 
 
 Use the following command to inference/evaluate the Transformer model. 
-We use the [Stochastic BeamSearch](https://arxiv.org/pdf/1903.06059.pdf) to generate the samples.
 
 ```bash
 SUBWORD_ALGO=yttm
@@ -190,7 +193,7 @@ python3 evaluate_transformer.py \
     --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
     --src_corpus wmt2014_ende/test.raw.en \
     --tgt_corpus wmt2014_ende/test.raw.de \
-    --stochastic \
+    --lp_alpha 0.0 \
     --fp16
 ```
 
@@ -198,11 +201,10 @@ python3 evaluate_transformer.py \
 
 | Subword Model | Beam Search | Seed  | Test BLEU | Tensorboard | Weights | Log | Config |
 |---------------|-------------|-------|-----------|-------------|---------|-----|--------|
-| yttm          | stochastic beam (with --stochastic)  | 123 | 28.01 | [tensorboard](https://tensorboard.dev/experiment/jm4bs3f3Q9CRYN3SxLBi9Q) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201227/avg_46_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201227/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201227/config.yml) |
+| yttm          | lp_alpha 0.0, beam 4  | 123 | 28.01 | [tensorboard](https://tensorboard.dev/experiment/jm4bs3f3Q9CRYN3SxLBi9Q) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201227/avg_46_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201227/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_wmt2014_en_de_yttm_0.0006_3584_16_60_eps1e-9_norm_clip_20201227/config.yml) |
 
 The sacreBLEU hash is
 ```
-# with stochastic beam search
 BLEU+case.mixed+lang.en-de+numrefs.1+smooth.exp+test.wmt14/full+tok.13a+version.1.4.14 = 28.0 58.9/33.7/21.6/14.4 (BP = 1.000 ratio = 1.023 hyp_len = 64110 ref_len = 62688)
 ```
 
@@ -259,13 +261,9 @@ Similarly, we will average the checkpoints and run evaluation (as described in [
 
 We evaluated with SacreBLEU and also attached the hash
 
-```
-cat pred_sentences.txt | sacrebleu -t wmt14/full -l en-de
-```
-
 | Subword Model | Beam Search | Seed  | Test BLEU | Tensorboard | Weights | Log | Config |
 |---------------|-------------|-------|-----------|-------------|---------|-----|--------|
-| yttm          | stochastic beam (with --stochastic) | 123 | 27.98 | [tensorboard](https://tensorboard.dev/experiment/FViOeiMQS56qK4bzRvcvEA) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_t2t_wmt2014_en_de_yttm_0.0006_2560_4_60_eps1e-9_20201226/avg_46_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_t2t_wmt2014_en_de_yttm_0.0006_2560_4_60_eps1e-9_20201226/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_t2t_wmt2014_en_de_yttm_0.0006_2560_4_60_eps1e-9_20201226/config.yml) |
+| yttm          | lp_alpha 0.0, beam 4 | 123 | 27.98 | [tensorboard](https://tensorboard.dev/experiment/FViOeiMQS56qK4bzRvcvEA) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_t2t_wmt2014_en_de_yttm_0.0006_2560_4_60_eps1e-9_20201226/avg_46_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_t2t_wmt2014_en_de_yttm_0.0006_2560_4_60_eps1e-9_20201226/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_big_t2t_wmt2014_en_de_yttm_0.0006_2560_4_60_eps1e-9_20201226/config.yml) |
 
 ```
 BLEU+case.mixed+lang.en-de+numrefs.1+smooth.exp+test.wmt14/full+tok.13a+version.1.4.14 = 28.0 58.8/33.6/21.5/14.4 (BP = 1.000 ratio = 1.021 hyp_len = 64018 ref_len = 62688)
