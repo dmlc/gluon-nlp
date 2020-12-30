@@ -293,7 +293,8 @@ def deduplicate_param_dict(param_dict):
     """
     dedup_param_dict = dict()
     param_uuid_set = set()
-    for k, v in param_dict.items():
+    for k in sorted(param_dict.keys()):
+        v = param_dict[k]
         if v._uuid in param_uuid_set:
             continue
         dedup_param_dict[k] = v
