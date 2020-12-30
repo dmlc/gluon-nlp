@@ -316,3 +316,13 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --max_grad_norm 1.0 \
     --fp16
 ```
+
+We used the same evaluation method (by averaging the last 10 checkpoints) as in [Transformer Base](#transformer-base)
+
+| Subword Model | Beam Search | Seed  | Test BLEU | Tensorboard | Weights | Log | Config |
+|---------------|-------------|-------|-----------|-------------|---------|-----|--------|
+| yttm          | lp_alpha 0.0, beam 4 | 123 | 26.25 | [tensorboard](https://tensorboard.dev/experiment/Xc1zsayHRYK0oOGhWJ3N5A) | [weight](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_en-de_enc12_dec1_yttm_0.0006_0.0_4_4096_60_20201229/avg_51_60.params) | [log](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_en-de_enc12_dec1_yttm_0.0006_0.0_4_4096_60_20201229/train_transformer_rank0_local0_4.log) | [config](https://gluon-nlp-log.s3.amazonaws.com/machine_translation/transformer_base_en-de_enc12_dec1_yttm_0.0006_0.0_4_4096_60_20201229/config.yml) |
+
+```
+BLEU+case.mixed+lang.en-de+numrefs.1+smooth.exp+test.wmt14/full+tok.13a+version.1.4.14 = 26.2 57.8/32.2/20.1/13.0 (BP = 0.994 ratio = 0.994 hyp_len = 62312 ref_len = 62688)
+```
