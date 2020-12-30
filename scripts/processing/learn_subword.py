@@ -15,28 +15,33 @@ from gluonnlp.data import Vocab
 def get_parser():
     parser = argparse.ArgumentParser(
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        description=textwrap.dedent('''
+        description=textwrap.dedent(r'''
     Learn BPE based on different implementations.
 
     We support the following models:
 
-        - "nlp_process learn_subword --model spm --corpus CORPUS --vocab-size SIZE"
+        - `nlp_process learn_subword --model spm --corpus CORPUS --vocab-size SIZE`
             Train a Sentencepiece Model on raw text.
 
-        - "nlp_process learn_subword --model subword_nmt --corpus CORPUS --vocab-size SIZE"
+        - `nlp_process learn_subword --model subword_nmt --corpus CORPUS --vocab-size SIZE`
             Train with the subword-nmt package:
 
-        - "nlp_process learn_subword --model yttm --corpus CORPUS --vocab-size SIZE"
+        - `nlp_process learn_subword --model yttm --corpus CORPUS --vocab-size SIZE`
             Train with YouTokenToMe:
 
-        - "nlp_process learn_subword --model hf_bytebpe --corpus CORPUS --vocab-size SIZE"
+        - `nlp_process learn_subword --model hf_bytebpe --corpus CORPUS --vocab-size SIZE`
             Train with the Byte-level BPE Tokenizer Implemented by Huggingface.
 
-        - "nlp_process learn_subword --model hf_wordpiece --corpus CORPUS --vocab-size SIZE"
+        - `nlp_process learn_subword --model hf_wordpiece --corpus CORPUS --vocab-size SIZE`
             Train with the Wordpiece Tokenizer Implementated by Huggingface.
 
-        - "nlp_process learn_subword --model hf_bpe --corpus CORPUS --vocab-size SIZE"
+        - `nlp_process learn_subword --model hf_bpe --corpus CORPUS --vocab-size SIZE`
             Train with the BPE Tokenizer Implemented by Huggingface.
+        
+        - `nlp_process learn_subword --model spm --corpus CORPUS --vocab-size SIZE \
+                                     --disable-bos --disable-eos \
+                                     --custom-special-tokens "cls_token=[CLS]" "sep_token=[SEP]" "mask_token=[MASK]"`
+            Train with the sentencepiece model and set cls token to "[CLS]", sep token to "[SEP]", and mask token to "[MASK]".
     '''),
         prog='learn_subword'
     )
@@ -90,7 +95,7 @@ def get_parser():
     parser.add_argument('--custom-special-tokens', type=str, nargs='*', default=[], 
                         help='Specified special tokens key value pairs besides unk, '
                              'bos, eos and pad, for example: '
-                             '--custom special tokens cls_token=<cls> sep_token=<sep>, '
+                             '--custom-special-tokens "cls_token=<cls>" "sep_token=<sep>", '
                              'this is not applicable to yttm')
     return parser
 
@@ -122,15 +127,18 @@ def main(args):
     # split custom special tokens
     if args.model in ['yttm'] and len(args.custom_special_tokens) > 0:
         raise ValueError('model {} do not support custom_special_tokens'.format(args.model))
+    additional_custom_special_token = OrderedDict()
     for custom_special_token in args.custom_special_tokens:
         kv = custom_special_token.split('=')
         if not len(kv) == 2:
             raise ValueError('parameter {} has wrong format'.format(custom_special_token))
         k, v = kv[0], kv[1]
         if k in special_tokens_kv:
-            raise ValueError('There are overlaps between the custom special tokens and the'
-                             ' unk, bos, eos, pad tokens')
+            warnings.warn(f'There are overlaps between the custom special tokens and the'
+                          f' unk, bos, eos, pad tokens. Currently, we will overwrite the '
+                          f'default tokens. We will overwrite "{k}" to "{v}"')
         special_tokens_kv[k] = v
+        additional_custom_special_token[k] = v
     if args.model == 'hf_wordpiece':
         tokenizers = try_import_huggingface_tokenizers()
         if 'unk_token' not in special_tokens_kv or special_tokens_kv['unk_token'] != '[UNK]':
@@ -155,13 +163,12 @@ def main(args):
         corpus_path = ','.join(corpus_path_list)
         script = '--input={} --model_prefix={} --vocab_size={} --character_coverage={} --input_sentence_size={}' \
                  .format(corpus_path, model_prefix, args.vocab_size, args.coverage, args.input_sentence_size)
-        script += (' --unk_id=' + str(special_tokens.index(Vocab.UNK_TOKEN)))
-        script += (' --bos_id=' + ('-1' if args.disable_bos else str(special_tokens.index(Vocab.BOS_TOKEN))))
-        script += (' --eos_id=' + ('-1' if args.disable_eos else str(special_tokens.index(Vocab.EOS_TOKEN))))
-        script += (' --pad_id=' + ('-1' if args.disable_pad else str(special_tokens.index(Vocab.PAD_TOKEN))))
-        if len(args.custom_special_tokens) > 0:
-            ids_in_script = script.count('_id')
-            script += (' --control_symbols=' + ','.join(special_tokens[ids_in_script:]))
+        script += (' --unk_id=' + str(list(special_tokens_kv.keys()).index('unk_token')))
+        script += (' --bos_id=' + ('-1' if args.disable_bos else str(list(special_tokens_kv.keys()).index('bos_token'))))
+        script += (' --eos_id=' + ('-1' if args.disable_eos else str(list(special_tokens_kv.keys()).index('eos_token'))))
+        script += (' --pad_id=' + ('-1' if args.disable_pad else str(list(special_tokens_kv.keys()).index('pad_token'))))
+        if len(additional_custom_special_token) > 0:
+            script += (' --control_symbols=' + ','.join(list(additional_custom_special_token.values())))
         print(script)
         spm.SentencePieceTrainer.Train(script)
         if 'bos_token' in special_tokens_kv:
