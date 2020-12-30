@@ -194,7 +194,8 @@ def test_sharded_iterator_even_size(seq_lengths, max_num_tokens, max_num_sentenc
         batch_num = 0
         # we use independent (but same) sampler to simulate multi process situation
         sampler = s.BoundedBudgetSampler(seq_lengths, max_num_tokens, max_num_sentences,
-                                         required_batch_size_multiple, shuffle, seed=100)
+                                         required_batch_size_multiple,
+                                         shuffle=shuffle, seed=100)
         sharded_iter = s.ShardedIterator(sampler, num_parts, part_index, even_size)
         print(sharded_iter)
         for batch_sample_ids in sharded_iter:
