@@ -15,7 +15,7 @@
 # specific language governing permissions and limitations
 # under the License.
 """Layers."""
-__all__ = ['MultiHeadDense', 'PositionalEmbedding', 'SinusoidalPositionalEmbedding',
+__all__ = ['PositionalEmbedding', 'SinusoidalPositionalEmbedding',
            'LearnedPositionalEmbedding', 'BucketPositionalEmbedding', 'AdaptiveEmbedding',
            'PositionwiseFFN', 'ProjectedAdaptiveLogSoftmaxWithLoss']
 
@@ -384,7 +384,6 @@ class SinusoidalPositionalEmbedding(HybridBlock):
         self._units = units
         self._dtype = dtype
         sinusoidal_base = _init_sinusoidal_base(units)
-        print(units, sinusoidal_base)
         self.base_mult = Constant(sinusoidal_base)
 
     def forward(self, positions):

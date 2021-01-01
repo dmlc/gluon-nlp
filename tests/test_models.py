@@ -5,7 +5,8 @@ import os
 import numpy as np
 import numpy.testing as npt
 from gluonnlp.models import get_backbone, list_backbone_names
-from gluonnlp.utils.misc import count_parameters, get_ec2_tvm_flags
+from gluonnlp.utils.misc import get_ec2_tvm_flags
+from gluonnlp.utils.parameter import count_parameters
 from gluonnlp.utils.lazy_imports import try_import_tvm
 mx.npx.set_np()
 

@@ -9,6 +9,7 @@ from gluonnlp.models.transformer import\
 from gluonnlp.attention_cell import gen_mem_attn_mask, gen_self_attn_mask
 from gluonnlp.utils.testing import verify_nmt_model, verify_nmt_inference
 from gluonnlp.utils.testing import verify_backbone_fp16
+from gluonnlp.utils.parameter import count_parameters, deduplicate_param_dict
 
 
 mx.npx.set_np()
@@ -239,3 +240,22 @@ def test_transformer_fp16_amp(enc_pre_norm, dec_pre_norm,
             raise NotImplementedError
         verify_backbone_fp16(TransformerModel, cfg, ctx,
                              inputs=[src_data, src_valid_length, tgt_data, tgt_valid_length])
+
+
+@pytest.mark.parametrize('cfg_name,gt_num_params,gt_num_fixed_params',
+                         [('transformer_base', 60897280, 512),
+                          ('transformer_wmt_en_de_big', 209874944, 1024)])
+def test_transformer_param_number(cfg_name, gt_num_params, gt_num_fixed_params):
+    cfg = TransformerModel.get_cfg(cfg_name)
+    cfg.defrost()
+    cfg.MODEL.src_vocab_size = 32768
+    cfg.MODEL.tgt_vocab_size = 32768
+    cfg.freeze()
+    model = TransformerModel.from_cfg(cfg)
+    model.initialize()
+    num_params, num_fixed_params = count_parameters(model.collect_params())
+    assert num_params == gt_num_params
+    assert num_fixed_params == gt_num_fixed_params
+    num_params2, num_fixed_params2 = count_parameters(deduplicate_param_dict(model.collect_params()))
+    assert num_params2 == gt_num_params
+    assert num_fixed_params2 == gt_num_fixed_params
