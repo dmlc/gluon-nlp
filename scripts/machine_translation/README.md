@@ -328,7 +328,29 @@ BLEU+case.mixed+lang.en-de+numrefs.1+smooth.exp+test.wmt14/full+tok.13a+version.
 ```
 #### Stochastic Beam Search
 
-Additionally, it has been shown that Stochastic Beam Search can obtain diverse translations with good quality in ["Stochastic Beams and Where to Find Them: The Gumbel-Top-k Trick for Sampling Sequences Without Replacement"](https://arxiv.org/pdf/1903.06059.pdf). To use stochactic Beam Search for evaluation, add the ``--stochastic`` option and set the ``--temperature``. The default temperature is 0.5. According to the paper, Lower temperature can yield better translations. There are some results for reference.
+Additionally, it has been shown that Stochastic Beam Search can obtain diverse translations with good quality in ["Stochastic Beams and Where to Find Them: The Gumbel-Top-k Trick for Sampling Sequences Without Replacement"](https://arxiv.org/pdf/1903.06059.pdf). To use stochactic Beam Search for evaluation, add the ``--stochastic`` option and set the ``--temperature``. Take the "transformer_base" configuration for example.
+```bash
+SUBWORD_ALGO=yttm
+python3 evaluate_transformer.py \
+    --param_path ${SAVE_DIR}/avg_51_60.params \
+    --src_lang en \
+    --tgt_lang de \
+    --cfg ${SAVE_DIR}/config.yml \
+    --src_tokenizer ${SUBWORD_ALGO} \
+    --tgt_tokenizer ${SUBWORD_ALGO} \
+    --src_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
+    --tgt_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
+    --src_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --src_corpus wmt2014_ende/test.raw.en \
+    --tgt_corpus wmt2014_ende/test.raw.de \
+    --lp_alpha 0.0 \
+    --stochastic \
+    --temperature 0.5 \
+    --fp16
+```
+
+According to the algorithmic procedure, higer temperature can increase the randomness during inference. Due to the exposure bias problem, errors can accumulate easily at inference time. As a result, high temperature can lead to low translation quality. For example, with the default temperature T= 1, the BLEU score can be below 10. Therefore, we set the default temperature T=0.5. There are also some results for reference.
 
 |      | Temperature | Transforme_Base | Transformer_Big |
 | ---- | ----------- | --------------- | --------------- |
