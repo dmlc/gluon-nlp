@@ -211,4 +211,4 @@ The bibtex entry for the `reference paper <https://arxiv.org/abs/1907.04433>`__ 
 New to Deep Learning or NLP?
 ============================
 
-For background knowledge of deep learning or NLP, please refer to the open source book `Dive into Deep Learning <http://en.diveintodeeplearning.org/>`__.
+For background knowledge of deep learning or NLP, please refer to the open source book `Dive into Deep Learning <https://d2l.ai/>`__ (`中文版 <https://zh.d2l.ai>`__).
