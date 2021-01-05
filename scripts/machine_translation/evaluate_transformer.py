@@ -90,6 +90,8 @@ def parse_args():
                         help='The path to save the log files and predictions.')
     parser.add_argument('--stochastic', action='store_true',
                         help='Whether to use the stochastic beam search')
+    parser.add_argument('--temperature', type=float, default=None,
+                        help='the temperature used for softmax normalization with stochastic setting')
     parser.add_argument('--inference', action='store_true',
                         help='Whether to inference with your own data, '
                         'when applying inference, tgt_corpus is not needed and will be set to None.')
@@ -101,6 +103,9 @@ def parse_args():
     assert args.inference or args.tgt_corpus, 'requring --tgt_corpus while not using --inference'
     if args.inference:
         args.tgt_corpus = None
+    if args.stochastic:
+        if args.temperature is None:
+            args.temperature = 0.5
     logging_config(args.save_dir, console=True)
     logging.info(args)
     return args
@@ -215,7 +220,7 @@ def evaluate(args):
     if args.stochastic:
         scorer = BeamSearchScorer(alpha=0.0,
                                   K=0.0,
-                                  temperature=1.0,
+                                  temperature=args.temperature,
                                   from_logits=False)
     else:
         scorer = BeamSearchScorer(alpha=args.lp_alpha,

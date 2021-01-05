@@ -326,3 +326,39 @@ We used the same evaluation method (by averaging the last 10 checkpoints) as in 
 ```
 BLEU+case.mixed+lang.en-de+numrefs.1+smooth.exp+test.wmt14/full+tok.13a+version.1.4.14 = 26.2 57.8/32.2/20.1/13.0 (BP = 0.994 ratio = 0.994 hyp_len = 62312 ref_len = 62688)
 ```
+#### Stochastic Beam Search
+
+Additionally, it has been shown that Stochastic Beam Search can obtain diverse translations with good quality in ["Stochastic Beams and Where to Find Them: The Gumbel-Top-k Trick for Sampling Sequences Without Replacement"](https://arxiv.org/pdf/1903.06059.pdf). To use stochactic Beam Search for evaluation, add the ``--stochastic`` option and set the ``--temperature``. Take the "transformer_base" configuration for example.
+```bash
+SUBWORD_ALGO=yttm
+python3 evaluate_transformer.py \
+    --param_path ${SAVE_DIR}/avg_51_60.params \
+    --src_lang en \
+    --tgt_lang de \
+    --cfg ${SAVE_DIR}/config.yml \
+    --src_tokenizer ${SUBWORD_ALGO} \
+    --tgt_tokenizer ${SUBWORD_ALGO} \
+    --src_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
+    --tgt_subword_model_path wmt2014_ende/${SUBWORD_ALGO}.model \
+    --src_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --tgt_vocab_path wmt2014_ende/${SUBWORD_ALGO}.vocab \
+    --src_corpus wmt2014_ende/test.raw.en \
+    --tgt_corpus wmt2014_ende/test.raw.de \
+    --lp_alpha 0.0 \
+    --stochastic \
+    --temperature 0.5 \
+    --fp16
+```
+
+According to the algorithmic procedure, higer temperature can increase the randomness during inference. Due to the exposure bias problem, errors can accumulate easily at inference time. As a result, high temperature can lead to low translation quality. For example, with the default temperature T= 1, the BLEU score can be below 10. Therefore, we set the default temperature T=0.5. There are also some results for reference.
+
+|      | Temperature | Transforme_Base | Transformer_Big |
+| ---- | ----------- | --------------- | --------------- |
+| 1.   | 1.0         | 8.66            | 11.52           |
+| 2.   | 0.5         | 24.22           | 25.19           |
+| 3.   | 0.4         | 24.92           | 26.05           |
+| 4.   | 0.3         | 25.46           | 26.58           |
+| 5.   | 0.2         | 25.94           | 26.88           |
+| 6.   | 0.1         | 26.28           | 27.26           |
+| 7.   | 0.05        | 26.29           | 27.27           |
+| 8.   | 0.01        | 26.32           | 27.22           |
