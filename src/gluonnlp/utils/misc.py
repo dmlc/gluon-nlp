@@ -363,8 +363,11 @@ def download(url: str,
     """
     is_s3 = url.startswith(S3_PREFIX)
     if is_s3:
-        boto3 = try_import_boto3()
+        boto3, botocore = try_import_boto3()
         s3 = boto3.resource('s3')
+        if boto3.session.Session().get_credentials() is None:
+            from botocore.handlers import disable_signing
+            s3.meta.client.meta.events.register('choose-signer.s3.*', disable_signing)
         components = url[len(S3_PREFIX):].split('/')
         if len(components) < 2:
             raise ValueError('Invalid S3 url. Received url={}'.format(url))
