@@ -15,7 +15,7 @@ mx.npx.set_np()
 def s3_enabled():
     from gluonnlp.utils.lazy_imports import try_import_boto3
     try:
-        boto3 = try_import_boto3()
+        boto3, botocore = try_import_boto3()
         s3 = boto3.resource('s3')
         for bucket in s3.buckets.all():
             print(bucket.name)
