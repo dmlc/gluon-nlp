@@ -136,7 +136,7 @@ It is straightforward to load the other models by specifying the name of the mod
 
 
 ```{.python .input}
-from gluonnlp.utils.misc import count_parameters
+from gluonnlp.utils.parameter import count_parameters
 param_num_l = []
 for name in ['google_en_uncased_bert_base',
              'google_uncased_mobilebert']:

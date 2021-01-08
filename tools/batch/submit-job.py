@@ -52,7 +52,7 @@ parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFo
 parser.add_argument('--profile', help='profile name of aws account.', type=str,
                     default=None)
 parser.add_argument('--region', help='Default region when creating new connections', type=str,
-                    default=None)
+                    default='us-east-1')
 parser.add_argument('--name', help='name of the job', type=str, default='dummy')
 parser.add_argument('--job-type', help='type of job to submit.', type=str,
                     choices=instance_type_info.keys(), default='g4dn.4x')
@@ -91,7 +91,7 @@ def printLogs(logGroupName, logStreamName, startTime):
               'startTime': startTime,
               'startFromHead': True}
 
-    lastTimestamp = 0
+    lastTimestamp = startTime - 1
     while True:
         logEvents = cloudwatch.get_log_events(**kwargs)
 
@@ -155,10 +155,10 @@ def main():
         describeJobsResponse = batch.describe_jobs(jobs=[jobId])
         status = describeJobsResponse['jobs'][0]['status']
         if status == 'SUCCEEDED' or status == 'FAILED':
-            print('=' * 80)
-            print('Job [{} - {}] {}'.format(jobName, jobId, status))
             if logStreamName:
                 startTime = printLogs(logGroupName, logStreamName, startTime) + 1
+            print('=' * 80)
+            print('Job [{} - {}] {}'.format(jobName, jobId, status))
             sys.exit(status == 'FAILED')
 
         elif status == 'RUNNING':

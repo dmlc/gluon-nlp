@@ -27,14 +27,28 @@ Also, you should follow the [license](https://www.gutenberg.org/wiki/Gutenberg:T
 
 We used the [attardi/wikiextractor](https://github.com/attardi/wikiextractor) package for preparing the data.
 
+The following is an example that downloads and formats the hindi wikicorpus.
+
 ```bash
-# Download
-python3 prepare_wikipedia.py --mode download --lang en --date latest -o ./
+# Download. 
+# By default, it will download to wikicorpus/download/lang/date/wikicorpus.xml.bz2
+python3 prepare_wikipedia.py --mode download --lang hi --date latest
 
 # Properly format the text files
-python3 prepare_wikipedia.py --mode format -i [path-to-wiki.xml.bz2] -o ./
+python3 prepare_wikipedia.py --mode format -i wikicorpus/download/hi/latest/wikicorpus.xml.bz2
+
+# In addition, you may supress the logging by adding `--quiet`
+python3 prepare_wikipedia.py --mode format -i wikicorpus/download/hi/latest/wikicorpus.xml.bz2 --quiet
 
 ```
+After formatting, it will create a folder called `prepare_wikipedia`. The processed text files 
+are chunked.
+
+In addition, you can try to combine these two steps via
+```
+python3 prepare_wikipedia.py --mode download+format --lang hi --date latest --quiet
+```
+
 The process of downloading and formatting is time consuming, and we offer an alternative 
 solution to download the prepared raw text file from S3 bucket. This raw text file is in English and 
 was dumped at 2020-06-20 being formatted by the above process (` --lang en --date 20200620`).

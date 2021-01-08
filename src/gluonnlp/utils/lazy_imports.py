@@ -26,7 +26,8 @@ __all__ = ['try_import_sentencepiece',
            'try_import_langid',
            'try_import_boto3',
            'try_import_jieba',
-           'try_import_tvm']
+           'try_import_tvm',
+           'try_import_wikiextractor']
 
 
 def try_import_sentencepiece():
@@ -140,13 +141,14 @@ def try_import_langid():
 def try_import_boto3():
     try:
         import boto3
+        import botocore
     except ImportError:
         raise ImportError('"boto3" is not installed. To enable fast downloading in EC2. You should '
                           'install boto3 and correctly configure the S3. '
                           'See https://boto3.readthedocs.io/ for more information. '
                           'If you are using EC2, downloading from s3:// will '
                           'be multiple times faster than using the traditional http/https URL.')
-    return boto3
+    return boto3, botocore
 
 
 def try_import_jieba():
@@ -165,3 +167,16 @@ def try_import_tvm():
         raise ImportError('"tvm" is not installed. You must install TVM to use the functionality. '
                           'To install TVM, you may see the documentation in '
                           'https://tvm.apache.org/ or try to use the docker of GluonNLP.')
+    return tvm
+
+
+def try_import_wikiextractor():
+    try:
+        import wikiextractor
+    except ImportError:
+        raise ImportError('"wikiextractor" is not installed. You must install wikiextractor '
+                          'to use the functionality. '
+                          'To install the package, you may use `pip install wikiextractor`, or '
+                          'refer to the official guide in '
+                          'https://github.com/attardi/wikiextractor.')
+    return wikiextractor

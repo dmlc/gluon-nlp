@@ -13,6 +13,7 @@ def test_list_pretrained_xlmr():
     assert len(list_pretrained_xlmr()) > 0
 
 
+# We choose to not test amp for XLMR because it's the same as RoBERTa.
 @pytest.mark.slow
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_xlmr())

@@ -7,8 +7,9 @@ __all__ = ['transformer_cfg_reg', 'transformer_base',
            'TransformerModel', 'TransformerNMTInference']
 
 
-import numpy as np
+import numpy as _np
 import mxnet as mx
+from mxnet import np, npx
 from mxnet import use_np
 from mxnet.gluon import nn, HybridBlock
 from typing import Optional, Tuple, List
@@ -229,7 +230,7 @@ class TransformerEncoderLayer(HybridBlock):
     def layout(self) -> str:
         return self._layout
 
-    def hybrid_forward(self, F, data, attn_mask):
+    def forward(self, data, attn_mask):
         """
 
         Parameters
@@ -255,10 +256,10 @@ class TransformerEncoderLayer(HybridBlock):
         """
         if self._pre_norm:
             data = self.layer_norm(data)
-        query, key, value = F.np.split(self.attn_qkv(data), 3, axis=-1)
-        query = F.npx.reshape(query, (-2, -2, self._num_heads, -1))
-        key = F.npx.reshape(key, (-2, -2, self._num_heads, -1))
-        value = F.npx.reshape(value, (-2, -2, self._num_heads, -1))
+        query, key, value = np.split(self.attn_qkv(data), 3, axis=-1)
+        query = npx.reshape(query, (-2, -2, self._num_heads, -1))
+        key = npx.reshape(key, (-2, -2, self._num_heads, -1))
+        value = npx.reshape(value, (-2, -2, self._num_heads, -1))
         out, [_, attn_weight] = self.attention_cell(query, key, value, attn_mask)
         out = self.attention_proj(out)
         out = self.dropout_layer(out)
@@ -339,7 +340,7 @@ class TransformerEncoder(HybridBlock):
     def layout(self) -> str:
         return self._layout
 
-    def hybrid_forward(self, F, data, valid_length):
+    def forward(self, data, valid_length):
         """
 
         Parameters
@@ -362,7 +363,7 @@ class TransformerEncoder(HybridBlock):
                 Shape (seq_length, batch_size, C_out)
         """
         # 1. Embed the data
-        attn_mask = gen_self_attn_mask(F, data, valid_length,
+        attn_mask = gen_self_attn_mask(data, valid_length,
                                        dtype=self._dtype,
                                        layout=self.layout,
                                        attn_type='full')
@@ -505,7 +506,7 @@ class TransformerDecoderLayer(HybridBlock):
     def layout(self) -> str:
         return self._layout
 
-    def hybrid_forward(self, F, data, mem, self_causal_mask, mem_attn_mask):
+    def forward(self, data, mem, self_causal_mask, mem_attn_mask):
         """
 
         Parameters
@@ -555,11 +556,11 @@ class TransformerDecoderLayer(HybridBlock):
         # 1. Get the causal self-attention value
         if self._pre_norm:
             data = self.ln_in(data)
-        self_query, self_key, self_value = F.np.split(self.attn_in_qkv(data), 3, axis=-1)
+        self_query, self_key, self_value = np.split(self.attn_in_qkv(data), 3, axis=-1)
         out, [_, self_attn_weight] = self.self_attention(
-                F.npx.reshape(self_query, (-2, -2, self._num_heads, -1)),
-                F.npx.reshape(self_key, (-2, -2, self._num_heads, -1)),
-                F.npx.reshape(self_value, (-2, -2, self._num_heads, -1)),
+                npx.reshape(self_query, (-2, -2, self._num_heads, -1)),
+                npx.reshape(self_key, (-2, -2, self._num_heads, -1)),
+                npx.reshape(self_value, (-2, -2, self._num_heads, -1)),
                 self_causal_mask)
         out = self.proj_in(out)
         out = self.dropout_layer(out)
@@ -571,9 +572,9 @@ class TransformerDecoderLayer(HybridBlock):
         if self._pre_norm:
             data = self.ln_inter(data)
         out, [_, context_attn_weight] = self.inter_attention(
-                F.npx.reshape(self.attn_inter_q(data), (-2, -2, self._num_heads, -1)),
-                F.npx.reshape(self.attn_inter_k(mem), (-2, -2, self._num_heads, -1)),
-                F.npx.reshape(self.attn_inter_v(mem), (-2, -2, self._num_heads, -1)),
+                npx.reshape(self.attn_inter_q(data), (-2, -2, self._num_heads, -1)),
+                npx.reshape(self.attn_inter_k(mem), (-2, -2, self._num_heads, -1)),
+                npx.reshape(self.attn_inter_v(mem), (-2, -2, self._num_heads, -1)),
                 mem_attn_mask)
         out = self.proj_inter(out)
         out = self.dropout_layer(out)
@@ -619,7 +620,7 @@ class TransformerDecoderLayer(HybridBlock):
                                             self._units // self._num_heads), ctx=ctx, dtype=dtype)
         return init_key, init_value
 
-    def incremental_decode(self, F, data, states, mem, mem_valid_length, mem_attn_mask=None):
+    def incremental_decode(self, data, states, mem, mem_valid_length, mem_attn_mask=None):
         """Incrementally generate the output given the decoder input.
 
         Parameters
@@ -668,24 +669,24 @@ class TransformerDecoderLayer(HybridBlock):
             time_axis = 1
         else:
             time_axis = 0
-        data = F.np.expand_dims(data, axis=time_axis)
+        data = np.expand_dims(data, axis=time_axis)
         # Shape (B, prev_L, #Head, C_K), (B, prev_L, #Head, C_V)
         #  or (prev_L, B, #Head, C_K), (prev_L, B, #Head, C_V)
         prev_key, prev_value = states
         if mem_attn_mask is None:
-            mem_attn_mask = gen_mem_attn_mask(F, mem, mem_valid_length, data, None,
+            mem_attn_mask = gen_mem_attn_mask(mem, mem_valid_length, data, None,
                                               dtype=self._dtype, layout=self.layout)
         # 1. Get the causal self-attention value, we need to attend to both the current data
         # and the previous stored key/values
         # Shape (B, 1, 3 * num_heads * C_key)
         #  or (1, B, 3 * num_heads * C_key)
         step_qkv = self.attn_in_qkv(data)
-        step_query, step_key, step_value = F.np.split(step_qkv, 3, axis=-1)
-        step_query = F.npx.reshape(step_query, (-2, -2, self._num_heads, -1))
-        step_key = F.npx.reshape(step_key, (-2, -2, self._num_heads, -1))
-        step_value = F.npx.reshape(step_value, (-2, -2, self._num_heads, -1))
-        new_key = F.np.concatenate([prev_key, step_key], axis=time_axis)
-        new_value = F.np.concatenate([prev_value, step_value], axis=time_axis)
+        step_query, step_key, step_value = np.split(step_qkv, 3, axis=-1)
+        step_query = npx.reshape(step_query, (-2, -2, self._num_heads, -1))
+        step_key = npx.reshape(step_key, (-2, -2, self._num_heads, -1))
+        step_value = npx.reshape(step_value, (-2, -2, self._num_heads, -1))
+        new_key = np.concatenate([prev_key, step_key], axis=time_axis)
+        new_value = np.concatenate([prev_value, step_value], axis=time_axis)
         out, [_, attn_weight] = self.self_attention(step_query, new_key, new_value, None)
         out = self.proj_in(out)
         out = self.dropout_layer(out)
@@ -696,11 +697,11 @@ class TransformerDecoderLayer(HybridBlock):
         data = out
         if self._pre_norm:
             data = self.ln_inter(data)
-        out, _ = self.inter_attention(F.npx.reshape(self.attn_inter_q(data),
+        out, _ = self.inter_attention(npx.reshape(self.attn_inter_q(data),
                                                     (-2, -2, self._num_heads, -1)),
-                                      F.npx.reshape(self.attn_inter_k(mem),
+                                      npx.reshape(self.attn_inter_k(mem),
                                                     (-2, -2, self._num_heads, -1)),
-                                      F.npx.reshape(self.attn_inter_v(mem),
+                                      npx.reshape(self.attn_inter_v(mem),
                                                     (-2, -2, self._num_heads, -1)),
                                       mem_attn_mask)
         out = self.proj_inter(out)
@@ -710,7 +711,7 @@ class TransformerDecoderLayer(HybridBlock):
             out = self.ln_inter(out)
         # 3. Encode the output via an FFN layer
         out = self.ffn(out)
-        out = F.npx.reshape(out, (-5, -1))
+        out = npx.reshape(out, (-5, -1))
         return out, (new_key, new_value)
 
 
@@ -766,7 +767,7 @@ class TransformerDecoder(HybridBlock):
     def layout(self) -> str:
         return self._layout
 
-    def hybrid_forward(self, F, data, valid_length, mem_data, mem_valid_length):
+    def forward(self, data, valid_length, mem_data, mem_valid_length):
         """
 
         Parameters
@@ -799,11 +800,11 @@ class TransformerDecoder(HybridBlock):
         out = self.dropout_layer(data)
         if self._data_norm:
             out = self.ln_data(out)
-        self_causal_mask = gen_self_attn_mask(F, data, valid_length,
+        self_causal_mask = gen_self_attn_mask(data, valid_length,
                                               dtype=self._dtype,
                                               attn_type='causal',
                                               layout=self._layout)
-        mem_attn_mask = gen_mem_attn_mask(F, mem_data, mem_valid_length, data, valid_length,
+        mem_attn_mask = gen_mem_attn_mask(mem_data, mem_valid_length, data, valid_length,
                                           dtype=self._dtype,
                                           layout=self._layout)
         for i in range(self.num_layers):
@@ -852,7 +853,7 @@ class TransformerDecoder(HybridBlock):
                                             dtype=dtype))
         return states
 
-    def incremental_decode(self, F, data, states, mem, mem_valid_length):
+    def incremental_decode(self, data, states, mem, mem_valid_length):
         """Incrementally generate the output given the decoder input.
 
         Parameters
@@ -901,9 +902,9 @@ class TransformerDecoder(HybridBlock):
             out = self.ln_data(out)
         time_axis = 0 if self.layout == 'TN' else 1
         # Generate the mem_attn_mask
-        time_steps = F.npx.arange_like(mem, axis=time_axis)  # (mem_length,)
-        mem_attn_mask = F.np.reshape(time_steps, (1, 1, -1))\
-                        < F.np.reshape(mem_valid_length, (-1, 1, 1))
+        time_steps = npx.arange_like(mem, axis=time_axis)  # (mem_length,)
+        mem_attn_mask = np.reshape(time_steps, (1, 1, -1))\
+                        < np.reshape(mem_valid_length, (-1, 1, 1))
         # TODO(sxjscience) Try with boolean masking
         mem_attn_mask = mem_attn_mask.astype(self._dtype)
         new_states = []
@@ -912,7 +913,7 @@ class TransformerDecoder(HybridBlock):
                 layer = self.layers[0]
             else:
                 layer = self.layers[i]
-            out, new_state = layer.incremental_decode(F, out, states[i],
+            out, new_state = layer.incremental_decode(out, states[i],
                                                       mem, mem_valid_length, mem_attn_mask)
             new_states.append(new_state)
         if self._pre_norm:
@@ -1147,7 +1148,7 @@ class TransformerModel(HybridBlock):
 
     # TODO(sxjscience) We can actually try to hybridize this function via the
     #  newly-introduced deferred compute.
-    def encode(self, F, src_data, src_valid_length):
+    def encode(self, src_data, src_valid_length):
         """Encode the source data to memory
 
         Parameters
@@ -1171,18 +1172,18 @@ class TransformerModel(HybridBlock):
         """
         src_data = self.src_embed_layer(src_data)
         if self.scaled_embed:
-            src_data = src_data * np.sqrt(self.enc_units)
+            src_data = src_data * _np.sqrt(self.enc_units)
         if self.pos_embed_type is not None:
             if self.layout == 'NT':
-                src_data = src_data + self.src_pos_embed_layer(F.npx.arange_like(src_data, axis=1))
+                src_data = src_data + self.src_pos_embed_layer(npx.arange_like(src_data, axis=1))
             else:
-                src_data = src_data + F.np.expand_dims(self.src_pos_embed_layer(
-                    F.npx.arange_like(src_data, axis=0)), axis=1)
+                src_data = src_data + np.expand_dims(self.src_pos_embed_layer(
+                    npx.arange_like(src_data, axis=0)), axis=1)
 
         enc_out = self.encoder(src_data, src_valid_length)
         return enc_out
 
-    def decode_seq(self, F, tgt_data, tgt_valid_length, mem_data, mem_valid_length):
+    def decode_seq(self, tgt_data, tgt_valid_length, mem_data, mem_valid_length):
         """Decode a sequence of inputs
 
         Parameters
@@ -1213,24 +1214,23 @@ class TransformerModel(HybridBlock):
         """
         tgt_data = self.tgt_embed_layer(tgt_data)
         if self.scaled_embed:
-            tgt_data = tgt_data * np.sqrt(self.dec_units)
+            tgt_data = tgt_data * _np.sqrt(self.dec_units)
         if self.pos_embed_type is not None:
             if self.layout == 'NT':
                 tgt_data = tgt_data + self.tgt_pos_embed_layer(
-                    F.npx.arange_like(tgt_data, axis=1))
+                    npx.arange_like(tgt_data, axis=1))
             else:
-                tgt_data = tgt_data + F.np.expand_dims(self.tgt_pos_embed_layer(
-                    F.npx.arange_like(tgt_data, axis=0)), axis=1)
+                tgt_data = tgt_data + np.expand_dims(self.tgt_pos_embed_layer(
+                    npx.arange_like(tgt_data, axis=0)), axis=1)
 
         dec_out = self.decoder(tgt_data, tgt_valid_length, mem_data, mem_valid_length)
         return dec_out
 
-    def hybrid_forward(self, F, src_data, src_valid_length, tgt_data, tgt_valid_length):
+    def forward(self, src_data, src_valid_length, tgt_data, tgt_valid_length):
         """
 
         Parameters
         ----------
-        F
         src_data
             - layout = 'NT'
                 Shape (batch_size, src_length)
@@ -1254,8 +1254,8 @@ class TransformerModel(HybridBlock):
             - layout = 'TN'
                 Shape (tgt_length, batch_size, tgt_vocab_size)
         """
-        enc_out = self.encode(F, src_data, src_valid_length)
-        dec_out = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out, src_valid_length)
+        enc_out = self.encode(src_data, src_valid_length)
+        dec_out = self.decode_seq(tgt_data, tgt_valid_length, enc_out, src_valid_length)
         dec_out = self.tgt_final_layer(dec_out)
         return dec_out
 
@@ -1377,13 +1377,13 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
         else:
             batch_size = src_data.shape[1]
         ctx = src_data.ctx
-        enc_out = self.model.encode(mx, src_data, src_valid_length)
+        enc_out = self.model.encode(src_data, src_valid_length)
         position = mx.np.zeros((batch_size,), dtype=np.int32, ctx=ctx)
         dtype = enc_out.dtype
         dec_states = self.model.decoder.init_states(batch_size, ctx, dtype)
         return enc_out, src_valid_length, position, dec_states
 
-    def hybrid_forward(self, F, step_data, states):
+    def forward(self, step_data, states):
         """
 
         Parameters
@@ -1413,11 +1413,11 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
         # 1. Get the embedding
         step_data = self.model.tgt_embed_layer(step_data)
         if self.model.scaled_embed:
-            step_data = step_data * np.sqrt(self.model.dec_units)
+            step_data = step_data * _np.sqrt(self.model.dec_units)
         if self.model.pos_embed_type is not None:
             step_data = step_data + self.model.tgt_pos_embed_layer(position)
         out, new_states =\
-            self.model.decoder.incremental_decode(F, step_data, dec_states,
+            self.model.decoder.incremental_decode(step_data, dec_states,
                                                   mem_data, mem_valid_length)
         out = self.model.tgt_final_layer(out)
         return out, (mem_data, mem_valid_length, position + 1, new_states)

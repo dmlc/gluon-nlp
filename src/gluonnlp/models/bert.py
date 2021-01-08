@@ -32,7 +32,7 @@ import os
 from typing import Tuple
 
 import mxnet as mx
-from mxnet import use_np
+from mxnet import use_np, np, npx
 from mxnet.gluon import HybridBlock, nn
 from .base import BACKBONE_REGISTRY
 from .transformer import TransformerEncoderLayer
@@ -195,6 +195,13 @@ PRETRAINED_URL = {
         'params': 'google_en_uncased_bert_wwm_large/model-cb3ad3c2.params',
         'mlm_params': None,
         'lowercase': True,
+    },
+    'gluon_en_cased_bert_base_v1': {
+        'cfg': google_en_cased_bert_base(),
+        'vocab': 'gluon_en_cased_bert_base_v1/vocab-c1defaaa.json',
+        'params': 'gluon_en_cased_bert_base_v1/model-c9645538.params',
+        'mlm_params': None,
+        'lowercase': False,
     }
 }
 
@@ -249,7 +256,7 @@ class BertTransformer(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, data, valid_length):
+    def forward(self, data, valid_length):
         """
         Generate the representation given the inputs.
 
@@ -279,7 +286,7 @@ class BertTransformer(HybridBlock):
         else:
             time_axis, batch_axis = 0, 1
         # 1. Embed the data
-        attn_mask = gen_self_attn_mask(F, data, valid_length, dtype=self._dtype,
+        attn_mask = gen_self_attn_mask(data, valid_length, dtype=self._dtype,
                                        attn_type='full', layout=self.layout)
         out = data
         all_encodings_outputs = []
@@ -290,7 +297,7 @@ class BertTransformer(HybridBlock):
             # out : [batch_size, seq_len, units] or [seq_len, batch_size, units]
             # attention_weights : [batch_size, num_heads, seq_len, seq_len]
             if self._output_all_encodings:
-                out = F.npx.sequence_mask(out,
+                out = npx.sequence_mask(out,
                                           sequence_length=valid_length,
                                           use_sequence_length=True, axis=time_axis)
                 all_encodings_outputs.append(out)
@@ -300,7 +307,7 @@ class BertTransformer(HybridBlock):
 
         if not self._output_all_encodings:
             # if self._output_all_encodings, SequenceMask is already applied above
-            out = F.npx.sequence_mask(out, sequence_length=valid_length,
+            out = npx.sequence_mask(out, sequence_length=valid_length,
                                       use_sequence_length=True, axis=time_axis)
             return out, additional_outputs
         else:
@@ -364,7 +371,6 @@ class BertModel(HybridBlock):
             dtype=dtype,
             layout=self._compute_layout
         )
-        self.encoder.hybridize()
         # Construct word embedding
         self.word_embed = nn.Embedding(input_dim=vocab_size,
                                        output_dim=units,
@@ -394,7 +400,7 @@ class BertModel(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length):
+    def forward(self, inputs, token_types, valid_length):
         # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
@@ -430,14 +436,14 @@ class BertModel(HybridBlock):
         pooled_output :
             This is optional. Shape (batch_size, units)
         """
-        initial_embedding = self.get_initial_embedding(F, inputs, token_types)
+        initial_embedding = self.get_initial_embedding(inputs, token_types)
         prev_out = initial_embedding
         outputs = []
         if self._compute_layout != self._layout:
             # Swap the axes if the compute_layout and layout mismatch
-            contextual_embeddings, additional_outputs = self.encoder(F.np.swapaxes(prev_out, 0, 1),
+            contextual_embeddings, additional_outputs = self.encoder(np.swapaxes(prev_out, 0, 1),
                                                                      valid_length)
-            contextual_embeddings = F.np.swapaxes(contextual_embeddings, 0, 1)
+            contextual_embeddings = np.swapaxes(contextual_embeddings, 0, 1)
         else:
             contextual_embeddings, additional_outputs = self.encoder(prev_out, valid_length)
         outputs.append(contextual_embeddings)
@@ -446,7 +452,7 @@ class BertModel(HybridBlock):
             outputs.append(pooled_out)
         return tuple(outputs) if len(outputs) > 1 else outputs[0]
 
-    def get_initial_embedding(self, F, inputs, token_types=None):
+    def get_initial_embedding(self, inputs, token_types=None):
         """Get the initial token embeddings that considers the token type and positional embeddings
 
         Parameters
@@ -479,12 +485,12 @@ class BertModel(HybridBlock):
             time_axis, batch_axis = 0, 1
         embedding = self.word_embed(inputs)
         if token_types is None:
-            token_types = F.np.zeros_like(inputs)
+            token_types = np.zeros_like(inputs)
         type_embedding = self.token_type_embed(token_types)
         embedding = embedding + type_embedding
         if self.pos_embed_type is not None:
-            positional_embedding = self.token_pos_embed(F.npx.arange_like(inputs, axis=time_axis))
-            positional_embedding = F.np.expand_dims(positional_embedding, axis=batch_axis)
+            positional_embedding = self.token_pos_embed(npx.arange_like(inputs, axis=time_axis))
+            positional_embedding = np.expand_dims(positional_embedding, axis=batch_axis)
             embedding = embedding + positional_embedding
         # Extra layer normalization plus dropout
         embedding = self.embed_layer_norm(embedding)
@@ -601,13 +607,12 @@ class BertForMLM(HybridBlock):
                                       flatten=False,
                                       bias_initializer=bias_initializer))
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
-        self.mlm_decoder.hybridize()
 
     @property
     def layout(self):
         return self.backbone_model.layout
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length,
+    def forward(self, inputs, token_types, valid_length,
                        masked_positions):
         """Getting the scores of the masked positions.
 
@@ -648,9 +653,9 @@ class BertForMLM(HybridBlock):
         """
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
         if self.layout == 'NT':
-            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+            mlm_features = select_vectors_by_position(contextual_embeddings, masked_positions)
         else:
-            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+            mlm_features = select_vectors_by_position(np.swapaxes(contextual_embeddings, 0, 1),
                                                       masked_positions)
         mlm_scores = self.mlm_decoder(mlm_features)
         return contextual_embeddings, pooled_out, mlm_scores
@@ -698,13 +703,12 @@ class BertForPretrain(HybridBlock):
                                       flatten=False,
                                       bias_initializer=bias_initializer))
         self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
-        self.mlm_decoder.hybridize()
 
     @property
     def layout(self):
         return self.backbone_model.layout
 
-    def hybrid_forward(self, F, inputs, token_types, valid_length,
+    def forward(self, inputs, token_types, valid_length,
                        masked_positions):
         """Generate the representation given the inputs.
 
@@ -750,9 +754,9 @@ class BertForPretrain(HybridBlock):
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
         nsp_score = self.nsp_classifier(pooled_out)
         if self.layout == 'NT':
-            mlm_features = select_vectors_by_position(F, contextual_embeddings, masked_positions)
+            mlm_features = select_vectors_by_position(contextual_embeddings, masked_positions)
         else:
-            mlm_features = select_vectors_by_position(F, F.np.swapaxes(contextual_embeddings, 0, 1),
+            mlm_features = select_vectors_by_position(np.swapaxes(contextual_embeddings, 0, 1),
                                                       masked_positions)
         mlm_scores = self.mlm_decoder(mlm_features)
         return contextual_embeddings, pooled_out, nsp_score, mlm_scores

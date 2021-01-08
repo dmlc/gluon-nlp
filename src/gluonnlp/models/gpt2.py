@@ -30,7 +30,7 @@ import os
 from typing import Tuple
 
 import mxnet as mx
-from mxnet import use_np
+from mxnet import use_np, np, npx
 from mxnet.gluon import HybridBlock, nn
 from .base import BACKBONE_REGISTRY
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
@@ -164,7 +164,7 @@ class GPT2SelfAttentionLayer(HybridBlock):
         assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
                                        'Only "TN" and "NT" are accepted!'.format(layout)
         self._attention_layout = 'NTK' if self._layout == 'NT' else 'TNK'
-        
+
         self.ln = nn.LayerNorm(
             epsilon=self._layer_norm_eps,
             in_channels=self._units
@@ -197,7 +197,7 @@ class GPT2SelfAttentionLayer(HybridBlock):
         )
         self.hidden_dropout = nn.Dropout(self._hidden_dropout_prob)
 
-    def hybrid_forward(self, F, x, layer_states):
+    def forward(self, x, layer_states):
         """
 
         Parameters
@@ -216,37 +216,37 @@ class GPT2SelfAttentionLayer(HybridBlock):
         x = self.ln(x)
         if self._layout == 'NT':
             batch_axis, time_axis = 0, 1
-            prev_len = F.npx.shape_array(layer_states)[2]
+            prev_len = npx.shape_array(layer_states)[2]
         else:
             batch_axis, time_axis = 1, 0
-            prev_len = F.npx.shape_array(layer_states)[1]
+            prev_len = npx.shape_array(layer_states)[1]
 
-        query, key, value = F.np.split(self.qkv(x), 3, axis=-1)
+        query, key, value = np.split(self.qkv(x), 3, axis=-1)
         if layer_states is not None:
             prev_key, prev_value = layer_states[0], layer_states[1]
-            key = F.np.concatenate([prev_key, key], axis=time_axis)
-            value = F.np.concatenate([prev_value, value], axis=time_axis)
-        new_states = F.np.stack([key, value], axis=0)
-        
+            key = np.concatenate([prev_key, key], axis=time_axis)
+            value = np.concatenate([prev_value, value], axis=time_axis)
+        new_states = np.stack([key, value], axis=0)
+
         # gen mask
-        query_pos = F.npx.arange_like(query, axis=time_axis)
+        query_pos = npx.arange_like(query, axis=time_axis)
         if prev_len is not None:
             query_pos = query_pos + prev_len
-        key_pos = F.npx.arange_like(key, axis=time_axis)
+        key_pos = npx.arange_like(key, axis=time_axis)
         # (query_len, key_len)
-        mask = (F.npx.reshape(key_pos, (1, -1)) <= 
-                F.npx.reshape(query_pos, (-1, 1))).astype(self._dtype)
+        mask = (npx.reshape(key_pos, (1, -1)) <=
+                npx.reshape(query_pos, (-1, 1))).astype(self._dtype)
         # broadcast to (batch_size, query_len, key_len)
-        mask = F.npx.broadcast_like(
-            F.np.expand_dims(mask, axis=0),
+        mask = npx.broadcast_like(
+            np.expand_dims(mask, axis=0),
             query,
             lhs_axes=0,
             rhs_axes=batch_axis
         )
 
-        query = F.npx.reshape(query, (-2, -2, self._num_heads, -1))
-        key = F.npx.reshape(key, (-2, -2, self._num_heads, -1))
-        value = F.npx.reshape(value, (-2, -2, self._num_heads, -1))
+        query = npx.reshape(query, (-2, -2, self._num_heads, -1))
+        key = npx.reshape(key, (-2, -2, self._num_heads, -1))
+        value = npx.reshape(value, (-2, -2, self._num_heads, -1))
 
         out, [_, attn_weight] = self.attention_cell(query, key, value, mask)
         out = self.out_proj(out)
@@ -292,7 +292,7 @@ class GPT2FFN(HybridBlock):
                               dtype=self._dtype)
         self.hidden_dropout = nn.Dropout(self._hidden_dropout_prob)
 
-    def hybrid_forward(self, F, data):
+    def forward(self, data):
         # here the residual connection is applied before the layernorm,
         # which is different from the PositionwiseFFN(pre_norm=True)
         out = self.layer_norm(data)
@@ -329,7 +329,7 @@ class GPT2Layer(HybridBlock):
         self._activation = activation
         self._dtype = dtype
         self._layout = layout
-        
+
         self.atten = GPT2SelfAttentionLayer(
             units=self._units,
             num_heads=self._num_heads,
@@ -350,8 +350,8 @@ class GPT2Layer(HybridBlock):
             activation=self._activation,
             dtype=self._dtype
         )
-    
-    def hybrid_forward(self, F, x, layer_states):
+
+    def forward(self, x, layer_states):
         """
 
         Parameters
@@ -467,7 +467,7 @@ class GPT2Model(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, x, states):
+    def forward(self, x, states):
         """
 
         Parameters
@@ -500,28 +500,28 @@ class GPT2Model(HybridBlock):
             - layout = 'TN'
                 Shape (num_layers, 2, prev_len + seq_length, batch_size, C_in)
         """
-        prev_len = F.npx.shape_array(states)[3] if self._layout == 'NT' else \
-                   F.npx.shape_array(states)[2]
-        x = self.get_initial_embedding(F, x, prev_len)
-        
+        prev_len = npx.shape_array(states)[3] if self._layout == 'NT' else \
+                   npx.shape_array(states)[2]
+        x = self.get_initial_embedding(x, prev_len)
+
         if self._layout != self._compute_layout:
-            x = F.np.swapaxes(x, 0, 1)
-            states = F.np.swapaxes(states, 2, 3)
-        
+            x = np.swapaxes(x, 0, 1)
+            states = np.swapaxes(states, 2, 3)
+
         new_states = []
         for layer_idx in range(self._num_layers):
             layer_states = None if states is None else states[layer_idx]
             x, new_layer_states = self._layers[layer_idx](x, layer_states)
             new_states.append(new_layer_states)
-        new_states = F.np.stack(new_states, axis=0)
-        
+        new_states = np.stack(new_states, axis=0)
+
         x = self._final_ln(x)
         if self._layout != self._compute_layout:
-            x = F.np.swapaxes(x, 0, 1)
-            new_states = F.np.swapaxes(new_states, 2, 3)
+            x = np.swapaxes(x, 0, 1)
+            new_states = np.swapaxes(new_states, 2, 3)
         return x, new_states
 
-    def get_initial_embedding(self, F, inputs, prev_len):
+    def get_initial_embedding(self, inputs, prev_len):
         """Get the initial token embeddings that considers the token type and positional embeddings
 
         Parameters
@@ -534,7 +534,7 @@ class GPT2Model(HybridBlock):
                 Shape (seq_length, batch_size)
         prev_len
             The previous length. It will be a scalar.
-        
+
         Returns
         -------
         embedding
@@ -549,16 +549,16 @@ class GPT2Model(HybridBlock):
         else:
             batch_axis, time_axis = 1, 0
         if self._pos_embed_type is not None:
-            pos = F.npx.arange_like(inputs, axis=time_axis)
+            pos = npx.arange_like(inputs, axis=time_axis)
             if prev_len is not None:
                 pos = pos + prev_len
             positional_embedding = self._pos_embed(pos)
-            positional_embedding = F.np.expand_dims(positional_embedding, axis=batch_axis)
+            positional_embedding = np.expand_dims(positional_embedding, axis=batch_axis)
             embedding = embedding + positional_embedding
         embedding = self._embed_dropout(embedding)
         return embedding
 
-    def init_states(self, batch_size, ctx):
+    def init_states(self, batch_size, ctx, dtype=None):
         """Initialize the states required for incremental decoding
 
         Returns
@@ -569,10 +569,12 @@ class GPT2Model(HybridBlock):
             - layout = 'TN'
                 Shape (num_layers, 2, 0, batch_size, C_in)
         """
+        if dtype is None:
+            dtype = self._dtype
         return mx.np.zeros(shape=(self._num_layers, 2, batch_size, 0,
-                                  self._units), ctx=ctx, dtype=self._dtype) if self.layout == 'NT' else \
+                                  self._units), ctx=ctx, dtype=dtype) if self.layout == 'NT' else \
                mx.np.zeros(shape=(self._num_layers, 2, 0, batch_size,
-                                  self._units), ctx=ctx, dtype=self._dtype)
+                                  self._units), ctx=ctx, dtype=dtype)
 
     @staticmethod
     def get_cfg(key=None):
@@ -625,7 +627,7 @@ class GPT2ForLM(HybridBlock):
         )
         self._lm_head.weight = self._backbone_model._embed.weight
 
-    def hybrid_forward(self, F, inputs, states):
+    def forward(self, inputs, states):
         """Getting the logits
 
         Parameters

@@ -1,8 +1,10 @@
 __all__ = ['is_match_states_batch_size', 'verify_nmt_model', 'verify_nmt_inference']
 
 import numpy.testing as npt
+import numpy as np
 import mxnet as mx
 from mxnet.util import use_np
+from .parameter import move_to_ctx
 
 
 def is_match_states_batch_size(states, states_batch_axis, batch_size) -> bool:
@@ -106,10 +108,15 @@ def verify_nmt_inference(train_model, inference_model,
     Parameters
     ----------
     train_model
+        The training model
     inference_model
+        The inference model
     batch_size
+        Batch size
     src_seq_length
+        Length of the source sequence
     tgt_seq_length
+        Length of the target sequence
     atol
         Absolute tolerance
     rtol
@@ -161,3 +168,103 @@ def verify_nmt_inference(train_model, inference_model,
                                 partial_out[:, :partial_batch_size].asnumpy(), atol, rtol)
     else:
         raise NotImplementedError
+
+
+def _match_struct_output(lhs, rhs, atol=1E-2, rtol=1E-2):
+    if isinstance(lhs, (list, tuple)):
+        for lhs_ele, rhs_ele in zip(lhs, rhs):
+            _match_struct_output(lhs_ele, rhs_ele, atol=atol, rtol=rtol)
+    else:
+        npt.assert_allclose(lhs.asnumpy().astype('float32'),
+                            rhs.asnumpy().astype('float32'), atol=atol, rtol=rtol)
+
+
+def _cast_nested_to_fp16(nested_dat):
+    """Cast the nested input to fp16
+
+    Parameters
+    ----------
+    dat
+        The input nested data structure
+
+    Returns
+    -------
+    output
+        The casted output data
+    """
+    if isinstance(nested_dat, (mx.np.ndarray, np.ndarray)):
+        if nested_dat.dtype == np.float32:
+            return nested_dat.astype(np.float16)
+        else:
+            return nested_dat
+    elif isinstance(nested_dat, list):
+        return [_cast_nested_to_fp16(ele) for ele in nested_dat]
+    elif isinstance(nested_dat, tuple):
+        return tuple([_cast_nested_to_fp16(ele) for ele in nested_dat])
+    else:
+        raise NotImplementedError('Type is not supported!')
+
+
+def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
+                         atol=1E-2, rtol=1E-2, check_amp=True):
+    """Test whether the backbone model has the comparable parameter gradient +
+
+    Parameters
+    ----------
+    model_cls
+        The modeling class
+    cfg
+        The configuration
+    ctx
+        The context
+    inputs
+        The input tensors of the model. We will
+    atol
+        The absolute tolerance
+    rtol
+        The relative tolerance
+    check_amp
+        Whether to check the AMP process. You will need to ensure that there is no
+        randomness in the model when it is turned on.
+
+    """
+    model_fp32 = model_cls.from_cfg(cfg, dtype='float32')
+    model_fp32.initialize(ctx=ctx)
+    model_fp32.hybridize()
+    # Check forward
+    fp32_inputs = move_to_ctx(inputs, ctx=ctx)
+    outputs_fp32 = model_fp32(*fp32_inputs)
+    mx.npx.waitall()
+    # Check forward of fp16
+    model_fp16 = model_cls.from_cfg(cfg, dtype='float16')
+    model_fp16.share_parameters(model_fp32.collect_params())
+    model_fp16.cast('float16')
+    model_fp16.hybridize()
+    for param in model_fp16.collect_params().values():
+        assert param.dtype == 'float16'
+    fp16_inputs = move_to_ctx(_cast_nested_to_fp16(inputs), ctx=ctx)
+    outputs_fp16 = model_fp16(*fp16_inputs)
+    mx.npx.waitall()
+    _match_struct_output(outputs_fp16, outputs_fp32, atol=atol, rtol=rtol)
+    if check_amp:
+        from mxnet import amp
+        amp.init()
+        # Reconstruct the fp32 model
+        model_fp32 = model_cls.from_cfg(cfg, dtype='float32')
+        model_fp32.initialize(ctx=ctx)
+        model_fp32.hybridize()
+        trainer = mx.gluon.Trainer(model_fp32.collect_params(), 'adam',
+                                   {'learning_rate': 1E-3, 'wd': 1E-4,
+                                    'multi_precision': True},
+                                   update_on_kvstore=False)
+        amp.init_trainer(trainer)
+        with mx.autograd.record():
+            outputs_amp = model_fp32(*fp32_inputs)
+            if not isinstance(outputs_amp, (tuple, list)):
+                loss = outputs_amp.mean()
+            else:
+                loss = sum([ele.mean() for ele in outputs_amp])
+            with amp.scale_loss(loss, trainer) as scaled_loss:
+                mx.autograd.backward(scaled_loss)
+        trainer.step(1)
+        mx.npx.waitall()

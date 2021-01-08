@@ -3,7 +3,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 import mxnet as mx
 from gluonnlp.layers import\
-    MultiHeadDense, PositionalEmbedding, \
+    PositionalEmbedding, \
     SinusoidalPositionalEmbedding, \
     LearnedPositionalEmbedding, \
     BucketPositionalEmbedding, \
@@ -13,32 +13,6 @@ from gluonnlp.layers import\
     get_norm_layer
 from gluonnlp.op import relative_position_bucket
 mx.npx.set_np()
-
-
-def test_multi_head_dense():
-    def _verify(num_heads, hybridize):
-        layer = MultiHeadDense(32, num_heads)
-        layer.initialize()
-        if hybridize:
-            layer.hybridize()
-        in_data = mx.np.ones((5, 4, 10))
-        out = layer(in_data)
-        if not isinstance(num_heads, (list, tuple)):
-            num_heads = (num_heads,)
-        else:
-            num_heads = tuple(num_heads)
-        assert out.shape == (5,) + num_heads + (4, 32)
-        out_data = out.asnumpy()
-        weight_data = layer.weight.data().asnumpy()
-        bias_data = layer.bias.data().asnumpy()
-        gt_data = (in_data.asnumpy().dot(weight_data.T) + bias_data)\
-            .reshape((5, 4, np.prod(num_heads), 32))
-        gt_data = np.moveaxis(gt_data, -2, 1)
-        gt_data = gt_data.reshape((5,) + num_heads + (4, 32))
-        assert_allclose(gt_data, out_data, 1E-4, 1E-4)
-    for parallel_num in [3, (2, 3), (3, 2, 3)]:
-        for hybridize in [True, False]:
-            _verify(parallel_num, hybridize)
 
 
 def test_sinusoidal_positional_embedding():
@@ -235,7 +209,7 @@ def test_bucket_positional_embedding(units, num_buckets, bidirectional, max_dist
     relative_positions1 = mx.np.random.randint(-10000, 10000, (128, 25), dtype=np.int32)
     relative_positions2 = mx.np.random.randint(-10, 10, (128, 25), dtype=np.int32)
     relative_positions = mx.np.concatenate([relative_positions1, relative_positions2], axis=-1)
-    buckets = relative_position_bucket(mx, relative_positions, bidirectional=bidirectional,
+    buckets = relative_position_bucket(relative_positions, bidirectional=bidirectional,
                                        num_buckets=num_buckets, max_distance=max_distance)
     out = embed(relative_positions)
     for i in range(num_buckets):
@@ -252,13 +226,18 @@ def test_bucket_positional_embedding(units, num_buckets, bidirectional, max_dist
 
 @pytest.mark.parametrize('normalization', ['layer_norm', 'no_norm', 'identity', 'batch_norm'])
 def test_get_norm_layer(normalization, ctx):
+    class TestNet(mx.gluon.HybridBlock):
+        def __init__(self):
+            super().__init__()
+            self.embed = mx.gluon.nn.Dense(16, in_units=16)
+            self.norm_layer = get_norm_layer(normalization=normalization,
+                                             in_channels=16)
+            self.pred = mx.gluon.nn.Dense(16, in_units=16)
+
+        def forward(self, x):
+            return self.pred(self.norm_layer(self.embed(x)))
     with ctx:
-        norm_layer = get_norm_layer(normalization=normalization,
-                                    in_channels=16)
-        net = mx.gluon.nn.HybridSequential()
-        net.add(mx.gluon.nn.Dense(16, in_units=16))
-        net.add(norm_layer)
-        net.add(mx.gluon.nn.Dense(16, in_units=16))
+        net = TestNet()
         net.hybridize()
         net.initialize()
         data_in = mx.np.random.normal(0, 1, (8, 16))

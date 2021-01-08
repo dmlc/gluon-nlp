@@ -4,6 +4,7 @@ import mxnet as mx
 import tempfile
 from gluonnlp.models.bert import BertModel, BertForMLM, BertForPretrain,\
     list_pretrained_bert, get_pretrained_bert
+from gluonnlp.utils.testing import verify_backbone_fp16
 mx.npx.set_np()
 
 
@@ -52,19 +53,6 @@ def test_bert_small_cfg(compute_layout, ctx):
                         1E-4, 1E-4)
         assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
 
-        # Test BertModel FP16
-        device_type = ctx.device_type
-        if device_type == 'gpu':
-            bert_model_fp16 = BertModel.from_cfg(cfg, dtype='float16')
-            bert_model_fp16.share_parameters(bert_model.collect_params())
-            bert_model_fp16.cast('float16')
-            bert_model_fp16.hybridize()
-            contextual_embedding_fp16, pooled_out_fp16 = bert_model_fp16(inputs,\
-                    token_types, valid_length)
-            assert_allclose(contextual_embedding_fp16.asnumpy(),
-                            mx.np.swapaxes(contextual_embedding_tn, 0, 1).asnumpy(),
-                            1E-2, 1E-2)
-
         # Test for BertForMLM
         bert_mlm_model = BertForMLM(cfg)
         bert_mlm_model.initialize()
@@ -79,8 +67,8 @@ def test_bert_small_cfg(compute_layout, ctx):
         assert_allclose(contextual_embedding.asnumpy(),
                         mx.np.swapaxes(contextual_embedding_tn, 0, 1).asnumpy(),
                         1E-4, 1E-4)
-        assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
-        assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-4, 1E-4)
+        assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-3, 1E-3)
+        assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-3, 1E-3)
 
         # Test for BertForPretrain
         bert_pretrain_model = BertForPretrain(cfg)
@@ -95,10 +83,16 @@ def test_bert_small_cfg(compute_layout, ctx):
             bert_pretrain_model_tn(inputs.T, token_types.T, valid_length, masked_positions)
         assert_allclose(contextual_embedding.asnumpy(),
                         mx.np.swapaxes(contextual_embedding_tn, 0, 1).asnumpy(),
-                        1E-4, 1E-4)
-        assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-4, 1E-4)
-        assert_allclose(nsp_score.asnumpy(), nsp_score_tn.asnumpy(), 1E-4, 1E-4)
-        assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-4, 1E-4)
+                        1E-3, 1E-3)
+        assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-3, 1E-3)
+        assert_allclose(nsp_score.asnumpy(), nsp_score_tn.asnumpy(), 1E-3, 1E-3)
+        assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-3, 1E-3)
+
+        # Test BertModel FP16
+        device_type = ctx.device_type
+        if device_type == 'gpu':
+            verify_backbone_fp16(model_cls=BertModel, cfg=cfg, ctx=ctx,
+                                 inputs=[inputs, token_types, valid_length])
 
 
 @pytest.mark.slow

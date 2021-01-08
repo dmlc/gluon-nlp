@@ -48,7 +48,7 @@ markdown:
 	done;
 
 docs_local: markdown distribute
-	make -C docs html SPHINXOPTS=-W
+	make -C docs html
 
 clean:
 	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda/" --exclude="$(ROOTDIR)/.idea/"

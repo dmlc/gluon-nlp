@@ -1,5 +1,6 @@
 import os
 import pytest
+import tempfile
 from gluonnlp.cli.process import learn_subword, apply_subword
 from gluonnlp.data import tokenizers
 
@@ -113,3 +114,32 @@ def test_subword_algorithms_zh(model):
                       'r', encoding='utf-8') as in_f:
                 for line in in_f:
                     out_f.write(tokenizer.decode(line.split()) + '\n')
+
+
+@pytest.mark.parametrize('model',
+                         ['spm', 'subword_nmt', 'hf_bpe', 'hf_bytebpe', 'hf_wordpiece'])
+def test_subword_custom_token(model):
+    parser = learn_subword.get_parser()
+    corpus_path = os.path.join(_CURR_DIR, 'data', 'wmt19-test-zh-en.zh.jieba')
+    with tempfile.TemporaryDirectory() as tempdir:
+        dir_path = tempdir
+        arguments = ['--corpus'] + [corpus_path] + \
+                    ['--model', model, '--vocab-size', '5000',
+                     '--save-dir', dir_path,
+                     '--disable-bos', '--disable-eos',
+                     '--custom-special-tokens',
+                     'cls_token=<cls>', 'sep_token=<sep>']
+        args = parser.parse_args(arguments)
+        # Train the tokenizer
+        learn_subword.main(args)
+        if model in ['yttm', 'spm', 'subword_nmt']:
+            model_key = model
+        else:
+            model_key = 'hf_tokenizer'
+        tokenizer = tokenizers.create(model_key,
+                                      model_path=os.path.join(dir_path,
+                                                              '{}.model'.format(model)),
+                                      vocab=os.path.join(dir_path,
+                                                         '{}.vocab'.format(model)))
+        assert tokenizer.vocab.sep_token == '<sep>'
+        assert tokenizer.vocab.cls_token == '<cls>'

@@ -1,8 +1,9 @@
-import numpy as np
+import numpy as _np
 import gluonnlp.data.batchify as bf
 import collections
 import dataclasses
 import mxnet as mx
+from mxnet import np, npx
 from mxnet.gluon import nn
 from mxnet.gluon.nn import HybridBlock
 from dataclasses import dataclass
@@ -74,9 +75,9 @@ def predict_extended(original_feature,
     all_end_idx = []
     all_pred_score = []
     context_length = len(original_feature.context_token_ids)
-    token_max_context_score = np.full((len(chunked_features), context_length),
-                                      -np.inf,
-                                      dtype=np.float32)
+    token_max_context_score = _np.full((len(chunked_features), context_length),
+                                      -_np.inf,
+                                      dtype=_np.float32)
     for i, chunked_feature in enumerate(chunked_features):
         chunk_start = chunked_feature.chunk_start
         chunk_length = chunked_feature.chunk_length
@@ -137,8 +138,8 @@ def predict_extended(original_feature,
     # just create a nonce prediction in this case to avoid failure.
     if len(nbest) == 0:
         nbest.append(('', float('-inf')))
-    all_scores = np.array([ele[1] for ele in nbest], dtype=np.float32)
-    probs = np.exp(all_scores) / np.sum(np.exp(all_scores))
+    all_scores = _np.array([ele[1] for ele in nbest], dtype=_np.float32)
+    probs = _np.exp(all_scores) / _np.sum(_np.exp(all_scores))
     nbest_json = []
     for i, (entry, prob) in enumerate(zip(nbest, probs)):
         output = collections.OrderedDict()
@@ -201,12 +202,11 @@ class ModelForQAConditionalV1(HybridBlock):
                                             weight_initializer=weight_initializer,
                                             bias_initializer=bias_initializer))
 
-    def get_start_logits(self, F, contextual_embedding, p_mask):
+    def get_start_logits(self, contextual_embedding, p_mask):
         """
 
         Parameters
         ----------
-        F
         contextual_embedding
             Shape (batch_size, sequence_length, C)
 
@@ -215,16 +215,15 @@ class ModelForQAConditionalV1(HybridBlock):
         start_logits
             Shape (batch_size, sequence_length)
         """
-        start_scores = F.np.squeeze(self.start_scores(contextual_embedding), -1)
-        start_logits = masked_logsoftmax(F, start_scores, mask=p_mask, axis=-1)
+        start_scores = np.squeeze(self.start_scores(contextual_embedding), -1)
+        start_logits = masked_logsoftmax(start_scores, mask=p_mask, axis=-1)
         return start_logits
 
-    def get_end_logits(self, F, contextual_embedding, start_positions, p_mask):
+    def get_end_logits(self, contextual_embedding, start_positions, p_mask):
         """
 
         Parameters
         ----------
-        F
         contextual_embedding
             Shape (batch_size, sequence_length, C)
         start_positions
@@ -240,27 +239,26 @@ class ModelForQAConditionalV1(HybridBlock):
         """
         # Select the features at the start_positions
         # start_feature will have shape (batch_size, N, C)
-        start_features = select_vectors_by_position(F, contextual_embedding, start_positions)
+        start_features = select_vectors_by_position(contextual_embedding, start_positions)
         # Concatenate the start_feature and the contextual_embedding
-        contextual_embedding = F.np.expand_dims(contextual_embedding, axis=1)  # (B, 1, T, C)
-        start_features = F.np.expand_dims(start_features, axis=2)  # (B, N, 1, C)
-        concat_features = F.np.concatenate([F.npx.broadcast_like(start_features,
+        contextual_embedding = np.expand_dims(contextual_embedding, axis=1)  # (B, 1, T, C)
+        start_features = np.expand_dims(start_features, axis=2)  # (B, N, 1, C)
+        concat_features = np.concatenate([npx.broadcast_like(start_features,
                                                                  contextual_embedding, 2, 2),
-                                            F.npx.broadcast_like(contextual_embedding,
+                                            npx.broadcast_like(contextual_embedding,
                                                                  start_features, 1, 1)],
                                            axis=-1)  # (B, N, T, 2C)
         end_scores = self.end_scores(concat_features)
-        end_scores = F.np.squeeze(end_scores, -1)
-        end_logits = masked_logsoftmax(F, end_scores, mask=F.np.expand_dims(p_mask, axis=1),
+        end_scores = np.squeeze(end_scores, -1)
+        end_logits = masked_logsoftmax(end_scores, mask=np.expand_dims(p_mask, axis=1),
                                        axis=-1)
         return end_logits
 
-    def get_answerable_logits(self, F, contextual_embedding, p_mask):
+    def get_answerable_logits(self, contextual_embedding, p_mask):
         """Get the answerable logits.
 
         Parameters
         ----------
-        F
         contextual_embedding
             Shape (batch_size, sequence_length, C)
         p_mask
@@ -275,23 +273,22 @@ class ModelForQAConditionalV1(HybridBlock):
             Shape (batch_size, 2)
         """
         # Shape (batch_size, sequence_length)
-        start_scores = F.np.squeeze(self.start_scores(contextual_embedding), -1)
-        start_score_weights = masked_softmax(F, start_scores, p_mask, axis=-1)
-        start_agg_feature = F.npx.batch_dot(F.np.expand_dims(start_score_weights, axis=1),
+        start_scores = np.squeeze(self.start_scores(contextual_embedding), -1)
+        start_score_weights = masked_softmax(start_scores, p_mask, axis=-1)
+        start_agg_feature = npx.batch_dot(np.expand_dims(start_score_weights, axis=1),
                                             contextual_embedding)
-        start_agg_feature = F.np.squeeze(start_agg_feature, 1)
+        start_agg_feature = np.squeeze(start_agg_feature, 1)
         cls_feature = contextual_embedding[:, 0, :]
-        answerable_scores = self.answerable_scores(F.np.concatenate([start_agg_feature,
+        answerable_scores = self.answerable_scores(np.concatenate([start_agg_feature,
                                                                      cls_feature], axis=-1))
-        answerable_logits = F.npx.log_softmax(answerable_scores, axis=-1)
+        answerable_logits = npx.log_softmax(answerable_scores, axis=-1)
         return answerable_logits
 
-    def hybrid_forward(self, F, tokens, token_types, valid_length, p_mask, start_position):
+    def forward(self, tokens, token_types, valid_length, p_mask, start_position):
         """
 
         Parameters
         ----------
-        F
         tokens
             Shape (batch_size, sequence_length)
         token_types
@@ -315,12 +312,12 @@ class ModelForQAConditionalV1(HybridBlock):
             contextual_embeddings = self.backbone(tokens, token_types, valid_length)
         else:
             contextual_embeddings = self.backbone(tokens, valid_length)
-        start_logits = self.get_start_logits(F, contextual_embeddings, p_mask)
-        end_logits = self.get_end_logits(F, contextual_embeddings,
-                                         F.np.expand_dims(start_position, axis=1),
+        start_logits = self.get_start_logits(contextual_embeddings, p_mask)
+        end_logits = self.get_end_logits(contextual_embeddings,
+                                         np.expand_dims(start_position, axis=1),
                                          p_mask)
-        end_logits = F.np.squeeze(end_logits, axis=1)
-        answerable_logits = self.get_answerable_logits(F, contextual_embeddings, p_mask)
+        end_logits = np.squeeze(end_logits, axis=1)
+        answerable_logits = self.get_answerable_logits(contextual_embeddings, p_mask)
         return start_logits, end_logits, answerable_logits
 
     def inference(self, tokens, token_types, valid_length, p_mask,
@@ -366,16 +363,16 @@ class ModelForQAConditionalV1(HybridBlock):
             contextual_embeddings = self.backbone(tokens, token_types, valid_length)
         else:
             contextual_embeddings = self.backbone(tokens, valid_length)
-        start_logits = self.get_start_logits(mx.nd, contextual_embeddings, p_mask)
+        start_logits = self.get_start_logits(contextual_embeddings, p_mask)
         # The shape of start_top_index will be (..., start_top_n)
-        start_top_logits, start_top_index = mx.npx.topk(start_logits, k=start_top_n, axis=-1,
+        start_top_logits, start_top_index = npx.topk(start_logits, k=start_top_n, axis=-1,
                                                         ret_typ='both')
-        end_logits = self.get_end_logits(mx.nd, contextual_embeddings, start_top_index, p_mask)
+        end_logits = self.get_end_logits(contextual_embeddings, start_top_index, p_mask)
         # Note that end_top_index and end_top_log_probs have shape (bsz, start_n_top, end_n_top)
         # So that for each start position, there are end_n_top end positions on the third dim.
-        end_top_logits, end_top_index = mx.npx.topk(end_logits, k=end_top_n, axis=-1,
+        end_top_logits, end_top_index = npx.topk(end_logits, k=end_top_n, axis=-1,
                                                     ret_typ='both')
-        answerable_logits = self.get_answerable_logits(mx.nd, contextual_embeddings, p_mask)
+        answerable_logits = self.get_answerable_logits(contextual_embeddings, p_mask)
         return start_top_logits, start_top_index, end_top_logits, end_top_index, \
                     answerable_logits
 
@@ -686,7 +683,7 @@ def convert_squad_example_to_feature(example: SquadExample,
     gt_span_start_pos, gt_span_end_pos = None, None
     token_answer_mismatch = False
     unreliable_span = False
-    np_offsets = np.array(offsets)
+    np_offsets = _np.array(offsets)
     if is_training and not example.is_impossible:
         assert example.start_position >= 0 and example.end_position >= 0
         # We convert the character-level offsets to token-level offsets
@@ -701,7 +698,7 @@ def convert_squad_example_to_feature(example: SquadExample,
             start_position, end_position = candidates.pop()
             # Match the token offsets
             token_start_ends = match_tokens_with_char_spans(np_offsets,
-                                                            np.array([[start_position,
+                                                            _np.array([[start_position,
                                                                        end_position]]))
             lower_idx = int(token_start_ends[0][0])
             upper_idx = int(token_start_ends[0][1])
@@ -855,14 +852,14 @@ class SquadDatasetProcessor:
             doc_stride=self._doc_stride,
             max_chunk_length=self._max_seq_length - len(truncated_query_ids) - 3)
         for chunk in chunks:
-            data = np.array([self.cls_id] + truncated_query_ids + [self.sep_id] +
+            data = _np.array([self.cls_id] + truncated_query_ids + [self.sep_id] +
                             feature.context_token_ids[chunk.start:(chunk.start + chunk.length)] +
-                            [self.sep_id], dtype=np.int32)
+                            [self.sep_id], dtype=_np.int32)
             valid_length = len(data)
-            segment_ids = np.array([0] + [0] * len(truncated_query_ids) +
-                                   [0] + [1] * chunk.length + [1], dtype=np.int32)
-            masks = np.array([0] + [1] * len(truncated_query_ids) + [1] + [0] * chunk.length + [1],
-                             dtype=np.int32)
+            segment_ids = _np.array([0] + [0] * len(truncated_query_ids) +
+                                   [0] + [1] * chunk.length + [1], dtype=_np.int32)
+            masks = _np.array([0] + [1] * len(truncated_query_ids) + [1] + [0] * chunk.length + [1],
+                             dtype=_np.int32)
             context_offset = len(truncated_query_ids) + 2
             if chunk.gt_start_pos is None and chunk.gt_end_pos is None:
                 start_pos = 0

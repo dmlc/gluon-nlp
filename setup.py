@@ -32,7 +32,8 @@ if VERSION.endswith('dev'):
 
 
 requirements = [
-    'numpy',
+    'boto3',
+    'numpy<1.20.0',
     'sacremoses>=0.0.38',
     'yacs>=0.1.6',
     'sacrebleu',
@@ -44,7 +45,7 @@ requirements = [
     'sentencepiece==0.1.91',
     'protobuf',
     'pandas',
-    'tokenizers==0.8.1',
+    'tokenizers==0.9.4',
     'dataclasses;python_version<"3.7"',  # Dataclass for python <= 3.6
     'click>=7.0',  # Dependency of youtokentome
     'youtokentome>=1.0.6',
@@ -76,7 +77,6 @@ setup(
     install_requires=requirements,
     extras_require={
         'extras': [
-            'boto3',
             'tqdm',
             'jieba',
             'subword_nmt',
@@ -85,6 +85,7 @@ setup(
             'nltk',
             'h5py>=2.10',
             'scipy',
+            'wikiextractor<3.0.0',
             'tqdm'
         ],
         'dev': [

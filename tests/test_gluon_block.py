@@ -1,6 +1,7 @@
+import pytest
 import mxnet as mx
-import numpy as np
-from numpy.testing import assert_allclose
+from mxnet import nd, np, npx
+from mxnet.test_utils import assert_allclose
 from mxnet.gluon import HybridBlock, Constant
 from mxnet.gluon.data import DataLoader
 import itertools
@@ -13,7 +14,7 @@ def test_const():
             super().__init__()
             self.weight = Constant(np.ones((10, 10)))
 
-        def hybrid_forward(self, F, x, weight):
+        def forward(self, x, weight):
             return x, weight.astype(np.float32)
 
     foo = Foo()
@@ -23,7 +24,7 @@ def test_const():
 
 def test_scalar():
     class Foo(HybridBlock):
-        def hybrid_forward(self, F, x):
+        def forward(self, x):
             return x * x * 2
 
     foo = Foo()
@@ -38,8 +39,8 @@ def test_gluon_nonzero_hybridize():
         def __init__(self):
             super().__init__()
 
-        def hybrid_forward(self, F, x):
-            dat = F.np._internal.nonzero(x)
+        def forward(self, x):
+            dat = npx.nonzero(x)
             return dat.sum() + dat
 
     foo = Foo()
@@ -50,13 +51,15 @@ def test_gluon_nonzero_hybridize():
     out.wait_to_read()
 
 
+@pytest.mark.xfail(reason='Expected to fail due to MXNet bug https://github.com/apache/'
+                          'incubator-mxnet/issues/19659')
 def test_gluon_boolean_mask():
     class Foo(HybridBlock):
-        def hybrid_forward(self, F, data, indices):
+        def forward(self, data, indices):
             mask = indices < 3
-            data = F.npx.reshape(data, (-1, -2), reverse=True)
-            mask = F.np.reshape(mask, (-1,))
-            sel = F.np._internal.boolean_mask(data, mask)
+            data = npx.reshape(data, (-1, -2), reverse=True)
+            mask = np.reshape(mask, (-1,))
+            sel = nd.np._internal.boolean_mask(data, mask)
             return sel
     data = mx.np.random.normal(0, 1, (5, 5, 5, 5, 16))
     indices = mx.np.random.randint(0, 5, (5, 5, 5, 5))
@@ -77,7 +80,7 @@ def test_basic_dataloader():
         args = [iter(iterable)] * n
         return itertools.zip_longest(*args, fillvalue=fillvalue)
     ctx_l = [mx.cpu(i) for i in range(8)]
-    dataset = [mx.np.ones((10,)) * i for i in range(100000)]
+    dataset = [mx.np.ones((2,)) * i for i in range(1000)]
     dataloader = DataLoader(dataset, 2, num_workers=4, prefetch=10)
 
     for i, data_l in enumerate(grouper(dataloader, len(ctx_l))):

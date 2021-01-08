@@ -16,15 +16,10 @@ process the text data, and train models.
 
 # Features
 
-For NLP Practitioners
-- Easy-to-use Text Processing Tools
-
-For Researchers
+- Easy-to-use Text Processing Tools and Modular APIs
 - Pretrained Model Zoo
 - Write Models with Numpy-like API
-
-For Engineers
-- Fast Inference via [TVM](https://tvm.apache.org/) (TODO)
+- Fast Inference via [Apache TVM (incubating)](https://tvm.apache.org/) (Experimental)
 - AWS Integration via [SageMaker](https://aws.amazon.com/sagemaker/)
 
 
@@ -32,17 +27,17 @@ For Engineers
 First of all, install the latest MXNet. You may use the following commands:
 
 ```bash
-# Install the version with CUDA 10.0
-python3 -m pip install -U --pre "mxnet-cu100>=2.0.0b20200926" -f https://dist.mxnet.io/python
-
 # Install the version with CUDA 10.1
-python3 -m pip install -U --pre "mxnet-cu101>=2.0.0b20200926" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet-cu101>=2.0.0b20201206" -f https://dist.mxnet.io/python
 
 # Install the version with CUDA 10.2
-python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20200926" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20201206" -f https://dist.mxnet.io/python
+
+# Install the version with CUDA 11
+python3 -m pip install -U --pre "mxnet-cu110>=2.0.0b20201206" -f https://dist.mxnet.io/python
 
 # Install the cpu-only version
-python3 -m pip install -U --pre "mxnet>=2.0.0b20200926" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet>=2.0.0b20201206" -f https://dist.mxnet.io/python
 ```
 
 
@@ -97,7 +92,7 @@ docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size
 
 # CPU Instance
 docker pull gluonai/gluon-nlp:cpu-latest
-docker run --gpus all --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=2g gluonai/gluon-nlp:cpu-latest
+docker run --rm -it -p 8888:8888 -p 8787:8787 -p 8786:8786 --shm-size=2g gluonai/gluon-nlp:cpu-latest
 ``` 
 
 For more details, you can refer to the guidance in [tools/docker](tools/docker).

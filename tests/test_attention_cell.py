@@ -164,7 +164,8 @@ def test_dot_product_attention(scaled, normalized, ctx):
         key = mx.np.random.normal(0, 1, (batch_size, num_heads, mem_length, num_channel))
         value = mx.np.random.normal(0, 1, (batch_size, num_heads, mem_length, num_channel))
         mask = mx.np.random.randint(0, 2, (batch_size, query_length, mem_length))
-        out, [score, attn_weights] = multi_head_dot_attn(mx.nd, query, key, value, mask,
+        out, [score, attn_weights] = multi_head_dot_attn(query, key, value, mask,
+                                                         query_head_units=num_channel,
                                                          scaled=scaled, normalized=normalized)
         assert out.shape == (batch_size, query_length, num_heads * num_channel)
         for i in range(num_heads):
@@ -181,8 +182,8 @@ def test_gen_attn_mask(ctx):
             self._layout = layout
             self._attn_type = attn_type
 
-        def hybrid_forward(self, F, data, valid_length):
-            return gen_self_attn_mask(F, data, valid_length,
+        def forward(self, data, valid_length):
+            return gen_self_attn_mask(data, valid_length,
                                       dtype=self._dtype,
                                       layout=self._layout,
                                       attn_type=self._attn_type)
@@ -193,8 +194,8 @@ def test_gen_attn_mask(ctx):
             self._dtype = dtype
             self._layout = layout
 
-        def hybrid_forward(self, F, mem, mem_valid_length, data, valid_length):
-            return gen_mem_attn_mask(F, mem, mem_valid_length, data, valid_length,
+        def forward(self, mem, mem_valid_length, data, valid_length):
+            return gen_mem_attn_mask(mem, mem_valid_length, data, valid_length,
                                      dtype=self._dtype, layout=self._layout)
 
     with ctx:

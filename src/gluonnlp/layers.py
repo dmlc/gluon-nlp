@@ -15,16 +15,17 @@
 # specific language governing permissions and limitations
 # under the License.
 """Layers."""
-__all__ = ['MultiHeadDense', 'PositionalEmbedding', 'SinusoidalPositionalEmbedding',
+__all__ = ['PositionalEmbedding', 'SinusoidalPositionalEmbedding',
            'LearnedPositionalEmbedding', 'BucketPositionalEmbedding', 'AdaptiveEmbedding',
            'PositionwiseFFN', 'ProjectedAdaptiveLogSoftmaxWithLoss']
 
 import math
-import numpy as np
 from collections import OrderedDict
 import mxnet as mx
+from mxnet import np, npx
 from mxnet import use_np
 from mxnet.gluon import nn, HybridBlock, Parameter, Constant
+import numpy as _np
 from typing import Union, Optional, List
 from .op import relative_position_bucket
 
@@ -126,14 +127,12 @@ class NoNorm(HybridBlock):
         self._kwargs = {'center': center, 'scale': scale}
         self._in_channels = in_channels
         self.gamma = Parameter('gamma', grad_req='write' if scale else 'null',
-                               shape=(in_channels,), init=gamma_initializer,
-                               allow_deferred_init=True)
+                               shape=(in_channels,), init=gamma_initializer)
         self.beta = Parameter('beta', grad_req='write' if center else 'null',
-                              shape=(in_channels,), init=beta_initializer,
-                              allow_deferred_init=True)
+                              shape=(in_channels,), init=beta_initializer)
 
-    def hybrid_forward(self, F, data, gamma, beta):
-        return data * gamma + beta
+    def forward(self, data):
+        return data * self.gamma.data() + self.beta.data()
 
     def __repr__(self):
         s = '{name}({content}'
@@ -236,84 +235,8 @@ def get_activation(act: Optional[Union[str, HybridBlock]]) -> HybridBlock:
 
 
 @use_np
-class MultiHeadDense(HybridBlock):
-    def __init__(self, units, num_heads, use_bias=True, dtype='float32',
-                 weight_initializer=None, bias_initializer=None):
-        """Multiple Dense with different parameters and the same number of units
-        The inner shapes of the weight and bias are
-            weight: (self._parallel_num[0] * ... * self._parallel_num[k] * units, in_units)
-            bias: (self._parallel_num[0] * ... * self._parallel_num[k],)
-        Parameters
-        ----------
-        units : int
-            The basic units.
-        num_heads : int or tuple
-        use_bias : bool, default True
-        dtype : str, default 'float32'
-            The data type
-        weight_initializer : None or initialzer, default None
-        bias_initializer : None or initializer, default None
-        """
-        super().__init__()
-        if not isinstance(num_heads, (list, tuple)):
-            num_heads = (int(num_heads),)
-        else:
-            num_heads = tuple(num_heads)
-        self._num_heads = num_heads
-        self._use_bias = use_bias
-        for ele in self._num_heads:
-            if ele <= 0:
-                raise ValueError('Invalid number of heads, all numbers need to be larger than 0.'
-                                 ' num_heads={}'.format(num_heads))
-        self._units = units
-        self._mult = np.prod(num_heads)
-        self.weight = Parameter('weight', shape=(self._mult * units, 0),
-                                init=weight_initializer, dtype=dtype,
-                                allow_deferred_init=True)
-        if use_bias:
-            self.bias = Parameter('bias', shape=(self._mult * units,),
-                                  init=bias_initializer, dtype=dtype,
-                                  allow_deferred_init=True)
-        else:
-            self.bias = None
-
-    def hybrid_forward(self, F, data, weight, bias=None):
-        """
-        Parameters
-        ----------
-        F
-        data : Symbol or NDArray
-            Shape (B, ..., C_in)
-        Returns
-        -------
-        ret : Symbol or NDArray
-            Shape (B,) + num_heads + (, ..., C_out)
-        """
-        ret = F.npx.fully_connected(data, weight, bias, no_bias=bias is None,
-                                    num_hidden=self._mult * self._units, flatten=False, name='fwd')
-        ret = F.npx.reshape(ret, newshape=(-4, self._mult, -1, -6), reverse=True)
-        ret = F.np.moveaxis(ret, -2, 1)
-        for i in range(len(self._num_heads) - 1, 0, -1):
-            ret = F.npx.reshape(ret, newshape=(-2, -6, -1, self._num_heads[i], -4))
-        return ret
-
-    def __repr__(self):
-        s = '{name}(' \
-            'units={units},' \
-            ' num_heads={num_heads},' \
-            ' use_bias={use_bias},' \
-            ' weight={weight}' \
-            ')'.format(name=self.__class__.__name__,
-                       units=self._units,
-                       num_heads=self._num_heads,
-                       use_bias=self._use_bias,
-                       weight=self.weight.shape)
-        return s
-
-
-@use_np
 class IdentityActivation(HybridBlock):
-    def hybrid_forward(self, F, x):
+    def forward(self, x):
         return x
 
 
@@ -359,14 +282,14 @@ class GELU(HybridBlock):
                              'Received mode={}'.format(mode))
         self._mode = mode
 
-    def hybrid_forward(self, F, x):
+    def forward(self, x):
         if self._mode == 'erf':
-            return F.npx.leaky_relu(x, act_type='gelu')
+            return npx.leaky_relu(x, act_type='gelu')
         elif self._mode == 'tanh':
             return 0.5 * x\
-                   * (1.0 + F.np.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * (x ** 3))))
+                   * (1.0 + np.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * (x ** 3))))
         elif self._mode == 'sigmoid':
-            return x * F.npx.sigmoid(1.702 * x)
+            return x * npx.sigmoid(1.702 * x)
         else:
             raise NotImplementedError
 
@@ -395,8 +318,8 @@ class ELU(HybridBlock):
         super().__init__(**kwargs)
         self._alpha = alpha
 
-    def hybrid_forward(self, F, x):
-        return - self._alpha * F.npx.relu(1.0 - F.np.exp(x)) + F.npx.relu(x)
+    def forward(self, x):
+        return - self._alpha * npx.relu(1.0 - np.exp(x)) + npx.relu(x)
 
     def __repr__(self):
         s = '{name}(alpha={alpha})'
@@ -422,12 +345,11 @@ class PositionalEmbedding(HybridBlock):
         else:
             raise NotImplementedError
 
-    def hybrid_forward(self, F, positions):
+    def forward(self, positions):
         """
 
         Parameters
         ----------
-        F
         positions : mx.numpy.ndarray or mx.numpy.Symbol
             Shape (..., )
 
@@ -453,7 +375,7 @@ class SinusoidalPositionalEmbedding(HybridBlock):
         """
         super().__init__()
 
-        def _init_sinusodial_base(units):
+        def _init_sinusoidal_base(units):
             half_units = units // 2
             val = np.log(10000) / (half_units - 1)
             val = np.exp(np.arange(half_units, dtype=np.float32) * -val)
@@ -461,14 +383,14 @@ class SinusoidalPositionalEmbedding(HybridBlock):
 
         self._units = units
         self._dtype = dtype
-        self.base_mult = Constant(_init_sinusodial_base(units))
+        sinusoidal_base = _init_sinusoidal_base(units)
+        self.base_mult = Constant(sinusoidal_base)
 
-    def hybrid_forward(self, F, positions, base_mult):
+    def forward(self, positions):
         """
 
         Parameters
         ----------
-        F
         positions : NDArray
             Shape (..., )
 
@@ -477,14 +399,14 @@ class SinusoidalPositionalEmbedding(HybridBlock):
         ret :
             Shape (..., units)
         """
-        emb = F.np.expand_dims(positions.astype(self._dtype), axis=-1) * base_mult
-        sin_emb = F.np.sin(emb)
-        cos_emb = F.np.cos(emb)
+        emb = np.expand_dims(positions.astype(self._dtype), axis=-1) * self.base_mult.data()
+        sin_emb = np.sin(emb)
+        cos_emb = np.cos(emb)
         if self._units % 2 == 0:
-            return F.np.concatenate([sin_emb, cos_emb], axis=-1)
+            return np.concatenate([sin_emb, cos_emb], axis=-1)
         else:
-            return F.np.concatenate(
-                [sin_emb, cos_emb, F.np.expand_dims(F.np.zeros_like(positions).astype(self._dtype),
+            return np.concatenate(
+                [sin_emb, cos_emb, np.expand_dims(np.zeros_like(positions).astype(self._dtype),
                                                     axis=-1)], axis=-1)
 
     def __repr__(self):
@@ -516,8 +438,8 @@ class LearnedPositionalEmbedding(HybridBlock):
                         mode=self._mode,
                         dtype=self._dtype)
 
-    def hybrid_forward(self, F, positions, weight):
-        return F.np.take(weight, positions, axis=0, mode=self._mode)
+    def forward(self, positions):
+        return np.take(self.weight.data(), positions, axis=0, mode=self._mode)
 
 
 @use_np
@@ -554,12 +476,12 @@ class BucketPositionalEmbedding(HybridBlock):
                         max_distance=self._max_distance,
                         dtype=self._dtype)
 
-    def hybrid_forward(self, F, relative_positions, weight):
-        buckets = relative_position_bucket(F, relative_positions,
+    def forward(self, relative_positions):
+        buckets = relative_position_bucket(relative_positions,
                                            bidirectional=self._bidirectional,
                                            num_buckets=self._num_buckets,
                                            max_distance=self._max_distance)
-        return F.np.take(weight, buckets, axis=0)
+        return np.take(self.weight.data(), buckets, axis=0)
 
 
 @use_np
@@ -639,7 +561,7 @@ class PositionwiseFFN(HybridBlock):
                                          in_channels=units,
                                          epsilon=layer_norm_eps)
 
-    def hybrid_forward(self, F, data):
+    def forward(self, data):
         """
 
         Parameters
@@ -739,18 +661,16 @@ class AdaptiveEmbedding(HybridBlock):
         if self._scaled:
             self._emb_scale = units**0.5
         if div_val == 1.0:
-            setattr(self, 'embed0_weight',
-                    Parameter('embed0_weight',
-                              shape=(vocab_size, embed_size),
-                              init=embedding_initializer,
-                              allow_deferred_init=True))
+            self.embed0_weight = Parameter('embed0_weight',
+                                           shape=(vocab_size, embed_size),
+                                           init=embedding_initializer,
+                                           allow_deferred_init=True)
 
             if units != embed_size:
-                setattr(self, 'inter_proj0_weight',
-                        Parameter('inter_proj0_weight',
-                                  shape=(embed_size, units),
-                                  init=weight_initializer,
-                                  allow_deferred_init=True))
+                self.inter_proj0_weight = Parameter('inter_proj0_weight',
+                                                    shape=(embed_size, units),
+                                                    init=weight_initializer,
+                                                    allow_deferred_init=True)
             else:
                 self.proj_layers = None
         else:
@@ -775,15 +695,13 @@ class AdaptiveEmbedding(HybridBlock):
                                   init=weight_initializer,
                                   allow_deferred_init=True))
 
-    def hybrid_forward(self, F, inp, **params):  # pylint: disable=arguments-differ
+    def forward(self, inp):  # pylint: disable=arguments-differ
         """
 
         Parameters
         ----------
-        F
         inp
             Shape (...,)
-        params
 
         Returns
         -------
@@ -791,23 +709,21 @@ class AdaptiveEmbedding(HybridBlock):
             Shape (..., units)
         """
         if self._div_val == 1.0:
-            emb = F.np.take(params['embed0_weight'], inp, axis=0)
+            emb = np.take(getattr(self, 'embed0_weight').data(), inp, axis=0)
             if self._units != self._embed_size:
-                emb = F.np.dot(emb, params['inter_proj0_weight'])
+                emb = np.dot(emb, getattr(self, 'inter_proj0_weight').data())
         else:
             emb = None
-            # TODO(?) We can refactor the code using
-            #  F.np._internal.nonzero() + F.npx.index_update
             for i, (l_idx, r_idx) in enumerate(zip([0] + self._cutoffs,
                                                    self._cutoffs + [self._vocab_size])):
-                emb_i = F.np.take(params['embed{}_weight'.format(i)],
+                emb_i = np.take(getattr(self, 'embed{}_weight'.format(i)).data(),
                                   inp - l_idx, axis=0,
                                   mode='clip')
-                emb_i = F.np.dot(emb_i, params['inter_proj{}_weight'.format(i)])
+                emb_i = np.dot(emb_i, getattr(self, 'inter_proj{}_weight'.format(i)).data())
                 if emb is None:
                     emb = emb_i
                 else:
-                    emb = F.np.where(F.np.expand_dims((inp >= l_idx) * (inp < r_idx), axis=-1),
+                    emb = np.where(np.expand_dims((inp >= l_idx) * (inp < r_idx), axis=-1),
                                      emb_i, emb)
         if self._scaled:
             emb = emb * self._emb_scale
@@ -952,7 +868,7 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
                                              weight_initializer=weight_initializer,
                                              bias_initializer=bias_initializer))
 
-    def get_logits(self, F, hidden):
+    def get_logits(self, hidden):
         """Get all the logits.
 
         Parameters
@@ -983,30 +899,30 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
                     inter_hidden = self.inter_proj_l[0](hidden)
                     all_scores = self.out_proj_l[0](inter_hidden)
                     tail_cluster_scores = self.tail_cluster_score_proj(inter_hidden)
-                all_scores_l = F.np.split(all_scores, self._cutoffs, axis=-1)
+                all_scores_l = np.split(all_scores, self._cutoffs, axis=-1)
                 head_scores = all_scores_l[0]
             else:
                 inter_hidden = self.inter_proj_l[0](hidden)
                 head_scores = self.out_proj_l[0](inter_hidden)
                 tail_cluster_scores = self.tail_cluster_score_proj(inter_hidden)
             head_tail_cluster_logits = \
-                F.npx.log_softmax(F.np.concatenate([head_scores, tail_cluster_scores],
+                npx.log_softmax(np.concatenate([head_scores, tail_cluster_scores],
                                                    axis=-1), axis=-1)
             head_logits, tail_cluster_logits = \
-                F.np.split(head_tail_cluster_logits, [self._cutoffs[0]], axis=-1)
-            tail_cluster_logits = F.np.split(tail_cluster_logits, self._num_tail_clusters, axis=-1)
+                np.split(head_tail_cluster_logits, [self._cutoffs[0]], axis=-1)
+            tail_cluster_logits = np.split(tail_cluster_logits, self._num_tail_clusters, axis=-1)
             all_logits.append(head_logits)
             for i in range(1, len(self._cutoffs) + 1):
                 if self._div_val == 1.0:
                     ele_scores = all_scores_l[i]
                 else:
                     ele_scores = self.out_proj_l[i](self.inter_proj_l[i](hidden))
-                ele_logits = F.npx.log_softmax(ele_scores, axis=-1)
+                ele_logits = npx.log_softmax(ele_scores, axis=-1)
                 ele_logits = tail_cluster_logits[-i] + ele_logits
                 all_logits.append(ele_logits)
-            return F.np.concatenate(all_logits, axis=-1)
+            return np.concatenate(all_logits, axis=-1)
 
-    def hybrid_forward(self, F, hidden, target):
+    def forward(self, hidden, target):
         """
 
         Parameters
@@ -1026,8 +942,8 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
         """
         # TODO(sxjscience) The computation here can be greatly accelerated! Due to the
         #  missing feature of index_update, we are not able to do this here.
-        logits = self.get_logits(F, hidden)
-        sel_logits = F.npx.pick(logits, target, axis=-1)
+        logits = self.get_logits(hidden)
+        sel_logits = npx.pick(logits, target, axis=-1)
         return sel_logits
 
     def __repr__(self):

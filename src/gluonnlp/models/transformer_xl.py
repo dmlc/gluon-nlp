@@ -3,7 +3,7 @@ __all__ = ['TransformerXLDecoderLayer', 'TransformerXLDecoder', 'TransformerXLFo
 
 import numpy as np
 import mxnet as mx
-from mxnet import use_np
+from mxnet import use_np, np, npx
 from mxnet.gluon import nn, Block, HybridBlock, Parameter
 from ..attention_cell import multi_head_dot_attn, gen_self_attn_mask, gen_mem_attn_mask,\
     RelAttentionScoreCell, MultiHeadAttentionCell
@@ -86,7 +86,7 @@ class TransformerXLDecoderLayer(HybridBlock):
     def layout(self):
         return self._layout
 
-    def hybrid_forward(self, F, data, mem, rel_positions, mask, query_r_bias, query_k_bias):
+    def forward(self, data, mem, rel_positions, mask, query_r_bias, query_k_bias):
         """
 
         Parameters
@@ -129,22 +129,22 @@ class TransformerXLDecoderLayer(HybridBlock):
                 Shape (query_length, batch_size, units)
         """
         if self._layout == 'NT':
-            context = F.np.concatenate([mem, data], axis=1)
+            context = np.concatenate([mem, data], axis=1)
         elif self._layout == 'TN':
-            context = F.np.concatenate([mem, data], axis=0)
+            context = np.concatenate([mem, data], axis=0)
         else:
             raise NotImplementedError
         if self._pre_norm:
             query = self.attn_query(self.layer_norm(data))
             key_value = self.attn_kv(self.layer_norm(context))
-            key, value = F.np.split(key_value, 2, axis=-1)
+            key, value = np.split(key_value, 2, axis=-1)
         else:
             query = self.attn_query(data)
             key_value = self.attn_kv(context)
-            key, value = F.np.split(key_value, 2, axis=-1)
-        query = F.npx.reshape(query, (-2, -2, self._num_heads, -1))
-        key = F.npx.reshape(key, (-2, -2, self._num_heads, -1))
-        value = F.npx.reshape(value, (-2, -2, self._num_heads, -1))
+            key, value = np.split(key_value, 2, axis=-1)
+        query = npx.reshape(query, (-2, -2, self._num_heads, -1))
+        key = npx.reshape(key, (-2, -2, self._num_heads, -1))
+        value = npx.reshape(value, (-2, -2, self._num_heads, -1))
         # Compute attention
         rel_score = self.rel_pos_score_cell(rel_positions, query + query_r_bias)
         out, _ = self.attn_cell(query + query_k_bias, key, value, mask, rel_score)
@@ -199,7 +199,7 @@ class TransformerXLDecoder(HybridBlock):
                                           weight_initializer=weight_initializer,
                                           bias_initializer=bias_initializer))
 
-    def hybrid_forward(self, F, data, mem_l, rel_positions, mask, **params):
+    def forward(self, data, mem_l, rel_positions, mask):
         """
 
         Parameters
@@ -232,8 +232,8 @@ class TransformerXLDecoder(HybridBlock):
             - layout = 'TN'
                 Shape (query_length, batch_size, C_o)
         """
-        query_k_bias = params['query_k_bias']
-        query_r_bias = params['query_r_bias']
+        query_k_bias = self.query_k_bias.data()
+        query_r_bias = self.query_r_bias.data()
         out_l = []
         out = data
         for i, layer in enumerate(self.decoder_layers):
@@ -349,8 +349,14 @@ class TransformerXLForLM(Block):
         return config
 
     @classmethod
-    def from_cfg(cls, cfg):
-        return cls(cfg=cfg)
+    def from_cfg(cls, cfg, dtype=None):
+        if dtype is not None:
+            new_cfg = cfg.clone()
+            new_cfg.defrost()
+            new_cfg.MODEL.dtype = dtype
+            return cls(cfg=new_cfg)
+        else:
+            return cls(cfg=cfg)
 
     @property
     def state_batch_axis(self):
@@ -582,7 +588,7 @@ class TransformerXLForLM(Block):
             final_out = out_l[-1][0, :]
         else:
             raise NotImplementedError
-        logits = self.crit.get_logits(mx, final_out)
+        logits = self.crit.get_logits(final_out)
 
         # Update memory
         new_mem_l = []

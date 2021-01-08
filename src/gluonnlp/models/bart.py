@@ -51,7 +51,7 @@ bart_cfg_reg = Registry('bart_cfg')
 
 
 @bart_cfg_reg.register()
-def bart_base():
+def fairseq_bart_base():
     cfg = CN()
     # Config for the bart base model
     cfg.MODEL = CN()
@@ -104,8 +104,8 @@ def bart_base():
 
 
 @bart_cfg_reg.register()
-def bart_large():
-    cfg = bart_base()
+def fairseq_bart_large():
+    cfg = fairseq_bart_base()
     cfg.defrost()
     cfg.MODEL.vocab_size = 50265
     cfg.MODEL.ENCODER.units = 1024
@@ -122,14 +122,14 @@ def bart_large():
 
 PRETRAINED_URL = {
     'fairseq_bart_base': {
-        'cfg': bart_base(),
+        'cfg': fairseq_bart_base(),
         'merges': 'fairseq_bart_base/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_bart_base/gpt2-f4dedacb.vocab',
         'params': 'fairseq_bart_base/model-8f4929b5.params',
         'lowercase': False,
     },
     'fairseq_bart_large': {
-        'cfg': bart_large(),
+        'cfg': fairseq_bart_large(),
         'merges': 'fairseq_bart_large/gpt2-396d4d8e.merges',
         'vocab': 'fairseq_bart_large/gpt2-f1335494.vocab',
         'params': 'fairseq_bart_large/model-862277b1.params',
@@ -195,12 +195,11 @@ class BartModel(TransformerModel):
                                    bias_initializer=self.bias_initializer,
                                    dtype=self._dtype)
 
-    def hybrid_forward(self, F, src_data, src_valid_length, tgt_data, tgt_valid_length):
+    def forward(self, src_data, src_valid_length, tgt_data, tgt_valid_length):
         """
 
         Parameters
         ----------
-        F
         src_data
             - layout = 'NT'
                 Shape (batch_size, src_length)
@@ -235,12 +234,12 @@ class BartModel(TransformerModel):
                 - layout = 'TN'
                     Shape (tgt_length, batch_size, tgt_vocab_size)
         """
-        enc_out = self.encode(F, src_data, src_valid_length)
-        contextual_embedding = self.decode_seq(F, tgt_data, tgt_valid_length, enc_out,
+        enc_out = self.encode(src_data, src_valid_length)
+        contextual_embedding = self.decode_seq(tgt_data, tgt_valid_length, enc_out,
                                                src_valid_length)
         if self.extract_feature:
             if self.use_pooler:
-                pooled_output = self.apply_pooling(F, contextual_embedding, tgt_valid_length)
+                pooled_output = self.apply_pooling(contextual_embedding, tgt_valid_length)
                 return contextual_embedding, pooled_output
             else:
                 return contextual_embedding
@@ -248,7 +247,7 @@ class BartModel(TransformerModel):
             dec_out = self.tgt_final_layer(contextual_embedding)
             return dec_out
 
-    def apply_pooling(self, F, sequence, valid_length):
+    def apply_pooling(self, sequence, valid_length):
         """Generate the representation given the inputs.
 
         This is used for pre-training or fine-tuning a BART model.
@@ -273,10 +272,10 @@ class BartModel(TransformerModel):
             Shape (batch_size, units)
         """
         if self._layout == 'NT':
-            batch_indices = F.npx.arange_like(sequence, axis=0).astype(mx.np.int32)
+            batch_indices = mx.npx.arange_like(sequence, axis=0).astype(mx.np.int32)
             outputs = sequence[batch_indices, valid_length - 1]
         elif self._layout == 'TN':
-            batch_indices = F.npx.arange_like(sequence, axis=1).astype(mx.np.int32)
+            batch_indices = mx.npx.arange_like(sequence, axis=1).astype(mx.np.int32)
             outputs = sequence[valid_length - 1, batch_indices]
         else:
             raise NotImplementedError
@@ -296,7 +295,7 @@ class BartModel(TransformerModel):
     @classmethod
     def get_cfg(cls, key=None):
         if key is None:
-            return bart_base()
+            return fairseq_bart_base()
         else:
             return bart_cfg_reg.create(key)
 

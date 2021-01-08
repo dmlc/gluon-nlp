@@ -55,7 +55,7 @@ def test_beam_search(early_return, eos_id):
         def data_batch_axis(self):
             return 0
 
-        def hybrid_forward(self, F, data, state):
+        def forward(self, data, state):
             """
 
             Parameters
@@ -119,7 +119,7 @@ def test_beam_search_stochastic(early_return, eos_id):
         def data_batch_axis(self):
             return 0
 
-        def hybrid_forward(self, F, data, state):
+        def forward(self, data, state):
             """
 
             Parameters
@@ -191,7 +191,7 @@ def test_multinomial_sampling(early_return, sampling_paras, eos_id):
         def data_batch_axis(self):
             return 0
 
-        def hybrid_forward(self, F, data, state):
+        def forward(self, data, state):
             new_state = self.h2h_map(state)
             out = self.vocab_map(self.x2h_map(data) + new_state)
             return out, new_state
