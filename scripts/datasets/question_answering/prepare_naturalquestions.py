@@ -31,7 +31,6 @@ _URLS = {
 
 def get_parser():
     parser = argparse.ArgumentParser(description='Downloading the NaturalQuestions Dataset.')
-    parser.add_argument('--all', type=ast.literal_eval, default=False)
     parser.add_argument('--save-path', type=str, default='NaturalQuestions')
     parser.add_argument('--cache-path', type=str, default=_BASE_DATASET_PATH,
                         help='The path to download the dataset.')
