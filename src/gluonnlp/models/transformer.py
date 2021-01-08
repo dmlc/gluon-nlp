@@ -532,25 +532,29 @@ class TransformerDecoderLayer(HybridBlock):
             self_causal_mask[i, j, :] masks the elements that token `j` attends to.
             To understand the self-causal attention mask, we can look at the following example:
 
-                       ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
-            'I':         1,    0,     0,     0,      0,     0,      0,      0
-            'can':       1,    1,     0,     0,      0,     0,      0,      0
-            'now':       1,    1,     1,     0,      0,     0,      0,      0
-            'use':       1,    1,     1,     1,      0,     0,      0,      0
-            'numpy':     1,    1,     1,     1,      1,     0,      0,      0
-            'in':        1,    1,     1,     1,      1,     1,      0,      0
-            'Gluon@@':   1,    1,     1,     1,      1,     1,      1,      0
-            'NLP':       1,    1,     1,     1,      1,     1,      1,      1
+            .. code-block:: none
+
+                           ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
+                'I':         1,    0,     0,     0,      0,     0,      0,      0
+                'can':       1,    1,     0,     0,      0,     0,      0,      0
+                'now':       1,    1,     1,     0,      0,     0,      0,      0
+                'use':       1,    1,     1,     1,      0,     0,      0,      0
+                'numpy':     1,    1,     1,     1,      1,     0,      0,      0
+                'in':        1,    1,     1,     1,      1,     1,      0,      0
+                'Gluon@@':   1,    1,     1,     1,      1,     1,      1,      0
+                'NLP':       1,    1,     1,     1,      1,     1,      1,      1
 
         mem_attn_mask :
             Shape (batch_size, seq_length, mem_length)
             Mask between the decoding input and the memory.
 
-                       ['numpy', 'in', 'Gluon@@', 'NLP']
-            'I':         1,     1,      1,      1
-            'can':       1,     1,      1,      1
-            'now':       1,     1,      1,      1
-            'use':       1,     1,      1,      1
+            .. code-block:: none
+
+                           ['numpy', 'in', 'Gluon@@', 'NLP']
+                'I':         1,     1,      1,      1
+                'can':       1,     1,      1,      1
+                'now':       1,     1,      1,      1
+                'use':       1,     1,      1,      1
 
         Returns
         -------
