@@ -478,6 +478,7 @@ class BertModel(HybridBlock):
         -------
         embedding
             The initial embedding that will be fed into the encoder
+
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_emb)
             - layout = 'TN'
