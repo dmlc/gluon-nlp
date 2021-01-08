@@ -254,12 +254,12 @@ class ElectraEncoder(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             - layout = 'NT'
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
+
         valid_length
             Shape (batch_size,)
 
@@ -402,19 +402,18 @@ class ElectraModel(HybridBlock):
         return self._layout
 
     def forward(self, inputs, token_types, valid_length=None):
-        # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a Electra model.
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
             - layout = 'NT'
                 Shape (batch_size, seq_length)
@@ -434,6 +433,7 @@ class ElectraModel(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units).
+
         pooled_output
             This is optional. Shape (batch_size, units)
         """
@@ -469,17 +469,18 @@ class ElectraModel(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
             If None, it will be initialized as all zero
 
         Returns
@@ -490,6 +491,7 @@ class ElectraModel(HybridBlock):
                 Shape (batch_size, seq_length, C_embed)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_embed)
+
         """
         if self.layout == 'NT':
             time_axis, batch_axis = 1, 0
@@ -543,7 +545,7 @@ class ElectraModel(HybridBlock):
                             continue
                 value.lr_mult = layerwise_decay**(max_depth - (layer_depth + 1))
 
-    def frozen_params(self, untunable_depth, not_included=None):
+    def frozen_params(self, untunable_depth: int, not_included: Optional[List[str]] = None):
         """Froze part of parameters according to layer depth.
 
         That is, make all layer that shallower than `untunable_depth` untunable
@@ -551,9 +553,9 @@ class ElectraModel(HybridBlock):
 
         Parameters:
         ----------
-        untunable_depth: int
+        untunable_depth
             the depth of the neural network starting from 1 to number of layers
-        not_included: list of str
+        not_included
             A list or parameter names that not included in the untunable parameters
         """
         all_layers = self.encoder.all_encoder_layers
@@ -652,12 +654,12 @@ class ElectraDiscriminator(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
             - layout = 'NT'
                 Shape (batch_size, seq_length)

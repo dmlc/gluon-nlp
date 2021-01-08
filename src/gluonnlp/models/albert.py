@@ -375,6 +375,7 @@ class AlbertModel(HybridBlock):
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
             - layout = 'NT'
                 Shape (batch_size, seq_length)
@@ -421,12 +422,12 @@ class AlbertModel(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
             - layout = 'NT'
                 Shape (batch_size, seq_length)

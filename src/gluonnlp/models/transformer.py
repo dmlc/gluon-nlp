@@ -235,23 +235,24 @@ class TransformerEncoderLayer(HybridBlock):
 
         Parameters
         ----------
-        F
-        data :
-            If layout == 'NT'
+        data
+            - layout = 'NT'
                 Shape (batch_size, seq_length, C_in)
-            Else
+            - layout = 'TN'
                 Shape (seq_length, batch_size, C_in)
-        attn_mask :
+
+        attn_mask
             Shape (batch_size, seq_length, seq_length)
 
         Returns
         -------
-        out :
-            If layout == 'NT'
+        out
+            - layout = 'NT'
                 Shape (batch_size, seq_length, C_out)
-            Else
+            - layout = 'TN'
                 Shape (seq_length, batch_size, C_out)
-        attn_weight :
+
+        attn_weight
             Shape (batch_size, seq_length, seq_length)
         """
         if self._pre_norm:
@@ -268,6 +269,7 @@ class TransformerEncoderLayer(HybridBlock):
             out = self.layer_norm(out)
         out = self.ffn(out)
         return out, attn_weight
+
 
 @use_np
 class TransformerEncoder(HybridBlock):
@@ -345,18 +347,18 @@ class TransformerEncoder(HybridBlock):
 
         Parameters
         ----------
-        F
         data :
             - layout = 'NT'
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
+
         valid_length :
             Shape (batch_size,)
 
         Returns
         -------
-        out :
+        out
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_out)
             - layout = 'TN'
@@ -416,7 +418,7 @@ class TransformerDecoderLayer(HybridBlock):
         pre_norm
             Whether to apply normalization before the attention layer
         use_qkv_bias
-            Wether to use bias for both self attention and contextual attention
+            Whether to use bias for both self attention and contextual attention
         weight_initializer
         bias_initializer
         dtype
@@ -511,18 +513,19 @@ class TransformerDecoderLayer(HybridBlock):
 
         Parameters
         ----------
-        F
-        data :
+        data
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_in)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_in)
-        mem :
+
+        mem
             - layout = 'NT'
                 Shape (batch_size, mem_length, C_mem)
             - layout = 'TN'
                 Shape (mem_length, batch_size, C_mem)
-        self_causal_mask :
+
+        self_causal_mask
             Shape (batch_size, seq_length, seq_length)
             Mask for the causal self-attention.
             self_causal_mask[i, j, :] masks the elements that token `j` attends to.
@@ -536,6 +539,7 @@ class TransformerDecoderLayer(HybridBlock):
             'in':        1,    1,     1,     1,      1,     1,      0,      0
             'Gluon@@':   1,    1,     1,     1,      1,     1,      1,      0
             'NLP':       1,    1,     1,     1,      1,     1,      1,      1
+
         mem_attn_mask :
             Shape (batch_size, seq_length, mem_length)
             Mask between the decoding input and the memory.
@@ -547,7 +551,7 @@ class TransformerDecoderLayer(HybridBlock):
 
         Returns
         -------
-        out :
+        out
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_out)
             - layout = 'TN'
@@ -602,7 +606,8 @@ class TransformerDecoderLayer(HybridBlock):
                 Shape (batch_size, 0, N, C_key)
             - layout = 'TN'
                 Shape (0, batch_size, N, C_key)
-        init_value :
+
+        init_value
             - layout = 'NT'
                 Shape (batch_size, 0, N, C_value)
             - layout = 'TN'
@@ -625,7 +630,6 @@ class TransformerDecoderLayer(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             Shape (batch_size, C_in)
         states
@@ -635,17 +639,20 @@ class TransformerDecoderLayer(HybridBlock):
                     Shape (batch_size, prev_seq_length, num_heads, C_key)
                 - prev_multi_value
                     Shape (batch_size, prev_seq_length, num_heads, C_value)
+
             2. layout = 'TN'
                 - prev_multi_key
                     Shape (prev_seq_length, batch_size, num_heads, C_key)
                 - prev_multi_value
                     Shape (prev_seq_length, batch_size, num_heads, C_value)
+
         mem
             The memory
-            1. layout = 'NT':
+            1. layout = 'NT'
                 Shape (batch_size, mem_length, C_mem)
             2. layout = 'TN'
                 Shape (mem_length, batch_size, C_mem)
+
         mem_valid_length
             Valid length of the memory
             Shape (batch_size,)
@@ -772,12 +779,12 @@ class TransformerDecoder(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_in)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_in)
+
         valid_length
             Shape (batch_size,)
         mem_data
@@ -785,6 +792,7 @@ class TransformerDecoder(HybridBlock):
                 Shape (batch_size, mem_length, C_mem)
             - layout = 'TN'
                 Shape (mem_length, batch_size, C_mem)
+
         mem_valid_length
             Shape (batch_size,)
 
@@ -835,11 +843,16 @@ class TransformerDecoder(HybridBlock):
         -------
         states
             A list of states, each includes:
-                - init_key :
-                    layout = 'NT':
+                - init_key
+                    - layout = 'NT'
                         Shape (batch_size, 0, N, C_key)
+                    - layout = 'TN'
+                        Shape (0, batch_size, N, C_key)
+
                 - init_value :
-                    layout = 'TN':
+                    - layout = 'NT'
+                        Shape (batch_size, 0, N, C_value)
+                    - layout = 'TN'
                         Shape (0, batch_size, N, C_value)
         """
         states = []
@@ -858,7 +871,6 @@ class TransformerDecoder(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             Shape (batch_size, C_in)
         states
@@ -868,6 +880,7 @@ class TransformerDecoder(HybridBlock):
                     Shape (batch_size, prev_seq_length, num_heads, C_key)
                 - prev_multi_value
                     Shape (batch_size, prev_seq_length, num_heads, C_value)
+
             2. layout = 'TN'
                 - prev_multi_key
                     Shape (prev_seq_length, batch_size, num_heads, C_key)
@@ -879,6 +892,7 @@ class TransformerDecoder(HybridBlock):
                 Shape (batch_size, mem_length, C_mem)
             2. layout = 'TN'
                 Shape (mem_length, batch_size, C_mem)
+
         mem_valid_length
             Valid length of the memory
             Shape (batch_size,)
@@ -892,7 +906,11 @@ class TransformerDecoder(HybridBlock):
             1. layout = 'NT'
                 - new_key
                     Shape (batch_size, prev_seq_length + 1, num_heads, C_key)
+                - new_value
+                    Shape (prev_seq_length + 1, batch_size, num_heads, C_value)
             2. layout = 'TN'
+                - new_key
+                    Shape (prev_seq_length + 1, batch_size, num_heads, C_key)
                 - new_value
                     Shape (prev_seq_length + 1, batch_size, num_heads, C_value)
         """
@@ -1188,12 +1206,12 @@ class TransformerModel(HybridBlock):
 
         Parameters
         ----------
-        F
         tgt_data
             - layout = 'NT'
                 Shape (batch_size, tgt_length)
             - layout = 'TN'
                 Shape (tgt_length, batch_size)
+
         tgt_valid_length
             Shape (batch_size,)
         mem_data
@@ -1201,6 +1219,7 @@ class TransformerModel(HybridBlock):
                 Shape (batch_size, src_length, C_out)
             - layout = 'TN'
                 Shape (src_length, batch_size, C_out)
+
         mem_valid_length :
             Shape (batch_size,)
 

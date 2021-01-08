@@ -205,6 +205,7 @@ class BartModel(TransformerModel):
                 Shape (batch_size, src_length)
             - layout = 'TN'
                 Shape (src_length, batch_size)
+
         src_valid_length
             Shape (batch_size,)
         tgt_data
@@ -212,6 +213,7 @@ class BartModel(TransformerModel):
                 Shape (batch_size, tgt_length)
             - layout = 'TN'
                 Shape (tgt_length, batch_size)
+
         tgt_valid_length
             Shape (batch_size,)
 
@@ -225,14 +227,17 @@ class BartModel(TransformerModel):
                     Shape (batch_size, tgt_length, units)
                 - layout = 'TN'
                     Shape (tgt_length, batch_size, units)
+
             - pooled_output, optional, only enabled if use_pooler = True
                 Shape (batch_size, units)
+
         - If 'self.extract_feature' = False
             - dec_out
                 - layout = 'NT'
                     Shape (batch_size, tgt_length, tgt_vocab_size)
                 - layout = 'TN'
                     Shape (tgt_length, batch_size, tgt_vocab_size)
+
         """
         enc_out = self.encode(src_data, src_valid_length)
         contextual_embedding = self.decode_seq(tgt_data, tgt_valid_length, enc_out,
@@ -255,16 +260,15 @@ class BartModel(TransformerModel):
 
         Parameters
         ----------
-        F
-            ndarray or symbol
         sequence
             - layout = 'NT'
                 Shape (batch_size, sequence_length, units)
             - layout = 'TN'
                 Shape (sequence_length, batch_size, units)
+
         valid_length
             Valid length of each sequence
-            shape (batch_size,)
+            Shape (batch_size,)
 
         Returns
         -------

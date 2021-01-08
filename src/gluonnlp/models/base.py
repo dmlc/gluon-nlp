@@ -46,7 +46,7 @@ def get_backbone(model_name: str,
     --------
 
     >>> from gluonnlp.models import get_backbone
-    >>> model_cls, tokenizer, cfg, backbone_param_path, _ = get_backbone('google_en_cased_bert_base')
+    >>> model_cls, cfg, tokenizer, backbone_param_path, _ = get_backbone('google_en_cased_bert_base')
     >>> model = model_cls.from_cfg(cfg)
     >>> model.load_parameters(backbone_param_path)
     """
