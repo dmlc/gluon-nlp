@@ -50,18 +50,17 @@ About GluonNLP
 
 .. hint::
 
-   You can find our the doc for our master development branch `here <http://gluon-nlp.mxnet.io/master/index.html>`_.
+   You can find out the doc for our master development branch `here <http://nlp.gluon.ai/master/index.html>`_.
 
 GluonNLP provides implementations of the state-of-the-art (SOTA) deep learning
 models in NLP, and build blocks for text data pipelines and models.
 It is designed for engineers, researchers, and students to fast prototype
 research ideas and products based on these models. This toolkit offers five main features:
 
-1. Training scripts to reproduce SOTA results reported in research papers.
+1. Carefully designed APIs that greatly reduce the implementation complexity.
 2. Pre-trained models for common NLP tasks.
-3. Carefully designed APIs that greatly reduce the implementation complexity.
-4. Tutorials to help get started on new NLP tasks.
-5. Community support.
+3. Tutorials to help get started on new NLP tasks.
+4. Community support.
 
 This toolkit assumes that users have basic knowledge about deep learning and
 NLP. Otherwise, please refer to an introductory course such as

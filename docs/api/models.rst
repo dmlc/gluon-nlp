@@ -11,5 +11,6 @@ API Reference
 
 .. automodule:: gluonnlp.models
     :members:
+    :no-undoc-members:
     :imported-members:
     :special-members: __contains__, __getitem__, __setitem__
