@@ -55,12 +55,12 @@ See more useful scripts in [Offical Github](https://github.com/mandarjoshi90/tri
 Run the following command to download TriviaQA
 
 ```bash
-python3 prepare_triviaqa.py --version rc         # Download TriviaQA version 1.0 for RC (2.5G)
-python3 prepare_triviaqa.py --version unfiltered # Download unfiltered TriviaQA version 1.0 (604M)
+python3 prepare_triviaqa.py --type rc         # Download TriviaQA version 1.0 for RC (2.5G)
+python3 prepare_triviaqa.py --type unfiltered # Download unfiltered TriviaQA version 1.0 (604M)
 
 # Or download with command-line toolkits
-nlp_data prepare_triviaqa --version rc
-nlp_data prepare_triviaqa --version unfiltered
+nlp_data prepare_triviaqa --type rc
+nlp_data prepare_triviaqa --type unfiltered
 ```
 
 Directory structure of the triviaqa (rc and unfiltered) dataset will be as follows:
@@ -118,10 +118,7 @@ python3 prepare_naturalquestions.py
 # Or download with command-line toolkits
 nlp_data prepare_naturalquestions
 ```
-
-
-
-Directory structure of the hotpotqa dataset will be as follows
+Directory structure of the NaturalQuestions dataset will be as follows
 
 ```
 NaturalQuestions
