@@ -209,17 +209,17 @@ class TransformerXLDecoder(HybridBlock):
         Parameters
         ----------
         data
-            - layout = 'NT':
+            - layout = 'NT'
                 Shape (batch_size, query_length)
-            - layout = 'TN':
+            - layout = 'TN'
                 Shape (query_length, batch_size)
 
         mem_l
             Contains a list of memory objects, each one will contain:
 
-            - layout = 'NT':
+            - layout = 'NT'
                 Shape (batch_size, mem_length, C_i)
-            - layout = 'TN':
+            - layout = 'TN'
                 Shape (mem_length, batch_size, C_i)
 
         rel_positions
@@ -449,10 +449,13 @@ class TransformerXLForLM(Block):
         rel_positions
             Shape (query_length, mem_length + query_length)
             By default, we will use the following relative positions
-                       ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
-            'in':        5,    4,     3,     2,      1,     0,      -1,      -2
-            'Gluon@@':   6,    5,     4,     3,      2,     1,       0,      -1
-            'NLP':       7,    6,     5,     4,      3,     2,       1,       0
+
+            .. code-block:: none
+
+                           ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
+                'in':        5,    4,     3,     2,      1,     0,      -1,      -2
+                'Gluon@@':   6,    5,     4,     3,      2,     1,       0,      -1
+                'NLP':       7,    6,     5,     4,      3,     2,       1,       0
 
         data_mem_mask
             Shape (B, query_length, mem_length + query_length)
@@ -460,23 +463,29 @@ class TransformerXLForLM(Block):
             By default, we will mask all locations that have distance > mem_length with the
             current token.
             Following is an example in which query_length = 3, mem_length = 4
-                        |------- <mem> ----------|--------- <query> ------------|
-             <query>   ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
-            'numpy':     1,    1,     1,     1,      1,     0,      0,        0
-            'in':        0,    1,     1,     1,      1,     1,      0,        0
-            'Gluon@@':   0,    0,     1,     1,      1,     1,      1,        0
-            'NLP':       0,    0,     0,     1,      1,     1,      1,        1
+
+            .. code-block:: none
+
+                            |------- <mem> ----------|--------- <query> ------------|
+                 <query>   ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
+                'numpy':     1,    1,     1,     1,      1,     0,      0,        0
+                'in':        0,    1,     1,     1,      1,     1,      0,        0
+                'Gluon@@':   0,    0,     1,     1,      1,     1,      1,        0
+                'NLP':       0,    0,     0,     1,      1,     1,      1,        1
 
             Also, we provide the option in which we only mask the future tokens, this is
             supported by setting `causal_only` to True. However, there will be a
             discrepancy between training and inference because the effecitve memory length is
             longer for the later tokens in the query.
-                        |------- <mem> ----------|--------- <query> ------------|
-             <query>   ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
-            'numpy':     1,    1,     1,     1,      1,     0,      0,        0
-            'in':        1,    1,     1,     1,      1,     1,      0,        0
-            'Gluon@@':   1,    1,     1,     1,      1,     1,      1,        0
-            'NLP':       1,    1,     1,     1,      1,     1,      1,        1
+
+            .. code-block:: none
+
+                            |------- <mem> ----------|--------- <query> ------------|
+                 <query>   ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
+                'numpy':     1,    1,     1,     1,      1,     0,      0,        0
+                'in':        1,    1,     1,     1,      1,     1,      0,        0
+                'Gluon@@':   1,    1,     1,     1,      1,     1,      1,        0
+                'NLP':       1,    1,     1,     1,      1,     1,      1,        1
 
         causal_only
             Whether to ignore the local masking constraint. See the flag above for more information.
@@ -567,9 +576,9 @@ class TransformerXLForLM(Block):
         mem_l
             A list of memory objects
 
-            - layout == 'NT'
+            - layout = 'NT'
                 Shape (B, T_mem, units)
-            - layout == 'TN'
+            - layout = 'TN'
                 Shape (T_mem, B, units)
 
         Returns
