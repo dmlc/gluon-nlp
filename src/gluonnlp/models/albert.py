@@ -190,7 +190,6 @@ class AlbertEncoder(HybridBlock):
         self._output_all_encodings = output_all_encodings
         self._layout = layout
 
-
         self.all_encoder_groups = nn.HybridSequential()
         for group_idx in range(num_groups):
             self.all_encoder_groups.add(
@@ -218,12 +217,12 @@ class AlbertEncoder(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             - layout = 'NT'
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
+
         valid_length :
             Shape (batch_size,)
 
@@ -365,14 +364,12 @@ class AlbertModel(HybridBlock):
         return self._layout
 
     def forward(self, inputs, token_types, valid_length=None):
-        # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a Albert model.
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
@@ -684,21 +681,20 @@ class AlbertForPretrain(HybridBlock):
         return self.backbone_model.layout
 
     def forward(self, inputs, token_types, valid_length,
-                       masked_positions):
+                masked_positions):
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a Albert model.
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-        token_types :
+        token_types
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
@@ -706,10 +702,10 @@ class AlbertForPretrain(HybridBlock):
 
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
-        valid_length :
+        valid_length
             The valid length of each sequence
             Shape (batch_size,)
-        masked_positions :
+        masked_positions
             The masked position of the sequence
             Shape (batch_size, num_masked_positions).
 
