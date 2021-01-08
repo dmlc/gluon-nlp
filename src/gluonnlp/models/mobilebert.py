@@ -624,14 +624,14 @@ class MobileBertModel(HybridBlock):
                 Shape (seq_length, batch_size)
 
         token_types
+            If the inputs contain two sequences, we will set different token types for the first
+            sentence and the second sentence.
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
-        valid_length :
+        valid_length
             The valid length of each sequence
             Shape (batch_size,)
 
@@ -856,13 +856,13 @@ class MobileBertForMLM(HybridBlock):
                 Shape (seq_length, batch_size)
 
         token_types
+            The type of the token. For example, if the inputs contain two sequences,
+            we will set different token types for the first sentence and the second sentence.
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            The type of the token. For example, if the inputs contain two sequences,
-            we will set different token types for the first sentence and the second sentence.
         valid_length
             The valid length of each sequence
             Shape (batch_size,)
@@ -973,13 +973,13 @@ class MobileBertForPretrain(HybridBlock):
                 Shape (seq_length, batch_size)
 
         token_types
+            If the inputs contain two sequences, we will set different token types for the first
+            sentence and the second sentence.
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
         valid_length
             The valid length of each sequence
             Shape (batch_size,)
@@ -994,6 +994,7 @@ class MobileBertForPretrain(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units).
+
         pooled_out
             Shape (batch_size, units)
         nsp_score

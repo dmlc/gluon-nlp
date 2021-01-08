@@ -91,19 +91,20 @@ class TransformerXLDecoderLayer(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             The input data.
             layout = 'NT':
                 Shape (batch_size, query_length, units)
             layout = 'TN':
                 Shape (query_length, batch_size, units)
+
         mem
             The memory.
             layout = 'NT':
                 Shape (batch_size, mem_length, units)
             layout = 'TN':
                 Shape (mem_length, batch_size, units)
+
         rel_positions
             The relative positions between data and [mem, data]
             Shape (query_length, mem_length + query_length).
@@ -127,6 +128,7 @@ class TransformerXLDecoderLayer(HybridBlock):
                 Shape (batch_size, query_length, units)
             - layout = 'TN'
                 Shape (query_length, batch_size, units)
+
         """
         if self._layout == 'NT':
             context = np.concatenate([mem, data], axis=1)
@@ -204,18 +206,19 @@ class TransformerXLDecoder(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             - layout = 'NT':
                 Shape (batch_size, query_length)
             - layout = 'TN':
                 Shape (query_length, batch_size)
+
         mem_l
             Contains a list of memory objects, each one will contain:
             - layout = 'NT':
                 Shape (batch_size, mem_length, C_i)
             - layout = 'TN':
                 Shape (mem_length, batch_size, C_i)
+
         rel_positions
             The relative positions.
             Shape (query_length, mem_length + query_length)
@@ -231,6 +234,7 @@ class TransformerXLDecoder(HybridBlock):
                 Shape (batch_size, query_length, C_o)
             - layout = 'TN'
                 Shape (query_length, batch_size, C_o)
+
         """
         query_k_bias = self.query_k_bias.data()
         query_r_bias = self.query_r_bias.data()
@@ -384,6 +388,7 @@ class TransformerXLForLM(Block):
                 Shape (B, T, C)
             - layout = 'TN'
                 Shape (T, B, C)
+
         """
         if self._layout == 'NT':
             return [mx.np.zeros((batch_size, 0, self._units), ctx=ctx)
@@ -418,18 +423,21 @@ class TransformerXLForLM(Block):
                 Shape (B, T)
             - layout == 'TN'
                 Shape (T, B)
+
         target
             The ground truth
             - layout == 'NT'
                 Shape (B, T)
             - layout == 'TN'
                 Shape (T, B)
+
         mem_l
             A list of memory objects
             - layout == 'NT'
                 Shape (B, T_mem, units)
             - layout == 'TN'
                 Shape (T_mem, B, units)
+
         rel_positions
             Shape (query_length, mem_length + query_length)
             By default, we will use the following relative positions
@@ -437,6 +445,7 @@ class TransformerXLForLM(Block):
             'in':        5,    4,     3,     2,      1,     0,      -1,      -2
             'Gluon@@':   6,    5,     4,     3,      2,     1,       0,      -1
             'NLP':       7,    6,     5,     4,      3,     2,       1,       0
+
         data_mem_mask
             Shape (B, query_length, mem_length + query_length)
             Here, 1 --> will be used, 0 --> won't be used.
@@ -460,8 +469,10 @@ class TransformerXLForLM(Block):
             'in':        1,    1,     1,     1,      1,     1,      0,        0
             'Gluon@@':   1,    1,     1,     1,      1,     1,      1,        0
             'NLP':       1,    1,     1,     1,      1,     1,      1,        1
+
         causal_only
             Whether to ignore the local masking constraint. See the flag above for more information.
+
         detach_memory
             Whether to detach the encoded memory from the graph.
 
@@ -473,6 +484,7 @@ class TransformerXLForLM(Block):
                 Shape (B, T)
             - layout == 'TN'
                 Shape (T, B)
+
         new_mem_l
             A list of the updated memory
             - layout == 'NT'

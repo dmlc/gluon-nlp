@@ -501,6 +501,7 @@ class GPT2Model(HybridBlock):
                 Shape (num_layers, 2, batch_size, prev_len + seq_length, C_in)
             - layout = 'TN'
                 Shape (num_layers, 2, prev_len + seq_length, batch_size, C_in)
+
         """
         prev_len = npx.shape_array(states)[3] if self._layout == 'NT' else \
                    npx.shape_array(states)[2]
@@ -544,6 +545,7 @@ class GPT2Model(HybridBlock):
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
+
         """
         embedding = self._embed(inputs)
         if self._layout == 'NT':
@@ -570,6 +572,7 @@ class GPT2Model(HybridBlock):
                 Shape (num_layers, 2, batch_size, 0, C_in)
             - layout = 'TN'
                 Shape (num_layers, 2, 0, batch_size, C_in)
+
         """
         if dtype is None:
             dtype = self._dtype
@@ -660,6 +663,7 @@ class GPT2ForLM(HybridBlock):
                 Shape (num_layers, 2, batch_size, prev_len + seq_length, C_in)
             - layout = 'TN'
                 Shape (num_layers, 2, prev_len + seq_length, batch_size, C_in)
+
         """
         contextual_embeddings, new_states = self._backbone_model(inputs, states)
         logits = self._lm_head(contextual_embeddings)

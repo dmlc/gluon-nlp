@@ -168,7 +168,7 @@ class TransformerEncoderLayer(HybridBlock):
                 data -> attn -> norm(res(+data)) -> ffn
 
         use_qkv_bias
-            Wether to use bias for self attention
+            Whether to use bias for self attention
         weight_initializer
         bias_initializer
         activation
@@ -854,6 +854,7 @@ class TransformerDecoder(HybridBlock):
                         Shape (batch_size, 0, N, C_value)
                     - layout = 'TN'
                         Shape (0, batch_size, N, C_value)
+
         """
         states = []
         for i in range(self.num_layers):
@@ -908,11 +909,13 @@ class TransformerDecoder(HybridBlock):
                     Shape (batch_size, prev_seq_length + 1, num_heads, C_key)
                 - new_value
                     Shape (prev_seq_length + 1, batch_size, num_heads, C_value)
+
             2. layout = 'TN'
                 - new_key
                     Shape (prev_seq_length + 1, batch_size, num_heads, C_key)
                 - new_value
                     Shape (prev_seq_length + 1, batch_size, num_heads, C_value)
+
         """
         # 1. Embed the data
         out = self.dropout_layer(data)
@@ -1171,12 +1174,12 @@ class TransformerModel(HybridBlock):
 
         Parameters
         ----------
-        F
         src_data
             - layout = 'NT'
                 Shape (batch_size, src_length)
             - layout = 'TN'
                 Shape (src_length, batch_size)
+
         src_valid_length
             Shape (batch_size,)
 
@@ -1354,10 +1357,10 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
 
         Returns
         -------
-        enc_out_batch_axis : int
-        src_valid_length_batch_axis : int
-        position_batch_axis : int
-        dec_layer_batch_axis : list
+        enc_out_batch_axis
+        src_valid_length_batch_axis
+        position_batch_axis
+        dec_layer_batch_axis
         """
         if self.model.layout == 'NT':
             return 0, 0, 0, self.model.decoder.state_batch_axis
@@ -1374,6 +1377,7 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
                 Shape (batch_size, src_length)
             - layout = 'TN'
                 Shape (src_length, batch_size)
+
         src_valid_length
             Shape (batch_size,)
 
@@ -1384,6 +1388,7 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
                 Shape (batch_size, src_length, C_mem)
             - layout = 'TN'
                 Shape (src_length, batch_size, C_mem)
+
         src_valid_length
             Shape (batch_size,)
         position
@@ -1412,15 +1417,16 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
         states
             It includes :
                 - layout = 'NT'
-                    mem_data : (batch_size, src_length, C_mem)
-                    mem_valid_length : (batch_size,)
-                    position : (batch_size,)
-                    dec_states : list
+                    - mem_data : (batch_size, src_length, C_mem)
+                    - mem_valid_length : (batch_size,)
+                    - position : (batch_size,)
+                    - dec_states : list
                 - layout = 'TN'
-                    mem_data : (src_length, batch_size, C_mem)
-                    mem_valid_length : (batch_size,)
-                    position : (batch_size,)
-                    dec_states : list
+                    - mem_data : (src_length, batch_size, C_mem)
+                    - mem_valid_length : (batch_size,)
+                    - position : (batch_size,)
+                    - dec_states : list
+
         Returns
         -------
         out
