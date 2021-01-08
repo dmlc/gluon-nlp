@@ -589,19 +589,20 @@ class AlbertForMLM(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
 
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
             - layout = 'NT'
                 Shape (batch_size, seq_length)
 
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
             The type of the token. For example, if the inputs contain two sequences,
             we will set different token types for the first sentence and the second sentence.
         valid_length :
@@ -619,6 +620,7 @@ class AlbertForMLM(HybridBlock):
 
             - layout = 'TN'
                 Shape (seq_length, batch_size, units)
+
         pooled_out
             Shape (batch_size, units)
         mlm_scores :
@@ -695,6 +697,7 @@ class AlbertForPretrain(HybridBlock):
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types :
             - layout = 'NT'
                 Shape (batch_size, seq_length)
@@ -717,6 +720,7 @@ class AlbertForPretrain(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units).
+
         pooled_out
             Shape (batch_size, units)
         sop_score :
