@@ -531,6 +531,7 @@ class TransformerDecoderLayer(HybridBlock):
             Mask for the causal self-attention.
             self_causal_mask[i, j, :] masks the elements that token `j` attends to.
             To understand the self-causal attention mask, we can look at the following example:
+
                        ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
             'I':         1,    0,     0,     0,      0,     0,      0,      0
             'can':       1,    1,     0,     0,      0,     0,      0,      0
@@ -544,6 +545,7 @@ class TransformerDecoderLayer(HybridBlock):
         mem_attn_mask :
             Shape (batch_size, seq_length, mem_length)
             Mask between the decoding input and the memory.
+
                        ['numpy', 'in', 'Gluon@@', 'NLP']
             'I':         1,     1,      1,      1
             'can':       1,     1,      1,      1

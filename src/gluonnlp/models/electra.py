@@ -552,7 +552,7 @@ class ElectraModel(HybridBlock):
         That is, make all layer that shallower than `untunable_depth` untunable
         to stop the gradient backward computation and accelerate the training.
 
-        Parameters:
+        Parameters
         ----------
         untunable_depth
             the depth of the neural network starting from 1 to number of layers
