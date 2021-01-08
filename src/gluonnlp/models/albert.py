@@ -432,6 +432,7 @@ class AlbertModel(HybridBlock):
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
+
             If None, it will be initialized as all zero
 
         Returns
@@ -442,6 +443,7 @@ class AlbertModel(HybridBlock):
                 Shape (batch_size, seq_length, C_embed)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_embed)
+
         """
         if self.layout == 'NT':
             batch_axis, time_axis = 0, 1

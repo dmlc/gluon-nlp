@@ -471,7 +471,7 @@ class BertModel(HybridBlock):
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If None, it will be initialized as all zero
+            If None, it will be initialized as all zero.
 
         Returns
         -------
