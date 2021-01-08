@@ -218,7 +218,7 @@ def test_bucket_positional_embedding(units, num_buckets, bidirectional, max_dist
             assert_allclose(mx.np.linalg.norm(out[buckets == i].std(axis=0)).asnumpy(), 0,
                             1E-5, 1E-5)
     if bidirectional:
-        assert mx.np.all(buckets[relative_positions < 0] >= num_buckets // 2).asnumpy()
+        assert mx.np.all(buckets[relative_positions > 0] >= num_buckets // 2).asnumpy()
     out_of_bound_cnt = buckets[relative_positions > max_distance].sum()
     if out_of_bound_cnt.asnumpy() > 0:
         assert buckets[relative_positions > max_distance].std().asnumpy() == 0
