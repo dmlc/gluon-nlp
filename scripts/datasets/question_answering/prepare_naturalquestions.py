@@ -23,8 +23,7 @@ journal	= {Transactions of the Association of Computational Linguistics}
 
 _URLS = {
     'train': get_repo_url() + 'NaturalQuestions/v1.0-simplified_simplified-nq-train.jsonl.gz',
-    'dev': get_repo_url() + 'NaturalQuestions/nq-dev-all.jsonl.gz',
-    # 'all': get_repo_url() + 'NaturalQuestions/*'
+    'dev': get_repo_url() + 'NaturalQuestions/nq-dev-all.jsonl.gz'
 }
 
 
@@ -37,6 +36,7 @@ def get_parser():
     parser.add_argument('--cache-path', type=str, default=_BASE_DATASET_PATH,
                         help='The path to download the dataset.')
     parser.add_argument('--overwrite', action='store_true')
+    parser.add_argument('--extract', action='store_true')
     return parser
 
 
@@ -64,7 +64,8 @@ def main(args):
                     or (args.overwrite and args.save_path != args.cache_path):
                 os.symlink(os.path.join(args.cache_path, file_name),
                            os.path.join(args.save_path, file_name))
-            extract(os.path.join(args.save_path, file_name))
+            if args.extract:
+                extract(os.path.join(args.save_path, file_name))
 
 
 def cli_main():

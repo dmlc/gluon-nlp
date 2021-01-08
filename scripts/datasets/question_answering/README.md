@@ -109,15 +109,24 @@ hotpotqa
 
 NaturalQuestions is an open domain QA dataset. This dataset contains questions from real users. For more details about this dataset, check out https://ai.google.com/research/NaturalQuestions
 
-Run the following command to download NaturalQuestions
+Run the following command to download NaturalQuestions and extract gz files.
 
 ```
-python3 prepare_naturalquestions.py
+python3 prepare_naturalquestions.py --extract
 # Download NaturalQuestions simplified version 1.0(5.4G)
+
+# Or download with command-line toolkits
+nlp_data prepare_naturalquestions --extract
+```
+
+If you do not want to extract gz files, just run:
+```
+python3 prepare_naturalquestions.py
 
 # Or download with command-line toolkits
 nlp_data prepare_naturalquestions
 ```
+
 Directory structure of the NaturalQuestions dataset will be as follows
 
 ```
