@@ -60,7 +60,7 @@ Select your preferences and run the install command.
               python3 -m pip install -U --pre "mxnet>=2.0.0" -f https://dist.mxnet.io/python
 
               # Install GluonNLP
-              git clone -b master --single-branch https://github.com/dmlc/gluon-nlp.git
+              git clone https://github.com/dmlc/gluon-nlp.git
               cd gluon-nlp
               python3 -m pip install -U -e ."[extras]"
 
@@ -69,11 +69,11 @@ Select your preferences and run the install command.
            .. code-block:: bash
 
               # Here we assume CUDA 10.2 is installed. You can change the number
-              # according to your own CUDA version, e.g., cu100, cu101
+              # according to your own CUDA version, e.g., cu101, cu110
               python3 -m pip install -U --pre "mxnet-cu102>=2.0.0" -f https://dist.mxnet.io/python
 
-              # Install GluonNLP (TBA)
-              git clone -b master --single-branch https://github.com/dmlc/gluon-nlp.git
+              # Install GluonNLP
+              git clone https://github.com/dmlc/gluon-nlp.git
               cd gluon-nlp
               python3 -m pip install -U -e ."[extras]"
 
@@ -87,7 +87,7 @@ Select your preferences and run the install command.
               python3 -m pip install -U --pre "mxnet>=2.0.0" -f https://dist.mxnet.io/python
 
               # Install GluonNLP
-              git clone -b master --single-branch https://github.com/dmlc/gluon-nlp.git
+              git clone https://github.com/dmlc/gluon-nlp.git
               cd gluon-nlp
               python3 -m pip install -U -e ."[extras]"
 
@@ -99,7 +99,7 @@ Select your preferences and run the install command.
               # according to your own CUDA version, e.g., cu100, cu101
               python3 -m pip install -U --pre "mxnet-cu102>=2.0.0" -f https://dist.mxnet.io/python
 
-              # Install GluonNLP (TBA)
-              git clone -b master --single-branch https://github.com/dmlc/gluon-nlp.git
+              # Install GluonNLP
+              git clone https://github.com/dmlc/gluon-nlp.git
               cd gluon-nlp
               python3 -m pip install -U -e ."[extras]"
