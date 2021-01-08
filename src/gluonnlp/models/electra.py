@@ -520,7 +520,7 @@ class ElectraModel(HybridBlock):
         .. math::
             lr = lr * layerwise_decay^(max_depth - layer_depth)
 
-        Parameters:
+        Parameters
         ----------
         layerwise_decay
             Power rate of the layer-wise decay
