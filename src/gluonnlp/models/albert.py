@@ -429,11 +429,11 @@ class AlbertModel(HybridBlock):
                 Shape (seq_length, batch_size)
 
         token_types
+            The types of tokens. If it is None, it will be initialized as all zeros.
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
-
-            If None, it will be initialized as all zero
+                Shape (seq_length, batch_size)
 
         Returns
         -------

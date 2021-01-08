@@ -466,12 +466,11 @@ class BertModel(HybridBlock):
                 Shape (seq_length, batch_size)
 
         token_types
+            The type of tokens. If None, it will be initialized as all zero.
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-
-            If None, it will be initialized as all zero.
 
         Returns
         -------
