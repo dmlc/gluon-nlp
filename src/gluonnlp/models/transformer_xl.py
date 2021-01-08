@@ -108,8 +108,8 @@ class TransformerXLDecoderLayer(HybridBlock):
                 Shape (mem_length, batch_size, units)
 
         rel_positions
-            The relative positions between data and [mem, data]
-            Shape (query_length, mem_length + query_length).
+            The relative positions between data and concat(mem, data).
+            Shape is (query_length, mem_length + query_length).
             A positive value means that query is after the memory, i.e.,
             query_location - mem_location.
         mask
