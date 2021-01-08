@@ -6,7 +6,7 @@ import gzip
 from gluonnlp.utils.misc import download, load_checksum_stats
 from gluonnlp.base import get_data_home_dir, get_repo_url
 
-
+logger = logging.getLogger(__name__)
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 _BASE_DATASET_PATH = os.path.join(get_data_home_dir(), 'NaturalQuestions')
 _URL_FILE_STATS_PATH = os.path.join(_CURR_DIR, '..', 'url_checksums', 'naturalquestions.txt')
@@ -42,7 +42,7 @@ def get_parser():
 
 def main(args):
     def extract(gz_path):
-        logging.info(f'Extracting {gz_path}, this can cost long time because the file is large')
+        logging.warning(f'Extracting {gz_path}, this can cost long time because the file is large')
         try:
             f_name = gz_path.replace(".gz", "")
             g_file = gzip.GzipFile(gz_path)
