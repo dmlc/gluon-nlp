@@ -395,6 +395,7 @@ class AlbertModel(HybridBlock):
                 Shape (batch_size, seq_length, units)
             - layout = 'TN'
                 Shape (seq_length, batch_size, units)
+
         pooled_output
             This is optional. Shape (batch_size, units)
         """
@@ -430,6 +431,7 @@ class AlbertModel(HybridBlock):
 
         token_types
             The types of tokens. If it is None, it will be initialized as all zeros.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
@@ -439,6 +441,7 @@ class AlbertModel(HybridBlock):
         -------
         embedding
             The initial embedding that will be fed into the encoder
+
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_embed)
             - layout = 'TN'
@@ -597,14 +600,15 @@ class AlbertForMLM(HybridBlock):
                 Shape (seq_length, batch_size)
 
         token_types
+            The type of the token. For example, if the inputs contain two sequences,
+            we will set different token types for the first sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
 
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            The type of the token. For example, if the inputs contain two sequences,
-            we will set different token types for the first sentence and the second sentence.
         valid_length :
             The valid length of each sequence
             Shape (batch_size,)
@@ -698,13 +702,14 @@ class AlbertForPretrain(HybridBlock):
                 Shape (seq_length, batch_size)
 
         token_types
+            Type of the tokens. If the inputs contain two sequences, we will set different
+            token types for the first sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
         valid_length
             The valid length of each sequence
             Shape (batch_size,)

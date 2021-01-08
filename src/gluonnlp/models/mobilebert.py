@@ -626,6 +626,7 @@ class MobileBertModel(HybridBlock):
         token_types
             If the inputs contain two sequences, we will set different token types for the first
             sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
@@ -668,12 +669,12 @@ class MobileBertModel(HybridBlock):
                 Shape (seq_length, batch_size)
 
         token_types
+            Type of tokens. If None, it will be initialized as all zero
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-
-            If None, it will be initialized as all zero
 
         Returns
         -------
@@ -858,6 +859,7 @@ class MobileBertForMLM(HybridBlock):
         token_types
             The type of the token. For example, if the inputs contain two sequences,
             we will set different token types for the first sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
@@ -959,7 +961,7 @@ class MobileBertForPretrain(HybridBlock):
                 dtype=self.backbone_model.dtype)
 
     def forward(self, inputs, token_types, valid_length,
-                       masked_positions):
+                masked_positions):
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a mobile mobile bert model.
@@ -975,6 +977,7 @@ class MobileBertForPretrain(HybridBlock):
         token_types
             If the inputs contain two sequences, we will set different token types for the first
             sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'

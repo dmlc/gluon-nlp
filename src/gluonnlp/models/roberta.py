@@ -349,10 +349,12 @@ class RobertaModel(HybridBlock):
         -------
         embedding
             The initial embedding that will be fed into the encoder
+
             - layout = 'NT'
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
+
         """
         if self._layout == 'NT':
             batch_axis, time_axis = 0, 1

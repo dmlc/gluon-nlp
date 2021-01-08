@@ -417,6 +417,7 @@ class ElectraModel(HybridBlock):
         token_types
             If the inputs contain two sequences, we will set different token types for the first
             sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
@@ -476,6 +477,7 @@ class ElectraModel(HybridBlock):
 
         token_types
             The type of tokens. If None, it will be initialized as all zero.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
@@ -485,6 +487,7 @@ class ElectraModel(HybridBlock):
         -------
         embedding
             The initial embedding that will be fed into the encoder
+
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_embed)
             - layout = 'TN'
@@ -659,13 +662,14 @@ class ElectraDiscriminator(HybridBlock):
                 Shape (seq_length, batch_size)
 
         token_types
+            If the inputs contain two sequences, we will set different token types for the first
+             sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
         valid_length
             The valid length of each sequence
             Shape (batch_size,)
@@ -761,20 +765,20 @@ class ElectraGenerator(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
         token_types
+            If the inputs contain two sequences, we will set different token types for the first
+             sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
         valid_length :
             The valid length of each sequence
             Shape (batch_size,)
@@ -902,13 +906,16 @@ class ElectraForPretrain(HybridBlock):
         ----------
         inputs
             The masked input
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
             The token types. If the inputs contain two sequences, we will set different token types
             for the first sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
@@ -931,6 +938,7 @@ class ElectraForPretrain(HybridBlock):
             Shape (batch_size, num_masked_positions, vocab_size)
         rtd_scores
             The replaced-token-detection score. Predicts whether the tokens are replaced or not.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
@@ -969,6 +977,7 @@ class ElectraForPretrain(HybridBlock):
         ----------
         inputs
             The masked input
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'

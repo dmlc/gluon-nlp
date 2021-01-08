@@ -93,16 +93,18 @@ class TransformerXLDecoderLayer(HybridBlock):
         ----------
         data
             The input data.
-            layout = 'NT':
+
+            - layout = 'NT'
                 Shape (batch_size, query_length, units)
-            layout = 'TN':
+            - layout = 'TN'
                 Shape (query_length, batch_size, units)
 
         mem
             The memory.
-            layout = 'NT':
+
+            - layout = 'NT'
                 Shape (batch_size, mem_length, units)
-            layout = 'TN':
+            - layout = 'TN'
                 Shape (mem_length, batch_size, units)
 
         rel_positions
@@ -214,6 +216,7 @@ class TransformerXLDecoder(HybridBlock):
 
         mem_l
             Contains a list of memory objects, each one will contain:
+
             - layout = 'NT':
                 Shape (batch_size, mem_length, C_i)
             - layout = 'TN':
@@ -230,6 +233,7 @@ class TransformerXLDecoder(HybridBlock):
         -------
         out_l
             Contains a list of hidden states, each will contain:
+
             - layout = 'NT'
                 Shape (batch_size, query_length, C_o)
             - layout = 'TN'
@@ -384,6 +388,7 @@ class TransformerXLForLM(Block):
         -------
         mems
             A list of memory states
+
             - layout = 'NT'
                 Shape (B, T, C)
             - layout = 'TN'
@@ -419,23 +424,26 @@ class TransformerXLForLM(Block):
         ----------
         data
             The input data
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Shape (B, T)
-            - layout == 'TN'
+            - layout = 'TN'
                 Shape (T, B)
 
         target
             The ground truth
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Shape (B, T)
-            - layout == 'TN'
+            - layout = 'TN'
                 Shape (T, B)
 
         mem_l
             A list of memory objects
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Shape (B, T_mem, units)
-            - layout == 'TN'
+            - layout = 'TN'
                 Shape (T_mem, B, units)
 
         rel_positions
@@ -480,16 +488,18 @@ class TransformerXLForLM(Block):
         -------
         logits
             The selected logits
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Shape (B, T)
-            - layout == 'TN'
+            - layout = 'TN'
                 Shape (T, B)
 
         new_mem_l
             A list of the updated memory
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Each will have shape (B, T, C)
-            - layout == 'TN'
+            - layout = 'TN'
                 Each will have shape (T, B, C)
         """
         # Note that curr_mem_length will not necessarily be equal to mem_length
@@ -556,6 +566,7 @@ class TransformerXLForLM(Block):
             Shape (B,)
         mem_l
             A list of memory objects
+
             - layout == 'NT'
                 Shape (B, T_mem, units)
             - layout == 'TN'
@@ -567,10 +578,12 @@ class TransformerXLForLM(Block):
             Shape (B, V)
         new_mem_l
             A list of memory objects
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Shape (B, min(T_mem + 1, memory_length), C)
-            - layout == 'TN'
+            - layout = 'TN'
                 Shape (min(T_mem + 1, memory_length), B, C)
+
         """
         batch_size = step_data.shape[0]
         if self._layout == 'NT':

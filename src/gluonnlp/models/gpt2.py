@@ -481,6 +481,7 @@ class GPT2Model(HybridBlock):
 
         states
             The previous states
+
             - layout = 'NT'
                 Shape (num_layers, 2, batch_size, prev_len, C_in)]
             - layout = 'TN'
@@ -490,6 +491,7 @@ class GPT2Model(HybridBlock):
         -------
         new_x
             Output
+
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_out)
             - layout = 'TN'
@@ -497,6 +499,7 @@ class GPT2Model(HybridBlock):
 
         new_states
             The new states
+
             - layout = 'NT'
                 Shape (num_layers, 2, batch_size, prev_len + seq_length, C_in)
             - layout = 'TN'
@@ -645,6 +648,7 @@ class GPT2ForLM(HybridBlock):
 
         states
             The states.
+
             - layout = 'NT'
                 Shape (num_layers, 2, batch_size, prev_len, C_in)
             - layout = 'TN'
