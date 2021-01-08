@@ -1,0 +1,2 @@
+s3://gluonnlp-numpy-data/NaturalQuestions/v1.0-simplified_simplified-nq-train.jsonl.gz 9ae896ea4b29370fe157aea61a088ffdc0fbda8f 4715820286
+s3://gluonnlp-numpy-data/NaturalQuestions/nq-dev-all.jsonl.gz b4cc081a2d065f84d630a1338dead7faad77eeff 1068038975
