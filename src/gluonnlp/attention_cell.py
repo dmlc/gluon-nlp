@@ -118,6 +118,7 @@ def gen_self_attn_mask(data,
     ----------
     data
         The data.
+
         - layout = 'NT'
             Shape (batch_size, seq_length, C)
         - layout = 'TN'
@@ -348,6 +349,7 @@ def multi_head_dot_attn(query, key, value,
     ----------
     query
         Query. The shape depends on the layout
+
         - layout is 'NKT'
             Shape (batch_size, num_heads, query_length, key_dim)
         - layout is 'NTK'
@@ -357,6 +359,7 @@ def multi_head_dot_attn(query, key, value,
 
     key
         Key. The shape depends on the layout
+
         - layout is 'NKT'
             Shape (batch_size, num_heads, mem_length, key_dim)
         - layout is 'NTK'
@@ -366,6 +369,7 @@ def multi_head_dot_attn(query, key, value,
 
     value
         Value. The shape depends on the layout
+
         - layout is 'NKT'
             Shape (batch_size, num_heads, mem_length, value_dim)
         - layout is 'NTK'
