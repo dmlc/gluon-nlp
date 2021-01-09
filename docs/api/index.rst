@@ -9,5 +9,6 @@ API Documentation
    models
    attention
    layers
+   operators
    sequence_sampler
    utils
