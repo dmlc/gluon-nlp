@@ -55,6 +55,7 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
     ...                  ' zur Verfügung.')
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
 'zur', 'Verfügung', '.']
+
     """
 
     def __init__(self, lang: Optional[str] = 'en', model: Optional[str] = None,
