@@ -637,7 +637,6 @@ class RelAttentionScoreCell(HybridBlock):
             [Arxiv2019] Exploring the Limits of Transfer Learning with a Unified
         Text-to-Text Transformer
 
-
     Like in MultiHeadAttentionCell, we support different layouts to cope with the query matrix.
 
     - layout="NKT"
@@ -741,9 +740,10 @@ class RelAttentionScoreCell(HybridBlock):
         Parameters
         ----------
         rel_positions
-            The relative shifts. Shape (query_length, mem_length)
+            The relative shifts. Shape (query_length, mem_length).
             Each element represents the shift between the i-th element of query and the j-th
             element of memory.
+
         query
             The query for computing the relative scores. The shape depends on the layout.
             If we use T5 attention, the query won't be used
