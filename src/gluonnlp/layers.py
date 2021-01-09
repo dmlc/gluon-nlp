@@ -758,25 +758,31 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
     For the example above, we will have two additional virtual words: T2, and T3, meaning that the
     correct word should be at the 2nd or 3rd cluster
 
-    prob1 = \softmax([V_0, V_1, ..., V_{c0}, T2, T3])
-    prob2 = p(T2) * \softmax([V_{c0 + 1}, V_{c0 + 2}, ... V_{c1}])
-    prob3 = p(T3) * softmax([V_{c1 + 1}, V_{c1 + 2}, ... V_{N - 1}])
+    .. code-block: none
+
+        prob1 = \softmax([V_0, V_1, ..., V_{c0}, T2, T3])
+        prob2 = p(T2) * \softmax([V_{c0 + 1}, V_{c0 + 2}, ... V_{c1}])
+        prob3 = p(T3) * softmax([V_{c1 + 1}, V_{c1 + 2}, ... V_{N - 1}])
 
 
     Converting to log-probability, we have
-    lprob1 = log-softmax([V_0, V_1, ..., V_{c0}, T2, T3])
-    lprob2 = lprob1[T2] + log-softmax([V_{c0 + 1}, V_{c0 + 2}, ... V_{c1}])
-    lprob3 = lprob2[T3] + log-softmax([V_{c1 + 1}, V_{c1 + 2}, ... V_{N - 1}])
 
+    .. code-block: none
 
-    @inproceedings{grave2017efficient,
-      title={Efficient softmax approximation for GPUs},
-      author={Grave, Edouard and Joulin, Armand and Ciss{\'e}, Moustapha and J{\'e}gou, Herv{\'e} and others},
-      booktitle={Proceedings of the 34th International Conference on Machine Learning-Volume 70},
-      pages={1302--1310},
-      year={2017},
-      organization={JMLR. org}
-    }
+        lprob1 = log-softmax([V_0, V_1, ..., V_{c0}, T2, T3])
+        lprob2 = lprob1[T2] + log-softmax([V_{c0 + 1}, V_{c0 + 2}, ... V_{c1}])
+        lprob3 = lprob2[T3] + log-softmax([V_{c1 + 1}, V_{c1 + 2}, ... V_{N - 1}])
+
+    .. code-block: none
+
+        @inproceedings{grave2017efficient,
+          title={Efficient softmax approximation for GPUs},
+          author={Grave, Edouard and Joulin, Armand and Ciss{\'e}, Moustapha and J{\'e}gou, Herv{\'e} and others},
+          booktitle={Proceedings of the 34th International Conference on Machine Learning-Volume 70},
+          pages={1302--1310},
+          year={2017},
+          organization={JMLR. org}
+        }
     """
     def __init__(self, vocab_size: int, embed_size: int, in_units: int,
                  cutoffs: Optional[Union[int, List]] = None,
@@ -873,7 +879,6 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
 
         Parameters
         ----------
-        F
         hidden
             The hidden representation
             Shape (..., in_units)
@@ -927,7 +932,6 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
 
         Parameters
         ----------
-        F
         hidden
             The hidden representation
             Shape (..., in_units)
