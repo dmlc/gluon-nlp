@@ -753,6 +753,7 @@ class RelAttentionScoreCell(HybridBlock):
             The relative attention scores
             Can have shape (batch_size, num_heads, query_length, mem_length)
              or (num_heads, query_length, mem_length)
+
         """
         if self._method == 'transformer_xl' or self._method == 'shaw':
             assert query is not None, 'Must specify query if method={}'.format(self._method)
