@@ -1,4 +1,8 @@
 <h2 align="center">
+<img src="https://raw.githubusercontent.com/dmlc/gluon-nlp/master/docs/_static/gluon-logo.svg" alt="GluonNLP Logo" width="500"/>
+</h2>
+
+<h2 align="center">
 GluonNLP: Your Choice of Deep Learning for NLP
 </h2>
 
