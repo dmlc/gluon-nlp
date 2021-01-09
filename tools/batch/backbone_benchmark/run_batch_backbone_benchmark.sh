@@ -13,6 +13,6 @@ python3 ${SUBMIT_SCRIPT_PATH} \
     --name test_backbone_benchmark_${INSTANCE_TYPE} \
     --work-dir scripts/benchmarks \
     --remote https://github.com/sxjscience/gluon-nlp/ \
-    --command "bash run_backbone_bench_${INSTANCE_TYPE}.sh | tee stdout.log" \
+    --command "bash run_backbone_bench_${INSTANCE_TYPE}.sh 2>&1 | tee stdout.log" \
     | perl -pe 's/Submitted job \[([0-9|a-z|_].+)\] to the job queue .+/$1/' \
     | sed -e 's/ - / /g' >> ${LOG_PATH}
