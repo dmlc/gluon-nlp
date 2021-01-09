@@ -741,9 +741,8 @@ class RelAttentionScoreCell(HybridBlock):
         ----------
         rel_positions
             The relative shifts. Shape (query_length, mem_length).
-            Each element represents the shift between the i-th element of query and the j-th
-            element of memory.
-
+            Each element represents the shift between the :math:`i-th` element of query and
+            the :math:`j-th` element of memory.
         query
             The query for computing the relative scores. The shape depends on the layout.
             If we use T5 attention, the query won't be used
