@@ -7,4 +7,7 @@ API Documentation
    data
    embedding
    models
+   attention
+   layers
+   sequence_sampler
    utils

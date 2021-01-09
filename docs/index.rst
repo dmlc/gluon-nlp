@@ -75,8 +75,8 @@ You may find the 60-min Gluon crash course linked from there especially helpful.
    :hidden:
    :maxdepth: 2
 
-   model_zoo/index
    tutorials/index
+   model_zoo/index
    api/index
    website/index
    genindex
