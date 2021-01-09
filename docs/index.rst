@@ -37,7 +37,7 @@ computes the cosine similarity between two words.
    </script>
 
 
-.. include:: model_zoo.rst
+.. include:: examples.rst
 
 And more in :doc:`tutorials <tutorials/index>`.
 
