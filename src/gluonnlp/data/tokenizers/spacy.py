@@ -40,6 +40,7 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
 
     Examples
     --------
+
     >>> import gluonnlp
     >>> tokenizer = gluonnlp.data.SpacyTokenizer()
     >>> tokenizer.encode('Gluon NLP toolkit provides a suite of text processing tools.')
