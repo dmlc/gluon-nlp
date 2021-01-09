@@ -669,12 +669,9 @@ class RelAttentionScoreCell(HybridBlock):
         num_buckets
         method
         dropout
-        attention_dropout
-        query_add_bias
-            Add additional bias term to the query
-        scaled
         dtype
         layout
+        use_einsum
         """
         super().__init__()
         self._dropout = dropout
