@@ -39,7 +39,7 @@ computes the cosine similarity between two words.
 
 .. include:: model_zoo.rst
 
-And more in :doc:`tutorials <examples/index>`.
+And more in :doc:`tutorials <tutorials/index>`.
 
 
 .. include:: install.rst
@@ -76,7 +76,7 @@ You may find the 60-min Gluon crash course linked from there especially helpful.
    :maxdepth: 2
 
    model_zoo/index
-   examples/index
+   tutorials/index
    api/index
    website/index
    genindex

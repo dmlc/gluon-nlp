@@ -1,5 +1,5 @@
-Model Zoo
----------
+Examples
+--------
 
 .. container:: cards
 
@@ -7,7 +7,8 @@ Model Zoo
       :title: Benchmarking the Performance of NLP Backbones
       :link: model_zoo/benchmarks/index.html
 
-      Placeholder.
+      Benchmarking the performance of NLP models.
+      We released the benchmarking script that compares different NLP packages.
 
    .. card::
       :title: Conversion Scripts
@@ -19,35 +20,37 @@ Model Zoo
       :title: Datasets
       :link: model_zoo/datasets/index.html
 
-      Placeholder.
+      Example about the datasets supported by `nlp_data`
 
    .. card::
       :title: Generation
       :link: model_zoo/generation/index.html
 
-      Placeholder. 
+      Example about how to generate from a pretrained GPT-2 model with GluonNLP.
+      We provided the generation script and tried to compare different sampling methods.
 
    .. card::
       :title: Machine Translation
       :link: model_zoo/machine_translation/index.html
 
-      From "Hello" to "Bonjour".
+      Train machine translation model with GluonNLP.
 
    .. card::
       :title: Data Preprocessing Toolkit in GluonNLP
       :link: model_zoo/processing/index.html
 
-      Placeholder.
+      Example about the data processing toolkit (`nlp_process`) offered in GluonNLP.
 
    .. card::
       :title: Pretraining Model
       :link: model_zoo/pretraining/index.html
 
-      Placeholder.
+      Examples about pretraining your own backbones.
 
    .. card::
       :title: Question Answering Examples
       :link: model_zoo/question_answering/index.html
 
-      Placeholder.
+      Run SQuAD 1.1 and 2.0 finetuning with GluonNLP. You will know how to run the models with
+      mixed-precision training (AMP) and Horovod.
 

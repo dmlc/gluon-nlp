@@ -66,7 +66,7 @@ See `existing examples <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`_
 Contribute tutorials
 --------------------
 
-Our :doc:`tutorials <../examples/index>` are intended for people who
+Our :doc:`tutorials <../tutorials/index>` are intended for people who
 are interested in NLP and want to get better familiarized on different parts in NLP. In order for
 people to easily understand the content, the code needs to be clean and readable, accompanied by
 explanation with good writing.
