@@ -638,8 +638,7 @@ class RelAttentionScoreCell(HybridBlock):
         :math:`R_{i, j} = E_{i - j}`, in which :math:`E_{i - j}` is the bucket positional embedding.
         This is proposed in paper:
 
-            [Arxiv2019] Exploring the Limits of Transfer Learning with a Unified
-        Text-to-Text Transformer
+            [Arxiv2019] Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer
 
     Like in MultiHeadAttentionCell, we support different layouts to cope with the query matrix.
 
