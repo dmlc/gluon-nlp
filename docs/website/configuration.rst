@@ -11,7 +11,7 @@ Currently the GluonNLP website is constructed from the source code via CI automa
 Website Structure
 ~~~~~~~~~~~~~~~~~
 
-Currently the docs part contain four sections: Model Zoo, Examples, API and Community. It should be noted that the model zoo is a link redirecting to the ``scripts`` folder in the parent folder. The other three folders are used exclusively by the docs website. Also, three different sections use ``rst``, ``py``, ``md`` files and their composition for compiling - they are inconsistent. So when you work on different sections of the docs website, you should  pay attention to handle the different sections with care.
+Currently the docs part contain four sections: Examples, Tutorials, API and Community. It should be noted that the model zoo is a link redirecting to the ``scripts`` folder in the parent folder. The other three folders are used exclusively by the docs website. Also, three different sections use ``rst``, ``py``, ``md`` files and their composition for compiling - they are inconsistent. So when you work on different sections of the docs website, you should  pay attention to handle the different sections with care.
 
 The main structure, the index file of the entire website, is written in ``rst`` format. It calls the index file of each different section separately. Before compiling the website, you should be aware that:
 
