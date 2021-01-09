@@ -1,5 +1,5 @@
 gluonnlp.sequence_sampler
-=======================
+=========================
 
 GluonNLP Toolkit provides ways to sample from a sequence generator.
 
