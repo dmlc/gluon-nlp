@@ -25,10 +25,11 @@ from eval_utils import squad_eval
 from squad_utils import SquadFeature, get_squad_examples, convert_squad_example_to_feature
 from gluonnlp.models import get_backbone
 from gluonnlp.utils.misc import repeat, grouper, set_seed, init_comm, \
-    logging_config, count_parameters, parse_ctx
+    logging_config, parse_ctx
 from gluonnlp.initializer import TruncNorm
 from gluonnlp.data.sampler import SplitSampler
-from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm
+from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm, count_parameters,\
+    deduplicate_param_dict
 
 try:
     import horovod.mxnet as hvd
@@ -404,7 +405,8 @@ def get_network(model_name,
     if checkpoint_path is None:
         backbone.load_parameters(backbone_params_path, ignore_extra=True,
                                  ctx=ctx_l, cast_dtype=True)
-        num_params, num_fixed_params = count_parameters(backbone.collect_params())
+        num_params, num_fixed_params\
+            = count_parameters(deduplicate_param_dict(backbone.collect_params()))
         logging.info(
             'Loading Backbone Model from {}, with total/fixd parameters={}/{}'.format(
                 backbone_params_path, num_params, num_fixed_params))
@@ -491,7 +493,7 @@ def train(args):
 
     logging.info('Creating distributed trainer...')
     # Collect differentiable parameters
-    param_dict = qa_net.collect_params()
+    param_dict = deduplicate_param_dict(qa_net.collect_params())
     # Do not apply weight decay to all the LayerNorm and bias
     for _, v in qa_net.collect_params('.*beta|.*gamma|.*bias').items():
         v.wd_mult = 0.0
@@ -598,10 +600,10 @@ def train(args):
                     answerable_loss_l.append(answerable_loss)
             if use_amp:
                 with mx.autograd.record():
-                    with amp.scale_loss(loss_l, trainer) as loss_l:
-                        for loss in loss_l:
+                    with amp.scale_loss(loss_l, trainer) as amp_loss_l:
+                        for loss in amp_loss_l:
                             loss.backward()
-                norm_clip_mult = num_workers * trainer._amp_loss_scaler.loss_scale
+                norm_clip_mult = num_workers * trainer.amp_loss_scale
             else:
                 with mx.autograd.record():
                     for loss in loss_l:

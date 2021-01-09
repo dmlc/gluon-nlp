@@ -141,13 +141,14 @@ def try_import_langid():
 def try_import_boto3():
     try:
         import boto3
+        import botocore
     except ImportError:
         raise ImportError('"boto3" is not installed. To enable fast downloading in EC2. You should '
                           'install boto3 and correctly configure the S3. '
                           'See https://boto3.readthedocs.io/ for more information. '
                           'If you are using EC2, downloading from s3:// will '
                           'be multiple times faster than using the traditional http/https URL.')
-    return boto3
+    return boto3, botocore
 
 
 def try_import_jieba():

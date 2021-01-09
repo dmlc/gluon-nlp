@@ -14,7 +14,7 @@ parser.add_argument('--save_path', type=str, default=None, help='The path to sav
 args = parser.parse_args()
 
 if args.save_path is None:
-    args.save_path = os.path.basename(os.path.dirname(args.dir)) + '.csv'
+    args.save_path = os.path.basename(os.path.realpath(args.dir)) + '.csv'
 
 base_dir = args.dir
 prefix = 'test_squad2_'

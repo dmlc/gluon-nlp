@@ -25,6 +25,7 @@ import random
 import warnings
 import numpy as np
 import abc
+import logging
 from typing import Union, Sequence, Optional, List
 from ..base import INT_TYPES
 
@@ -278,6 +279,7 @@ class BoundedBudgetSampler(BaseSampler):
     ----------
     lengths
         The length of the sequences in the input data sample.
+        For example, can be [500, 100, 200], or [[100, 102], [200, 100], [500, 12]]
     max_num_tokens
         Max number of tokens of each batch
     max_num_sentences
@@ -285,6 +287,20 @@ class BoundedBudgetSampler(BaseSampler):
     required_batch_size_multiple
         Require batch size to be a multiple of N (default: 1).
         This will generally have better throughput in GPU.
+    sort_type
+        The way we sort the sample.
+        - sequential:
+            We sort the indices based on the individual lengths.
+            For example, each sample has (src_length, tgt_length).
+            We will sort them as
+            indices = indices[argsort(lengths[:, 1])]
+            indices = indices[argsort(lengths[:, 0])]
+        - max:
+            Take the max of the lengths and sort by the max value.
+            indices = indices[argsort(lengths.max(axis=-1)]
+        - first:
+            Just sort with the first length
+            indices = indices[argsort(lengths[:, 0]]
     shuffle
         Whether to shuffle the batches.
     seed
@@ -293,26 +309,49 @@ class BoundedBudgetSampler(BaseSampler):
     def __init__(self, lengths: Union[Sequence[int], Sequence[Sequence[int]]],
                  max_num_tokens: int = -1, max_num_sentences: int = -1,
                  required_batch_size_multiple: int = 1,
+                 sort_type: str = 'sequential',
                  shuffle: bool = True, seed: Optional[int] = None):
         assert len(lengths) > 0, 'BoundedBudgetSampler does not support empty lengths.'
         assert max_num_tokens > 0 or max_num_sentences > 0, \
                'One of max_num_tokens and max_num_sentences must be larger than 0'
         self._lengths = np.array(lengths)
-        if self._lengths.ndim == 2:
-            self._lengths = self._lengths.max(axis=1)
-        self._indices = np.arange(len(lengths))
         self._max_num_tokens = max_num_tokens
         self._max_num_sentences = max_num_sentences
         self._batches = []
         self._shuffle = shuffle
         self._rng = np.random.RandomState(seed)
+        self._sort_type = sort_type
         # sort
-        self._indices = self._indices[np.argsort(self._lengths, kind='mergesort')]
+        if self._shuffle:
+            self._indices = self._rng.permutation(len(lengths))
+        else:
+            self._indices = np.arange(len(lengths))
+        if self._lengths.ndim == 2:
+            if self._sort_type == 'sequential':
+                for i in range(self._lengths.shape[1] - 1, -1, -1):
+                    self._indices = self._indices[
+                        np.argsort(self._lengths[self._indices, i],
+                                   kind='mergesort')]
+            elif self._sort_type == 'max':
+                for i in range(self._lengths.shape[1] - 1, -1, -1):
+                    self._indices = self._indices[
+                        np.argsort(self._lengths.max(axis=-1)[self._indices],
+                                   kind='mergesort')]
+            else:
+                raise NotImplementedError
+
+        else:
+            self._indices = self._indices[np.argsort(self._lengths[self._indices],
+                                                     kind='mergesort')]
+        if self._lengths.ndim == 2:
+            self._max_lengths = self._lengths.max(axis=1)
+        else:
+            self._max_lengths = self._lengths
         batch = []
         # max len in a batch
         batch_max_sample_len = 0
         for index in self._indices:
-            batch_max_sample_len = max(batch_max_sample_len, self._lengths[index])
+            batch_max_sample_len = max(batch_max_sample_len, self._max_lengths[index])
             # try to insert new sample to the batch
             batch_num_sentences = len(batch) + 1
             batch_num_tokens = batch_num_sentences * batch_max_sample_len
@@ -326,8 +365,8 @@ class BoundedBudgetSampler(BaseSampler):
                 self._batches.append(np.array(batch[:moded_bs]))
                 batch = batch[moded_bs:]
                 batch_max_sample_len = max(
-                    self._lengths[batch].max() if len(batch) > 0 else 0,
-                    self._lengths[index]
+                    self._max_lengths[batch].max() if len(batch) > 0 else 0,
+                    self._max_lengths[index]
                 )
             batch.append(index)
         if len(batch) > 0:
@@ -335,12 +374,23 @@ class BoundedBudgetSampler(BaseSampler):
 
     def __iter__(self):
         if self._shuffle:
-            self._rng.shuffle(self._batches)
-        for batch in self._batches:
-            yield batch
+            logging.info('In BoundedBudgetSampler. Reshuffle batches.')
+            indices = self._rng.permutation(len(self._batches))
+        else:
+            indices = range(len(self._batches))
+        for idx in indices:
+            yield self._batches[idx]
 
     def __len__(self):
         return len(self._batches)
+
+    @property
+    def rng(self):
+        """Access the internal random number generator. This helps with reproducible research."""
+        return self._rng
+
+    def lengths(self):
+        return self._lengths
 
     def __repr__(self):
         ret = '{name}(\n' \
@@ -589,6 +639,11 @@ class SortedBucketSampler(BaseSampler):
                 batch_end = min(batch_begin + self._batch_size, len(sorted_sample_ids))
                 yield sorted_sample_ids[batch_begin:batch_end]
 
+    @property
+    def rng(self):
+        """Access the internal random number generator. This helps with reproducible research."""
+        return self._rng
+
     def __len__(self):
         return (len(self._sort_keys) + self._batch_size - 1) // self._batch_size
 
@@ -682,12 +737,14 @@ class ShardedIterator(BaseSampler):
     def __init__(self, sampler: BaseSampler,
                  num_parts: int = 1,
                  part_index: int = 0,
-                 even_size: bool = False):
+                 even_size: bool = False,
+                 seed: Optional[int] = None):
         assert part_index < num_parts, 'part_index should be less than num_parts'
         self._sampler = sampler
         self._num_parts = num_parts
         self._part_index = part_index
         self._even_size = even_size
+        self._rng = np.random.RandomState(seed)
 
         length = len(sampler)
         if not even_size:
@@ -704,28 +761,39 @@ class ShardedIterator(BaseSampler):
             self._end = self._end if self._end < length else length
             self._part_len = part_len
 
+    @property
+    def rng(self):
+        """Access the internal random number generator. This helps with reproducible research."""
+        return self._rng
+
     def __iter__(self):
+        # TODO(?), When the number of samples is large. We should improve the logic here.
+        #  Since the python list can cost lots of memory
         batches = list(self._sampler)
         part_batches = batches[self._start:self._end]
         if self._even_size and len(part_batches) < self._part_len:
-            candidates = random.sample(batches, k=self._part_len-len(part_batches))
-            part_batches.extend(candidates)
+            candidates = self._rng.choice(len(batches), size=self._part_len-len(part_batches))
+            for idx in candidates:
+                part_batches.append(batches[idx])
+        logging.info('In ShardedIterator. Constructed part batches!')
         for batch in part_batches:
             yield batch
     
     def __len__(self):
-        return len(self._sampler)
+        return self._part_len
     
     def __repr__(self):
         ret = '{name}(\n' \
-            '  batch_num={batch_num},\n' \
+            '  total_batch_num={batch_num},\n' \
             '  part_batch_num={part_batch_num},\n' \
             '  num_parts={num_parts},\n' \
             '  part_index={part_index},\n' \
+            '  rng={rng}\n' \
             ')'\
             .format(name=self.__class__.__name__,
                     batch_num=len(self._sampler),
                     part_batch_num=self._part_len,
                     num_parts=self._num_parts,
-                    part_index=self._part_index)
+                    part_index=self._part_index,
+                    rng=self._rng)
         return ret

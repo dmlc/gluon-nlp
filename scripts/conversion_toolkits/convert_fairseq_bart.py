@@ -286,7 +286,7 @@ def convert_fairseq_model(args):
     fairseq_bart = fairseq_BARTModel.from_pretrained(args.fairseq_model_path,
                                                      checkpoint_file='model.pt')
     vocab_size = convert_vocab(args, fairseq_bart)
-    gluon_cfg = convert_config(fairseq_bart.args, vocab_size,
+    gluon_cfg = convert_config(fairseq_bart.cfg.model, vocab_size,
                                BartModel.get_cfg().clone())
     with open(os.path.join(args.save_dir, 'model.yml'), 'w') as of:
         of.write(gluon_cfg.dump())

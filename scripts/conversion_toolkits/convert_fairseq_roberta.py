@@ -347,7 +347,7 @@ def convert_fairseq_model(args):
                                                            checkpoint_file='model.pt')
     vocab_size = convert_vocab(args, fairseq_roberta)
 
-    gluon_cfg = convert_config(fairseq_roberta.args, vocab_size,
+    gluon_cfg = convert_config(fairseq_roberta.cfg.model, vocab_size,
                                RobertaModel.get_cfg().clone())
     with open(os.path.join(args.save_dir, 'model.yml'), 'w') as of:
         of.write(gluon_cfg.dump())

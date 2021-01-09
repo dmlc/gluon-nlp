@@ -32,6 +32,7 @@ if VERSION.endswith('dev'):
 
 
 requirements = [
+    'boto3',
     'numpy<1.20.0',
     'sacremoses>=0.0.38',
     'yacs>=0.1.6',
@@ -76,7 +77,6 @@ setup(
     install_requires=requirements,
     extras_require={
         'extras': [
-            'boto3',
             'tqdm',
             'jieba',
             'subword_nmt',

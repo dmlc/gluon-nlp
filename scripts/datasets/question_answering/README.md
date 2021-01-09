@@ -55,12 +55,12 @@ See more useful scripts in [Offical Github](https://github.com/mandarjoshi90/tri
 Run the following command to download TriviaQA
 
 ```bash
-python3 prepare_triviaqa.py --version rc         # Download TriviaQA version 1.0 for RC (2.5G)
-python3 prepare_triviaqa.py --version unfiltered # Download unfiltered TriviaQA version 1.0 (604M)
+python3 prepare_triviaqa.py --type rc         # Download TriviaQA version 1.0 for RC (2.5G)
+python3 prepare_triviaqa.py --type unfiltered # Download unfiltered TriviaQA version 1.0 (604M)
 
 # Or download with command-line toolkits
-nlp_data prepare_triviaqa --version rc
-nlp_data prepare_triviaqa --version unfiltered
+nlp_data prepare_triviaqa --type rc
+nlp_data prepare_triviaqa --type unfiltered
 ```
 
 Directory structure of the triviaqa (rc and unfiltered) dataset will be as follows:
@@ -104,3 +104,34 @@ hotpotqa
 ├── hotpot_dev_distractor_v1.json
 ├── hotpot_test_fullwiki_v1.json
 ```
+
+## NaturalQuestions
+
+NaturalQuestions is an open domain QA dataset. This dataset contains questions from real users. For more details about this dataset, check out https://ai.google.com/research/NaturalQuestions
+
+Run the following command to download NaturalQuestions and extract gz files.
+
+```
+python3 prepare_naturalquestions.py --extract
+# Download NaturalQuestions simplified version 1.0(5.4G)
+
+# Or download with command-line toolkits
+nlp_data prepare_naturalquestions --extract
+```
+
+If you do not want to extract gz files, just run:
+```
+python3 prepare_naturalquestions.py
+
+# Or download with command-line toolkits
+nlp_data prepare_naturalquestions
+```
+
+Directory structure of the NaturalQuestions dataset will be as follows
+
+```
+NaturalQuestions
+├── v1.0-simplified_simplified-nq-train.jsonl
+├── nq-dev-all.jsonl
+```
+

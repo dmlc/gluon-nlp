@@ -1,0 +1,8 @@
+MODEL:
+  dropout: 0.2
+  DECODER:
+    pre_norm: false
+    num_layers: 1
+  ENCODER:
+    pre_norm: false
+    num_layers: 12

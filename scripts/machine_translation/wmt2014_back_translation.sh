@@ -44,7 +44,7 @@ python3 train_transformer.py \
     --seed 123 \
     --gpus 0,1,2,3
 
-Average the last 10 checkpoints
+# Average the last 10 checkpoints
 
 gluon_average_checkpoint --checkpoints transformer_big_wmt2014_de_en_${SUBWORD_ALGO}/update*.params \
     --begin 21 \

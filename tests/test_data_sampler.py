@@ -136,12 +136,14 @@ def test_split_sampler_even_size(num_samples, num_parts):
 @pytest.mark.parametrize('max_num_tokens', [200, 500])
 @pytest.mark.parametrize('max_num_sentences', [-1, 5])
 @pytest.mark.parametrize('required_batch_size_multiple', [1, 5])
+@pytest.mark.parametrize('sort_type', ['sequential', 'max'])
 @pytest.mark.parametrize('shuffle', [True, False])
 @pytest.mark.parametrize('seed', [100, None])
 def test_bounded_budget_sampler(seq_lengths, max_num_tokens, max_num_sentences,
-                                required_batch_size_multiple, shuffle, seed):
+                                required_batch_size_multiple, sort_type, shuffle, seed):
     sampler = s.BoundedBudgetSampler(seq_lengths, max_num_tokens, max_num_sentences,
-                                     required_batch_size_multiple, shuffle, seed)
+                                     required_batch_size_multiple,
+                                     sort_type=sort_type, shuffle=shuffle, seed=seed)
     print(sampler)
     total_sampled_ids = []
     for batch_sample_ids in sampler:
@@ -165,7 +167,8 @@ def test_sharded_iterator(seq_lengths, max_num_tokens, max_num_sentences,
     for part_index in range(num_parts):
         # we use independent (but same) sampler to simulate multi process situation
         sampler = s.BoundedBudgetSampler(seq_lengths, max_num_tokens, max_num_sentences,
-                                         required_batch_size_multiple, shuffle, seed=100)
+                                         required_batch_size_multiple,
+                                         shuffle=shuffle, seed=100)
         sharded_iter = s.ShardedIterator(sampler, num_parts, part_index, even_size)
         print(sharded_iter)
         for batch_sample_ids in sharded_iter:
@@ -191,7 +194,8 @@ def test_sharded_iterator_even_size(seq_lengths, max_num_tokens, max_num_sentenc
         batch_num = 0
         # we use independent (but same) sampler to simulate multi process situation
         sampler = s.BoundedBudgetSampler(seq_lengths, max_num_tokens, max_num_sentences,
-                                         required_batch_size_multiple, shuffle, seed=100)
+                                         required_batch_size_multiple,
+                                         shuffle=shuffle, seed=100)
         sharded_iter = s.ShardedIterator(sampler, num_parts, part_index, even_size)
         print(sharded_iter)
         for batch_sample_ids in sharded_iter:

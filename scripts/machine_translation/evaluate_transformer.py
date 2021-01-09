@@ -1,6 +1,7 @@
 import numpy as np
 import random
 import os
+import json
 import mxnet as mx
 from mxnet import gluon
 import argparse
@@ -29,6 +30,13 @@ def parse_args():
                         help='The source corpus for evaluation.')
     parser.add_argument('--tgt_corpus', type=str, default=None,
                         help='The target corpus for evaluation.')
+    parser.add_argument('--src_normalizer', choices=['no', 'moses'],
+                        default='moses', help='The sentence normalizer that will be '
+                                              'used to normalize the source sentence.')
+    parser.add_argument('--src_base_tokenizer', choices=['whitespace', 'moses',
+                                                         'no'],
+                        default='moses', help='The base tokenizer to tokenize the target '
+                                              'sentence into a list of tokens.')
     parser.add_argument('--src_tokenizer', choices=['spm',
                                                     'subword_nmt',
                                                     'yttm',
@@ -36,7 +44,15 @@ def parse_args():
                                                     'hf_wordpiece',
                                                     'hf_bpe'],
                         required=True, type=str,
-                        help='The source tokenizer. Only supports online encoding at present.')
+                        help='The source subword tokenizer. '
+                             'Only supports online encoding at present.')
+    parser.add_argument('--tgt_normalizer', choices=['no', 'moses'],
+                        default='moses', help='The sentence normalizer that will be '
+                                              'used to normalize the target sentence.')
+    parser.add_argument('--tgt_base_tokenizer', choices=['whitespace', 'moses',
+                                                         'no'],
+                        default='moses', help='The base tokenizer to tokenize the source '
+                                              'sentence into a list of tokens.')
     parser.add_argument('--tgt_tokenizer', choices=['spm',
                                                     'subword_nmt',
                                                     'yttm',
@@ -74,6 +90,8 @@ def parse_args():
                         help='The path to save the log files and predictions.')
     parser.add_argument('--stochastic', action='store_true',
                         help='Whether to use the stochastic beam search')
+    parser.add_argument('--temperature', type=float, default=None,
+                        help='the temperature used for softmax normalization with stochastic setting')
     parser.add_argument('--inference', action='store_true',
                         help='Whether to inference with your own data, '
                         'when applying inference, tgt_corpus is not needed and will be set to None.')
@@ -85,6 +103,9 @@ def parse_args():
     assert args.inference or args.tgt_corpus, 'requring --tgt_corpus while not using --inference'
     if args.inference:
         args.tgt_corpus = None
+    if args.stochastic:
+        if args.temperature is None:
+            args.temperature = 0.5
     logging_config(args.save_dir, console=True)
     logging.info(args)
     return args
@@ -131,13 +152,45 @@ def create_tokenizer(tokenizer_type, model_path, vocab_path):
         raise NotImplementedError
 
 
+def get_normalizer(normalize_method, lang):
+    if normalize_method == 'moses':
+        return MosesNormalizer(lang)
+    elif normalize_method == 'no':
+        return lambda x: x
+    else:
+        raise NotImplementedError
+
+
+def get_base_tokenizer(method, lang):
+    """The base tokenization method
+
+    Parameters
+    ----------
+    method
+
+    lang
+
+    Returns
+    -------
+
+    """
+    if method == 'moses':
+        return tokenizers.create('moses', lang)
+    elif method == 'whitespace':
+        return tokenizers.create('whitespace')
+    elif method == 'no':
+        return None
+    else:
+        raise NotImplementedError
+
+
 def evaluate(args):
     ctx_l = [mx.cpu()] if args.gpus is None or args.gpus == '' else [mx.gpu(int(x)) for x in
                                                                      args.gpus.split(',')]
-    src_normalizer = MosesNormalizer(args.src_lang)
-    tgt_normalizer = MosesNormalizer(args.tgt_lang)
-    base_src_tokenizer = tokenizers.create('moses', args.src_lang)
-    base_tgt_tokenizer = tokenizers.create('moses', args.tgt_lang)
+    src_normalizer = get_normalizer(args.src_normalizer, args.src_lang)
+    tgt_normalizer = get_normalizer(args.src_normalizer, args.tgt_lang)
+    base_src_tokenizer = get_base_tokenizer(args.src_base_tokenizer, args.src_lang)
+    base_tgt_tokenizer = get_base_tokenizer(args.tgt_base_tokenizer, args.tgt_lang)
 
     src_tokenizer = create_tokenizer(args.src_tokenizer,
                                      args.src_subword_model_path,
@@ -158,15 +211,16 @@ def evaluate(args):
         cfg.MODEL.dtype = 'float16'
     cfg.freeze()
     model = TransformerModel.from_cfg(cfg)
+    model.cast('float16')
     model.hybridize()
-    model.load_parameters(args.param_path, ctx=ctx_l)
+    model.load_parameters(args.param_path, ctx=ctx_l, cast_dtype=True)
     inference_model = TransformerNMTInference(model=model)
     inference_model.hybridize()
     # Construct the BeamSearchSampler
     if args.stochastic:
         scorer = BeamSearchScorer(alpha=0.0,
                                   K=0.0,
-                                  temperature=1.0,
+                                  temperature=args.temperature,
                                   from_logits=False)
     else:
         scorer = BeamSearchScorer(alpha=args.lp_alpha,
@@ -199,7 +253,8 @@ def evaluate(args):
             add_bos=True,
             add_eos=True
         )
-    else: # when applying inference, populate the fake tgt tokens
+    else:
+        # when applying inference, populate the fake tgt tokens
         all_tgt_token_ids = all_tgt_lines = [[] for i in range(len(all_src_token_ids))]
     test_dataloader = gluon.data.DataLoader(
         list(zip(all_src_token_ids,
@@ -223,16 +278,34 @@ def evaluate(args):
             src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
             tgt_token_ids = mx.np.array(tgt_token_ids, ctx=ctx, dtype=np.int32)
             tgt_valid_length = mx.np.array(tgt_valid_length, ctx=ctx, dtype=np.int32)
-            tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
-                            tgt_valid_length - 1)
-            pred_logits = mx.npx.log_softmax(tgt_pred, axis=-1)
-            nll = - mx.npx.pick(pred_logits, tgt_token_ids[:, 1:])
-            avg_nll_loss += mx.npx.sequence_mask(nll,
-                                                sequence_length=tgt_valid_length - 1,
-                                                use_sequence_length=True, axis=1).sum().asnumpy()
+            if model.layout == 'NT':
+                tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
+                                tgt_valid_length - 1)
+                pred_logits = mx.npx.log_softmax(tgt_pred, axis=-1)
+                nll = - mx.npx.pick(pred_logits, tgt_token_ids[:, 1:])
+                avg_nll_loss += mx.npx.sequence_mask(nll,
+                                                     sequence_length=tgt_valid_length - 1,
+                                                     use_sequence_length=True,
+                                                     axis=1).sum().asnumpy()
+            elif model.layout == 'TN':
+                tgt_pred = model(src_token_ids.T, src_valid_length, tgt_token_ids.T[:-1, :],
+                                 tgt_valid_length - 1)
+                pred_logits = mx.npx.log_softmax(tgt_pred, axis=-1)
+                nll = - mx.npx.pick(pred_logits, tgt_token_ids.T[1:, :])
+                avg_nll_loss += mx.npx.sequence_mask(nll,
+                                                     sequence_length=tgt_valid_length - 1,
+                                                     use_sequence_length=True,
+                                                     axis=0).sum().asnumpy()
+            else:
+                raise NotImplementedError
             ntokens += int((tgt_valid_length - 1).sum().asnumpy())
             init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
-            states = inference_model.init_states(src_token_ids, src_valid_length)
+            if model.layout == 'NT':
+                states = inference_model.init_states(src_token_ids, src_valid_length)
+            elif model.layout == 'TN':
+                states = inference_model.init_states(src_token_ids.T, src_valid_length)
+            else:
+                raise NotImplementedError
             samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
             for j in range(samples.shape[0]):
                 pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()
@@ -251,7 +324,8 @@ def evaluate(args):
             of.write('\n'.join(pred_sentences))
             of.write('\n')
 
-        sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences, ref_streams=[all_tgt_lines])        
+        sacrebleu_out = sacrebleu.corpus_bleu(sys_stream=pred_sentences,
+                                              ref_streams=[all_tgt_lines])
         logging.info('Time Spent: {}, #Sent={}, SacreBlEU={} '
                      '({:2.1f} {:2.1f} {:2.1f} {:2.1f}) '
                      '(BP={:.3f}, ratio={:.3f}, syslen={}, reflen={}), '
@@ -262,6 +336,10 @@ def evaluate(args):
                              sacrebleu_out.bp, sacrebleu_out.sys_len / sacrebleu_out.ref_len,
                              sacrebleu_out.sys_len, sacrebleu_out.ref_len,
                              avg_nll_loss, np.exp(avg_nll_loss)))
+        results = {'sacrebleu': sacrebleu_out.score,
+                   'nll': avg_nll_loss}
+        with open(os.path.join(args.save_dir, 'results.json'), 'w') as of:
+            json.dump(results, of)
     # inference only
     else:
         with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
@@ -270,7 +348,12 @@ def evaluate(args):
                 src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
                 src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
                 init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
-                states = inference_model.init_states(src_token_ids, src_valid_length)
+                if model.layout == 'NT':
+                    states = inference_model.init_states(src_token_ids, src_valid_length)
+                elif model.layout == 'TN':
+                    states = inference_model.init_states(src_token_ids.T, src_valid_length)
+                else:
+                    raise NotImplementedError
                 samples, scores, valid_length = beam_search_sampler(init_input, states, src_valid_length)
                 for j in range(samples.shape[0]):
                     pred_tok_ids = samples[j, 0, :valid_length[j, 0].asnumpy()].asnumpy().tolist()

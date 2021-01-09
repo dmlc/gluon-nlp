@@ -17,8 +17,7 @@ try:
 except ImportError:
     tqdm = None
 from .lazy_imports import try_import_boto3
-from mxnet.gluon.utils import shape_is_known, replace_file
-from collections import OrderedDict
+from mxnet.gluon.utils import replace_file
 import glob as _glob
 
 
@@ -43,90 +42,6 @@ def glob(url, separator=','):
     for pattern in patterns:
         result.extend(_glob.glob(os.path.expanduser(pattern.strip())))
     return result
-
-
-class AverageSGDTracker(object):
-    def __init__(self, params=None):
-        """Maintain a set of shadow variables "v" that is calculated by
-
-            v[:] = (1 - 1/t) v + 1/t \theta
-
-        The t is the number of training steps.
-
-        It is also known as "Polyak-Rupert averaging" applied to SGD and was rediscovered in
-        "Towards Optimal One Pass Large Scale Learning withAveraged Stochastic Gradient Descent"
-         Wei Xu (2011).
-
-        The idea is to average the parameters obtained by stochastic gradient descent.
-
-
-        Parameters
-        ----------
-        params : ParameterDict
-            The parameters that we are going to track.
-        """
-        self._track_params = None
-        self._average_params = None
-        self._initialized = False
-        self._n_steps = 0
-        if params is not None:
-            self.apply(params)
-
-    @property
-    def n_steps(self):
-        return self._n_steps
-
-    @property
-    def average_params(self):
-        return self._average_params
-
-    @property
-    def initialized(self):
-        return self._initialized
-
-    def apply(self, params):
-        """ Tell the moving average tracker which parameters we are going to track.
-
-        Parameters
-        ----------
-        params : ParameterDict
-            The parameters that we are going to track and calculate the moving average.
-        """
-        assert self._track_params is None, 'The MovingAverageTracker is already initialized and'\
-                                           ' is not allowed to be initialized again. '
-        self._track_params = params
-        self._n_steps = 0
-
-    def step(self):
-        assert self._track_params is not None, 'You will need to use `.apply(params)`' \
-                                               ' to initialize the MovingAverageTracker.'
-        for k, v in self._track_params.items():
-            assert shape_is_known(v.shape),\
-                'All shapes of the tracked parameters must be given.' \
-                ' The shape of {} is {}, and it has not been fully initialized.' \
-                ' You should call step after the first forward of the model.'.format(k, v.shape)
-        ctx = next(iter(self._track_params.values())).list_ctx()[0]
-        if self._average_params is None:
-            self._average_params = OrderedDict([(k, v.data(ctx).copy()) for k, v in self._track_params.items()])
-        self._n_steps += 1
-        decay = 1.0 / self._n_steps
-        for name, average_param in self._average_params.items():
-            average_param += decay * (self._track_params[name].data(ctx) - average_param)
-
-    def copy_back(self, params=None):
-        """ Copy the average parameters back to the given parameters
-
-        Parameters
-        ----------
-        params : ParameterDict
-            The parameters that we will copy tha average params to.
-            If it is not given, the tracked parameters will be updated
-
-        """
-        if params is None:
-            params = self._track_params
-        for k, v in params.items():
-            v.set_data(self._average_params[k])
 
 
 def file_line_number(path: str) -> int:
@@ -264,43 +179,6 @@ def logging_config(folder: Optional[str] = None,
     return folder
 
 
-# TODO(sxjscience) Consider to move it into the official MXNet gluon package
-#  Also currently we have not printed the grad_req flag in Parameters, i.e.,
-#  print(net.collect_params()) will not print the grad_req flag.
-def count_parameters(params) -> Tuple[int, int]:
-    """
-
-    Parameters
-    ----------
-    params
-        The input parameter dict
-
-    Returns
-    -------
-    num_params
-        The number of parameters that requires gradient
-    num_fixed_params
-        The number of parameters that does not require gradient
-    """
-    # TODO(sxjscience), raise warning if there are -1/0s in the parameters
-    num_params = 0
-    num_fixed_params = 0
-    for k, v in params.items():
-        if v.grad_req != 'null':
-            if v._data is None:
-                warnings.warn('"{}" is not initialized! The total parameter count '
-                              'will not be correct.'.format(k))
-            else:
-                num_params += np.prod(v.shape)
-        else:
-            if v._data is None:
-                warnings.warn('"{}" is not initialized! The total fixed parameter count '
-                              'will not be correct.'.format(k))
-            else:
-                num_fixed_params += np.prod(v.shape)
-    return num_params, num_fixed_params
-
-
 def set_seed(seed):
     import mxnet as mx
     mx.random.seed(seed)
@@ -322,7 +200,22 @@ def grouper(iterable, n, fillvalue=None):
     args = [iter(iterable)] * n
     return itertools.zip_longest(*args, fillvalue=fillvalue)
 
+
 def repeat(iterable, count=None):
+    """Repeat a basic iterator for multiple rounds
+
+    Parameters
+    ----------
+    iterable
+        The basic iterable
+    count
+        Repeat the basic iterable for "count" times. If it is None, it will be an infinite iterator.
+
+    Returns
+    -------
+    new_iterable
+        A new iterable in which the basic iterator has been repeated for multiple rounds.
+    """
     if count is None:
         while True:
             for sample in iterable:
@@ -331,6 +224,7 @@ def repeat(iterable, count=None):
         for i in range(count):
             for sample in iterable:
                 yield sample
+
 
 def parse_ctx(data_str):
     import mxnet as mx
@@ -469,8 +363,11 @@ def download(url: str,
     """
     is_s3 = url.startswith(S3_PREFIX)
     if is_s3:
-        boto3 = try_import_boto3()
+        boto3, botocore = try_import_boto3()
         s3 = boto3.resource('s3')
+        if boto3.session.Session().get_credentials() is None:
+            from botocore.handlers import disable_signing
+            s3.meta.client.meta.events.register('choose-signer.s3.*', disable_signing)
         components = url[len(S3_PREFIX):].split('/')
         if len(components) < 2:
             raise ValueError('Invalid S3 url. Received url={}'.format(url))
@@ -610,12 +507,16 @@ def init_comm(backend, gpus):
     Parameters
     ----------
     backend
+        The communication backend
     gpus
+
 
     Returns
     -------
     store
+        The kvstore
     num_workers
+        The total number of workers
     rank
     local_rank
     is_master_node

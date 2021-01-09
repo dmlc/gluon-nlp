@@ -86,7 +86,7 @@ class YTTMTokenizer(BaseTokenizerWithVocab):
             ret = []
             for ele_tokens in tokens:
                 sentence = ''.join(ele_tokens)
-                if sentence[0] == self._meta_symbol:
+                if len(sentence) > 0 and sentence[0] == self._meta_symbol:
                     sentence = sentence[1:]
                 sentence = sentence.replace(self._meta_symbol, ' ')
                 ret.append(sentence)
