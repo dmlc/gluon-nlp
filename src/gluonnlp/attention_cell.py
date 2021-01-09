@@ -603,7 +603,7 @@ class MultiHeadAttentionCell(HybridBlock):
 
 
 class RelAttentionScoreCell(HybridBlock):
-    """Get the score based on the query and relative position index. This is used for implementing
+    r"""Get the score based on the query and relative position index. This is used for implementing
      relative attention.
 
     For the multi-head attention with relative positional encoding, we have the formula
