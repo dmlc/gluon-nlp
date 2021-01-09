@@ -10,7 +10,7 @@ python3 ${SUBMIT_SCRIPT_PATH} \
     --source-ref fix_benchmark3 \
     --job-type ${INSTANCE_TYPE} \
     --save-path temp \
-    --name test_backbone_benchmark \
+    --name test_backbone_benchmark_${INSTANCE_TYPE} \
     --work-dir scripts/benchmarks \
     --remote https://github.com/sxjscience/gluon-nlp/ \
     --command "bash run_backbone_bench_${INSTANCE_TYPE}.sh | tee stdout.log" \
