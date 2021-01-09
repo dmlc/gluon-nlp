@@ -735,7 +735,7 @@ class RelAttentionScoreCell(HybridBlock):
         return self._layout
 
     def forward(self, rel_positions, query=None):
-        """
+        """Forward function
 
         Parameters
         ----------
@@ -745,7 +745,7 @@ class RelAttentionScoreCell(HybridBlock):
             the :math:`j-th` element of memory.
         query
             The query for computing the relative scores. The shape depends on the layout.
-            If we use T5 attention, the query won't be used
+            If we use T5 attention, the query won't be used.
 
         Returns
         -------
