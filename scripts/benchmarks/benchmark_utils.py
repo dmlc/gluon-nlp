@@ -883,7 +883,7 @@ class GluonNLPBackboneBenchmark:
         else:
             model = model_cls.from_cfg(cfg)
         model.load_parameters(backbone_param_path, ctx=ctx)
-        model.hybridize()
+        model.hybridize(static_alloc=True)
         vocab_size = cfg.MODEL.vocab_size
         if hasattr(cfg.MODEL, 'units'):
             out_units = cfg.MODEL.units
@@ -937,7 +937,7 @@ class GluonNLPBackboneBenchmark:
                 mxnet.npx.waitall()
         else:
             raise NotImplementedError
-        timeit.repeat(train_step, repeat=1, number=3)
+        timeit.repeat(train_step, repeat=1, number=5)
         mxnet.npx.waitall()
         runtimes = timeit.repeat(train_step, repeat=self._repeat, number=3)
         mxnet.npx.waitall()
