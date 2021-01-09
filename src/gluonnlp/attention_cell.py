@@ -604,7 +604,9 @@ class RelAttentionScoreCell(HybridBlock):
 
     For the multi-head attention with relative positional encoding, we have the formula:
 
-    out = softmax(\frac(Q K^T + R}{\sqrt(d)}) V
+    .. code-block: none
+
+        out = softmax(\frac(Q K^T + R}{\sqrt(d)}) V
 
     Here, R is the relative positional encoding matrix. Usually, R_{i, j} is calculate based on the
     relative positional difference $i - j$.
