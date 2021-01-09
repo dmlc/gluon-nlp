@@ -115,8 +115,8 @@ docs/html
 
 # release
 scripts/*.zip
-docs/examples/*.zip
-docs/examples/*/*.ipynb
+docs/tutorials/*.zip
+docs/tutorials/*/*.ipynb
 
 conda
 

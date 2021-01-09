@@ -1,13 +1,15 @@
-# Datasets
-## OpenWebTextCorpus
+# Pretraining with ELECTRA
+## Datasets
+### OpenWebTextCorpus
 Following the instruction of [Prepare OpenWebTextCorpus](../datasets/pretrain_corpus#openwebtext), download and prepare the dataset, obtaining a total of 20610 text files in the folder `prepared_owt`.
 
 ```bash
 python3 data_preprocessing.py --input prepared_owt --output preprocessed_owt --max_seq_length 128 --shuffle
 ```
 The above command allows us to generate the preprocessed Numpy features saved in `.npz`.
-# Pretrain Model
-## ELECTRA
+
+## Pretrain Model
+### ELECTRA
 Following [Official Quickstart](https://github.com/google-research/electra#quickstart-pre-train-a-small-electra-model), pretrain a small model using OpenWebText as pretraining corpus. Note that [horovod](https://github.com/horovod/horovod) needs to be installed in advance, if `comm_backend` is set to `horovod`.
 
 ```bash

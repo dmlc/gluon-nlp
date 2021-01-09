@@ -25,19 +25,19 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
         The language to tokenize. Default is None, and we will choose the tokenizer
         automatically based on the language:
 
-        en --> 'en_core_web_sm'
-        de --> 'de_core_news_sm'
-        fr --> 'fr_core_news_sm'
-        ja --> 'ja_core_news_sm'
+        - en --> 'en_core_web_sm'
+        - de --> 'de_core_news_sm'
+        - fr --> 'fr_core_news_sm'
+        - ja --> 'ja_core_news_sm'
 
         For more details about how to set this flag, you may refer to
         https://spacy.io/usage/models for supported languages.
 
-        Also, you may refer to
-        https://github.com/explosion/spacy-models/blob/master/compatibility.json
+        Also, you may refer to https://github.com/explosion/spacy-models/blob/master/compatibility.json
+
     vocab
-        The vocabulary of the tokenizer. Can be optional. You must specify this if you
-        will need to map the raw text into integers.
+        The vocabulary of the tokenizer. Can be optional. You must specify this if you will need to map
+        the raw text into integers.
 
     Examples
     --------
@@ -49,12 +49,13 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
     >>> tokenizer.encode('Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools'
     ...                  ' zur Verfügung.')
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
-'zur', 'Verfügung', '.']
+    'zur', 'Verfügung', '.']
     >>> tokenizer = gluonnlp.data.SpacyTokenizer(model='de_core_news_sm')
     >>> tokenizer.encode('Das Gluon NLP-Toolkit stellt eine Reihe von Textverarbeitungstools'
     ...                  ' zur Verfügung.')
     ['Das', 'Gluon', 'NLP-Toolkit', 'stellt', 'eine', 'Reihe', 'von', 'Textverarbeitungstools', \
-'zur', 'Verfügung', '.']
+    'zur', 'Verfügung', '.']
+
     """
 
     def __init__(self, lang: Optional[str] = 'en', model: Optional[str] = None,

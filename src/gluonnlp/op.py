@@ -1,12 +1,13 @@
-import mxnet as mx
-from mxnet import np, npx
-import math
-from mxnet import use_np
 __all__ = ['select_vectors_by_position', 'add_vectors_by_position',
            'update_vectors_by_position',
            'gumbel_softmax', 'trunc_gumbel',
            'relative_position_bucket',
            'l2_normalize']
+
+import mxnet as mx
+from mxnet import np, npx
+import math
+from mxnet import use_np
 
 
 @use_np
@@ -62,7 +63,6 @@ def add_vectors_by_position(data, increment, positions):
 
     Parameters
     ----------
-    F
     data
         Input tensor of the array to be updated.
         Shape (batch_size, seq_length, ...)
@@ -110,8 +110,7 @@ def update_vectors_by_position(data, val, positions):
 
     Parameters
     ----------
-    F
-    data:
+    data
         Input tensor of the array to be updated.
         Shape (batch_size, seq_length)
     val
@@ -242,7 +241,6 @@ def relative_position_bucket(relative_position,
 
     Parameters
     ----------
-    F
     relative_position
         Shape (...,)
     bidirectional
