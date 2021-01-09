@@ -880,13 +880,12 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
         Parameters
         ----------
         hidden
-            The hidden representation
-            Shape (..., in_units)
+            The hidden representation/ Shape (..., in_units)
 
         Returns
         -------
         logits
-            Shape (..., |V|)
+            Shape (..., :math:`|V|`)
 
         """
         if self._cutoffs is None:
