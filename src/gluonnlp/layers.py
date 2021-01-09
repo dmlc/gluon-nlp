@@ -26,7 +26,7 @@ from mxnet import np, npx
 from mxnet import use_np
 from mxnet.gluon import nn, HybridBlock, Parameter, Constant
 import numpy as _np
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Dict
 from .op import relative_position_bucket
 
 
