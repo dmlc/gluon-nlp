@@ -608,26 +608,27 @@ class RelAttentionScoreCell(HybridBlock):
 
         out = softmax(\frac(Q K^T + R}{\sqrt(d)}) V
 
-    Here, R is the relative positional encoding matrix. Usually, R_{i, j} is calculate based on the
-    relative positional difference $i - j$.
+    Here, R is the relative positional encoding matrix. Usually, :math:`R_{i, j}` is calculate based on the
+    relative positional difference :math:`i - j`.
 
     This function aims at generating the R matrix given the query and the relative positions.
     We support the following methods:
 
     - method = 'transformer_xl'
-        R_{i, j} = <Q, W S_{i - j}>, in which S_{i, j} is the sinusoidal embedding and
-        W is a Dense layer that maps S_{i - j} to the same dimension as the query.
+        :math:`R_{i, j} = <Q, W S_{i - j}>`, in which :math:`S_{i, j}` is the sinusoidal embedding and
+        :math:`W` is a Dense layer that maps :math:`S_{i - j}` to the same dimension as the query.
         This is proposed in paper:
 
             [ACL2019] Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context
 
     - method = 'shaw'
-        R_{i, j} = < Q, E_{i - j}>, in which E_{i - j} is the learned positional embedding
+        :math:`R_{i, j} = < Q, E_{i - j}>`, in which :math:`E_{i - j}` is the learned positional embedding
         This is proposed in paper:
 
             [NAACL2018] Self-Attention with Relative Position Representations
+
     - method = 't5'
-        R_{i, j} = E_{i - j}, in which E_{i - j} is the bucket positional embedding.
+        :math:`R_{i, j} = E_{i - j}`, in which :math:`E_{i - j}` is the bucket positional embedding.
         This is proposed in paper:
 
             [Arxiv2019] Exploring the Limits of Transfer Learning with a Unified
