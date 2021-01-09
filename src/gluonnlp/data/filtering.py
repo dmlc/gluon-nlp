@@ -152,7 +152,7 @@ class LanguageIdentifier:
             Use the compressed fasttext model "lid.176.ftz"
             from  https://fasttext.cc/docs/en/language-identification.html
 
-    ..code-block:: none
+    .. code-block:: none
 
         References:
 
