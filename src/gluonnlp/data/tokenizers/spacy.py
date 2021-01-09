@@ -25,11 +25,6 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
         The language to tokenize. Default is None, and we will choose the tokenizer
         automatically based on the language:
 
-        - en --> 'en_core_web_sm'
-        - de --> 'de_core_news_sm'
-        - fr --> 'fr_core_news_sm'
-        - ja --> 'ja_core_news_sm'
-
         For more details about how to set this flag, you may refer to
         https://spacy.io/usage/models for supported languages.
 
