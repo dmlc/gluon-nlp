@@ -608,6 +608,7 @@ class RelAttentionScoreCell(HybridBlock):
 
         out = softmax(\frac(Q K^T + R}{\sqrt(d)}) V
 
+
     Here, :math:`R` is the relative positional encoding matrix.
 
     Usually, :math:`R_{i, j}` is calculate based on the
