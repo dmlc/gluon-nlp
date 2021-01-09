@@ -156,28 +156,28 @@ class LanguageIdentifier:
 
         References:
 
-            @article{joulin2016bag,
-              title={Bag of Tricks for Efficient Text Classification},
-              author={Joulin, Armand and Grave, Edouard and Bojanowski, Piotr and Mikolov, Tomas},
-              journal={arXiv preprint arXiv:1607.01759},
-              year={2016}
-            }
+        @article{joulin2016bag,
+          title={Bag of Tricks for Efficient Text Classification},
+          author={Joulin, Armand and Grave, Edouard and Bojanowski, Piotr and Mikolov, Tomas},
+          journal={arXiv preprint arXiv:1607.01759},
+          year={2016}
+        }
 
-            @article{joulin2016fasttext,
-              title={FastText.zip: Compressing text classification models},
-              author={Joulin, Armand and Grave, Edouard and Bojanowski, Piotr and Douze, Matthijs and J{\'e}gou, H{\'e}rve and Mikolov, Tomas},
-              journal={arXiv preprint arXiv:1612.03651},
-              year={2016}
-            }
+        @article{joulin2016fasttext,
+          title={FastText.zip: Compressing text classification models},
+          author={Joulin, Armand and Grave, Edouard and Bojanowski, Piotr and Douze, Matthijs and J{\'e}gou, H{\'e}rve and Mikolov, Tomas},
+          journal={arXiv preprint arXiv:1612.03651},
+          year={2016}
+        }
 
-            @inproceedings{lui2012langid,
-              title={langid. py: An off-the-shelf language identification tool},
-              author={Lui, Marco and Baldwin, Timothy},
-              booktitle={Proceedings of the ACL 2012 system demonstrations},
-              pages={25--30},
-              year={2012},
-              organization={Association for Computational Linguistics}
-            }
+        @inproceedings{lui2012langid,
+          title={langid. py: An off-the-shelf language identification tool},
+          author={Lui, Marco and Baldwin, Timothy},
+          booktitle={Proceedings of the ACL 2012 system demonstrations},
+          pages={25--30},
+          year={2012},
+          organization={Association for Computational Linguistics}
+        }
 
     """
     def __init__(self, algo='fasttext_compressed', model_path=None):
