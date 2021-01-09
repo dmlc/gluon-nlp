@@ -76,3 +76,12 @@ Internally, it will train the following models on SQuAD 2.0 dataset:
 | roberta_large      |
 | gluon_en_cased_bert_base_v1    |
 | mobilebert         |
+
+## Benchmarking NLP Backbones
+```bash
+# Test for g4dn.2x
+bash backbone_benchmark/run_batch_backbone_benchmark.sh g4dn.2x
+
+# Test for p3.2x
+bash backbone_benchmark/run_batch_backbone_benchmark.sh p3.2x
+```
