@@ -606,11 +606,12 @@ class RelAttentionScoreCell(HybridBlock):
     """Get the score based on the query and relative position index. This is used for implementing
      relative attention.
 
-    For the multi-head attention with relative positional encoding, we have the formula:
+    For the multi-head attention with relative positional encoding, we have the formula
 
     .. math::
 
         out = \text{softmax}(\frac{Q K^T + R}{\sqrt{d}}) V
+
 
     Here, :math:`R` is the relative positional encoding matrix.
 
