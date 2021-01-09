@@ -1,8 +1,8 @@
 #!/bin/bash
 
 set -ex
-LOG_PATH=${1:-submit_backbone_benchmark.log}
-INSTANCE_TYPE=${2:-g4dn.2x}
+INSTANCE_TYPE=${1:-g4dn.2x}
+LOG_PATH=${2:-submit_backbone_benchmark.log}
 SUBMIT_SCRIPT_PATH=$(dirname "$0")/../../../tools/batch/submit-job.py
 
 python3 ${SUBMIT_SCRIPT_PATH} \
