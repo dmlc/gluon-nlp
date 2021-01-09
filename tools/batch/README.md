@@ -79,8 +79,8 @@ Internally, it will train the following models on SQuAD 2.0 dataset:
 
 ## Benchmarking NLP Backbones
 ```bash
-# Test for g4dn.2x
-bash backbone_benchmark/run_batch_backbone_benchmark.sh g4dn.2x g4dn.2x_result.log
+# Test for g4dn.4x
+bash backbone_benchmark/run_batch_backbone_benchmark.sh g4dn.4x g4dn.4x_result.log
 
 # Test for p3.2x
 bash backbone_benchmark/run_batch_backbone_benchmark.sh p3.2x p3.2x_result.log
