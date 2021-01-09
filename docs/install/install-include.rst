@@ -56,7 +56,7 @@ Select your preferences and run the install command.
 
            .. code-block:: bash
 
-              # Install MXNet
+              # Install Apache MXNet (incubating) (Disclaimer: This is an unreleased nightly build and is used for the purpose of development).
               python3 -m pip install -U --pre "mxnet>=2.0.0" -f https://dist.mxnet.io/python
 
               # Install GluonNLP
@@ -83,7 +83,7 @@ Select your preferences and run the install command.
 
            .. code-block:: bash
 
-              # Install MXNet
+              # Install Apache MXNet (incubating) (Disclaimer: This is an unreleased nightly build and is used for the purpose of development).
               python3 -m pip install -U --pre "mxnet>=2.0.0" -f https://dist.mxnet.io/python
 
               # Install GluonNLP
@@ -95,6 +95,7 @@ Select your preferences and run the install command.
 
            .. code-block:: bash
 
+              # Install Apache MXNet (incubating) (Disclaimer: This is an unreleased nightly build and is used for the purpose of development).
               # Here we assume CUDA 10.2 is installed. You can change the number
               # according to your own CUDA version, e.g., cu100, cu101
               python3 -m pip install -U --pre "mxnet-cu102>=2.0.0" -f https://dist.mxnet.io/python
