@@ -33,7 +33,7 @@ class NLTKSegmenter:
 
 
 class Sharding:
-    def __init__(self, input_files, output_name_prefix, n_training_shards, n_test_shards, fraction_test_set):
+    def __init__(self, input_files, output_name_prefix, n_training_shards, n_test_shards, fraction_test_set, segmenting_num_worker):
         assert len(input_files) > 0, 'The input file list must contain at least one file.'
         assert n_training_shards > 0, 'There must be at least one output shard.'
         assert n_test_shards > 0, 'There must be at least one output shard.'
@@ -41,6 +41,7 @@ class Sharding:
         self.n_training_shards = n_training_shards
         self.n_test_shards = n_test_shards
         self.fraction_test_set = fraction_test_set
+        self.segmenting_num_worker = segmenting_num_worker
 
         self.input_files = input_files
 
@@ -90,23 +91,23 @@ class Sharding:
 
         if use_multiprocessing == 'manager':
             pass
-            ##To do: debug
+
             time1 = time.time()
             manager = multiprocessing.Manager()
             return_dict = manager.dict()
             jobs = []
-            n_processes = 16    # in addition to the main process, total = n_proc+1
+            n_processes = self.segmenting_num_worker    # in addition to the main process, total = n_proc+1
 
             def work(articles, return_dict, rank):
-                print(len(articles))
+                print('process {} needs to segment {} articles'.format(rank,len(articles)))
                 sentences = {}
                 for i, article in enumerate(articles):
                     sentences[article] = segmenter.segment_string(articles[article])
 
                     if i % 100 == 0:
-                        print('Segmenting article', i, rank)
+                        print('process {} finish article {}'.format(rank,i))
 
-                print('finish:', rank)
+                print('process {} finish segment'.format(rank))
                 return_dict.update(sentences)
             rank = 0
             for item in chunks(self.articles, len(self.articles)//(n_processes)+1):
@@ -125,7 +126,7 @@ class Sharding:
 
             time2 = time.time()
 
-            print('finish spend:', time2-time1)
+            print('total segment spend  spend:', time2-time1)
         elif use_multiprocessing == 'queue':
             work_queue = multiprocessing.Queue()
             jobs = []
@@ -366,6 +367,8 @@ def get_parser():
     parser = argparse.ArgumentParser(description='Download the raw txt BookCorpus')
     parser.add_argument("-o", "--output", default="BookCorpus",
                         help="directory for downloaded  files")
+    parser.add_argument("--segment_num_worker", type=int, default=8,
+                        help="process num when segmenting articles")
     parser.add_argument("--segment_sentences", action='store_true',
                         help="directory for downloaded  files")
     return parser
@@ -398,7 +401,7 @@ def main(args):
         segmenter = NLTKSegmenter()
         if not os.path.exists('./BookCorpus/one_sentence_per_line/'):
             os.mkdir('./BookCorpus/one_sentence_per_line/')
-        sharding = Sharding(['BookCorpus/bookcorpus.txt'], 'BookCorpus/one_sentence_per_line/', 128, 1, 0)
+        sharding = Sharding(['BookCorpus/bookcorpus.txt'], 'BookCorpus/one_sentence_per_line/', 128, 1, 0 ,args.segment_num_worker)
 
         sharding.load_articles()
         sharding.segment_articles_into_sentences(segmenter)
