@@ -34,13 +34,13 @@ class SpacyTokenizer(BaseTokenizerWithVocab):
         https://spacy.io/usage/models for supported languages.
 
         Also, you may refer to https://github.com/explosion/spacy-models/blob/master/compatibility.json
+
     vocab
         The vocabulary of the tokenizer. Can be optional. You must specify this if you
         will need to map the raw text into integers.
 
     Examples
     --------
-
     >>> import gluonnlp
     >>> tokenizer = gluonnlp.data.SpacyTokenizer()
     >>> tokenizer.encode('Gluon NLP toolkit provides a suite of text processing tools.')
