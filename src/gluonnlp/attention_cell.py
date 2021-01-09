@@ -739,7 +739,7 @@ class RelAttentionScoreCell(HybridBlock):
         return self._layout
 
     def forward(self, rel_positions, query=None):
-        """Forward function
+        r"""Forward function
 
         Parameters
         ----------
