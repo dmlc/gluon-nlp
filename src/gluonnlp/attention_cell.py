@@ -637,6 +637,7 @@ class RelAttentionScoreCell(HybridBlock):
             [Arxiv2019] Exploring the Limits of Transfer Learning with a Unified
         Text-to-Text Transformer
 
+
     Like in MultiHeadAttentionCell, we support different layouts to cope with the query matrix.
 
     - layout="NKT"
