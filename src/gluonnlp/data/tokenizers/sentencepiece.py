@@ -131,12 +131,11 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
         else:
             self._vocab = load_vocab(vocab)
         # Sanity check
-        assert self._vocab.all_tokens == sp_model_all_tokens
+        assert len(self._vocab.all_tokens) >= len(sp_model_all_tokens)
+        assert self._vocab.all_tokens[:len(sp_model_all_tokens)] == sp_model_all_tokens
         for token in self._vocab.special_tokens:
             piece_id = self._sp_model.piece_to_id(token)
-            if self._sp_model.is_unknown(piece_id):
-                assert self._vocab[token] == self._sp_model.unk_id()
-            else:
+            if not self._sp_model.is_unknown(piece_id):
                 assert self._sp_model.is_control(piece_id), \
                     'Vocab mismatch! "{}" is a special token in the given vocab but not in the ' \
                     'sentencepiece model!'.format(token)
