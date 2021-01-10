@@ -376,7 +376,6 @@ def get_parser():
 
 
 def main(args):
-    '''
     url =_URLS['books1']
     file_hash = _URL_FILE_STATS[url]
     target_download_location = os.path.join(args.output,
@@ -391,17 +390,20 @@ def main(args):
     tar.close()
     print("Done unarchiving within {:.2f} seconds".format(time.time() - start_time))
     print("start transfer to one article per line")
-    format = BookscorpusTextFormatting('BookCorpus/books1/epubtxt', 'BookCorpus/bookcorpus.txt')
+    input_name = os.path.join(args.output, 'books1/epubtxt/')
+    output_name = os.path.join(args.output,'bookcorpus.txt' )
+    format = BookscorpusTextFormatting(input_name, output_name)
     format.merge()
     print("end format")
-    '''
     if args.segment_sentences:
         print("start to transfer bookcorpus to one sentence per line")
         t1 = time.time()
         segmenter = NLTKSegmenter()
-        if not os.path.exists('./BookCorpus/one_sentence_per_line/'):
-            os.mkdir('./BookCorpus/one_sentence_per_line/')
-        sharding = Sharding(['BookCorpus/bookcorpus.txt'], 'BookCorpus/one_sentence_per_line/', 128, 1, 0 ,args.segment_num_worker)
+        input_name = os.path.join(args.output, 'bookcorpus.txt')
+        output_name = os.path.join(args.output, 'one_sentence_per_line/')
+        if not os.path.exists(output_name):
+            os.mkdir(output_name)
+        sharding = Sharding([input_name], output_name, 128, 1, 0 ,args.segment_num_worker)
 
         sharding.load_articles()
         sharding.segment_articles_into_sentences(segmenter)
