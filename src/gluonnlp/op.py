@@ -244,7 +244,6 @@ def relative_position_bucket(relative_position,
 
     Parameters
     ----------
-    F
     relative_position
         Shape (...,)
     bidirectional
