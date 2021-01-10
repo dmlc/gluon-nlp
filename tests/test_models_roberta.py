@@ -57,17 +57,17 @@ def test_robert_small_config(compute_layout, ctx):
         roberta_mlm_model = RobertaForMLM(cfg)
         roberta_mlm_model.initialize()
         roberta_mlm_model.hybridize()
-        contextual_embedding, pooled_out, mlm_scores = roberta_mlm_model(inputs, valid_length,
+        contextual_embedding, pooled_out, mlm_score = roberta_mlm_model(inputs, valid_length,
                                                                          masked_positions)
         roberta_mlm_model_tn = RobertaForMLM(cfg_tn)
         roberta_mlm_model_tn.share_parameters(roberta_mlm_model.collect_params())
         roberta_mlm_model_tn.hybridize()
-        contextual_embedding_tn, pooled_out_tn, mlm_scores_tn =\
+        contextual_embedding_tn, pooled_out_tn, mlm_score_tn =\
             roberta_mlm_model_tn(inputs.T, valid_length.T, masked_positions)
         assert_allclose(np.swapaxes(contextual_embedding_tn.asnumpy(), 0, 1),
                         contextual_embedding.asnumpy(), 1E-3, 1E-3)
         assert_allclose(pooled_out_tn.asnumpy(), pooled_out.asnumpy(), 1E-3, 1E-3)
-        assert_allclose(mlm_scores_tn.asnumpy(), mlm_scores.asnumpy(), 1E-3, 1E-3)
+        assert_allclose(mlm_score_tn.asnumpy(), mlm_score.asnumpy(), 1E-3, 1E-3)
 
         # Test for fp16
         if ctx.device_type == 'gpu':
