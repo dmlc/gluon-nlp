@@ -18,33 +18,11 @@ Community
 
       Feature requests, bug reports, design and roadmap discussion.
 
-
-   .. card::
-      :title: Github Projects
-      :link: https://github.com/dmlc/gluon-nlp/projects
-
-      Active roadmaps, and current and past projects.
-
-
    .. card::
       :title: GluonNLP Slack Channel
       :link: https://apache-mxnet.slack.com/messages/CCCDM10V9
 
       #gluon-nlp Slack channel. Click the `sign-up link <https://join.slack.com/t/apache-mxnet/shared_invite/zt-5n577awn-iEQhjazdppqbAV~0K7_Vvg>`_ to register.
-
-
-   .. card::
-      :title: Discuss Forum
-      :link: https://discuss.mxnet.io/c/gluon
-
-      General discussions, usage experiences, and questions.
-
-
-   .. card::
-      :title: 中文论坛
-      :link: https://discuss.gluon.ai/c/gluon-nlp
-
-      中文用户使用讨论，提问与心得分享
 
 
 Interested in contributing to GluonNLP? Check our contribution guide:

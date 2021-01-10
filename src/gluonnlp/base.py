@@ -29,7 +29,7 @@ FLOAT_TYPES = (float, np.float16, np.float32, np.float64)
 
 def get_home_dir():
     """Get home directory for storing datasets/models/pre-trained word embeddings"""
-    _home_dir = os.environ.get('MXNET_HOME', os.path.join('~', '.mxnet'))
+    _home_dir = os.environ.get('GLUONNLP_HOME', os.path.join('~', '.gluonnlp'))
     # expand ~ to actual path
     _home_dir = os.path.expanduser(_home_dir)
     return _home_dir
@@ -38,13 +38,13 @@ def get_home_dir():
 def get_data_home_dir():
     """Get home directory for storing the datasets"""
     home_dir = get_home_dir()
-    return os.path.join(home_dir, 'datasets', 'nlp')
+    return os.path.join(home_dir, 'datasets')
 
 
 def get_model_zoo_home_dir():
     """Get the local directory for storing pretrained models"""
     home_dir = get_home_dir()
-    return os.path.join(home_dir, 'models', 'nlp')
+    return os.path.join(home_dir, 'models')
 
 
 def get_model_zoo_checksum_dir():
@@ -56,9 +56,8 @@ def get_model_zoo_checksum_dir():
 
 def get_repo_url():
     """Return the base URL for Gluon dataset and model repository """
-    # TODO(sxjscience) Revise later by calling gluon.utils._get_repo_url
     default_repo = 's3://gluonnlp-numpy-data'
-    repo_url = os.environ.get('MXNET_GLUON_REPO', default_repo)
+    repo_url = os.environ.get('GLUONNLP_REPO_URL', default_repo)
     if repo_url[-1] != '/':
         repo_url = repo_url + '/'
     return repo_url

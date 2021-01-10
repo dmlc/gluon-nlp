@@ -21,9 +21,9 @@ compile_notebook () {
     python3 tools/batch/submit-job.py --region us-east-1 \
             --wait \
             --timeout 3600 \
-            --saved-output docs/examples \
+            --saved-output docs/tutorials \
             --name GluonNLP-Docs-${refs}-${prnumber}-${runnumber} \
-            --save-path ${runnumber}/gluon-nlp/docs/examples \
+            --save-path ${runnumber}/gluon-nlp/docs/tutorials \
             --work-dir . \
             --source-ref ${refs} \
             --remote https://github.com/${remote} \
@@ -50,7 +50,7 @@ compile_notebook () {
 
 pids=()
 
-for f in $(find docs/examples -type f -name '*.md' -print); do
+for f in $(find docs/tutorials -type f -name '*.md' -print); do
     compile_notebook "$f" &
     pids+=($!)
 done;

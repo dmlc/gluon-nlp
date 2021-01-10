@@ -34,7 +34,7 @@ from typing import Tuple
 import mxnet as mx
 from mxnet import use_np, np, npx
 from mxnet.gluon import HybridBlock, nn
-from ..registry import BACKBONE_REGISTRY
+from .base import BACKBONE_REGISTRY
 from .transformer import TransformerEncoderLayer
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
@@ -264,12 +264,12 @@ class BertTransformer(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             - layout = 'NT'
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
+
         valid_length
             Shape (batch_size,)
 
@@ -280,6 +280,7 @@ class BertTransformer(HybridBlock):
                 Shape (batch_size, seq_length, C_out)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_out)
+
         """
         if self.layout == 'NT':
             time_axis, batch_axis = 1, 0
@@ -408,20 +409,21 @@ class BertModel(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
+            If the inputs contain two sequences, we will set different token types for the first
+             sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (batch_size, seq_length)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
         valid_length :
             The valid length of each sequence
             Shape (batch_size,)
@@ -433,7 +435,8 @@ class BertModel(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units).
-        pooled_output :
+
+        pooled_output
             This is optional. Shape (batch_size, units)
         """
         initial_embedding = self.get_initial_embedding(inputs, token_types)
@@ -457,27 +460,30 @@ class BertModel(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
+            The type of tokens. If None, it will be initialized as all zero.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-            If None, it will be initialized as all zero
 
         Returns
         -------
         embedding
             The initial embedding that will be fed into the encoder
+
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_emb)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_emb)
+
         """
         if self.layout == 'NT':
             time_axis, batch_axis = 1, 0
@@ -501,14 +507,19 @@ class BertModel(HybridBlock):
         """Generate the representation given the inputs.
 
         This is used for pre-training or fine-tuning a bert model.
-        Get the first token of the whole sequence which is [CLS]
+        Get the first token of the whole sequence which is [CLS].
 
+        Parameters
+        ----------
         sequence
             - layout = 'NT'
                 Shape (batch_size, sequence_length, units)
             - layout = 'TN'
                 Shape (sequence_length, batch_size, units)
-        return:
+
+        Returns
+        -------
+        outputs
             Shape (batch_size, units)
         """
         if self.layout == 'NT':
@@ -618,20 +629,21 @@ class BertForMLM(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
+            If the inputs contain two sequences, we will set different token types for the first
+             sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
         valid_length :
             The valid length of each sequence
             Shape (batch_size,)
@@ -646,6 +658,7 @@ class BertForMLM(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units)
+
         pooled_out
             Shape (batch_size, units)
         mlm_scores :
@@ -716,20 +729,21 @@ class BertForPretrain(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
+            If the inputs contain two sequences, we will set different token types for the first
+             sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
         valid_length
             The valid length of each sequence
             Shape (batch_size,)
@@ -744,6 +758,7 @@ class BertForPretrain(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units).
+
         pooled_out
             Shape (batch_size, units)
         nsp_score :

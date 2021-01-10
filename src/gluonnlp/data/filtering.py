@@ -17,7 +17,7 @@ class MosesNormalizer:
     """Normalizes the input sentence. Currently, we support the combination of the
 
     Moses Punctuation Normalizer 'normalize-punctuation.perl' and the
-     'remove-non-printing-char.perl' in [mosesdecoder](https://github.com/moses-smt/mosesdecoder):
+    'remove-non-printing-char.perl' in [mosesdecoder](https://github.com/moses-smt/mosesdecoder):
 
     Also, we will normalize the
 
@@ -138,7 +138,7 @@ class ProfanityFilter:
 
 
 class LanguageIdentifier:
-    """Detect the language of the input corpus.
+    r"""Detect the language of the input corpus.
 
     We currently support three pretrained models:
 
@@ -152,7 +152,9 @@ class LanguageIdentifier:
             Use the compressed fasttext model "lid.176.ftz"
             from  https://fasttext.cc/docs/en/language-identification.html
 
-    References:
+    .. code-block:: none
+
+        References:
 
         @article{joulin2016bag,
           title={Bag of Tricks for Efficient Text Classification},

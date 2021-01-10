@@ -74,12 +74,12 @@ def test_bert_small_cfg(compute_layout, ctx):
         bert_pretrain_model = BertForPretrain(cfg)
         bert_pretrain_model.initialize()
         bert_pretrain_model.hybridize()
-        contextual_embedding, pooled_out, nsp_score, mlm_scores =\
+        contextual_embedding, pooled_out, nsp_score, mlm_score =\
             bert_pretrain_model(inputs, token_types, valid_length, masked_positions)
         bert_pretrain_model_tn = BertForPretrain(cfg_tn)
         bert_pretrain_model_tn.share_parameters(bert_pretrain_model.collect_params())
         bert_pretrain_model_tn.hybridize()
-        contextual_embedding_tn, pooled_out_tn, nsp_score_tn, mlm_scores_tn = \
+        contextual_embedding_tn, pooled_out_tn, nsp_score_tn, mlm_score_tn = \
             bert_pretrain_model_tn(inputs.T, token_types.T, valid_length, masked_positions)
         assert_allclose(contextual_embedding.asnumpy(),
                         mx.np.swapaxes(contextual_embedding_tn, 0, 1).asnumpy(),

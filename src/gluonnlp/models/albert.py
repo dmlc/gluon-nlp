@@ -36,7 +36,7 @@ from mxnet import use_np
 from mxnet import np, npx
 from mxnet.gluon import HybridBlock, nn
 from .transformer import TransformerEncoderLayer
-from ..registry import BACKBONE_REGISTRY
+from .base import BACKBONE_REGISTRY
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
@@ -190,7 +190,6 @@ class AlbertEncoder(HybridBlock):
         self._output_all_encodings = output_all_encodings
         self._layout = layout
 
-
         self.all_encoder_groups = nn.HybridSequential()
         for group_idx in range(num_groups):
             self.all_encoder_groups.add(
@@ -218,12 +217,12 @@ class AlbertEncoder(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             - layout = 'NT'
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
+
         valid_length :
             Shape (batch_size,)
 
@@ -365,19 +364,18 @@ class AlbertModel(HybridBlock):
         return self._layout
 
     def forward(self, inputs, token_types, valid_length=None):
-        # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a Albert model.
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
             - layout = 'NT'
                 Shape (batch_size, seq_length)
@@ -397,6 +395,7 @@ class AlbertModel(HybridBlock):
                 Shape (batch_size, seq_length, units)
             - layout = 'TN'
                 Shape (seq_length, batch_size, units)
+
         pooled_output
             This is optional. Shape (batch_size, units)
         """
@@ -424,26 +423,30 @@ class AlbertModel(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
+            The types of tokens. If it is None, it will be initialized as all zeros.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
-            If None, it will be initialized as all zero
+                Shape (seq_length, batch_size)
 
         Returns
         -------
         embedding
             The initial embedding that will be fed into the encoder
+
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_embed)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_embed)
+
         """
         if self.layout == 'NT':
             batch_axis, time_axis = 0, 1
@@ -589,19 +592,23 @@ class AlbertForMLM(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
+
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
-            - layout = 'NT'
-                Shape (batch_size, seq_length)
-            - layout = 'TN'
-                Shape (seq_length, batch_size)
             The type of the token. For example, if the inputs contain two sequences,
             we will set different token types for the first sentence and the second sentence.
+
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+
         valid_length :
             The valid length of each sequence
             Shape (batch_size,)
@@ -614,8 +621,10 @@ class AlbertForMLM(HybridBlock):
         contextual_embedding
             - layout = 'NT'
                 Shape (batch_size, seq_length, units)
+
             - layout = 'TN'
                 Shape (seq_length, batch_size, units)
+
         pooled_out
             Shape (batch_size, units)
         mlm_scores :
@@ -679,31 +688,32 @@ class AlbertForPretrain(HybridBlock):
         return self.backbone_model.layout
 
     def forward(self, inputs, token_types, valid_length,
-                       masked_positions):
+                masked_positions):
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a Albert model.
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-        token_types :
+
+        token_types
+            Type of the tokens. If the inputs contain two sequences, we will set different
+            token types for the first sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
-        valid_length :
+        valid_length
             The valid length of each sequence
             Shape (batch_size,)
-        masked_positions :
+        masked_positions
             The masked position of the sequence
             Shape (batch_size, num_masked_positions).
 
@@ -714,6 +724,7 @@ class AlbertForPretrain(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units).
+
         pooled_out
             Shape (batch_size, units)
         sop_score :

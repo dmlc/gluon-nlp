@@ -11,7 +11,7 @@ There are lots of opportunities for you to become our `contributors <https://git
 - Contribute bug reports `GitHub issues <https://github.com/dmlc/gluon-nlp/issues>`__.
 - Write new `scripts <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`__ to reproduce
   state-of-the-art results.
-- Write new `tutorials <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__.
+- Write new `tutorials <https://github.com/dmlc/gluon-nlp/tree/master/docs/tutorials>`__.
 - Write new `public datasets <https://github.com/dmlc/gluon-nlp/tree/master/src/gluonnlp/data>`__
   (license permitting).
 - Most importantly, if you have an idea of how to contribute, then do it!
@@ -66,12 +66,12 @@ See `existing examples <https://github.com/dmlc/gluon-nlp/tree/master/scripts>`_
 Contribute tutorials
 --------------------
 
-Our :doc:`tutorials <../examples/index>` are intended for people who
+Our :doc:`tutorials <../tutorials/index>` are intended for people who
 are interested in NLP and want to get better familiarized on different parts in NLP. In order for
 people to easily understand the content, the code needs to be clean and readable, accompanied by
 explanation with good writing.
 
-See `existing tutorials <https://github.com/dmlc/gluon-nlp/tree/master/docs/examples>`__.
+See `existing tutorials <https://github.com/dmlc/gluon-nlp/tree/master/docs/tutorials>`__.
 
 To make the review process easy, we adopt `notedown <https://github.com/aaren/notedown>`_ as the
 tutorial format. Notedown notebooks are regular markdown files with code blocks that can be

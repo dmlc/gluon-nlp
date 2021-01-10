@@ -109,13 +109,13 @@ def test_albert_for_mlm_model(compute_layout):
     token_types = mx.np.random.randint(0, cfg.MODEL.num_token_types, (batch_size, seq_length))
     valid_length = mx.np.random.randint(seq_length // 2, seq_length, (batch_size,))
     masked_positions = mx.np.random.randint(0, seq_length // 2, (batch_size, num_mask))
-    contextual_embeddings, pooled_out, mlm_scores = albert_mlm_model(inputs, token_types, valid_length, masked_positions)
-    contextual_embeddings_tn, pooled_out_tn, mlm_scores_tn = albert_mlm_tn_model(inputs.T, token_types.T, valid_length, masked_positions)
+    contextual_embeddings, pooled_out, mlm_score = albert_mlm_model(inputs, token_types, valid_length, masked_positions)
+    contextual_embeddings_tn, pooled_out_tn, mlm_score_tn = albert_mlm_tn_model(inputs.T, token_types.T, valid_length, masked_positions)
     assert_allclose(np.swapaxes(contextual_embeddings_tn.asnumpy(), 0, 1),
                     contextual_embeddings.asnumpy(), 1E-4, 1E-4)
     assert_allclose(pooled_out_tn.asnumpy(), pooled_out.asnumpy(), 1E-4, 1E-4)
-    assert_allclose(mlm_scores_tn.asnumpy(), mlm_scores.asnumpy(), 1E-4, 1E-4)
-    assert mlm_scores.shape == (batch_size, num_mask, cfg.MODEL.vocab_size)
+    assert_allclose(mlm_score_tn.asnumpy(), mlm_score.asnumpy(), 1E-4, 1E-4)
+    assert mlm_score.shape == (batch_size, num_mask, cfg.MODEL.vocab_size)
 
 
 @pytest.mark.parametrize('compute_layout', ['auto', 'NT', 'TN'])
@@ -142,16 +142,16 @@ def test_albert_for_pretrain_model(compute_layout):
     token_types = mx.np.random.randint(0, cfg.MODEL.num_token_types, (batch_size, seq_length))
     valid_length = mx.np.random.randint(seq_length // 2, seq_length, (batch_size,))
     masked_positions = mx.np.random.randint(0, seq_length // 2, (batch_size, num_mask))
-    contextual_embeddings, pooled_out, sop_score, mlm_scores =\
+    contextual_embeddings, pooled_out, sop_score, mlm_score =\
         albert_pretrain_model(inputs, token_types, valid_length, masked_positions)
-    contextual_embeddings_tn, pooled_out_tn, sop_score_tn, mlm_scores_tn = \
+    contextual_embeddings_tn, pooled_out_tn, sop_score_tn, mlm_score_tn = \
         albert_pretrain_model_tn(inputs.T, token_types.T, valid_length, masked_positions)
     assert_allclose(np.swapaxes(contextual_embeddings_tn.asnumpy(), 0, 1),
                     contextual_embeddings.asnumpy(), 1E-4, 1E-4)
     assert_allclose(pooled_out_tn.asnumpy(), pooled_out.asnumpy(), 1E-4, 1E-4)
     assert_allclose(sop_score.asnumpy(), sop_score_tn.asnumpy(), 1E-4, 1E-4)
-    assert_allclose(mlm_scores.asnumpy(), mlm_scores_tn.asnumpy(), 1E-4, 1E-4)
-    assert mlm_scores.shape == (batch_size, num_mask, cfg.MODEL.vocab_size)
+    assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-4, 1E-4)
+    assert mlm_score.shape == (batch_size, num_mask, cfg.MODEL.vocab_size)
     assert sop_score.shape == (batch_size, 2)
 
 

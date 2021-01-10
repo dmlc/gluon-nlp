@@ -13,7 +13,7 @@ from gluonnlp.data.tokenizers import WhitespaceTokenizer, MosesTokenizer, JiebaT
     HuggingFaceBPETokenizer, HuggingFaceByteBPETokenizer, HuggingFaceWordPieceTokenizer, \
     HuggingFaceTokenizer
 from gluonnlp.base import get_repo_url
-from gluonnlp.data import Vocab
+from gluonnlp.data import Vocab, load_vocab
 from gluonnlp.utils.misc import download
 
 
@@ -418,6 +418,52 @@ def test_sentencepiece_tokenizer():
                     break
         assert has_different_encode_out
         os.remove(model_path)
+
+    # Case of T5 Tokenizer
+    with tempfile.TemporaryDirectory() as dir_path: 
+        model_path = os.path.join(dir_path, 't5_spm.model')
+        download(
+            url=get_repo_url() + 'tokenizer_test_models/sentencepiece/case_t5/test_t5spm-5f05e7.model',
+            path=model_path
+        )
+        vocab_path = os.path.join(dir_path, 't5_spm_vocab.json')
+        download(
+            url=get_repo_url() + 'tokenizer_test_models/sentencepiece/case_t5/test_t5spm_vocab-a9d819.json', 
+            path=vocab_path
+        )
+        tokenizer = SentencepieceTokenizer(
+            model_path=model_path, 
+            vocab=load_vocab(vocab_path)
+        )
+        gt_tokenized = [
+            ['▁Hello', ',', '▁', 'y', "'", 'all', '!', '▁How', '▁are', '▁you', '▁VIII', '▁', '😁', 
+             '▁', '😁', '▁', '😁', '▁', '?'], 
+            ['▁', 'Glu', 'on', 'N', 'LP', '▁is', '▁great', '!', '!!!!!'], 
+            ['▁', 'Glu', 'on', 'N', 'LP', '-', 'Am', 'a', 'zon', '-', 'H', 'a', 'i', 'bin', '-', 
+             'Le', 'on', 'ard', '-', 'She', 'ng', '-', 'Sh', 'u', 'a', 'i', '-', 'X', 'ing', 'j', 
+              'i', 'an', '.....', '/', ':', '!', '@', '#', '▁', "'", 'a', 'b', 'c', "'"]
+        ]
+        gt_offsets = [
+            [(0, 5), (5, 6), (6, 7), (7, 8), (8, 9), (9, 12), (12, 13), (13, 17), (17, 21), (21, 25), 
+             (25, 27), (27, 28), (28, 29), (29, 30), (30, 31), (31, 32), (32, 33), (33, 34), (34, 35)], 
+            [(0, 0), (0, 3), (3, 5), (5, 6), (6, 8), (8, 11), (11, 17), (17, 18), (18, 23)], 
+            [(0, 0), (0, 3), (3, 5), (5, 6), (6, 8), (8, 9), (9, 11), (11, 12), (12, 15), (15, 16), 
+             (16, 17), (17, 18), (18, 19), (19, 22), (22, 23), (23, 25), (25, 27), (27, 30), (30, 31), 
+             (31, 34), (34, 36), (36, 37), (37, 39), (39, 40), (40, 41), (41, 42), (42, 43), (43, 44), 
+             (44, 47), (47, 48), (48, 49), (49, 51), (51, 56), (56, 57), (57, 58), (58, 59), (59, 60), 
+             (60, 61), (61, 62), (62, 63), (63, 64), (64, 65), (65, 66), (66, 67)]
+        ]
+        gt_int_decode = [
+            "Hello, y'all! How are you VIII  ⁇   ⁇   ⁇  ?",
+            'GluonNLP is great!!!!!!', 
+            "GluonNLP-Amazon-Haibin-Leonard-Sheng-Shuai-Xingjian...../:!@# 'abc'"
+        ]
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        verify_pickleble(tokenizer, SentencepieceTokenizer)
+        verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
+        verify_decode_spm(tokenizer, SUBWORD_TEST_SAMPLES, gt_int_decode)
+        os.remove(model_path)
+        os.remove(vocab_path)
 
 
 def test_subword_nmt_tokenizer():

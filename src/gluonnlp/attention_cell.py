@@ -42,73 +42,88 @@ def gen_self_attn_mask(data,
 
     Let's consider the data with two samples:
 
-    data =
-        [['I',   'can', 'now',   'use', 'numpy', 'in',  'Gluon@@', 'NLP'  ],
-         ['May', 'the', 'force', 'be',  'with',  'you', '<PAD>',   '<PAD>']]
-    valid_length =
-        [8, 6]
+    .. code-block:: none
+
+        data =
+            [['I',   'can', 'now',   'use', 'numpy', 'in',  'Gluon@@', 'NLP'  ],
+             ['May', 'the', 'force', 'be',  'with',  'you', '<PAD>',   '<PAD>']]
+        valid_length =
+            [8, 6]
 
     - attn_type = 'causal'
         Each token will attend to itself + the tokens before.
         It will not attend to tokens in the future.
 
         For our example, the mask of the first sample is
-                   ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
-        'I':         1,    0,     0,     0,      0,     0,      0,      0
-        'can':       1,    1,     0,     0,      0,     0,      0,      0
-        'now':       1,    1,     1,     0,      0,     0,      0,      0
-        'use':       1,    1,     1,     1,      0,     0,      0,      0
-        'numpy':     1,    1,     1,     1,      1,     0,      0,      0
-        'in':        1,    1,     1,     1,      1,     1,      0,      0
-        'Gluon@@':   1,    1,     1,     1,      1,     1,      1,      0
-        'NLP':       1,    1,     1,     1,      1,     1,      1,      1
+
+        .. code-block:: none
+
+                       ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
+            'I':         1,    0,     0,     0,      0,     0,      0,      0
+            'can':       1,    1,     0,     0,      0,     0,      0,      0
+            'now':       1,    1,     1,     0,      0,     0,      0,      0
+            'use':       1,    1,     1,     1,      0,     0,      0,      0
+            'numpy':     1,    1,     1,     1,      1,     0,      0,      0
+            'in':        1,    1,     1,     1,      1,     1,      0,      0
+            'Gluon@@':   1,    1,     1,     1,      1,     1,      1,      0
+            'NLP':       1,    1,     1,     1,      1,     1,      1,      1
 
         The mask of the second sample is
-                   ['May', 'the', 'force', 'be', 'with', 'you', '<PAD>', '<PAD>']
-        'May':        1,    0,     0,     0,      0,     0,      0,      0
-        'the':        1,    1,     0,     0,      0,     0,      0,      0
-        'force':      1,    1,     1,     0,      0,     0,      0,      0
-        'be':         1,    1,     1,     1,      0,     0,      0,      0
-        'with':       1,    1,     1,     1,      1,     0,      0,      0
-        'you':        1,    1,     1,     1,      1,     1,      0,      0
-        '<PAD>':      0,    0,     0,     0,      0,     0,      0,      0
-        '<PAD>':      0,    0,     0,     0,      0,     0,      0,      0
+
+        .. code-block:: none
+
+                       ['May', 'the', 'force', 'be', 'with', 'you', '<PAD>', '<PAD>']
+            'May':        1,    0,     0,     0,      0,     0,      0,      0
+            'the':        1,    1,     0,     0,      0,     0,      0,      0
+            'force':      1,    1,     1,     0,      0,     0,      0,      0
+            'be':         1,    1,     1,     1,      0,     0,      0,      0
+            'with':       1,    1,     1,     1,      1,     0,      0,      0
+            'you':        1,    1,     1,     1,      1,     1,      0,      0
+            '<PAD>':      0,    0,     0,     0,      0,     0,      0,      0
+            '<PAD>':      0,    0,     0,     0,      0,     0,      0,      0
 
 
     - attn_type = 'full'
         Each token will attend to both the tokens before and in the future
 
         For our example, the mask of the first sample is
-                   ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
-        'I':         1,    1,     1,     1,      1,     1,      1,      1
-        'can':       1,    1,     1,     1,      1,     1,      1,      1
-        'now':       1,    1,     1,     1,      1,     1,      1,      1
-        'use':       1,    1,     1,     1,      1,     1,      1,      1
-        'numpy':     1,    1,     1,     1,      1,     1,      1,      1
-        'in':        1,    1,     1,     1,      1,     1,      1,      1
-        'Gluon@@':   1,    1,     1,     1,      1,     1,      1,      1
-        'NLP':       1,    1,     1,     1,      1,     1,      1,      1
+
+        .. code-block:: none
+
+                       ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
+            'I':         1,    1,     1,     1,      1,     1,      1,      1
+            'can':       1,    1,     1,     1,      1,     1,      1,      1
+            'now':       1,    1,     1,     1,      1,     1,      1,      1
+            'use':       1,    1,     1,     1,      1,     1,      1,      1
+            'numpy':     1,    1,     1,     1,      1,     1,      1,      1
+            'in':        1,    1,     1,     1,      1,     1,      1,      1
+            'Gluon@@':   1,    1,     1,     1,      1,     1,      1,      1
+            'NLP':       1,    1,     1,     1,      1,     1,      1,      1
 
         The mask of the second sample is
-                   ['May', 'the', 'force', 'be', 'with', 'you', '<PAD>', '<PAD>']
-        'May':        1,    1,     1,     1,      1,     1,      0,      0
-        'the':        1,    1,     1,     1,      1,     1,      0,      0
-        'force':      1,    1,     1,     1,      1,     1,      0,      0
-        'be':         1,    1,     1,     1,      1,     1,      0,      0
-        'with':       1,    1,     1,     1,      1,     1,      0,      0
-        'you':        1,    1,     1,     1,      1,     1,      0,      0
-        '<PAD>':      0,    0,     0,     0,      0,     0,      0,      0
-        '<PAD>':      0,    0,     0,     0,      0,     0,      0,      0
+
+        .. code-block:: none
+
+                       ['May', 'the', 'force', 'be', 'with', 'you', '<PAD>', '<PAD>']
+            'May':        1,    1,     1,     1,      1,     1,      0,      0
+            'the':        1,    1,     1,     1,      1,     1,      0,      0
+            'force':      1,    1,     1,     1,      1,     1,      0,      0
+            'be':         1,    1,     1,     1,      1,     1,      0,      0
+            'with':       1,    1,     1,     1,      1,     1,      0,      0
+            'you':        1,    1,     1,     1,      1,     1,      0,      0
+            '<PAD>':      0,    0,     0,     0,      0,     0,      0,      0
+            '<PAD>':      0,    0,     0,     0,      0,     0,      0,      0
 
     Parameters
     ----------
-    F
     data
         The data.
+
         - layout = 'NT'
             Shape (batch_size, seq_length, C)
         - layout = 'TN'
             Shape (seq_length, batch_size, C)
+
     valid_length
         Shape (batch_size,)
     dtype
@@ -170,17 +185,22 @@ def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
 
     Let's consider the data + mem with a batch of two samples:
 
-    mem = [['I',   'can', 'now',   'use'],
-           ['May', 'the', 'force', '<PAD>']]
-    mem_valid_length =
-        [4, 3]
-    data =
-        [['numpy', 'in',    'Gluon@@', 'NLP'  ],
-         ['be',    'with',  'you',     '<PAD>']]
-    data_valid_length =
-        [4, 3]
+    .. code-block:: none
+
+        mem = [['I',   'can', 'now',   'use'],
+               ['May', 'the', 'force', '<PAD>']]
+        mem_valid_length =
+            [4, 3]
+        data =
+            [['numpy', 'in',    'Gluon@@', 'NLP'  ],
+             ['be',    'with',  'you',     '<PAD>']]
+        data_valid_length =
+            [4, 3]
 
     For our example, the mask of the first sample is
+
+    .. code-block:: none
+
                    ['I', 'can', 'now', 'use']
         'numpy':     1,    1,     1,     1
         'in':        1,    1,     1,     1
@@ -188,6 +208,9 @@ def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
         'NLP':       1,    1,     1,     1
 
     The mask of the second sample is
+
+    .. code-block:: none
+
                    ['be', 'with', 'you', '<PAD>']
         'May':        1,    1,     1,     0
         'the':        1,    1,     1,     0
@@ -202,6 +225,7 @@ def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
             Shape (batch_size, mem_length, C_mem)
        - layout = 'TN'
             Shape (mem_length, batch_size, C_mem)
+
     mem_valid_length :
         Shape (batch_size,)
     data
@@ -209,6 +233,7 @@ def gen_mem_attn_mask(mem, mem_valid_length, data, data_valid_length=None,
             Shape (batch_size, query_length, C_data)
         - layout = 'TN'
             Shape (query_length, batch_size, C_data)
+
     data_valid_length :
         Shape (batch_size,)
     dtype
@@ -324,28 +349,34 @@ def multi_head_dot_attn(query, key, value,
     ----------
     query
         Query. The shape depends on the layout
+
         - layout is 'NKT'
             Shape (batch_size, num_heads, query_length, key_dim)
         - layout is 'NTK'
             Shape (batch_size, query_length, num_heads, key_dim)
         - layout is 'TNK'
             Shape (query_length, batch_size, num_heads, key_dim)
+
     key
         Key. The shape depends on the layout
+
         - layout is 'NKT'
             Shape (batch_size, num_heads, mem_length, key_dim)
         - layout is 'NTK'
             Shape (batch_size, mem_length, num_heads, key_dim)
         - layout is 'TNK'
             Shape (mem_length, batch_size, num_heads, key_dim)
+
     value
         Value. The shape depends on the layout
+
         - layout is 'NKT'
             Shape (batch_size, num_heads, mem_length, value_dim)
         - layout is 'NTK'
             Shape (batch_size, mem_length, num_heads, value_dim)
         - layout is 'TNK'
             Shape (mem_length, batch_size, num_heads, value_dim)
+
     mask
         Mask between query and memory. Shape (batch_size, query_length, mem_length)
     edge_scores
@@ -357,10 +388,14 @@ def multi_head_dot_attn(query, key, value,
         Whether to divide the attention weights by the sqrt of the query dimension.
         This is first proposed in "[NIPS2017] Attention is all you need."::
 
+        .. code-block:: none
+
             score = <h_q, h_k> / sqrt(dim_q)
 
     normalized
         If turned on, the cosine distance is used, i.e::
+
+        .. code-block:: none
 
             score = <h_q / ||h_q||, h_k / ||h_k||>
 
@@ -383,6 +418,7 @@ def multi_head_dot_attn(query, key, value,
             Shape (batch_size, query_length, num_heads * value_units)
         - layout is 'TNK'
             Shape (query_length, batch_size, num_heads * value_units)
+
     additional_info
         scores:
             Shape (batch_size, num_head, query_length, mem_length)
@@ -507,6 +543,7 @@ class MultiHeadAttentionCell(HybridBlock):
         key: (L_m, B, K, C_k)
         value: (L_m, B, K, C_v)
         out: (L_q, B, K * C_v)
+
     """
     def __init__(self, query_units=None, num_heads=None, attention_dropout=0.0,
                  scaled: bool = True, normalized: bool = False, eps: float = 1E-6,
@@ -566,37 +603,42 @@ class MultiHeadAttentionCell(HybridBlock):
 
 
 class RelAttentionScoreCell(HybridBlock):
-    """Get the score based on the query and relative position index. This is used for implementing
+    r"""Get the score based on the query and relative position index. This is used for implementing
      relative attention.
 
-    For the multi-head attention with relative positional encoding, we have the formula:
+    For the multi-head attention with relative positional encoding, we have the formula
 
-    out = softmax(\frac(Q K^T + R}{\sqrt(d)}) V
+    .. math::
 
-    Here, R is the relative positional encoding matrix. Usually, R_{i, j} is calculate based on the
-    relative positional difference $i - j$.
+        out = \text{softmax}(\frac{Q K^T + R}{\sqrt{d}}) V
+
+
+    Here, :math:`R` is the relative positional encoding matrix.
+
+    Usually, :math:`R_{i, j}` is calculate based on the
+    relative positional difference :math:`i - j`.
 
     This function aims at generating the R matrix given the query and the relative positions.
     We support the following methods:
 
     - method = 'transformer_xl'
-        R_{i, j} = <Q, W S_{i - j}>, in which S_{i, j} is the sinusoidal embedding and
-        W is a Dense layer that maps S_{i - j} to the same dimension as the query.
+        :math:`R_{i, j} = <Q, W S_{i - j}>`, in which :math:`S_{i, j}` is the sinusoidal embedding and
+        :math:`W` is a Dense layer that maps :math:`S_{i - j}` to the same dimension as the query.
         This is proposed in paper:
 
-        - [ACL2019] Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context
+            [ACL2019] Transformer-XL: Attentive Language Models Beyond a Fixed-Length Context
 
     - method = 'shaw'
-        R_{i, j} = < Q, E_{i - j}>, in which E_{i - j} is the learned positional embedding
+        :math:`R_{i, j} = < Q, E_{i - j}>`, in which :math:`E_{i - j}` is the learned positional embedding
         This is proposed in paper:
 
-        - [NAACL2018] Self-Attention with Relative Position Representations
+            [NAACL2018] Self-Attention with Relative Position Representations
+
     - method = 't5'
-        R_{i, j} = E_{i - j}, in which E_{i - j} is the bucket positional embedding.
+        :math:`R_{i, j} = E_{i - j}`, in which :math:`E_{i - j}` is the bucket positional embedding.
         This is proposed in paper:
 
-        - [Arxiv2019] Exploring the Limits of Transfer Learning with a Unified
-        Text-to-Text Transformer
+            [Arxiv2019] Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer
 
     Like in MultiHeadAttentionCell, we support different layouts to cope with the query matrix.
 
@@ -631,12 +673,9 @@ class RelAttentionScoreCell(HybridBlock):
         num_buckets
         method
         dropout
-        attention_dropout
-        query_add_bias
-            Add additional bias term to the query
-        scaled
         dtype
         layout
+        use_einsum
         """
         super().__init__()
         self._dropout = dropout
@@ -699,25 +738,24 @@ class RelAttentionScoreCell(HybridBlock):
         return self._layout
 
     def forward(self, rel_positions, query=None):
-        """
+        """Forward function
 
         Parameters
         ----------
-        F
         rel_positions
-            The relative shifts. Shape (query_length, mem_length)
-            Each element represents the shift between the i-th element of query and the j-th
-            element of memory.
+            The relative shifts. Shape (query_length, mem_length).
+            Each element represents the shift between the :math:`i-th` element of query and
+            the :math:`j-th` element of memory.
         query
             The query for computing the relative scores. The shape depends on the layout.
-            If we use T5 attention, the query won't be used
+            If we use T5 attention, the query will not be used.
 
         Returns
         -------
         rel_scores
             The relative attention scores
             Can have shape (batch_size, num_heads, query_length, mem_length)
-             or (num_heads, query_length, mem_length)
+            or (num_heads, query_length, mem_length)
         """
         if self._method == 'transformer_xl' or self._method == 'shaw':
             assert query is not None, 'Must specify query if method={}'.format(self._method)
