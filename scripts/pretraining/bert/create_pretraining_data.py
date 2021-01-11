@@ -351,10 +351,8 @@ def create_instances_from_document(x):
     current_chunk = []
     current_length = 0
     i = 0
-    #print('doc: ',len(document) )
     while i < len(document):  # pylint: disable=R1702
         segment = document[i]
-        #print(segment)
         current_chunk.append(segment)
         current_length += len(segment)
         if i == len(document) - 1 or current_length >= target_seq_length:
