@@ -7,9 +7,16 @@ import time
 import tarfile
 import argparse
 import multiprocessing
+from collections import defaultdict
 from gluonnlp.utils.misc import download, load_checksum_stats
 from gluonnlp.utils.lazy_imports import try_import_wikiextractor
 from gluonnlp.base import get_repo_url
+from itertools import islice
+from gluonnlp.utils.pretrain import *
+import nltk
+import statistics
+
+nltk.download('punkt')
 
 _CITATION = """\
 @ONLINE {wikidump,
@@ -102,6 +109,27 @@ def merge(x):
                             article_lines.append(line)
 
 
+
+class BookscorpusTextFormatting:
+    def __init__(self, books_path, output_filename, recursive = False):
+        self.books_path = books_path
+        self.recursive = recursive
+        self.output_filename = output_filename
+
+
+    # This puts one book per line
+    def merge(self):
+        with open(self.output_filename, mode='w', newline='\n') as ofile:
+            for filename in glob.glob(self.books_path + '/' + '*.txt', recursive=True):
+                with open(filename, mode='r', encoding='utf-8-sig', newline='\n') as file:
+                    for line in file:
+                        if line.strip() != '':
+                            ofile.write(line.strip() + ' ')
+                ofile.write("\n\n")
+
+
+
+
 def get_parser():
     parser = argparse.ArgumentParser(description='Download and Prepare the Wikipedia')
     parser.add_argument('--mode', type=str,
@@ -131,8 +159,12 @@ def get_parser():
     parser.add_argument("--num_out_files", type=int, default=1000,
                         help="Number of desired output files, where each is processed"
                              " independently by a worker.")
+    parser.add_argument("--segment_sentences", action='store_true',
+                        help="directory for downloaded  files")
     parser.add_argument("-q", "--quiet", action="store_true",
                         help="suppress reporting progress info")
+    parser.add_argument("--segment_num_worker", type=int, default=8,
+                        help="process num when segmenting articles")
     return parser
 
 
@@ -228,6 +260,26 @@ def main(args):
         print("Done unarchiving within {:.2f} seconds".format(time.time() - start_time))
     else:
         raise NotImplementedError
+    if args.segment_sentences:
+        print("start to transfer bookcorpus to one sentence per line")
+        t1 = time.time()
+        segmenter = NLTKSegmenter()
+        original_name = os.path.join(args.output, 'prepared_wikipedia')
+        output_name = os.path.join(args.output, 'one_sentence_per_line/')
+        if not os.path.exists(output_name):
+            os.mkdir(output_name)
+        input_names = os.listdir(original_name)
+        for i in range(len(input_names)):
+            input_names[i]=os.path.join(original_name, input_names[i])
+        sharding = Sharding(input_names, output_name, 256, 1, 0,
+                            args.segment_num_worker)
+
+        sharding.load_articles()
+        sharding.segment_articles_into_sentences(segmenter)
+        sharding.distribute_articles_over_shards()
+        sharding.write_shards_to_disk()
+        t2 = time.time()
+        print("transfer cost:{}".format(t2 - t1))
 
 
 def cli_main():
