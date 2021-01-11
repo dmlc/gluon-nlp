@@ -131,7 +131,7 @@ def uncased_bert_wwm_large_cfg():
     cfg.model_name = 'google_en_uncased_bert_wwm_large'
     cfg.batch_size = 3
     cfg.epochs = 2
-    cfg.max_seq_length = 384
+    cfg.max_seq_length = 512
     return cfg
 
 
