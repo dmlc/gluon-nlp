@@ -15,6 +15,7 @@ from gluonnlp.data.tokenizers import WhitespaceTokenizer, MosesTokenizer, JiebaT
 from gluonnlp.base import get_repo_url
 from gluonnlp.data import Vocab, load_vocab
 from gluonnlp.utils.misc import download
+from gluonnlp.models.t5 import _build_t5_tokenizer
 
 
 EN_SAMPLES = ['Four score and seven years ago our fathers brought forth on this continent, '
@@ -421,20 +422,12 @@ def test_sentencepiece_tokenizer():
 
     # Case of T5 Tokenizer
     with tempfile.TemporaryDirectory() as dir_path: 
-        model_path = os.path.join(dir_path, 't5_spm.model')
+        vocab_path = os.path.join(dir_path, 't5_spm.model')
         download(
             url=get_repo_url() + 'tokenizer_test_models/sentencepiece/case_t5/test_t5spm-5f05e7.model',
-            path=model_path
-        )
-        vocab_path = os.path.join(dir_path, 't5_spm_vocab.json')
-        download(
-            url=get_repo_url() + 'tokenizer_test_models/sentencepiece/case_t5/test_t5spm_vocab-a9d819.json', 
             path=vocab_path
         )
-        tokenizer = SentencepieceTokenizer(
-            model_path=model_path, 
-            vocab=load_vocab(vocab_path)
-        )
+        tokenizer = _build_t5_tokenizer(vocab_path, False, 100)
         gt_tokenized = [
             ['▁Hello', ',', '▁', 'y', "'", 'all', '!', '▁How', '▁are', '▁you', '▁VIII', '▁', '😁', 
              '▁', '😁', '▁', '😁', '▁', '?'], 
@@ -462,7 +455,6 @@ def test_sentencepiece_tokenizer():
         verify_pickleble(tokenizer, SentencepieceTokenizer)
         verify_encode_token_with_offsets(tokenizer, SUBWORD_TEST_SAMPLES, gt_offsets)
         verify_decode_spm(tokenizer, SUBWORD_TEST_SAMPLES, gt_int_decode)
-        os.remove(model_path)
         os.remove(vocab_path)
 
 
