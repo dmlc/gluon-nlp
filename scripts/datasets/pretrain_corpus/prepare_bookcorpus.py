@@ -8,10 +8,15 @@ from gluonnlp.utils.misc import download, load_checksum_stats
 from collections import defaultdict
 from itertools import islice
 import time
-from gluonnlp.utils.pretrain import *
 import multiprocessing
 import statistics
 import nltk
+import sys
+
+_CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
+_TARGET_PATH = os.path.join(_CURR_DIR, '../../processing/')
+sys.path.append(_TARGET_PATH)
+from segment_sentences import *
 
 
 
