@@ -12,11 +12,14 @@ from gluonnlp.utils.misc import download, load_checksum_stats
 from gluonnlp.utils.lazy_imports import try_import_wikiextractor
 from gluonnlp.base import get_repo_url
 from itertools import islice
-from gluonnlp.utils.pretrain import *
 import nltk
 import statistics
 
-nltk.download('punkt')
+_CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
+_TARGET_PATH = os.path.join(_CURR_DIR, '../../processing/')
+sys.path.append(_TARGET_PATH)
+from segment_sentences import *
+
 
 _CITATION = """\
 @ONLINE {wikidump,
