@@ -49,9 +49,9 @@ bash question_answering/run_batch_squad.sh 1 1.1 submit_squad_v1_horovod_fp16.lo
 
 Also, after you have submitted the jobs, you may sync the results via
 ```bash
-bash question_answering/sync_batch_result.sh submit_squad_v2_fp32.log squad_v2_no_horovod
-bash question_answering/sync_batch_result.sh submit_squad_v2_horovod_fp32.log squad_v2_horovod_fp32
-bash question_answering/sync_batch_result.sh submit_squad_v2_horovod_fp16.log squad_v2_horovod_fp16
+bash sync_batch_result.sh submit_squad_v2_fp32.log squad_v2_no_horovod
+bash sync_batch_result.sh submit_squad_v2_horovod_fp32.log squad_v2_horovod_fp32
+bash sync_batch_result.sh submit_squad_v2_horovod_fp16.log squad_v2_horovod_fp16
 ```
 
 You can then use [parse_squad_results.py](question_answering/parse_squad_results.py) to parse the 
@@ -76,3 +76,19 @@ Internally, it will train the following models on SQuAD 2.0 dataset:
 | roberta_large      |
 | gluon_en_cased_bert_base_v1    |
 | mobilebert         |
+
+## Benchmarking NLP Backbones
+```bash
+# Test for g4dn.4x
+bash backbone_benchmark/run_batch_backbone_benchmark.sh g4dn.4x g4dn.4x_result.log
+
+# Test for p3.2x
+bash backbone_benchmark/run_batch_backbone_benchmark.sh p3.2x p3.2x_result.log
+```
+
+After these jobs are finished, you can download the benchmarking results via
+
+```
+bash sync_batch_result.sh g4dn.4x_result.log g4dn.4x_benchmark
+bash sync_batch_result.sh p3.2x_result.log p3.2x_benchmark
+```
