@@ -18,6 +18,8 @@ GluonNLP: Your Choice of Deep Learning for NLP
 GluonNLP is a toolkit that helps you solve NLP problems. It provides easy-to-use tools that helps you load the text data, 
 process the text data, and train models.
 
+See our documents at https://nlp.gluon.ai/master/index.html.
+
 # Features
 
 - Easy-to-use Text Processing Tools and Modular APIs

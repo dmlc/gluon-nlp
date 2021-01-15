@@ -37,5 +37,5 @@ jobs:
                                              --job-type c5n.4x \
                                              --source-ref ${{ github.ref }} \
                                              --work-dir tools/batch/batch_states \
-                                             --remote ${{ github.repository }} \
+                                             --remote https://github.com/${{ github.repository }} \
                                              --command "bash test_data_pipeline.sh" --wait

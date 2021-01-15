@@ -52,19 +52,17 @@ def main(args):
             print(e)
     if not os.path.exists(args.save_path):
         os.makedirs(args.save_path)
-    if args.all:
-        pass
-    else:
-        for url in _URLS.values():
-            file_name = url[url.rfind('/') + 1:]
-            file_hash = _URL_FILE_STATS[url]
-            download(url, path=os.path.join(args.cache_path, file_name), sha1_hash=file_hash)
-            if not os.path.exists(os.path.join(args.save_path, file_name))\
-                    or (args.overwrite and args.save_path != args.cache_path):
-                os.symlink(os.path.join(args.cache_path, file_name),
-                           os.path.join(args.save_path, file_name))
-            if args.extract:
-                extract(os.path.join(args.save_path, file_name))
+
+    for url in _URLS.values():
+        file_name = url[url.rfind('/') + 1:]
+        file_hash = _URL_FILE_STATS[url]
+        download(url, path=os.path.join(args.cache_path, file_name), sha1_hash=file_hash)
+        if not os.path.exists(os.path.join(args.save_path, file_name))\
+                or (args.overwrite and args.save_path != args.cache_path):
+            os.symlink(os.path.join(args.cache_path, file_name),
+                        os.path.join(args.save_path, file_name))
+        if args.extract:
+            extract(os.path.join(args.save_path, file_name))
 
 
 def cli_main():

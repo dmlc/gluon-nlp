@@ -10,7 +10,7 @@ We use the [huggingface benchmark](https://github.com/huggingface/transformers/t
 to benchmark the training + inference speed of common workloads in NLP. 
 
 ```bash
-python3 -m pip install -U -r requirements.txt --user
+python3 -m pip install -U -r requirements.txt
 python3 benchmark_hf.py
 ```
 
@@ -30,7 +30,7 @@ We profile three options: `NT` layout, `NT` layout with `TN` layout as the compu
 and `TN` layout.
 
 ```bash
-python3 -m pip install -U -r requirements.txt --user
+python3 -m pip install -U -r requirements.txt
 bash benchmark_gluonnlp.sh
 ```
 
@@ -57,3 +57,5 @@ bash benchmark_gluonnlp_tvm.sh
 ├── gluonnlp_infer_fp32_NT_TN_tvm1.csv
 ├── gluonnlp_infer_fp32_TN_TN_tvm1.csv
 ```
+
+## Generate the Benchmark Report

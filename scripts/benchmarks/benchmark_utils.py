@@ -780,7 +780,7 @@ class GluonNLPBackboneBenchmark:
             model = model_cls.from_cfg(cfg, dtype=dtype)
         model.load_parameters(backbone_param_path, ctx=ctx, cast_dtype=True)
         model.cast(dtype)
-        model.hybridize()
+        model.hybridize(static_alloc=True, static_shape=True)
         vocab_size = cfg.MODEL.vocab_size
         if self._layout == 'NT':
             input_ids = mxnet.np.random.randint(0, vocab_size, (batch_size, sequence_length),
@@ -883,7 +883,7 @@ class GluonNLPBackboneBenchmark:
         else:
             model = model_cls.from_cfg(cfg)
         model.load_parameters(backbone_param_path, ctx=ctx)
-        model.hybridize()
+        model.hybridize(static_alloc=True)
         vocab_size = cfg.MODEL.vocab_size
         if hasattr(cfg.MODEL, 'units'):
             out_units = cfg.MODEL.units
@@ -937,7 +937,7 @@ class GluonNLPBackboneBenchmark:
                 mxnet.npx.waitall()
         else:
             raise NotImplementedError
-        timeit.repeat(train_step, repeat=1, number=3)
+        timeit.repeat(train_step, repeat=1, number=5)
         mxnet.npx.waitall()
         runtimes = timeit.repeat(train_step, repeat=self._repeat, number=3)
         mxnet.npx.waitall()

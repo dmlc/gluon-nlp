@@ -19,6 +19,7 @@ for MODEL_NAME in albert_base \
                   roberta_large \
                   uncased_bert_base \
                   uncased_bert_large \
+                  uncased_bert_wwm_large \
                   gluon_en_cased_bert_base_v1 \
                   mobilebert
 do
