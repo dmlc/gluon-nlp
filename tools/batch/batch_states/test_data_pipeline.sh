@@ -2,6 +2,7 @@
 # Shell script for testing the data preprocessing on AWS Batch
 
 set -ex
+export PYTHONIOENCODING=utf8
 echo $PWD
 
 for MODEL in spm yttm
