@@ -30,149 +30,772 @@ T5 Model
 }
 """
 
-__all__ = []
+
+__all__ = ['T5Model']
+
 
 import os
+import functools
 from typing import Tuple
 
 import mxnet as mx
 from mxnet import use_np
 from mxnet import np, npx
 from mxnet.gluon import HybridBlock, Parameter, nn
+from mxnet.initializer import Constant, Normal
+from ..attention_cell import (
+    gen_self_attn_mask, gen_mem_attn_mask, MultiHeadAttentionCell, RelAttentionScoreCell
+)
 from ..base import get_model_zoo_home_dir, get_model_zoo_checksum_dir
 from ..data import Vocab
 from ..data.tokenizers import SentencepieceTokenizer
 from ..layers import get_activation
+from ..sequence_sampler import BaseStepDecoder
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats
 from ..utils.registry import Registry
+
 
 t5_cfg_reg = Registry('t5_cfg')
 
 
 @t5_cfg_reg.register()
 def google_t5_base(): 
+    """Configuratino of T5 Base"""
     cfg = CN()
+    # model parameters
+    cfg.MODEL = CN()
+    cfg.MODEL.vocab_size = 32128
+    cfg.MODEL.d_model = 768
+    cfg.MODEL.d_kv = 64
+    cfg.MODEL.d_ff = 3072
+    cfg.MODEL.num_layers = 12
+    cfg.MODEL.num_heads = 12
+    cfg.MODEL.dropout_prob = 0.1
+    cfg.MODEL.layer_norm_eps = 1E-6
+    cfg.MODEL.activation = 'relu'
+    cfg.MODEL.dtype = 'float32'
+    cfg.MODEL.layout = 'NT'
+    # initializer parameters
+    cfg.INITIALIZER = CN()
+    cfg.INITIALIZER.init_factor = 1.0
+    # other parameters
+    cfg.VERSION = 1
+    cfg.freeze()
+    return cfg
+
+
+@t5_cfg_reg.register()
+def google_t5_small(): 
+    cfg = google_t5_base()
+    cfg.defrost()
+    cfg.MODEL.d_model = 512
+    cfg.MODEL.d_ff = 2048
+    cfg.MODEL.num_layers = 6
+    cfg.MODEL.num_heads = 8
+    cfg.freeze()
+    return cfg
+
+
+@t5_cfg_reg.register()
+def google_t5_large(): 
+    cfg = google_t5_base()
+    cfg.defrost()
+    cfg.MODEL.d_model = 1024
+    cfg.MODEL.d_ff = 4096
+    cfg.MODEL.num_layers = 24
+    cfg.MODEL.num_heads = 16
+    cfg.freeze()
+    return cfg
+
+
+@t5_cfg_reg.register()
+def google_t5_3B(): 
+    cfg = google_t5_base()
+    cfg.defrost()
+    cfg.MODEL.d_model = 1024
+    cfg.MODEL.d_kv = 128
+    cfg.MODEL.d_ff = 16384
+    cfg.MODEL.num_layers = 24
+    cfg.MODEL.num_heads = 32
+    cfg.freeze()
+    return cfg
+
+
+@t5_cfg_reg.register()
+def google_t5_11B(): 
+    cfg = google_t5_base()
+    cfg.defrost()
+    cfg.MODEL.d_model = 1024
+    cfg.MODEL.d_kv = 128
+    cfg.MODEL.d_ff = 65536
+    cfg.MODEL.num_layers = 24
+    cfg.MODEL.num_heads = 128
     cfg.freeze()
     return cfg
 
 
 PRETRAINED_URL = {
-    'google_t5-small': {
+    'google_t5_small': {
 
     }, 
-    'google_t5-base': {
+    'google_t5_base': {
 
     }, 
-    'google_t5-large': {
+    'google_t5_large': {
 
     }, 
-    'google_t5: 3b': {
+    'google_t5_3B': {
 
     }, 
-    'google_t5: 11b': {
+    'google_t5_11B': {
 
     }
 }
+
 
 # FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 't5.txt'))
 
 
 @use_np
 class T5LayerNorm(HybridBlock): 
-    def __init__(self, d_model, eps=1e-6): 
-        """
-        LayerNorm with no bias or mean substraction
-        """
+    """
+    Layer normalization without bias and mean substraction
+    """
+    def __init__(self, d_model, epsilon=1E-6, init_factor=1.0, dtype='float32'): 
         super().__init__()
-        self.gemma = Parameter('layernorm_weight', shape=d_model, init='ones')
-        self.variance_epsilon = eps
+        self.weight = Parameter('layernorm_weight', shape=d_model, init=Constant(1.0 * init_factor), dtype=dtype)
+        self.variance_epsilon = epsilon
 
     def forward(self, x): 
         var = np.power(x.astype('float32'), 2).mean(-1, keepdims=True)
         x = x * np.reciprocal(np.sqrt(var + self.variance_epsilon))
-        if self.gemma.dtype == 'float16': 
+        if self.weight.dtype == 'float16': 
             x = x.astype('float16')
-        return self.gemma * x
+        return self.weight.data() * x # TODO: .data()?
 
 
 @use_np
-class T5DenseReluDense(HybridBlock): 
-    def __init__(self, d_model, d_ff, dropout_prob): 
-        super.__init__()
-        self.wi = nn.Dense(units=d_ff, in_units=d_model, use_bias=False)
-        self.relu = get_activation('relu')
-        self.wo = nn.Dense(units=d_model, in_units=d_ff, use_bias=False)
-        self.dropout = nn.Dropout(dropout_prob)
-
-    def forward(self, x): 
-        x = self.wi(x)
-        x = self.relu(x)
-        x = self.dropout(x)
-        x = self.wo(x)
-        return x
-
-
-@use_np
-class T5DenseGatedGeluDense(HybridBlock): 
-    def __init__(self, d_model, d_ff, dropout_prob): 
-        self.wi_0 = nn.Dense(units=d_ff, in_units=d_model, use_bias=False)
-        self.wi_1 = nn.Dense(units=d_ff, in_units=d_model, use_bias=False)
-        self.wo = nn.Dense(units=d_model, in_units=d_ff, use_bias=False)
-        self.gelu = get_activation('gelu')
-        self.dropout = nn.Dropout(dropout_prob)
-
-    def forward(self, x): 
-        x_gelu = self.gelu(self.wi_0(x))
-        x_linear = self.wi_1(x)
-        x = x_gelu * x_linear
-        x = self.dropout(x)
-        x = self.wo(x)
-        return x
-
-
-@use_np
-class T5BlockFFN(HybridBlock): 
+class T5FeedForward(HybridBlock): 
+    """
+    Feed forward network supporting relu and gated-gelu
+    """
     def __init__(
         self, 
         d_model, 
         d_ff, 
-        dropout_prob, 
-        ff_proj, 
-        layer_norm_eps
+        dropout_prob=0.1, 
+        layer_norm_eps=1E-6, 
+        activation='relu', 
+        init_factor=1.0, 
+        dtype='float32'
     ): 
         super().__init__()
-        if ff_proj == 'relu': 
-            self.ffn = T5DenseReluDense(d_model, d_ff, dropout_prob)
-        elif ff_proj == 'gated-gelu': 
-            self.ffn = T5DenseGatedGeluDense(d_model, d_ff, dropout_prob)
+        self._activation = activation
+
+        if activation == 'relu': 
+            self.wi = nn.Dense(
+                units=d_ff, 
+                in_units=d_model, 
+                flatten=False, 
+                use_bias=False, 
+                weight_initializer=Normal(d_model ** -0.5 * init_factor), 
+                dtype=dtype    
+            )
+            self.relu = get_activation('relu')
+            self.wo = nn.Dense(
+                units=d_model, 
+                in_units=d_ff, 
+                flatten=False, 
+                use_bias=False, 
+                weight_initializer=Normal(d_ff ** -0.5 * init_factor), 
+                dtype=dtype
+            )
+        elif activation == 'gated-gelu': 
+            self.wi_0 = nn.Dense(
+                units=d_ff, 
+                in_units=d_model, 
+                flatten=False, 
+                use_bias=False, 
+                weight_initializer=Normal(d_model ** -0.5 * init_factor), 
+                dtype=dtype
+            )
+            self.wi_1 = nn.Dense(
+                units=d_ff, 
+                in_units=d_model, 
+                flatten=False, 
+                use_bias=False, 
+                weight_initializer=Normal(d_model ** -0.5 * init_factor), 
+                dtype=dtype
+            )
+            self.wo = nn.Dense(
+                units=d_model, 
+                in_units=d_ff, 
+                flatten=False, 
+                use_bias=False, 
+                weight_initializer=Normal(d_ff ** -0.5 * factor), 
+                dtype=dtype
+            )
+            self.gelu = get_activation('gelu')
         else: 
             raise ValueError(
-                '{} unsupported. Select `relu` or `gated-gelu`'.format(ff_proj)
+                '{} unsupported. Select `relu` or `gated-gelu`'.format(activation)
             )
-        self.layer_norm = T5LayerNorm(d_model, layer_norm_eps)
+        self.layer_norm = T5LayerNorm(
+            d_model, 
+            epsilon=layer_norm_eps, 
+            init_factor=init_factor, 
+            dtype=dtype
+        )
         self.dropout = nn.Dropout(dropout_prob)
 
     def forward(self, x): 
         out = self.layer_norm(x)
-        out = self.ffn(out)
+        if self._activation == 'relu': 
+            out = self.wi(out)
+            out = self.relu(out)
+            out = self.dropout(out)
+            out = self.wo(out)
+        elif self._activation == 'gated-gelu': 
+            out_gelu = self.gelu(self.wi_0(out))
+            out_linear = self.wi_1(out)
+            out = out_gelu * out_linear
+            out = self.dropout(out)
+            out = self.wo(out)
+        else: 
+            raise ValueError(
+                '{} unsupported. Select `relu` or `gated-gelu`'.format(activation)
+            )
         out = x + self.dropout(out)
         return out
 
 
-@use_np
-class T5Attention(HybridBlock): 
-    pass
+def _assert_decoder_method(fn): 
+    @functools.wraps(fn)
+    def wrapper(self, *args, **kwargs): 
+        assert self._is_decoder, \
+            '{}() is available for decoder only'.format(fn.__name__)
+        return fn(self *args, **kwargs)
+    return wrapper
 
 
 @use_np
 class T5Block(HybridBlock): 
-    pass
+    def __init__(
+        self, 
+        d_model, 
+        d_kv, 
+        d_ff, 
+        is_decoder, 
+        num_heads=12, 
+        dropout_prob=0.1, 
+        layer_norm_eps=1E-6, 
+        activation='relu', 
+        init_factor=1.0, 
+        layout='NT', 
+        dtype='float32'
+    ): 
+        super().__init__()
+        self._d_model = d_model
+        self._d_kv = d_kv
+        self._d_ff = d_ff
+        self._is_decoder = is_decoder
+        self._num_heads = num_heads
+        self._inner_dim = self._num_heads * self._d_kv
+        self._dtype = dtype
+        assert layout in ['TN', 'NT'], \
+            'Invalid layout: {}. Only "TN" and "NT" are supported.'.format(layout)
+        self._layout = layout
+
+        self.self_attn_layer_norm = T5LayerNorm(
+            d_model=d_model, 
+            epsilon=layer_norm_eps, 
+            init_factor=init_factor, 
+            dtype=dtype
+        )
+        # avoid scaling before softmax
+        # See https://github.com/tensorflow/mesh/blob/fa19d69eafc9a482aff0b59ddd96b025c0cb207d/mesh_tensorflow/transformer/attention.py#L136
+        self.self_attn_q = nn.Dense(
+                units=self._inner_dim, 
+                in_units=d_model, 
+                flatten=False, 
+                use_bias=False, 
+                weight_initializer=Normal((d_model * d_kv) ** -0.5 * init_factor), 
+                dtype=dtype
+            )
+        self.self_attn_k = nn.Dense(
+            units=self._inner_dim, 
+            in_units=d_model, 
+            flatten=False, 
+            use_bias=False, 
+            weight_initializer=Normal(d_model ** -0.5 * init_factor), 
+            dtype=dtype
+        )
+        self.self_attn_v = nn.Dense(
+            units=self._inner_dim, 
+            in_units=d_model, 
+            flatten=False, 
+            use_bias=False, 
+            weight_initializer=Normal(d_model ** -0.5 * init_factor), 
+            dtype=dtype
+        )
+        self.self_attn = MultiHeadAttentionCell(
+            query_units=self._inner_dim, 
+            num_heads=num_heads, 
+            attention_dropout=dropout_prob, 
+            scaled=False, 
+            normalized=False, 
+            dtype=dtype, 
+            layout='NTK' if layout == 'NT' else 'TNK', 
+            use_einsum=False
+        )
+        self.self_attn_proj = nn.Dense(
+            units=d_model, 
+            in_units=self._inner_dim, 
+            flatten=False, 
+            use_bias=False, 
+            weight_initializer=Normal(self._inner_dim ** -0.5 * init_factor), 
+            dtype=dtype
+        )
+        if is_decoder: 
+            self.cross_attn_layer_norm = T5LayerNorm(
+                d_model=d_model, 
+                epsilon=layer_norm_eps, 
+                init_factor=init_factor, 
+                dtype=dtype
+            )
+            # avoid scaling before softmax
+            self.cross_attn_q = nn.Dense(
+                units=self._inner_dim, 
+                in_units=d_model, 
+                flatten=False, 
+                use_bias=False, 
+                weight_initializer=Normal((d_model * d_kv) ** -0.5 * init_factor), 
+                dtype=dtype
+            )
+            self.cross_attn_k = nn.Dense(
+                units=self._inner_dim, 
+                in_units=d_model, 
+                flatten=False, 
+                use_bias=False, 
+                weight_initializer=Normal(d_model ** -0.5 * init_factor), 
+                dtype=dtype
+            )
+            self.cross_attn_v = nn.Dense(
+                units=self._inner_dim, 
+                in_units=d_model, 
+                flatten=False, 
+                use_bias=False, 
+                weight_initializer=Normal(d_model ** -0.5 * init_factor), 
+                dtype=dtype
+            )
+            self.cross_attn = MultiHeadAttentionCell(
+                query_units=self._inner_dim, 
+                num_heads=num_heads, 
+                attention_dropout=dropout_prob, 
+                scaled=False, 
+                normalized=False, 
+                dtype=dtype, 
+                layout='NTK' if layout == 'NT' else 'TNK', 
+                use_einsum=False
+            )
+            self.cross_attn_proj = nn.Dense(
+                units=d_model, 
+                in_units=self._inner_dim, 
+                flatten=False, 
+                use_bias=False, 
+                weight_initializer=Normal(self._inner_dim ** -0.5 * init_factor), 
+                dtype=dtype
+            )
+        self.ffn = T5FeedForward(
+            d_model=d_model, 
+            d_ff=d_ff, 
+            dropout_prob=dropout_prob, 
+            layer_norm_eps=layer_norm_eps, 
+            activation=activation, 
+            init_factor=init_factor, 
+            dtype=dtype
+        )
+        self.dropout = nn.Dropout(dropout_prob)
+
+    @property
+    def layout(self): 
+        return self._layout
+
+    @_assert_decoder_method
+    @property
+    def state_batch_axis(self): 
+        if self.layout == 'NT': 
+            return 0, 0
+        else: 
+            return 1, 1
+
+    @_assert_decoder_method
+    def _init_states(self, batch_size, ctx, dtype='float32'): 
+        if self.layout == 'NT': 
+            shape = (batch_size, 0, self._num_heads, self._d_kv)
+        else: 
+            shape = ((0, batch_size, self._num_heads, self._d_kv))
+        init_key = np.zeros(shape, ctx=ctx, dtype=dtype)
+        init_value = np.zeros(shape, ctx=ctx, dtype=dtype)
+        return init_key, init_value
+
+    @_assert_decoder_method
+    def incremental_decode(
+        self, 
+        hidden_states, 
+        past_key_value, 
+        mem_states, 
+        mem_valid_length, 
+        mem_attn_mask=None
+    ): 
+        raise NotImplementedError
+
+    def forward(
+        self, 
+        hidden_states, 
+        self_attn_mask, 
+        position_embeddings, 
+        mem_states=None, 
+        mem_attn_mask=None, 
+        mem_position_embeddings=None
+    ): 
+        """
+        hidden_states: 
+            - layout = 'NT'
+                Shape (B, L_seq, d_model)
+            - layout = 'TN'
+                Shape (L_seq, B, d_model)
+        """
+        # NT -> NTK: (B, L_seq, inner_dim) -> (B, L_seq, num_heads, n_kv)
+        # TN -> TNK: (L_seq, B, inner_dim) -> (L_seq, B, num_heads, n_kv)
+        def shape(x):
+            return npx.reshape(x, (-2, -2, self._num_heads, -1))
+
+        # 1. self-attention
+        out = self.self_attn_layer_norm(hidden_states)
+        self_query, self_key, self_value = (
+            self.self_attn_q(out), 
+            self.self_attn_k(out), 
+            self.self_attn_v(out)
+        )
+        out, [_, self_attn_weights] = self.self_attn(
+            shape(self_query), 
+            shape(self_key), 
+            shape(self_value), 
+            self_attn_mask, 
+            position_embeddings
+        )
+        out = self.dropout(self.self_attn_proj(out))
+        hidden_states = hidden_states + out
+
+        # 2. cross-attention, if needed
+        if self._is_decoder: 
+            out = self.cross_attn_layer_norm(hidden_states)
+            cross_query, cross_key, cross_value = (
+                self.cross_attn_q(out), 
+                self.cross_attn_k(mem_states), 
+                self.cross_attn_v(mem_states)
+            )
+            out, [_, cross_attn_weights] = self.cross_attn(
+                shape(cross_query), 
+                shape(cross_key), 
+                shape(cross_value), 
+                mem_attn_mask, 
+                mem_position_embeddings
+            )
+            out = self.dropout(self.cross_attn_proj(out))
+            hidden_states = hidden_states + out
+
+        # 3. feed forward
+        hidden_states = self.ffn(hidden_states)
+        return hidden_states
+
+
+@use_np
+class T5Stack(HybridBlock): 
+    def __init__(
+        self, 
+        d_model, 
+        d_kv, 
+        d_ff, 
+        is_decoder, 
+        num_layers=12, 
+        num_heads=12, 
+        dropout_prob=0.1, 
+        layer_norm_eps=1E-6, 
+        activation='relu', 
+        init_factor=1.0, 
+        layout='NT', 
+        dtype='float32'
+    ): 
+        super().__init__()
+        self._is_decoder = is_decoder
+        self._d_model = d_model
+        self._d_kv = d_kv
+        self._d_ff = d_ff
+        self._num_layers = num_layers
+        self._num_heads = num_heads
+        self._inner_dim = num_heads * d_kv
+        self._dtype = dtype
+        assert layout in ['TN', 'NT'], \
+            'Invalid layout: {}. Only "TN" and "NT" are supported.'.format(layout)
+        self._layout = layout
+
+        self.relative_position_encoder = RelAttentionScoreCell(
+            query_units=self._inner_dim, 
+            num_heads=num_heads, 
+            method='t5', 
+            bidirectional=(not is_decoder), 
+            embed_initializer=Normal(d_model ** -0.5 * init_factor), 
+            layout='NTK' if layout == 'NT' else 'TNK', 
+            dtype=dtype
+        )
+        self.layers = nn.HybridSequential()
+        for _ in range(num_layers): 
+            self.layers.add(
+                T5Block(
+                    d_model=d_model, 
+                    d_kv=d_kv, 
+                    d_ff=d_ff, 
+                    is_decoder=is_decoder, 
+                    num_heads=num_heads, 
+                    dropout_prob=dropout_prob, 
+                    layer_norm_eps=layer_norm_eps, 
+                    activation=activation, 
+                    init_factor=init_factor, 
+                    layout=layout, 
+                    dtype=dtype
+                )
+            )
+        self.final_layer_norm = T5LayerNorm(
+            d_model=d_model, 
+            epsilon=layer_norm_eps, 
+            init_factor=init_factor, 
+            dtype=dtype
+        )
+        self.dropout = nn.Dropout(dropout_prob)
+
+    @property
+    def layout(self): 
+        return self._layout
+
+    @_assert_decoder_method
+    @property
+    def state_batch_axis(self): 
+        return list(layer.state_batch_axis for layer in self.layers)
+
+    @_assert_decoder_method
+    def init_states(self, batch_size, ctx, dtype='float32'): 
+        return list(layer.init_states(batch_size, ctx, dtype) for layer in self.layers)
+
+    @_assert_decoder_method
+    def incremental_decode(
+        hidden_states, 
+        past_key_value, 
+        mem_states, 
+        mem_valid_length
+    ): 
+        raise NotImplementedError
+
+    def _get_query_key_shape(self, hidden_states, mem_states, past_key_value): 
+        # NT: (B, L_seq, inner_dim); TN: (L_seq, B, inner_dim)
+        index = 1 if self.layout == 'NT' else 0
+        query_length = hidden_states.shape[index]
+        if past_key_value is not None: 
+            # for incremental decoding only, where past key and value are of shape
+            # NT(NTK): (B, L_seq, num_heads, n_kv); TN(TNK): (L_seq, B, num_heads, n_kv)
+            query_length += past_key_value[0].shape[index]
+        key_length = query_length if mem_states is None else mem_states.shape[index]
+        return query_length, key_length
+
+    @staticmethod
+    def _get_relative_position(query_length, key_length): 
+        # relative_position = mem_i - query_j
+        query_position = np.arange(query_length, dtype=np.int32)[:, None]
+        mem_position = np.arange(key_length, dtype=np.int32)[None, :]
+        relative_position = mem_position - query_position
+        return relative_position
+
+    def forward(
+        self, 
+        hidden_states, 
+        valid_length, 
+        mem_states=None, 
+        mem_valid_length=None
+    ): 
+        # 1. relative position embeddings and attention masks
+        position_embeddings = self.relative_position_encoder(
+            T5Stack._get_relative_position(*self._get_query_key_shape(hidden_states, None, None))
+        )
+        if self._is_decoder: 
+            mem_position_embeddings = np.zeros(
+                (1, self._num_heads, *self._get_query_key_shape(hidden_states, mem_states, None)), 
+                dtype=self._dtype
+            )
+        else: 
+            mem_position_embeddings = None
+        self_attn_mask = gen_self_attn_mask(
+            hidden_states, 
+            valid_length, 
+            dtype=self._dtype, 
+            attn_type='causal' if self._is_decoder else 'full', 
+            layout=self.layout
+        )
+        if self._is_decoder: 
+            mem_attn_mask = gen_mem_attn_mask(
+                mem_states, 
+                mem_valid_length, 
+                hidden_states, 
+                valid_length, 
+                dtype=self._dtype, 
+                layout=self.layout
+            )
+        else: 
+            mem_attn_mask = None
+
+        # 2. encoder (or decoder) blocks and other layers
+        # for the encoder, mem_states, mem_valid_length, mem_attn_mask, 
+        # and mem_position_embeddings are None
+        hidden_states = self.dropout(hidden_states)
+        for layer in self.layers: 
+            hidden_states = layer( # TODO(yongyi-wu): enable kwargs
+                hidden_states, 
+                self_attn_mask, 
+                position_embeddings, 
+                mem_states, 
+                mem_attn_mask, 
+                mem_position_embeddings
+            )
+        hidden_states = self.final_layer_norm(hidden_states)
+        hidden_states = self.dropout(hidden_states)
+        return hidden_states
 
 
 @use_np
 class T5Model(HybridBlock): 
-    pass
+    def __init__(
+        self, 
+        vocab_size=32128, 
+        d_model=768, 
+        d_kv=64, 
+        d_ff=3072, 
+        num_layers=12, 
+        num_heads=12, 
+        dropout_prob=0.1, 
+        layer_norm_eps=1E-6, 
+        activation='relu', 
+        init_factor=1.0, 
+        layout='NT', 
+        dtype='float32'
+    ): 
+        super().__init__()
+        assert vocab_size > 0, 'Vocab size {} is not valid'.format(vocab_size)
+        self._vocab_size = vocab_size
+        self._num_layers = num_layers
+        self._activation = activation
+        assert layout in ['TN', 'NT'], \
+            'Invalid layout: {}. Only "TN" and "NT" are supported.'.format(layout)
+        self._layout = layout
+
+        # input embedding weights are shared between across encoder and decoder
+        self.input_embedding_layer = nn.Embedding(
+            input_dim=vocab_size, 
+            output_dim=d_model, 
+            weight_initializer=Normal(1.0 * init_factor), 
+            dtype=dtype
+        )
+        self.encoder = T5Stack(
+            d_model=d_model, 
+            d_kv=d_kv, 
+            d_ff=d_ff, 
+            is_decoder=False, 
+            num_layers=num_layers, 
+            num_heads=num_heads, 
+            dropout_prob=dropout_prob, 
+            layer_norm_eps=layer_norm_eps, 
+            activation=activation,  
+            init_factor=init_factor, 
+            dtype=dtype, 
+            layout=layout
+        )
+        self.decoder = T5Stack(
+            d_model=d_model, 
+            d_kv=d_kv, 
+            d_ff=d_ff, 
+            is_decoder=True, 
+            num_layers=num_layers, 
+            num_heads=num_heads, 
+            dropout_prob=dropout_prob, 
+            layer_norm_eps=layer_norm_eps, 
+            activation=activation,  
+            init_factor=init_factor, 
+            dtype=dtype, 
+            layout=layout
+        )
+    
+    @property
+    def activation(self): 
+        return self._activation
+    
+    @property
+    def layout(self): 
+        return self._layout
+
+    @property
+    def num_layers(self): 
+        return self._num_layers
+
+    @property
+    def vocab_size(self): 
+        return self._vocab_size
+
+    def forward(self, src_data, src_valid_length, tgt_data, tgt_valid_length): 
+        src_hidden_states = self.input_embedding_layer(src_data)
+        enc_out = self.encoder(
+            src_hidden_states, 
+            src_valid_length
+        )
+        tgt_hidden_states = self.input_embedding_layer(tgt_data)
+        dec_out = self.decoder(
+            tgt_hidden_states, 
+            tgt_valid_length, 
+            enc_out, 
+            src_valid_length
+        )
+        return dec_out
+
+    @classmethod
+    def get_cfg(cls, key=None): 
+        if key is None: 
+            return google_t5_base()
+        else: 
+            return t5_cfg_reg.create(key)
+
+    @classmethod
+    def from_cfg(cls, cfg, dtype=None): 
+        cfg = cls.get_cfg().clone_merge(cfg)
+        assert cfg.VERSION == 1, 'Wrong version: {}'.format(cfg.VERSION)
+        if dtype is None: 
+            dtype = cfg.MODEL.dtype
+        return cls(
+            vocab_size=cfg.MODEL.vocab_size, 
+            d_model=cfg.MODEL.d_model, 
+            d_kv=cfg.MODEL.d_kv, 
+            d_ff=cfg.MODEL.d_ff, 
+            num_layers=cfg.MODEL.num_layers, 
+            num_heads=cfg.MODEL.num_heads, 
+            dropout_prob=cfg.MODEL.dropout_prob, 
+            layer_norm_eps=cfg.MODEL.layer_norm_eps, 
+            activation=cfg.MODEL.activation, 
+            init_factor=cfg.INITIALIZER.init_factor, 
+            layout=cfg.MODEL.layout, 
+            dtype=dtype
+        )
+
+
+class T5Inference(HybridBlock, BaseStepDecoder): 
+    pass 
 
 
 def list_pretrained_t5(): 
@@ -217,11 +840,10 @@ def get_pretrained_t5(model_name: str = 't5-base',
         cfg = None
 
     vocab_path = PRETRAINED_URL[model_name]['vocab']
-    params_path = PRETRAINED_URL[model_name]['params']
 
     do_lower = True if 'lowercase' in PRETRAINED_URL[model_name]\
                        and PRETRAINED_URL[model_name]['lowercase'] else False
     tokenizer = _build_t5_tokenizer(vocab_path, do_lower, extra_ids)
     if cfg is None: 
         cfg = T5Model.get_cfg().clone_merge(local_paths['cfg'])
-    return cfg, tokenizer,
+    return cfg, tokenizer, '', ''

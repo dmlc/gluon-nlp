@@ -660,7 +660,8 @@ class RelAttentionScoreCell(HybridBlock):
                  dropout: float = 0.0,
                  dtype='float32',
                  layout='NTK',
-                 use_einsum=False):
+                 use_einsum=False, 
+                 embed_initializer=None):
         """
 
         Parameters
@@ -728,6 +729,7 @@ class RelAttentionScoreCell(HybridBlock):
                 num_buckets=self._num_buckets,
                 max_distance=self._max_distance,
                 bidirectional=self._bidirectional,
+                embed_initializer=embed_initializer,
                 dtype=self._dtype)
         else:
             raise NotImplementedError('method="{}" is currently not supported!'.format(method))
