@@ -45,8 +45,7 @@ jobs:
                                              --work-dir . \
                                              --saved-output docs/tutorials \
                                              --save-path tutorials \
-                                             --command "ln -s /workspace/gluon-nlp/scripts/ /workspace/gluon-nlp/docs/model_zoo \
-                                                        && python -m pip install --quiet -e .[web] && \
+                                             --command "python -m pip install --quiet -e .[web] && \
                                                         ./tools/batch/batch_states/compile_notebooks.sh \
                                                         'master' ${GITHUB_REF##*/}"
                                              --wait | tee build_website.log
@@ -57,15 +56,14 @@ jobs:
           python ./tools/batch/submit-job.py --region us-east-1 \
                                              --job-type g4dn.4x \
                                              --name GluonNLP-Website-${{ github.ref }} \
-                                             --remote https://github.com/${{ github.repository }} \
-                                             --source-ref ${{ github.ref }} \
+                                             --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
+                                             --source-ref ${{ github.event.pull_request.head.sha }} \
                                              --work-dir . \
                                              --saved-output docs/tutorials \
                                              --save-path tutorials \
-                                             --command "ln -s /workspace/gluon-nlp/scripts/ /workspace/gluon-nlp/docs/model_zoo \
-                                                        && python -m pip install --quiet -e .[web] && \
+                                             --command "python -m pip install --quiet -e .[web] && \
                                                         ./tools/batch/batch_states/compile_notebooks.sh \
-                                                        'master' ${GITHUB_REF##*/}"
+                                                        ${{ github.event.number }} ${{ github.event.pull_request.head.sha }}"
                                              --wait | tee build_website.log
       # TODO
       # - name: Wait for job and copy logs from AWS s3
