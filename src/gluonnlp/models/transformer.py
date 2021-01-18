@@ -684,6 +684,7 @@ class TransformerDecoderLayer(HybridBlock):
                 Shape (batch_size, prev_seq_length + 1, num_heads, C_value)
 
         """
+        residual = data
         if self._pre_norm:
             data = self.ln_in(data)
         if self.layout == 'NT':
@@ -711,11 +712,12 @@ class TransformerDecoderLayer(HybridBlock):
         out, [_, attn_weight] = self.self_attention(step_query, new_key, new_value, None)
         out = self.proj_in(out)
         out = self.dropout_layer(out)
-        out = out + data
+        out = out + residual
         if not self._pre_norm:
             out = self.ln_in(out)
         # 2. Attend to the contextual memory
         data = out
+        residual = data
         if self._pre_norm:
             data = self.ln_inter(data)
         out, _ = self.inter_attention(npx.reshape(self.attn_inter_q(data),
@@ -727,7 +729,7 @@ class TransformerDecoderLayer(HybridBlock):
                                       mem_attn_mask)
         out = self.proj_inter(out)
         out = self.dropout_layer(out)
-        out = out + data
+        out = out + residual
         if not self._pre_norm:
             out = self.ln_inter(out)
         # 3. Encode the output via an FFN layer
