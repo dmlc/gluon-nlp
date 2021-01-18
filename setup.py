@@ -103,10 +103,12 @@ setup(
             'flaky',
         ],
         'web': [
-            'setuptools',
-            'ipython sphinx>=1.5.5',
+            'ipython',
+            'sphinx>=1.5.5',
             'sphinx-gallery',
-            'nbsphinx sphinx_rtd_theme mxtheme',
+            'nbsphinx',
+            'sphinx_rtd_theme'
+            'mxtheme',
             'sphinx-autodoc-typehints',
             'matplotlib',
             'Image',
