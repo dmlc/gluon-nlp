@@ -76,7 +76,7 @@ jobs:
           cat jobid.log
           cat jobid.log | xargs -i python ./tools/batch/wait-job.py --job-id {}
           echo "Copy Log file"
-          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/tutorials
+          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/tutorials/index.rst
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/tutorials tutorials --recursive
       
       - name: Upload Notebook Compile Logs 
