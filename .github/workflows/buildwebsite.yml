@@ -65,25 +65,25 @@ jobs:
                                                         ./tools/batch/batch_states/compile_notebooks.sh \
                                                         ${{ github.event.number }} ${{ github.event.pull_request.head.sha }}"
                                              --wait | tee build_website.log
-      # TODO
-      # - name: Wait for job and copy logs from AWS s3
-      #   if: ${{ failure() || success() }}
-      #   run: |
-      #     head -100 batch_job.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
+
+      - name: Wait for job and copy logs from AWS s3
+        if: ${{ failure() || success() }}
+        run: |
+          head -100 batch_job.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
           
-      #     echo "Job ID is"
-      #     cat jobid.log
-      #     cat jobid.log | xargs -i python ./tools/batch/wait-job.py --job-id {}
-      #     echo "Copy Log file"
-      #     cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/tutorials
-      #     cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/tutorials/*/*.stdout.log .
+          echo "Job ID is"
+          cat jobid.log
+          cat jobid.log | xargs -i python ./tools/batch/wait-job.py --job-id {}
+          echo "Copy Log file"
+          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/tutorials
+          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/tutorials tutorials --recursive
       
       - name: Upload Notebook Compile Logs 
         if: ${{ failure() || success() }}
         uses: actions/upload-artifact@v2
         with:
           name: Notebook_Logs
-          path: ./*.stdout.log
+          path: ./tutorials/**/*.stdout.log
 
       - name: Upload Website Build Log 
         if: ${{ failure() || success() }}
