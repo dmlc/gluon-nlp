@@ -187,8 +187,8 @@ class Pad:
     val : float or int, default 0
         The padding value.
     axis : int, default 0
-        The axis to pad the arrays. The arrays will be padded to the largest dimension at
-        `axis`. For example, assume the input arrays have shape
+        The axis to pad the arrays. The arrays will be padded to the largest possible dimension,
+        and then stack at `axis`. For example, assume the input arrays have shape
         (10, 8, 5), (6, 8, 5), (3, 8, 5) and the `axis` is 0. Each input will be padded into
         (10, 8, 5) and then stacked to form the final output, which has shape（3, 10, 8, 5).
     dtype : str or numpy.dtype, default None
