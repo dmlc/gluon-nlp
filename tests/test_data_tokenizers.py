@@ -15,7 +15,7 @@ from gluonnlp.data.tokenizers import WhitespaceTokenizer, MosesTokenizer, JiebaT
 from gluonnlp.base import get_repo_url
 from gluonnlp.data import Vocab, load_vocab
 from gluonnlp.utils.misc import download
-from gluonnlp.models.t5 import _build_t5_tokenizer
+from gluonnlp.models.t5 import build_t5_tokenizer
 
 
 EN_SAMPLES = ['Four score and seven years ago our fathers brought forth on this continent, '
@@ -427,7 +427,7 @@ def test_sentencepiece_tokenizer():
             url=get_repo_url() + 'tokenizer_test_models/sentencepiece/case_t5/test_t5spm-5f05e7.model',
             path=vocab_path
         )
-        tokenizer = _build_t5_tokenizer(vocab_path, False, 100)
+        tokenizer = build_t5_tokenizer(vocab_path, False, 100)
         gt_tokenized = [
             ['▁Hello', ',', '▁', 'y', "'", 'all', '!', '▁How', '▁are', '▁you', '▁VIII', '▁', '😁', 
              '▁', '😁', '▁', '😁', '▁', '?'], 

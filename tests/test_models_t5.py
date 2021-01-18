@@ -41,9 +41,9 @@ def test_t5_small_config(activation, ctx):
         src_length = 32
         tgt_length = 16
         src_data = np.random.randint(0, 255, (batch_size, src_length))
-        src_valid_length = np.random.randint(2, tgt_length, (batch_size,))
+        src_valid_length = np.random.randint(2, src_length, (batch_size,))
         tgt_data = np.random.randint(0, 255, (batch_size, tgt_length))
-        tgt_valid_length = np.random.randint(5, tgt_length, ((batch_size,)))
+        tgt_valid_length = np.random.randint(5, tgt_length, (batch_size,))
 
         out = t5_model(src_data, src_valid_length, tgt_data, tgt_valid_length)
         out_tn = t5_model_tn(src_data.T, src_valid_length, tgt_data.T, tgt_valid_length)

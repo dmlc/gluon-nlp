@@ -201,7 +201,7 @@ class Vocab:
             idx = len(self._all_tokens)
             self._all_tokens.append(token)
             self._token_to_idx[token] = idx
-        for k, token in [('unk_token', unk_token)] + list(kwargs.items()):
+        for k, token in [('unk_token', unk_token)] + sorted(list(kwargs.items())):
             _check_special_token_identifier(k)
             if token is None:
                 continue

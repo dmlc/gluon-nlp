@@ -95,7 +95,7 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
              if self._sp_model.is_control(i) and i not in existing_control_token_ids]
         other_control_tokens = set([self._sp_model.id_to_piece(ele)
                                     for ele in other_control_tokens_ids])
-        matched_other_tokens = dict()
+        matched_other_control_tokens = dict()
         for k, v in kwargs.items():
             if k in special_tokens_kv:
                 if v != special_tokens_kv[k]:
@@ -109,18 +109,21 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
                                      'We cannot rename it to "vocab.{}".'
                                      .format(v, token_id_to_token_name[v], k))
                 continue
-            if v in matched_other_tokens:
-                raise ValueError(
-                    '"{}" has already been registered as "vocab.{}", '
-                    'we cannot register it again as "vocab.{}".'
-                        .format(v, matched_other_tokens[v], k)) 
-            else:
-                matched_other_tokens[v] = k
+            if v in other_control_tokens:
+                if v in matched_other_control_tokens:
+                    raise ValueError(
+                        '"{}" has already been registered as "vocab.{}", '
+                        'we cannot register it again as "vocab.{}".'
+                            .format(v, matched_other_control_tokens[v], k))
+                matched_other_control_tokens[v] = k
                 special_tokens_kv[k] = v
+            else:
+                raise ValueError('Mismatch vocabulary! All special tokens specified '
+                                 'must be control tokens in the sentencepiece vocabulary.')
         if vocab is None:
-            if len(matched_other_tokens) < len(other_control_tokens):
+            if len(matched_other_control_tokens) < len(other_control_tokens):
                 for i, token in enumerate(other_control_tokens.difference(
-                        set(matched_other_tokens.keys()))):
+                        set(matched_other_control_tokens.keys()))):
                     token_key = 'other{}_token'.format(i)
                     assert token_key not in special_tokens_kv
                     special_tokens_kv[token_key] = token

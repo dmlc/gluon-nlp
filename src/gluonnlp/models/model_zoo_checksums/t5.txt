@@ -1,0 +1,9 @@
+google_t5_small/t5-5f05e7c5.vocab       5f05e7c57adf916bdba74912b0b37dea5c585988    791656
+google_t5_small/model-3cc6e5f7.yml      3cc6e5f7c6ccc3e2ac174d899b1aed74d7de65e0    235
+google_t5_small/model-e34f6fbd.params   e34f6fbda666c02f0ffd5e15fec02056d3e3014d    242141346
+google_t5_base/t5-5f05e7c5.vocab        5f05e7c57adf916bdba74912b0b37dea5c585988    791656
+google_t5_base/model-ca5cc26c.yml       ca5cc26c9dfe31295c97ef536b3f6f954ef1a447    237
+google_t5_base/model-e1956ac9.params    e1956ac9670263b6803672bd0d7579f71d7494c6    891901274
+google_t5_large/t5-5f05e7c5.vocab       5f05e7c57adf916bdba74912b0b37dea5c585988    791656
+google_t5_large/model-01c5d9ae.yml      01c5d9ae5476b18c3516ebbe3a505b966982027d    238
+google_t5_large/model-bf5fc813.params   bf5fc8138a04aa5f3bc495cacb010c873e59e909    2951363690
