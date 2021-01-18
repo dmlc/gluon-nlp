@@ -12,6 +12,9 @@ jobs:
     strategy: 
       fail-fast: false
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Install Linux dependencies
         run: |
           sudo apt-get install libopenblas-dev pandoc
