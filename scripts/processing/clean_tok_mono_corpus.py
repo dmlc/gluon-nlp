@@ -213,7 +213,7 @@ def get_parser():
     parser.add_argument('--discard-non-latin1', action='store_true',
                         help='Whether to discard the sentence pair if both sentences cannot be '
                              'encoded into latin1.')
-    parser.add_argument('--num-process', type=int, default=8,
+    parser.add_argument('--num-process', type=int, default=multiprocessing.cpu_count(),
                         help='number of process')
     parser.add_argument('--overwrite', action='store_true')
 
