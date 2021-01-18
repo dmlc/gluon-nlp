@@ -255,6 +255,7 @@ class TransformerEncoderLayer(HybridBlock):
         attn_weight
             Shape (batch_size, seq_length, seq_length)
         """
+        residual = data
         if self._pre_norm:
             data = self.layer_norm(data)
         query, key, value = np.split(self.attn_qkv(data), 3, axis=-1)
@@ -264,7 +265,7 @@ class TransformerEncoderLayer(HybridBlock):
         out, [_, attn_weight] = self.attention_cell(query, key, value, attn_mask)
         out = self.attention_proj(out)
         out = self.dropout_layer(out)
-        out = out + data
+        out = out + residual
         if not self._pre_norm:
             out = self.layer_norm(out)
         out = self.ffn(out)
@@ -565,6 +566,7 @@ class TransformerDecoderLayer(HybridBlock):
                 Shape (seq_length, batch_size, C_out)
         """
         # 1. Get the causal self-attention value
+        residual = data
         if self._pre_norm:
             data = self.ln_in(data)
         self_query, self_key, self_value = np.split(self.attn_in_qkv(data), 3, axis=-1)
@@ -575,11 +577,12 @@ class TransformerDecoderLayer(HybridBlock):
                 self_causal_mask)
         out = self.proj_in(out)
         out = self.dropout_layer(out)
-        out = out + data
+        out = out + residual
         if not self._pre_norm:
             out = self.ln_in(out)
         # 2. Attend to the contextual memory
         data = out
+        residual = data
         if self._pre_norm:
             data = self.ln_inter(data)
         out, [_, context_attn_weight] = self.inter_attention(
@@ -589,7 +592,7 @@ class TransformerDecoderLayer(HybridBlock):
                 mem_attn_mask)
         out = self.proj_inter(out)
         out = self.dropout_layer(out)
-        out = out + data
+        out = out + residual
         if not self._pre_norm:
             out = self.ln_inter(out)
         # 3. Encode the output via an FFN layer
@@ -681,13 +684,14 @@ class TransformerDecoderLayer(HybridBlock):
                 Shape (batch_size, prev_seq_length + 1, num_heads, C_value)
 
         """
-        if self._pre_norm:
-            data = self.ln_in(data)
         if self.layout == 'NT':
             time_axis = 1
         else:
             time_axis = 0
         data = np.expand_dims(data, axis=time_axis)
+        residual = data
+        if self._pre_norm:
+            data = self.ln_in(data)
         # Shape (B, prev_L, #Head, C_K), (B, prev_L, #Head, C_V)
         #  or (prev_L, B, #Head, C_K), (prev_L, B, #Head, C_V)
         prev_key, prev_value = states
@@ -708,11 +712,12 @@ class TransformerDecoderLayer(HybridBlock):
         out, [_, attn_weight] = self.self_attention(step_query, new_key, new_value, None)
         out = self.proj_in(out)
         out = self.dropout_layer(out)
-        out = out + data
+        out = out + residual
         if not self._pre_norm:
             out = self.ln_in(out)
         # 2. Attend to the contextual memory
         data = out
+        residual = data
         if self._pre_norm:
             data = self.ln_inter(data)
         out, _ = self.inter_attention(npx.reshape(self.attn_inter_q(data),
@@ -724,7 +729,7 @@ class TransformerDecoderLayer(HybridBlock):
                                       mem_attn_mask)
         out = self.proj_inter(out)
         out = self.dropout_layer(out)
-        out = out + data
+        out = out + residual
         if not self._pre_norm:
             out = self.ln_inter(out)
         # 3. Encode the output via an FFN layer

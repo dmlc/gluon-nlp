@@ -254,6 +254,7 @@ horovodrun -np 4 -H localhost:4 python3 train_transformer.py \
     --warmup_steps 4000 \
     --warmup_init_lr 0.0 \
     --seed 123 \
+    --max_grad_norm 1.0 \
     --fp16
 ```
 
