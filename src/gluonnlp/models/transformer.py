@@ -684,14 +684,14 @@ class TransformerDecoderLayer(HybridBlock):
                 Shape (batch_size, prev_seq_length + 1, num_heads, C_value)
 
         """
-        residual = data
-        if self._pre_norm:
-            data = self.ln_in(data)
         if self.layout == 'NT':
             time_axis = 1
         else:
             time_axis = 0
         data = np.expand_dims(data, axis=time_axis)
+        residual = data
+        if self._pre_norm:
+            data = self.ln_in(data)
         # Shape (B, prev_L, #Head, C_K), (B, prev_L, #Head, C_V)
         #  or (prev_L, B, #Head, C_K), (prev_L, B, #Head, C_V)
         prev_key, prev_value = states
