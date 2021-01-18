@@ -107,7 +107,7 @@ setup(
             'sphinx>=1.5.5',
             'sphinx-gallery',
             'nbsphinx',
-            'sphinx_rtd_theme'
+            'sphinx_rtd_theme',
             'mxtheme',
             'sphinx-autodoc-typehints',
             'matplotlib',
