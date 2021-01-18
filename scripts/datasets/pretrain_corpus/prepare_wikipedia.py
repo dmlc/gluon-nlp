@@ -127,7 +127,7 @@ def get_parser():
     parser.add_argument("-b", "--bytes", default="100M",
                         help="maximum bytes per extracted file (default %(default)s)",
                         metavar="n[KMG]")
-    parser.add_argument("--num_process", type=int, default=8,
+    parser.add_argument("--num_process", type=int, default=os.cpu_count(),
                         help="number of processes for multiprocessing")
     parser.add_argument("--num_out_files", type=int, default=1000,
                         help="Number of desired output files, where each is processed"
