@@ -575,13 +575,14 @@ class PositionwiseFFN(HybridBlock):
         out :
             Shape (B, seq_length, C_out)
         """
+        residual = data
         if self._pre_norm:
             data = self.layer_norm(data)
         out = self.activation(self.ffn_1(data))
         out = self.activation_dropout_layer(out)
         out = self.ffn_2(out)
         out = self.dropout_layer(out)
-        out = out + data
+        out = out + residual
         if not self._pre_norm:
             out = self.layer_norm(out)
         return out

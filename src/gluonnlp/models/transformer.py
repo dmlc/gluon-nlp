@@ -255,6 +255,7 @@ class TransformerEncoderLayer(HybridBlock):
         attn_weight
             Shape (batch_size, seq_length, seq_length)
         """
+        residual = data
         if self._pre_norm:
             data = self.layer_norm(data)
         query, key, value = np.split(self.attn_qkv(data), 3, axis=-1)
@@ -264,7 +265,7 @@ class TransformerEncoderLayer(HybridBlock):
         out, [_, attn_weight] = self.attention_cell(query, key, value, attn_mask)
         out = self.attention_proj(out)
         out = self.dropout_layer(out)
-        out = out + data
+        out = out + residual
         if not self._pre_norm:
             out = self.layer_norm(out)
         out = self.ffn(out)
