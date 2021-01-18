@@ -489,7 +489,7 @@ class PositionwiseFFN(HybridBlock):
     """The Position-wise FFN layer used in Transformer-like architectures
 
     If pre_norm is True:
-        norm(data) -> fc1 -> act -> act_dropout -> fc2 -> dropout -> res(+data)
+        data -> norm(data) -> fc1 -> act -> act_dropout -> fc2 -> dropout -> res(+data)
     Else:
         data -> fc1 -> act -> act_dropout -> fc2 -> dropout -> norm(res(+data))
     """
@@ -566,7 +566,6 @@ class PositionwiseFFN(HybridBlock):
 
         Parameters
         ----------
-        F
         data :
             Shape (B, seq_length, C_in)
 
