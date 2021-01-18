@@ -15,10 +15,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get install libopenblas-dev pandoc
-
       - name: Setup python
         uses: actions/setup-python@v2
         with:
@@ -49,8 +45,9 @@ jobs:
                                              --saved-output docs/tutorials \
                                              --save-path tutorials \
                                              --command "python -m pip install --quiet -e .[web] && \
+                                                        apt-get install -y pandoc zip && \
                                                         ./tools/batch/batch_states/compile_notebooks.sh \
-                                                        'master' ${GITHUB_REF##*/}"
+                                                        'push' ${GITHUB_REF##*/}" \
                                              --wait | tee build_website.log
 
       - name: Build Website (For pull request)
@@ -65,14 +62,15 @@ jobs:
                                              --saved-output docs/tutorials \
                                              --save-path tutorials \
                                              --command "python -m pip install --quiet -e .[web] && \
+                                                        apt-get install -y pandoc zip && \
                                                         ./tools/batch/batch_states/compile_notebooks.sh \
-                                                        ${{ github.event.number }} ${{ github.event.pull_request.head.sha }}"
+                                                        ${{ github.event.number }} ${{ github.event.pull_request.head.sha }}" \
                                              --wait | tee build_website.log
 
       - name: Wait for job and copy logs from AWS s3
         if: ${{ failure() || success() }}
         run: |
-          head -100 batch_job.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
+          head -100 build_website.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
           
           echo "Job ID is"
           cat jobid.log
