@@ -102,6 +102,22 @@ setup(
             'nbsphinx',
             'flaky',
         ],
+        'web': [
+            'setuptools',
+            'ipython sphinx>=1.5.5',
+            'sphinx-gallery',
+            'nbsphinx sphinx_rtd_theme mxtheme',
+            'sphinx-autodoc-typehints',
+            'matplotlib',
+            'Image',
+            'recommonmark',
+            'nbformat',
+            'notedown',
+            'jupyter_client',
+            'ipykernel',
+            'matplotlib',
+            'termcolor',
+        ],
     },
 
     entry_points={
