@@ -125,6 +125,7 @@ def transformer_wmt_en_de_big_t2t():
     cfg.defrost()
     cfg.MODEL.attention_dropout = 0.1
     cfg.MODEL.activation_dropout = 0.1
+    cfg.MODEL.dropout = 0.1
     cfg.MODEL.ENCODER.pre_norm = True
     cfg.MODEL.DECODER.pre_norm = True
     cfg.freeze()
