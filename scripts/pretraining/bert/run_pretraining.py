@@ -210,11 +210,11 @@ def train(args):
     raw_datas=[]
 
     if args.raw:
-        datasets_dir=args.data_dir.split(',')
+        datasets_dir = args.data_dir.split(',')
         for dataset_dir in datasets_dir:
-            names=os.listdir(dataset_dir)
+            names = os.listdir(dataset_dir)
             for i in range(len(names)):
-                names[i]=os.path.join(dataset_dir, names[i])
+                names[i] = os.path.join(dataset_dir, names[i])
             raw_datas.append(','.join(names))
     if args.raw:
         raw_data = ','.join(raw_datas)
