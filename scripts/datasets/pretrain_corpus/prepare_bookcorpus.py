@@ -4,6 +4,7 @@ import os
 import tarfile
 import argparse
 import glob
+from gluonnlp.base import get_data_home_dir
 from gluonnlp.utils.misc import download, load_checksum_stats
 from collections import defaultdict
 from itertools import islice
@@ -16,7 +17,7 @@ import sys
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 _TARGET_PATH = os.path.join(_CURR_DIR, '../../processing/')
 sys.path.append(_TARGET_PATH)
-from segment_sentences import *
+from segment_sentences import Sharding, segment_sentences, NLTKSegmenter
 
 
 
@@ -56,6 +57,9 @@ def get_parser():
                         help="process num when segmenting articles")
     parser.add_argument("--segment_sentences", action='store_true',
                         help="directory for downloaded  files")
+    parser.add_argument('--cache-path', type=str,
+                        default=os.path.join(get_data_home_dir(), 'bookcorpus'),
+                        help='The temporary path to download the dataset.')
     return parser
 
 
@@ -63,7 +67,7 @@ def get_parser():
 def main(args):
     url =_URLS['books1']
     file_hash = _URL_FILE_STATS[url]
-    target_download_location = os.path.join(args.output,
+    target_download_location = os.path.join(args.cache_path,
                                             os.path.basename(url))
     download(url, target_download_location, sha1_hash=file_hash)
     tar = tarfile.open(target_download_location)
@@ -83,7 +87,7 @@ def main(args):
     if args.segment_sentences:
         print("start to transfer bookcorpus to one sentence per line")
         t1 = time.time()
-        segmenter = NLTKSegmenter()
+
         input_name = os.path.join(args.output, 'bookcorpus.txt')
         output_name = os.path.join(args.output, 'one_sentence_per_line/')
         if not os.path.exists(output_name):
@@ -91,9 +95,7 @@ def main(args):
         sharding = Sharding([input_name], output_name, 128, 1, 0 ,args.segment_num_worker)
 
         sharding.load_articles()
-        sharding.segment_articles_into_sentences(segmenter)
-        sharding.distribute_articles_over_shards()
-        sharding.write_shards_to_disk()
+        sharding.segment_articles_into_sentences()
         t2 = time.time()
         print("transfer cost:{}".format(t2-t1))
 
