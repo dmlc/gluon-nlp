@@ -7,3 +7,9 @@ google_t5_base/model-e1956ac9.params    e1956ac9670263b6803672bd0d7579f71d7494c6
 google_t5_large/t5-5f05e7c5.vocab       5f05e7c57adf916bdba74912b0b37dea5c585988    791656
 google_t5_large/model-01c5d9ae.yml      01c5d9ae5476b18c3516ebbe3a505b966982027d    238
 google_t5_large/model-bf5fc813.params   bf5fc8138a04aa5f3bc495cacb010c873e59e909    2951363690
+google_t5_3B/t5-5f05e7c5.vocab          5f05e7c57adf916bdba74912b0b37dea5c585988    791656
+google_t5_3B/model-791f2e90.yml         791f2e90057fcccfa83bf8130034196d3550fb77    240
+google_t5_3B/model-48ba7250.params      48ba72501239c8d2d355282eebdebd0935556780    11407098198
+google_t5_11B/t5-5f05e7c5.vocab         5f05e7c57adf916bdba74912b0b37dea5c585988    791656
+google_t5_11B/model-2e50d93e.yml        2e50d93effc258aa75af162e9598be60ae13a83e    241
+google_t5_11B/model-1936031c.params     1936031c6db581ae866f41ec6d3c1c6de2049823    45229995126

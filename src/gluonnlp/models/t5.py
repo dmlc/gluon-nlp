@@ -155,10 +155,14 @@ PRETRAINED_URL = {
         'params': 'google_t5_large/model-bf5fc813.params'
     }, 
     'google_t5_3B': {
-        'cfg': google_t5_3B()
+        'cfg': google_t5_3B(), 
+        'vocab': 'google_t5_3B/t5-5f05e7c5.vocab', 
+        'params': 'google_t5_3B/model-48ba7250.params'
     }, 
     'google_t5_11B': {
-        'cfg': google_t5_11B()
+        'cfg': google_t5_11B(), 
+        'vocab': 'google_t5_11B/t5-5f05e7c5.vocab', 
+        'params': 'google_t5_11B/model-1936031c.params'
     }
 }
 
