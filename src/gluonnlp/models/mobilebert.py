@@ -34,6 +34,7 @@ import mxnet as mx
 from mxnet import use_np, np, npx
 from mxnet.gluon import HybridBlock, nn
 
+from .base import BACKBONE_REGISTRY
 from ..op import select_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..layers import InitializerType, PositionwiseFFN, PositionalEmbedding, get_norm_layer, \
@@ -42,7 +43,6 @@ from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
 from ..utils.registry import Registry
-from ..registry import BACKBONE_REGISTRY
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask
 from ..data.tokenizers import HuggingFaceWordPieceTokenizer
 
@@ -288,12 +288,12 @@ class MobileBertEncoderLayer(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_in)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_in)
+
         attn_mask
             The attention mask
             Shape (batch_size, seq_length, seq_length)
@@ -305,6 +305,7 @@ class MobileBertEncoderLayer(HybridBlock):
                 Shape (batch_size, seq_length, C_out)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_out)
+
         attn_weight
             Shape (batch_size, seq_length, seq_length)
         """
@@ -425,12 +426,12 @@ class MobileBertTransformer(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             - layout = 'NT'
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
+
         valid_length
             Shape (batch_size,)
 
@@ -616,20 +617,22 @@ class MobileBertModel(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
+            If the inputs contain two sequences, we will set different token types for the first
+            sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
-        valid_length :
+
+        valid_length
             The valid length of each sequence
             Shape (batch_size,)
 
@@ -659,18 +662,19 @@ class MobileBertModel(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
+            Type of tokens. If None, it will be initialized as all zero
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-            If None, it will be initialized as all zero
 
         Returns
         -------
@@ -846,19 +850,21 @@ class MobileBertForMLM(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
+            The type of the token. For example, if the inputs contain two sequences,
+            we will set different token types for the first sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-            The type of the token. For example, if the inputs contain two sequences,
-            we will set different token types for the first sentence and the second sentence.
+
         valid_length
             The valid length of each sequence
             Shape (batch_size,)
@@ -873,6 +879,7 @@ class MobileBertForMLM(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units).
+
         pooled_out
             Shape (batch_size, units)
         mlm_scores
@@ -954,27 +961,28 @@ class MobileBertForPretrain(HybridBlock):
                 dtype=self.backbone_model.dtype)
 
     def forward(self, inputs, token_types, valid_length,
-                       masked_positions):
+                masked_positions):
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a mobile mobile bert model.
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
+            If the inputs contain two sequences, we will set different token types for the first
+            sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
         valid_length
             The valid length of each sequence
             Shape (batch_size,)
@@ -989,6 +997,7 @@ class MobileBertForPretrain(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units).
+
         pooled_out
             Shape (batch_size, units)
         nsp_score

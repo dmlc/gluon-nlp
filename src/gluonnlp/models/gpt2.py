@@ -32,7 +32,7 @@ from typing import Tuple
 import mxnet as mx
 from mxnet import use_np, np, npx
 from mxnet.gluon import HybridBlock, nn
-from ..registry import BACKBONE_REGISTRY
+from .base import BACKBONE_REGISTRY
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
@@ -202,12 +202,13 @@ class GPT2SelfAttentionLayer(HybridBlock):
 
         Parameters
         ----------
-        x :
+        x
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_in)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_in)
-        layer_states :
+
+        layer_states
             - layout = 'NT'
                 Shape (2, batch_size, prev_len, C_in)
             - layout = 'TN'
@@ -357,12 +358,12 @@ class GPT2Layer(HybridBlock):
         Parameters
         ----------
         x
-            Input
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_in)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_in)
-        layer_states :
+
+        layer_states
             - layout = 'NT'
                 Shape (2, batch_size, prev_len, C_in)
             - layout = 'TN'
@@ -371,11 +372,11 @@ class GPT2Layer(HybridBlock):
         Returns
         -------
         new_x
-            Output
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_out)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_out)
+
         new_states
             - layout = 'NT'
                 Shape (2, batch_size, prev_len + seq_length, C_in)
@@ -473,13 +474,14 @@ class GPT2Model(HybridBlock):
         Parameters
         ----------
         x
-            Input
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         states
             The previous states
+
             - layout = 'NT'
                 Shape (num_layers, 2, batch_size, prev_len, C_in)]
             - layout = 'TN'
@@ -489,16 +491,20 @@ class GPT2Model(HybridBlock):
         -------
         new_x
             Output
+
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_out)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_out)
+
         new_states
             The new states
+
             - layout = 'NT'
                 Shape (num_layers, 2, batch_size, prev_len + seq_length, C_in)
             - layout = 'TN'
                 Shape (num_layers, 2, prev_len + seq_length, batch_size, C_in)
+
         """
         prev_len = npx.shape_array(states)[3] if self._layout == 'NT' else \
                    npx.shape_array(states)[2]
@@ -526,12 +532,12 @@ class GPT2Model(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         prev_len
             The previous length. It will be a scalar.
 
@@ -542,6 +548,7 @@ class GPT2Model(HybridBlock):
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
+
         """
         embedding = self._embed(inputs)
         if self._layout == 'NT':
@@ -568,6 +575,7 @@ class GPT2Model(HybridBlock):
                 Shape (num_layers, 2, batch_size, 0, C_in)
             - layout = 'TN'
                 Shape (num_layers, 2, 0, batch_size, C_in)
+
         """
         if dtype is None:
             dtype = self._dtype
@@ -628,18 +636,19 @@ class GPT2ForLM(HybridBlock):
         self._lm_head.weight = self._backbone_model._embed.weight
 
     def forward(self, inputs, states):
-        """Getting the logits
+        """Getting the logits. This can be used for language modeling.
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         states
             The states.
+
             - layout = 'NT'
                 Shape (num_layers, 2, batch_size, prev_len, C_in)
             - layout = 'TN'
@@ -652,11 +661,13 @@ class GPT2ForLM(HybridBlock):
                 Shape (batch_size, seq_length, vocab_size).
             - layout = 'TN'
                 Shape (seq_length, batch_size, vocab_size).
+
         new_states
             - layout = 'NT'
                 Shape (num_layers, 2, batch_size, prev_len + seq_length, C_in)
             - layout = 'TN'
                 Shape (num_layers, 2, prev_len + seq_length, batch_size, C_in)
+
         """
         contextual_embeddings, new_states = self._backbone_model(inputs, states)
         logits = self._lm_head(contextual_embeddings)

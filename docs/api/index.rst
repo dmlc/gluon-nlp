@@ -2,9 +2,13 @@ API Documentation
 =================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    data
    embedding
    models
+   attention
+   layers
+   operators
+   sequence_sampler
    utils

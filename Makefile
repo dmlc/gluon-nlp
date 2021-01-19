@@ -19,7 +19,7 @@ ROOTDIR = $(CURDIR)
 MD2IPYNB = $(ROOTDIR)/docs/md2ipynb.py
 
 docs: docs_local
-	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
+	for f in $(shell find docs/tutorials -type f -name '*.md' -print) ; do \
 		FILE=`echo $$f | sed 's/docs\///g'` ; \
 		DIR=`dirname $$FILE` ; \
 		BASENAME=`basename $$FILE` ; \
@@ -54,7 +54,7 @@ clean:
 	git clean -ff -d -x --exclude="$(ROOTDIR)/tests/data/*" --exclude="$(ROOTDIR)/conda/" --exclude="$(ROOTDIR)/.idea/"
 
 compile_notebooks:
-	for f in $(shell find docs/examples -type f -name '*.md' -print) ; do \
+	for f in $(shell find docs/tutorials -type f -name '*.md' -print) ; do \
 		DIR=$$(dirname $$f) ; \
 		BASENAME=$$(basename $$f) ; \
 		TARGETNAME=$${BASENAME%.md}.ipynb ; \
@@ -73,7 +73,7 @@ dist_scripts:
 	find * -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {}
 
 dist_notebooks:
-	cd docs/examples && \
+	cd docs/tutorials && \
 	find * -type d -prune | grep -v 'tests\|__pycache__' | xargs -t -n 1 -I{} zip -r {}.zip {} -x "*.md" -x "__pycache__" -x "*.pyc" -x "*.txt" -x "*.log" -x "*.params" -x "*.npz" -x "*.json"
 
 distribute: dist_scripts dist_notebooks

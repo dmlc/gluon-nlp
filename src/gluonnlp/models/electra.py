@@ -34,11 +34,11 @@ from typing import Tuple, Optional, List
 import mxnet as mx
 from mxnet import use_np, np, npx
 from mxnet.gluon import HybridBlock, nn
-from ..registry import BACKBONE_REGISTRY
+from .base import BACKBONE_REGISTRY
+from .transformer import TransformerEncoderLayer
 from ..op import gumbel_softmax, select_vectors_by_position, add_vectors_by_position, update_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..layers import PositionalEmbedding, get_activation
-from .transformer import TransformerEncoderLayer
 from ..initializer import TruncNorm
 from ..utils.config import CfgNode as CN
 from ..utils.misc import load_checksum_stats, download
@@ -247,19 +247,18 @@ class ElectraEncoder(HybridBlock):
         return self._layout
 
     def forward(self, data, valid_length):
-        """
-        Generate the representation given the inputs.
+        """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a Electra model.
 
         Parameters
         ----------
-        F
         data
             - layout = 'NT'
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
+
         valid_length
             Shape (batch_size,)
 
@@ -270,6 +269,7 @@ class ElectraEncoder(HybridBlock):
                 Shape (batch_size, seq_length, C_out)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_out)
+
         """
         if self.layout == 'NT':
             time_axis, batch_axis = 1, 0
@@ -290,9 +290,9 @@ class ElectraEncoder(HybridBlock):
             # attention_weights : [batch_size, num_heads, seq_len, seq_len]
             if self._output_all_encodings:
                 out = npx.sequence_mask(out,
-                                          sequence_length=valid_length,
-                                          use_sequence_length=True,
-                                          axis=time_axis)
+                                        sequence_length=valid_length,
+                                        use_sequence_length=True,
+                                        axis=time_axis)
                 all_encodings_outputs.append(out)
 
             if self._output_attention:
@@ -301,7 +301,7 @@ class ElectraEncoder(HybridBlock):
         if not self._output_all_encodings:
             # if self._output_all_encodings, SequenceMask is already applied above
             out = npx.sequence_mask(out, sequence_length=valid_length,
-                                      use_sequence_length=True, axis=time_axis)
+                                    use_sequence_length=True, axis=time_axis)
             return out, additional_outputs
         else:
             return all_encodings_outputs, additional_outputs
@@ -402,27 +402,27 @@ class ElectraModel(HybridBlock):
         return self._layout
 
     def forward(self, inputs, token_types, valid_length=None):
-        # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
 
         This is used in training or fine-tuning a Electra model.
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
+            If the inputs contain two sequences, we will set different token types for the first
+            sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
         valid_length
             The valid length of each sequence
             Shape (batch_size,)
@@ -434,6 +434,7 @@ class ElectraModel(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units).
+
         pooled_output
             This is optional. Shape (batch_size, units)
         """
@@ -463,33 +464,35 @@ class ElectraModel(HybridBlock):
             outputs.append(pooled_out)
         return tuple(outputs) if len(outputs) > 1 else outputs[0]
 
-    #TODO(sxjscience) Move to a `common.py`
     def get_initial_embedding(self, inputs, token_types=None):
         """Get the initial token embeddings that considers the token type and positional embeddings
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
+            The type of tokens. If None, it will be initialized as all zero.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-            If None, it will be initialized as all zero
 
         Returns
         -------
         embedding
             The initial embedding that will be fed into the encoder
+
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_embed)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_embed)
+
         """
         if self.layout == 'NT':
             time_axis, batch_axis = 1, 0
@@ -517,7 +520,7 @@ class ElectraModel(HybridBlock):
         .. math::
             lr = lr * layerwise_decay^(max_depth - layer_depth)
 
-        Parameters:
+        Parameters
         ----------
         layerwise_decay
             Power rate of the layer-wise decay
@@ -543,17 +546,17 @@ class ElectraModel(HybridBlock):
                             continue
                 value.lr_mult = layerwise_decay**(max_depth - (layer_depth + 1))
 
-    def frozen_params(self, untunable_depth, not_included=None):
+    def frozen_params(self, untunable_depth: int, not_included: Optional[List[str]] = None):
         """Froze part of parameters according to layer depth.
 
         That is, make all layer that shallower than `untunable_depth` untunable
         to stop the gradient backward computation and accelerate the training.
 
-        Parameters:
+        Parameters
         ----------
-        untunable_depth: int
+        untunable_depth
             the depth of the neural network starting from 1 to number of layers
-        not_included: list of str
+        not_included
             A list or parameter names that not included in the untunable parameters
         """
         all_layers = self.encoder.all_encoder_layers
@@ -652,20 +655,21 @@ class ElectraDiscriminator(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         token_types
+            If the inputs contain two sequences, we will set different token types for the first
+             sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
         valid_length
             The valid length of each sequence
             Shape (batch_size,)
@@ -761,20 +765,20 @@ class ElectraGenerator(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
         token_types
+            If the inputs contain two sequences, we will set different token types for the first
+             sentence and the second sentence.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
         valid_length :
             The valid length of each sequence
             Shape (batch_size,)
@@ -900,22 +904,23 @@ class ElectraForPretrain(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             The masked input
-            - layout = 'NT'
-                Shape (batch_size, seq_length)
-            - layout = 'TN'
-                Shape (seq_length, batch_size)
-        token_types
-            The token types.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
 
-            If the inputs contain two sequences, we will set different token types for the first
-             sentence and the second sentence.
+        token_types
+            The token types. If the inputs contain two sequences, we will set different token types
+            for the first sentence and the second sentence.
+
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+
         valid_length
             The valid length of each sequence.
             Shape (batch_size,)
@@ -933,18 +938,20 @@ class ElectraForPretrain(HybridBlock):
             Shape (batch_size, num_masked_positions, vocab_size)
         rtd_scores
             The replaced-token-detection score. Predicts whether the tokens are replaced or not.
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-        replaced_inputs
 
+        replaced_inputs
             Shape (batch_size, num_masked_positions)
         labels
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         """
         if self._uniform_generator:
             # generate the corrupt tokens randomly with a mlm_scores vector whose value is all 0
@@ -968,13 +975,14 @@ class ElectraForPretrain(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             The masked input
+
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         original_tokens
             The original tokens that appear in the unmasked input sequence
             Shape (batch_size, num_masked_positions).
@@ -994,11 +1002,13 @@ class ElectraForPretrain(HybridBlock):
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         labels
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         """
 
         if self._disallow_correct:
@@ -1007,7 +1017,6 @@ class ElectraForPretrain(HybridBlock):
             logits = logits - 1000.0 * disallow
         # gumbel_softmax() samples from the logits with a noise of Gumbel distribution
         prob = gumbel_softmax(
-            F,
             logits,
             temperature=self._temperature,
             eps=self._gumbel_eps,
@@ -1016,10 +1025,8 @@ class ElectraForPretrain(HybridBlock):
 
         if self.disc_backbone.layout == 'TN':
             inputs = inputs.T
-        original_data = update_vectors_by_position(F,
-            inputs, original_tokens, masked_positions)
-        fake_data = update_vectors_by_position(F,
-            inputs, corrupted_tokens, masked_positions)
+        original_data = update_vectors_by_position(inputs, original_tokens, masked_positions)
+        fake_data = update_vectors_by_position(inputs, corrupted_tokens, masked_positions)
         updates_mask = add_vectors_by_position(np.zeros_like(inputs),
                 np.ones_like(masked_positions), masked_positions)
         # Dealing with multiple zeros in masked_positions which

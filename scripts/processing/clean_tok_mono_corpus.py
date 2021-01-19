@@ -134,7 +134,7 @@ class MonoCorpusProcessor:
                 processed_lines.append(' '.join(tokens))
         return processed_lines, unfiltered_line_num
 
-    def process_mono_corpus(self, 
+    def process_mono_corpus(self,
                             corpus_paths: List[str],
                             out_path: str,
                             chunk_size: int = 1024 * 1024,
@@ -213,7 +213,7 @@ def get_parser():
     parser.add_argument('--discard-non-latin1', action='store_true',
                         help='Whether to discard the sentence pair if both sentences cannot be '
                              'encoded into latin1.')
-    parser.add_argument('--num-process', type=int, default=8,
+    parser.add_argument('--num-process', type=int, default=os.cpu_count(),
                         help='number of process')
     parser.add_argument('--overwrite', action='store_true')
 

@@ -371,7 +371,7 @@ def train(args):
                 input_ids = input_ids.as_in_ctx(ctx)
                 segment_ids = segment_ids.as_in_ctx(ctx)
                 valid_lengths = valid_lengths.as_in_ctx(ctx)
-                masked_input = data_masker.dynamic_masking(mx.nd, input_ids, valid_lengths)
+                masked_input = data_masker.dynamic_masking(input_ids, valid_lengths)
                 masked_input_ids = masked_input.input_ids
                 length_masks = masked_input.masks
                 unmasked_tokens = masked_input.unmasked_tokens

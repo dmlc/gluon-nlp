@@ -1,3 +1,7 @@
+__all__ = ['TransformerXLDecoderLayer', 'TransformerXLDecoder', 'TransformerXLForLM',
+           'TransformerXLForLMGen']
+
+import numpy as np
 import mxnet as mx
 from mxnet import use_np, np, npx
 from mxnet.gluon import nn, Block, HybridBlock, Parameter
@@ -7,8 +11,6 @@ from ..layers import get_activation, PositionalEmbedding, PositionwiseFFN,\
     AdaptiveEmbedding, ProjectedAdaptiveLogSoftmaxWithLoss
 from ..utils.config import CfgNode as CN
 from ..sequence_sampler import BaseStepDecoder
-__all__ = ['TransformerXLDecoderLayer', 'TransformerXLDecoder', 'TransformerXLForLM',
-           'TransformerXLForLMGen']
 
 
 @use_np
@@ -89,22 +91,25 @@ class TransformerXLDecoderLayer(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             The input data.
-            layout = 'NT':
+
+            - layout = 'NT'
                 Shape (batch_size, query_length, units)
-            layout = 'TN':
+            - layout = 'TN'
                 Shape (query_length, batch_size, units)
+
         mem
             The memory.
-            layout = 'NT':
+
+            - layout = 'NT'
                 Shape (batch_size, mem_length, units)
-            layout = 'TN':
+            - layout = 'TN'
                 Shape (mem_length, batch_size, units)
+
         rel_positions
-            The relative positions between data and [mem, data]
-            Shape (query_length, mem_length + query_length).
+            The relative positions between data and concat(mem, data).
+            Shape is (query_length, mem_length + query_length).
             A positive value means that query is after the memory, i.e.,
             query_location - mem_location.
         mask
@@ -125,6 +130,7 @@ class TransformerXLDecoderLayer(HybridBlock):
                 Shape (batch_size, query_length, units)
             - layout = 'TN'
                 Shape (query_length, batch_size, units)
+
         """
         if self._layout == 'NT':
             context = np.concatenate([mem, data], axis=1)
@@ -202,18 +208,20 @@ class TransformerXLDecoder(HybridBlock):
 
         Parameters
         ----------
-        F
         data
-            - layout = 'NT':
+            - layout = 'NT'
                 Shape (batch_size, query_length)
-            - layout = 'TN':
+            - layout = 'TN'
                 Shape (query_length, batch_size)
+
         mem_l
             Contains a list of memory objects, each one will contain:
-            - layout = 'NT':
+
+            - layout = 'NT'
                 Shape (batch_size, mem_length, C_i)
-            - layout = 'TN':
+            - layout = 'TN'
                 Shape (mem_length, batch_size, C_i)
+
         rel_positions
             The relative positions.
             Shape (query_length, mem_length + query_length)
@@ -225,10 +233,12 @@ class TransformerXLDecoder(HybridBlock):
         -------
         out_l
             Contains a list of hidden states, each will contain:
+
             - layout = 'NT'
                 Shape (batch_size, query_length, C_o)
             - layout = 'TN'
                 Shape (query_length, batch_size, C_o)
+
         """
         query_k_bias = self.query_k_bias.data()
         query_r_bias = self.query_r_bias.data()
@@ -378,10 +388,12 @@ class TransformerXLForLM(Block):
         -------
         mems
             A list of memory states
+
             - layout = 'NT'
                 Shape (B, T, C)
             - layout = 'TN'
                 Shape (T, B, C)
+
         """
         if self._layout == 'NT':
             return [mx.np.zeros((batch_size, 0, self._units), ctx=ctx)
@@ -412,54 +424,72 @@ class TransformerXLForLM(Block):
         ----------
         data
             The input data
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Shape (B, T)
-            - layout == 'TN'
+            - layout = 'TN'
                 Shape (T, B)
+
         target
             The ground truth
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Shape (B, T)
-            - layout == 'TN'
+            - layout = 'TN'
                 Shape (T, B)
+
         mem_l
             A list of memory objects
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Shape (B, T_mem, units)
-            - layout == 'TN'
+            - layout = 'TN'
                 Shape (T_mem, B, units)
+
         rel_positions
             Shape (query_length, mem_length + query_length)
             By default, we will use the following relative positions
-                       ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
-            'in':        5,    4,     3,     2,      1,     0,      -1,      -2
-            'Gluon@@':   6,    5,     4,     3,      2,     1,       0,      -1
-            'NLP':       7,    6,     5,     4,      3,     2,       1,       0
+
+            .. code-block:: none
+
+                           ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
+                'in':        5,    4,     3,     2,      1,     0,      -1,      -2
+                'Gluon@@':   6,    5,     4,     3,      2,     1,       0,      -1
+                'NLP':       7,    6,     5,     4,      3,     2,       1,       0
+
         data_mem_mask
             Shape (B, query_length, mem_length + query_length)
             Here, 1 --> will be used, 0 --> won't be used.
             By default, we will mask all locations that have distance > mem_length with the
             current token.
             Following is an example in which query_length = 3, mem_length = 4
-                        |------- <mem> ----------|--------- <query> ------------|
-             <query>   ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
-            'numpy':     1,    1,     1,     1,      1,     0,      0,        0
-            'in':        0,    1,     1,     1,      1,     1,      0,        0
-            'Gluon@@':   0,    0,     1,     1,      1,     1,      1,        0
-            'NLP':       0,    0,     0,     1,      1,     1,      1,        1
+
+            .. code-block:: none
+
+                            |------- <mem> ----------|--------- <query> ------------|
+                 <query>   ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
+                'numpy':     1,    1,     1,     1,      1,     0,      0,        0
+                'in':        0,    1,     1,     1,      1,     1,      0,        0
+                'Gluon@@':   0,    0,     1,     1,      1,     1,      1,        0
+                'NLP':       0,    0,     0,     1,      1,     1,      1,        1
 
             Also, we provide the option in which we only mask the future tokens, this is
             supported by setting `causal_only` to True. However, there will be a
             discrepancy between training and inference because the effecitve memory length is
             longer for the later tokens in the query.
-                        |------- <mem> ----------|--------- <query> ------------|
-             <query>   ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
-            'numpy':     1,    1,     1,     1,      1,     0,      0,        0
-            'in':        1,    1,     1,     1,      1,     1,      0,        0
-            'Gluon@@':   1,    1,     1,     1,      1,     1,      1,        0
-            'NLP':       1,    1,     1,     1,      1,     1,      1,        1
+
+            .. code-block:: none
+
+                            |------- <mem> ----------|--------- <query> ------------|
+                 <query>   ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
+                'numpy':     1,    1,     1,     1,      1,     0,      0,        0
+                'in':        1,    1,     1,     1,      1,     1,      0,        0
+                'Gluon@@':   1,    1,     1,     1,      1,     1,      1,        0
+                'NLP':       1,    1,     1,     1,      1,     1,      1,        1
+
         causal_only
             Whether to ignore the local masking constraint. See the flag above for more information.
+
         detach_memory
             Whether to detach the encoded memory from the graph.
 
@@ -467,15 +497,18 @@ class TransformerXLForLM(Block):
         -------
         logits
             The selected logits
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Shape (B, T)
-            - layout == 'TN'
+            - layout = 'TN'
                 Shape (T, B)
+
         new_mem_l
             A list of the updated memory
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Each will have shape (B, T, C)
-            - layout == 'TN'
+            - layout = 'TN'
                 Each will have shape (T, B, C)
         """
         # Note that curr_mem_length will not necessarily be equal to mem_length
@@ -542,9 +575,10 @@ class TransformerXLForLM(Block):
             Shape (B,)
         mem_l
             A list of memory objects
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Shape (B, T_mem, units)
-            - layout == 'TN'
+            - layout = 'TN'
                 Shape (T_mem, B, units)
 
         Returns
@@ -553,10 +587,12 @@ class TransformerXLForLM(Block):
             Shape (B, V)
         new_mem_l
             A list of memory objects
-            - layout == 'NT'
+
+            - layout = 'NT'
                 Shape (B, min(T_mem + 1, memory_length), C)
-            - layout == 'TN'
+            - layout = 'TN'
                 Shape (min(T_mem + 1, memory_length), B, C)
+
         """
         batch_size = step_data.shape[0]
         if self._layout == 'NT':

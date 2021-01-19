@@ -36,7 +36,7 @@ def get_parser():
                         help="path to openwebtext dataset")
     parser.add_argument("-o", "--output", default="openwebtext",
                         help="directory for extracted files")
-    parser.add_argument("--num_process", type=int, default=8,
+    parser.add_argument("--num_process", type=int, default=os.cpu_count(),
                         help="number of processes for multiprocessing")
     parser.add_argument("--shuffle", action="store_true",
                         help="Wether to shuffle the data order")
