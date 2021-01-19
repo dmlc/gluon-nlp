@@ -27,6 +27,8 @@ def tvm_enabled():
 @pytest.mark.parametrize('name', list_backbone_names())
 def test_get_backbone(name, ctx):
     with tempfile.TemporaryDirectory() as root, ctx:
+        if name in ['google_t5_3B', 'google_t5_11B']: 
+            pytest.skip('Skipping large T5 model test')
         model_cls, cfg, tokenizer, local_params_path, _ = get_backbone(name, root=root)
         net = model_cls.from_cfg(cfg)
         net.load_parameters(local_params_path)
@@ -52,6 +54,8 @@ def test_get_backbone(name, ctx):
             states = net.init_states(batch_size=batch_size, ctx=ctx)
             out, new_states = net(inputs, states)
             out_np = out.asnumpy()
+        elif 't5' in name:
+            out = net(inputs, valid_length, inputs, valid_length)
         else:
             out = net(inputs, token_types, valid_length)
         mx.npx.waitall()

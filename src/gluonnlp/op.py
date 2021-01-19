@@ -245,7 +245,7 @@ def relative_position_bucket(relative_position,
         Shape (...,)
     bidirectional
         Whether we are dealing with bidirectional attention.
-        If it's bidirectional, positive shifts are mappd to [0, num_buckets // 2), 
+        If it's bidirectional, positive shifts are mapped to [0, num_buckets // 2), 
         and negative shifts are mapped to [num_buckets // 2, num_buckets). 
     num_buckets
         The number of buckets.
