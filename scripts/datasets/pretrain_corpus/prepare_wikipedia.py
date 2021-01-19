@@ -18,7 +18,7 @@ import statistics
 _CURR_DIR = os.path.realpath(os.path.dirname(os.path.realpath(__file__)))
 _TARGET_PATH = os.path.join(_CURR_DIR, '../../processing/')
 sys.path.append(_TARGET_PATH)
-from segment_sentences import *
+from segment_sentences import Sharding, segment_sentences, NLTKSegmenter
 
 
 _CITATION = """\
@@ -257,9 +257,7 @@ def main(args):
                             args.segment_num_worker)
 
         sharding.load_articles()
-        sharding.segment_articles_into_sentences(segmenter)
-        sharding.distribute_articles_over_shards()
-        sharding.write_shards_to_disk()
+        sharding.segment_articles_into_sentences()
         t2 = time.time()
         print("transfer cost:{}".format(t2 - t1))
 
