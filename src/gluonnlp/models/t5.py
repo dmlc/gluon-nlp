@@ -875,7 +875,7 @@ def get_pretrained_t5(
         local_params_path = None
     # lm model has not been implemented
     local_lm_params_path = None
-    tokenizer = build_t5_tokenizer(vocab_path, False, extra_ids)
+    tokenizer = build_t5_tokenizer(local_paths['vocab'], False, extra_ids)
     if cfg is None: 
         cfg = T5Model.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_lm_params_path
