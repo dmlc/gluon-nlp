@@ -31,7 +31,7 @@ T5 Model
 """
 
 
-__all__ = ['T5Model', 'T5Inference']
+__all__ = ['T5Model', 'T5NMTInference']
 
 
 import os
@@ -44,7 +44,7 @@ from mxnet import np, npx
 from mxnet.gluon import HybridBlock, Parameter, nn
 from mxnet.initializer import Constant, Normal, Xavier
 from ..attention_cell import (
-    gen_self_attn_mask, gen_mem_attn_mask, MultiHeadAttentionCell, RelAttentionScoreCell
+    gen_self_attn_mask, gen_mem_attn_mask, MultiHeadAttentionCell, gen_rel_position, RelAttentionScoreCell
 )
 from .base import BACKBONE_REGISTRY
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
@@ -327,15 +327,15 @@ class T5Block(HybridBlock):
         def wrapper(self, *args, **kwargs): 
             assert self._is_decoder, \
                 '{}() is available for decoder only.'.format(fn.__name__)
-            return fn(self *args, **kwargs)
+            return fn(self, *args, **kwargs)
         return wrapper
 
     @property
     def layout(self): 
         return self._layout
 
-    @_assert_decoder_method
     @property
+    @_assert_decoder_method
     def state_batch_axis(self): 
         if self.layout == 'NT': 
             return 0, 0
@@ -343,7 +343,7 @@ class T5Block(HybridBlock):
             return 1, 1
 
     @_assert_decoder_method
-    def init_states(self, batch_size, ctx, dtype='float32'): 
+    def _init_key_value(self, batch_size, ctx, dtype='float32'): 
         if self.layout == 'NT': 
             shape = (batch_size, 0, self._num_heads, self._d_kv)
         else: 
@@ -360,17 +360,15 @@ class T5Block(HybridBlock):
     @_assert_decoder_method
     def incremental_decode(
         self, 
-        hidden_states, 
+        step_hidden_states, 
+        step_position_embeddings, 
         past_key_value, 
         mem_states, 
-        mem_attn_mask
+        step_mem_attn_mask
     ): 
-        # NT: (B, d_model) -> (B, 1, d_model); TN: (B, d_model) -> (1, B, d_model)
-        hidden_states = np.expand_dims(hidden_states, axis=self._time_axis)
-
         # 1. self-attention
-        out = self.self_attn_layer_norm(hidden_states)
-        self_step_query, self_step_key, self_step_value = (
+        out = self.self_attn_layer_norm(step_hidden_states)
+        step_self_query, self_step_key, self_step_value = (
             self.transpose_for_scores(self.self_attn_q(out)), 
             self.transpose_for_scores(self.self_attn_k(out)), 
             self.transpose_for_scores(self.self_attn_v(out))
@@ -380,34 +378,34 @@ class T5Block(HybridBlock):
             np.concatenate([past_key_value[1], self_step_value], axis=self._time_axis)
         )
         out, _ = self.self_attn(
-            self_step_query, 
+            step_self_query, 
             self_key, 
-            self_value
+            self_value, 
+            None, 
+            step_position_embeddings
         )
         out = self.dropout(self.self_attn_proj(out))
-        hidden_states = hidden_states + out
+        step_hidden_states = step_hidden_states + out
 
         # 2. cross-attention
-        out = self.cross_attn_layer_norm(hidden_states)
-        cross_step_query, cross_key, cross_value = (
+        out = self.cross_attn_layer_norm(step_hidden_states)
+        step_cross_query, cross_key, cross_value = (
             self.transpose_for_scores(self.cross_attn_q(out)), 
             self.transpose_for_scores(self.cross_attn_k(mem_states)), 
             self.transpose_for_scores(self.cross_attn_v(mem_states))
         )
         out, _ = self.cross_attn(
-            cross_step_query, 
+            step_cross_query, 
             cross_key, 
             cross_value, 
-            mem_attn_mask
+            step_mem_attn_mask
         )
         out = self.dropout(self.cross_attn_proj(out))
-        hidden_states = hidden_states + out
+        step_hidden_states = step_hidden_states + out
 
         # 3. feed forward
-        hidden_states = self.ffn(hidden_states)
-        # NT: (B, 1, d_model) -> (B, d_model); TN: (1, B, d_model) -> (B, d_model)
-        hidden_states = npx.reshape(hidden_states, (-5, -1))
-        return hidden_states, (self_key, self_value)
+        step_hidden_states = self.ffn(step_hidden_states)
+        return step_hidden_states, (self_key, self_value)
 
     def forward(
         self, 
@@ -532,22 +530,10 @@ class T5Encoder(HybridBlock):
     def layout(self): 
         return self._layout
 
-    def _get_relative_position(self, hidden_states): 
-        query_position = np.expand_dims(
-            npx.arange_like(hidden_states, axis=self._time_axis), 
-            axis=-1
-        )
-        mem_position = np.expand_dims(
-            npx.arange_like(hidden_states, axis=self._time_axis), 
-            axis=0
-        )
-        relative_position = mem_position - query_position
-        return relative_position.astype(np.int32)
-
     def forward(self, hidden_states, valid_length): 
         # 1. relative position embeddings and attention masks
         position_embeddings = self.relative_position_encoder(
-            self._get_relative_position(hidden_states)
+            gen_rel_position(hidden_states, layout=self.layout)
         )
         self_attn_mask = gen_self_attn_mask(
             hidden_states, 
@@ -643,64 +629,59 @@ class T5Decoder(HybridBlock):
     def state_batch_axis(self): 
         return list(layer.state_batch_axis for layer in self.layers)
 
-    def init_states(self, batch_size, ctx, dtype='float32'): 
-        return list(layer.init_states(batch_size, ctx, dtype) for layer in self.layers)
+    def _init_key_values(self, batch_size, ctx, dtype='float32'): 
+        return list(layer._init_key_value(batch_size, ctx, dtype) for layer in self.layers)
 
     def incremental_decode(
-        hidden_states, 
+        self, 
+        step_hidden_states, 
+        position, 
         past_key_values, 
         mem_states, 
         mem_valid_length
     ): 
-        # 1. (NO relative position embeddings) ONLY attention mask
-        mem_attn_mask = gen_mem_attn_mask(
+        # 1. relative position embeddings and attention mask
+        # step_position_embeddings: Shape (num_heads, 1, L_seq), for self-attention
+        # step_mem_attn_mask: Shape (B, 1, L_mem), for cross-attention
+        position_embeddings = self.relative_position_encoder(
+            gen_rel_position(
+                step_hidden_states, 
+                past_data=past_key_values[0][0], 
+                layout=self.layout
+            )
+        )
+        step_position_embeddings = position_embeddings[:, -1:, :]
+        step_mem_attn_mask = gen_mem_attn_mask(
             mem_states, 
             mem_valid_length, 
-            hidden_states, 
+            step_hidden_states, 
             dtype=self._dtype, 
             layout=self.layout
         )
 
         # 2. decoder blocks and other layers
-        hidden_states = self.dropout(hidden_states)
+        step_hidden_states = self.dropout(step_hidden_states)
         present_key_values = []
         for i, layer in enumerate(self.layers): 
-            hidden_states, present_key_value = layer.incremental_decode(
-                hidden_states, 
+            step_hidden_states, present_key_value = layer.incremental_decode(
+                step_hidden_states, 
+                step_position_embeddings, 
                 past_key_values[i], 
                 mem_states, 
-                mem_attn_mask
+                step_mem_attn_mask
             )
             present_key_values.append(present_key_value)
-        hidden_states = self.final_layer_norm(hidden_states)
-        hidden_states = self.dropout(hidden_states)
-        return hidden_states, present_key_values
-
-    def _get_relative_position(self, hidden_states, mem_states=None, past_key_value=None): 
-        if past_key_value is None: 
-            query_position = np.expand_dims(
-                npx.arange_like(hidden_states, axis=self._time_axis), 
-                axis=-1
-            )
-        else: 
-            # for incremental decoding only, where past key and past value are of shape
-            # NT(NTK): (B, L_seq, num_heads, n_kv); TN(TNK): (L_seq, B, num_heads, n_kv)
-            query_position = npx.arange_like(
-                np.concatenate([hidden_states, past_key_value[0]], axis=self._time_axis), 
-                axis=self._time_axis
-            )
-            query_position = np.expand_dims(query_position, axis=-1)
-        mem_position = np.expand_dims(
-            npx.arange_like(hidden_states if mem_states is None else mem_states, axis=self._time_axis), 
-            axis=0
-        )
-        relative_position = mem_position - query_position
-        return relative_position.astype(np.int32)
+        step_hidden_states = self.final_layer_norm(step_hidden_states)
+        step_hidden_states = self.dropout(step_hidden_states)
+        return step_hidden_states, present_key_values
 
     def forward(self, hidden_states, valid_length, mem_states, mem_valid_length): 
         # 1. relative position embeddings and attention masks
+        # position_embeddings: Shape (num_heads, L_seq, L_seq), broadcastable, for self-attention 
+        # self_attn_mask: Shape (B, L_seq, L_seq), for self-attention
+        # mem_attn_mask: Shape (B, L_seq, L_mem), for cross-attention
         position_embeddings = self.relative_position_encoder(
-            self._get_relative_position(hidden_states)
+            gen_rel_position(hidden_states, layout=self.layout)
         )
         self_attn_mask = gen_self_attn_mask(
             hidden_states, 
@@ -753,11 +734,19 @@ class T5Model(HybridBlock):
         super().__init__()
         assert vocab_size > 0, 'Vocab size {} is not valid.'.format(vocab_size)
         self._vocab_size = vocab_size
+        self._d_model = d_model
+        self._d_kv = d_kv
+        self._d_ff = d_ff
         self._num_layers = num_layers
+        self._num_heads = num_heads
+        self._inner_dim = num_heads * d_kv
         self._activation = activation
+        self._init_factor = init_factor
+        self._dtype = dtype
         assert layout in ['TN', 'NT'], \
             'Invalid layout: {}. Only "TN" and "NT" are supported.'.format(layout)
         self._layout = layout
+        self._time_axis = 1 if self.layout == 'NT' else 0
 
         # input embedding weights are shared between across encoder and decoder
         self.input_embedding_layer = nn.Embedding(
@@ -809,19 +798,27 @@ class T5Model(HybridBlock):
     def vocab_size(self): 
         return self._vocab_size
 
-    def forward(self, src_data, src_valid_length, tgt_data, tgt_valid_length): 
+    def encode(self, src_data, src_valid_length): 
         src_hidden_states = self.input_embedding_layer(src_data)
         enc_out = self.encoder(
             src_hidden_states, 
             src_valid_length
         )
+        return enc_out
+
+    def decode(self, tgt_data, tgt_valid_length, mem_states, mem_valid_length): 
         tgt_hidden_states = self.input_embedding_layer(tgt_data)
         dec_out = self.decoder(
             tgt_hidden_states, 
             tgt_valid_length, 
-            enc_out, 
-            src_valid_length
+            mem_states, 
+            mem_valid_length
         )
+        return dec_out
+
+    def forward(self, src_data, src_valid_length, tgt_data, tgt_valid_length): 
+        enc_out = self.encode(src_data, src_valid_length)
+        dec_out = self.decode(tgt_data, tgt_valid_length, enc_out, src_valid_length)
         return dec_out
 
     @classmethod
@@ -854,8 +851,57 @@ class T5Model(HybridBlock):
 
 
 @use_np
-class T5Inference(HybridBlock, BaseStepDecoder): 
-    pass 
+class T5NMTInference(HybridBlock, BaseStepDecoder): 
+    def __init__(self, model): 
+        super().__init__()
+        self.model = model
+        self.output_layer = nn.Dense(
+            units=model.vocab_size, 
+            in_units=model._d_model, 
+            flatten=False, 
+            use_bias=False, 
+            dtype=model._dtype
+        )
+        self.output_layer.weight = model.input_embedding_layer.weight
+
+    def initialize(self, **kwargs): 
+        raise NotImplementedError(
+            'You can not initialize a T5Inference Model! ' \
+            'The correct approach is to create a T5Model and ' \
+            'then feed it into a T5Inference.'
+        )
+
+    @property
+    def state_batch_axis(self): 
+        if self.model.layout == 'NT':
+            return 0, 0, 0, self.model.decoder.state_batch_axis
+        else:
+            return 1, 0, 0, self.model.decoder.state_batch_axis
+
+    def init_states(self, src_data, src_valid_length): 
+        batch_size = src_data.shape[1 - self.model._time_axis] # NT: 0; TN: 1
+        ctx = src_data.ctx
+        enc_out = self.model.encode(src_data, src_valid_length)
+        position = np.zeros((batch_size,), dtype=np.int32, ctx=ctx)
+        key_values = self.model.decoder._init_key_values(batch_size, ctx, dtype=enc_out.dtype)
+        return enc_out, src_valid_length, position, key_values
+
+    def forward(self, step_data, past_states): 
+        mem_states, mem_valid_length, position, past_key_values = past_states
+        step_hidden_states = self.model.input_embedding_layer(step_data)
+        # NT: (B, d_model) -> (B, 1, d_model); TN: (B, d_model) -> (1, B, d_model)
+        step_hidden_states = np.expand_dims(step_hidden_states, axis=self.model._time_axis)
+        step_hidden_states, present_key_values = self.model.decoder.incremental_decode(
+            step_hidden_states, 
+            position, 
+            past_key_values, 
+            mem_states, 
+            mem_valid_length
+        )
+        step_hidden_states = self.output_layer(step_hidden_states)
+        # NT: (B, 1, d_model) -> (B, d_model); TN: (1, B, d_model) -> (B, d_model)
+        step_hidden_states = npx.reshape(step_hidden_states, (-5, -1))
+        return step_hidden_states, (mem_states, mem_valid_length, position + 1, present_key_values)
 
 
 def list_pretrained_t5(): 

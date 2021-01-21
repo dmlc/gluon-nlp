@@ -602,6 +602,25 @@ class MultiHeadAttentionCell(HybridBlock):
                         dtype=self._dtype)
 
 
+def gen_rel_position(data, past_data=None, dtype=np.int32, layout='NT'): 
+    time_axis = 1 if layout == 'NT' else 0
+    if past_data is None: 
+        position = npx.arange_like(data, axis=time_axis)
+    else: 
+        # for incremental decoding only, where past data is of the shape: 
+        # NT(NTK): (B, L_seq, num_heads, n_kv) -> (B, L_seq, inner_dim)
+        # TN(TNK): (L_seq, B, num_heads, n_kv) -> (L_seq, B, inner_dim)
+        past_data = npx.reshape(past_data, (-2, -2, -5))
+        position = npx.arange_like(
+            np.concatenate([past_data, data], axis=time_axis), 
+            axis=time_axis
+        )
+    query_position = np.expand_dims(position, axis=-1)
+    mem_position = np.expand_dims(position, axis=0)
+    relative_position = mem_position - query_position
+    return relative_position.astype(np.int32) # shape (query_length, key_length)
+
+
 class RelAttentionScoreCell(HybridBlock):
     r"""Get the score based on the query and relative position index. This is used for implementing
      relative attention.

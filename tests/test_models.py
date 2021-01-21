@@ -27,8 +27,7 @@ def tvm_enabled():
 @pytest.mark.parametrize('name', list_backbone_names())
 def test_get_backbone(name, ctx):
     with tempfile.TemporaryDirectory() as root, ctx:
-        if name in ['google_t5_3B', 'google_t5_11B']: 
-            pytest.skip('Skipping large T5 model test')
+        # Test for model download
         model_cls, cfg, tokenizer, local_params_path, _ = get_backbone(name, root=root)
         net = model_cls.from_cfg(cfg)
         net.load_parameters(local_params_path)
@@ -39,6 +38,8 @@ def test_get_backbone(name, ctx):
         # Test for model export + save
         if 'gpt2' in name:
             pytest.skip('Skipping GPT-2 test')
+        elif name in ['google_t5_3B', 'google_t5_11B']: 
+            pytest.skip('Skipping large T5 model test')
         batch_size = 1
         sequence_length = 4
         inputs = mx.np.random.randint(0, 10, (batch_size, sequence_length))
