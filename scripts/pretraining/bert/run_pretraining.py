@@ -33,6 +33,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--ckpt_dir', type=str, default='./ckpt_dir',
                         help='Path to checkpoint directory')
+    parser.add_argument('--data_dir', type=str, default=None,
+                        help='Path to raw data, required if --raw set True')
     parser.add_argument('--log_interval', type=int, default=250, help='Report interval')
     parser.add_argument('--ckpt_interval', type=int, default=25000, help='Checkpoint interval')
     # model
@@ -204,6 +206,20 @@ def train(args):
                                            num_max_dataset_cached=args.num_max_dataset_cached)
     else:
         get_dataset_fn = get_pretrain_data_npz
+
+    raw_datas=[]
+
+    if args.raw:
+        datasets_dir = args.data_dir.split(',')
+        for dataset_dir in datasets_dir:
+            names = os.listdir(dataset_dir)
+            for i in range(len(names)):
+                names[i] = os.path.join(dataset_dir, names[i])
+            raw_datas.append(','.join(names))
+    if args.raw:
+        raw_data = ','.join(raw_datas)
+        args.data = raw_data
+
 
     data_train = get_dataset_fn(args.data, args.batch_size, shuffle=True,
                                 num_buckets=args.num_buckets, vocab=tokenizer.vocab,

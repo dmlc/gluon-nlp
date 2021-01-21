@@ -257,6 +257,10 @@ def load_checksum_stats(path: str) -> dict:
         for line in f:
             name, hex_hash, file_size = line.strip().split()
             file_stats[name] = hex_hash
+            if name[8:27] == 'gluonnlp-numpy-data':
+                new_name = name.replace('https://gluonnlp-numpy-data.s3-accelerate.amazonaws.com', 's3://gluonnlp-numpy-data')
+                file_stats[new_name] = hex_hash
+
     return file_stats
 
 
