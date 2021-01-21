@@ -6,7 +6,8 @@ from mxnet.gluon import HybridBlock
 from gluonnlp.attention_cell import\
     multi_head_dot_attn, gen_self_attn_mask, gen_mem_attn_mask,\
     MultiHeadAttentionCell,\
-    RelAttentionScoreCell
+    RelAttentionScoreCell,\
+    MultiHeadSlidingWindowAttentionCell
 from gluonnlp.utils.parameter import grad_global_norm
 mx.npx.set_np()
 
@@ -389,3 +390,77 @@ def test_multi_head_rel_attn_score(num_heads, method, bidirectional, hybridize, 
             assert_allclose(rel_score.asnumpy(), original_rel_score, 1E-5, 1E-5)
             layout_query_grad_norm = np.linalg.norm(query.grad.asnumpy())
             assert_allclose(layout_query_grad_norm, original_query_grad_norm, 1E-5, 1E-5)
+
+
+
+def test_multi_head_sliding_window_dot_attention_cell():
+
+    def gen_sliding_window_mask_full(batch_size, seq_length, w, symmetric, d):
+        """Generate sliding_window attention mask for the full attention matrix ( seq_len^2 ).
+        """
+        mask_np = np.zeros((batch_size, seq_length, seq_length))
+        for i in range(seq_length):
+            end = (i + 1 + w * d) if symmetric else (i + 1)
+            for j in range(i - w * d, end, d):
+                if j >= 0 and j < seq_length:
+                    mask_np[:, i, j] = 1
+        return mask_np
+
+    def test_impl(batch_size, seq_length, num_heads, num_head_units, w, symmetric, d):
+        attn_cell = MultiHeadAttentionCell()
+        sw_attn_cell = MultiHeadSlidingWindowAttentionCell(w, symmetric)
+        # Generate the data
+        query = np.random.normal(0, 1, (batch_size, seq_length, num_heads, num_head_units))
+        key = np.random.normal(0, 1, (batch_size, seq_length, num_heads, num_head_units))
+        value = np.random.normal(0, 1, (batch_size, seq_length, num_heads, num_head_units))
+        mask = gen_sliding_window_mask_full(batch_size, seq_length, w, symmetric, d)
+        mask = mx.np.array(mask, dtype=np.float32)
+
+        query = mx.np.array(query, dtype=np.float32)
+        key = mx.np.array(key, dtype=np.float32)
+        value = mx.np.array(value, dtype=np.float32)
+
+        query.attach_grad()
+        key.attach_grad()
+        value.attach_grad()
+
+        with mx.autograd.record():
+            out, _ = attn_cell(query, key, value, mask)
+            out.backward()
+
+        out_np = out.asnumpy()
+        grad_query = query.grad.asnumpy()
+        grad_key = key.grad.asnumpy()
+        grad_value = value.grad.asnumpy()
+
+        query.grad[:] = 0
+        key.grad[:] = 0
+        value.grad[:] = 0
+
+        dilation = mx.np.zeros((num_heads,))
+        dilation[:] = d
+        dilation = mx.np.array(dilation, dtype=np.int32)
+        valid_length = np.zeros((batch_size,))
+        valid_length[:] = seq_length
+        valid_length = mx.np.array(valid_length, dtype=np.int32)
+
+        with mx.autograd.record():
+            sw_out, _ = sw_attn_cell(query, key, value, dilation, valid_length)
+            sw_out.backward()
+
+        sw_out_np = sw_out.asnumpy()
+        sw_grad_query = query.grad.asnumpy()
+        sw_grad_key = key.grad.asnumpy()
+        sw_grad_value = value.grad.asnumpy()
+
+        assert_allclose(sw_out_np, out_np, 1E-3, 1E-3)
+        assert_allclose(sw_grad_key, grad_key, 1E-3, 1E-3)
+        assert_allclose(sw_grad_value, grad_value, 1E-3, 1E-3)
+        assert_allclose(sw_grad_query, grad_query, 1E-3, 1E-3)
+
+    for symmetric in [True, False]:
+        for d in [1, 2, 3]:
+            test_impl(4, 128, 12, 64, 16, symmetric, d)
+            test_impl(1, 8, 2, 3, 2, symmetric, d)
+
+

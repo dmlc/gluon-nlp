@@ -602,6 +602,163 @@ class MultiHeadAttentionCell(HybridBlock):
                         dtype=self._dtype)
 
 
+
+
+def multi_head_sliding_window_dot_attn(F, query, key, value, dilation, valid_length,
+                                       window_size: int, symmetric: bool = True,
+                                       dropout: float = 0.0, scaled: bool = True,
+                                       normalized: bool = False, eps: float = 1E-6,
+                                       query_head_units: Optional[int] = None,
+                                       layout: str = 'NKT',
+                                       dtype=np.float32):
+    """Multihead sliding window attention between the query, key and value,
+    described at *Longformer: The Long-Document Transformer*,
+    available at https://arxiv.org/pdf/2004.05150.pdf.
+
+    Given a fixed window size *2w*, each token attends to *w* tokens on the left side
+    if using causal attention (setting *symmetric* to *False*),
+    otherwise each token attends to *w* tokens on each side.
+
+    Parameters
+    ----------
+    F
+    query
+        Query. The shape is (batch_size, seq_length, num_heads, num_head_units)
+
+    key
+        Key. The shape is (batch_size, seq_length, num_heads, num_head_units)
+    value
+        Value. The shape is (batch_size, seq_length, num_heads, num_head_units)
+    dilation
+        Dilation. The shape is (num_heads,)
+    valid_length
+        Valid length. The shape is (batch_size,)
+    window_size
+        The one-sided window length.
+    symmetric
+        If False, each token can only attend to itself and the previous tokens.
+    dropout
+        Dropout rate
+    scaled
+        Whether to divide the attention weights by the sqrt of the query dimension.
+    normalized
+        If turned on, the cosine distance is used, i.e::
+
+            score = <h_q / ||h_q||, h_k / ||h_k||>
+
+    eps
+        The epsilon value used in L2 normalization
+    query_head_units
+        The units of each query head. If it's empty, we will estimate it via the
+        shape_array of the query.
+    layout
+        This stands for the layout of the attention cell. The shape of the input/output will depend
+        on the layout. Currently, we only support 'NTK' in which
+        'N' means the batch_size, 'K' means the head, and 'T' means the length dimension.
+
+    Returns
+    -------
+    context_vec
+        - (batch_size, seq_length, num_heads, num_head_units)
+    additional_info
+        scores:
+            Shape (batch_size, num_heads, seq_length, w + w + 1)  if *symmetric* is True
+            Shape (batch_size, num_heads, seq_length, w + 1)      otherwise
+        attn_weight:
+            Shape (batch_size, num_heads, seq_length, w + w + 1)  if *symmetric* is True
+            Shape (batch_size, num_heads, seq_length, w + 1)      otherwise
+    """
+    if layout != "NTK":
+        raise NotImplementedError('We only support layout = "NTK".')
+    if normalized:
+        query = l2_normalize(F, query, axis=-1, eps=eps)
+        key = l2_normalize(F, key, axis=-1, eps=eps)
+    # 1. Calculate the attention weights
+    # scores' shape  (batch_size, seq_length, num_heads, w + w + 1) if symmetric else
+    #                (batch_size, seq_length, num_heads, w + 1)
+    scores = F.npx.sldwin_atten_score(query, key, dilation,
+                                      w=window_size, symmetric=symmetric)
+    if scaled:
+        if query_head_units is None:
+            query_shape = F.npx.shape_array(query)
+            scores = scores / F.np.sqrt(query_shape[-1])
+        else:
+            scores = scores / math.sqrt(query_head_units)
+    # mask's shape is the same as scores
+    mask = F.npx.sldwin_atten_mask_like(scores, dilation, valid_length.astype(np.int32),
+                                        w=window_size, symmetric=symmetric)
+    attn_weights = masked_softmax(F, scores, mask, dtype=dtype)
+    attn_weights = F.npx.dropout(attn_weights, p=dropout)
+    # 2. Calculate the context vector
+    # (batch_size, seq_length, num_heads, num_head_units)
+    context_vec = F.npx.sldwin_atten_context(attn_weights, value, dilation,
+                                             w=window_size, symmetric=symmetric)
+    # (batch_size, seq_length, num_units)
+    context_vec = F.npx.reshape(context_vec, (-2, -2, -1))
+
+    return context_vec, [scores, attn_weights]
+
+
+class MultiHeadSlidingWindowAttentionCell(HybridBlock):
+    def __init__(self, window_size, symmetric=True, query_units=None, num_heads=None,
+                 attention_dropout=0.0, scaled: bool = True, normalized: bool = False,
+                 eps: float = 1E-6, dtype='float32', layout='NTK'):
+        super().__init__()
+        self._query_units = query_units
+        self._window_size = window_size
+        self._symmetric = symmetric
+        self._num_heads = num_heads
+        self._attention_dropout = attention_dropout
+        self._scaled = scaled
+        self._normalized = normalized
+        self._eps = eps
+        self._dtype = dtype
+        self._layout = layout
+        if self._query_units is not None:
+            assert self._num_heads is not None
+            assert self._query_units % self._num_heads == 0,\
+                'The units must be divisible by the number of heads.'
+            self._query_head_units = self._query_units // self._num_heads
+        else:
+            self._query_head_units = None
+
+    @property
+    def layout(self):
+        return self._layout
+
+    def hybrid_forward(self, F, query, key, value, dilation, valid_length):
+        return multi_head_sliding_window_dot_attn(F, query=query, key=key,
+                    value=value, dilation=dilation,
+                    valid_length=valid_length, window_size=self._window_size,
+                    symmetric=self._symmetric, dropout=self._attention_dropout,
+                    scaled=self._scaled, normalized=self._normalized, eps=self._eps,
+                    query_head_units=self._query_head_units, layout=self._layout,
+                    dtype=self._dtype)
+
+    def __repr__(self):
+        s = '{name}(\n' \
+            '   window_size={window_size},\n' \
+            '   symmetric={symmetric},\n' \
+            '   query_units={query_units},\n' \
+            '   num_heads={num_heads},\n' \
+            '   attention_dropout={attention_dropout},\n' \
+            '   scaled={scaled},\n' \
+            '   normalized={normalized},\n' \
+            '   layout="{layout}",\n' \
+            '   dtype={dtype}\n' \
+            ')'
+        return s.format(name=self.__class__.__name__,
+                        window_size=self._window_size,
+                        symmetric=self._symmetric,
+                        query_units=self._query_units,
+                        num_heads=self._num_heads,
+                        attention_dropout=self._attention_dropout,
+                        scaled=self._scaled,
+                        normalized=self._normalized,
+                        layout=self._layout,
+                        dtype=self._dtype)
+
+
 class RelAttentionScoreCell(HybridBlock):
     r"""Get the score based on the query and relative position index. This is used for implementing
      relative attention.
