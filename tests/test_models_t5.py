@@ -69,7 +69,7 @@ def test_t5_model(cfg_key, activation, ctx):
 @pytest.mark.parametrize('activation', ['relu', 'gated-gelu'])
 def test_t5_nmt_inference(layout, activation, ctx): 
     with ctx: 
-        cfg = T5Model.get_cfg()
+        cfg = T5Model.get_cfg('google_t5_small')
         cfg.defrost()
         cfg.MODEL.layout = layout
         cfg.MODEL.activation = activation

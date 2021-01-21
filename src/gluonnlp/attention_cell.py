@@ -603,6 +603,35 @@ class MultiHeadAttentionCell(HybridBlock):
 
 
 def gen_rel_position(data, past_data=None, dtype=np.int32, layout='NT'): 
+    """Create a matrix of relative position for RelAttentionScoreCell. 
+    
+    The relative position is defined as the index difference: `mem_i` - `query_j`. 
+    Note, though, that the implementation here makes sense in self-attention's setting, 
+    but not in cross-attention's. Hence, both `mem_i` and `query_j` are time indices from 
+    `data` (or, in incremental decoding's case, the concatenated sequence from the current 
+    stepwise `data` and the previous steps `past_data`). 
+
+    Parameters
+    ----------
+    data
+        The data. Under incremental decoding, seq_length = 1. 
+
+        - layout = 'NT'
+            Shape (batch_size, seq_length, C)
+        - layout = 'TN'
+            Shape (seq_length, batch_size, C)
+    past_data
+        This is only used under incremental decoding. Stacked data from previous steps. 
+    dtype
+        Data type of the mask
+    layout
+        Layout of the data + past_data
+
+    Returns
+    -------
+    relative_position :
+        Shape (seq_length, seq_length)
+    """
     time_axis = 1 if layout == 'NT' else 0
     if past_data is None: 
         position = npx.arange_like(data, axis=time_axis)
@@ -618,7 +647,7 @@ def gen_rel_position(data, past_data=None, dtype=np.int32, layout='NT'):
     query_position = np.expand_dims(position, axis=-1)
     mem_position = np.expand_dims(position, axis=0)
     relative_position = mem_position - query_position
-    return relative_position.astype(np.int32) # shape (query_length, key_length)
+    return relative_position.astype(np.int32) # shape (L_seq, L_seq)
 
 
 class RelAttentionScoreCell(HybridBlock):
