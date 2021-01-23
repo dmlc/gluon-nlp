@@ -51,7 +51,7 @@ def get_ec2_tvm_flags() -> Dict[str, Dict]:
 
 
 def update_tvm_convert_map() -> None:
-    op = (('masked_softmax', _mx_masked_softmax))
+    op = (('masked_softmax', _mx_masked_softmax),)
     _convert_map.update({key: value for key, value in op})
 
 
