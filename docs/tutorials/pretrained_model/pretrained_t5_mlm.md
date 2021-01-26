@@ -16,7 +16,7 @@ In this tutorial, we are going to:
 To begin, we load required packages. We also set seeds so that you could replicate our results on your machine. In addition, two helper functions are introduced here for creating corrupted input and printing human-readable output. 
 
 
-```python
+```{.python .input}
 import random
 import warnings
 warnings.filterwarnings('ignore')
@@ -30,7 +30,7 @@ from gluonnlp.sequence_sampler import BeamSearchSampler
 ```
 
 
-```python
+```{.python .input}
 npx.set_np()
 
 random.seed(0)
@@ -40,7 +40,7 @@ _np.random.seed(0)
 ```
 
 
-```python
+```{.python .input}
 def spans_to_masks(tokenizer, tokens, spans): 
     def _spans_to_masks(tokens, spans): 
         if isinstance(tokens[0], int): 
@@ -99,7 +99,7 @@ In GluonNLP, `get_backbone` is a handy way to load models and download pretraine
 `T5Inference` uses `T5Model` as the backbone and leverages the incremental decoding feature. Notice that it must be initialized with a (pretrained) `T5Model` instance. 
 
 
-```python
+```{.python .input}
 T5Model, cfg, tokenizer, local_params_path, _ = get_backbone('google_t5_large')
 backbone = T5Model.from_cfg(cfg)
 backbone.load_parameters(local_params_path)
@@ -110,7 +110,7 @@ t5mlm.hybridize()
 For this MLM task, we will also utilize the `BeamSearchSampler`, a powerful and easy-to-use tools in many searching scenarios. 
 
 
-```python
+```{.python .input}
 beam_size = 4
 t5mlm_seacher = BeamSearchSampler(beam_size, t5mlm, eos_id=1, vocab_size=32128)
 ```
@@ -118,7 +118,7 @@ t5mlm_seacher = BeamSearchSampler(beam_size, t5mlm, eos_id=1, vocab_size=32128)
 Since the output of our tokenizer is a Python list (or nested Python list), each sample can be of different lengths. This design choise allows for more flexibilities in manipulating intermediate results, but requires an additional step before feeding into the model. `Pad` helps us group multiple samples into an ndarray batch with just one line of code. 
 
 
-```python
+```{.python .input}
 batcher = Pad(val=0, dtype=np.int32)
 ```
 
@@ -127,7 +127,7 @@ batcher = Pad(val=0, dtype=np.int32)
 In this tutorial, we simply use a batch of two samples. We can inspect the tokenization results by passing `str` as the second argument. Notice that the tokenizer itself does not add EOS tokens, `</s>`, to the end of sequences. We leave the flexibility and responsibility to users. 
 
 
-```python
+```{.python .input}
 text = [
     'Andrew Carnegie famously said , " My heart is in the work . " At CMU , we think about work a little differently .', 
     'Peace is a concept of societal friendship and harmony in the absence of hostility and violence . In a social sense , peace is commonly used to mean a lack of conflict and freedom from fear of violence between individuals or groups .' 
@@ -138,7 +138,7 @@ for ele_tokens in tokens:
 ```
 
 
-```python
+```{.python .input}
 for ele_tokens in tokenizer.encode(text, str): 
     print(ele_tokens, end='\n\n')
 ```
@@ -149,7 +149,7 @@ We have converted a helper function, `mask_to_sentinel()`,  from the `noise_span
 > For curious readers, there are many more useful implementations in T5's original repository. 
 
 
-```python
+```{.python .input}
 noise_spans = [
     [(11, 12, 13)], # for sequence 1
     [(4, 5, 6), (28, 29, 30), (46, 47, 48)] # for sequence 2
@@ -161,7 +161,7 @@ masked_tokens = mask_to_sentinel(tokens, masks, len(tokenizer.vocab))
 The preparation step completes as we batch-ify the encoder input tokens (which is corrupted sequences) and record valid length for each sample. 
 
 
-```python
+```{.python .input}
 enc_tokens = batcher(masked_tokens)
 enc_valid_length = np.array([len(ele_tokens) for ele_tokens in masked_tokens], dtype=np.int32)
 ```
@@ -173,7 +173,7 @@ We first get the initial states of decoder by calling `init_states()`. This meth
 Then, we initiate the beam search with a batch of `<pad>` tokens (token id = 0). The beam search will use incremental decoding implemented in `T5Inference` to speed up the process, although it may still take a while. 
 
 
-```python
+```{.python .input}
 states = t5mlm.init_states(enc_tokens, enc_valid_length)
 output = t5mlm_seacher(np.zeros_like(enc_valid_length), states, enc_valid_length)
 ```
@@ -181,7 +181,7 @@ output = t5mlm_seacher(np.zeros_like(enc_valid_length), states, enc_valid_length
 When the search is done, we can print the results nicely using our helper function, and compare them with the target. Happily, the pretrianed T5-large gives reasonable (and sometimes perfect) guess in our toy MLM task. 
 
 
-```python
+```{.python .input}
 print_results(tokenizer, output, noise_spans, targets)
 ```
 
