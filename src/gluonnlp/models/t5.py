@@ -31,7 +31,7 @@ T5 Model
 """
 
 
-__all__ = ['T5Model', 'T5NMTInference']
+__all__ = ['T5Model', 'T5Inference', 'T5Tokenizer', 'T5NMTInference']
 
 
 import os
@@ -43,6 +43,7 @@ from mxnet import use_np
 from mxnet import np, npx
 from mxnet.gluon import HybridBlock, Parameter, nn
 from mxnet.initializer import Constant, Normal, Xavier
+import numpy as _np
 from ..attention_cell import (
     gen_self_attn_mask, gen_mem_attn_mask, MultiHeadAttentionCell, gen_rel_position, RelAttentionScoreCell
 )
@@ -50,6 +51,7 @@ from .base import BACKBONE_REGISTRY
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..data import Vocab
 from ..data.tokenizers import SentencepieceTokenizer
+from ..data.tokenizers.base import is_tokens_from_multiple_sentences, get_token_type
 from ..layers import RMSNorm, PositionwiseFFN
 from ..sequence_sampler import BaseStepDecoder
 from ..utils.config import CfgNode as CN
@@ -368,14 +370,14 @@ class T5Block(HybridBlock):
     ): 
         # 1. self-attention
         out = self.self_attn_layer_norm(step_hidden_states)
-        step_self_query, self_step_key, self_step_value = (
+        step_self_query, step_self_key, step_self_value = (
             self.transpose_for_scores(self.self_attn_q(out)), 
             self.transpose_for_scores(self.self_attn_k(out)), 
             self.transpose_for_scores(self.self_attn_v(out))
         )
         self_key, self_value = (
-            np.concatenate([past_key_value[0], self_step_key], axis=self._time_axis), 
-            np.concatenate([past_key_value[1], self_step_value], axis=self._time_axis)
+            np.concatenate([past_key_value[0], step_self_key], axis=self._time_axis), 
+            np.concatenate([past_key_value[1], step_self_value], axis=self._time_axis)
         )
         out, _ = self.self_attn(
             step_self_query, 
@@ -850,8 +852,31 @@ class T5Model(HybridBlock):
         )
 
 
+def mask_to_sentinel(tokens, noise_mask, vocab_size): 
+    if isinstance(tokens, list) and isinstance(tokens[0], list): 
+        masked_tokens = []
+        for i, (tok, mask) in enumerate(zip(tokens, noise_mask)): 
+            masked_tokens.append(mask_to_sentinel(tok, mask, vocab_size))
+        return masked_tokens
+    elif isinstance(tokens, list): 
+        # reference: https://github.com/google-research/text-to-text-transfer-transformer/blob/867715664c8393cf12093ea9633f868c0df35548/t5/data/preprocessors.py#L2802-L2839
+        assert isinstance(tokens, list) and isinstance(noise_mask, list), 'Only Python lists are supported'
+        assert len(tokens) == len(noise_mask), 'tokens and noise_mask have different shapes'
+        # converting back to numpy array is an ad hoc solution to bugs in mxnet.np.pad()
+        tokens = _np.array(tokens)
+        noise_mask = _np.array(noise_mask)
+        prev_token_is_noise = _np.pad(noise_mask[:-1], [[1, 0]])
+        first_noise_tokens = _np.logical_and(noise_mask, _np.logical_not(prev_token_is_noise))
+        subsequent_noise_tokens = _np.logical_and(noise_mask, prev_token_is_noise)
+        sentinel = vocab_size - _np.cumsum(first_noise_tokens.astype(tokens.dtype))
+        tokens = _np.where(first_noise_tokens, sentinel, tokens)
+        return tokens[_np.logical_not(subsequent_noise_tokens)].tolist()
+    else: 
+        raise ValueError('Unsupported input type: {}'.format(tokens))
+
+
 @use_np
-class T5NMTInference(HybridBlock, BaseStepDecoder): 
+class T5Inference(HybridBlock, BaseStepDecoder): 
     def __init__(self, model): 
         super().__init__()
         self.model = model
@@ -873,6 +898,16 @@ class T5NMTInference(HybridBlock, BaseStepDecoder):
 
     @property
     def state_batch_axis(self): 
+        """The returned 4-tuple corresponds to the batch axes of
+        results of `init_states()`
+
+        Returns
+        -------
+        enc_out_batch_axis
+        src_valid_length_batch_axis
+        position_batch_axis
+        dec_layer_batch_axis
+        """
         if self.model.layout == 'NT':
             return 0, 0, 0, self.model.decoder.state_batch_axis
         else:
@@ -899,40 +934,62 @@ class T5NMTInference(HybridBlock, BaseStepDecoder):
             mem_valid_length
         )
         step_hidden_states = self.output_layer(step_hidden_states)
-        # NT: (B, 1, d_model) -> (B, d_model); TN: (1, B, d_model) -> (B, d_model)
+        # NT: (B, 1, vocab_size) -> (B, vocab_size); TN: (1, B, vocab_size) -> (B, vocab_size)
         step_hidden_states = npx.reshape(step_hidden_states, (-5, -1))
         return step_hidden_states, (mem_states, mem_valid_length, position + 1, present_key_values)
 
 
+class T5NMTInference(T5Inference): 
+    def __init__(self, *args, **kwargs): 
+        print(
+            'Note: T5NMTInference is deprecated. We have renamed it to T5Inference and ' \
+            'migrated all previous functionalities. Please use it instead.'
+        )
+        super().__init__(*args, **kwargs)
+
+
+class T5Tokenizer(SentencepieceTokenizer): 
+    """This inheriting class is capable of handling extra tokens which do not present in self._sp_model
+    """
+    def __init__(self, vocab_path, extra_ids=100): 
+        # extend tokens in vocab with <extra_id>s, which correspond to noise span sentinels one-by-one
+        # <extra_id_0> will the last token in the new vocabulary
+        special_tokens = {
+            'extra{}_token'.format(i): '<extra_id_{}>'.format(i) for i in range(extra_ids - 1, -1, -1)
+        }
+        spiece_model = SentencepieceTokenizer(vocab_path)
+        tokens = spiece_model.vocab.all_tokens
+        tokens.extend(list(special_tokens.values()))
+        # re-specify special tokens 
+        special_tokens['eos_token'] = spiece_model.vocab.eos_token
+        special_tokens['unk_token'] = spiece_model.vocab.unk_token
+        special_tokens['pad_token'] = spiece_model.vocab.pad_token
+        super().__init__(
+            model_path=vocab_path, 
+            vocab=Vocab(tokens, **special_tokens), 
+            lowercase=False
+        )
+
+    def _filter_extra_tokens(self, tokens): 
+        def _filter(tokens, token_type): 
+            if token_type is str: 
+                return [token for token in tokens if 'extra_id' not in token]
+            elif token_type is int: 
+                return [token for token in tokens if token < len(self._sp_model)]
+        is_multi_sentences = is_tokens_from_multiple_sentences(tokens)
+        token_type = get_token_type(tokens)
+        if not is_multi_sentences: 
+            return _filter(tokens, token_type)
+        else: 
+            return [_filter(ele_token, token_type) for ele_token in tokens]
+
+    def decode(self, tokens): 
+        tokens = self._filter_extra_tokens(tokens)
+        return super().decode(tokens)
+
+
 def list_pretrained_t5(): 
     return sorted(list(PRETRAINED_URL.keys()))
-
-
-def build_t5_tokenizer(vocab_path, do_lower, extra_ids=100): 
-    # extend tokens in vocab with <extra_id>s, which correspond to noise span sentinels one-by-one
-    # <extra_id_0> will the last token in the new vocabulary
-    extra_token = '<extra_id_{}>'
-    special_tokens = {
-        'extra{}_token'.format(i): extra_token.format(i) for i in range(extra_ids - 1, -1, -1)
-    }
-    spiece_model = SentencepieceTokenizer(vocab_path)
-    tokens = spiece_model.vocab.all_tokens
-    tokens.extend(list(special_tokens.values()))
-    # re-specify special tokens 
-    special_tokens['eos_token'] = spiece_model.vocab.eos_token
-    special_tokens['unk_token'] = spiece_model.vocab.unk_token
-    special_tokens['pad_token'] = spiece_model.vocab.pad_token
-    tokenizer = SentencepieceTokenizer(
-        model_path=vocab_path, 
-        vocab=Vocab(tokens, **special_tokens), 
-        lowercase=do_lower
-    )
-    # sanity check: every additional token has been inserted with correct order
-    inserted_special_tokens = list(extra_token.format(i) for i in range(extra_ids - 1, -1, -1))
-    assert list(
-        tokenizer.vocab.to_tokens(i) for i in range(len(tokenizer._sp_model), len(tokenizer._vocab))
-    ) == inserted_special_tokens, 'Some <extra_id> tokens are not properly inserted.'
-    return tokenizer
 
 
 def get_pretrained_t5(
@@ -972,7 +1029,7 @@ def get_pretrained_t5(
         local_params_path = None
     # lm model has not been implemented
     local_lm_params_path = None
-    tokenizer = build_t5_tokenizer(local_paths['vocab'], False, extra_ids)
+    tokenizer = T5Tokenizer(local_paths['vocab'], extra_ids)
     if cfg is None: 
         cfg = T5Model.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_lm_params_path

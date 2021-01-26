@@ -8,8 +8,7 @@ import argparse
 import logging
 import time
 from gluonnlp.utils.misc import logging_config
-from gluonnlp.models.transformer import TransformerModel,\
-    TransformerNMTInference
+from gluonnlp.models.transformer import TransformerModel, TransformerInference
 from gluonnlp.data.batchify import Tuple, Pad, Stack
 from gluonnlp.data.filtering import MosesNormalizer
 from gluonnlp.data import tokenizers
@@ -214,7 +213,7 @@ def evaluate(args):
     model.cast('float16')
     model.hybridize()
     model.load_parameters(args.param_path, ctx=ctx_l, cast_dtype=True)
-    inference_model = TransformerNMTInference(model=model)
+    inference_model = TransformerInference(model=model)
     inference_model.hybridize()
     # Construct the BeamSearchSampler
     if args.stochastic:
