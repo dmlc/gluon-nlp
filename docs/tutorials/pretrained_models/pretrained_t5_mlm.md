@@ -1,10 +1,10 @@
-# Using T5 for Masked Language Modeling (MLM) Tasks
+# T5 for Masked Language Modeling (MLM)
 
 ## Introduction
 
 As we have seen in T5 model's paper [1], the author explored a pre-training technique called "random spans". As the name suggests, this method corrupts the input sequence by spans of tokens rather than individual tokens. After that, every noise spans is mapped to unique sentinel starting from `<extra_id_0>`, and the model's objective is to denoise these spans. By handling consequentive corrupted tokens altogether, this method yields significant speed-up as compared to BERT's objective while retain performance. 
 
-<center><img src="pretraining_objectives.png" alt="Different pretraining objectives" width="800"/></center>
+<center><img src="pretraining_objectives.png" alt="Different pretraining objectives" width="800px"/></center>
 <div align="center"> <strong>Figure 1:</strong> A comparison of different pretraining objectives (source: T5's paper [1]). </div>
 
 In this tutorial, we are going to: 
