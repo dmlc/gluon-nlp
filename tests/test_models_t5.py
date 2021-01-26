@@ -3,7 +3,7 @@ import mxnet as mx
 from mxnet import np, npx
 from mxnet.gluon import nn, HybridBlock
 from gluonnlp.models.t5 import (
-    T5Model, T5NMTInference, t5_cfg_reg, list_pretrained_t5, get_pretrained_t5
+    T5Model, T5Inference, t5_cfg_reg, list_pretrained_t5, get_pretrained_t5
 )
 from gluonnlp.utils.testing import verify_nmt_model, verify_nmt_inference
 
@@ -67,7 +67,7 @@ def test_t5_model(cfg_key, activation, ctx):
 
 @pytest.mark.parametrize('layout', ['NT', 'TN'])
 @pytest.mark.parametrize('activation', ['relu', 'gated-gelu'])
-def test_t5_nmt_inference(layout, activation, ctx): 
+def test_t5_inference(layout, activation, ctx): 
     with ctx: 
         cfg = T5Model.get_cfg('google_t5_small')
         cfg.defrost()
@@ -81,7 +81,7 @@ def test_t5_nmt_inference(layout, activation, ctx):
         
         # while keeping T5Model implementation consistent with Huggingface's, this 
         # temporary class would help the backbone fit into the provided nmt tests. 
-        class TempNMTModel(HybridBlock): 
+        class TempWithHead(HybridBlock): 
             def __init__(self, model): 
                 super().__init__()
                 self.model = model
@@ -101,10 +101,10 @@ def test_t5_nmt_inference(layout, activation, ctx):
             def forward(self, *args, **kwargs): 
                 return self.output_layer(self.model(*args, **kwargs))
 
-        nmt_model = TempNMTModel(model)
-        nmt_model.hybridize()
-        verify_nmt_model(nmt_model)
+        backbone = TempWithHead(model)
+        backbone.hybridize()
+        verify_nmt_model(backbone)
 
-        inference_model = T5NMTInference(model)
+        inference_model = T5Inference(model)
         inference_model.hybridize()
-        verify_nmt_inference(train_model=nmt_model, inference_model=inference_model)
+        verify_nmt_inference(train_model=backbone, inference_model=inference_model)
