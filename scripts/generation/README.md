@@ -14,6 +14,7 @@ python3 generate_unconditional_gpt2_samples.py \
     --gpu 0 \
     --temperature 0.7 \
     --top_k 40 \
+    --batch_size 2 \
     --nsamples 1000 > samples
 ```
 
@@ -43,7 +44,7 @@ Some metrics for the unconditional generated text
 | topk=40       | 0.4291         | 0.9666         | 0.0            |
 | topk=640      | 0.3384         | 0.9623         | 0.0            |
 | topk=40 t=0.7 | 0.4621         | 0.9586         | 1.1            |
-
+| topp=0.95     | 0.2676         | 0.9519         | 0.0            |
 
 Part of some interesting generated unconditional example
 
