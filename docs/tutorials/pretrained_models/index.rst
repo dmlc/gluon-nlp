@@ -5,7 +5,7 @@ Using Pretrained models
 
    .. card::
       :title: T5 for Masked Language Modeling
-      :link: pretrained_models/pretrained_t5_mlm.html
+      :link: pretrained_t5_mlm.html
 
       An example of using pretrained models in GluonNLP. 
 
