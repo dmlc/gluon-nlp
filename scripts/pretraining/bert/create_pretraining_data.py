@@ -552,32 +552,20 @@ def main():
     # vocabulary and tokenizer
     _, tokenizer, _, _ = get_pretrained_bert(
         args.model_name, load_backbone=False, load_mlm=False)
-    '''
-    if args.sentencepiece:
-        logging.info('loading vocab file from sentence piece model: %s', args.sentencepiece)
-        if args.dataset_name:
-            warnings.warn('Both --dataset_name and --sentencepiece are provided. '
-                          'The vocabulary will be loaded based on --sentencepiece.')
-        vocab = nlp.vocab.BERTVocab.from_sentencepiece(args.sentencepiece)
-        tokenizer = nlp.data.BERTSPTokenizer(args.sentencepiece, vocab, num_best=args.sp_nbest,
-                                             alpha=args.sp_alpha, lower=not args.cased)
-    else:
-        logging.info('loading vocab file from pre-defined dataset: %s', args.dataset_name)
-        vocab = nlp.data.utils._load_pretrained_vocab(args.dataset_name, root=output_dir,
-                                                      cls=nlp.vocab.BERTVocab)
-        tokenizer = BERTTokenizer(vocab=vocab, lower='uncased' in args.dataset_name)
-    '''
     # count the number of input files
     input_files = []
-    inputs = ','.join(os.listdir(args.input_dir))
-    for input_pattern in inputs.split(','):
-        input_files.append(os.path.expanduser(os.path.join(args.input_dir, input_pattern)))
+    datasets = args.input_dir.split(',')
+    for dataset in datasets:
+        tmp_names = os.listdir(dataset)
+        for file in tmp_names:
+            input_files.append(os.path.expanduser(os.path.join(dataset, file)))
+
 
     # seperate input_files
     total_num = len(input_files)
-    part_num = total_num // args.total_num
+    part_num = total_num // args.shard_num
     input_files.sort()
-    input_files = input_files[part_num * args.current:min(part_num * (args.current + 1), total_num)]
+    input_files = input_files[part_num * args.current_shard:min(part_num * (args.current_shard + 1), total_num)]
 
     for input_file in input_files:
         logging.info('\t%s', input_file)
@@ -598,7 +586,7 @@ def main():
     process_args = []
 
     for i, file_split in enumerate(file_splits):
-        output_file = os.path.join(output_dir, 'part-{}-{}.npz'.format(str(args.current), str(i).zfill(3)))
+        output_file = os.path.join(output_dir, 'shard-{}-{}.npz'.format(str(args.current_shard), str(i).zfill(3)))
         count += len(file_split)
         process_args.append((file_split, tokenizer, args.max_seq_length, args.short_seq_prob,
                              args.masked_lm_prob, args.max_predictions_per_seq,
@@ -625,13 +613,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Pre-training data generator for BERT',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    '''
-    parser.add_argument(
-        '--input_file',
-        type=str,
-        required=True,
-        help='Input files, separated by comma. For example, "~/data/*.txt"')
-    '''
     parser.add_argument(
         '--input_dir',
         type=str,
@@ -646,37 +627,17 @@ if __name__ == '__main__':
         type=str,
         required=True,
         help='Output directory.')
-    parser.add_argument('--current', type=int, required=True,
-                        help='current num of part, range from 0 to total_num-1')
-    '''
-    parser.add_argument(
-        '--dataset_name',
-        type=str,
-        default=None,
-        choices=['book_corpus_wiki_en_uncased', 'book_corpus_wiki_en_cased',
-                 'wiki_multilingual_uncased', 'wiki_multilingual_cased', 'wiki_cn_cased'],
-        help='The dataset name for the vocab file BERT model was trained on. For example, '
-             '"book_corpus_wiki_en_uncased"')
+    parser.add_argument('--current_shard', type=int, required=True,
+                        help='current num of shard, range from 0 to shard_num-1')
 
-    parser.add_argument(
-        '--sentencepiece',
-        type=str,
-        default=None,
-        help='Path to the sentencepiece .model file for both tokenization and vocab.')
-
-    parser.add_argument(
-        '--cased',
-        action='store_true',
-        help='Effective only if --sentencepiece is set')
-    '''
     parser.add_argument('--sp_nbest', type=int, default=0,
                         help='Number of best candidates for sampling subwords with sentencepiece. ')
 
     parser.add_argument('--sp_alpha', type=float, default=1.0,
                         help='Inverse temperature for probability rescaling for sentencepiece '
                              'unigram sampling')
-    parser.add_argument('--total_num', type=int, default=8,
-                        help='total number of part')
+    parser.add_argument('--shard_num', type=int, default=8,
+                        help='total number of shard')
 
     parser.add_argument(
         '--whole_word_mask',
