@@ -548,7 +548,6 @@ def main():
 
     # create output dir
     output_dir = os.path.expanduser(args.output_dir)
-    # nlp.utils.mkdir(output_dir)
     if not os.path.exists(output_dir):
         os.mkdir(output_dir)
     # vocabulary and tokenizer
