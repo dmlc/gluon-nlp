@@ -21,8 +21,7 @@ python create_pretraining_data.py \
       --current_shard 7 \
       --max_seq_length 512 \
 ```
-Since it needs too much memory to convert whole dataset, you can use shard number to 
-divide it to different shards.
+Since it needs too much memory to convert whole dataset, you can use shard number to divide it to different shards.
 
 2. Phase 1 training with sequence length 128
 
