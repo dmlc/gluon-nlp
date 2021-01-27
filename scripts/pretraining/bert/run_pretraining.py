@@ -347,7 +347,7 @@ def train(args):
                     with amp.scale_loss(loss_l, trainer) as loss_l:
                         for loss in loss_l:
                             loss.backward()
-                norm_clip_mult = num_workers * trainer._amp_loss_scaler.loss_scale
+                norm_clip_mult = num_workers * trainer.amp_loss_scale
             else:
                 with mx.autograd.record():
                     for loss in loss_l:
