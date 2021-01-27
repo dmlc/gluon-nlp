@@ -31,7 +31,7 @@ T5 Model
 """
 
 
-__all__ = ['T5Model', 'T5Inference']
+__all__ = ['T5Model', 'T5Inference', 'T5Tokenizer', 'T5NMTInference']
 
 
 import os
@@ -43,13 +43,15 @@ from mxnet import use_np
 from mxnet import np, npx
 from mxnet.gluon import HybridBlock, Parameter, nn
 from mxnet.initializer import Constant, Normal, Xavier
+import numpy as _np
 from ..attention_cell import (
-    gen_self_attn_mask, gen_mem_attn_mask, MultiHeadAttentionCell, RelAttentionScoreCell
+    gen_self_attn_mask, gen_mem_attn_mask, MultiHeadAttentionCell, gen_rel_position, RelAttentionScoreCell
 )
 from .base import BACKBONE_REGISTRY
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo_checksum_dir
 from ..data import Vocab
 from ..data.tokenizers import SentencepieceTokenizer
+from ..data.tokenizers.base import is_tokens_from_multiple_sentences, get_token_type
 from ..layers import RMSNorm, PositionwiseFFN
 from ..sequence_sampler import BaseStepDecoder
 from ..utils.config import CfgNode as CN
@@ -194,6 +196,7 @@ class T5Block(HybridBlock):
         assert layout in ['TN', 'NT'], \
             'Invalid layout: {}. Only "TN" and "NT" are supported.'.format(layout)
         self._layout = layout
+        self._time_axis = 1 if self.layout == 'NT' else 0
 
         self.self_attn_layer_norm = RMSNorm(
             in_channels=d_model, 
@@ -326,15 +329,15 @@ class T5Block(HybridBlock):
         def wrapper(self, *args, **kwargs): 
             assert self._is_decoder, \
                 '{}() is available for decoder only.'.format(fn.__name__)
-            return fn(self *args, **kwargs)
+            return fn(self, *args, **kwargs)
         return wrapper
 
     @property
     def layout(self): 
         return self._layout
 
-    @_assert_decoder_method
     @property
+    @_assert_decoder_method
     def state_batch_axis(self): 
         if self.layout == 'NT': 
             return 0, 0
@@ -342,7 +345,7 @@ class T5Block(HybridBlock):
             return 1, 1
 
     @_assert_decoder_method
-    def init_states(self, batch_size, ctx, dtype='float32'): 
+    def _init_key_value(self, batch_size, ctx, dtype='float32'): 
         if self.layout == 'NT': 
             shape = (batch_size, 0, self._num_heads, self._d_kv)
         else: 
@@ -351,16 +354,60 @@ class T5Block(HybridBlock):
         init_value = np.zeros(shape, ctx=ctx, dtype=dtype)
         return init_key, init_value
 
+    def transpose_for_scores(self, x): 
+        # NT -> NTK: (B, L_seq, inner_dim) -> (B, L_seq, num_heads, n_kv)
+        # TN -> TNK: (L_seq, B, inner_dim) -> (L_seq, B, num_heads, n_kv)
+        return npx.reshape(x, (-2, -2, self._num_heads, -1))
+
     @_assert_decoder_method
     def incremental_decode(
         self, 
-        hidden_states, 
+        step_hidden_states, 
+        step_position_embeddings, 
         past_key_value, 
         mem_states, 
-        mem_valid_length, 
-        mem_attn_mask=None
+        step_mem_attn_mask
     ): 
-        raise NotImplementedError
+        # 1. self-attention
+        out = self.self_attn_layer_norm(step_hidden_states)
+        step_self_query, step_self_key, step_self_value = (
+            self.transpose_for_scores(self.self_attn_q(out)), 
+            self.transpose_for_scores(self.self_attn_k(out)), 
+            self.transpose_for_scores(self.self_attn_v(out))
+        )
+        self_key, self_value = (
+            np.concatenate([past_key_value[0], step_self_key], axis=self._time_axis), 
+            np.concatenate([past_key_value[1], step_self_value], axis=self._time_axis)
+        )
+        out, _ = self.self_attn(
+            step_self_query, 
+            self_key, 
+            self_value, 
+            None, 
+            step_position_embeddings
+        )
+        out = self.dropout(self.self_attn_proj(out))
+        step_hidden_states = step_hidden_states + out
+
+        # 2. cross-attention
+        out = self.cross_attn_layer_norm(step_hidden_states)
+        step_cross_query, cross_key, cross_value = (
+            self.transpose_for_scores(self.cross_attn_q(out)), 
+            self.transpose_for_scores(self.cross_attn_k(mem_states)), 
+            self.transpose_for_scores(self.cross_attn_v(mem_states))
+        )
+        out, _ = self.cross_attn(
+            step_cross_query, 
+            cross_key, 
+            cross_value, 
+            step_mem_attn_mask
+        )
+        out = self.dropout(self.cross_attn_proj(out))
+        step_hidden_states = step_hidden_states + out
+
+        # 3. feed forward
+        step_hidden_states = self.ffn(step_hidden_states)
+        return step_hidden_states, (self_key, self_value)
 
     def forward(
         self, 
@@ -368,8 +415,7 @@ class T5Block(HybridBlock):
         self_attn_mask, 
         position_embeddings, 
         mem_states=None, 
-        mem_attn_mask=None, 
-        mem_position_embeddings=None
+        mem_attn_mask=None
     ): 
         """
         hidden_states: 
@@ -378,22 +424,17 @@ class T5Block(HybridBlock):
             - layout = 'TN'
                 Shape (L_seq, B, d_model)
         """
-        # NT -> NTK: (B, L_seq, inner_dim) -> (B, L_seq, num_heads, n_kv)
-        # TN -> TNK: (L_seq, B, inner_dim) -> (L_seq, B, num_heads, n_kv)
-        def transpose_for_scores(x):
-            return npx.reshape(x, (-2, -2, self._num_heads, -1))
-
         # 1. self-attention
         out = self.self_attn_layer_norm(hidden_states)
         self_query, self_key, self_value = (
-            self.self_attn_q(out), 
-            self.self_attn_k(out), 
-            self.self_attn_v(out)
+            self.transpose_for_scores(self.self_attn_q(out)), 
+            self.transpose_for_scores(self.self_attn_k(out)), 
+            self.transpose_for_scores(self.self_attn_v(out))
         )
         out, _ = self.self_attn(
-            transpose_for_scores(self_query), 
-            transpose_for_scores(self_key), 
-            transpose_for_scores(self_value), 
+            self_query, 
+            self_key, 
+            self_value, 
             self_attn_mask, 
             position_embeddings
         )
@@ -404,16 +445,15 @@ class T5Block(HybridBlock):
         if self._is_decoder: 
             out = self.cross_attn_layer_norm(hidden_states)
             cross_query, cross_key, cross_value = (
-                self.cross_attn_q(out), 
-                self.cross_attn_k(mem_states), 
-                self.cross_attn_v(mem_states)
+                self.transpose_for_scores(self.cross_attn_q(out)), 
+                self.transpose_for_scores(self.cross_attn_k(mem_states)), 
+                self.transpose_for_scores(self.cross_attn_v(mem_states))
             )
             out, _ = self.cross_attn(
-                transpose_for_scores(cross_query), 
-                transpose_for_scores(cross_key), 
-                transpose_for_scores(cross_value), 
-                mem_attn_mask, 
-                mem_position_embeddings
+                cross_query, 
+                cross_key, 
+                cross_value, 
+                mem_attn_mask
             )
             out = self.dropout(self.cross_attn_proj(out))
             hidden_states = hidden_states + out
@@ -450,7 +490,7 @@ class T5Encoder(HybridBlock):
         assert layout in ['TN', 'NT'], \
             'Invalid layout: {}. Only "TN" and "NT" are supported.'.format(layout)
         self._layout = layout
-        self.time_axis = 1 if self.layout == 'NT' else 0
+        self._time_axis = 1 if self.layout == 'NT' else 0
 
         self.relative_position_encoder = RelAttentionScoreCell(
             query_units=self._inner_dim, 
@@ -492,22 +532,10 @@ class T5Encoder(HybridBlock):
     def layout(self): 
         return self._layout
 
-    def _get_relative_position(self, hidden_states): 
-        query_position = np.expand_dims(
-            npx.arange_like(hidden_states, axis=self.time_axis), 
-            axis=-1
-        )
-        mem_position = np.expand_dims(
-            npx.arange_like(hidden_states, axis=self.time_axis), 
-            axis=0
-        )
-        relative_position = mem_position - query_position
-        return relative_position.astype(np.int32)
-
     def forward(self, hidden_states, valid_length): 
         # 1. relative position embeddings and attention masks
         position_embeddings = self.relative_position_encoder(
-            self._get_relative_position(hidden_states)
+            gen_rel_position(hidden_states, layout=self.layout)
         )
         self_attn_mask = gen_self_attn_mask(
             hidden_states, 
@@ -557,7 +585,7 @@ class T5Decoder(HybridBlock):
         assert layout in ['TN', 'NT'], \
             'Invalid layout: {}. Only "TN" and "NT" are supported.'.format(layout)
         self._layout = layout
-        self.time_axis = 1 if self.layout == 'NT' else 0
+        self._time_axis = 1 if self.layout == 'NT' else 0
 
         self.relative_position_encoder = RelAttentionScoreCell(
             query_units=self._inner_dim, 
@@ -603,52 +631,59 @@ class T5Decoder(HybridBlock):
     def state_batch_axis(self): 
         return list(layer.state_batch_axis for layer in self.layers)
 
-    def init_states(self, batch_size, ctx, dtype='float32'): 
-        return list(layer.init_states(batch_size, ctx, dtype) for layer in self.layers)
+    def _init_key_values(self, batch_size, ctx, dtype='float32'): 
+        return list(layer._init_key_value(batch_size, ctx, dtype) for layer in self.layers)
 
     def incremental_decode(
-        hidden_states, 
-        past_key_value, 
+        self, 
+        step_hidden_states, 
+        position, 
+        past_key_values, 
         mem_states, 
         mem_valid_length
     ): 
-        raise NotImplementedError
-
-    def _get_relative_position(self, hidden_states, mem_states=None, past_key_value=None): 
-        if past_key_value is None: 
-            query_position = np.expand_dims(
-                npx.arange_like(hidden_states, axis=self.time_axis), 
-                axis=-1
+        # 1. relative position embeddings and attention mask
+        # step_position_embeddings: Shape (num_heads, 1, L_seq), for self-attention
+        # step_mem_attn_mask: Shape (B, 1, L_mem), for cross-attention
+        position_embeddings = self.relative_position_encoder(
+            gen_rel_position(
+                step_hidden_states, 
+                past_data=past_key_values[0][0], 
+                layout=self.layout
             )
-        else: 
-            # for incremental decoding only, where past key and past value are of shape
-            # NT(NTK): (B, L_seq, num_heads, n_kv); TN(TNK): (L_seq, B, num_heads, n_kv)
-            query_position = npx.arange_like(
-                np.concatenate([hidden_states, past_key_value[0]], axis=self.time_axis), 
-                axis=self.time_axis
-            )
-            query_position = np.expand_dims(query_position, axis=-1)
-        mem_position = np.expand_dims(
-            npx.arange_like(hidden_states if mem_states is None else mem_states, axis=self.time_axis), 
-            axis=0
         )
-        relative_position = mem_position - query_position
-        return relative_position.astype(np.int32)
+        step_position_embeddings = position_embeddings[:, -1:, :]
+        step_mem_attn_mask = gen_mem_attn_mask(
+            mem_states, 
+            mem_valid_length, 
+            step_hidden_states, 
+            dtype=self._dtype, 
+            layout=self.layout
+        )
+
+        # 2. decoder blocks and other layers
+        step_hidden_states = self.dropout(step_hidden_states)
+        present_key_values = []
+        for i, layer in enumerate(self.layers): 
+            step_hidden_states, present_key_value = layer.incremental_decode(
+                step_hidden_states, 
+                step_position_embeddings, 
+                past_key_values[i], 
+                mem_states, 
+                step_mem_attn_mask
+            )
+            present_key_values.append(present_key_value)
+        step_hidden_states = self.final_layer_norm(step_hidden_states)
+        step_hidden_states = self.dropout(step_hidden_states)
+        return step_hidden_states, present_key_values
 
     def forward(self, hidden_states, valid_length, mem_states, mem_valid_length): 
         # 1. relative position embeddings and attention masks
+        # position_embeddings: Shape (num_heads, L_seq, L_seq), broadcastable, for self-attention 
+        # self_attn_mask: Shape (B, L_seq, L_seq), for self-attention
+        # mem_attn_mask: Shape (B, L_seq, L_mem), for cross-attention
         position_embeddings = self.relative_position_encoder(
-            self._get_relative_position(hidden_states)
-        )
-        # relative position embedding is not used for cross attention, 
-        # so we just obtain the correct shape and fill it with 0
-        mem_relative_position = np.zeros_like(
-            self._get_relative_position(hidden_states, mem_states)
-        )
-        mem_position_embeddings = np.repeat(
-            np.expand_dims(mem_relative_position, axis=0), 
-            self._num_heads, 
-            axis=0
+            gen_rel_position(hidden_states, layout=self.layout)
         )
         self_attn_mask = gen_self_attn_mask(
             hidden_states, 
@@ -674,8 +709,7 @@ class T5Decoder(HybridBlock):
                 self_attn_mask, 
                 position_embeddings, 
                 mem_states, 
-                mem_attn_mask, 
-                mem_position_embeddings
+                mem_attn_mask
             )
         hidden_states = self.final_layer_norm(hidden_states)
         hidden_states = self.dropout(hidden_states)
@@ -702,11 +736,19 @@ class T5Model(HybridBlock):
         super().__init__()
         assert vocab_size > 0, 'Vocab size {} is not valid.'.format(vocab_size)
         self._vocab_size = vocab_size
+        self._d_model = d_model
+        self._d_kv = d_kv
+        self._d_ff = d_ff
         self._num_layers = num_layers
+        self._num_heads = num_heads
+        self._inner_dim = num_heads * d_kv
         self._activation = activation
+        self._init_factor = init_factor
+        self._dtype = dtype
         assert layout in ['TN', 'NT'], \
             'Invalid layout: {}. Only "TN" and "NT" are supported.'.format(layout)
         self._layout = layout
+        self._time_axis = 1 if self.layout == 'NT' else 0
 
         # input embedding weights are shared between across encoder and decoder
         self.input_embedding_layer = nn.Embedding(
@@ -758,19 +800,27 @@ class T5Model(HybridBlock):
     def vocab_size(self): 
         return self._vocab_size
 
-    def forward(self, src_data, src_valid_length, tgt_data, tgt_valid_length): 
+    def encode(self, src_data, src_valid_length): 
         src_hidden_states = self.input_embedding_layer(src_data)
         enc_out = self.encoder(
             src_hidden_states, 
             src_valid_length
         )
+        return enc_out
+
+    def decode(self, tgt_data, tgt_valid_length, mem_states, mem_valid_length): 
         tgt_hidden_states = self.input_embedding_layer(tgt_data)
         dec_out = self.decoder(
             tgt_hidden_states, 
             tgt_valid_length, 
-            enc_out, 
-            src_valid_length
+            mem_states, 
+            mem_valid_length
         )
+        return dec_out
+
+    def forward(self, src_data, src_valid_length, tgt_data, tgt_valid_length): 
+        enc_out = self.encode(src_data, src_valid_length)
+        dec_out = self.decode(tgt_data, tgt_valid_length, enc_out, src_valid_length)
         return dec_out
 
     @classmethod
@@ -802,40 +852,144 @@ class T5Model(HybridBlock):
         )
 
 
+def mask_to_sentinel(tokens, noise_mask, vocab_size): 
+    if isinstance(tokens, list) and isinstance(tokens[0], list): 
+        masked_tokens = []
+        for i, (tok, mask) in enumerate(zip(tokens, noise_mask)): 
+            masked_tokens.append(mask_to_sentinel(tok, mask, vocab_size))
+        return masked_tokens
+    elif isinstance(tokens, list): 
+        # reference: https://github.com/google-research/text-to-text-transfer-transformer/blob/867715664c8393cf12093ea9633f868c0df35548/t5/data/preprocessors.py#L2802-L2839
+        assert isinstance(tokens, list) and isinstance(noise_mask, list), 'Only Python lists are supported'
+        assert len(tokens) == len(noise_mask), 'tokens and noise_mask have different shapes'
+        # converting back to numpy array is an ad hoc solution to bugs in mxnet.np.pad()
+        tokens = _np.array(tokens)
+        noise_mask = _np.array(noise_mask)
+        prev_token_is_noise = _np.pad(noise_mask[:-1], [[1, 0]])
+        first_noise_tokens = _np.logical_and(noise_mask, _np.logical_not(prev_token_is_noise))
+        subsequent_noise_tokens = _np.logical_and(noise_mask, prev_token_is_noise)
+        sentinel = vocab_size - _np.cumsum(first_noise_tokens.astype(tokens.dtype))
+        tokens = _np.where(first_noise_tokens, sentinel, tokens)
+        return tokens[_np.logical_not(subsequent_noise_tokens)].tolist()
+    else: 
+        raise ValueError('Unsupported input type: {}'.format(tokens))
+
+
 @use_np
 class T5Inference(HybridBlock, BaseStepDecoder): 
-    pass 
+    def __init__(self, model): 
+        super().__init__()
+        self.model = model
+        self.output_layer = nn.Dense(
+            units=model.vocab_size, 
+            in_units=model._d_model, 
+            flatten=False, 
+            use_bias=False, 
+            dtype=model._dtype
+        )
+        self.output_layer.weight = model.input_embedding_layer.weight
+
+    def initialize(self, **kwargs): 
+        raise NotImplementedError(
+            'You can not initialize a T5Inference Model! ' \
+            'The correct approach is to create a T5Model and ' \
+            'then feed it into a T5Inference.'
+        )
+
+    @property
+    def state_batch_axis(self): 
+        """The returned 4-tuple corresponds to the batch axes of
+        results of `init_states()`
+
+        Returns
+        -------
+        enc_out_batch_axis
+        src_valid_length_batch_axis
+        position_batch_axis
+        dec_layer_batch_axis
+        """
+        if self.model.layout == 'NT':
+            return 0, 0, 0, self.model.decoder.state_batch_axis
+        else:
+            return 1, 0, 0, self.model.decoder.state_batch_axis
+
+    def init_states(self, src_data, src_valid_length): 
+        batch_size = src_data.shape[1 - self.model._time_axis] # NT: 0; TN: 1
+        ctx = src_data.ctx
+        enc_out = self.model.encode(src_data, src_valid_length)
+        position = np.zeros((batch_size,), dtype=np.int32, ctx=ctx)
+        key_values = self.model.decoder._init_key_values(batch_size, ctx, dtype=enc_out.dtype)
+        return enc_out, src_valid_length, position, key_values
+
+    def forward(self, step_data, past_states): 
+        mem_states, mem_valid_length, position, past_key_values = past_states
+        step_hidden_states = self.model.input_embedding_layer(step_data)
+        # NT: (B, d_model) -> (B, 1, d_model); TN: (B, d_model) -> (1, B, d_model)
+        step_hidden_states = np.expand_dims(step_hidden_states, axis=self.model._time_axis)
+        step_hidden_states, present_key_values = self.model.decoder.incremental_decode(
+            step_hidden_states, 
+            position, 
+            past_key_values, 
+            mem_states, 
+            mem_valid_length
+        )
+        step_hidden_states = self.output_layer(step_hidden_states)
+        # NT: (B, 1, vocab_size) -> (B, vocab_size); TN: (1, B, vocab_size) -> (B, vocab_size)
+        step_hidden_states = npx.reshape(step_hidden_states, (-5, -1))
+        return step_hidden_states, (mem_states, mem_valid_length, position + 1, present_key_values)
+
+
+class T5NMTInference(T5Inference): 
+    def __init__(self, *args, **kwargs): 
+        print(
+            'Note: T5NMTInference is deprecated. We have renamed it to T5Inference and ' \
+            'migrated all previous functionalities. Please use it instead.'
+        )
+        super().__init__(*args, **kwargs)
+
+
+class T5Tokenizer(SentencepieceTokenizer): 
+    """This inheriting class is capable of handling extra tokens which do not present in self._sp_model
+    """
+    def __init__(self, vocab_path, extra_ids=100): 
+        # extend tokens in vocab with <extra_id>s, which correspond to noise span sentinels one-by-one
+        # <extra_id_0> will the last token in the new vocabulary
+        special_tokens = {
+            'extra{}_token'.format(i): '<extra_id_{}>'.format(i) for i in range(extra_ids - 1, -1, -1)
+        }
+        spiece_model = SentencepieceTokenizer(vocab_path)
+        tokens = spiece_model.vocab.all_tokens
+        tokens.extend(list(special_tokens.values()))
+        # re-specify special tokens 
+        special_tokens['eos_token'] = spiece_model.vocab.eos_token
+        special_tokens['unk_token'] = spiece_model.vocab.unk_token
+        special_tokens['pad_token'] = spiece_model.vocab.pad_token
+        super().__init__(
+            model_path=vocab_path, 
+            vocab=Vocab(tokens, **special_tokens), 
+            lowercase=False
+        )
+
+    def _filter_extra_tokens(self, tokens): 
+        def _filter(tokens, token_type): 
+            if token_type is str: 
+                return [token for token in tokens if 'extra_id' not in token]
+            elif token_type is int: 
+                return [token for token in tokens if token < len(self._sp_model)]
+        is_multi_sentences = is_tokens_from_multiple_sentences(tokens)
+        token_type = get_token_type(tokens)
+        if not is_multi_sentences: 
+            return _filter(tokens, token_type)
+        else: 
+            return [_filter(ele_token, token_type) for ele_token in tokens]
+
+    def decode(self, tokens): 
+        tokens = self._filter_extra_tokens(tokens)
+        return super().decode(tokens)
 
 
 def list_pretrained_t5(): 
     return sorted(list(PRETRAINED_URL.keys()))
-
-
-def build_t5_tokenizer(vocab_path, do_lower, extra_ids=100): 
-    # extend tokens in vocab with <extra_id>s, which correspond to noise span sentinels one-by-one
-    # <extra_id_0> will the last token in the new vocabulary
-    extra_token = '<extra_id_{}>'
-    special_tokens = {
-        'extra{}_token'.format(i): extra_token.format(i) for i in range(extra_ids - 1, -1, -1)
-    }
-    spiece_model = SentencepieceTokenizer(vocab_path)
-    tokens = spiece_model.vocab.all_tokens
-    tokens.extend(list(special_tokens.values()))
-    # re-specify special tokens 
-    special_tokens['eos_token'] = spiece_model.vocab.eos_token
-    special_tokens['unk_token'] = spiece_model.vocab.unk_token
-    special_tokens['pad_token'] = spiece_model.vocab.pad_token
-    tokenizer = SentencepieceTokenizer(
-        model_path=vocab_path, 
-        vocab=Vocab(tokens, **special_tokens), 
-        lowercase=do_lower
-    )
-    # sanity check: every additional token has been inserted with correct order
-    inserted_special_tokens = list(extra_token.format(i) for i in range(extra_ids - 1, -1, -1))
-    assert list(
-        tokenizer.vocab.to_tokens(i) for i in range(len(tokenizer._sp_model), len(tokenizer._vocab))
-    ) == inserted_special_tokens, 'Some <extra_id> tokens are not properly inserted.'
-    return tokenizer
 
 
 def get_pretrained_t5(
@@ -875,7 +1029,7 @@ def get_pretrained_t5(
         local_params_path = None
     # lm model has not been implemented
     local_lm_params_path = None
-    tokenizer = build_t5_tokenizer(local_paths['vocab'], False, extra_ids)
+    tokenizer = T5Tokenizer(local_paths['vocab'], extra_ids)
     if cfg is None: 
         cfg = T5Model.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_lm_params_path

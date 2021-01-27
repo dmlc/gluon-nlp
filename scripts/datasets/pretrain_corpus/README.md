@@ -71,3 +71,23 @@ python3 prepare_openwebtext.py --input openwebtext/ --output prepared_owt --shuf
 
 In this step, the archived txt are directly read without decompressing.
 They are concatenated together in a single txt file with the same name as the archived file, using double empty lines as the document separation.
+
+
+## BookCorpus
+
+You can use the following instruction to download BookCorpus dataset.
+
+```bash
+python3 prepare_bookcorpus.py  --output BookCorpus 
+```
+
+And you can get raw text files (one article per text file) and
+formulation 1(one article per line in one text file called bookcorpus.txt) 
+
+For using of SOP/NSP loss in training BERT, you can get formulation 2 (one sentence per line) by
+
+```bash
+python3 prepare_bookcorpus.py  --output BookCorpus --segment_sentences --segment_num_worker 16
+```
+
+

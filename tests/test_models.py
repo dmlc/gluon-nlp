@@ -5,7 +5,6 @@ import os
 import numpy as np
 import numpy.testing as npt
 from gluonnlp.models import get_backbone, list_backbone_names
-from gluonnlp.utils.misc import get_ec2_tvm_flags
 from gluonnlp.utils.parameter import count_parameters
 from gluonnlp.utils.lazy_imports import try_import_tvm
 mx.npx.set_np()
@@ -27,8 +26,7 @@ def tvm_enabled():
 @pytest.mark.parametrize('name', list_backbone_names())
 def test_get_backbone(name, ctx):
     with tempfile.TemporaryDirectory() as root, ctx:
-        if name in ['google_t5_3B', 'google_t5_11B']: 
-            pytest.skip('Skipping large T5 model test')
+        # Test for model download
         model_cls, cfg, tokenizer, local_params_path, _ = get_backbone(name, root=root)
         net = model_cls.from_cfg(cfg)
         net.load_parameters(local_params_path)
@@ -39,6 +37,8 @@ def test_get_backbone(name, ctx):
         # Test for model export + save
         if 'gpt2' in name:
             pytest.skip('Skipping GPT-2 test')
+        elif name in ['google_t5_3B', 'google_t5_11B']: 
+            pytest.skip('Skipping large T5 model test')
         batch_size = 1
         sequence_length = 4
         inputs = mx.np.random.randint(0, 10, (batch_size, sequence_length))
@@ -73,11 +73,13 @@ def test_get_backbone(name, ctx):
 @pytest.mark.parametrize('layout', ['NT', 'TN'])
 @pytest.mark.skipif(not tvm_enabled(),
                     reason='TVM is not supported. So this test is skipped.')
-@pytest.mark.skip('TVM issue https://github.com/dmlc/gluon-nlp/issues/1425.')
+# @pytest.mark.skip('TVM issue https://github.com/dmlc/gluon-nlp/issues/1425.')
 def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
     tvm = try_import_tvm()
     from tvm import relay
     from tvm.contrib import graph_runtime
+    from gluonnlp.utils.tvm_utils import get_ec2_tvm_flags, update_tvm_convert_map
+    update_tvm_convert_map()
     tvm_recommended_flags = get_ec2_tvm_flags()
     if ctx.device_type == 'gpu':
         flags = tvm_recommended_flags['g4']
@@ -161,11 +163,11 @@ def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
             ctx = tvm.cpu()
         rt = graph_runtime.GraphModule(lib["default"](ctx))
         if 'bart' in model_name:
-            rt.set_input(data0=token_ids, data1=valid_length, data2=token_ids, data3=valid_length)
+            rt.set_input(data0=token_ids.asnumpy(), data1=valid_length.asnumpy(), data2=token_ids.asnumpy(), data3=valid_length.asnumpy())
         elif 'roberta' in model_name:
-            rt.set_input(data0=token_ids, data1=valid_length)
+            rt.set_input(data0=token_ids.asnumpy(), data1=valid_length.asnumpy())
         else:
-            rt.set_input(data0=token_ids, data1=token_types, data2=valid_length)
+            rt.set_input(data0=token_ids.asnumpy(), data1=token_types.asnumpy(), data2=valid_length.asnumpy())
         rt.run()
         for i in range(rt.get_num_outputs()):
             out = rt.get_output(i)

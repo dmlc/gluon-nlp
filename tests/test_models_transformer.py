@@ -4,7 +4,7 @@ import pytest
 from numpy.testing import assert_allclose
 from gluonnlp.models.transformer import\
     TransformerEncoder, TransformerDecoder, \
-    TransformerModel, TransformerNMTInference,\
+    TransformerModel, TransformerInference,\
     transformer_cfg_reg
 from gluonnlp.attention_cell import gen_mem_attn_mask, gen_self_attn_mask
 from gluonnlp.utils.testing import verify_nmt_model, verify_nmt_inference
@@ -110,7 +110,7 @@ def test_transformer_encoder_decoder(pre_norm, num_enc_layers, num_dec_layers):
 @pytest.mark.parametrize('enc_recurrent', [False, True])
 @pytest.mark.parametrize('dec_recurrent', [False, True])
 @pytest.mark.parametrize('tie_weights,layout', [(False, 'NT'), (True, 'NT'), (True, 'TN')])
-def test_transformer_nmt_model(train_hybridize, inference_hybridize,
+def test_transformer_inference(train_hybridize, inference_hybridize,
                                enc_pre_norm, dec_pre_norm,
                                enc_units, dec_units,
                                enc_num_layers, dec_num_layers,
@@ -144,7 +144,7 @@ def test_transformer_nmt_model(train_hybridize, inference_hybridize,
                              tie_weights=tie_weights,
                              dropout=0.0,
                              layout=layout)
-    inference_model = TransformerNMTInference(model=model)
+    inference_model = TransformerInference(model=model)
     model.initialize()
     if train_hybridize:
         model.hybridize()

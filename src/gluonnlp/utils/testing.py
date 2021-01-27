@@ -40,7 +40,7 @@ def verify_nmt_model(model, batch_size: int = 4,
                      src_seq_length: int = 5,
                      tgt_seq_length: int = 10,
                      atol: float = 1E-4,
-                     rtol: float = 1E-4):
+                     rtol: float = 1E-3):
     """Verify the correctness of an NMT model. Raise error message if it detects problems.
 
     Parameters
@@ -101,7 +101,7 @@ def verify_nmt_model(model, batch_size: int = 4,
 @use_np
 def verify_nmt_inference(train_model, inference_model,
                          batch_size=4, src_seq_length=5,
-                         tgt_seq_length=10, atol=1E-4, rtol=1E-4):
+                         tgt_seq_length=10, atol=1E-4, rtol=1E-3):
     """Verify the correctness of an NMT inference model. Raise error message if it detects
     any problems.
 

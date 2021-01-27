@@ -109,7 +109,7 @@ def convert_config(args, converted):
 def convert_vocab(args, converted): 
     print('converting vocab...')
     # at this step we don't add <extra_id>s into the vocab, but just save the original binary file directly
-    # those pecial tokens are added only when T5 tokenizer gets instantiated from build_t5_tokenizer()
+    # those special tokens are added only when instantiating a T5Tokenizer
     vocab_path = os.path.join(args.dest_dir, 't5.vocab')
     download(
         url=PRETRAINED_VOCAB_MAP[args.model_name], 

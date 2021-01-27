@@ -209,6 +209,7 @@ def train(args):
     else:
         get_dataset_fn = get_pretrain_data_npz
 
+
     if args.data_dir:
         tmp = []
         for dataset in args.data_dir.split(','):
@@ -218,6 +219,7 @@ def train(args):
             tmp.append(','.join(names))
 
         args.data = ','.join(tmp)
+
 
 
     data_train = get_dataset_fn(args.data, args.batch_size, shuffle=True,

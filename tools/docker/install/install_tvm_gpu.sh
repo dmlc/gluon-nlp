@@ -24,7 +24,7 @@ cd ${WORKDIR}
 git clone https://github.com/apache/incubator-tvm tvm --recursive
 cd ${WORKDIR}/tvm
 # checkout a hash-tag
-git checkout ef6e52f191888ee2a5f2221bde3b69391766903f
+git checkout 790344c6ef035947caaaf1cd812ade8d862802aa
 
 
 mkdir -p build

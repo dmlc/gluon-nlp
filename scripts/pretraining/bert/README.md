@@ -1,5 +1,6 @@
 # BERT
 
+
 1. Prepare the dataset, use
 ```bash
 nlp_data prepare_bookcorpus --segment_sentences --segment_num_worker 16
@@ -23,7 +24,7 @@ python create_pretraining_data.py \
 ```
 Since it needs too much memory to convert whole dataset, you can use shard number to divide it to different shards.
 
-2. Phase 1 training with sequence length 128
+2. Phase 1 training with sequence length 128 
 
 ```bash
 python3 run_pretraining.py \
@@ -39,6 +40,7 @@ python3 run_pretraining.py \
   --max_seq_length 128 \
   --gpus 0,1,2,3,4,5,6,7
 ```
+
 also use AMP to accelerate:
 ```bash
 python3 run_pretraining.py \
@@ -55,6 +57,7 @@ python3 run_pretraining.py \
   --max_seq_length 128 \
   --gpus 0,1,2,3,4,5,6,7
 ```
+
 3. Phase 2 training with sequence length 512
 
 ```bash
