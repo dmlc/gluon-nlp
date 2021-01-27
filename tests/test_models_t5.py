@@ -1,4 +1,6 @@
 import pytest
+import tempfile
+
 import mxnet as mx
 from mxnet import np, npx
 from mxnet.gluon import nn, HybridBlock
@@ -108,3 +110,16 @@ def test_t5_inference(layout, activation, ctx):
         inference_model = T5Inference(model)
         inference_model.hybridize()
         verify_nmt_inference(train_model=backbone, inference_model=inference_model)
+
+
+@pytest.mark.slow
+@pytest.mark.remote_required
+@pytest.mark.parametrize('model_name', list_pretrained_t5())
+def test_t5_get_pretrained(model_name, ctx): 
+    assert len(list_pretrained_t5()) > 0
+    with tempfile.TemporaryDirectory() as root, ctx: 
+        cfg, tokenizer, backbone_params_path, _ = get_pretrained_t5(model_name)
+        assert cfg.MODEL.vocab_size >= len(tokenizer.vocab)
+        t5_model = T5Model.from_cfg(cfg)
+        t5_model.load_parameters(backbone_params_path)
+        t5_inference_model = T5Inference(t5_model)

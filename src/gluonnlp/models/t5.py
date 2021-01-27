@@ -61,8 +61,8 @@ from ..utils.registry import Registry
 
 FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 't5.txt'))
 
-t5_cfg_reg = Registry('t5_cfg')
 
+t5_cfg_reg = Registry('t5_cfg')
 
 @t5_cfg_reg.register()
 def google_t5_base(): 
@@ -993,12 +993,11 @@ def list_pretrained_t5():
 
 
 def get_pretrained_t5(
-    model_name: str = 't5-base', 
+    model_name: str = 'google_t5_base', 
     root: str = get_model_zoo_home_dir(), 
     load_backbone: bool = True, 
-    load_lm: bool = False, 
     extra_ids: int = 100
-) -> Tuple[CN, SentencepieceTokenizer, str, str]: 
+) -> Tuple[CN, T5Tokenizer, str, str]: 
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}.'.format(
         model_name, list_pretrained_t5())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
@@ -1027,7 +1026,7 @@ def get_pretrained_t5(
         )
     else: 
         local_params_path = None
-    # lm model has not been implemented
+    # lm model simply uses T5Model as backbone, so no additional params
     local_lm_params_path = None
     tokenizer = T5Tokenizer(local_paths['vocab'], extra_ids)
     if cfg is None: 
