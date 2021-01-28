@@ -630,7 +630,7 @@ def gen_rel_position(data, past_data=None, dtype=np.int32, layout='NT'):
     Returns
     -------
     relative_position :
-        Shape (seq_length, seq_length)
+        Shape (query_length, mem_length) where query_length = mem_length = seq_length
     """
     time_axis = 1 if layout == 'NT' else 0
     if past_data is None: 

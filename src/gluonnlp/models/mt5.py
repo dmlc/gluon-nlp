@@ -155,6 +155,10 @@ PRETRAINED_URL = {
 
 @use_np
 class MT5Model(T5Model): 
+    """
+    This class simply inherits the `T5Model`. 
+    Please check the parent class for documentation. 
+    """
     @classmethod
     def get_cfg(cls, key=None): 
         if key is None: 
@@ -165,10 +169,18 @@ class MT5Model(T5Model):
 
 @use_np
 class MT5Inference(T5Inference): 
+    """
+    This class simply inherits the `T5Inference`. 
+    Please check the parent class for documentation. 
+    """
     pass
 
 
 class MT5Tokenizer(T5Tokenizer): 
+    """
+    This class simply inherits the `T5Tokenizer`. 
+    Please check the parent class for documentation. 
+    """
     pass
 
 
