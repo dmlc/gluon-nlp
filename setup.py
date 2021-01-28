@@ -86,7 +86,8 @@ setup(
             'h5py>=2.10',
             'scipy',
             'wikiextractor<3.0.0',
-            'tqdm'
+            'tqdm',
+            'py3nvml',
         ],
         'dev': [
             'pytest',
