@@ -1,3 +1,4 @@
+import os
 import argparse
 import textwrap
 from multiprocessing import Pool
@@ -17,7 +18,7 @@ def get_parser():
 
         "nlp_process apply_subword --model spm" : Encode with Sentencepiece Model;
         "nlp_process apply_subword --model subword_nmt" : Encode with the subword-nmt package;
-        "nlp_process apply_subword --model yttm" : Encode with YouTokenToMe; 
+        "nlp_process apply_subword --model yttm" : Encode with YouTokenToMe;
         "nlp_process apply_subword --model hf_bytebpe" : Encode with the Byte-level BPE Tokenizer Implemented by Huggingface.
         "nlp_process apply_subword --model hf_wordpiece" : Encode with the WordPiece Tokenizer Implementated by Huggingface.
         "nlp_process apply_subword --model hf_bpe" : Encode with the BPE Tokenizer Implemented by Huggingface.
@@ -39,7 +40,7 @@ def get_parser():
                                                       'hf_wordpiece',
                                                       'hf_bpe'],
                         required=True, help='Subword model type')
-    parser.add_argument('--num-process', type=int, default=16,
+    parser.add_argument('--num-process', type=int, default=os.cpu_count(),
                         help='Number of process')
     parser.add_argument('--lowercase', action='store_true', default=False,
                         help='Use lowercase, '
@@ -51,7 +52,7 @@ def get_parser():
                         help='Whether output subwords or ids')
     parser.add_argument('--bpe-dropout', type=float, default=None,
                         help='BPE dropout, applicable to subword_nmt, yttm, hf_bpe and hf_bytebpe')
-    
+
     return parser
 
 
@@ -61,7 +62,7 @@ class ParallelCorpusApplyer:
         self.corpus = corpus
         self.tokenizer_model = tokenizer_model
         self.output_type = output_type
-        
+
     def chunk_iter(self, step=10):
         for corpus_path in self.corpus:
             line_pos = [0]
@@ -86,7 +87,7 @@ class ParallelCorpusApplyer:
                     chunk_start += cur_chunk_size
                     budget = self.chunk_size
                     cur_chunk_size = 0
-        
+
     def process_chunk(self, args):
         corpus_path, chunk_start, cur_chunk_size = args
         with open(corpus_path, 'rb') as fcb:
@@ -184,7 +185,7 @@ def main(args):
     print('Done, #Lines processed {}, Avg tokens of sentences {:.1f},'
           'Unknown rate {:.1f}%, Time spent {}'
           .format(sentence_count, token_count / sentence_count,
-                  unk_count * 100 / token_count, end - start))    
+                  unk_count * 100 / token_count, end - start))
 
 
 def cli_main():

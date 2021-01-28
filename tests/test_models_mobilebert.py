@@ -60,16 +60,16 @@ def test_mobilebert_model_small_cfg(compute_layout, ctx):
         mobile_bert_mlm_model_tn = MobileBertForMLM(cfg_tn)
         mobile_bert_mlm_model_tn.share_parameters(mobile_bert_mlm_model.collect_params())
         mobile_bert_model_tn.hybridize()
-        contextual_embedding, pooled_out, mlm_scores = mobile_bert_mlm_model(inputs, token_types,
+        contextual_embedding, pooled_out, mlm_score = mobile_bert_mlm_model(inputs, token_types,
                                                                              valid_length,
                                                                              masked_positions)
-        contextual_embedding_tn, pooled_out_tn, mlm_scores_tn =\
+        contextual_embedding_tn, pooled_out_tn, mlm_score_tn =\
             mobile_bert_mlm_model_tn(inputs.T, token_types.T, valid_length, masked_positions)
         assert_allclose(contextual_embedding.asnumpy(),
                         np.swapaxes(contextual_embedding_tn.asnumpy(), 0, 1),
                         1E-3, 1E-3)
         assert_allclose(pooled_out_tn.asnumpy(), pooled_out.asnumpy(), 1E-3, 1E-3)
-        assert_allclose(mlm_scores_tn.asnumpy(), mlm_scores.asnumpy(), 1E-3, 1E-3)
+        assert_allclose(mlm_score_tn.asnumpy(), mlm_score.asnumpy(), 1E-3, 1E-3)
 
         # Test for MobileBertForPretrain
         mobile_bert_pretrain_model = MobileBertForPretrain(cfg)
@@ -78,16 +78,16 @@ def test_mobilebert_model_small_cfg(compute_layout, ctx):
         mobile_bert_pretrain_model_tn = MobileBertForPretrain(cfg_tn)
         mobile_bert_pretrain_model_tn.share_parameters(mobile_bert_pretrain_model.collect_params())
         mobile_bert_pretrain_model_tn.hybridize()
-        contextual_embedding, pooled_out, nsp_score, mlm_scores =\
+        contextual_embedding, pooled_out, nsp_score, mlm_score =\
             mobile_bert_pretrain_model(inputs, token_types, valid_length, masked_positions)
-        contextual_embedding_tn, pooled_out_tn, nsp_score_tn, mlm_scores_tn = \
+        contextual_embedding_tn, pooled_out_tn, nsp_score_tn, mlm_score_tn = \
             mobile_bert_pretrain_model_tn(inputs.T, token_types.T, valid_length, masked_positions)
         assert_allclose(contextual_embedding.asnumpy(),
                         np.swapaxes(contextual_embedding_tn.asnumpy(), 0, 1),
                         1E-3, 1E-3)
         assert_allclose(pooled_out.asnumpy(), pooled_out_tn.asnumpy(), 1E-3, 1E-3)
         assert_allclose(nsp_score.asnumpy(), nsp_score_tn.asnumpy(), 1E-3, 1E-3)
-        assert_allclose(mlm_scores.asnumpy(), mlm_scores_tn.asnumpy(), 1E-3, 1E-3)
+        assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-3, 1E-3)
 
         # Test for fp16
         if ctx.device_type == 'gpu':

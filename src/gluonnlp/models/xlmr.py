@@ -35,7 +35,7 @@ from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, get_model_zoo
 from ..utils.config import CfgNode as CN
 from ..utils.registry import Registry
 from ..utils.misc import load_checksum_stats, download
-from ..registry import BACKBONE_REGISTRY
+from .base import BACKBONE_REGISTRY
 from ..data.tokenizers import SentencepieceTokenizer
 
 

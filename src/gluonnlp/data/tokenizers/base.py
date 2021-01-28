@@ -23,8 +23,7 @@ TokenOffsetsType = NewType('TokenOffsetsType', Union[List[Tuple[int, int]],
 
 
 class TokenizerEncodeWithoutVocabError(ValueError):
-    """
-     Error message when you want to encode sentence to a sequence of ids without
+    """Error message when you want to encode sentence to a sequence of ids without
     specifying the vocabulary
 
     """
@@ -36,8 +35,7 @@ class TokenizerEncodeWithoutVocabError(ValueError):
 
 
 class TokenizerDecodeWithoutVocabError(ValueError):
-    """
-    Error message when you want to decode a sequence of ids to a string sentence without
+    """Error message when you want to decode a sequence of ids to a string sentence without
     specifying the vocabulary
 
     """

@@ -59,7 +59,7 @@ jobs:
           python ./tools/batch/submit-job.py --region us-east-1 \
                                              --job-type g4dn.4x \
                                              --name GluonNLP-GPU-Test-PR#${{ github.event.number }} \
-                                             --source-ref ${{ github.event.pull_request.head.ref }} \
+                                             --source-ref ${{ github.event.pull_request.head.sha }} \
                                              --work-dir . \
                                              --saved-output coverage.xml \
                                              --save-path coverage.xml \

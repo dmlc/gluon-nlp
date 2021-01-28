@@ -560,9 +560,9 @@ def extract_mono_corpus(compressed_data_path, lang, name, out_src_path):
     else:
         raise NotImplementedError('Cannot process {}'.format(compressed_data_path))
     # Parse data and move to the required src paths
-    
+
     shutil.copyfile(os.path.join(tmp_dir, name), out_src_path)
-        
+
     # Clean-up
     shutil.rmtree(tmp_dir)
 
@@ -648,7 +648,7 @@ def fetch_mono_dataset(selection: Union[str, List[str], List[List[str]]],
         data_path = concatenate_files(download_fname_l)
     else:
         data_path = download_fname_l[0]
-    
+
     src_name = lang_data_info[lang]
     print('Prepare data for {}\n'
           '\tCompressed File: {}\n'
@@ -957,7 +957,7 @@ def get_parser():
     parser.add_argument('--mono', action='store_true',
                         help='Download monolingual dataset.')
     parser.add_argument('--mono_lang', type=str, default='de',
-                        help='The monolingual language.')                  
+                        help='The monolingual language.')
     parser.add_argument('--lang-pair', type=str, default='en-de',
                         help='The pair of source language and target language separated by "-", '
                              'e.g. "en-de", "en-zh".')

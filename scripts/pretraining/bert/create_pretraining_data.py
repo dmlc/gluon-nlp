@@ -264,9 +264,11 @@ def create_training_instances(x):
                 for line in tokenized_result:
                     if not line:
                         if all_documents[-1]:
+
                             all_documents.append([])
                     else:
                         all_documents[-1].append(line)
+
 
     # remove the empty document if any
     all_documents = [x for x in all_documents if x]

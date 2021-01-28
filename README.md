@@ -1,4 +1,8 @@
 <h2 align="center">
+<a href="https://github.com/dmlc/gluon-nlp"><img src="https://raw.githubusercontent.com/dmlc/gluon-nlp/master/docs/_static/gluon-logo.svg" alt="GluonNLP Logo" width="500"/></a>
+</h2>
+
+<h2 align="center">
 GluonNLP: Your Choice of Deep Learning for NLP
 </h2>
 
@@ -14,6 +18,8 @@ GluonNLP: Your Choice of Deep Learning for NLP
 GluonNLP is a toolkit that helps you solve NLP problems. It provides easy-to-use tools that helps you load the text data, 
 process the text data, and train models.
 
+See our documents at https://nlp.gluon.ai/master/index.html.
+
 # Features
 
 - Easy-to-use Text Processing Tools and Modular APIs
@@ -28,16 +34,16 @@ First of all, install the latest MXNet. You may use the following commands:
 
 ```bash
 # Install the version with CUDA 10.1
-python3 -m pip install -U --pre "mxnet-cu101>=2.0.0b20201206" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet-cu101>=2.0.0b20210121" -f https://dist.mxnet.io/python
 
 # Install the version with CUDA 10.2
-python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20201206" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20210121" -f https://dist.mxnet.io/python
 
 # Install the version with CUDA 11
-python3 -m pip install -U --pre "mxnet-cu110>=2.0.0b20201206" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet-cu110>=2.0.0b20210121" -f https://dist.mxnet.io/python
 
 # Install the cpu-only version
-python3 -m pip install -U --pre "mxnet>=2.0.0b20201206" -f https://dist.mxnet.io/python
+python3 -m pip install -U --pre "mxnet>=2.0.0b20210121" -f https://dist.mxnet.io/python
 ```
 
 

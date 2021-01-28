@@ -36,11 +36,11 @@ import mxnet as mx
 from mxnet import use_np, np, npx
 from mxnet.gluon import HybridBlock, nn
 
+from .base import BACKBONE_REGISTRY
 from ..op import select_vectors_by_position
 from ..base import get_model_zoo_home_dir, get_repo_model_zoo_url, \
                    get_model_zoo_checksum_dir
 from ..layers import PositionalEmbedding, get_activation
-from ..registry import BACKBONE_REGISTRY
 from ..utils.misc import download, load_checksum_stats
 from ..utils.registry import Registry
 from .transformer import TransformerEncoderLayer
@@ -339,7 +339,6 @@ class RobertaModel(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
@@ -350,10 +349,12 @@ class RobertaModel(HybridBlock):
         -------
         embedding
             The initial embedding that will be fed into the encoder
+
             - layout = 'NT'
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
+
         """
         if self._layout == 'NT':
             batch_axis, time_axis = 0, 1
@@ -487,12 +488,12 @@ class RobertaForMLM(HybridBlock):
 
         Parameters
         ----------
-        F
         inputs
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
+
         valid_length
             The valid length of each sequence
             Shape (batch_size,)
@@ -507,6 +508,7 @@ class RobertaForMLM(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units).
+
         pooled_out
             Shape (batch_size, units)
         mlm_scores :

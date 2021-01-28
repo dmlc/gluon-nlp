@@ -26,7 +26,7 @@ from mxnet import np, npx
 from mxnet import use_np
 from mxnet.gluon import nn, HybridBlock, Parameter, Constant
 import numpy as _np
-from typing import Union, Optional, List
+from typing import Union, Optional, List, Dict
 from .op import relative_position_bucket
 
 
@@ -63,6 +63,8 @@ def get_norm_layer(normalization: str = 'layer_norm',
                                       **kwargs)
         elif normalization == 'no_norm':
             norm_layer = NoNorm(in_channels=in_channels, **kwargs)
+        elif normalization == 'rms_norm': 
+            norm_layer = RMSNorm(in_channels=in_channels, **kwargs)
         elif normalization == 'identity':
             norm_layer = IdentityActivation()
         elif normalization == 'batch_norm':
@@ -122,19 +124,53 @@ class NoNorm(HybridBlock):
     """
     def __init__(self, in_channels, center=True, scale=True,
                  beta_initializer='zeros', gamma_initializer='ones',
-                 **kwargs):
+                 dtype='float32', **kwargs):
         super().__init__(**kwargs)
         self._kwargs = {'center': center, 'scale': scale}
         self._in_channels = in_channels
         self.gamma = Parameter('gamma', grad_req='write' if scale else 'null',
-                               shape=(in_channels,), init=gamma_initializer)
+                               shape=(in_channels,), init=gamma_initializer, dtype=dtype)
         self.beta = Parameter('beta', grad_req='write' if center else 'null',
-                              shape=(in_channels,), init=beta_initializer)
+                              shape=(in_channels,), init=beta_initializer, dtype=dtype)
 
     def forward(self, data):
         return data * self.gamma.data() + self.beta.data()
 
     def __repr__(self):
+        s = '{name}({content}'
+        in_channels = self.gamma.shape[0]
+        s += ', in_channels={0}'.format(in_channels)
+        s += ')'
+        return s.format(name=self.__class__.__name__,
+                        content=', '.join(['='.join([k, v.__repr__()])
+                                           for k, v in self._kwargs.items()]))
+
+
+@use_np
+class RMSNorm(HybridBlock): 
+    """Apply root mean square layer normalization to n-dimensional input array, 
+    where we do not substract mean in the numerator. 
+
+    For more details, see the paper: https://arxiv.org/pdf/1910.07467.pdf
+    """
+    def __init__(self, in_channels, center=True, scale=True, 
+                 beta_initializer='zeros', gamma_initializer='ones', 
+                 variance_epsilon=1E-6, dtype='float32', **kwargs): 
+        super().__init__()
+        self._kwargs = {'center': center, 'scale': scale}
+        self._in_channels = in_channels
+        self._epsilon = variance_epsilon
+        self.gamma = Parameter('gamma', grad_req='write' if scale else 'null',
+                               shape=(in_channels,), init=gamma_initializer, dtype=dtype)
+        self.beta = Parameter('beta', grad_req='write' if center else 'null',
+                              shape=(in_channels,), init=beta_initializer, dtype=dtype)
+
+    def forward(self, data): 
+        var = np.power(data, 2).mean(-1, keepdims=True)
+        data = data * np.reciprocal(np.sqrt(var + self._epsilon))
+        return data * self.gamma.data() + self.beta.data()
+
+    def __repr__(self): 
         s = '{name}({content}'
         in_channels = self.gamma.shape[0]
         s += ', in_channels={0}'.format(in_channels)
@@ -496,15 +532,18 @@ class PositionwiseFFN(HybridBlock):
     def __init__(self,
                  units: int = 512,
                  hidden_size: int = 2048,
+                 use_bias=True,
                  activation_dropout: float = 0.0,
                  dropout: float = 0.1,
                  weight_initializer=None,
                  bias_initializer='zeros',
                  activation='relu',
+                 use_gated_activation=False,
                  normalization: str = 'layer_norm',
                  layer_norm_eps: float = 1E-5,
                  pre_norm: bool = False,
-                 dtype='float32'):
+                 dtype='float32',
+                 **kwargs):
         """
 
         Parameters
@@ -530,6 +569,7 @@ class PositionwiseFFN(HybridBlock):
         super().__init__()
         self._dtype = dtype
         self._pre_norm = pre_norm
+        self._use_gated_activation = use_gated_activation
         self._kwargs = OrderedDict([
             ('units', units),
             ('hidden_size', hidden_size),
@@ -546,20 +586,31 @@ class PositionwiseFFN(HybridBlock):
         self.ffn_1 = nn.Dense(units=hidden_size,
                               in_units=units,
                               flatten=False,
+                              use_bias=use_bias,
                               weight_initializer=weight_initializer,
                               bias_initializer=bias_initializer,
                               dtype=dtype)
+        if use_gated_activation: 
+            self.gated_ffn_1 = nn.Dense(units=hidden_size,
+                                        in_units=units,
+                                        flatten=False,
+                                        use_bias=use_bias,
+                                        weight_initializer=weight_initializer,
+                                        bias_initializer=bias_initializer,
+                                        dtype=dtype)
         self.activation = get_activation(activation)
         self.ffn_2 = nn.Dense(units=units,
                               in_units=hidden_size,
                               flatten=False,
+                              use_bias=use_bias,
                               weight_initializer=weight_initializer,
                               bias_initializer=bias_initializer,
                               dtype=dtype)
         # TODO(sxjscience) We may need to set the dtype flag in LayerNorm, need to double check
-        self.layer_norm = get_norm_layer(normalization=normalization,
-                                         in_channels=units,
-                                         epsilon=layer_norm_eps)
+        self.layer_norm = get_norm_layer(in_channels=units,
+                                         normalization=normalization,
+                                         epsilon=layer_norm_eps, 
+                                         **kwargs)
 
     def forward(self, data):
         """
@@ -575,13 +626,18 @@ class PositionwiseFFN(HybridBlock):
         out :
             Shape (B, seq_length, C_out)
         """
+        residual = data
         if self._pre_norm:
             data = self.layer_norm(data)
-        out = self.activation(self.ffn_1(data))
+        if self._use_gated_activation:
+            gated_out = self.activation(self.gated_ffn_1(data))
+            out = gated_out * self.ffn_1(data)
+        else:
+            out = self.activation(self.ffn_1(data))
         out = self.activation_dropout_layer(out)
         out = self.ffn_2(out)
         out = self.dropout_layer(out)
-        out = out + data
+        out = out + residual
         if not self._pre_norm:
             out = self.layer_norm(out)
         return out
@@ -758,25 +814,31 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
     For the example above, we will have two additional virtual words: T2, and T3, meaning that the
     correct word should be at the 2nd or 3rd cluster
 
-    prob1 = \softmax([V_0, V_1, ..., V_{c0}, T2, T3])
-    prob2 = p(T2) * \softmax([V_{c0 + 1}, V_{c0 + 2}, ... V_{c1}])
-    prob3 = p(T3) * softmax([V_{c1 + 1}, V_{c1 + 2}, ... V_{N - 1}])
+    .. code-block: none
+
+        prob1 = \softmax([V_0, V_1, ..., V_{c0}, T2, T3])
+        prob2 = p(T2) * \softmax([V_{c0 + 1}, V_{c0 + 2}, ... V_{c1}])
+        prob3 = p(T3) * softmax([V_{c1 + 1}, V_{c1 + 2}, ... V_{N - 1}])
 
 
     Converting to log-probability, we have
-    lprob1 = log-softmax([V_0, V_1, ..., V_{c0}, T2, T3])
-    lprob2 = lprob1[T2] + log-softmax([V_{c0 + 1}, V_{c0 + 2}, ... V_{c1}])
-    lprob3 = lprob2[T3] + log-softmax([V_{c1 + 1}, V_{c1 + 2}, ... V_{N - 1}])
 
+    .. code-block: none
 
-    @inproceedings{grave2017efficient,
-      title={Efficient softmax approximation for GPUs},
-      author={Grave, Edouard and Joulin, Armand and Ciss{\'e}, Moustapha and J{\'e}gou, Herv{\'e} and others},
-      booktitle={Proceedings of the 34th International Conference on Machine Learning-Volume 70},
-      pages={1302--1310},
-      year={2017},
-      organization={JMLR. org}
-    }
+        lprob1 = log-softmax([V_0, V_1, ..., V_{c0}, T2, T3])
+        lprob2 = lprob1[T2] + log-softmax([V_{c0 + 1}, V_{c0 + 2}, ... V_{c1}])
+        lprob3 = lprob2[T3] + log-softmax([V_{c1 + 1}, V_{c1 + 2}, ... V_{N - 1}])
+
+    .. code-block: none
+
+        @inproceedings{grave2017efficient,
+          title={Efficient softmax approximation for GPUs},
+          author={Grave, Edouard and Joulin, Armand and Ciss{\'e}, Moustapha and J{\'e}gou, Herv{\'e} and others},
+          booktitle={Proceedings of the 34th International Conference on Machine Learning-Volume 70},
+          pages={1302--1310},
+          year={2017},
+          organization={JMLR. org}
+        }
     """
     def __init__(self, vocab_size: int, embed_size: int, in_units: int,
                  cutoffs: Optional[Union[int, List]] = None,
@@ -873,15 +935,13 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
 
         Parameters
         ----------
-        F
         hidden
-            The hidden representation
-            Shape (..., in_units)
+            The hidden representation/ Shape (..., in_units)
 
         Returns
         -------
         logits
-            Shape (..., |V|)
+            Shape (..., :math:`|V|`)
 
         """
         if self._cutoffs is None:
@@ -927,7 +987,6 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
 
         Parameters
         ----------
-        F
         hidden
             The hidden representation
             Shape (..., in_units)

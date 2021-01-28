@@ -1,12 +1,13 @@
-import mxnet as mx
-from mxnet import np, npx
-import math
-from mxnet import use_np
 __all__ = ['select_vectors_by_position', 'add_vectors_by_position',
            'update_vectors_by_position',
            'gumbel_softmax', 'trunc_gumbel',
            'relative_position_bucket',
            'l2_normalize']
+
+import mxnet as mx
+from mxnet import np, npx
+import math
+from mxnet import use_np
 
 
 @use_np
@@ -62,7 +63,6 @@ def add_vectors_by_position(data, increment, positions):
 
     Parameters
     ----------
-    F
     data
         Input tensor of the array to be updated.
         Shape (batch_size, seq_length, ...)
@@ -110,8 +110,7 @@ def update_vectors_by_position(data, val, positions):
 
     Parameters
     ----------
-    F
-    data:
+    data
         Input tensor of the array to be updated.
         Shape (batch_size, seq_length)
     val
@@ -231,26 +230,23 @@ def relative_position_bucket(relative_position,
                              bidirectional: bool = True,
                              num_buckets: int = 32,
                              max_distance: int = 128):
-    """Map the relative position to buckets. The major difference between our implementation and
-    that in [mesh_tensorflow](https://github.com/tensorflow/mesh/blob/c59988047e49b4d2af05603e3170724cdbadc467/mesh_tensorflow/transformer/transformer_layers.py#L595-L637)
-    is that we use 'query_i - mem_j' as the (i, j)th location in relative_position.
+    """Map the relative position to buckets. The implementation is consistent with that
+    in [mesh_tensorflow](https://github.com/tensorflow/mesh/blob/c59988047e49b4d2af05603e3170724cdbadc467/mesh_tensorflow/transformer/transformer_layers.py#L595-L637)
+    where relative position is defined as `mem_i - query_j`. Thus, a positive value indicates 
+    that the memory slot is in a later timestamp than the query slot. 
 
-    Thus, a positive value means that the query slot is in a later timestamp than the memory slot.
-    However, in mesh transformer, it is treated as `mem_i - query_j` (reversed).
-
-    The implementation uses the first half of the bucket (num_buckets // 2) to store the
-    exact increments in positions and the second half of the bucket
-    (num_buckets - num_buckets // 2) to store the bucketing values in the logarithm order.
+    After handling the bidirectional case (see below), the implementation uses the first half 
+    of buckets to store exact differences and the second half to store the differences after 
+    a logrithmic transformation. 
 
     Parameters
     ----------
-    F
     relative_position
         Shape (...,)
     bidirectional
         Whether we are dealing with bidirectional attention.
-        If it's bidirectional, we will use the first half to map the positions of the
-        positive shifts and the second half to map the positions of the negative shifts.
+        If it's bidirectional, positive shifts are mapped to [0, num_buckets // 2), 
+        and negative shifts are mapped to [num_buckets // 2, num_buckets). 
     num_buckets
         The number of buckets.
     max_distance
@@ -263,6 +259,7 @@ def relative_position_bucket(relative_position,
         It has the same shape as the `relative_position`. It will have int32 type.
     """
     ret = 0
+    relative_position = -relative_position
     if bidirectional:
         assert num_buckets % 2 == 0, 'When bidirectional is True, the number of buckets must be ' \
                                      'divisible by 2.'

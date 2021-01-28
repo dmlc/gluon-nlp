@@ -1,4 +1,12 @@
-from abc import ABC
+__all__ = ['transformer_cfg_reg', 'transformer_base',
+           'transformer_base_prenorm', 'transformer_iwslt_de_en',
+           'transformer_wmt_en_de_big', 'transformer_wmt_en_de_big_t2t',
+           'TransformerEncoderLayer',
+           'TransformerDecoderLayer',
+           'TransformerEncoder', 'TransformerDecoder',
+           'TransformerModel', 'TransformerInference',
+           'TransformerNMTInference']
+
 
 import numpy as _np
 import mxnet as mx
@@ -11,9 +19,6 @@ from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask, gen_mem
 from ..layers import PositionalEmbedding, PositionwiseFFN, InitializerType
 from ..utils.config import CfgNode as CN
 from ..sequence_sampler import BaseStepDecoder
-__all__ = ['TransformerEncoderLayer', 'TransformerDecoderLayer',
-           'TransformerEncoder', 'TransformerDecoder',
-           'TransformerModel', 'TransformerNMTInference']
 
 transformer_cfg_reg = Registry('transformer_cfg')
 
@@ -164,7 +169,7 @@ class TransformerEncoderLayer(HybridBlock):
                 data -> attn -> norm(res(+data)) -> ffn
 
         use_qkv_bias
-            Wether to use bias for self attention
+            Whether to use bias for self attention
         weight_initializer
         bias_initializer
         activation
@@ -231,23 +236,24 @@ class TransformerEncoderLayer(HybridBlock):
 
         Parameters
         ----------
-        F
-        data :
-            If layout == 'NT'
+        data
+            - layout = 'NT'
                 Shape (batch_size, seq_length, C_in)
-            Else
+            - layout = 'TN'
                 Shape (seq_length, batch_size, C_in)
-        attn_mask :
+
+        attn_mask
             Shape (batch_size, seq_length, seq_length)
 
         Returns
         -------
-        out :
-            If layout == 'NT'
+        out
+            - layout = 'NT'
                 Shape (batch_size, seq_length, C_out)
-            Else
+            - layout = 'TN'
                 Shape (seq_length, batch_size, C_out)
-        attn_weight :
+
+        attn_weight
             Shape (batch_size, seq_length, seq_length)
         """
         if self._pre_norm:
@@ -264,6 +270,7 @@ class TransformerEncoderLayer(HybridBlock):
             out = self.layer_norm(out)
         out = self.ffn(out)
         return out, attn_weight
+
 
 @use_np
 class TransformerEncoder(HybridBlock):
@@ -341,22 +348,23 @@ class TransformerEncoder(HybridBlock):
 
         Parameters
         ----------
-        F
         data :
             - layout = 'NT'
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
+
         valid_length :
             Shape (batch_size,)
 
         Returns
         -------
-        out :
+        out
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_out)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_out)
+
         """
         # 1. Embed the data
         attn_mask = gen_self_attn_mask(data, valid_length,
@@ -412,7 +420,7 @@ class TransformerDecoderLayer(HybridBlock):
         pre_norm
             Whether to apply normalization before the attention layer
         use_qkv_bias
-            Wether to use bias for both self attention and contextual attention
+            Whether to use bias for both self attention and contextual attention
         weight_initializer
         bias_initializer
         dtype
@@ -507,43 +515,51 @@ class TransformerDecoderLayer(HybridBlock):
 
         Parameters
         ----------
-        F
-        data :
+        data
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_in)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_in)
-        mem :
+
+        mem
             - layout = 'NT'
                 Shape (batch_size, mem_length, C_mem)
             - layout = 'TN'
                 Shape (mem_length, batch_size, C_mem)
-        self_causal_mask :
+
+        self_causal_mask
             Shape (batch_size, seq_length, seq_length)
             Mask for the causal self-attention.
             self_causal_mask[i, j, :] masks the elements that token `j` attends to.
             To understand the self-causal attention mask, we can look at the following example:
-                       ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
-            'I':         1,    0,     0,     0,      0,     0,      0,      0
-            'can':       1,    1,     0,     0,      0,     0,      0,      0
-            'now':       1,    1,     1,     0,      0,     0,      0,      0
-            'use':       1,    1,     1,     1,      0,     0,      0,      0
-            'numpy':     1,    1,     1,     1,      1,     0,      0,      0
-            'in':        1,    1,     1,     1,      1,     1,      0,      0
-            'Gluon@@':   1,    1,     1,     1,      1,     1,      1,      0
-            'NLP':       1,    1,     1,     1,      1,     1,      1,      1
+
+            .. code-block:: none
+
+                           ['I', 'can', 'now', 'use', 'numpy', 'in', 'Gluon@@', 'NLP']
+                'I':         1,    0,     0,     0,      0,     0,      0,      0
+                'can':       1,    1,     0,     0,      0,     0,      0,      0
+                'now':       1,    1,     1,     0,      0,     0,      0,      0
+                'use':       1,    1,     1,     1,      0,     0,      0,      0
+                'numpy':     1,    1,     1,     1,      1,     0,      0,      0
+                'in':        1,    1,     1,     1,      1,     1,      0,      0
+                'Gluon@@':   1,    1,     1,     1,      1,     1,      1,      0
+                'NLP':       1,    1,     1,     1,      1,     1,      1,      1
+
         mem_attn_mask :
             Shape (batch_size, seq_length, mem_length)
             Mask between the decoding input and the memory.
-                       ['numpy', 'in', 'Gluon@@', 'NLP']
-            'I':         1,     1,      1,      1
-            'can':       1,     1,      1,      1
-            'now':       1,     1,      1,      1
-            'use':       1,     1,      1,      1
+
+            .. code-block:: none
+
+                           ['numpy', 'in', 'Gluon@@', 'NLP']
+                'I':         1,     1,      1,      1
+                'can':       1,     1,      1,      1
+                'now':       1,     1,      1,      1
+                'use':       1,     1,      1,      1
 
         Returns
         -------
-        out :
+        out
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_out)
             - layout = 'TN'
@@ -598,11 +614,13 @@ class TransformerDecoderLayer(HybridBlock):
                 Shape (batch_size, 0, N, C_key)
             - layout = 'TN'
                 Shape (0, batch_size, N, C_key)
-        init_value :
+
+        init_value
             - layout = 'NT'
                 Shape (batch_size, 0, N, C_value)
             - layout = 'TN'
                 Shape (0, batch_size, N, C_value)
+
         """
         if self.layout == 'NT':
             init_key = mx.np.zeros(shape=(batch_size, 0, self._num_heads,
@@ -621,27 +639,31 @@ class TransformerDecoderLayer(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             Shape (batch_size, C_in)
         states
             The previous states, contains
+
             1. layout = 'NT':
                 - prev_multi_key
                     Shape (batch_size, prev_seq_length, num_heads, C_key)
                 - prev_multi_value
                     Shape (batch_size, prev_seq_length, num_heads, C_value)
+
             2. layout = 'TN'
                 - prev_multi_key
                     Shape (prev_seq_length, batch_size, num_heads, C_key)
                 - prev_multi_value
                     Shape (prev_seq_length, batch_size, num_heads, C_value)
+
         mem
             The memory
-            1. layout = 'NT':
+
+            1. layout = 'NT'
                 Shape (batch_size, mem_length, C_mem)
             2. layout = 'TN'
                 Shape (mem_length, batch_size, C_mem)
+
         mem_valid_length
             Valid length of the memory
             Shape (batch_size,)
@@ -658,6 +680,7 @@ class TransformerDecoderLayer(HybridBlock):
                 Shape (batch_size, prev_seq_length + 1, num_heads, C_key)
             - new_value
                 Shape (batch_size, prev_seq_length + 1, num_heads, C_value)
+
         """
         if self._pre_norm:
             data = self.ln_in(data)
@@ -768,12 +791,12 @@ class TransformerDecoder(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_in)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_in)
+
         valid_length
             Shape (batch_size,)
         mem_data
@@ -781,6 +804,7 @@ class TransformerDecoder(HybridBlock):
                 Shape (batch_size, mem_length, C_mem)
             - layout = 'TN'
                 Shape (mem_length, batch_size, C_mem)
+
         mem_valid_length
             Shape (batch_size,)
 
@@ -791,6 +815,7 @@ class TransformerDecoder(HybridBlock):
                 Shape (batch_size, seq_length, C_out)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_out)
+
         """
         # 1. Embed the data
         out = self.dropout_layer(data)
@@ -831,12 +856,19 @@ class TransformerDecoder(HybridBlock):
         -------
         states
             A list of states, each includes:
-                - init_key :
-                    layout = 'NT':
+
+                - init_key
+                    - layout = 'NT'
                         Shape (batch_size, 0, N, C_key)
+                    - layout = 'TN'
+                        Shape (0, batch_size, N, C_key)
+
                 - init_value :
-                    layout = 'TN':
+                    - layout = 'NT'
+                        Shape (batch_size, 0, N, C_value)
+                    - layout = 'TN'
                         Shape (0, batch_size, N, C_value)
+
         """
         states = []
         for i in range(self.num_layers):
@@ -854,16 +886,17 @@ class TransformerDecoder(HybridBlock):
 
         Parameters
         ----------
-        F
         data
             Shape (batch_size, C_in)
         states
             The previous states, contain a list of
+
             1. layout = 'NT'
                 - prev_multi_key
                     Shape (batch_size, prev_seq_length, num_heads, C_key)
                 - prev_multi_value
                     Shape (batch_size, prev_seq_length, num_heads, C_value)
+
             2. layout = 'TN'
                 - prev_multi_key
                     Shape (prev_seq_length, batch_size, num_heads, C_key)
@@ -871,10 +904,12 @@ class TransformerDecoder(HybridBlock):
                     Shape (prev_seq_length, batch_size, num_heads, C_value)
         mem
             The memory
+
             1. layout = 'NT'
                 Shape (batch_size, mem_length, C_mem)
             2. layout = 'TN'
                 Shape (mem_length, batch_size, C_mem)
+
         mem_valid_length
             Valid length of the memory
             Shape (batch_size,)
@@ -885,12 +920,19 @@ class TransformerDecoder(HybridBlock):
             Shape (batch_size, C_out)
         new_states
             The updated states, contain a list of
+
             1. layout = 'NT'
                 - new_key
                     Shape (batch_size, prev_seq_length + 1, num_heads, C_key)
-            2. layout = 'TN'
                 - new_value
                     Shape (prev_seq_length + 1, batch_size, num_heads, C_value)
+
+            2. layout = 'TN'
+                - new_key
+                    Shape (prev_seq_length + 1, batch_size, num_heads, C_key)
+                - new_value
+                    Shape (prev_seq_length + 1, batch_size, num_heads, C_value)
+
         """
         # 1. Embed the data
         out = self.dropout_layer(data)
@@ -1149,12 +1191,12 @@ class TransformerModel(HybridBlock):
 
         Parameters
         ----------
-        F
         src_data
             - layout = 'NT'
                 Shape (batch_size, src_length)
             - layout = 'TN'
                 Shape (src_length, batch_size)
+
         src_valid_length
             Shape (batch_size,)
 
@@ -1165,6 +1207,7 @@ class TransformerModel(HybridBlock):
                 Shape (batch_size, src_length, C_out)
             - layout = 'TN'
                 Shape (src_length, batch_size, C_out)
+
         """
         src_data = self.src_embed_layer(src_data)
         if self.scaled_embed:
@@ -1184,12 +1227,12 @@ class TransformerModel(HybridBlock):
 
         Parameters
         ----------
-        F
         tgt_data
             - layout = 'NT'
                 Shape (batch_size, tgt_length)
             - layout = 'TN'
                 Shape (tgt_length, batch_size)
+
         tgt_valid_length
             Shape (batch_size,)
         mem_data
@@ -1197,6 +1240,7 @@ class TransformerModel(HybridBlock):
                 Shape (batch_size, src_length, C_out)
             - layout = 'TN'
                 Shape (src_length, batch_size, C_out)
+
         mem_valid_length :
             Shape (batch_size,)
 
@@ -1207,6 +1251,7 @@ class TransformerModel(HybridBlock):
                 Shape (batch_size, tgt_length, tgt_vocab_size)
             - layout = 'TN'
                 Shape (tgt_length, batch_size, tgt_vocab_size)
+
         """
         tgt_data = self.tgt_embed_layer(tgt_data)
         if self.scaled_embed:
@@ -1232,6 +1277,7 @@ class TransformerModel(HybridBlock):
                 Shape (batch_size, src_length)
             - layout = 'TN'
                 Shape (src_length, batch_size)
+
         src_valid_length
             Shape (batch_size,)
         tgt_data
@@ -1239,6 +1285,7 @@ class TransformerModel(HybridBlock):
                 Shape (batch_size, tgt_length)
             - layout = 'TN'
                 Shape (tgt_length, batch_size)
+
         tgt_valid_length
             Shape (batch_size,)
 
@@ -1249,6 +1296,7 @@ class TransformerModel(HybridBlock):
                 Shape (batch_size, tgt_length, tgt_vocab_size)
             - layout = 'TN'
                 Shape (tgt_length, batch_size, tgt_vocab_size)
+
         """
         enc_out = self.encode(src_data, src_valid_length)
         dec_out = self.decode_seq(tgt_data, tgt_valid_length, enc_out, src_valid_length)
@@ -1306,7 +1354,7 @@ class TransformerModel(HybridBlock):
 
 
 @use_np
-class TransformerNMTInference(HybridBlock, BaseStepDecoder):
+class TransformerInference(HybridBlock, BaseStepDecoder):
     def __init__(self, model):
         """
 
@@ -1319,9 +1367,9 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
 
     def initialize(self, **kwargs):
         # Manually disable the initialize
-        raise NotImplementedError('You can not initialize a TransformerNMTFastInference Model! '
+        raise NotImplementedError('You can not initialize a TransformerInference Model! '
                                   'The correct approach is to create a TransformerModel and '
-                                  'then build the TransformerNMTInference with the given model.')
+                                  'then build the TransformerInference with the given model.')
 
     @property
     # TODO(sxjscience) Think about how to improve this
@@ -1331,10 +1379,10 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
 
         Returns
         -------
-        enc_out_batch_axis : int
-        src_valid_length_batch_axis : int
-        position_batch_axis : int
-        dec_layer_batch_axis : list
+        enc_out_batch_axis
+        src_valid_length_batch_axis
+        position_batch_axis
+        dec_layer_batch_axis
         """
         if self.model.layout == 'NT':
             return 0, 0, 0, self.model.decoder.state_batch_axis
@@ -1351,6 +1399,7 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
                 Shape (batch_size, src_length)
             - layout = 'TN'
                 Shape (src_length, batch_size)
+
         src_valid_length
             Shape (batch_size,)
 
@@ -1361,6 +1410,7 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
                 Shape (batch_size, src_length, C_mem)
             - layout = 'TN'
                 Shape (src_length, batch_size, C_mem)
+
         src_valid_length
             Shape (batch_size,)
         position
@@ -1389,15 +1439,17 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
         states
             It includes :
                 - layout = 'NT'
-                    mem_data : (batch_size, src_length, C_mem)
-                    mem_valid_length : (batch_size,)
-                    position : (batch_size,)
-                    dec_states : list
+                    - mem_data : (batch_size, src_length, C_mem)
+                    - mem_valid_length : (batch_size,)
+                    - position : (batch_size,)
+                    - dec_states : list
+
                 - layout = 'TN'
-                    mem_data : (src_length, batch_size, C_mem)
-                    mem_valid_length : (batch_size,)
-                    position : (batch_size,)
-                    dec_states : list
+                    - mem_data : (src_length, batch_size, C_mem)
+                    - mem_valid_length : (batch_size,)
+                    - position : (batch_size,)
+                    - dec_states : list
+
         Returns
         -------
         out
@@ -1417,3 +1469,12 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
                                                   mem_data, mem_valid_length)
         out = self.model.tgt_final_layer(out)
         return out, (mem_data, mem_valid_length, position + 1, new_states)
+
+
+class TransformerNMTInference(TransformerInference): 
+    def __init__(self, *args, **kwargs): 
+        print(
+            'Note: TransformerNMTInference is deprecated. We have renamed it to TransformerInference and ' \
+            'migrated all previous functionalities. Please use it instead.'
+        )
+        super().__init__(*args, **kwargs)
