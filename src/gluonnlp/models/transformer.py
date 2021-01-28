@@ -1471,6 +1471,7 @@ class TransformerInference(HybridBlock, BaseStepDecoder):
         return out, (mem_data, mem_valid_length, position + 1, new_states)
 
 
+@use_np
 class TransformerNMTInference(TransformerInference): 
     def __init__(self, *args, **kwargs): 
         print(

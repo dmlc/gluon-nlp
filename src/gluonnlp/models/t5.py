@@ -939,6 +939,7 @@ class T5Inference(HybridBlock, BaseStepDecoder):
         return step_hidden_states, (mem_states, mem_valid_length, position + 1, present_key_values)
 
 
+@use_np
 class T5NMTInference(T5Inference): 
     def __init__(self, *args, **kwargs): 
         print(

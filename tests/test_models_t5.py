@@ -119,7 +119,7 @@ def test_t5_get_pretrained(model_name, ctx):
     assert len(list_pretrained_t5()) > 0
     with tempfile.TemporaryDirectory() as root, ctx: 
         cfg, tokenizer, backbone_params_path, _ = get_pretrained_t5(model_name)
-        assert cfg.MODEL.vocab_size >= len(tokenizer.vocab)
+        assert cfg.MODEL.vocab_size >= len(tokenizer._sp_model)
         t5_model = T5Model.from_cfg(cfg)
         t5_model.load_parameters(backbone_params_path)
         t5_inference_model = T5Inference(t5_model)

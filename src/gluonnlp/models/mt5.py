@@ -28,6 +28,7 @@ MT5 Model
 }
 """
 
+
 __all__ = ['MT5Model', 'MT5Inference']
 
 
@@ -125,19 +126,29 @@ def google_mt5_xxl():
 
 PRETRAINED_URL = {
     'google_mt5_small': {
-
+        'cfg': google_mt5_small(), 
+        'vocab': 'google_mt5_small/mt5-2730df74.vocab', 
+        'params': 'google_mt5_small/model-b20e24d7.params'
     }, 
     'google_mt5_base': {
-
+        'cfg': google_mt5_base(), 
+        'vocab': 'google_mt5_base/mt5-2730df74.vocab', 
+        'params': 'google_mt5_base/model-91eaa894.params'
     }, 
     'google_mt5_large': {
-
+        'cfg': google_mt5_large(), 
+        'vocab': 'google_mt5_large/mt5-2730df74.vocab', 
+        'params': 'google_mt5_large/model-6b46e841.params'
     }, 
     'google_mt5_xl': {
-
+        'cfg': google_mt5_xl(), 
+        'vocab': 'google_mt5_xl/mt5-2730df74.vocab', 
+        'params': 'google_mt5_xl/model-7655ea81.params'
     }, 
     'google_mt5_xxl': {
-
+        'cfg': google_mt5_xxl(), 
+        'vocab': 'google_mt5_xxl/mt5-2730df74.vocab', 
+        'params': 'google_mt5_xxl/model-2e9e44b9.params'
     }
 }
 
@@ -157,6 +168,10 @@ class MT5Inference(T5Inference):
     pass
 
 
+class MT5Tokenizer(T5Tokenizer): 
+    pass
+
+
 def list_pretrained_mt5(): 
     return sorted(list(PRETRAINED_URL.keys()))
 
@@ -167,7 +182,7 @@ def get_pretrained_mt5(
     load_backbone: bool = True, 
     load_lm: bool = False, 
     extra_ids: int = 100
-) -> Tuple[CN, T5Tokenizer, str, str]: 
+) -> Tuple[CN, MT5Tokenizer, str, str]: 
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}.'.format(
         model_name, list_pretrained_mt5())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
@@ -198,7 +213,7 @@ def get_pretrained_mt5(
         local_params_path = None
     # lm model has not been implemented
     local_lm_params_path = None
-    tokenizer = T5Tokenizer(local_paths['vocab'], extra_ids)
+    tokenizer = MT5Tokenizer(local_paths['vocab'], extra_ids)
     if cfg is None: 
         cfg = MT5Model.get_cfg().clone_merge(local_paths['cfg'])
     return cfg, tokenizer, local_params_path, local_lm_params_path

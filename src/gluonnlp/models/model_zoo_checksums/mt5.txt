@@ -1,0 +1,15 @@
+google_mt5_small/mt5-2730df74.vocab     2730df74056f29388cc4c8c912af6e97ac54bab2    4309802
+google_mt5_small/model-23352279.yml     23352279d13971a536847aebe31b34c4a0b80dd8    242
+google_mt5_small/model-b20e24d7.params  b20e24d75d097e9eea647f4b9a0dc53b956a9d1a    688633650
+google_mt5_base/mt5-2730df74.vocab      2730df74056f29388cc4c8c912af6e97ac54bab2    4309802
+google_mt5_base/model-da71d108.yml      da71d1084d75af5648e1b9247fecfa74e0361da0    244
+google_mt5_base/model-91eaa894.params   91eaa89444e062e2fc3953b1184e15ccf5375385    1561555474
+google_mt5_large/mt5-2730df74.vocab     2730df74056f29388cc4c8c912af6e97ac54bab2    4309802
+google_mt5_large/model-1226608e.yml     1226608ec2c53cc6dcf2303a8f1b19c59f43cbfe    245
+google_mt5_large/model-6b46e841.params  6b46e841e9b1b4c8ad97b071b316f9c52c2731e6    3894572546
+google_mt5_xl/mt5-2730df74.vocab        2730df74056f29388cc4c8c912af6e97ac54bab2    4309802
+google_mt5_xl/model-089b83a2.yml        089b83a2c893bd901fe26180f2fbfd2f52804ae0    245
+google_mt5_xl/model-7655ea81.params     7655ea81d4b7c9787dd1bfa902e96cdf9e124e3d    12922784462
+google_mt5_xxl/mt5-2730df74.vocab       2730df74056f29388cc4c8c912af6e97ac54bab2    4309802
+google_mt5_xxl/model-65e24812.yml       65e248120fbdcbaced58fb6f6c21f8143f9e97be    246
+google_mt5_xxl/model-2e9e44b9.params    2e9e44b9fc10d8a4c7133fa5e67ecadedfbfb692    47588620878

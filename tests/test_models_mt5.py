@@ -4,8 +4,6 @@ import tempfile
 from gluonnlp.models.mt5 import (
     MT5Model, MT5Inference, mt5_cfg_reg, list_pretrained_mt5, get_pretrained_mt5
 )
-from test_models_t5 import test_t5_model, test_t5_inference, test_t5_get_pretrained
-
 
 def test_list_pretrained_mt5(): 
     assert len(list_pretrained_mt5()) > 0
@@ -36,12 +34,13 @@ def test_mt5_model_and_inference(cfg_key, ctx):
 
 @pytest.mark.slow
 @pytest.mark.remote_required
-@pytest.mark.parametrize('model_name', ['google_mt5_small'])# list_pretrained_mt5())
+@pytest.mark.parametrize('model_name', list_pretrained_mt5())
 def test_mt5_get_pretrained(model_name, ctx): 
     assert len(list_pretrained_mt5()) > 0
     with tempfile.TemporaryDirectory() as root, ctx: 
         cfg, tokenizer, backbone_params_path, _ = get_pretrained_mt5(model_name)
-        assert cfg.MODEL.vocab_size >= len(tokenizer.vocab)
+        # we exclude <extra_id>s in the comparison below by avoiding len(tokenizer.vocab)
+        assert cfg.MODEL.vocab_size >= len(tokenizer._sp_model)
         mt5_model = MT5Model.from_cfg(cfg)
         mt5_model.load_parameters(backbone_params_path)
         mt5_inference_model = MT5Inference(mt5_model)
