@@ -7,7 +7,7 @@ Using Pretrained models
       :title: T5 for Masked Language Modeling
       :link: pretrained_t5_mlm.html
 
-      An example of using pretrained models in GluonNLP. 
+      Use a pretrained T5 for MLM with noise spans. 
 
 .. toctree::
     :hidden:

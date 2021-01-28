@@ -65,7 +65,7 @@ Tokenization
       Try out different subword learning algorithms.
 
 
-Using Pretrained models
+Using Pretrained Models
 -----------------------
 
 .. container:: cards
@@ -85,4 +85,4 @@ Using Pretrained models
    text_prediction/index
    question_answering/index
    tokenization/index
-   pretrained_models/index 
+   pretrained_models/index

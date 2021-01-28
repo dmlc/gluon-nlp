@@ -112,14 +112,12 @@ def test_t5_inference(layout, activation, ctx):
         verify_nmt_inference(train_model=backbone, inference_model=inference_model)
 
 
-@pytest.mark.slow
-@pytest.mark.remote_required
-@pytest.mark.parametrize('model_name', list_pretrained_t5())
-def test_t5_get_pretrained(model_name, ctx): 
-    assert len(list_pretrained_t5()) > 0
+def test_t5_get_pretrained(ctx): 
     with tempfile.TemporaryDirectory() as root, ctx: 
-        cfg, tokenizer, backbone_params_path, _ = get_pretrained_t5(model_name)
+        cfg, tokenizer, backbone_params_path, _ = get_pretrained_t5('google_t5_small')
         assert cfg.MODEL.vocab_size >= len(tokenizer._sp_model)
         t5_model = T5Model.from_cfg(cfg)
         t5_model.load_parameters(backbone_params_path)
+        t5_model.hybridize()
         t5_inference_model = T5Inference(t5_model)
+        t5_inference_model.hybridize()

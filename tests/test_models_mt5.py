@@ -32,16 +32,13 @@ def test_mt5_model_and_inference(cfg_key, ctx):
             inference_model.hybridize()
 
 
-@pytest.mark.slow
-@pytest.mark.remote_required
-@pytest.mark.parametrize('model_name', list_pretrained_mt5())
-def test_mt5_get_pretrained(model_name, ctx): 
-    assert len(list_pretrained_mt5()) > 0
+def test_mt5_get_pretrained(ctx): 
     with tempfile.TemporaryDirectory() as root, ctx: 
-        cfg, tokenizer, backbone_params_path, _ = get_pretrained_mt5(model_name)
+        cfg, tokenizer, backbone_params_path, _ = get_pretrained_mt5('google_mt5_small')
         # we exclude <extra_id>s in the comparison below by avoiding len(tokenizer.vocab)
         assert cfg.MODEL.vocab_size >= len(tokenizer._sp_model)
         mt5_model = MT5Model.from_cfg(cfg)
         mt5_model.load_parameters(backbone_params_path)
+        mt5_model.hybridize()
         mt5_inference_model = MT5Inference(mt5_model)
-    
+        mt5_inference_model.hybridize()
