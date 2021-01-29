@@ -31,7 +31,7 @@ T5 Model
 """
 
 
-__all__ = ['T5Model', 'T5Inference', 'T5Tokenizer', 'T5NMTInference']
+__all__ = ['T5Block', 'T5Encoder', 'T5Decoder', 'T5Model', 'T5Inference', 'T5NMTInference']
 
 
 import os
@@ -61,8 +61,8 @@ from ..utils.registry import Registry
 
 FILE_STATS = load_checksum_stats(os.path.join(get_model_zoo_checksum_dir(), 't5.txt'))
 
-t5_cfg_reg = Registry('t5_cfg')
 
+t5_cfg_reg = Registry('t5_cfg')
 
 @t5_cfg_reg.register()
 def google_t5_base(): 
@@ -171,6 +171,9 @@ PRETRAINED_URL = {
 
 @use_np
 class T5Block(HybridBlock): 
+    """T5's basic building block. `is_decoder` determines whether it
+    behaves like an encoder layer or decoder layer. 
+    """
     def __init__(
         self, 
         d_model, 
@@ -185,6 +188,29 @@ class T5Block(HybridBlock):
         layout='NT', 
         dtype='float32'
     ): 
+        """
+
+        Parameters
+        ----------
+        d_model
+            Equivalent to transformer's `units`. 
+        d_kv
+            d_kv * num_heads (see below) = inner_dim. 
+        d_ff
+            Equivalent to transformer's `hidden_size`. 
+        is_decoder
+            If is_decoder, apply cross-attention. 
+        num_heads
+        dropout_prob
+            We use the same dropout rate for all dropout layers. 
+        layer_norm_eps
+        activation
+            Type of feed forward projection. Currently supported are `relu` and `gated-gelu`. 
+        init_factor
+            A scalor factor in sd of weight initialization. 
+        layout
+        dtype
+        """
         super().__init__()
         self._d_model = d_model
         self._d_kv = d_kv
@@ -355,8 +381,11 @@ class T5Block(HybridBlock):
         return init_key, init_value
 
     def transpose_for_scores(self, x): 
-        # NT -> NTK: (B, L_seq, inner_dim) -> (B, L_seq, num_heads, n_kv)
-        # TN -> TNK: (L_seq, B, inner_dim) -> (L_seq, B, num_heads, n_kv)
+        """Split the last concatenated dimension into seperate heads. 
+
+        NT -> NTK: (B, L_seq, inner_dim) -> (B, L_seq, num_heads, n_kv)
+        TN -> TNK: (L_seq, B, inner_dim) -> (L_seq, B, num_heads, n_kv)
+        """
         return npx.reshape(x, (-2, -2, self._num_heads, -1))
 
     @_assert_decoder_method
@@ -368,6 +397,57 @@ class T5Block(HybridBlock):
         mem_states, 
         step_mem_attn_mask
     ): 
+        """Incrementally generate the output given the decoder input. 
+
+        Parameters
+        ----------
+        step_hidden_states
+            Stepwise hidden states where L_seq = 1 as in `forward` case. 
+
+            - layout = 'NT'
+                Shape (B, 1, d_model)
+            - layout = 'TN'
+                Shape (1, B, d_model)
+
+        step_position_embeddings
+            Stepwise relative position embeddings. 
+            Shape (num_heads, 1, (L_past_seq + 1))
+        past_key_value
+            A tuple containing past key and past value. Presumably they are of the same shape. 
+
+            - layout = 'NT'
+                Shape (B, L_past_seq, num_heads, d_kv)
+            - layout = 'TN'
+                Shape (L_past_seq, B, num_heads, d_kv)
+
+        mem_states
+            Encoded results. 
+
+            - layout = 'NT'
+                Shape (B, L_src_seq, d_model)
+            - layout = 'TN'
+                Shape (L_src_seq, B, d_model)
+
+        step_mem_attn_mask
+            Stepwise attention mask for cross-attention. 
+            Shape (B, 1, L_src_seq)
+
+        Returns
+        -------
+        step_hidden_states
+            - layout = 'NT'
+                Shape (B, 1, d_model)
+            - layout = 'TN'
+                Shape (1, B, d_model)
+
+        (self_key, self_value)
+            The updated `past_key_value` tuple. Presumably they are of the same shape. 
+
+            - layout = 'NT'
+                Shape (B, (L_past_seq + 1), num_heads, d_kv)
+            - layout = 'TN'
+                Shape ((L_past_seq + 1), B, num_heads, d_kv)
+        """
         # 1. self-attention
         out = self.self_attn_layer_norm(step_hidden_states)
         step_self_query, step_self_key, step_self_value = (
@@ -418,7 +498,36 @@ class T5Block(HybridBlock):
         mem_attn_mask=None
     ): 
         """
-        hidden_states: 
+
+        Parameters
+        ----------
+        hidden_states
+            - layout = 'NT'
+                Shape (B, L_seq, d_model)
+            - layout = 'TN'
+                Shape (L_seq, B, d_model)
+
+        self_attn_mask
+            if is_decoder, it should be a "causal" attention mask. 
+            Shape (B, L_seq, L_seq)
+        position_embeddings
+            Relative position embeddings for self-attention, while cross-attention is free of position encoding. 
+            Shape (num_heads, L_seq, L_seq)
+        mem_states
+            Encoded results. Only applicable to decoder layers. 
+
+            - layout = 'NT'
+                Shape (B, L_src_seq, d_model)
+            - layout = 'TN'
+                Shape (L_src_seq, B, d_model)
+
+        mem_attn_mask
+            Attention mask ask for cross-attention. Only applicable to decoder layers. 
+            Shape (B, L_seq, L_src_seq)
+
+        Returns
+        -------
+        hidden_states
             - layout = 'NT'
                 Shape (B, L_seq, d_model)
             - layout = 'TN'
@@ -479,6 +588,28 @@ class T5Encoder(HybridBlock):
         layout='NT', 
         dtype='float32'
     ): 
+        """
+
+        Parameters
+        ----------
+        d_model
+            Equivalent to transformer's `units`. 
+        d_kv
+            d_kv * num_heads (see below) = inner_dim. 
+        d_ff
+            Equivalent to transformer's `hidden_size`. 
+        num_layers
+        num_heads
+        dropout_prob
+            We use the same dropout rate for all dropout layers. 
+        layer_norm_eps
+        activation
+            Type of feed forward projection. Currently supported are `relu` and `gated-gelu`. 
+        init_factor
+            A scalor factor in sd of weight initialization. 
+        layout
+        dtype
+        """
         super().__init__()
         self._d_model = d_model
         self._d_kv = d_kv
@@ -533,6 +664,28 @@ class T5Encoder(HybridBlock):
         return self._layout
 
     def forward(self, hidden_states, valid_length): 
+        """
+
+        Parameters
+        ----------
+        hidden_states
+            - layout = 'NT'
+                Shape (B, L_seq, d_model)
+            - layout = 'TN'
+                Shape (L_seq, B, d_model)
+
+        valid_length
+            Valid sequence length for each sample feeded into the encoder. 
+            Shape (B,)
+
+        Returns
+        -------
+        hidden_states
+            - layout = 'NT'
+                Shape (B, L_seq, d_model)
+            - layout = 'TN'
+                Shape (L_seq, B, d_model)
+        """
         # 1. relative position embeddings and attention masks
         position_embeddings = self.relative_position_encoder(
             gen_rel_position(hidden_states, layout=self.layout)
@@ -574,6 +727,28 @@ class T5Decoder(HybridBlock):
         layout='NT', 
         dtype='float32'
     ): 
+        """
+
+        Parameters
+        ----------
+        d_model
+            Equivalent to transformer's `units`. 
+        d_kv
+            d_kv * num_heads (see below) = inner_dim. 
+        d_ff
+            Equivalent to transformer's `hidden_size`. 
+        num_layers
+        num_heads
+        dropout_prob
+            We use the same dropout rate for all dropout layers. 
+        layer_norm_eps
+        activation
+            Type of feed forward projection. Currently supported are `relu` and `gated-gelu`. 
+        init_factor
+            A scalor factor in sd of weight initialization. 
+        layout
+        dtype
+        """
         super().__init__()
         self._d_model = d_model
         self._d_kv = d_kv
@@ -642,9 +817,49 @@ class T5Decoder(HybridBlock):
         mem_states, 
         mem_valid_length
     ): 
+        """Incrementally generate the output given the decoder input. 
+
+        Parameters
+        ----------
+        step_hidden_states
+            Stepwise hidden states where L_seq = 1 as in `forward` case. 
+
+            - layout = 'NT'
+                Shape (B, 1, d_model)
+            - layout = 'TN'
+                Shape (1, B, d_model)
+
+        position
+            Current position index in incremental decoding. 
+            Shape (B,)
+        past_key_values
+            A list of tuples where each one corresponds to the `past_key_value` of a decoder layer. 
+        mem_states
+            Encoded results. 
+
+            - layout = 'NT'
+                Shape (B, L_src_seq, d_model)
+            - layout = 'TN'
+                Shape (L_src_seq, B, d_model)
+
+        mem_valid_length
+            Valid sequence length for each sample feeded into the encoder. 
+            Shape (B,)
+
+        Returns
+        -------
+        step_hidden_states
+            - layout = 'NT'
+                Shape (B, 1, d_model)
+            - layout = 'TN'
+                Shape (1, B, d_model)
+
+        present_key_values
+            A list of tuples containing the updated `past_key_value` for each decoder layer. 
+        """
         # 1. relative position embeddings and attention mask
         # step_position_embeddings: Shape (num_heads, 1, L_seq), for self-attention
-        # step_mem_attn_mask: Shape (B, 1, L_mem), for cross-attention
+        # step_mem_attn_mask: Shape (B, 1, L_src_seq), for cross-attention
         position_embeddings = self.relative_position_encoder(
             gen_rel_position(
                 step_hidden_states, 
@@ -678,10 +893,43 @@ class T5Decoder(HybridBlock):
         return step_hidden_states, present_key_values
 
     def forward(self, hidden_states, valid_length, mem_states, mem_valid_length): 
+        """
+
+        Parameters
+        ----------
+        hidden_states
+            - layout = 'NT'
+                Shape (B, L_seq, d_model)
+            - layout = 'TN'
+                Shape (L_seq, B, d_model)
+
+        valid_length
+            Valid sequence length for each sample feeded into the decoder. 
+            Shape (B,)
+        mem_states
+            Encoded results. 
+
+            - layout = 'NT'
+                Shape (B, L_src_seq, d_model)
+            - layout = 'TN'
+                Shape (L_src_seq, B, d_model)
+
+        mem_valid_length
+            Valid sequence length for each sample feeded into the encoder: mem_valid_length = src_valid_length. 
+            Shape (B,)
+
+        Returns
+        -------
+        hidden_states
+            - layout = 'NT'
+                Shape (B, L_seq, d_model)
+            - layout = 'TN'
+                Shape (L_seq, B, d_model)
+        """
         # 1. relative position embeddings and attention masks
         # position_embeddings: Shape (num_heads, L_seq, L_seq), broadcastable, for self-attention 
         # self_attn_mask: Shape (B, L_seq, L_seq), for self-attention
-        # mem_attn_mask: Shape (B, L_seq, L_mem), for cross-attention
+        # mem_attn_mask: Shape (B, L_seq, L_src_seq), for cross-attention
         position_embeddings = self.relative_position_encoder(
             gen_rel_position(hidden_states, layout=self.layout)
         )
@@ -718,6 +966,7 @@ class T5Decoder(HybridBlock):
 
 @use_np
 class T5Model(HybridBlock): 
+    """T5 encoder-decoder model"""
     def __init__(
         self, 
         vocab_size=32128, 
@@ -733,6 +982,30 @@ class T5Model(HybridBlock):
         layout='NT', 
         dtype='float32'
     ): 
+        """
+
+        Parameters
+        ----------
+        vocab_size
+            vocab_size should be no smaller than len(tokenizer._sp_model). 
+        d_model
+            Equivalent to transformer's `units`. 
+        d_kv
+            d_kv * num_heads (see below) = inner_dim. 
+        d_ff
+            Equivalent to transformer's `hidden_size`. 
+        num_layers
+        num_heads
+        dropout_prob
+            We use the same dropout rate for all dropout layers. 
+        layer_norm_eps
+        activation
+            Type of feed forward projection. Currently supported are `relu` and `gated-gelu`. 
+        init_factor
+            A scalor factor in sd of weight initialization. 
+        layout
+        dtype
+        """
         super().__init__()
         assert vocab_size > 0, 'Vocab size {} is not valid.'.format(vocab_size)
         self._vocab_size = vocab_size
@@ -801,6 +1074,30 @@ class T5Model(HybridBlock):
         return self._vocab_size
 
     def encode(self, src_data, src_valid_length): 
+        """Encode the source data to memory states. 
+
+        Parameters
+        ----------
+        src_data
+            Token ids feeded into the encoder. 
+
+            - layout = 'NT'
+                Shape (B, L_src_seq)
+            - layout = 'TN'
+                Shape (L_src_seq, B)
+
+        src_valid_length
+            Valid sequence length for each sample feeded into the encoder. 
+            Shape (B,)
+
+        Returns
+        -------
+        enc_out
+            - layout = 'NT'
+                Shape (B, L_src_seq, d_model)
+            - layout = 'TN'
+                Shape (L_src_seq, B, d_model)
+        """
         src_hidden_states = self.input_embedding_layer(src_data)
         enc_out = self.encoder(
             src_hidden_states, 
@@ -809,6 +1106,39 @@ class T5Model(HybridBlock):
         return enc_out
 
     def decode(self, tgt_data, tgt_valid_length, mem_states, mem_valid_length): 
+        """Decode based on target data and memory states. 
+
+        Parameters
+        ----------
+        tgt_data
+            Token ids feeded into the decoder. 
+
+            - layout = 'NT'
+                Shape (B, L_seq)
+            - layout = 'TN'
+                Shape (L_seq, B)
+
+        tgt_valid_length
+            Valid sequence length for each sample feeded into the decoder. 
+            Shape (B,)
+        mem_states
+            - layout = 'NT'
+                Shape (B, L_src_seq, d_model)
+            - layout = 'TN'
+                Shape (L_src_seq, B, d_model)
+
+        mem_valid_length
+            Valid sequence length for each sample feeded into the encoder: mem_valid_length = src_valid_length. 
+            Shape (B,)
+
+        Returns
+        -------
+        dec_out
+            - layout = 'NT'
+                Shape (B, L_seq, d_model)
+            - layout = 'TN'
+                Shape (L_seq, B, d_model)
+        """
         tgt_hidden_states = self.input_embedding_layer(tgt_data)
         dec_out = self.decoder(
             tgt_hidden_states, 
@@ -819,6 +1149,41 @@ class T5Model(HybridBlock):
         return dec_out
 
     def forward(self, src_data, src_valid_length, tgt_data, tgt_valid_length): 
+        """
+
+        Parameters
+        ----------
+        src_data
+            Token ids feeded into the encoder. 
+
+            - layout = 'NT'
+                Shape (B, L_src_seq)
+            - layout = 'TN'
+                Shape (L_src_seq, B)
+
+        src_valid_length
+            Valid sequence length for each sample feeded into the encoder. 
+            Shape (B,)
+        tgt_data
+            Token ids feeded into the decoder. 
+
+            - layout = 'NT'
+                Shape (B, L_seq)
+            - layout = 'TN'
+                Shape (L_seq, B)
+
+        tgt_valid_length
+            Valid sequence length for each sample feeded into the decoder. 
+            Shape (B,)
+
+        Returns
+        -------
+        dec_out
+            - layout = 'NT'
+                Shape (B, L_seq, d_model)
+            - layout = 'TN'
+                Shape (L_seq, B, d_model)
+        """
         enc_out = self.encode(src_data, src_valid_length)
         dec_out = self.decode(tgt_data, tgt_valid_length, enc_out, src_valid_length)
         return dec_out
@@ -877,7 +1242,15 @@ def mask_to_sentinel(tokens, noise_mask, vocab_size):
 
 @use_np
 class T5Inference(HybridBlock, BaseStepDecoder): 
+    """T5 Seq2seq inference model, using a pretrained T5Model instance as the backbone."""
     def __init__(self, model): 
+        """
+
+        Parameters
+        ----------
+        model
+            A pretrained T5Model instance. 
+        """
         super().__init__()
         self.model = model
         self.output_layer = nn.Dense(
@@ -898,15 +1271,14 @@ class T5Inference(HybridBlock, BaseStepDecoder):
 
     @property
     def state_batch_axis(self): 
-        """The returned 4-tuple corresponds to the batch axes of
-        results of `init_states()`
+        """The returned 4-tuple corresponds to the batch axes of `init_states()` results. 
 
         Returns
         -------
         enc_out_batch_axis
         src_valid_length_batch_axis
         position_batch_axis
-        dec_layer_batch_axis
+        dec_layer_batch_axes
         """
         if self.model.layout == 'NT':
             return 0, 0, 0, self.model.decoder.state_batch_axis
@@ -914,6 +1286,39 @@ class T5Inference(HybridBlock, BaseStepDecoder):
             return 1, 0, 0, self.model.decoder.state_batch_axis
 
     def init_states(self, src_data, src_valid_length): 
+        """Initialize the states required for incremental decoding. 
+
+        Parameters
+        ----------
+        src_data
+            Token ids feeded into the encoder. 
+
+            - layout = 'NT'
+                Shape (B, L_src_seq)
+            - layout = 'TN'
+                Shape (L_src_seq, B)
+
+        src_valid_length
+            Valid sequence length for each sample feeded into the encoder. 
+            Shape (B,)
+
+        Returns
+        -------
+        enc_out
+            Encoded results from src_data. 
+
+            - layout = 'NT'
+                Shape (B, L_src_seq, d_model)
+            - layout = 'TN'
+                Shape (L_src_seq, B, d_model)
+
+        src_valid_length
+            Shape (B,)
+        position
+            Shape (B,)
+        dec_states
+            A list of `past_key_value` for incremental decoding. 
+        """
         batch_size = src_data.shape[1 - self.model._time_axis] # NT: 0; TN: 1
         ctx = src_data.ctx
         enc_out = self.model.encode(src_data, src_valid_length)
@@ -922,6 +1327,37 @@ class T5Inference(HybridBlock, BaseStepDecoder):
         return enc_out, src_valid_length, position, key_values
 
     def forward(self, step_data, past_states): 
+        """
+
+        Parameters
+        ----------
+        step_data
+            Stepwise batched token ids for incremental decoding. 
+            Shape (B,)
+        past_states
+            A 4-tuple containing states of last incremental decoding step. 
+            
+            1. mem_states
+                - layout = 'NT'
+                    Shape (B, L_src_seq, d_model)
+                - layout = 'TN'
+                    Shape (L_src_seq, B, d_model)
+
+            2. mem_valid_length
+                Shape (B,)
+            3. position
+                Shape (B,)
+            4. dec_states
+                A list of `past_key_value` tuples whose shape depend on layout. 
+
+        Returns
+        -------
+        step_hidden_states
+            Stepwise hidden states with time axis squeezed out. 
+            Shape (B, vocab_size)
+        new_states
+            Similar to past_states, but updated for next incremental decoding step. 
+        """
         mem_states, mem_valid_length, position, past_key_values = past_states
         step_hidden_states = self.model.input_embedding_layer(step_data)
         # NT: (B, d_model) -> (B, 1, d_model); TN: (B, d_model) -> (1, B, d_model)
@@ -939,6 +1375,7 @@ class T5Inference(HybridBlock, BaseStepDecoder):
         return step_hidden_states, (mem_states, mem_valid_length, position + 1, present_key_values)
 
 
+@use_np
 class T5NMTInference(T5Inference): 
     def __init__(self, *args, **kwargs): 
         print(
@@ -952,15 +1389,15 @@ class T5Tokenizer(SentencepieceTokenizer):
     """This inheriting class is capable of handling extra tokens which do not present in self._sp_model
     """
     def __init__(self, vocab_path, extra_ids=100): 
-        # extend tokens in vocab with <extra_id>s, which correspond to noise span sentinels one-by-one
-        # <extra_id_0> will the last token in the new vocabulary
+        # 1. extend tokens in vocab with <extra_id>s, which correspond to noise span sentinels one-by-one
+        # <extra_id_0> will the last token in the new vocabulary. 
         special_tokens = {
             'extra{}_token'.format(i): '<extra_id_{}>'.format(i) for i in range(extra_ids - 1, -1, -1)
         }
         spiece_model = SentencepieceTokenizer(vocab_path)
         tokens = spiece_model.vocab.all_tokens
         tokens.extend(list(special_tokens.values()))
-        # re-specify special tokens 
+        # 2. re-specify special tokens 
         special_tokens['eos_token'] = spiece_model.vocab.eos_token
         special_tokens['unk_token'] = spiece_model.vocab.unk_token
         special_tokens['pad_token'] = spiece_model.vocab.pad_token
@@ -984,6 +1421,7 @@ class T5Tokenizer(SentencepieceTokenizer):
             return [_filter(ele_token, token_type) for ele_token in tokens]
 
     def decode(self, tokens): 
+        # before calling super().decode, we remove <extra_id> tokens from the input. 
         tokens = self._filter_extra_tokens(tokens)
         return super().decode(tokens)
 
@@ -993,12 +1431,11 @@ def list_pretrained_t5():
 
 
 def get_pretrained_t5(
-    model_name: str = 't5-base', 
+    model_name: str = 'google_t5_base', 
     root: str = get_model_zoo_home_dir(), 
     load_backbone: bool = True, 
-    load_lm: bool = False, 
     extra_ids: int = 100
-) -> Tuple[CN, SentencepieceTokenizer, str, str]: 
+) -> Tuple[CN, T5Tokenizer, str, str]: 
     assert model_name in PRETRAINED_URL, '{} is not found. All available are {}.'.format(
         model_name, list_pretrained_t5())
     cfg_path = PRETRAINED_URL[model_name]['cfg']
@@ -1027,7 +1464,7 @@ def get_pretrained_t5(
         )
     else: 
         local_params_path = None
-    # lm model has not been implemented
+    # lm model simply uses T5Model as backbone, so no additional params
     local_lm_params_path = None
     tokenizer = T5Tokenizer(local_paths['vocab'], extra_ids)
     if cfg is None: 

@@ -8,6 +8,7 @@ As we have seen in T5 model's paper [1], the author explored a pre-training tech
 <div align="center"> <strong>Figure 1:</strong> A comparison of different pretraining objectives (source: T5's paper [1]). </div>
 
 In this tutorial, we are going to: 
+
 1. Load a pretrained T5 model
 2. Perform a MLM task on a simple example
 
@@ -92,7 +93,7 @@ def print_results(tokenizer, output, spans, targets=None):
         print()
 ```
 
-## Loading the Model
+## Load the Model
 
 In GluonNLP, `get_backbone` is a handy way to load models and download pretrained weights (not limited to T5). Here, we choose T5-large for illustration purpose. Alternatively, you can specify `google_t5_small`, `google_t5_base`, `google_t5_3B`, or `google_t5_11B` as well. 
 
@@ -166,7 +167,7 @@ enc_tokens = batcher(masked_tokens)
 enc_valid_length = np.array([len(ele_tokens) for ele_tokens in masked_tokens], dtype=np.int32)
 ```
 
-## Inference Step
+## Denoise Inference
 
 We first get the initial states of decoder by calling `init_states()`. This method includes feeding the corrupted sequences into the encoder, initializing "past" keys and values in every decoder's layer to zero, etc. The returned states is a 4-tuple of encoded results, valid lengths of corrupted sequences, our position (index) in incremental decoding, and past key-values. 
 

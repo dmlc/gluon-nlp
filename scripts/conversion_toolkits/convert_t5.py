@@ -23,6 +23,7 @@ T5_PRETRAINED_MODEL_MAP = {
     "t5-3b": "google_t5_3B",
     "t5-11b": "google_t5_11B"
 }
+
 T5_PRETRAINED_CONFIG_MAP = {
     "t5-small": "https://huggingface.co/t5-small/resolve/main/config.json",
     "t5-base": "https://huggingface.co/t5-base/resolve/main/config.json",
@@ -30,7 +31,8 @@ T5_PRETRAINED_CONFIG_MAP = {
     "t5-3b": "https://huggingface.co/t5-3b/resolve/main/config.json",
     "t5-11b": "https://huggingface.co/t5-11b/resolve/main/config.json"
 }
-PRETRAINED_VOCAB_MAP = {
+
+T5_PRETRAINED_VOCAB_MAP = {
     "t5-small": "https://huggingface.co/t5-small/resolve/main/spiece.model",
     "t5-base": "https://huggingface.co/t5-base/resolve/main/spiece.model",
     "t5-large": "https://huggingface.co/t5-large/resolve/main/spiece.model",
@@ -39,7 +41,7 @@ PRETRAINED_VOCAB_MAP = {
 }
 
 
-# this mapping only works on "T5Model" class from Huggingface and GluonNLP
+# this mapping works for both "T5Model" and "MT5Model" from Huggingface to GluonNLP
 PARAM_MAP = [
     # 0.
     ('shared.weight', 'input_embedding_layer.weight'), 
@@ -69,19 +71,20 @@ def parse_args():
     parser.add_argument(
         '--test', action='store_true', required=False, default=False, help='Whether to test conversion correctness.'
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    # further process mappings
+    args.tgt_model_name = T5_PRETRAINED_MODEL_MAP[args.model_name]
+    args.config_url = T5_PRETRAINED_CONFIG_MAP[args.model_name]
+    args.vocab_url = T5_PRETRAINED_VOCAB_MAP[args.model_name]
+    return args
 
 
-def convert_config(args, converted): 
+def convert_config(args, gluon_cfg, converted): 
     print('converting cfg...')
     # download config
-    gluon_cfg = Gluon_T5.get_cfg(T5_PRETRAINED_MODEL_MAP[args.model_name])
     with tempfile.TemporaryDirectory() as temp_dir: 
         hf_cfg_path = os.path.join(temp_dir, 'config.json')
-        download(
-            url=T5_PRETRAINED_CONFIG_MAP[args.model_name], 
-            path=hf_cfg_path
-        )
+        download(url=args.config_url, path=hf_cfg_path)
         with open(hf_cfg_path, 'r') as f: 
             hf_cfg = json.load(f)
         os.remove(hf_cfg_path)
@@ -110,11 +113,8 @@ def convert_vocab(args, converted):
     print('converting vocab...')
     # at this step we don't add <extra_id>s into the vocab, but just save the original binary file directly
     # those special tokens are added only when instantiating a T5Tokenizer
-    vocab_path = os.path.join(args.dest_dir, 't5.vocab')
-    download(
-        url=PRETRAINED_VOCAB_MAP[args.model_name], 
-        path=vocab_path
-    )
+    vocab_path = os.path.join(args.dest_dir, 'mt5.vocab' if 'mt5' in args.model_name else 't5.vocab')
+    download(url=args.vocab_url, path=vocab_path)
     converted['vocab'] = vocab_path
 
 
@@ -240,7 +240,8 @@ def convert_t5(args):
     # convert and save vocab
     convert_vocab(args, converted)
     # convert and save config
-    gluon_cfg = convert_config(args, converted)
+    gluon_cfg = Gluon_T5.get_cfg(args.tgt_model_name)
+    gluon_cfg = convert_config(args, gluon_cfg, converted)
     # convert, (test), and save model
     hf_t5 = HF_T5.from_pretrained(args.model_name)
     gluon_t5 = Gluon_T5.from_cfg(gluon_cfg)

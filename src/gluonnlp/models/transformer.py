@@ -1390,7 +1390,7 @@ class TransformerInference(HybridBlock, BaseStepDecoder):
             return 1, 0, 0, self.model.decoder.state_batch_axis
 
     def init_states(self, src_data, src_valid_length):  # TODO(sxjscience) Revisit here, support auxiliary states?
-        """Initialize the states required for sequence sampling
+        """Initialize the states required for incremental decoding
 
         Parameters
         ----------
@@ -1471,6 +1471,7 @@ class TransformerInference(HybridBlock, BaseStepDecoder):
         return out, (mem_data, mem_valid_length, position + 1, new_states)
 
 
+@use_np
 class TransformerNMTInference(TransformerInference): 
     def __init__(self, *args, **kwargs): 
         print(

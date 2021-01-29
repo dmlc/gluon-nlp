@@ -37,8 +37,8 @@ def test_get_backbone(name, ctx):
         # Test for model export + save
         if 'gpt2' in name:
             pytest.skip('Skipping GPT-2 test')
-        elif name in ['google_t5_3B', 'google_t5_11B']: 
-            pytest.skip('Skipping large T5 model test')
+        elif name in ['google_t5_3B', 'google_t5_11B', 'google_mt5_xl', 'google_mt5_xxl']: 
+            pytest.skip('Skipping large T5 (mT5) model test')
         batch_size = 1
         sequence_length = 4
         inputs = mx.np.random.randint(0, 10, (batch_size, sequence_length))
