@@ -1060,10 +1060,12 @@ class T5Model(HybridBlock):
         ----------
         src_data
             Token ids feeded into the encoder. 
+
             - layout = 'NT'
                 Shape (B, L_src_seq)
             - layout = 'TN'
                 Shape (L_src_seq, B)
+
         src_valid_length
             Valid sequence length for each sample feeded into the encoder. 
             Shape (B,)
@@ -1090,10 +1092,12 @@ class T5Model(HybridBlock):
         ----------
         tgt_data
             Token ids feeded into the decoder. 
+
             - layout = 'NT'
                 Shape (B, L_seq)
             - layout = 'TN'
                 Shape (L_seq, B)
+
         tgt_valid_length
             Valid sequence length for each sample feeded into the decoder. 
             Shape (B,)
@@ -1102,6 +1106,7 @@ class T5Model(HybridBlock):
                 Shape (B, L_src_seq, d_model)
             - layout = 'TN'
                 Shape (L_src_seq, B, d_model)
+
         mem_valid_length
             Valid sequence length for each sample feeded into the encoder: mem_valid_length = src_valid_length. 
             Shape (B,)
@@ -1130,19 +1135,23 @@ class T5Model(HybridBlock):
         ----------
         src_data
             Token ids feeded into the encoder. 
+
             - layout = 'NT'
                 Shape (B, L_src_seq)
             - layout = 'TN'
                 Shape (L_src_seq, B)
+
         src_valid_length
             Valid sequence length for each sample feeded into the encoder. 
             Shape (B,)
         tgt_data
             Token ids feeded into the decoder. 
+
             - layout = 'NT'
                 Shape (B, L_seq)
             - layout = 'TN'
                 Shape (L_seq, B)
+
         tgt_valid_length
             Valid sequence length for each sample feeded into the decoder. 
             Shape (B,)
@@ -1263,10 +1272,12 @@ class T5Inference(HybridBlock, BaseStepDecoder):
         ----------
         src_data
             Token ids feeded into the encoder. 
+
             - layout = 'NT'
                 Shape (B, L_src_seq)
             - layout = 'TN'
                 Shape (L_src_seq, B)
+
         src_valid_length
             Valid sequence length for each sample feeded into the encoder. 
             Shape (B,)
@@ -1275,10 +1286,12 @@ class T5Inference(HybridBlock, BaseStepDecoder):
         -------
         enc_out
             Encoded results from src_data. 
+
             - layout = 'NT'
                 Shape (B, L_src_seq, d_model)
             - layout = 'TN'
                 Shape (L_src_seq, B, d_model)
+
         src_valid_length
             Shape (B,)
         position
@@ -1303,16 +1316,18 @@ class T5Inference(HybridBlock, BaseStepDecoder):
             Shape (B,)
         past_states
             A 4-tuple containing states of last incremental decoding step. 
-            mem_states
+            
+            1. mem_states
                 - layout = 'NT'
                     Shape (B, L_src_seq, d_model)
                 - layout = 'TN'
                     Shape (L_src_seq, B, d_model)
-            mem_valid_length
+
+            2. mem_valid_length
                 Shape (B,)
-            position
+            3. position
                 Shape (B,)
-            dec_states
+            4. dec_states
                 A list of `past_key_value` tuples whose shape depend on layout. 
 
         Returns
