@@ -17,7 +17,7 @@ import timeit
 import numpy as np
 import gluonnlp
 from gluonnlp.models import get_backbone
-from gluonnlp.utils.misc import logging_config, get_ec2_tvm_flags
+from gluonnlp.utils.misc import logging_config
 from gluonnlp.utils.lazy_imports import try_import_tvm
 from collections import defaultdict, namedtuple
 from datetime import datetime
@@ -612,10 +612,12 @@ def compile_tvm_graph_runtime(model, model_name, layout, compute_layout,
     key = (model_name, layout, compute_layout, batch_size, seq_length, dtype, instance_type)
     if key in _TVM_RT_CACHE:
         return _TVM_RT_CACHE[key]
-    flags = get_ec2_tvm_flags()[instance_type]
     tvm = try_import_tvm()
     from tvm import relay
     from tvm.contrib import graph_runtime
+    from gluonnlp.utils.tvm_utils import get_ec2_tvm_flags, update_tvm_convert_map
+    flags = get_ec2_tvm_flags()[instance_type]
+    update_tvm_convert_map()
     token_ids_shape = (batch_size, seq_length) if layout == 'NT' else (seq_length, batch_size)
     valid_length_shape = (batch_size,)
     if 'bart' in model_name:
@@ -827,23 +829,19 @@ class GluonNLPBackboneBenchmark:
             tvm_token_types = tvm.nd.array(token_types.asnumpy(), ctx=ctx)
             tvm_valid_length = tvm.nd.array(valid_length.asnumpy(), ctx=ctx)
 
-            def run_tvm_forward():
-                if 'roberta' in model_name or 'xlmr' in model_name:
-                    rt.set_input(data0=tvm_input_ids, data1=tvm_valid_length)
-                elif 'bart' in model_name:
-                    rt.set_input(data0=tvm_input_ids, data1=tvm_valid_length)
-                else:
-                    rt.set_input(data0=tvm_input_ids, data1=tvm_token_types,
-                                 data2=tvm_valid_length)
-                rt.run()
-                for i in range(rt.get_num_outputs()):
-                    out = rt.get_output(i)
-            # Warmup
-            timeit.repeat(run_tvm_forward, repeat=1, number=2)
-            runtimes = timeit.repeat(run_tvm_forward, repeat=self._repeat, number=3)
+            if 'roberta' in model_name or 'xlmr' in model_name:
+                rt.set_input(data0=tvm_input_ids, data1=tvm_valid_length)
+            elif 'bart' in model_name:
+                rt.set_input(data0=tvm_input_ids, data1=tvm_valid_length)
+            else:
+                rt.set_input(data0=tvm_input_ids, data1=tvm_token_types,
+                             data2=tvm_valid_length)
+            # ftimer returns a ProfileResult
+            ftimer = rt.module.time_evaluator("run", ctx, number=3, repeat=self._repeat)
+            runtimes = np.min(ftimer().results)
         else:
             timeit.repeat(run_forward, repeat=1, number=3)
-            runtimes = timeit.repeat(run_forward, repeat=self._repeat, number=3)
+            runtimes = float(np.min(timeit.repeat(run_forward, repeat=self._repeat, number=3)) / 3.0)
             mxnet.npx.waitall()
         # Profile memory
         if self._use_gpu:
@@ -860,7 +858,7 @@ class GluonNLPBackboneBenchmark:
             # cpu
             memory_bytes = measure_peak_memory_cpu(run_forward)
             memory = Memory(memory_bytes) if isinstance(memory_bytes, int) else memory_bytes
-        return float(np.min(runtimes) / 3.0), memory
+        return runtimes, memory
 
     def _train_speed_memory(self, model_name: str, batch_size: int, sequence_length: int)\
             -> Tuple[float, Memory]:
