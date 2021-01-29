@@ -103,6 +103,8 @@ def parse_args():
     # phase 2
     parser.add_argument('--phase2', action='store_true', help='phase 2 training')
     parser.add_argument('--phase1_num_steps', type=int, help='number of steps for phase 1')
+    # use amp
+    parser.add_argument('--use_amp', action='store_true', help='use amp')
     # communication
     parser.add_argument('--comm_backend', type=str, default='device',
                         choices=['byteps', 'horovod', 'dist_sync_device', 'device'],
@@ -207,18 +209,17 @@ def train(args):
     else:
         get_dataset_fn = get_pretrain_data_npz
 
-    raw_datas=[]
 
-    if args.raw:
-        datasets_dir = args.data_dir.split(',')
-        for dataset_dir in datasets_dir:
-            names = os.listdir(dataset_dir)
+    if args.data_dir:
+        tmp = []
+        for dataset in args.data_dir.split(','):
+            names = os.listdir(dataset)
             for i in range(len(names)):
-                names[i] = os.path.join(dataset_dir, names[i])
-            raw_datas.append(','.join(names))
-    if args.raw:
-        raw_data = ','.join(raw_datas)
-        args.data = raw_data
+                names[i] = os.path.join(dataset, names[i])
+            tmp.append(','.join(names))
+
+        args.data = ','.join(tmp)
+
 
 
     data_train = get_dataset_fn(args.data, args.batch_size, shuffle=True,
@@ -253,6 +254,8 @@ def train(args):
                                  'epsilon': 1e-6,
                                  'correct_bias': False,
                                  })
+    if args.use_amp:
+        optimizer_params.update({'multi_precision': True})
     if args.comm_backend == 'horovod':
         trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optimizer_params)
     elif args.comm_backend == 'byteps':
@@ -265,6 +268,8 @@ def train(args):
         states_option(args.start_step, trainer, args.ckpt_dir, local_rank, 'Loading')
 
     # backend specific implementation
+    if args.use_amp:
+        amp.init_trainer(trainer)
     if args.comm_backend == 'byteps':
         trainer._init_params()
     if args.comm_backend == 'horovod':
@@ -337,10 +342,17 @@ def train(args):
                     ns_pred_list.append(nsp_score)
 
                 running_num_tks += valid_length.sum().as_in_ctx(mx.cpu())
-
-            for loss in loss_l:
-                loss.backward()
-
+            if args.use_amp:
+                with mx.autograd.record():
+                    with amp.scale_loss(loss_l, trainer) as loss_l:
+                        for loss in loss_l:
+                            loss.backward()
+                norm_clip_mult = num_workers * trainer.amp_loss_scale
+            else:
+                with mx.autograd.record():
+                    for loss in loss_l:
+                        loss.backward()
+                norm_clip_mult = num_workers
             running_mlm_loss += sum([ele.as_in_ctx(mx.cpu())
                                     for ele in mlm_loss_l]).asnumpy().item()
             running_nsp_loss += sum([ele.as_in_ctx(mx.cpu())
@@ -349,11 +361,9 @@ def train(args):
             nsp_metric.update(ns_label_list, ns_pred_list)
         # update
         trainer.allreduce_grads()
-
         total_norm, ratio, is_finite = clip_grad_global_norm(
-            params, args.max_grad_norm * num_workers)
-        total_norm = total_norm / num_workers
-
+            params, args.max_grad_norm * norm_clip_mult)
+        total_norm = total_norm / norm_clip_mult
         # update learning rate
         scheduled_lr = args.lr
         if step_num <= warmup_steps:
@@ -419,5 +429,7 @@ def train(args):
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
     args = parse_args()
+    if args.use_amp:
+        from mxnet import amp
+        amp.init()
     train(args)
-
