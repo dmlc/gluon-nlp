@@ -109,4 +109,4 @@ gluon_en_cased_bert_base
 ```
 
 The pretrained model has been finetuned on SQUAD 2.0, obtaining F1/EM as 77.09/74.38. See also [question_answering](../../question_answering) for more details on the finetuning results.
-And when using AMP, we can refer this sheet https://docs.google.com/spreadsheets/d/1c5QPLBpJEAVDUk_BmcpKphp8nN3Dk9q2bKYqa3AIUz0/edit?usp=sharing to see more training details in phase1 and we get F1/EM 74.20/76.87.
+And when using AMP, we can refer this sheet https://docs.google.com/spreadsheets/d/1c5QPLBpJEAVDUk_BmcpKphp8nN3Dk9q2bKYqa3AIUz0/edit?usp=sharing to see more training details in phase1 and we get F1/EM 76.87/74.20.
