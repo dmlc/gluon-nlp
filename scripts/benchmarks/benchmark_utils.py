@@ -838,10 +838,10 @@ class GluonNLPBackboneBenchmark:
                              data2=tvm_valid_length)
             # ftimer returns a ProfileResult
             ftimer = rt.module.time_evaluator("run", ctx, number=3, repeat=self._repeat)
-            runtimes = ftimer().results
+            runtimes = ftimer().mean
         else:
             timeit.repeat(run_forward, repeat=1, number=3)
-            runtimes = timeit.repeat(run_forward, repeat=self._repeat, number=3)
+            runtimes = float(np.min(timeit.repeat(run_forward, repeat=self._repeat, number=3)) / 3.0)
             mxnet.npx.waitall()
         # Profile memory
         if self._use_gpu:
@@ -858,7 +858,7 @@ class GluonNLPBackboneBenchmark:
             # cpu
             memory_bytes = measure_peak_memory_cpu(run_forward)
             memory = Memory(memory_bytes) if isinstance(memory_bytes, int) else memory_bytes
-        return float(np.min(runtimes) / 3.0), memory
+        return runtimes, memory
 
     def _train_speed_memory(self, model_name: str, batch_size: int, sequence_length: int)\
             -> Tuple[float, Memory]:
