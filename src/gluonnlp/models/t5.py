@@ -31,7 +31,7 @@ T5 Model
 """
 
 
-__all__ = ['T5Model', 'T5Inference', 'T5Tokenizer', 'T5NMTInference']
+__all__ = ['T5Block', 'T5Encoder', 'T5Decoder', 'T5Model', 'T5Inference', 'T5NMTInference']
 
 
 import os
@@ -402,26 +402,32 @@ class T5Block(HybridBlock):
         Parameters
         ----------
         step_hidden_states
-            Stepwise hidden_states where L_seq = 1 as in `forward` case. 
+            Stepwise hidden states where L_seq = 1 as in `forward` case. 
+
             - layout = 'NT'
                 Shape (B, 1, d_model)
             - layout = 'TN'
                 Shape (1, B, d_model)
+
         step_position_embeddings
             Stepwise relative position embeddings. 
             Shape (num_heads, 1, (L_past_seq + 1))
         past_key_value
             A tuple containing past key and past value. Presumably they are of the same shape. 
+
             - layout = 'NT'
                 Shape (B, L_past_seq, num_heads, d_kv)
             - layout = 'TN'
                 Shape (L_past_seq, B, num_heads, d_kv)
+
         mem_states
             Encoded results. 
+
             - layout = 'NT'
                 Shape (B, L_src_seq, d_model)
             - layout = 'TN'
                 Shape (L_src_seq, B, d_model)
+
         step_mem_attn_mask
             Stepwise attention mask for cross-attention. 
             Shape (B, 1, L_src_seq)
@@ -433,8 +439,10 @@ class T5Block(HybridBlock):
                 Shape (B, 1, d_model)
             - layout = 'TN'
                 Shape (1, B, d_model)
+
         (self_key, self_value)
             The updated `past_key_value` tuple. Presumably they are of the same shape. 
+
             - layout = 'NT'
                 Shape (B, (L_past_seq + 1), num_heads, d_kv)
             - layout = 'TN'
@@ -498,6 +506,7 @@ class T5Block(HybridBlock):
                 Shape (B, L_seq, d_model)
             - layout = 'TN'
                 Shape (L_seq, B, d_model)
+
         self_attn_mask
             if is_decoder, it should be a "causal" attention mask. 
             Shape (B, L_seq, L_seq)
@@ -506,10 +515,12 @@ class T5Block(HybridBlock):
             Shape (num_heads, L_seq, L_seq)
         mem_states
             Encoded results. Only applicable to decoder layers. 
+
             - layout = 'NT'
                 Shape (B, L_src_seq, d_model)
             - layout = 'TN'
                 Shape (L_src_seq, B, d_model)
+
         mem_attn_mask
             Attention mask ask for cross-attention. Only applicable to decoder layers. 
             Shape (B, L_seq, L_src_seq)
@@ -662,6 +673,7 @@ class T5Encoder(HybridBlock):
                 Shape (B, L_seq, d_model)
             - layout = 'TN'
                 Shape (L_seq, B, d_model)
+
         valid_length
             Valid sequence length for each sample feeded into the encoder. 
             Shape (B,)
@@ -810,11 +822,13 @@ class T5Decoder(HybridBlock):
         Parameters
         ----------
         step_hidden_states
-            Stepwise hidden_states where L_seq = 1 as in `forward` case. 
+            Stepwise hidden states where L_seq = 1 as in `forward` case. 
+
             - layout = 'NT'
                 Shape (B, 1, d_model)
             - layout = 'TN'
                 Shape (1, B, d_model)
+
         position
             Current position index in incremental decoding. 
             Shape (B,)
@@ -822,10 +836,12 @@ class T5Decoder(HybridBlock):
             A list of tuples where each one corresponds to the `past_key_value` of a decoder layer. 
         mem_states
             Encoded results. 
+
             - layout = 'NT'
                 Shape (B, L_src_seq, d_model)
             - layout = 'TN'
                 Shape (L_src_seq, B, d_model)
+
         mem_valid_length
             Valid sequence length for each sample feeded into the encoder. 
             Shape (B,)
@@ -837,6 +853,7 @@ class T5Decoder(HybridBlock):
                 Shape (B, 1, d_model)
             - layout = 'TN'
                 Shape (1, B, d_model)
+
         present_key_values
             A list of tuples containing the updated `past_key_value` for each decoder layer. 
         """
@@ -885,15 +902,18 @@ class T5Decoder(HybridBlock):
                 Shape (B, L_seq, d_model)
             - layout = 'TN'
                 Shape (L_seq, B, d_model)
+
         valid_length
             Valid sequence length for each sample feeded into the decoder. 
             Shape (B,)
         mem_states
             Encoded results. 
+
             - layout = 'NT'
                 Shape (B, L_src_seq, d_model)
             - layout = 'TN'
                 Shape (L_src_seq, B, d_model)
+
         mem_valid_length
             Valid sequence length for each sample feeded into the encoder: mem_valid_length = src_valid_length. 
             Shape (B,)
@@ -1333,7 +1353,7 @@ class T5Inference(HybridBlock, BaseStepDecoder):
         Returns
         -------
         step_hidden_states
-            Stepwise hidden_states with time axis squeezed out. 
+            Stepwise hidden states with time axis squeezed out. 
             Shape (B, vocab_size)
         new_states
             Similar to past_states, but updated for next incremental decoding step. 

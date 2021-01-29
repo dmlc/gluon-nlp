@@ -1,4 +1,4 @@
-Using Pretrained models
+Using Pretrained Models
 =======================
 
 .. container:: cards
