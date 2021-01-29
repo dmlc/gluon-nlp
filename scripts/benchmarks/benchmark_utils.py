@@ -838,7 +838,7 @@ class GluonNLPBackboneBenchmark:
                              data2=tvm_valid_length)
             # ftimer returns a ProfileResult
             ftimer = rt.module.time_evaluator("run", ctx, number=3, repeat=self._repeat)
-            runtimes = ftimer().mean
+            runtimes = np.min(ftimer().results)
         else:
             timeit.repeat(run_forward, repeat=1, number=3)
             runtimes = float(np.min(timeit.repeat(run_forward, repeat=self._repeat, number=3)) / 3.0)
