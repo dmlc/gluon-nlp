@@ -1,7 +1,7 @@
 __all__ = ['glob', 'file_line_number', 'md5sum', 'sha1sum', 'naming_convention',
            'logging_config', 'set_seed', 'sizeof_fmt', 'grouper', 'repeat',
            'parse_ctx', 'load_checksum_stats', 'download', 'check_version',
-           'init_comm', 'get_mxnet_visible_ctx']
+           'init_comm', 'get_mxnet_visible_ctx', 'logerror']
 
 import os
 import sys
@@ -11,7 +11,7 @@ import warnings
 import functools
 import uuid
 from types import ModuleType
-from typing import Optional, Tuple
+from typing import Optional
 import numpy as np
 import hashlib
 import requests
@@ -182,6 +182,28 @@ def logging_config(folder: Optional[str] = None,
         logconsole.setFormatter(formatter)
         logger.addHandler(logconsole)
     return folder
+
+
+def logerror(logger: logging.Logger = logging.root):
+    """A decorator that wraps the passed in function and logs exceptions.
+
+    Parameters
+    ----------
+    logger: logging.Logger
+        The logger to which to log the error.
+    """
+    def log_wrapper(function):
+        @functools.wraps(function)
+        def wrapper(*args, **kwargs):
+            try:
+                return function(*args, **kwargs)
+            except Exception as e:
+                # log the exception
+                logger.exception(
+                    f'{function.__name__}(args={args}, kwargs={kwargs}) failed:\n{e}.')
+                raise e
+        return wrapper
+    return log_wrapper
 
 
 def set_seed(seed):

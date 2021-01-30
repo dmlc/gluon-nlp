@@ -92,6 +92,7 @@ setup(
         'dev': [
             'pytest',
             'pytest-env',
+            'pytest-mock',
             'pylint',
             'pylint_quotes',
             'flake8',
