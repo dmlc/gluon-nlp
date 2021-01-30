@@ -56,7 +56,7 @@ jobs:
           python -m pip install setuptools pytest pytest-cov contextvars
           python -m pip install --upgrade cython
           python -m pip install --pre "mxnet>=2.0.0b20210121" -f https://dist.mxnet.io/python
-          python -m pip install -U -e .[extras]
+          python -m pip install -U -e .[extras,dev]
       - name: Build and Install TVM
         if: matrix.os == 'ubuntu-latest'
         run: |

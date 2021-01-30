@@ -47,7 +47,7 @@ RUN cd ${WORKDIR} \
    && git clone https://github.com/dmlc/gluon-nlp \
    && cd gluon-nlp \
    && git checkout master \
-   && python3 -m pip install -U -e ."[extras]"
+   && python3 -m pip install -U -e ."[extras,dev]"
 
 
 # Stage-CI
