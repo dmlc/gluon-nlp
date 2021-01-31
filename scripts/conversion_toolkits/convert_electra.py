@@ -400,15 +400,15 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
                     ele_valid_length = valid_length[i]
                     assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
                                     tf_contextual_embedding[i, :ele_valid_length, :], 1E-3, 1E-3)
-            model.save_parameters(os.path.join(save_dir, 'model.params'), deduplicate=True)
+            model.save_parameters(os.path.join(save_dir, 'model.params'))
             logging.info('Convert the backbone model in {} to {}/{}'.format(model_dir,
                                                                             save_dir, 'model.params'))
         elif convert_type == 'disc':
-            model.save_parameters(os.path.join(save_dir, 'disc_model.params'), deduplicate=True)
+            model.save_parameters(os.path.join(save_dir, 'disc_model.params'))
             logging.info(
                 'Convert the discriminator model in {} to {}/{}'.format(model_dir, save_dir, 'disc_model.params'))
         elif convert_type == 'gen':
-            model.save_parameters(os.path.join(save_dir, 'gen_model.params'), deduplicate=True)
+            model.save_parameters(os.path.join(save_dir, 'gen_model.params'))
             logging.info('Convert the generator model in {} to {}/{}'.format(model_dir,
                                                                              save_dir, 'gen_model.params'))
 

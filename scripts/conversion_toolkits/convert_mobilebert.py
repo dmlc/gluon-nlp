@@ -311,9 +311,9 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
             ele_valid_length = valid_length[i]
             assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
                             tf_contextual_embedding[i, :ele_valid_length, :], 1E-2, 1E-2)
-    model.backbone_model.save_parameters(os.path.join(save_dir, 'model.params'), deduplicate=True)
+    model.backbone_model.save_parameters(os.path.join(save_dir, 'model.params'))
     logging.info('Convert the backbone model in {} to {}/{}'.format(model_dir, save_dir, 'model.params'))
-    model.save_parameters(os.path.join(save_dir, 'model_mlm.params'), deduplicate=True)
+    model.save_parameters(os.path.join(save_dir, 'model_mlm.params'))
     logging.info('Convert the MLM and NSP model in {} to {}/{}'.format(model_dir,
                                                                        save_dir, 'model_mlm.params'))
 

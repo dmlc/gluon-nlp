@@ -483,7 +483,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
     if not has_mlm:
         if test_conversion:
             check_backbone(model, tf_token_outputs_np)
-        model.save_parameters(os.path.join(save_dir, 'model.params'), deduplicate=True)
+        model.save_parameters(os.path.join(save_dir, 'model.params'))
         logging.info('Convert the backbone model in {} to {}/{}'.format(hub_model_dir,
                                                                         save_dir, 'model.params'))
     else:
@@ -504,10 +504,10 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type, gpu):
                     assert_allclose(contextual_embedding[i, :ele_valid_length, :].asnumpy(),
                                     tf_contextual_embedding[i, :ele_valid_length, :], tolerance, tolerance)
         model.backbone_model.save_parameters(os.path.join(
-            save_dir, 'model.params'), deduplicate=True)
+            save_dir, 'model.params'))
         logging.info('Convert the backbone model in {} to {}/{}'.format(hub_model_dir,
                                                                         save_dir, 'model.params'))
-        model.save_parameters(os.path.join(save_dir, 'model_mlm.params'), deduplicate=True)
+        model.save_parameters(os.path.join(save_dir, 'model_mlm.params'))
         logging.info('Convert the MLM model in {} to {}/{}'.format(hub_model_dir,
                                                                    save_dir, 'model_mlm.params'))
 

@@ -504,7 +504,7 @@ def train(args):
     logging.info(beam_search_sampler)
     if args.comm_backend == 'horovod':
         hvd.broadcast_parameters(param_dict, root_rank=0)
-    
+
     # Construct the trainer
     if args.lr is None:
         base_lr = 2.0 / math.sqrt(args.num_units) / math.sqrt(args.warmup_steps)
@@ -775,12 +775,10 @@ def train(args):
             if local_rank == 0:
                 if args.max_update <= 0:
                     model.save_parameters(os.path.join(args.save_dir,
-                                                       'epoch{}.params'.format(epoch_id)),
-                                          deduplicate=True)
+                                                       'epoch{}.params'.format(epoch_id)))
                 else:
                     model.save_parameters(os.path.join(args.save_dir,
-                                                       'iter{}.params'.format(train_iter + 1)),
-                                          deduplicate=True)
+                                                       'iter{}.params'.format(train_iter + 1)))
 
             avg_val_loss, ntokens, pred_sentences, pred_lengths, sentence_ids\
                 = validation(model, val_data_loader, inference_model, beam_search_sampler,
@@ -837,8 +835,7 @@ def train(args):
 
     if args.num_averages > 0:
         model_averager.copy_back(param_dict)  # TODO(sxjscience) Rewrite using update
-        model.save_parameters(os.path.join(args.save_dir, 'average.params'),
-                              deduplicate=True)
+        model.save_parameters(os.path.join(args.save_dir, 'average.params'))
 
 
 if __name__ == '__main__':

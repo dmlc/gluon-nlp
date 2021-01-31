@@ -36,7 +36,7 @@ def convert_vocab(args):
     vocab_path = os.path.join(args.tf_model_path, 'encoder.json')
     gluon_merges_path = os.path.join(args.save_dir, 'gpt2.merges')
     gluon_vocab_path = os.path.join(args.save_dir, 'gpt2.vocab')
-    
+
     shutil.copy(merges_path, gluon_merges_path)
     with open(vocab_path, 'r', encoding='utf-8') as f_v:
         tf_vocab = json.load(f_v)
@@ -99,7 +99,7 @@ def convert_backbone_params(tf_params, gluon_backbone_model):
         'model/ln_f/b' : '_final_ln.beta',
         'model/ln_f/g' : '_final_ln.gamma'
     }
-    
+
     params = gluon_backbone_model.collect_params()
     loaded = {k: False for k in params}
     for name, param_value in tf_params.items():
@@ -174,21 +174,21 @@ def test_model(tf_model_path, gluon_model):
     gl_logits_2, _ = gluon_model(gl_input_ids, gl_states)
 
     # tf model
-    with tf.Session(graph=tf.Graph()) as sess:    
+    with tf.Session(graph=tf.Graph()) as sess:
         tf.set_random_seed(None)
         tf_context = tf.placeholder(tf.int32, [batch_size, seq_length])
         tf_past = tf.placeholder(tf.float32, [batch_size, hparams.n_layer, 2, hparams.n_head,
                                             None, hparams.n_embd // hparams.n_head])
         tf_lm_output = model.model(hparams=hparams, X=tf_context, past=tf_past, reuse=tf.AUTO_REUSE)
-        
+
         tf_saver = tf.train.Saver()
         tf_ckpt = tf.train.latest_checkpoint(tf_model_path)
         tf_saver.restore(sess, tf_ckpt)
-        
+
         tf_output_1 = sess.run(tf_lm_output, feed_dict={tf_context:input_ids, tf_past:tf_start_states})
         tf_logits_1 = tf_output_1['logits']
         tf_present = tf_output_1['present']
-        
+
         tf_output_2 = sess.run(tf_lm_output, feed_dict={tf_context:input_ids, tf_past:tf_present})
         tf_logits_2 = tf_output_2['logits']
 
@@ -210,12 +210,12 @@ def test_model(tf_model_path, gluon_model):
 def convert_gpt2(args):
     if not os.path.exists(args.save_dir):
         os.makedirs(args.save_dir)
-    
+
     tf_ckpt_path = os.path.join(args.tf_model_path, 'model.ckpt')
     tf_params = read_tf_ckpt(tf_ckpt_path)
     with open(os.path.join(args.tf_model_path, 'hparams.json'), 'r') as hf:
         tf_cfg = json.load(hf)
-    
+
     vocab_size = convert_vocab(args)
     gluon_backbone_cfg = convert_config(tf_cfg, vocab_size)
     with open(os.path.join(args.save_dir, 'model.yml'), 'w') as of:
@@ -226,15 +226,15 @@ def convert_gpt2(args):
     gluon_gpt2forlm_model.hybridize()
     gluon_backbone_model = gluon_gpt2forlm_model._backbone_model
     convert_backbone_params(tf_params, gluon_backbone_model)
-    
+
     if args.test:
         test_model(args.tf_model_path, gluon_gpt2forlm_model)
 
-    gluon_gpt2forlm_model.save_parameters(os.path.join(args.save_dir, 'model_lm.params'), deduplicate=True)
+    gluon_gpt2forlm_model.save_parameters(os.path.join(args.save_dir, 'model_lm.params'))
     logging.info('Convert the GPT2 LM model in {} to {}'.
                  format(os.path.join(args.tf_model_path, 'model.ckpt'),
                         os.path.join(args.save_dir, 'model_lm.params')))
-    gluon_backbone_model.save_parameters(os.path.join(args.save_dir, 'model.params'), deduplicate=True)
+    gluon_backbone_model.save_parameters(os.path.join(args.save_dir, 'model.params'))
     logging.info('Convert the GPT2 backbone model in {} to {}'.
                  format(os.path.join(args.tf_model_path, 'model.ckpt'),
                         os.path.join(args.save_dir, 'model.params')))

@@ -100,12 +100,12 @@ def convert_fairseq_model(args):
     if args.test:
         test_model(fairseq_xlmr, gluon_xlmr, args.gpu)
 
-    gluon_xlmr.save_parameters(os.path.join(args.save_dir, 'model_mlm.params'), deduplicate=True)
+    gluon_xlmr.save_parameters(os.path.join(args.save_dir, 'model_mlm.params'))
     logging.info('Convert the RoBERTa MLM model in {} to {}'.
                  format(os.path.join(args.fairseq_model_path, 'model.pt'), \
                         os.path.join(args.save_dir, 'model_mlm.params')))
     gluon_xlmr.backbone_model.save_parameters(
-        os.path.join(args.save_dir, 'model.params'), deduplicate=True)
+        os.path.join(args.save_dir, 'model.params'))
     logging.info('Convert the RoBERTa backbone model in {} to {}'.
                  format(os.path.join(args.fairseq_model_path, 'model.pt'), \
                         os.path.join(args.save_dir, 'model.params')))
