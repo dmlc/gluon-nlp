@@ -34,7 +34,7 @@ else
   python3 -m pip install -U --quiet --pre "mxnet-cu102>=2.0.0b20210121" -f https://dist.mxnet.io/python/cu102 --user
 fi
 
-python3 -m pip install --quiet -e .[extras]
+python3 -m pip install --quiet -e .[extras,dev]
 
 cd $WORK_DIR
 /bin/bash -o pipefail -c "$COMMAND"
