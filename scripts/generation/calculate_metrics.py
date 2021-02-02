@@ -16,9 +16,8 @@ from gluonnlp.models.gpt2 import get_pretrained_gpt2
 def parse_args():
     parser = argparse.ArgumentParser(
         description='Calculate metrics for the generated sentences')
-    parser.add_argument('--file', type=str, required=True, help='Model name')
-    parser.add_argument('--num_samples', type=int, default=1000, help='')
-    parser.add_argument('--num_bleu_samples', type=int, default=1000, help='')
+    parser.add_argument('--file', type=str, required=True,
+                        help='File path for generated text file.')
     return parser.parse_args()
 
 
@@ -52,7 +51,7 @@ def calculate_zipf_coefficient(sample_ids, tokenizer):
     cnt = Counter()
     for sample_id in sample_ids:
         cnt.update(sample_id)
-    
+
     xs = np.arange(1, min(len(cnt), len(tokenizer.vocab)) + 1)
     ys = np.array(sorted(cnt.values(), key=operator.neg)[:len(tokenizer.vocab)])
     _, _, r, _, _ = stats.linregress(np.log(xs), np.log(ys))
@@ -84,9 +83,7 @@ def calculate_metrics(args):
         samples = of.read()
     pattern = '='*40 + ' SAMPLE \d+ ' + '='*40 + '\n'
     samples = re.split(pattern, samples)[1:]
-    samples = samples[:args.num_samples]
-    assert len(samples) == args.num_samples
-    
+
     _, tokenizer, _, _ = get_pretrained_gpt2(
         load_backbone=False,
         load_lm=False)
@@ -95,7 +92,7 @@ def calculate_metrics(args):
         sample_ids.pop()
     sample_strs = tokenizer.encode(samples, output_type=str)
 
-    self_bleu4 = calculate_self_bleu4(sample_strs, args.num_bleu_samples)
+    self_bleu4 = calculate_self_bleu4(sample_strs, len(samples))
     zipf_coefficient = calculate_zipf_coefficient(sample_ids, tokenizer)
     repetition = calculate_repetition(sample_ids)
     print('Self BLEU 4: {}\n'
