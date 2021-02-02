@@ -80,7 +80,7 @@ setup(
             'tqdm',
             'jieba',
             'subword_nmt',
-            'spacy>=2.3.0',
+            'spacy>=2.3.0,<3',
             'langid==1.1.6',
             'nltk',
             'h5py>=2.10',
