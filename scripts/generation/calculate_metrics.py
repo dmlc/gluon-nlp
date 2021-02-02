@@ -18,6 +18,14 @@ def parse_args():
         description='Calculate metrics for the generated sentences')
     parser.add_argument('--file', type=str, required=True,
                         help='File path for generated text file.')
+    parser.add_argument('--num_samples', type=int, default=None,
+                        help='The number of the first samples from the sample file to evaluate. '
+                             'By default the script uses all samples.')
+    parser.add_argument('--num_bleu_samples', type=int, default=None,
+                        help='The number of samples to use from all samples for '
+                             'self-BLEU metric. By default the script uses all samples.')
+    parser.add_argument('--seed', type=int, default=None,
+                        help='Random seed for sampling. Default seed is 0.')
     return parser.parse_args()
 
 
@@ -33,15 +41,12 @@ def calculate_self_bleu4(sample_strs, num_bleu_samples):
     """Self-BLEU is calculated by computing the BLEU score of each generated document
     using all other generations in the evaluation set as references.
     """
-    bleu_scores = []
     pool = Pool(processes=os.cpu_count())
-    bleu_scores = list(tqdm(
+    return sum(tqdm(
         pool.imap_unordered(
             partial(bleu, sample_strs),
             random.sample(range(len(sample_strs)), num_bleu_samples)),
-        total=num_bleu_samples
-    ))
-    return sum(bleu_scores) / num_bleu_samples
+        total=num_bleu_samples)) / num_bleu_samples
 
 
 def calculate_zipf_coefficient(sample_ids, tokenizer):
@@ -69,11 +74,12 @@ def calculate_repetition(sample_ids):
         for n in range(1, max_n + 1):
             n_repeat = 1
             while len(rev[n*n_repeat:n*(n_repeat+1)]) == n and \
-                  rev[n*n_repeat:n*(n_repeat+1)] == rev[:n]:
+                    rev[n*n_repeat:n*(n_repeat+1)] == rev[:n]:
                 n_repeat += 1
             last_n_repeats[n-1] = n_repeat
         max_repeated_n = max(range(max_n), key=lambda x: last_n_repeats[x])
-        if last_n_repeats[max_repeated_n] > 1 and (max_repeated_n+1 >= 3 or last_n_repeats[max_repeated_n] > 50):
+        if last_n_repeats[max_repeated_n] > 1 and \
+                (max_repeated_n+1 >= 3 or last_n_repeats[max_repeated_n] > 50):
             n_repeated_examples += 1
     return n_repeated_examples / len(sample_ids)
 
@@ -81,8 +87,20 @@ def calculate_repetition(sample_ids):
 def calculate_metrics(args):
     with open(args.file, encoding='utf-8') as of:
         samples = of.read()
-    pattern = '='*40 + ' SAMPLE \d+ ' + '='*40 + '\n'
+    pattern = '='*40 + r' SAMPLE \d+ ' + '='*40 + '\n'
     samples = re.split(pattern, samples)[1:]
+
+    num_samples = args.num_samples if args.num_samples else len(samples)
+    assert num_samples <= len(samples), \
+        f'The requested number of samples {num_samples} is greater than ' \
+        f'total number of samples {len(samples)}'
+    samples = samples[:num_samples]
+    num_bleu_samples = args.num_bleu_samples if args.num_bleu_samples else num_samples
+    assert num_bleu_samples <= num_samples, \
+        f'The requested number of samples {num_bleu_samples} for ' \
+        f'calculating self-BLEU is greater than number of samples {num_samples}.'
+    seed = args.seed if args.seed is not None else 0
+    random.seed(seed)
 
     _, tokenizer, _, _ = get_pretrained_gpt2(
         load_backbone=False,
@@ -90,9 +108,8 @@ def calculate_metrics(args):
     sample_ids = tokenizer.encode(samples, output_type=int)
     if sample_ids[-1] == tokenizer.vocab.eos_id:
         sample_ids.pop()
-    sample_strs = tokenizer.encode(samples, output_type=str)
 
-    self_bleu4 = calculate_self_bleu4(sample_strs, len(samples))
+    self_bleu4 = calculate_self_bleu4(sample_ids, num_bleu_samples)
     zipf_coefficient = calculate_zipf_coefficient(sample_ids, tokenizer)
     repetition = calculate_repetition(sample_ids)
     print('Self BLEU 4: {}\n'
