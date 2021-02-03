@@ -722,7 +722,7 @@ class _MultinomialStepUpdate(HybridBlock):
              masked_probs = mx.np.where(
                  cumsum_probs > self._sampling_topp,
                  sorted_probs,
-                 mx.np.zeros_like(probs)
+                 mx.np.ones_like(probs)
              )
              # choose the borderline prob
              p_prob = mx.np.min(masked_probs, axis=2, keepdims=True)
