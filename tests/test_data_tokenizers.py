@@ -620,28 +620,17 @@ def test_huggingface_wordpiece_tokenizer():
         os.remove(vocab_path)
         os.remove(hf_vocab_path)
 
+
 def test_charlevel_tokenizer():
     with tempfile.TemporaryDirectory() as dir_path:
         tokenizer = CharTokenizer(lowercase=False)
-        sentences = ["hello , y ' all ! how are you ?",
-                     "gluonnlp is great ！ ！ ！ ! ! !",
-                     "gluonnlp - amazon - haibin - leonard - sheng - shuai - xingjian "]
-        tokenizer.set_vocab_from_text(sentences, vocab_size=15)
-        tokenizer.vocab.all_tokens == ['<unk>', ' ', 'n', 'l', 'a', 'o', 'i', '-', 'h', 'e', 'g', '!', 'u', 'r', 's', '！']
-        # Case 1, lowercase=True
-
-        gt_tokenized = [["hello", ",", "y", "'", "all", "!", "how", "are", "you",
-                         "<unk>", "<unk>", "<unk>", "<unk>", "?"],
-                        ["gl", "##uo", "##nn", "##l", "##p", "is", "great", "\uff01",
-                         "\uff01", "\uff01", "!", "!", "!"],
-                        ["gl", "##uo", "##nn", "##l", "##p", "-", "amazon", "-", "hai",
-                         "##bin", "-", "leonard", "-", "shen", "##g", "-", "shu", "##ai", "-",
-                         "xin", "##g", "##ji", "##an", ".", ".", ".", ".", ".", "/", ":", "!",
-                         "@", "#", "'", "abc", "'"]]
-
-        gt_decode = ["hello, y'all! how are you?",
-                     "gluonnlp is great ！ ！ ！!!!",
-                     "gluonnlp - amazon - haibin - leonard - sheng - shuai - xingjian..... / :! @ #'abc '"]
-        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES, gt_tokenized)
+        sentences = ["hello , y ' all ! how are you ?"]
+        tokenizer.set_vocab_from_text(sentences, vocab_size=10)
+        tokenizer.vocab.all_tokens == ['<unk>', ' ', 'l', 'o', 'h', 'e', 'y', 'a', ',', "'", '!']
+        gt_tokenized = [['<unk>', 'e', 'l', 'l', 'o', ',', ' ', 'y', "'", 'a', 'l', 'l', '!', ' ',
+                         '<unk>', 'o', '<unk>', ' ', 'a', '<unk>', 'e', ' ', 'y', 'o', '<unk>', ' ',
+                         '<unk>', ' ', '<unk>', ' ', '<unk>', ' ', '<unk>', ' ', '<unk>']]
+        gt_decode = ["hello, y'all! how are you?"]
+        verify_encode_token(tokenizer, SUBWORD_TEST_SAMPLES[0:1], gt_tokenized)
         verify_pickleble(tokenizer, CharTokenizer)
-        verify_decode_hf(tokenizer, SUBWORD_TEST_SAMPLES, gt_decode)
+        # TODO(zheyuye), test decode
