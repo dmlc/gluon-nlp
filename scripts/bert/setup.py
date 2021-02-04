@@ -29,7 +29,8 @@ def CompileBERTCustomPass():
     lib_api_cc = pathlib.Path.joinpath(mxnet_path, 'src/lib_api.cc')
     if (mxnet.__version__ > '1.7.0'):
         source = source + ' ' + str(lib_api_cc)
-    print('MXNET ver: ', mxnet.__version__, 'source:', source, 'mxnet_include_path', mxnet_include_path)
+    print('MXNET ver: ', mxnet.__version__, 'source:', source, 'mxnet_include_path',
+          mxnet_include_path)
     print('lib_api_cc Exist:' + str(os.path.exists(lib_api_cc)))
     os.system('g++ -shared -fPIC -std=c++11 ' + str(source) +
               ' -o ' + str(target) + ' -I ' + str(mxnet_include_path))
