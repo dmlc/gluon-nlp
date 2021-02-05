@@ -69,3 +69,8 @@ bash convert_bart.sh
 ```bash
 bash convert_gpt2.sh
 ```
+
+## T5
+```bash
+bash convert_t5.sh
+```

@@ -15,7 +15,7 @@ compile_notebook () {
 
     echo Compiling $BASENAME ...
 
-    python3 docs/md2ipynb.py ${MDFILE} > $LOGNAME
+    python3 docs/md2ipynb.py ${MDFILE} &> $LOGNAME
 
     EXIT_CODE=$?
 

@@ -10,6 +10,7 @@ from .transformer_xl import *
 from .xlmr import *
 from .bart import *
 from .t5 import *
+from .mt5 import *
 
 __all__ = base.__all__ + \
           albert.__all__ + \
@@ -20,4 +21,5 @@ __all__ = base.__all__ + \
           roberta.__all__ + \
           transformer.__all__ + \
           transformer_xl.__all__ + \
-          t5.__all__
+          t5.__all__ + \
+          mt5.__all__

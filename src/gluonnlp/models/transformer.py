@@ -4,7 +4,8 @@ __all__ = ['transformer_cfg_reg', 'transformer_base',
            'TransformerEncoderLayer',
            'TransformerDecoderLayer',
            'TransformerEncoder', 'TransformerDecoder',
-           'TransformerModel', 'TransformerNMTInference']
+           'TransformerModel', 'TransformerInference',
+           'TransformerNMTInference']
 
 
 import numpy as _np
@@ -1353,7 +1354,7 @@ class TransformerModel(HybridBlock):
 
 
 @use_np
-class TransformerNMTInference(HybridBlock, BaseStepDecoder):
+class TransformerInference(HybridBlock, BaseStepDecoder):
     def __init__(self, model):
         """
 
@@ -1366,9 +1367,9 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
 
     def initialize(self, **kwargs):
         # Manually disable the initialize
-        raise NotImplementedError('You can not initialize a TransformerNMTFastInference Model! '
+        raise NotImplementedError('You can not initialize a TransformerInference Model! '
                                   'The correct approach is to create a TransformerModel and '
-                                  'then build the TransformerNMTInference with the given model.')
+                                  'then build the TransformerInference with the given model.')
 
     @property
     # TODO(sxjscience) Think about how to improve this
@@ -1389,7 +1390,7 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
             return 1, 0, 0, self.model.decoder.state_batch_axis
 
     def init_states(self, src_data, src_valid_length):  # TODO(sxjscience) Revisit here, support auxiliary states?
-        """Initialize the states required for sequence sampling
+        """Initialize the states required for incremental decoding
 
         Parameters
         ----------
@@ -1468,3 +1469,13 @@ class TransformerNMTInference(HybridBlock, BaseStepDecoder):
                                                   mem_data, mem_valid_length)
         out = self.model.tgt_final_layer(out)
         return out, (mem_data, mem_valid_length, position + 1, new_states)
+
+
+@use_np
+class TransformerNMTInference(TransformerInference): 
+    def __init__(self, *args, **kwargs): 
+        print(
+            'Note: TransformerNMTInference is deprecated. We have renamed it to TransformerInference and ' \
+            'migrated all previous functionalities. Please use it instead.'
+        )
+        super().__init__(*args, **kwargs)

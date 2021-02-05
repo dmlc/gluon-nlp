@@ -43,7 +43,7 @@ import numpy as np
 import mxnet as mx
 import sacrebleu
 from mxnet import gluon
-from gluonnlp.models.transformer import TransformerModel, TransformerNMTInference
+from gluonnlp.models.transformer import TransformerModel, TransformerInference
 from gluonnlp.sequence_sampler import BeamSearchSampler, BeamSearchScorer
 from gluonnlp.utils.misc import logging_config,\
     md5sum, grouper, init_comm, repeat
@@ -477,7 +477,7 @@ def train(args):
         v.wd_mult = 0.0
     param_dict = deduplicate_param_dict(model.collect_params())
 
-    inference_model = TransformerNMTInference(model=model)
+    inference_model = TransformerInference(model=model)
     inference_model.hybridize()
     if local_rank == 0:
         logging.info(model)
