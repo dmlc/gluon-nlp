@@ -404,5 +404,3 @@ if __name__ == '__main__':
         train(args)
     if args.do_eval:
         evaluate(args)
-    #if args.do_eval:
-    #    evaluate(args, last=not args.all_evaluate)
