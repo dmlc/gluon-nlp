@@ -32,5 +32,3 @@ class TextPredictionNet(nn.HybridBlock):
     def initialize_with_pretrained_backbone(self, backbone_params_path, ctx=None):
         self.backbone.load_parameters(backbone_params_path, ctx=ctx)
         self.out_proj.initialize(ctx=ctx)
-
-    
