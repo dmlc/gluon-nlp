@@ -1,9 +1,11 @@
 import gluonnlp
 import numpy as np
 import mxnet as mx
+import json
 import pandas as pd
 import os
 import logging
+import time
 import argparse
 import copy
 from mxnet.gluon.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeEvalMetric
@@ -11,6 +13,7 @@ from classification_utils import get_task
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from mxnet import gluon
+from gluonnlp.data.sampler import SplitSampler
 from mxnet.gluon import nn
 from gluonnlp.models import get_backbone
 from gluonnlp.utils.parameter import clip_grad_global_norm, count_parameters, deduplicate_param_dict
@@ -38,19 +41,6 @@ if not os.path.exists(CACHE_PATH):
     os.makedirs(CACHE_PATH, exist_ok=True)
 
 
-def get_metric(metric_name):
-    if metric_name == 'Accuracy':
-        return Accuracy()
-    elif metric_name == 'f1':
-        return F1()
-    elif metric_name == 'PearsonCorrelation':
-        return PearsonCorrelation()
-    elif metric_name == 'mcc':
-        return MCC()
-    else:
-        raise NotImplementedError
-
-
 def parse_args():
     parser = argparse.ArgumentParser(
         description='classification example. '
@@ -76,6 +66,8 @@ def parse_args():
                         help='The parameter checkpoint for evaluating the model')
     parser.add_argument('--backbone_path', type=str, default=None,
                         help='The parameter checkpoint of backbone model')
+    parser.add_argument('--overwrite_cache', action='store_true',
+                        help='Whether to overwrite the feature cache.')
     parser.add_argument('--num_accumulated', type=int, default=1,
                         help='The number of batches for gradients accumulation to '
                              'simulate large batch size.')
@@ -91,9 +83,9 @@ def parse_args():
     parser.add_argument('--wd', type=float, default=0.01, help='weight decay')
     parser.add_argument('--max_grad_norm', type=float, default=1.0,
                         help='Max gradient norm.')
-    parser.add_argument('--train_dir', type=str, required=True,
+    parser.add_argument('--train_dir', type=str, default=None,
                         help='the path to training dataset')
-    parser.add_argument('--eval_dir', type=str, required=False,
+    parser.add_argument('--eval_dir', type=str, default=None,
                         help='the path to training dataset')
     parser.add_argument('--warmup_ratio', type=float, default=0.1,
                         help='Ratio of warmup steps in the learning rate scheduler.')
@@ -138,22 +130,24 @@ def get_network(model_name,
 
     return cfg, tokenizer, classify_net, use_segmentation
 
-def proj_label(label, task_name):
+def project_label(label, task):
     projected_label = copy.copy(label)
     for i in range(len(label)):
-        projected_label[i] = _LABEL_PROJ[task_name][label[i]]
+        projected_label[i] = task.proj_label[label[i]]
 
     return projected_label
 
 
+
 def preprocess_data(df, feature_columns, label_column, tokenizer,
-                    max_length=128, use_label=True, use_tqdm=True, task_name = 'sst'):
+                    max_length=128, use_label=True, use_tqdm=True, task=None):
     out = []
     if isinstance(feature_columns, str):
         feature_columns = [feature_columns]
     cls_id = tokenizer.vocab.cls_id
     sep_id = tokenizer.vocab.sep_id
     iterator = tqdm(df.iterrows(), total=len(df)) if use_tqdm else df.iterrows()
+
     for idx, row in iterator:
         # Token IDs =      [CLS]    token_ids1       [SEP]      token_ids2         [SEP]
         # Segment IDs =      0         0               0           1                 1
@@ -170,26 +164,42 @@ def preprocess_data(df, feature_columns, label_column, tokenizer,
         feature = (token_ids, token_types, valid_length)
         if use_label:
             label = row[label_column]
-            if task_name == 'mnli' or task_name == 'rte':
-                label = _LABEL_PROJ[task_name][label]
+            if task.task_name != 'sts':
+                label = task.proj_label[label]
             out.append((feature, label))
         else:
             out.append(feature)
+    #print(used_label)
     return out
 
 
-def get_task_data(args, tokenizer, segment, task):
+def get_task_data(args, task, tokenizer, segment):
     feature_column = task.feature_column
     label_column = task.label_column
     if segment == 'train':
-        input_df = pd.read_parquet(args.train_dir)
-    elif segment == 'eval':
-        input_df = pd.read_parquet(args.eval_dir)
+        input_df = task.raw_train_data
+    else:
+        input_df = task.raw_eval_data
 
-    processed_data = preprocess_data(input_df, feature_column, label_column, tokenizer, use_label=True, task_name=args.task_name)
+    data_cache_path = os.path.join(CACHE_PATH,
+                                   '{}_{}_{}.ndjson'.format(
+                                       segment, args.model_name, task.task_name))
+    if os.path.exists(data_cache_path) and not args.overwrite_cache:
+        processed_data = []
+        with open(data_cache_path, 'r') as f:
+            for line in f:
+                processed_data.append(json.loads(line))
+        logging.info('Found cached data features, load from {}'.format(data_cache_path))
+    else:
+        processed_data = preprocess_data(input_df, feature_column, label_column,
+                                         tokenizer, use_label=True, task=task)
+        with open(data_cache_path, 'w') as f:
+            for feature in processed_data:
+                f.write(json.dumps(feature) + '\n')
+
     label = input_df[label_column]
-    if args.task_name == 'mnli' or args.task_name == 'rte':
-        label = proj_label(label, args.task_name)
+    if task.task_name != 'sts':
+        label = project_label(label, task)
     return processed_data, label
 
 
@@ -199,7 +209,7 @@ def get_task_data(args, tokenizer, segment, task):
 def train(args):
     store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
         args.comm_backend, args.gpus)
-    task = get_task(args.task_name)
+    task = get_task(args.task_name, args.train_dir, args.eval_dir)
     #setup_logging(args, local_rank)
     level = logging.INFO
     detail_dir = os.path.join(args.output_dir, args.task_name)
@@ -216,20 +226,23 @@ def train(args):
                     args.backbone_path,
                     task)
     logging.info('Prepare training data')
-    train_data, _ = get_task_data(args, tokenizer, segment='train', task=task)
+    train_data, _ = get_task_data(args, task, tokenizer, segment='train')
     train_batchify = bf.Group(bf.Group(bf.Pad(), bf.Pad(), bf.Stack()),
                               bf.Stack())
 
-    epoch_num_updates = len(train_data) // args.batch_size
-    max_update = epoch_num_updates * args.epochs
-    warmup_steps = int(np.ceil(max_update * args.warmup_ratio))
+    rs = np.random.RandomState(100)
+    rs.shuffle(train_data)
+    sampler = SplitSampler(
+        len(train_data),
+        num_parts=num_workers,
+        part_index=rank,
+        even_size=True)
 
     dataloader = DataLoader(train_data,
                             batch_size=args.batch_size,
                             batchify_fn=train_batchify,
-                            num_workers=4,
-                            shuffle=True)
-    dataloader = grouper(repeat(dataloader), len(ctx_l))
+                            num_workers=0,
+                            sampler=sampler)
 
 
 
@@ -249,6 +262,12 @@ def train(args):
     if args.comm_backend == 'horovod':
         # Horovod: fetch and broadcast parameters
         hvd.broadcast_parameters(param_dict, root_rank=0)
+
+    epoch_size = (len(dataloader) + len(ctx_l) - 1) // len(ctx_l)
+    max_update = epoch_size * args.epochs
+    warmup_steps = int(np.ceil(max_update * args.warmup_ratio))
+
+    dataloader = grouper(repeat(dataloader), len(ctx_l))
 
     lr_scheduler = PolyScheduler(max_update=max_update,
                                  base_lr=args.lr,
@@ -280,7 +299,9 @@ def train(args):
     if args.log_interval > 0:
         log_interval = args.log_interval
     else:
-        log_interval = int(epoch_num_updates * 0.5)
+        log_interval = int(epoch_size * 0.5)
+
+    start_time = time.time()
 
     for i in range(max_update):
         sample_l = next(dataloader)
@@ -307,11 +328,13 @@ def train(args):
         log_gnorm += total_norm
         log_step += 1
         if log_step >= log_interval or i == max_update - 1:
-            logging.info('[Iter {} / {}] avg {} = {:.2f}, avg gradient norm = {:.2f}'.format(i + 1,
+            curr_time = time.time()
+            logging.info('[Iter {} / {}] avg {} = {:.2f}, avg gradient norm = {:.2f}, ETA={:.2f}h'.format(i + 1,
                                                                                       max_update,
                                                                                       'nll',
                                                                                       log_loss / log_step,
-                                                                                      log_gnorm / log_step))
+                                                                                      log_gnorm / log_step,
+                                                                         (max_update-i)*((curr_time - start_time)/i)/3600))
             log_loss = 0
             log_gnorm = 0
             log_step = 0
@@ -329,7 +352,7 @@ def evaluate(args):
     store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
         args.comm_backend, args.gpus)
     # setup_logging(args, local_rank)
-    task = get_task(args.task_name)
+    task = get_task(args.task_name, args.train_dir, args.eval_dir)
     if rank != 0:
         logging.info('Skipping node {}'.format(rank))
         return
@@ -354,7 +377,7 @@ def evaluate(args):
         classify_net.load_parameters(ckpt_name, ctx=ctx_l, cast_dtype=True)
         logging.info('Prepare dev data')
 
-        dev_data, label = get_task_data(args, tokenizer, segment='eval', task=task)
+        dev_data, label = get_task_data(args, task, tokenizer, segment='eval')
         dev_batchify = bf.Group(bf.Group(bf.Pad(), bf.Pad(), bf.Stack()), bf.Stack())
         dataloader = DataLoader(dev_data,
                                 batch_size=args.batch_size,
@@ -371,7 +394,7 @@ def evaluate(args):
                 valid_length = mx.np.array(valid_length, ctx=ctx)
                 scores = classify_net(token_ids, token_types, valid_length)
 
-                if args.task_name == 'sts':
+                if task.task_name == 'sts':
                     label = label.reshape((-1,1))
                 for metric in metrics:
                     metric.update([label], [scores])
@@ -381,6 +404,7 @@ def evaluate(args):
         for metric in metrics:
             metric_name, result = metric.get()
             logging.info('checkpoint {} get result: {}:{}'.format(ckpt_name, metric_name, result))
+            print('checkpoint {} get result: {}:{}'.format(ckpt_name, metric_name, result))
             if best_ckpt.get(metric_name, [0, ''])[0]<result:
                 best_ckpt[metric_name] = [result, ckpt_name]
 
@@ -389,6 +413,8 @@ def evaluate(args):
         evaluate_by_ckpt(ckpt_name, best_ckpt)
     for metric_name in best_ckpt:
         logging.info('best result on metric {}: is {}, and on checkpoint {}'.format(metric_name, best_ckpt[metric_name][0],
+                                                                                    best_ckpt[metric_name][1]))
+        print('best result on metric {}: is {}, and on checkpoint {}'.format(metric_name, best_ckpt[metric_name][0],
                                                                                     best_ckpt[metric_name][1]))
 
 

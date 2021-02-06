@@ -3,6 +3,7 @@ import numpy as np
 import mxnet as mx
 import pandas as pd
 import matplotlib.pyplot as plt
+from gluonnlp.data.sampler import SplitSampler
 from tqdm import tqdm
 from mxnet.gluon import nn
 from gluonnlp.models import get_backbone
@@ -33,4 +34,3 @@ class TextPredictionNet(nn.HybridBlock):
         self.backbone.load_parameters(backbone_params_path, ctx=ctx)
         self.out_proj.initialize(ctx=ctx)
 
-    
