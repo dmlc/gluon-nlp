@@ -169,7 +169,6 @@ def preprocess_data(df, feature_columns, label_column, tokenizer,
             out.append((feature, label))
         else:
             out.append(feature)
-    #print(used_label)
     return out
 
 
@@ -404,7 +403,6 @@ def evaluate(args):
         for metric in metrics:
             metric_name, result = metric.get()
             logging.info('checkpoint {} get result: {}:{}'.format(ckpt_name, metric_name, result))
-            print('checkpoint {} get result: {}:{}'.format(ckpt_name, metric_name, result))
             if best_ckpt.get(metric_name, [0, ''])[0]<result:
                 best_ckpt[metric_name] = [result, ckpt_name]
 
@@ -413,8 +411,6 @@ def evaluate(args):
         evaluate_by_ckpt(ckpt_name, best_ckpt)
     for metric_name in best_ckpt:
         logging.info('best result on metric {}: is {}, and on checkpoint {}'.format(metric_name, best_ckpt[metric_name][0],
-                                                                                    best_ckpt[metric_name][1]))
-        print('best result on metric {}: is {}, and on checkpoint {}'.format(metric_name, best_ckpt[metric_name][0],
                                                                                     best_ckpt[metric_name][1]))
 
 
