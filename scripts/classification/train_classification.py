@@ -32,9 +32,7 @@ from classification import TextPredictionNet
 
 mx.npx.set_np()
 
-_LABEL_PROJ = {'rte':{'entailment':0, 'not_entailment':1},
-               'mnli':{'neutral':0, 'entailment':1, 'contradiction':2}
-               }
+
 
 CACHE_PATH = os.path.realpath(os.path.join(os.path.realpath(__file__), '..', 'cached'))
 if not os.path.exists(CACHE_PATH):

@@ -19,35 +19,6 @@ from gluonnlp.utils import set_seed
 __all__ = ['get_task']
 
 
-_FEATURE_COLUMN = {'sst':'sentence',
-                   'sts':['sentence1', 'sentence2'],
-                   'cola':'sentence',
-                   'mrpc':['sentence1', 'sentence2'],
-                   'wnli':['sentence1', 'sentence2'],
-                   'qnli':['sentence1', 'sentence2'],
-                   'qqp':['sentence1', 'sentence2'],
-                   'rte':['sentence1', 'sentence2'],
-                   'mnli':['sentence1', 'sentence2']
-                   }
-_LABEL_COLUMN = { 'sst':'label',
-                  'sts':'score',
-                  'cola':'label',
-                  'mrpc':'label',
-                  'qnli':'label',
-                  'wnli':'label',
-                  'qqp':'label',
-                  'rte':'label',
-                  'mnli':'label',
-                  }
-_METRIC = {'mrpc':['Accuracy', 'f1'],
-           'qqp':['Accuracy'],
-           'rte':['Accuracy'],
-           'qnli':['Accuracy'],
-           'sts':['PearsonCorrelation'],
-           'cola':['mcc'],
-           'sst':['Accuracy'],
-           'mnli':['Accuracy'],
-           }
 
 def get_proj(label):
     label_proj = {}
