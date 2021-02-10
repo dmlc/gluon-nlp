@@ -7,6 +7,7 @@ import logging
 import collections
 
 import numpy as np
+from mxnet import npx
 from mxnet.gluon import HybridBlock
 from mxnet.gluon.data import ArrayDataset
 
