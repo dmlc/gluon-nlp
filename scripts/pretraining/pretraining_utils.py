@@ -6,7 +6,8 @@ import random
 import logging
 import collections
 
-from mxnet import np, npx
+import numpy as np
+from mxnet import npx
 from mxnet.gluon import HybridBlock
 from mxnet.gluon.data import ArrayDataset
 
