@@ -5,7 +5,7 @@ Compile NLP Models
 
    .. card::
       :title: Compile and accelerate NLP models via TVM
-      :link: deep_learning_compiler/tvm_basic.html
+      :link: tvm_basic.html
 
       Basic example of how to use TVM to compile backbone models in GluonNLP.
 
