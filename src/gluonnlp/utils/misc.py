@@ -367,7 +367,8 @@ def download(url: str,
              overwrite: Optional[bool] = False,
              sha1_hash: Optional[str] = None,
              retries: Optional[int] = 5,
-             verify_ssl: Optional[bool] = True) -> str:
+             verify_ssl: Optional[bool] = True,
+             anonymous_credential: Optional[bool] = True) -> str:
     """Download a given URL
 
     Parameters
@@ -386,6 +387,8 @@ def download(url: str,
         The number of times to attempt the download in case of failure or non 200 return codes
     verify_ssl
         Verify SSL certificates.
+    anonymous_credential
+        Whether to force to use anonymous credential if the path is from S3.
 
     Returns
     -------
@@ -396,7 +399,7 @@ def download(url: str,
     if is_s3:
         boto3, botocore = try_import_boto3()
         s3 = boto3.resource('s3')
-        if boto3.session.Session().get_credentials() is None:
+        if boto3.session.Session().get_credentials() is None or anonymous_credential:
             from botocore.handlers import disable_signing
             s3.meta.client.meta.events.register('choose-signer.s3.*', disable_signing)
         components = url[len(S3_PREFIX):].split('/')
