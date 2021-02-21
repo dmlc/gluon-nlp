@@ -13,10 +13,10 @@ import numpy as np
 from mxnet.lr_scheduler import PolyScheduler
 
 from sklearn import metrics
-from pretraining_utils import ElectraMasker, get_pretrain_data_npz, get_pretrain_data_text
+from pretraining_utils import ElectraMasker, get_pretrain_data_npz, \
+    get_pretrain_data_text, get_electra_pretraining_model
 from gluonnlp.utils.misc import repeat, grouper, set_seed, init_comm, logging_config, naming_convention
-from gluonnlp.initializer import TruncNorm
-from gluonnlp.models.electra import ElectraModel, ElectraForPretrain, get_pretrained_electra
+from gluonnlp.models.electra import ElectraModel, ElectraForPretrain
 from gluonnlp.utils.parameter import clip_grad_global_norm
 try:
     import horovod.mxnet as hvd
@@ -128,41 +128,6 @@ def parse_args():
     return args
 
 
-def get_pretraining_model(model_name, ctx_l,
-                          max_seq_length=128,
-                          hidden_dropout_prob=0.1,
-                          attention_dropout_prob=0.1,
-                          generator_units_scale=None,
-                          generator_layers_scale=None):
-    """
-    A Electra Pretrain Model is built with a generator and a discriminator, in which
-    the generator has the same embedding as the discriminator but different backbone.
-    """
-    cfg, tokenizer, _, _ = get_pretrained_electra(
-        model_name, load_backbone=False)
-    cfg = ElectraModel.get_cfg().clone_merge(cfg)
-    cfg.defrost()
-    cfg.MODEL.hidden_dropout_prob = hidden_dropout_prob
-    cfg.MODEL.attention_dropout_prob = attention_dropout_prob
-    cfg.MODEL.max_length = max_seq_length
-    # Keep the original generator size if not designated
-    if generator_layers_scale:
-        cfg.MODEL.generator_layers_scale = generator_layers_scale
-    if generator_units_scale:
-        cfg.MODEL.generator_units_scale = generator_units_scale
-    cfg.freeze()
-
-    model = ElectraForPretrain(cfg,
-                               uniform_generator=False,
-                               tied_generator=False,
-                               tied_embeddings=True,
-                               disallow_correct=False,
-                               weight_initializer=TruncNorm(stdev=0.02))
-    model.initialize(ctx=ctx_l)
-    model.hybridize()
-    return cfg, tokenizer, model
-
-
 ElectraOutput = collections.namedtuple('ElectraOutput',
                                        ['mlm_scores',
                                         'rtd_scores',
@@ -237,12 +202,12 @@ def train(args):
     logging.info('Training info: num_buckets: {}, '
                  'num_workers: {}, rank: {}'.format(
                      args.num_buckets, num_workers, rank))
-    cfg, tokenizer, model = get_pretraining_model(args.model_name, ctx_l,
-                                                  args.max_seq_length,
-                                                  args.hidden_dropout_prob,
-                                                  args.attention_dropout_prob,
-                                                  args.generator_units_scale,
-                                                  args.generator_layers_scale)
+    cfg, tokenizer, model = get_electra_pretraining_model(args.model_name, ctx_l,
+                                                          args.max_seq_length,
+                                                          args.hidden_dropout_prob,
+                                                          args.attention_dropout_prob,
+                                                          args.generator_units_scale,
+                                                          args.generator_layers_scale)
     data_masker = ElectraMasker(
         tokenizer, args.max_seq_length, mask_prob=args.mask_prob,
         replace_prob=args.replace_prob)
