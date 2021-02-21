@@ -7,7 +7,7 @@ import logging
 import collections
 
 import numpy as np
-from mxnet import npx
+from mxnet import np as mxnp, npx
 from mxnet.gluon import HybridBlock
 from mxnet.gluon.data import ArrayDataset
 
@@ -521,39 +521,39 @@ class ElectraMasker(HybridBlock):
                 np.not_equal(input_ids, ignore_token)
         valid_lengths = valid_lengths.astype(np.float32)
         valid_candidates = valid_candidates.astype(np.float32)
-        num_masked_position = np.maximum(
+        num_masked_position = mxnp.maximum(
             1, np.minimum(N, round(valid_lengths * self._mask_prob)))
 
         # Get the masking probability of each position
         sample_probs = self._proposal_distribution * valid_candidates
-        sample_probs /= np.sum(sample_probs, axis=-1, keepdims=True)
+        sample_probs /= mxnp.sum(sample_probs, axis=-1, keepdims=True)
         sample_probs = npx.stop_gradient(sample_probs)
-        gumbels = np.random.gumbel(np.zeros_like(sample_probs))
+        gumbels = mxnp.random.gumbel(np.zeros_like(sample_probs))
         # Following the instruction of official repo to avoid deduplicate postions
         # with Top_k Sampling as https://github.com/google-research/electra/issues/41
         masked_positions = npx.topk(
-            np.log(sample_probs) + gumbels, k=N,
+            mxnp.log(sample_probs) + gumbels, k=N,
             axis=-1, ret_typ='indices', dtype=np.int32)
 
         masked_weights = npx.sequence_mask(
-            np.ones_like(masked_positions),
+            mxnp.ones_like(masked_positions),
             sequence_length=num_masked_position,
             use_sequence_length=True, axis=1, value=0)
         masked_positions = masked_positions * masked_weights
         length_masks = npx.sequence_mask(
-            np.ones_like(input_ids, dtype=np.float32),
+            mxnp.ones_like(input_ids, dtype=np.float32),
             sequence_length=valid_lengths,
             use_sequence_length=True, axis=1, value=0)
         unmasked_tokens = select_vectors_by_position(
             input_ids, masked_positions) * masked_weights
         masked_weights = masked_weights.astype(np.float32)
         replaced_positions = (
-            np.random.uniform(
-                np.zeros_like(masked_positions),
-                np.ones_like(masked_positions)) < self._replace_prob) * masked_positions
+            mxnp.random.uniform(
+                mxnp.zeros_like(masked_positions),
+                mxnp.ones_like(masked_positions)) < self._replace_prob) * masked_positions
         # dealing with multiple zero values in replaced_positions which causes
         # the [CLS] being replaced
-        filled = np.where(
+        filled = mxnp.where(
             replaced_positions,
             self.vocab.mask_id,
             self.vocab.cls_id).astype(
