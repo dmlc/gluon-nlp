@@ -24,6 +24,7 @@ __all__ = ['DatasetLoader']
 
 import io
 import os
+import gc
 import glob
 import pickle
 import warnings
@@ -31,7 +32,7 @@ import multiprocessing
 from functools import partial
 
 import numpy as np
-from mxnet import context
+from mxnet import context, npx
 from mxnet.gluon.data import ArrayDataset, SimpleDataset
 from mxnet.gluon.data.dataloader import ForkingPickler, _as_in_context, \
     default_mp_batchify_fn, default_batchify_fn
@@ -480,12 +481,20 @@ class DatasetLoader:
         self._manager = None
         self._dataset_worker_pool = None
         if self._num_dataset_workers > 0:
+            npx.waitall()
+            import gc
+            gc.collect()
+            npx.waitall()
             self._manager = multiprocessing.Manager()
             self._dataset_worker_pool = multiprocessing.Pool(self._num_dataset_workers,
                                                              initializer=_initialize_dataset_worker,
                                                              initargs=[self._manager])
         self._batch_worker_pool = None
         if self._num_batch_workers > 0:
+            npx.waitall()
+            import gc
+            gc.collect()
+            npx.waitall()
             self._batch_worker_pool = multiprocessing.Pool(self._num_batch_workers)
         if batchify_fn is None:
             if self._num_batch_workers > 0:
