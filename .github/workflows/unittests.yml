@@ -46,7 +46,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install setuptools pytest pytest-cov contextvars
-          python -m pip install --pre "mxnet>=1.9.0b20210220" -f https://dist.mxnet.io/python
+          python -m pip install --pre "mxnet>=1.9.0b20210220, <2.0.0" -f https://dist.mxnet.io/python
           python -m pip install -U -e .[extras,dev]
           python -m pip install -v -e .
           python -m pip install horovod --no-cache-dir -U
