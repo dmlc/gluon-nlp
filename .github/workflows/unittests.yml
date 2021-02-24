@@ -53,7 +53,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install setuptools pytest pytest-cov contextvars
           python -m pip install --upgrade cython
-          python -m pip install mxnet<2
+          python -m pip install mxnet>=1.6.0
           python -m pip install -U -e .[extras,dev]
 
       - name: Run Unittests
