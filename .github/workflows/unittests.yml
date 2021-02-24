@@ -37,12 +37,6 @@ jobs:
           # ${{ runner.os }}-ccache-${{ github.sha }} exists
           restore-keys: |
             ${{ runner.os }}-ccache
-      # Install Linux specific dependencies
-      - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-latest'
-        # TODO https://github.com/apache/incubator-mxnet/issues/18293
-        run: |
-          sudo apt-get install -y libopenblas-dev ninja-build libedit-dev libxml2-dev
       - name: Setup python
         uses: actions/setup-python@v2
         with:
