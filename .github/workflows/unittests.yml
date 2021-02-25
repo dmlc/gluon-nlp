@@ -47,7 +47,7 @@ jobs:
         shell: bash -l {0}
         run: |
           source ci/prepare_clean_env.sh cpu/py3
-          pytest -n 4 -m 'not (gpu or serial)' --durations=30 --cov=./ --cov-report=xml tests/unittest
+          pytest -m 'not (gpu or serial)' --durations=30 --cov=./ --cov-report=xml tests/unittest
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1.0.10
