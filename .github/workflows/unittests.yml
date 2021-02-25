@@ -55,6 +55,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install setuptools pytest pytest-cov contextvars
           python -m pip install --upgrade cython
+          python -m pip install "torch==1.7.1+cpu" -f https://download.pytorch.org/whl/torch_stable.html
           python -m pip install --pre "mxnet>=2.0.0b20210121" -f https://dist.mxnet.io/python
           python -m pip install -U -e .[extras,dev]
       - name: Build and Install TVM
