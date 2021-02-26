@@ -1,4 +1,4 @@
-name: continuous build - docs
+name: v0.x continuous build - docs
 
 on: [push, pull_request_target]
 
@@ -43,8 +43,12 @@ jobs:
                                              --work-dir . \
                                              --saved-output docs/tutorials \
                                              --save-path tutorials \
-                                             --command "source ci/prepare_clean_env.sh cpu/py3-master \
-                                                        && ./tools/batch/batch_states/compile_notebooks.sh \
+                                             --command "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+                                                        && chmod +x Miniconda3-latest-Linux-x86_64.sh \
+                                                        && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda \
+                                                        && source ci/prepare_clean_env.sh gpu/cy3 \
+                                                        && python3 -m pip install mxnet-cu102==1.6.0.post0 flaky numpy==1.18.4 \
+                                                        && ./ci/batch/compile_notebooks.sh \
                                                         'push' ${GITHUB_REF##*/}" \
                                              --wait | tee build_website.log
 
@@ -59,8 +63,12 @@ jobs:
                                              --work-dir . \
                                              --saved-output docs/tutorials \
                                              --save-path tutorials \
-                                             --command "source ci/prepare_clean_env.sh cpu/py3-master \
-                                                        && ./tools/batch/batch_states/compile_notebooks.sh \
+                                             --command "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+                                                        && chmod +x Miniconda3-latest-Linux-x86_64.sh \
+                                                        && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda \
+                                                        && source ci/prepare_clean_env.sh gpu/cy3 \
+                                                        && python3 -m pip install mxnet-cu102==1.6.0.post0 flaky numpy==1.18.4 \
+                                                        && ./ci/batch/compile_notebooks.sh \
                                                         ${{ github.event.number }} ${{ github.event.pull_request.head.sha }}" \
                                              --wait | tee build_website.log
 

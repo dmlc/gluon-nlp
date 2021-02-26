@@ -1,4 +1,4 @@
-name: continuous build - gpu
+name: v0.x continuous build - gpu
 
 on: [push, pull_request_target]
 
@@ -52,7 +52,7 @@ jobs:
                                              && chmod +x Miniconda3-latest-Linux-x86_64.sh \
                                              && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda \
                                              && source ci/prepare_clean_env.sh gpu/cy3 \
-                                             && python3 -m pip install mxnet-cu102==1.6.0.post0 flaky \
+                                             && python3 -m pip install mxnet-cu102==1.6.0.post0 flaky numpy==1.18.4 \
                                              && pytest -m 'gpu and not serial' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
                                              --wait | tee batch_job.log
 
@@ -72,7 +72,7 @@ jobs:
                                              && chmod +x Miniconda3-latest-Linux-x86_64.sh \
                                              && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda \
                                              && source ci/prepare_clean_env.sh gpu/cy3 \
-                                             && python3 -m pip install mxnet-cu102==1.6.0.post0 flaky \
+                                             && python3 -m pip install mxnet-cu102==1.6.0.post0 flaky numpy==1.18.4 \
                                              && pytest -m 'gpu and not serial' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
                                              --wait | tee batch_job.log
 
@@ -91,9 +91,9 @@ jobs:
         run: |
           curl -s https://codecov.io/bash -o codecov.sh
           if [ "$EVENT_NAME" == "push" ]; then \
-              bash codecov.sh -f ./coverage.xml -n -F; \
+              bash codecov.sh -f ./coverage.xml -n -F -B v0.x; \
           else \
-              bash codecov.sh -f ./coverage.xml -n -F -C ${{ github.event.pull_request.head.sha }} -P ${{ github.event.pull_request.number }}; \
+              bash codecov.sh -f ./coverage.xml -n -F -B v0.x -C ${{ github.event.pull_request.head.sha }} -P ${{ github.event.pull_request.number }}; \
           fi
         env:
           EVENT_NAME: ${{ github.event_name }}
