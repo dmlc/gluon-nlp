@@ -36,7 +36,7 @@ RUN bash /install/install_tvm_cpu.sh
 RUN python3 -m pip install -U --pre "mxnet>=2.0.0b20210121" -f https://dist.mxnet.io/python --user
 
 # Install PyTorch
-RUN python3 -m pip install -U torch torchvision --user
+RUN python3 -m pip install "torch==1.7.1+cpu" torchvision -f https://download.pytorch.org/whl/torch_stable.html
 
 # Install Jupyter Lab
 RUN bash /install/install_jupyter_lab.sh

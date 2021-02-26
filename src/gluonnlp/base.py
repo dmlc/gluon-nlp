@@ -68,3 +68,17 @@ def get_repo_model_zoo_url():
     repo_url = get_repo_url()
     model_zoo_url = repo_url + 'models/'
     return model_zoo_url
+
+
+def use_einsum_optimization():
+    """Whether to use einsum for attention. This will potentially accelerate the
+    attention cell
+
+    Returns
+    -------
+    flag
+        The use einsum flag
+
+    """
+    flag = os.environ.get('GLUONNLP_USE_EINSUM', False)
+    return flag
