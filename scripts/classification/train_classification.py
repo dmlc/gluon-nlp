@@ -1,7 +1,9 @@
 import gluonnlp
+from tensorboardX import SummaryWriter
 import numpy as np
 import mxnet as mx
 import json
+import random
 import pandas as pd
 import os
 import logging
@@ -78,6 +80,9 @@ def parse_args():
                         help='The optimization algorithm')
     parser.add_argument('--batch_size', type=int, default=32,
                         help='Batch size. Number of examples per gpu in a minibatch. default is 64')
+    parser.add_argument(
+        '--seed', type=int, default=2, help='Random seed')
+
     parser.add_argument('--wd', type=float, default=0.01, help='weight decay')
     parser.add_argument('--max_grad_norm', type=float, default=1.0,
                         help='Max gradient norm.')
@@ -175,12 +180,13 @@ def get_task_data(args, task, tokenizer, segment):
     label_column = task.label_column
     if segment == 'train':
         input_df = task.raw_train_data
+        file_name = args.train_dir.split('/')[-1]
     else:
         input_df = task.raw_eval_data
-
+        file_name = args.eval_dir.split('/')[-1]
     data_cache_path = os.path.join(CACHE_PATH,
-                                   '{}_{}_{}.ndjson'.format(
-                                       segment, args.model_name, task.task_name))
+                                   '{}_{}_{}_{}.ndjson'.format(
+                                       segment, args.model_name, task.task_name, file_name))
     if os.path.exists(data_cache_path) and not args.overwrite_cache:
         processed_data = []
         with open(data_cache_path, 'r') as f:
@@ -208,6 +214,10 @@ def train(args):
         args.comm_backend, args.gpus)
     task = get_task(args.task_name, args.train_dir, args.eval_dir)
     #setup_logging(args, local_rank)
+    #random seed
+    np.random.seed(args.seed)
+    random.seed(args.seed)
+    mx.random.seed(args.seed)
     level = logging.INFO
     detail_dir = os.path.join(args.output_dir, args.task_name)
     if not os.path.exists(detail_dir):
@@ -255,7 +265,10 @@ def train(args):
                      .format(num_accumulated * args.batch_size * len(ctx_l) * num_workers))
         for p in params:
             p.grad_req = 'add'
-
+    if local_rank == 0:
+        writer = SummaryWriter(logdir=os.path.join(args.output_dir,
+                                                   args.task_name + '_tensorboard_' +
+                                                   str(args.lr) + '_' + str(args.epochs)))
     if args.comm_backend == 'horovod':
         # Horovod: fetch and broadcast parameters
         hvd.broadcast_parameters(param_dict, root_rank=0)
@@ -288,7 +301,7 @@ def train(args):
     else:
         loss_function = gluon.loss.SoftmaxCELoss()
 
-
+    metrics = task.metric
     #prepare loss function
     log_loss = 0
     log_gnorm = 0
@@ -299,7 +312,9 @@ def train(args):
         log_interval = int(epoch_size * 0.5)
 
     start_time = time.time()
-
+    total_loss = 0
+    total_grad = 0
+    total_step = 0
     for i in range(max_update):
         sample_l = next(dataloader)
         loss_l = []
@@ -314,6 +329,11 @@ def train(args):
                 scores = classify_net(token_ids, token_types, valid_length)
                 loss = loss_function(scores, label).mean() / len(ctx_l)
                 loss_l.append(loss)
+            if task.task_name == 'sts':
+                label = label.reshape((-1, 1))
+            for metric in metrics:
+                metric.update([label], [scores])
+
         for loss in loss_l:
             loss.backward()
         trainer.allreduce_grads()
@@ -324,14 +344,33 @@ def train(args):
         log_loss += step_loss
         log_gnorm += total_norm
         log_step += 1
+        total_step += 1
+        total_loss += step_loss
+        total_grad += total_norm
+        if local_rank == 0:
+            writer.add_scalar('train_loss_avg', total_loss * 1.0 / total_step, i)
+            writer.add_scalar('lr', trainer.learning_rate, i)
+            writer.add_scalar('train_loss', step_loss, i)
+            writer.add_scalar('grad_norm_avg', total_grad * 1.0 / total_step, i)
+            writer.add_scalar('grad_norm', total_norm, i)
+            for metric in metrics:
+                metric_name, result = metric.get()
+                writer.add_scalar(metric_name, result, i)
         if log_step >= log_interval or i == max_update - 1:
             curr_time = time.time()
-            logging.info('[Iter {} / {}] avg {} = {:.2f}, avg gradient norm = {:.2f}, ETA={:.2f}h'.format(i + 1,
+            metric_log = ''
+            for metric in metrics:
+                metric_nm, val = metric.get()
+                metric_log += ', {}: = {}'.format(metric_nm, val)
+            logging.info('[Iter {} / {}] avg {} = {:.2f}, avg gradient norm = {:.2f}, lr = {}, ETA={:.2f}h'.format(i + 1,
                                                                                       max_update,
-                                                                                      'nll',
+                                                                                      'loss',
                                                                                       log_loss / log_step,
                                                                                       log_gnorm / log_step,
-                                                                         (max_update-i)*((curr_time - start_time)/i)/3600))
+                                                                                      trainer.learning_rate,
+
+                                                                         (max_update-i)*((curr_time - start_time)/i)/3600)
+                                                                                + metric_log)
             log_loss = 0
             log_gnorm = 0
             log_step = 0
@@ -343,6 +382,9 @@ def train(args):
             params_saved = os.path.join(detail_dir, ckpt_name)
             classify_net.save_parameters(params_saved)
             logging.info('Params saved in: {}'.format(params_saved))
+            for metric in metrics:
+                metric.reset()
+
 
 
 def evaluate(args):
