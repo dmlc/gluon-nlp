@@ -215,9 +215,7 @@ def train(args):
     task = get_task(args.task_name, args.train_dir, args.eval_dir)
     #setup_logging(args, local_rank)
     #random seed
-    np.random.seed(args.seed)
-    random.seed(args.seed)
-    mx.random.seed(args.seed)
+    set_seed(args.seed)
     level = logging.INFO
     detail_dir = os.path.join(args.output_dir, args.task_name)
     if not os.path.exists(detail_dir):
@@ -407,6 +405,7 @@ def evaluate(args):
                     task)
     candidate_ckpt = []
     detail_dir = os.path.join(args.output_dir, args.task_name)
+    print(detail_dir)
     for name in os.listdir(detail_dir):
         if name.endswith('.params') and args.task_name in name and args.model_name in name:
             candidate_ckpt.append(os.path.join(detail_dir, name))
@@ -445,7 +444,7 @@ def evaluate(args):
             logging.info('checkpoint {} get result: {}:{}'.format(ckpt_name, metric_name, result))
             if best_ckpt.get(metric_name, [0, ''])[0]<result:
                 best_ckpt[metric_name] = [result, ckpt_name]
-
+    print(candidate_ckpt)
 
     for ckpt_name in candidate_ckpt:
         evaluate_by_ckpt(ckpt_name, best_ckpt)
