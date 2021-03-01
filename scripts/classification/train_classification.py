@@ -390,6 +390,14 @@ def evaluate(args):
         args.comm_backend, args.gpus)
     # setup_logging(args, local_rank)
     task = get_task(args.task_name, args.train_dir, args.eval_dir)
+    level = logging.INFO
+    detail_dir = os.path.join(args.output_dir, args.task_name)
+    if not os.path.exists(detail_dir):
+        os.mkdir(detail_dir)
+    logging_config(detail_dir,
+                   name='train_{}_{}_'.format(args.task_name, args.model_name) + str(rank),  # avoid race
+                   level=level,
+                   console=(local_rank == 0))
     if rank != 0:
         logging.info('Skipping node {}'.format(rank))
         return
@@ -405,7 +413,6 @@ def evaluate(args):
                     task)
     candidate_ckpt = []
     detail_dir = os.path.join(args.output_dir, args.task_name)
-    print(detail_dir)
     for name in os.listdir(detail_dir):
         if name.endswith('.params') and args.task_name in name and args.model_name in name:
             candidate_ckpt.append(os.path.join(detail_dir, name))
@@ -444,7 +451,6 @@ def evaluate(args):
             logging.info('checkpoint {} get result: {}:{}'.format(ckpt_name, metric_name, result))
             if best_ckpt.get(metric_name, [0, ''])[0]<result:
                 best_ckpt[metric_name] = [result, ckpt_name]
-    print(candidate_ckpt)
 
     for ckpt_name in candidate_ckpt:
         evaluate_by_ckpt(ckpt_name, best_ckpt)
