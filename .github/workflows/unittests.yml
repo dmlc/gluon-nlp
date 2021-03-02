@@ -1,55 +1,106 @@
 name: v0.x continuous build
 
-on: [push, pull_request]
+on: [push, pull_request_target]
 
 defaults:
   run:
     shell: bash
 
 jobs:
-  unittest:
-    runs-on: ${{ matrix.os }}
+  unittest-gpu:
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        # TODO Add windows test by using "windows-latest"
-        os: [ubuntu-latest]
-        python-version: [ '3.6', '3.7', '3.8']
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      - name: Compilation cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.ccache
-          # We include the commit sha in the cache key, as new cache entries are
-          # only created if there is no existing entry for the key yet.
-          key: ${{ runner.os }}-ccache-${{ github.sha }}
-          # Restore any ccache cache entry, if none for
-          # ${{ runner.os }}-ccache-${{ github.sha }} exists
-          restore-keys: |
-            ${{ runner.os }}-ccache
-      - name: Setup Miniconda
-        uses: conda-incubator/setup-miniconda@v2.0.0
-        with:
-          auto-update-conda: true
-          python-version: ${{ matrix.python-version }}
 
-      - name: Sanity Check
-        shell: bash -l {0}
-        run: |
-          source ci/prepare_clean_env.sh cpu/py3
-          make lintdir=src/gluonnlp lint
+      - name: Install Linux dependencies
+        run: sudo apt-get install libopenblas-dev
 
-      - name: Unittest
-        shell: bash -l {0}
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+          architecture: x64
+
+      - name: Install Other Dependencies
         run: |
-          source ci/prepare_clean_env.sh cpu/py3
-          python -m pip install pytest-forked
-          pytest --forked -m 'not (gpu or serial)' --durations=30 --cov=./ --cov-report=xml tests/unittest
+          python -m pip install --quiet --upgrade pip
+          python -m pip install --quiet boto3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Test project on AWS Batch(For push)
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          echo "Start submitting job"
+          python ./ci/batch/submit-job.py --region us-east-1 \
+                                             --job-type c5n.4x \
+                                             --name GluonNLP-GPU-v0.x-Test-${{ github.ref }} \
+                                             --source-ref ${{ github.ref }} \
+                                             --work-dir . \
+                                             --saved-output coverage.xml \
+                                             --save-path coverage.xml \
+                                             --remote https://github.com/${{ github.repository }} \
+                                             --command "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+                                             && chmod +x Miniconda3-latest-Linux-x86_64.sh \
+                                             && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda \
+                                             && source ci/prepare_clean_env.sh gpu/cy3 \
+                                             && python3 -m pip install mxnet==1.6.0 flaky numpy==1.18.4 \
+                                             && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
+                                             --wait | tee batch_job.log
+
+      - name: Test project on AWS Batch(For pull request)
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
+        run: |
+          echo "Start submitting job"
+          python ./ci/batch/submit-job.py --region us-east-1 \
+                                             --job-type c5n.4x \
+                                             --name GluonNLP-GPU-v0.x-Test-PR#${{ github.event.number }} \
+                                             --source-ref ${{ github.event.pull_request.head.sha }} \
+                                             --work-dir . \
+                                             --saved-output coverage.xml \
+                                             --save-path coverage.xml \
+                                             --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
+                                             --command "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+                                             && chmod +x Miniconda3-latest-Linux-x86_64.sh \
+                                             && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda \
+                                             && source ci/prepare_clean_env.sh gpu/cy3 \
+                                             && python3 -m pip install mxnet==1.6.0 flaky numpy==1.18.4 \
+                                             && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
+                                             --wait | tee batch_job.log
+
+      - name: Wait for job and copy files from AWS s3
+        if: ${{ failure() || success() }}
+        run: |
+          head -100 batch_job.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
+          echo "Job ID is"
+          cat jobid.log
+          cat jobid.log | xargs -i python ./tools/batch/wait-job.py --job-id {}
+          echo "Copy Codecov file"
+          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/coverage.xml
+          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/coverage.xml ./coverage.xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1.0.10
+        run: |
+          curl -s https://codecov.io/bash -o codecov.sh
+          if [ "$EVENT_NAME" == "push" ]; then \
+              bash codecov.sh -f ./coverage.xml -n -F -B v0.x; \
+          else \
+              bash codecov.sh -f ./coverage.xml -n -F -B v0.x -C ${{ github.event.pull_request.head.sha }} -P ${{ github.event.pull_request.number }}; \
+          fi
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+
+      - name: Upload Cloud Watch Log Stream
+        if: ${{ failure() || success() }}
+        uses: actions/upload-artifact@v2
         with:
-          env_vars: OS,PYTHON
+          name: Test_Logs
+          path: ./batch_job.log
