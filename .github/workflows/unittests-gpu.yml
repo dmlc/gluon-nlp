@@ -9,7 +9,7 @@ defaults:
 jobs:
   unittest-gpu:
     runs-on: ubuntu-latest
-    strategy: 
+    strategy:
       fail-fast: false
     steps:
       - name: Checkout repository
@@ -49,7 +49,7 @@ jobs:
                                              --save-path coverage.xml \
                                              --remote https://github.com/${{ github.repository }} \
                                              --command "python3 -m pip install pytest-forked && python3 -m pytest --forked --cov=. --cov-config=./.coveragerc --cov-report=xml --durations=50 --device="gpu" --runslow ./tests/" \
-                                             --wait | tee batch_job.log  
+                                             --wait | tee batch_job.log
 
 
       - name: Test project on AWS Batch(For pull request)
@@ -59,7 +59,7 @@ jobs:
           python ./tools/batch/submit-job.py --region us-east-1 \
                                              --job-type g4dn.4x \
                                              --name GluonNLP-GPU-Test-PR#${{ github.event.number }} \
-                                             --source-ref ${{ github.event.pull_request.head.ref }} \
+                                             --source-ref ${{ github.event.pull_request.head.sha }} \
                                              --work-dir . \
                                              --saved-output coverage.xml \
                                              --save-path coverage.xml \
@@ -88,11 +88,11 @@ jobs:
               bash codecov.sh -f ./coverage.xml -n -F; \
           else \
               bash codecov.sh -f ./coverage.xml -n -F -C ${{ github.event.pull_request.head.sha }} -P ${{ github.event.pull_request.number }}; \
-          fi          
+          fi
         env:
           EVENT_NAME: ${{ github.event_name }}
-        
-      - name: Upload Cloud Watch Log Stream 
+
+      - name: Upload Cloud Watch Log Stream
         if: ${{ failure() || success() }}
         uses: actions/upload-artifact@v2
         with:

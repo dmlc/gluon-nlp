@@ -7,6 +7,7 @@ import logging
 import collections
 
 import numpy as np
+from mxnet import np as mxnp, npx
 from mxnet.gluon import HybridBlock
 from mxnet.gluon.data import ArrayDataset
 
@@ -15,6 +16,8 @@ from gluonnlp.utils.misc import glob
 from gluonnlp.data.loading import NumpyDataset, DatasetLoader
 from gluonnlp.data.sampler import SplitSampler, FixedBucketSampler
 from gluonnlp.op import select_vectors_by_position, update_vectors_by_position
+from gluonnlp.initializer import TruncNorm
+from gluonnlp.models.electra import ElectraModel, ElectraForPretrain, get_pretrained_electra
 
 PretrainFeature = collections.namedtuple(
     'PretrainFeature',
@@ -509,48 +512,48 @@ class ElectraMasker(HybridBlock):
         """
         N = self._max_num_masked_position
         # Only valid token without special token are allowed to mask
-        valid_candidates = F.np.ones_like(input_ids, dtype=np.bool)
+        valid_candidates = np.ones_like(input_ids, dtype=np.bool)
         ignore_tokens = [self.vocab.cls_id, self.vocab.sep_id, self.vocab.pad_id]
 
         for ignore_token in ignore_tokens:
             # TODO(zheyuye), Update when operation += supported
             valid_candidates = valid_candidates * \
-                F.np.not_equal(input_ids, ignore_token)
+                np.not_equal(input_ids, ignore_token)
         valid_lengths = valid_lengths.astype(np.float32)
         valid_candidates = valid_candidates.astype(np.float32)
-        num_masked_position = F.np.maximum(
-            1, F.np.minimum(N, round(valid_lengths * self._mask_prob)))
+        num_masked_position = mxnp.maximum(
+            1, np.minimum(N, round(valid_lengths * self._mask_prob)))
 
         # Get the masking probability of each position
         sample_probs = self._proposal_distribution * valid_candidates
-        sample_probs /= F.np.sum(sample_probs, axis=-1, keepdims=True)
-        sample_probs = F.npx.stop_gradient(sample_probs)
-        gumbels = F.np.random.gumbel(F.np.zeros_like(sample_probs))
+        sample_probs /= mxnp.sum(sample_probs, axis=-1, keepdims=True)
+        sample_probs = npx.stop_gradient(sample_probs)
+        gumbels = mxnp.random.gumbel(np.zeros_like(sample_probs))
         # Following the instruction of official repo to avoid deduplicate postions
         # with Top_k Sampling as https://github.com/google-research/electra/issues/41
-        masked_positions = F.npx.topk(
-            F.np.log(sample_probs) + gumbels, k=N,
+        masked_positions = npx.topk(
+            mxnp.log(sample_probs) + gumbels, k=N,
             axis=-1, ret_typ='indices', dtype=np.int32)
 
-        masked_weights = F.npx.sequence_mask(
-            F.np.ones_like(masked_positions),
+        masked_weights = npx.sequence_mask(
+            mxnp.ones_like(masked_positions),
             sequence_length=num_masked_position,
             use_sequence_length=True, axis=1, value=0)
         masked_positions = masked_positions * masked_weights
-        length_masks = F.npx.sequence_mask(
-            F.np.ones_like(input_ids, dtype=np.float32),
+        length_masks = npx.sequence_mask(
+            mxnp.ones_like(input_ids, dtype=np.float32),
             sequence_length=valid_lengths,
             use_sequence_length=True, axis=1, value=0)
         unmasked_tokens = select_vectors_by_position(
             input_ids, masked_positions) * masked_weights
         masked_weights = masked_weights.astype(np.float32)
         replaced_positions = (
-            F.np.random.uniform(
-                F.np.zeros_like(masked_positions),
-                F.np.ones_like(masked_positions)) < self._replace_prob) * masked_positions
+            mxnp.random.uniform(
+                mxnp.zeros_like(masked_positions),
+                mxnp.ones_like(masked_positions)) < self._replace_prob) * masked_positions
         # dealing with multiple zero values in replaced_positions which causes
         # the [CLS] being replaced
-        filled = F.np.where(
+        filled = mxnp.where(
             replaced_positions,
             self.vocab.mask_id,
             self.vocab.cls_id).astype(
@@ -567,3 +570,42 @@ class ElectraMasker(HybridBlock):
                                         masked_positions=masked_positions,
                                         masked_weights=masked_weights)
         return masked_input
+
+
+def get_electra_pretraining_model(model_name, ctx_l,
+                                  max_seq_length=128,
+                                  hidden_dropout_prob=0.1,
+                                  attention_dropout_prob=0.1,
+                                  generator_units_scale=None,
+                                  generator_layers_scale=None,
+                                  params_path=None):
+    """
+    A Electra Pretrain Model is built with a generator and a discriminator, in which
+    the generator has the same embedding as the discriminator but different backbone.
+    """
+    cfg, tokenizer, _, _ = get_pretrained_electra(
+        model_name, load_backbone=False)
+    cfg = ElectraModel.get_cfg().clone_merge(cfg)
+    cfg.defrost()
+    cfg.MODEL.hidden_dropout_prob = hidden_dropout_prob
+    cfg.MODEL.attention_dropout_prob = attention_dropout_prob
+    cfg.MODEL.max_length = max_seq_length
+    # Keep the original generator size if not designated
+    if generator_layers_scale:
+        cfg.MODEL.generator_layers_scale = generator_layers_scale
+    if generator_units_scale:
+        cfg.MODEL.generator_units_scale = generator_units_scale
+    cfg.freeze()
+
+    model = ElectraForPretrain(cfg,
+                               uniform_generator=False,
+                               tied_generator=False,
+                               tied_embeddings=True,
+                               disallow_correct=False,
+                               weight_initializer=TruncNorm(stdev=0.02))
+    if not params_path:
+        model.initialize(ctx=ctx_l)
+    else:
+        model.load_parameters(params_path, ctx=ctx_l)
+    model.hybridize()
+    return cfg, tokenizer, model

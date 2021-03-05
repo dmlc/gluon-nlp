@@ -1,8 +1,9 @@
 __all__ = ['glob', 'file_line_number', 'md5sum', 'sha1sum', 'naming_convention',
            'logging_config', 'set_seed', 'sizeof_fmt', 'grouper', 'repeat',
            'parse_ctx', 'load_checksum_stats', 'download', 'check_version',
-           'init_comm', 'get_mxnet_visible_ctx', 'get_ec2_tvm_flags']
+           'init_comm', 'get_mxnet_visible_ctx', 'logerror', 'BooleanOptionalAction']
 
+import argparse
 import os
 import sys
 import inspect
@@ -11,7 +12,7 @@ import warnings
 import functools
 import uuid
 from types import ModuleType
-from typing import Optional, Tuple, Dict
+from typing import Optional
 import numpy as np
 import hashlib
 import requests
@@ -184,6 +185,28 @@ def logging_config(folder: Optional[str] = None,
     return folder
 
 
+def logerror(logger: logging.Logger = logging.root):
+    """A decorator that wraps the passed in function and logs exceptions.
+
+    Parameters
+    ----------
+    logger: logging.Logger
+        The logger to which to log the error.
+    """
+    def log_wrapper(function):
+        @functools.wraps(function)
+        def wrapper(*args, **kwargs):
+            try:
+                return function(*args, **kwargs)
+            except Exception as e:
+                # log the exception
+                logger.exception(
+                    f'{function.__name__}(args={args}, kwargs={kwargs}) failed:\n{e}.')
+                raise e
+        return wrapper
+    return log_wrapper
+
+
 def set_seed(seed):
     import mxnet as mx
     mx.random.seed(seed)
@@ -257,6 +280,10 @@ def load_checksum_stats(path: str) -> dict:
         for line in f:
             name, hex_hash, file_size = line.strip().split()
             file_stats[name] = hex_hash
+            if name[8:27] == 'gluonnlp-numpy-data':
+                new_name = name.replace('https://gluonnlp-numpy-data.s3-accelerate.amazonaws.com', 's3://gluonnlp-numpy-data')
+                file_stats[new_name] = hex_hash
+
     return file_stats
 
 
@@ -341,7 +368,8 @@ def download(url: str,
              overwrite: Optional[bool] = False,
              sha1_hash: Optional[str] = None,
              retries: Optional[int] = 5,
-             verify_ssl: Optional[bool] = True) -> str:
+             verify_ssl: Optional[bool] = True,
+             anonymous_credential: Optional[bool] = True) -> str:
     """Download a given URL
 
     Parameters
@@ -360,6 +388,8 @@ def download(url: str,
         The number of times to attempt the download in case of failure or non 200 return codes
     verify_ssl
         Verify SSL certificates.
+    anonymous_credential
+        Whether to force to use anonymous credential if the path is from S3.
 
     Returns
     -------
@@ -370,7 +400,7 @@ def download(url: str,
     if is_s3:
         boto3, botocore = try_import_boto3()
         s3 = boto3.resource('s3')
-        if boto3.session.Session().get_credentials() is None:
+        if boto3.session.Session().get_credentials() is None or anonymous_credential:
             from botocore.handlers import disable_signing
             s3.meta.client.meta.events.register('choose-signer.s3.*', disable_signing)
         components = url[len(S3_PREFIX):].split('/')
@@ -581,45 +611,43 @@ def get_mxnet_visible_ctx():
     return ctx_l
 
 
-def get_ec2_tvm_flags() -> Dict[str, Dict]:
-    r"""Return the recommended flags for TVM compilation in AWS EC2 instances.
+# Python 3.9 feature backport https://github.com/python/cpython/pull/11478
+class BooleanOptionalAction(argparse.Action):
+    def __init__(self,
+                 option_strings,
+                 dest,
+                 default=None,
+                 type=None,
+                 choices=None,
+                 required=False,
+                 help=None,
+                 metavar=None):
 
-    Including C4, C5, G4, P3.
+        _option_strings = []
+        for option_string in option_strings:
+            _option_strings.append(option_string)
 
-    For more details about AWS EC2 instances, refer to https://aws.amazon.com/ec2/instance-types/.
+            if option_string.startswith('--'):
+                option_string = '--no-' + option_string[2:]
+                _option_strings.append(option_string)
 
-    Returns
-    -------
-    info_dict
-        A dictionary that contains the mapping between instance type and the
-        corresponding compilation flags.
-        Each element includes:
+        if help is not None and default is not None:
+            help += f" (default: {default})"
 
-        - target
-            The compilation target
-        - use_gpu
-            Whether it's a GPU instance
-        - opt_level
-            The optimization level in compilation
-        - pass
-            Additional graph passes for further improvement.
-    """
-    instance_info = {
-        'g4': {'target': "cuda -model=t4 -libs=cublas,cudnn",
-               'use_gpu': True,
-               'opt_level': 3,
-               'required_pass': ["FastMath"]},
-        'c4': {'target': 'llvm -mcpu=core-avx2 -libs=cblas',
-               'use_gpu': False,
-               'opt_level': 3,
-               'required_pass': ["FastMath"]},
-        'c5': {'target': 'llvm -mcpu=skylake-avx512 -libs=cblas',
-               'use_gpu': False,
-               'opt_level': 3,
-               'required_pass': ["FastMath"]},
-        'p3': {'target': 'cuda -model=v100 -libs=cublas,cudnn',
-               'use_gpu': True,
-               'opt_level': 3,
-               'required_pass': ["FastMath"]}
-    }
-    return instance_info
+        super().__init__(
+            option_strings=_option_strings,
+            dest=dest,
+            nargs=0,
+            default=default,
+            type=type,
+            choices=choices,
+            required=required,
+            help=help,
+            metavar=metavar)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        if option_string in self.option_strings:
+            setattr(namespace, self.dest, not option_string.startswith('--no-'))
+
+    def format_usage(self):
+        return ' | '.join(self.option_strings)

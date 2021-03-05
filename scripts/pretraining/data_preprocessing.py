@@ -20,7 +20,7 @@ def get_parser():
                         help="path to extraed openwebtext dataset")
     parser.add_argument("-o", "--output", default="preprocessed_owt",
                         help="directory for preprocessed features")
-    parser.add_argument("--num_process", type=int, default=8,
+    parser.add_argument("--num_process", type=int, default=os.cpu_count(),
                         help="number of processes for multiprocessing")
     parser.add_argument("--max_seq_length", type=int, default=128,
                         help="the maximum length of the pretraining sequence")

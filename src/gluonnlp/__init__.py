@@ -9,5 +9,6 @@ from . import layers
 from . import loss
 from . import lr_scheduler
 from . import op
+from . import torch
 from . import sequence_sampler
 from . import embedding

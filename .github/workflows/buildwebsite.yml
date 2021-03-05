@@ -12,9 +12,8 @@ jobs:
     strategy: 
       fail-fast: false
     steps:
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get install libopenblas-dev pandoc
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
       - name: Setup python
         uses: actions/setup-python@v2
@@ -32,62 +31,67 @@ jobs:
       - name: Install Other Dependencies
         run: |
           python -m pip install --quiet --upgrade pip
-          python -m pip install --upgrade cython
-          python -m pip install --pre "mxnet>=2.0.0b20201206" -f https://dist.mxnet.io/python
-          python -m pip install setuptools ipython sphinx>=1.5.5 sphinx-gallery nbsphinx sphinx_rtd_theme mxtheme sphinx-autodoc-typehints matplotlib Image recommonmark
+          python -m pip install --quiet boto3
 
-      - name: Checkout repository(For push)
-        if: ${{ github.event_name == 'push' }}
-        uses: actions/checkout@v2
-
-      - name: Compile Notebooks(For push)
-        if: ${{ github.event_name == 'push' }}
-        run: |
-          python -m pip install --quiet -e .[extras]
-          ./tools/batch/batch_states/compile_notebooks.sh \
-                 "push" "${{ github.run_number }}" \
-                 "${{ github.repository }}" "${{ github.ref }}"
-          exit $?
-
-      - name: Checkout Pull Request Repository(For pull request)
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
-        uses: actions/checkout@v2
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.ref }}
-
-      - name: Compile Notebooks(For pull request)
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
-        run: |
-          python -m pip install --quiet -e .[extras]
-          ./tools/batch/batch_states/compile_notebooks.sh \
-                 "#PR-${{ github.event.number }}" "${{ github.run_number }}" \
-                 "${{ github.event.pull_request.head.repo.full_name }}" "${{ github.event.pull_request.head.ref }}"
-          exit $?
-
-      - name: Build Website local
-        if: ${{ failure() || success() }}
-        run: |
-          make docs_local
-
-      - name: Copy docs to AWS S3(For push)
+      - name: Build Website (For push)
         if: ${{ (failure() || success()) && github.event_name == 'push' }}
         run: |
-          echo "Uploading docs to s3://gluon-nlp/${GITHUB_REF##*/}/"
-          aws s3 sync --delete ./docs/_build/html/ s3://gluon-nlp/${GITHUB_REF##*/}/ --acl public-read
+          python ./tools/batch/submit-job.py --region us-east-1 \
+                                             --job-type g4dn.4x \
+                                             --name GluonNLP-Website-${{ github.ref }} \
+                                             --remote https://github.com/${{ github.repository }} \
+                                             --source-ref ${{ github.ref }} \
+                                             --work-dir . \
+                                             --saved-output docs/tutorials \
+                                             --save-path tutorials \
+                                             --command "python -m pip install --quiet -e .[web] && \
+                                                        apt-get install -y pandoc zip && \
+                                                        ./tools/batch/batch_states/compile_notebooks.sh \
+                                                        'push' ${GITHUB_REF##*/}" \
+                                             --wait | tee build_website.log
 
-      - name: Copy docs to AWS S3(For pull request)
+      - name: Build Website (For pull request)
         if: ${{ (failure() || success()) && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') }}
         run: |
-          echo "Uploading docs to s3://gluon-nlp-staging/PR${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/"
-          aws s3 sync --delete ./docs/_build/html/ s3://gluon-nlp-staging/PR${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/ --acl public-read
+          python ./tools/batch/submit-job.py --region us-east-1 \
+                                             --job-type g4dn.4x \
+                                             --name GluonNLP-Website-PR#${{ github.event.number }} \
+                                             --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
+                                             --source-ref ${{ github.event.pull_request.head.sha }} \
+                                             --work-dir . \
+                                             --saved-output docs/tutorials \
+                                             --save-path tutorials \
+                                             --command "python -m pip install --quiet -e .[web] && \
+                                                        apt-get install -y pandoc zip && \
+                                                        ./tools/batch/batch_states/compile_notebooks.sh \
+                                                        ${{ github.event.number }} ${{ github.event.pull_request.head.sha }}" \
+                                             --wait | tee build_website.log
 
-      - name: Upload Artifacts 
+      - name: Wait for job and copy logs from AWS s3
+        if: ${{ failure() || success() }}
+        run: |
+          head -100 build_website.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
+          
+          echo "Job ID is"
+          cat jobid.log
+          cat jobid.log | xargs -i python ./tools/batch/wait-job.py --job-id {}
+          echo "Copy Log file"
+          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/tutorials/index.rst
+          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/tutorials tutorials --recursive
+      
+      - name: Upload Notebook Compile Logs 
         if: ${{ failure() || success() }}
         uses: actions/upload-artifact@v2
         with:
           name: Notebook_Logs
-          path: ./*.stdout.log
+          path: ./tutorials/**/*.stdout.log
+
+      - name: Upload Website Build Log 
+        if: ${{ failure() || success() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Website_Log
+          path: ./build_website.log
 
       - name: Create comment
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
@@ -95,4 +99,4 @@ jobs:
         with: 
           issue-number: ${{ github.event.number }}
           body: |
-            The documentation website for preview: http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/PR${{ github.event.number }}/${{ github.event.pull_request.head.ref }}/index.html
+            The documentation website for preview: http://gluon-nlp-staging.s3-accelerate.dualstack.amazonaws.com/PR${{ github.event.number }}/${{ github.event.pull_request.head.sha }}/index.html

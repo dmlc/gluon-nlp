@@ -25,6 +25,7 @@ import random
 import time
 from multiprocessing import Pool
 import numpy as np
+from gluonnlp.models.bert import BertModel, BertForPretrain, get_pretrained_bert
 import gluonnlp as nlp
 
 
@@ -264,6 +265,7 @@ def create_training_instances(x):
                 for line in tokenized_result:
                     if not line:
                         if all_documents[-1]:
+
                             all_documents.append([])
                     else:
                         all_documents[-1].append(line)
@@ -536,3 +538,170 @@ def truncate_seq_pair(tokens_a, tokens_b, max_num_tokens):
         else:
             trunc_tokens.pop()
 
+
+def main():
+    """Main function."""
+    time_start = time.time()
+
+    # random seed
+    random.seed(args.random_seed)
+
+    # create output dir
+    output_dir = os.path.expanduser(args.output_dir)
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+    # vocabulary and tokenizer
+    _, tokenizer, _, _ = get_pretrained_bert(
+        args.model_name, load_backbone=False, load_mlm=False)
+    # count the number of input files
+    input_files = []
+    datasets = args.input_dir.split(',')
+    for dataset in datasets:
+        tmp_names = os.listdir(dataset)
+        for file in tmp_names:
+            input_files.append(os.path.expanduser(os.path.join(dataset, file)))
+
+
+    # seperate input_files
+    total_num = len(input_files)
+    part_num = total_num // args.shard_num
+    input_files.sort()
+    input_files = input_files[part_num * args.current_shard:min(part_num * (args.current_shard + 1), total_num)]
+
+    for input_file in input_files:
+        logging.info('\t%s', input_file)
+    num_inputs = len(input_files)
+    num_outputs = min(args.num_outputs, len(input_files))
+    logging.info('*** Reading from %d input files ***', num_inputs)
+
+    # calculate the number of splits
+    file_splits = []
+    split_size = (num_inputs + num_outputs - 1) // num_outputs
+    for i in range(num_outputs):
+        split_start = i * split_size
+        split_end = min(num_inputs, (i + 1) * split_size)
+        file_splits.append(input_files[split_start:split_end])
+
+    # prepare workload
+    count = 0
+    process_args = []
+
+    for i, file_split in enumerate(file_splits):
+        output_file = os.path.join(output_dir, 'shard-{}-{}.npz'.format(str(args.current_shard), str(i).zfill(3)))
+        count += len(file_split)
+        process_args.append((file_split, tokenizer, args.max_seq_length, args.short_seq_prob,
+                             args.masked_lm_prob, args.max_predictions_per_seq,
+                             args.whole_word_mask,
+                             tokenizer.vocab, args.dupe_factor, 1, None, output_file, args.random_next_sentence))
+
+    # sanity check
+    assert count == len(input_files)
+
+    # dispatch to workers
+    nworker = args.num_workers
+    if nworker > 1:
+        pool = Pool(nworker)
+        pool.map(create_training_instances, process_args)
+    else:
+        for process_arg in process_args:
+            create_training_instances(process_arg)
+
+    time_end = time.time()
+    logging.info('Time cost=%.1f', time_end - time_start)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        description='Pre-training data generator for BERT',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument(
+        '--input_dir',
+        type=str,
+        required=True,
+        help='Input dir')
+
+    parser.add_argument('--model_name', type=str, default='google_en_cased_bert_base',
+                        help='Name of the pretrained model.')
+
+    parser.add_argument(
+        '--output_dir',
+        type=str,
+        required=True,
+        help='Output directory.')
+    parser.add_argument('--current_shard', type=int, required=True,
+                        help='current num of shard, range from 0 to shard_num-1')
+
+    parser.add_argument('--sp_nbest', type=int, default=0,
+                        help='Number of best candidates for sampling subwords with sentencepiece. ')
+
+    parser.add_argument('--sp_alpha', type=float, default=1.0,
+                        help='Inverse temperature for probability rescaling for sentencepiece '
+                             'unigram sampling')
+    parser.add_argument('--shard_num', type=int, default=8,
+                        help='total number of shard')
+
+    parser.add_argument(
+        '--whole_word_mask',
+        action='store_true',
+        help='Whether to use whole word masking rather than per-subword masking.')
+
+    parser.add_argument(
+        '--max_seq_length', type=int, default=512, help='Maximum sequence length.')
+
+    parser.add_argument(
+        '--max_predictions_per_seq',
+        type=int,
+        default=80,
+        help='Maximum number of masked LM predictions per sequence. ')
+
+    parser.add_argument(
+        '--random_seed',
+        type=int,
+        default=12345,
+        help='Random seed for data generation.')
+
+    parser.add_argument(
+        '--dupe_factor',
+        type=int,
+        default=5,
+        help='Number of times to duplicate the input data (with different masks).')
+
+    parser.add_argument(
+        '--masked_lm_prob',
+        type=float,
+        default=0.15,
+        help='Masked LM probability.')
+
+    parser.add_argument(
+        '--short_seq_prob',
+        type=float,
+        default=0.1,
+        help='Probability of creating sequences which are shorter than the '
+             'maximum length. ')
+
+    parser.add_argument(
+        '--verbose',
+        action='store_true',
+        help='Print debug information')
+
+    parser.add_argument(
+        '--num_workers',
+        type=int,
+        default=8,
+        help='Number of workers for parallel processing, where each generates an output file.')
+
+    parser.add_argument('--random_next_sentence', action='store_true',
+                        help='Whether to use the sentence order prediction objective as in ALBERT'
+                             'Effective only if --raw is set.')
+
+    parser.add_argument(
+        '--num_outputs',
+        type=int,
+        default=8,
+        help='Number of desired output files, where each is processed independently by a worker.')
+
+    args = parser.parse_args()
+    logging.getLogger().setLevel(logging.DEBUG if args.verbose else logging.INFO)
+    logging.info(args)
+    main()
+    logging.info('finished')

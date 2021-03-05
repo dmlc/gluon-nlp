@@ -65,6 +65,30 @@ Tokenization
       Try out different subword learning algorithms.
 
 
+Using Pretrained Models
+-----------------------
+
+.. container:: cards
+
+   .. card::
+      :title: T5 for Masked Language Modeling
+      :link: pretrained_models/pretrained_t5_mlm.html
+
+      An example of using pretrained models in GluonNLP. 
+
+
+Compiling NLP Models
+--------------------
+
+.. container:: cards
+
+   .. card::
+      :title: Compile and accelerate NLP models via TVM
+      :link: deep_learning_compiler/tvm_basic.html
+
+      Basic example of how to use TVM to compile backbone models in GluonNLP.
+
+
 .. toctree::
    :hidden:
    :maxdepth: 2
@@ -73,5 +97,5 @@ Tokenization
    text_prediction/index
    question_answering/index
    tokenization/index
-
-
+   pretrained_models/index
+   deep_learning_compiler/index

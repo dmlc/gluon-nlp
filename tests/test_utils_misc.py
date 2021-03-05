@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import mxnet as mx
 from gluonnlp.utils.misc import download, sha1sum, logging_config,\
-    get_mxnet_visible_ctx
+    get_mxnet_visible_ctx, logerror
 mx.npx.set_np()
 
 
@@ -109,4 +109,21 @@ def test_get_mxnet_visible_ctx(ctx):
     ctx_l = get_mxnet_visible_ctx()
     for ele_ctx in ctx_l:
         arr = mx.np.array(1.0, ctx=ele_ctx)
-        arr_np = arr.asnumpy()
+        arr.asnumpy()
+
+
+@pytest.mark.parametrize('a,err', [
+    (None, TypeError),
+    (range(2), IndexError)])
+def test_logerror(mocker, a, err):
+    logger = logging.getLogger(__name__)
+    spy = mocker.spy(logger, 'exception')
+
+    @logerror(logger=logger)
+    def test_fn(a):
+        return a[3]
+
+    with pytest.raises(err):
+        test_fn(a)
+
+    assert spy.call_count == 1

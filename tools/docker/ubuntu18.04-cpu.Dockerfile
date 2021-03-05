@@ -33,10 +33,10 @@ RUN bash /install/install_python_packages.sh
 RUN bash /install/install_tvm_cpu.sh
 
 # Install MXNet
-RUN python3 -m pip install -U --pre "mxnet>=2.0.0b20201206" -f https://dist.mxnet.io/python --user
+RUN python3 -m pip install -U --pre "mxnet>=2.0.0b20210121" -f https://dist.mxnet.io/python --user
 
 # Install PyTorch
-RUN python3 -m pip install -U torch torchvision --user
+RUN python3 -m pip install "torch==1.7.1+cpu" torchvision -f https://download.pytorch.org/whl/torch_stable.html
 
 # Install Jupyter Lab
 RUN bash /install/install_jupyter_lab.sh
@@ -47,7 +47,7 @@ RUN cd ${WORKDIR} \
    && git clone https://github.com/dmlc/gluon-nlp \
    && cd gluon-nlp \
    && git checkout master \
-   && python3 -m pip install -U -e ."[extras]"
+   && python3 -m pip install -U -e ."[extras,dev]"
 
 
 # Stage-CI
