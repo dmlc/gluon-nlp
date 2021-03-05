@@ -85,7 +85,7 @@ setup(
             'nltk',
             'h5py>=2.10',
             'scipy',
-            'wikiextractor<3.0.0',
+            'wikiextractor>=3.0.4',
             'tqdm',
             'py3nvml',
         ],
