@@ -43,13 +43,13 @@ Make changes
 Our package uses continuous integration and code coverage tools for verifying pull requests. Before
 submitting, contributor should ensure that the following checks do not fail:
 
-- Lint (code style)
-- Unittest
-- Doctest
+- CPU unittest
+- GPU unittest
+- Website build
 
 The commands executed by the continuous integration server to perform the tests
-are listed in the `build_steps.groovy file
-<https://github.com/dmlc/gluon-nlp/blob/master/ci/jenkins/build_steps.groovy>`__.
+are listed in the `github workflows files
+<https://github.com/dmlc/gluon-nlp/tree/v0.x/.github/workflows>`__.
 
 Contribute to model zoo
 -----------------------
