@@ -34,7 +34,7 @@ dependencies:
     - flaky==3.7.0
     - flake8==3.8.3
     - mock==4.0.2
-    - mxnet-cu101==1.6.0.post0
+    - mxnet-cu102==1.6.0.post0
     - scipy==1.5.2
     - regex==2020.7.14
     - nltk==3.5
@@ -42,3 +42,4 @@ dependencies:
     - spacy==2.3.2
     - sentencepiece==0.1.91
     - sphinx-autodoc-typehints==1.11.0
+    - sklearn
