@@ -41,7 +41,7 @@ jobs:
           echo "Start submitting job"
           python ./ci/batch/submit-job.py --region us-east-1 \
                                           --job-type c5n.4x \
-                                          --name GluonNLP-GPU-v0.x-Test-${{ github.ref }} \
+                                          --name GluonNLP-CPU-v0.x-Test-${{ github.ref }} \
                                           --source-ref ${{ github.ref }} \
                                           --work-dir . \
                                           --saved-output coverage.xml \
@@ -62,7 +62,7 @@ jobs:
           echo "Start submitting job"
           python ./ci/batch/submit-job.py --region us-east-1 \
                                           --job-type c5n.4x \
-                                          --name GluonNLP-GPU-v0.x-Test-PR#${{ github.event.number }} \
+                                          --name GluonNLP-CPU-v0.x-Test-PR#${{ github.event.number }} \
                                           --source-ref ${{ github.event.pull_request.head.sha }} \
                                           --work-dir . \
                                           --saved-output coverage.xml \

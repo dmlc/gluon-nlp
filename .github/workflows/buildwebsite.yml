@@ -36,19 +36,20 @@ jobs:
         if: ${{ (failure() || success()) && github.event_name == 'push' }}
         run: |
           python ./ci/batch/submit-job.py --region us-east-1 \
-                                          --job-type c5n.4x \
+                                          --job-type g4dn.4x \
                                           --name GluonNLP-Website-v0.x-${{ github.ref }} \
                                           --remote https://github.com/${{ github.repository }} \
                                           --source-ref ${{ github.ref }} \
                                           --work-dir . \
                                           --saved-output docs/tutorials \
                                           --save-path tutorials \
-                                          --command "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-                                                     && chmod +x Miniconda3-latest-Linux-x86_64.sh \
-                                                     && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p /workspace/miniconda \
-                                                     && export PATH='/workspace/miniconda/bin:$PATH' \
-                                                     && source /workspace/miniconda/bin/activate && conda init \
-                                                     && source ci/prepare_clean_env.sh docker/py3 \
+                                          --command "pip install spacy==2.3.5 nltk notedown seaborn \
+                                                     && apt-get install -y zip pandoc \
+                                                     && python -m spacy download en \
+                                                     && python -m spacy download de \
+                                                     && python -m nltk.downloader all \
+                                                     && pip uninstall mxnet-cu102 -y \
+                                                     && pip install mxnet-cu102==1.6.0.post0 \
                                                      && ./ci/batch/compile_notebooks.sh \
                                                      'push' ${GITHUB_REF##*/}" \
                                           --wait | tee build_website.log
@@ -57,19 +58,20 @@ jobs:
         if: ${{ (failure() || success()) && (github.event_name == 'pull_request' || github.event_name == 'pull_request_target') }}
         run: |
           python ./ci/batch/submit-job.py --region us-east-1 \
-                                          --job-type c5n.4x \
+                                          --job-type g4dn.4x \
                                           --name GluonNLP-Website-v0.x-PR#${{ github.event.number }} \
                                           --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
                                           --source-ref ${{ github.event.pull_request.head.sha }} \
                                           --work-dir . \
                                           --saved-output docs/tutorials \
                                           --save-path tutorials \
-                                          --command "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-                                                     && chmod +x Miniconda3-latest-Linux-x86_64.sh \
-                                                     && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p /workspace/miniconda \
-                                                     && export PATH='/workspace/miniconda/bin:$PATH' \
-                                                     && source /workspace/miniconda/bin/activate && conda init \
-                                                     && source ci/prepare_clean_env.sh docker/py3 \
+                                          --command "pip install spacy==2.3.5 nltk notedown seaborn \
+                                                     && apt-get install -y zip pandoc \
+                                                     && python -m spacy download en \
+                                                     && python -m spacy download de \
+                                                     && python -m nltk.downloader all \
+                                                     && pip uninstall mxnet-cu102 -y \
+                                                     && pip install mxnet-cu102==1.6.0.post0 \
                                                      && ./ci/batch/compile_notebooks.sh \
                                                      ${{ github.event.number }} ${{ github.event.pull_request.head.sha }}" \
                                           --wait | tee build_website.log
