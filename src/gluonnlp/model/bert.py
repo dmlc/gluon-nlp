@@ -1159,6 +1159,7 @@ def bert_12_768_12(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu(),
         If set to True, pre-defined hyper-parameters of the model
         (e.g. the number of layers, hidden units) can be overriden.
 
+
     The pretrained parameters for dataset_name
     'openwebtext_book_corpus_wiki_en_uncased' were obtained by running the
     GluonNLP BERT pre-training script on OpenWebText.

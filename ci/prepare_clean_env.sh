@@ -22,7 +22,7 @@ printenv
 
 pip install cmake
 pip install -v -e .
-pip install horovod --no-cache-dir -U
+# pip install horovod --no-cache-dir -U
 python -m spacy download en
 python -m spacy download de
 python -m nltk.downloader all

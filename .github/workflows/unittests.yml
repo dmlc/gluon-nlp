@@ -40,40 +40,42 @@ jobs:
         run: |
           echo "Start submitting job"
           python ./ci/batch/submit-job.py --region us-east-1 \
-                                             --job-type c5n.4x \
-                                             --name GluonNLP-GPU-v0.x-Test-${{ github.ref }} \
-                                             --source-ref ${{ github.ref }} \
-                                             --work-dir . \
-                                             --saved-output coverage.xml \
-                                             --save-path coverage.xml \
-                                             --remote https://github.com/${{ github.repository }} \
-                                             --command "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-                                             && chmod +x Miniconda3-latest-Linux-x86_64.sh \
-                                             && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda \
-                                             && source ci/prepare_clean_env.sh gpu/cy3 \
-                                             && python3 -m pip install mxnet==1.6.0 flaky numpy==1.18.4 \
-                                             && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
-                                             --wait | tee batch_job.log
+                                          --job-type c5n.4x \
+                                          --name GluonNLP-CPU-v0.x-Test-${{ github.ref }} \
+                                          --source-ref ${{ github.ref }} \
+                                          --work-dir . \
+                                          --saved-output coverage.xml \
+                                          --save-path coverage.xml \
+                                          --remote https://github.com/${{ github.repository }} \
+                                          --command "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+                                                    && chmod +x Miniconda3-latest-Linux-x86_64.sh \
+                                                    && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p /workspace/miniconda \
+                                                    && export PATH='/workspace/miniconda/bin:$PATH' \
+                                                    && source /workspace/miniconda/bin/activate && conda init \
+                                                    && source ci/prepare_clean_env.sh cpu/py3 \
+                                                    && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
+                                          --wait | tee batch_job.log
 
       - name: Test project on AWS Batch(For pull request)
         if: ${{ github.event_name == 'pull_request' || github.event_name == 'pull_request_target' }}
         run: |
           echo "Start submitting job"
           python ./ci/batch/submit-job.py --region us-east-1 \
-                                             --job-type c5n.4x \
-                                             --name GluonNLP-GPU-v0.x-Test-PR#${{ github.event.number }} \
-                                             --source-ref ${{ github.event.pull_request.head.sha }} \
-                                             --work-dir . \
-                                             --saved-output coverage.xml \
-                                             --save-path coverage.xml \
-                                             --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
-                                             --command "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-                                             && chmod +x Miniconda3-latest-Linux-x86_64.sh \
-                                             && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p $HOME/miniconda \
-                                             && source ci/prepare_clean_env.sh gpu/cy3 \
-                                             && python3 -m pip install mxnet==1.6.0 flaky numpy==1.18.4 \
-                                             && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
-                                             --wait | tee batch_job.log
+                                          --job-type c5n.4x \
+                                          --name GluonNLP-CPU-v0.x-Test-PR#${{ github.event.number }} \
+                                          --source-ref ${{ github.event.pull_request.head.sha }} \
+                                          --work-dir . \
+                                          --saved-output coverage.xml \
+                                          --save-path coverage.xml \
+                                          --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
+                                          --command "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
+                                                       && chmod +x Miniconda3-latest-Linux-x86_64.sh \
+                                                       && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p /workspace/miniconda \
+                                                       && export PATH='/workspace/miniconda/bin:$PATH' \
+                                                       && source /workspace/miniconda/bin/activate && conda init \
+                                                       && source ci/prepare_clean_env.sh cpu/py3 \
+                                                       && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
+                                          --wait | tee batch_job.log
 
       - name: Wait for job and copy files from AWS s3
         if: ${{ failure() || success() }}
@@ -81,7 +83,7 @@ jobs:
           head -100 batch_job.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
           echo "Job ID is"
           cat jobid.log
-          cat jobid.log | xargs -i python ./tools/batch/wait-job.py --job-id {}
+          cat jobid.log | xargs -i python ./ci/batch/wait-job.py --region us-east-1 --job-id {}
           echo "Copy Codecov file"
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/coverage.xml
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/coverage.xml ./coverage.xml
