@@ -76,25 +76,6 @@ jobs:
                                                      ${{ github.event.number }} ${{ github.event.pull_request.head.sha }}" \
                                           --wait | tee build_website.log
 
-      - name: Wait for job and copy logs from AWS s3
-        if: ${{ failure() || success() }}
-        run: |
-          head -100 build_website.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
-          
-          echo "Job ID is"
-          cat jobid.log
-          cat jobid.log | xargs -i python ./ci/batch/wait-job.py --region us-east-1 --job-id {}
-          echo "Copy Log file"
-          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/tutorials/index.rst
-          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/tutorials tutorials --recursive
-      
-      - name: Upload Notebook Compile Logs 
-        if: ${{ failure() || success() }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: Notebook_Logs
-          path: ./tutorials/**/*.stdout.log
-
       - name: Upload Website Build Log 
         if: ${{ failure() || success() }}
         uses: actions/upload-artifact@v2
