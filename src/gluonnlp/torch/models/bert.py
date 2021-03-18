@@ -25,7 +25,7 @@ Bert Model
 }
 """
 
-__all__ = ['BertModel', 'BertForMLM', 'BertForPretrain', 'init_weights']
+__all__ = ['BertModel', 'BertForMLM', 'QTBertForPretrain', 'init_weights']
 
 import logging
 
@@ -392,7 +392,7 @@ class BertForMLM(th.nn.Module):
         return contextual_embeddings, pooled_out, mlm_scores
 
 
-class BertForPretrain(th.nn.Module):
+class QTBertForPretrain(th.nn.Module):
     def __init__(self, backbone_cfg):
         """
 
@@ -402,9 +402,13 @@ class BertForPretrain(th.nn.Module):
             The cfg of the backbone model
         """
         super().__init__()
+
         self.backbone_model = BertModel.from_cfg(backbone_cfg)
-        # Construct nsp_classifier for next sentence prediction
-        self.nsp_classifier = th.nn.Linear(out_features=2, in_features=self.backbone_model.units)
+        self.quickthought = th.nn.Sequential(
+            th.nn.Linear(out_features=self.backbone_model.units,
+                         in_features=self.backbone_model.units),
+            get_activation(self.backbone_model.activation),
+            th.nn.LayerNorm(self.backbone_model.units, eps=self.backbone_model.layer_norm_eps))
         self.mlm_decoder = th.nn.Sequential(
             th.nn.Linear(out_features=self.backbone_model.units,
                          in_features=self.backbone_model.units),
@@ -443,8 +447,8 @@ class BertForPretrain(th.nn.Module):
             The valid length of each sequence
             Shape (batch_size,)
         masked_positions
-            The masked position of the sequence
-            Shape (batch_size, num_masked_positions).
+            The masked position of the sequence with respect to flattened batch
+            Shape (N, ) for N masked positions across whole batch.
 
         Returns
         -------
@@ -455,22 +459,25 @@ class BertForPretrain(th.nn.Module):
                 Shape (seq_length, batch_size, units).
         pooled_out
             Shape (batch_size, units)
-        nsp_score :
-            Shape (batch_size, 2)
         mlm_scores :
-            Shape (batch_size, num_masked_positions, vocab_size)
+            Shape (N, vocab_size)
         """
+        assert len(inputs) % 2 == 0, 'Model expects QuickThought paired inputs'
         contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
-        nsp_score = self.nsp_classifier(pooled_out)
         if self.layout == 'NT':
-            mlm_features = contextual_embeddings[
-                th.arange(contextual_embeddings.shape[0]).unsqueeze(1), masked_positions]
+            mlm_features = contextual_embeddings.flatten(0, 1)[masked_positions]
         else:
-            mlm_features = th.transpose(contextual_embeddings, 0,
-                                        1)[th.arange(contextual_embeddings.shape[1]).unsqueeze(1),
-                                           masked_positions]
+            mlm_features = th.transpose(contextual_embeddings, 0, 1).flatten(0, 1)[masked_positions]
         mlm_scores = self.mlm_decoder(mlm_features)
-        return contextual_embeddings, pooled_out, nsp_score, mlm_scores
+        qt_embeddings = self.quickthought(pooled_out)
+        qt_similarity = self._cosine_similarity(qt_embeddings[:len(inputs) // 2],
+                                                qt_embeddings[len(inputs) // 2:])
+        return contextual_embeddings, pooled_out, mlm_scores, qt_similarity
+
+    def _cosine_similarity(self, a, b):
+        a_norm = a / a.norm(dim=1)[:, None]
+        b_norm = b / b.norm(dim=1)[:, None]
+        return th.mm(a_norm, b_norm.transpose(0, 1))
 
 
 def init_weights(module):
