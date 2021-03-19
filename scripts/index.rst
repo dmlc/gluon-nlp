@@ -65,6 +65,7 @@ Examples
    benchmarks/index
    conversion_toolkits/index
    datasets/index
+   classification/index
    generation/index
    machine_translation/index
    pretraining/index
