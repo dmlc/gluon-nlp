@@ -47,12 +47,7 @@ jobs:
                                           --saved-output coverage.xml \
                                           --save-path coverage.xml \
                                           --remote https://github.com/${{ github.repository }} \
-                                          --command "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-                                                    && chmod +x Miniconda3-latest-Linux-x86_64.sh \
-                                                    && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p /workspace/miniconda \
-                                                    && export PATH='/workspace/miniconda/bin:$PATH' \
-                                                    && source /workspace/miniconda/bin/activate && conda init \
-                                                    && source ci/prepare_clean_env.sh cpu/py3 \
+                                          --command "python3 -m pip install 'mxnet-cu102<2' flaky numpy==1.18.4 \
                                                     && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
                                           --wait | tee batch_job.log
 
@@ -68,13 +63,8 @@ jobs:
                                           --saved-output coverage.xml \
                                           --save-path coverage.xml \
                                           --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
-                                          --command "wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-                                                       && chmod +x Miniconda3-latest-Linux-x86_64.sh \
-                                                       && bash ./Miniconda3-latest-Linux-x86_64.sh -b -p /workspace/miniconda \
-                                                       && export PATH='/workspace/miniconda/bin:$PATH' \
-                                                       && source /workspace/miniconda/bin/activate && conda init \
-                                                       && source ci/prepare_clean_env.sh cpu/py3 \
-                                                       && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
+                                          --command "python3 -m pip install 'mxnet-cu102<2' flaky numpy==1.18.4 \
+                                                    && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
                                           --wait | tee batch_job.log
 
       - name: Wait for job and copy files from AWS s3
