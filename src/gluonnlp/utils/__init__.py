@@ -1,4 +1,5 @@
 from . import config
+from . import shm
 from . import lazy_imports
 from . import preprocessing
 from . import registry

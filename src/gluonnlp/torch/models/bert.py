@@ -25,7 +25,7 @@ Bert Model
 }
 """
 
-__all__ = ['BertModel', 'BertForMLM', 'BertForPretrain', 'init_weights']
+__all__ = ['BertModel', 'BertForMLM', 'QTBertForPretrain', 'init_weights']
 
 import logging
 
@@ -471,6 +471,94 @@ class BertForPretrain(th.nn.Module):
                                            masked_positions]
         mlm_scores = self.mlm_decoder(mlm_features)
         return contextual_embeddings, pooled_out, nsp_score, mlm_scores
+
+
+class QTBertForPretrain(th.nn.Module):
+    def __init__(self, backbone_cfg):
+        """
+
+        Parameters
+        ----------
+        backbone_cfg
+            The cfg of the backbone model
+        """
+        super().__init__()
+
+        self.backbone_model = BertModel.from_cfg(backbone_cfg)
+        self.quickthought = th.nn.Sequential(
+            th.nn.Linear(out_features=self.backbone_model.units,
+                         in_features=self.backbone_model.units),
+            get_activation(self.backbone_model.activation),
+            th.nn.LayerNorm(self.backbone_model.units, eps=self.backbone_model.layer_norm_eps))
+        self.mlm_decoder = th.nn.Sequential(
+            th.nn.Linear(out_features=self.backbone_model.units,
+                         in_features=self.backbone_model.units),
+            get_activation(self.backbone_model.activation),
+            th.nn.LayerNorm(self.backbone_model.units, eps=self.backbone_model.layer_norm_eps),
+            th.nn.Linear(out_features=self.backbone_model.vocab_size,
+                         in_features=self.backbone_model.units))
+        # TODO such weight sharing not supported in torchscript
+        self.mlm_decoder[-1].weight = self.backbone_model.word_embed.weight
+
+    @property
+    def layout(self):
+        return self.backbone_model.layout
+
+    def forward(self, inputs, token_types, valid_length, masked_positions):
+        """Generate the representation given the inputs.
+
+        This is used in training or fine-tuning a bert model.
+
+        Parameters
+        ----------
+        inputs
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+        token_types
+            - layout = 'NT'
+                Shape (batch_size, seq_length)
+            - layout = 'TN'
+                Shape (seq_length, batch_size)
+
+            If the inputs contain two sequences, we will set different token types for the first
+             sentence and the second sentence.
+        valid_length
+            The valid length of each sequence
+            Shape (batch_size,)
+        masked_positions
+            The masked position of the sequence with respect to flattened batch
+            Shape (N, ) for N masked positions across whole batch.
+
+        Returns
+        -------
+        contextual_embedding
+            - layout = 'NT'
+                Shape (batch_size, seq_length, units).
+            - layout = 'TN'
+                Shape (seq_length, batch_size, units).
+        pooled_out
+            Shape (batch_size, units)
+        mlm_scores :
+            Shape (N, vocab_size)
+        """
+        assert len(inputs) % 2 == 0, 'Model expects QuickThought paired inputs'
+        contextual_embeddings, pooled_out = self.backbone_model(inputs, token_types, valid_length)
+        if self.layout == 'NT':
+            mlm_features = contextual_embeddings.flatten(0, 1)[masked_positions]
+        else:
+            mlm_features = th.transpose(contextual_embeddings, 0, 1).flatten(0, 1)[masked_positions]
+        mlm_scores = self.mlm_decoder(mlm_features)
+        qt_embeddings = self.quickthought(pooled_out)
+        qt_similarity = self._cosine_similarity(qt_embeddings[:len(inputs) // 2],
+                                                qt_embeddings[len(inputs) // 2:])
+        return contextual_embeddings, pooled_out, mlm_scores, qt_similarity
+
+    def _cosine_similarity(self, a, b):
+        a_norm = a / a.norm(dim=1)[:, None]
+        b_norm = b / b.norm(dim=1)[:, None]
+        return th.mm(a_norm, b_norm.transpose(0, 1))
 
 
 def init_weights(module):
