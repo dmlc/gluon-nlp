@@ -150,15 +150,16 @@ def preprocess_data(df, feature_columns, label_column, tokenizer,
     cls_id = tokenizer.vocab.cls_id
     sep_id = tokenizer.vocab.sep_id
     iterator = tqdm(df.iterrows(), total=len(df)) if use_tqdm else df.iterrows()
-
     for idx, row in iterator:
         # Token IDs =      [CLS]    token_ids1       [SEP]      token_ids2         [SEP]
         # Segment IDs =      0         0               0           1                 1
+
         encoded_text_l = [tokenizer.encode(row[col_name], int)
                           for col_name in feature_columns]
         trimmed_lengths = get_trimmed_lengths([len(ele) for ele in encoded_text_l],
                                               max_length=max_length - len(feature_columns) - 1,
                                               do_merge=True)
+
         token_ids = [cls_id] + sum([ele[:length] + [sep_id]
                           for length, ele in zip(trimmed_lengths, encoded_text_l)], [])
         token_types = [0] + sum([[i % 2] * (length + 1)
@@ -172,6 +173,7 @@ def preprocess_data(df, feature_columns, label_column, tokenizer,
             out.append((feature, label))
         else:
             out.append(feature)
+
     return out
 
 
@@ -230,6 +232,7 @@ def train(args):
                     args.param_checkpoint,
                     args.backbone_path,
                     task)
+
     logging.info('Prepare training data')
     train_data, _ = get_task_data(args, task, tokenizer, segment='train')
     train_batchify = bf.Group(bf.Group(bf.Pad(), bf.Pad(), bf.Stack()),
@@ -451,6 +454,8 @@ def evaluate(args):
             logging.info('checkpoint {} get result: {}:{}'.format(ckpt_name, metric_name, result))
             if best_ckpt.get(metric_name, [0, ''])[0]<result:
                 best_ckpt[metric_name] = [result, ckpt_name]
+        for metric in metrics:
+            metric.reset()
 
     for ckpt_name in candidate_ckpt:
         evaluate_by_ckpt(ckpt_name, best_ckpt)
