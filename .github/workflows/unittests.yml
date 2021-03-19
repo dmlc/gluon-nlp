@@ -7,7 +7,7 @@ defaults:
     shell: bash
 
 jobs:
-  unittest-gpu:
+  unittest:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
