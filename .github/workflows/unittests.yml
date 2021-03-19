@@ -47,7 +47,7 @@ jobs:
                                           --saved-output coverage.xml \
                                           --save-path coverage.xml \
                                           --remote https://github.com/${{ github.repository }} \
-                                          --command "python3 -m pip install 'mxnet-cu102<2' flaky numpy==1.18.4 \
+                                          --command "python3 -m pip install 'mxnet<2' flaky numpy==1.18.4 \
                                                     && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
                                           --wait | tee batch_job.log
 
@@ -63,7 +63,7 @@ jobs:
                                           --saved-output coverage.xml \
                                           --save-path coverage.xml \
                                           --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
-                                          --command "python3 -m pip install 'mxnet-cu102<2' flaky numpy==1.18.4 \
+                                          --command "python3 -m pip install 'mxnet<2' flaky numpy==1.18.4 \
                                                     && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
                                           --wait | tee batch_job.log
 
