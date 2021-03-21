@@ -228,6 +228,9 @@ if __name__ == '__main__':
     ###############################################################################
     #                              Hybridize the model                            #
     ###############################################################################
+    if (mx.__version__ > '1.7.0'):
+        os.environ['MXNET_ENABLE_CUDA_GRAPHS'] = '1'
+        log.info('CUDA Graphs enabled ')
     export_ctx = mx.cpu()
     seq_length = args.seq_length
     do_lower_case = 'uncased' in args.dataset_name
@@ -320,18 +323,18 @@ def export(prefix):
         arg_array['data1'] = mx.nd.ones((test_batch_size, seq_length), dtype='float32')
         arg_array['data2'] = mx.nd.ones((test_batch_size, ), dtype='float32')
         custom_sym = sym.optimize_for('custom_pass', arg_array, aux_params)
-
-        nheads = 12
-        if args.bert_model == 'bert_24_1024_16':
-            nheads = 24
-        for i in range(nheads):
-            basename = 'bertencoder0_transformer' + str(i) + '_dotproductselfattentioncell0'
-            arg_array.pop(basename + '_query_weight')
-            arg_array.pop(basename + '_key_weight')
-            arg_array.pop(basename + '_value_weight')
-            arg_array.pop(basename + '_query_bias')
-            arg_array.pop(basename + '_key_bias')
-            arg_array.pop(basename + '_value_bias')
+        if (mx.__version__ <= '1.7.0'):
+            nheads = 12
+            if args.bert_model == 'bert_24_1024_16':
+                nheads = 24
+            for i in range(nheads):
+                basename = 'bertencoder0_transformer' + str(i) + '_dotproductselfattentioncell0'
+                arg_array.pop(basename + '_query_weight')
+                arg_array.pop(basename + '_key_weight')
+                arg_array.pop(basename + '_value_weight')
+                arg_array.pop(basename + '_query_bias')
+                arg_array.pop(basename + '_key_bias')
+                arg_array.pop(basename + '_value_bias')
         arg_array.pop('data0')
         arg_array.pop('data1')
         arg_array.pop('data2')

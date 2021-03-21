@@ -26,9 +26,12 @@ def CompileBERTCustomPass():
     pass_path = os.path.dirname(os.path.realpath(__file__))
     source = os.path.join(pass_path, input_pass_file)
     target = os.path.join(pass_path, out_lib_file)
+    # lib_api_cc = pathlib.Path.joinpath(mxnet_path, 'src/lib_api.cc')
+    lib_api_cc = os.path.join(pass_path, 'lib_api.cc')
+    if (mxnet.__version__ > '1.7.0'):
+        source = source + ' ' + str(lib_api_cc)
     os.system('g++ -shared -fPIC -std=c++11 ' + str(source) +
-              ' -o ' + str(target) + ' -I ' +
-              str(mxnet_include_path))
+              ' -o ' + str(target) + ' -I ' + str(mxnet_include_path))
 
 class CompileBERTPass(install):
     def run(self):
