@@ -181,7 +181,7 @@ class BertEmbedding:
             oov_len = 1
             for token_id, sequence_output in zip(token_ids, sequence_outputs):
                 # [PAD] token, sequence is finished.
-                if padding_idx and token_id == padding_idx:
+                if padding_idx is not None and token_id == padding_idx:
                     break
                 # [CLS], [SEP]
                 if cls_idx and token_id == cls_idx:
