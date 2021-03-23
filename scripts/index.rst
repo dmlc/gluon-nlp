@@ -8,7 +8,13 @@ Examples
       :link: benchmarks/index.html
 
       NLP Benchmark.
+   
+   .. card::
+      :title: Classification Scripts
+      :link: classification/index.html
 
+      NLP Classification example.
+   
    .. card::
       :title: Conversion Scripts
       :link: conversion_toolkits/index.html
@@ -59,6 +65,7 @@ Examples
    benchmarks/index
    conversion_toolkits/index
    datasets/index
+   classification/index
    generation/index
    machine_translation/index
    pretraining/index
