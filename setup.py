@@ -112,8 +112,18 @@ setup(
     install_requires=requirements,
     extras_require={
         'extras': [
-            'tqdm', 'jieba', 'subword_nmt', 'spacy>=2.3.0,<3', 'langid==1.1.6', 'nltk',
-            'h5py>=2.10', 'scipy', 'wikiextractor<3.0.0', 'tqdm', 'py3nvml', 'smart_open'
+            'tqdm',
+            'jieba',
+            'subword_nmt',
+            'spacy>=2.3.0,<3',
+            'langid==1.1.6',
+            'nltk',
+            'h5py>=2.10',
+            'scipy',
+            'wikiextractor>=3.0.4,<4',
+            'tqdm',
+            'py3nvml',
+            'smart_open',
         ],
         'dev': [
             'pytest',
