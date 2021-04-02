@@ -17,7 +17,7 @@
 """Layers."""
 __all__ = ['PositionalEmbedding', 'SinusoidalPositionalEmbedding',
            'LearnedPositionalEmbedding', 'BucketPositionalEmbedding', 'AdaptiveEmbedding',
-           'PositionwiseFFN', 'ProjectedAdaptiveLogSoftmaxWithLoss']
+           'PositionwiseFFN', 'ProjectedAdaptiveLogSoftmaxWithLoss', 'AdapterModule']
 
 import math
 from collections import OrderedDict
@@ -28,6 +28,8 @@ from mxnet.gluon import nn, HybridBlock, Parameter, Constant
 import numpy as _np
 from typing import Union, Optional, List, Dict
 from .op import relative_position_bucket
+#from .attention_cell import MultiHeadAttentionCell
+
 
 
 InitializerType = Optional[Union[mx.init.Initializer, str]]
@@ -478,6 +480,8 @@ class LearnedPositionalEmbedding(HybridBlock):
         return np.take(self.weight.data(), positions, axis=0, mode=self._mode)
 
 
+
+
 @use_np
 class BucketPositionalEmbedding(HybridBlock):
     """Divide the positional space into buckets and assign the relative positions within each
@@ -543,6 +547,8 @@ class PositionwiseFFN(HybridBlock):
                  layer_norm_eps: float = 1E-5,
                  pre_norm: bool = False,
                  dtype='float32',
+                 use_adapter='False',
+                 adapter_config={},
                  **kwargs):
         """
 
@@ -570,6 +576,7 @@ class PositionwiseFFN(HybridBlock):
         self._dtype = dtype
         self._pre_norm = pre_norm
         self._use_gated_activation = use_gated_activation
+        self._use_adapter = use_adapter
         self._kwargs = OrderedDict([
             ('units', units),
             ('hidden_size', hidden_size),
@@ -611,6 +618,8 @@ class PositionwiseFFN(HybridBlock):
                                          normalization=normalization,
                                          epsilon=layer_norm_eps, 
                                          **kwargs)
+        if self._use_adapter:
+            self.adapter_layer_ffn = AdapterModule(in_units=units, adapter_config=adapter_config)
 
     def forward(self, data):
         """
@@ -637,6 +646,8 @@ class PositionwiseFFN(HybridBlock):
         out = self.activation_dropout_layer(out)
         out = self.ffn_2(out)
         out = self.dropout_layer(out)
+        if self._use_adapter:
+            out = self.adapter_layer_ffn(out)
         out = out + residual
         if not self._pre_norm:
             out = self.layer_norm(out)
@@ -1007,3 +1018,77 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
 
     def __repr__(self):
         return _gen_repr_with_kwargs(self._kwargs, self.__class__.__name__)
+
+@use_np
+class AdapterModule(nn.HybridBlock):
+    def __init__(self, in_units:int, adapter_config:dict):
+        super().__init__()
+        self._adapter_config = adapter_config
+        self.base_adapter_stacks = nn.HybridSequential()
+        for name in adapter_config['task_names']:
+            self.base_adapter_stacks.add(get_adapter(adapter_config[name], in_units))
+        if adapter_config['adapter_fusion']:
+            self.adapter_fusion = AdapterFusion(adapter_config['adapter_fusion_config'], in_units)
+
+    def forward(self, data):
+        output = []
+        for base_adapter in self.base_adapter_stacks:
+            output.append(base_adapter(data))
+        if  self._adapter_config['adapter_fusion']:
+            output = np.stack(output, axis=0)
+            output = self.adapter_fusion(output)
+            return output
+        else:
+            return output[0]
+
+
+
+
+
+@use_np
+def get_adapter(base_adapter_config, in_units):
+    if base_adapter_config['type'] == 'Basic':
+        return BasicAdapter(units=base_adapter_config['unit'], in_units=in_units)
+    else:
+        pass
+        ##lxy: not finished
+
+
+@use_np
+class AdapterFusion(nn.HybridBlock):
+    def __init__(self, config, in_units):
+        self._config = config
+        self.query_proj = nn.Dense(in_units=in_units, units=in_units)
+        self.key_proj = nn.Dense(in_units=in_units, units=in_units)
+        self.value_proj = nn.Dense(in_units=in_units, units=in_units)
+        self.attention_cell = MultiHeadAttentionCell(query_units=in_units,
+                                                     num_heads=1,
+                                                     attention_dropout=0,
+                                                     scaled=True)
+
+    def forward(self, query, key, value):
+        query = self.query_proj(query)
+        key = self.key_proj(key)
+        value = self.value_proj(value)
+        output = self.attention_cell(query, key, value)
+        return output
+
+@use_np
+class BasicAdapter(nn.HybridBlock):
+    def __init__(self, units: int, in_units: int):
+        super().__init__()
+        self._units = units
+        self.down_proj = nn.Dense(in_units=in_units,
+                                  units=units,
+                                  flatten=False)
+        self.activate = get_activation('gelu')
+        self.up_proj = nn.Dense(in_units=units,
+                                  units=in_units,
+                                  flatten=False)
+
+    def forward(self, data):
+        out = self.down_proj(data)
+        out = self.activate(out)
+        out = self.up_proj(out)
+        return out + data
+
