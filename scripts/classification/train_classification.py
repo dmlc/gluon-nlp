@@ -5,7 +5,9 @@ import mxnet as mx
 import json
 import random
 import pandas as pd
+import mxnet.numpy_extension as _mx_npx
 import os
+import json
 import logging
 import time
 import argparse
@@ -92,13 +94,27 @@ def parse_args():
                         help='the path to training dataset')
     parser.add_argument('--warmup_ratio', type=float, default=0.1,
                         help='Ratio of warmup steps in the learning rate scheduler.')
+    parser.add_argument('--method', type=str, default='full', choices=['full', 'bias', 'subbias', 'adapter'],
+                        help='different finetune method')
 
 
     args = parser.parse_args()
     return args
 
+
+def change_adapter_cfg(cfg, task):
+    adapter_config = {'adapter_fusion':False,
+                      'task_names':[task.task_name],
+                      task.task_name:{'type':'Basic','unit':64}}
+    cfg.defrost()
+    cfg.MODEL.use_adapter = True
+    cfg.MODEL.adapter_config = json.dumps(adapter_config)
+    cfg.freeze()
+    return cfg
+
 def get_network(model_name,
                 ctx_l,
+                method='full',
                 checkpoint_path=None,
                 backbone_path=None,
                 task=None):
@@ -109,13 +125,16 @@ def get_network(model_name,
     use_segmentation = 'roberta' not in model_name and 'xlmr' not in model_name
     Model, cfg, tokenizer, download_params_path, _ = \
         get_backbone(model_name, load_backbone=not backbone_path)
+
+    if method == 'adapter':
+        cfg = change_adapter_cfg(cfg, task)
     backbone = Model.from_cfg(cfg)
     # Load local backbone parameters if backbone_path provided.
     # Otherwise, download backbone parameters from gluon zoo.
 
     backbone_params_path = backbone_path if backbone_path else download_params_path
     if checkpoint_path is None:
-        backbone.load_parameters(backbone_params_path, ignore_extra=True,
+        backbone.load_parameters(backbone_params_path, ignore_extra=True, allow_missing=True,
                                  ctx=ctx_l, cast_dtype=True)
         num_params, num_fixed_params \
             = count_parameters(deduplicate_param_dict(backbone.collect_params()))
@@ -219,6 +238,8 @@ def train(args):
     #random seed
     set_seed(args.seed)
     level = logging.INFO
+    if not os.path.exists(args.output_dir):
+        os.mkdir(args.output_dir)
     detail_dir = os.path.join(args.output_dir, args.task_name)
     if not os.path.exists(detail_dir):
         os.mkdir(detail_dir)
@@ -228,10 +249,11 @@ def train(args):
                    console=(local_rank == 0))
     logging.info(args)
     cfg, tokenizer, classify_net, use_segmentation = \
-        get_network(args.model_name, ctx_l,
+        get_network(args.model_name, ctx_l, args.method,
                     args.param_checkpoint,
                     args.backbone_path,
                     task)
+
 
     logging.info('Prepare training data')
     train_data, _ = get_task_data(args, task, tokenizer, segment='train')
@@ -253,6 +275,22 @@ def train(args):
                             sampler=sampler)
 
 
+    if args.method == 'full':
+        target_params_name = classify_net.collect_params().keys()
+    elif args.method == 'bias':
+        target_params_name = [key
+                              for key in classify_net.collect_params() if
+                              key.endswith('bias') or key.endswith('beta') or 'out_proj' in key]
+    elif args.method == 'adapter':
+        target_params_name = [key
+                              for key in classify_net.collect_params() if
+                             'adapter' in key or 'out_proj' in key]
+    for name in classify_net.collect_params():
+        if name not in target_params_name:
+            classify_net.collect_params()[name].grad_req = 'null'
+
+    target_params = {name:classify_net.collect_params()[name] for name in target_params_name}
+
 
     param_dict = classify_net.collect_params()
     # Do not apply weight decay to all the LayerNorm and bias
@@ -269,7 +307,7 @@ def train(args):
     if local_rank == 0:
         writer = SummaryWriter(logdir=os.path.join(args.output_dir,
                                                    args.task_name + '_tensorboard_' +
-                                                   str(args.lr) + '_' + str(args.epochs)))
+                                                   str(args.lr) + '_' + str(args.epochs) + '_' + str(args.method)))
     if args.comm_backend == 'horovod':
         # Horovod: fetch and broadcast parameters
         hvd.broadcast_parameters(param_dict, root_rank=0)
@@ -290,10 +328,12 @@ def train(args):
     optimizer_params = {'learning_rate': args.lr,
                         'wd': args.wd,
                         'lr_scheduler': lr_scheduler}
+
+
     if args.comm_backend == 'horovod':
-        trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optimizer_params)
+        trainer = hvd.DistributedTrainer(target_params, args.optimizer, optimizer_params)
     else:
-        trainer = mx.gluon.Trainer(classify_net.collect_params(),
+        trainer = mx.gluon.Trainer(target_params,
                                    'adamw',
                                    optimizer_params)
 
@@ -376,15 +416,21 @@ def train(args):
             log_gnorm = 0
             log_step = 0
         if local_rank == 0 and (i == max_update - 1 or i%(max_update//args.epochs) == 0 and i>0):
-            ckpt_name = '{}_{}_{}.params'.format(args.model_name,
-                                                 args.task_name,
-                                                 (i + 1))
+            ckpt_name = '{}_{}_{}_{}.params'.format(args.model_name,
+                                                      args.task_name,
+                                                      (i + 1),
+                                                    args.method)
 
+            tmp_params = classify_net._collect_params_with_prefix()
             params_saved = os.path.join(detail_dir, ckpt_name)
-            classify_net.save_parameters(params_saved)
+            arg_dict = {key: tmp_params[key]._reduce() for key in target_params}
+            _mx_npx.savez(params_saved, **arg_dict)
             logging.info('Params saved in: {}'.format(params_saved))
             for metric in metrics:
                 metric.reset()
+
+    end_time = time.time()
+    logging.info('Total costs:{}'.format(end_time - start_time))
 
 
 
@@ -410,19 +456,24 @@ def evaluate(args):
             str(ctx_l)))
 
     cfg, tokenizer, classify_net, use_segmentation = \
-        get_network(args.model_name, ctx_l,
+        get_network(args.model_name, ctx_l, args.method,
                     args.param_checkpoint,
                     args.backbone_path,
                     task)
+
     candidate_ckpt = []
     detail_dir = os.path.join(args.output_dir, args.task_name)
     for name in os.listdir(detail_dir):
-        if name.endswith('.params') and args.task_name in name and args.model_name in name:
+        if name.endswith(args.method + '.params') and args.task_name in name and args.model_name in name:
             candidate_ckpt.append(os.path.join(detail_dir, name))
+    candidate_ckpt.sort(reverse=False)
     best_ckpt = {}
     metrics = task.metric
     def evaluate_by_ckpt(ckpt_name, best_ckpt):
-        classify_net.load_parameters(ckpt_name, ctx=ctx_l, cast_dtype=True)
+        loaded = _mx_npx.load(ckpt_name)
+        full_dict = {'params': loaded, 'filename': ckpt_name}
+        classify_net.load_dict(full_dict, ctx_l, allow_missing=True,
+                               ignore_extra=True, cast_dtype=True)
         logging.info('Prepare dev data')
 
         dev_data, label = get_task_data(args, task, tokenizer, segment='eval')
