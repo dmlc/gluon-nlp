@@ -16,7 +16,7 @@ from mxnet.gluon import nn, HybridBlock
 from typing import Optional, Tuple, List
 from ..utils.registry import Registry
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask, gen_mem_attn_mask
-from ..layers import PositionalEmbedding, PositionwiseFFN, InitializerType
+from ..layers import PositionalEmbedding, PositionwiseFFN, InitializerType, AdapterModule
 from ..utils.config import CfgNode as CN
 from ..sequence_sampler import BaseStepDecoder
 
@@ -149,7 +149,9 @@ class TransformerEncoderLayer(HybridBlock):
                  bias_initializer: Optional[InitializerType] = 'zeros',
                  activation: str = 'relu',
                  dtype='float32',
-                 layout='NT'):
+                 layout='NT',
+                 use_adapter=False,
+                 adapter_config={}):
         """
 
         Parameters
@@ -186,6 +188,8 @@ class TransformerEncoderLayer(HybridBlock):
         self._pre_norm = pre_norm
         self._dtype = dtype
         self._layout = layout
+        self._use_adapter = use_adapter
+        self._adapter_config = adapter_config
         assert layout in ['TN', 'NT'], 'Invalid layout received = {}. ' \
                                        'Only "TN" and "NT" are accepted!'.format(layout)
         assert self._units % self._num_heads == 0, 'units must be divisive by the number of heads'
@@ -204,6 +208,9 @@ class TransformerEncoderLayer(HybridBlock):
                                        weight_initializer=weight_initializer,
                                        bias_initializer=bias_initializer,
                                        dtype=self._dtype)
+
+        if self._use_adapter:
+            self.adapter_layer_attn = AdapterModule(in_units=units, adapter_config=adapter_config)
         attention_layout = 'NTK' if self._layout == 'NT' else 'TNK'
         self.attention_cell = \
             MultiHeadAttentionCell(
@@ -225,7 +232,9 @@ class TransformerEncoderLayer(HybridBlock):
                                    layer_norm_eps=layer_norm_eps,
                                    activation=activation,
                                    pre_norm=pre_norm,
-                                   dtype=self._dtype)
+                                   dtype=self._dtype,
+                                   use_adapter=self._use_adapter,
+                                   adapter_config=self._adapter_config)
 
     @property
     def layout(self) -> str:
@@ -265,6 +274,8 @@ class TransformerEncoderLayer(HybridBlock):
         out, [_, attn_weight] = self.attention_cell(query, key, value, attn_mask)
         out = self.attention_proj(out)
         out = self.dropout_layer(out)
+        if self._use_adapter:
+            out = self.adapter_layer_attn(out)
         out = out + data
         if not self._pre_norm:
             out = self.layer_norm(out)
