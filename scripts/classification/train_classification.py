@@ -94,7 +94,7 @@ def parse_args():
                         help='the path to training dataset')
     parser.add_argument('--warmup_ratio', type=float, default=0.1,
                         help='Ratio of warmup steps in the learning rate scheduler.')
-    parser.add_argument('--method', type=str, default='full', choices=['full', 'bias', 'subbias', 'adapter'],
+    parser.add_argument('--method', type=str, default='full', choices=['full', 'bias', 'adapter', 'last_layer'],
                         help='different finetune method')
 
 
@@ -103,9 +103,18 @@ def parse_args():
 
 
 def change_adapter_cfg(cfg, task):
-    adapter_config = {'adapter_fusion':False,
+    adapter_config = {
+        'location_0':{
+                      'adapter_fusion':False,
+                      'pre_operator':False,
                       'task_names':[task.task_name],
-                      task.task_name:{'type':'Basic','unit':64}}
+                      task.task_name:{'type':'Basic','units':64, 'activation':'gelu'}},
+        'location_1':{
+                      'adapter_fusion':False,
+                      'pre_operator':False,
+                      'task_names':[task.task_name],
+                      task.task_name:{'type':'Basic','units':64, 'activation':'gelu'}}
+    }
     cfg.defrost()
     cfg.MODEL.use_adapter = True
     cfg.MODEL.adapter_config = json.dumps(adapter_config)
@@ -131,7 +140,6 @@ def get_network(model_name,
     backbone = Model.from_cfg(cfg)
     # Load local backbone parameters if backbone_path provided.
     # Otherwise, download backbone parameters from gluon zoo.
-
     backbone_params_path = backbone_path if backbone_path else download_params_path
     if checkpoint_path is None:
         backbone.load_parameters(backbone_params_path, ignore_extra=True, allow_missing=True,
@@ -244,7 +252,7 @@ def train(args):
     if not os.path.exists(detail_dir):
         os.mkdir(detail_dir)
     logging_config(detail_dir,
-                   name='train_{}_{}_'.format(args.task_name, args.model_name) + str(rank),  # avoid race
+                   name='train_{}_{}_{}_'.format(args.task_name, args.model_name, args.method) + str(rank),  # avoid race
                    level=level,
                    console=(local_rank == 0))
     logging.info(args)
@@ -285,6 +293,10 @@ def train(args):
         target_params_name = [key
                               for key in classify_net.collect_params() if
                              'adapter' in key or 'out_proj' in key]
+    elif args.method == 'last_layer':
+        target_params_name = [key
+                              for key in classify_net.collect_params() if
+                              'out_proj' in key]
     for name in classify_net.collect_params():
         if name not in target_params_name:
             classify_net.collect_params()[name].grad_req = 'null'
