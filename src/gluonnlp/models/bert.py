@@ -230,7 +230,7 @@ class BertTransformer(HybridBlock):
                  activation='gelu',
                  layout='NT',
                  use_adapter='False',
-                 adapter_config={}):
+                 adapter_config='{}'):
         super().__init__()
         assert units % num_heads == 0,\
             'In BertTransformer, The units should be divided exactly ' \
@@ -360,6 +360,7 @@ class BertModel(HybridBlock):
         self.layer_norm_eps = layer_norm_eps
         self._layout = layout
         self._use_adapter = use_adapter
+        self._adapter_config = adapter_config
         if self._use_adapter:
             self._adapter_config = json.loads(adapter_config)
         if compute_layout is None or compute_layout == 'auto':
