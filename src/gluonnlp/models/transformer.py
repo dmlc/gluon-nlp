@@ -16,9 +16,10 @@ from mxnet.gluon import nn, HybridBlock
 from typing import Optional, Tuple, List
 from ..utils.registry import Registry
 from ..attention_cell import MultiHeadAttentionCell, gen_self_attn_mask, gen_mem_attn_mask
-from ..layers import PositionalEmbedding, PositionwiseFFN, InitializerType, AdapterModule
+from ..layers import PositionalEmbedding, PositionwiseFFN, InitializerType
 from ..utils.config import CfgNode as CN
 from ..sequence_sampler import BaseStepDecoder
+from ..adapters import AdapterModule, PositionwiseFFN_adapter
 
 transformer_cfg_reg = Registry('transformer_cfg')
 
@@ -209,8 +210,8 @@ class TransformerEncoderLayer(HybridBlock):
                                        bias_initializer=bias_initializer,
                                        dtype=self._dtype)
 
-        if self._use_adapter:
-            self.adapter_layer_attn = AdapterModule(in_units=units, adapter_config=adapter_config)
+        if self._use_adapter and 'location_0' in self._adapter_config:
+            self.adapter_layer_attn = AdapterModule(in_units=units, adapter_config=self._adapter_config['location_0'])
         attention_layout = 'NTK' if self._layout == 'NT' else 'TNK'
         self.attention_cell = \
             MultiHeadAttentionCell(
@@ -223,18 +224,32 @@ class TransformerEncoderLayer(HybridBlock):
             )
         self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps,
                                        in_channels=units)
-        self.ffn = PositionwiseFFN(units=units,
-                                   hidden_size=hidden_size,
-                                   dropout=hidden_dropout_prob,
-                                   activation_dropout=activation_dropout_prob,
-                                   weight_initializer=weight_initializer,
-                                   bias_initializer=bias_initializer,
-                                   layer_norm_eps=layer_norm_eps,
-                                   activation=activation,
-                                   pre_norm=pre_norm,
-                                   dtype=self._dtype,
-                                   use_adapter=self._use_adapter,
-                                   adapter_config=self._adapter_config)
+        if self._use_adapter:
+            self.ffn = PositionwiseFFN_adapter(units=units,
+                                       hidden_size=hidden_size,
+                                       dropout=hidden_dropout_prob,
+                                       activation_dropout=activation_dropout_prob,
+                                       weight_initializer=weight_initializer,
+                                       bias_initializer=bias_initializer,
+                                       layer_norm_eps=layer_norm_eps,
+                                       activation=activation,
+                                       pre_norm=pre_norm,
+                                       dtype=self._dtype,
+                                       use_adapter=self._use_adapter,
+                                       adapter_config=self._adapter_config)
+        else:
+            self.ffn = PositionwiseFFN(units=units,
+                                       hidden_size=hidden_size,
+                                       dropout=hidden_dropout_prob,
+                                       activation_dropout=activation_dropout_prob,
+                                       weight_initializer=weight_initializer,
+                                       bias_initializer=bias_initializer,
+                                       layer_norm_eps=layer_norm_eps,
+                                       activation=activation,
+                                       pre_norm=pre_norm,
+                                       dtype=self._dtype,
+                                       use_adapter=self._use_adapter,
+                                       adapter_config=self._adapter_config)
 
     @property
     def layout(self) -> str:
@@ -274,8 +289,8 @@ class TransformerEncoderLayer(HybridBlock):
         out, [_, attn_weight] = self.attention_cell(query, key, value, attn_mask)
         out = self.attention_proj(out)
         out = self.dropout_layer(out)
-        if self._use_adapter:
-            out = self.adapter_layer_attn(out)
+        if self._use_adapter and 'location_0' in self._adapter_config:
+            out = self.adapter_layer_attn(out, data)
         out = out + data
         if not self._pre_norm:
             out = self.layer_norm(out)
