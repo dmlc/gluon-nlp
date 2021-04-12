@@ -142,7 +142,7 @@ def get_network(model_name,
     # Otherwise, download backbone parameters from gluon zoo.
     backbone_params_path = backbone_path if backbone_path else download_params_path
     if checkpoint_path is None:
-        backbone.load_parameters(backbone_params_path, ignore_extra=True, allow_missing=True,
+        backbone.load_parameters(backbone_params_path, ignore_extra=True, allow_missing=(args.method != 'full'),
                                  ctx=ctx_l, cast_dtype=True)
         num_params, num_fixed_params \
             = count_parameters(deduplicate_param_dict(backbone.collect_params()))
