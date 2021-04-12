@@ -617,8 +617,6 @@ class PositionwiseFFN(HybridBlock):
                                          normalization=normalization,
                                          epsilon=layer_norm_eps, 
                                          **kwargs)
-        if self._use_adapter:
-            self.adapter_layer_ffn = AdapterModule(in_units=units, adapter_config=adapter_config)
 
     def forward(self, data):
         """
