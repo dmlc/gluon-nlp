@@ -51,7 +51,7 @@ here are some results with their hyperparameters
 |    CoLA    | Matthew Corr.  | 2e-5       | 32    | 7800 |  10 |  59.23 |  https://tensorboard.dev/experiment/33euRGh9SrW3p15JWgILnw/ |
 |    RTE    |  Accuracy | 2e-5       | 32    | 1800 |  10 |  69.67 |  https://tensorboard.dev/experiment/XjTxr5anRrC1LMukLJJQ3g/|
 |    MRPC    | Accuracy/F1  | 3e-5       | 32    | 7800 |  5 |  85.38/87.31 |  https://tensorboard.dev/experiment/jEJFq2XXQ8SvCxt6eKIjwg/ |
-|    MNLI    |  Accuracy(m/mm) | 2e-5       | 48    | 7800 |  5 |  84.90/85.10 |  https://tensorboard.dev/experiment/CZQlOBedRQeTZwn5o5fbKQ/ |
+|    MNLI    |  Accuracy(m/mm) | 2e-5       | 48    | 7800 |  4 |  84.90/85.10 |  https://tensorboard.dev/experiment/CZQlOBedRQeTZwn5o5fbKQ/ |
 
 
 ## different method
@@ -60,6 +60,7 @@ bias-finetune() and adapter-finetune. To use them, you can directly add an augme
 ```bash
 python train_classification.py \
   --model_name google_en_uncased_bert_base \
+  --method adapter \
   --task_name mrpc \
   --lr 4.5e-4\
   --model_name google_en_cased_bert_base \
