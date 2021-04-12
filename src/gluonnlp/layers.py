@@ -546,8 +546,6 @@ class PositionwiseFFN(HybridBlock):
                  layer_norm_eps: float = 1E-5,
                  pre_norm: bool = False,
                  dtype='float32',
-                 use_adapter='False',
-                 adapter_config={},
                  **kwargs):
         """
 
@@ -575,7 +573,6 @@ class PositionwiseFFN(HybridBlock):
         self._dtype = dtype
         self._pre_norm = pre_norm
         self._use_gated_activation = use_gated_activation
-        self._use_adapter = use_adapter
         self._kwargs = OrderedDict([
             ('units', units),
             ('hidden_size', hidden_size),
@@ -643,8 +640,6 @@ class PositionwiseFFN(HybridBlock):
         out = self.activation_dropout_layer(out)
         out = self.ffn_2(out)
         out = self.dropout_layer(out)
-        if self._use_adapter:
-            out = self.adapter_layer_ffn(out, residual)
         out = out + residual
         if not self._pre_norm:
             out = self.layer_norm(out)
