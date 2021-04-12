@@ -319,7 +319,7 @@ def train(args):
         if name not in target_params_name:
             classify_net.collect_params()[name].grad_req = 'null'
     store_names = [key for key in classify_net.collect_params() if
-                            'adapter' in key]
+                            'adapter' in key or 'out_proj' in key]
     target_params = {name:classify_net.collect_params()[name] for name in target_params_name}
     param_dict = classify_net.collect_params()
     # Do not apply weight decay to all the LayerNorm and bias
