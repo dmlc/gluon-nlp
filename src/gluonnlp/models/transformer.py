@@ -247,9 +247,7 @@ class TransformerEncoderLayer(HybridBlock):
                                        layer_norm_eps=layer_norm_eps,
                                        activation=activation,
                                        pre_norm=pre_norm,
-                                       dtype=self._dtype,
-                                       use_adapter=self._use_adapter,
-                                       adapter_config=self._adapter_config)
+                                       dtype=self._dtype)
 
     @property
     def layout(self) -> str:
