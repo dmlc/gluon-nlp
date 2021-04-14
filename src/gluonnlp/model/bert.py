@@ -1254,7 +1254,7 @@ def bert_24_1024_16(dataset_name=None, vocab=None, pretrained=True, ctx=mx.cpu()
                           pretrained_allow_missing=pretrained_allow_missing,
                           hparam_allow_override=hparam_allow_override, **kwargs)
 
-def distilbert_6_768_12(dataset_name='distil_book_corpus_wiki_en_uncased', vocab=None,
+def distilbert_6_768_12(dataset_name='distilbert_book_corpus_wiki_en_uncased', vocab=None,
                         pretrained=True, ctx=mx.cpu(),
                         output_attention=False,
                         output_all_encodings=False,
