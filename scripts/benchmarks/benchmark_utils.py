@@ -607,14 +607,14 @@ def bytes_to_mega_bytes(memory_amount: int) -> int:
 _TVM_RT_CACHE = dict()
 
 
-def compile_tvm_graph_runtime(model, model_name, layout, compute_layout,
+def compile_tvm_graph_executor(model, model_name, layout, compute_layout,
                               batch_size, seq_length, dtype, instance_type):
     key = (model_name, layout, compute_layout, batch_size, seq_length, dtype, instance_type)
     if key in _TVM_RT_CACHE:
         return _TVM_RT_CACHE[key]
     tvm = try_import_tvm()
     from tvm import relay
-    from tvm.contrib import graph_runtime
+    from tvm.contrib import graph_executor
     from gluonnlp.utils.tvm_utils import get_ec2_tvm_flags, update_tvm_convert_map
     flags = get_ec2_tvm_flags()[instance_type]
     update_tvm_convert_map()
@@ -668,7 +668,7 @@ def compile_tvm_graph_runtime(model, model_name, layout, compute_layout,
         ctx = tvm.gpu()
     else:
         ctx = tvm.cpu()
-    rt = graph_runtime.GraphModule(lib["default"](ctx))
+    rt = graph_executor.GraphModule(lib["default"](ctx))
     _TVM_RT_CACHE[key] = rt
     return rt
 
@@ -820,7 +820,7 @@ class GluonNLPBackboneBenchmark:
                 ctx = tvm.gpu()
             else:
                 ctx = tvm.cpu()
-            rt = compile_tvm_graph_runtime(model=model, model_name=model_name,
+            rt = compile_tvm_graph_executor(model=model, model_name=model_name,
                                            layout=self._layout, compute_layout=self._compute_layout,
                                            batch_size=batch_size, seq_length=sequence_length,
                                            instance_type=self._instance_type,

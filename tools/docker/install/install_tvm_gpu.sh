@@ -24,7 +24,7 @@ cd ${WORKDIR}
 git clone https://github.com/apache/incubator-tvm tvm --recursive
 cd ${WORKDIR}/tvm
 # checkout a hash-tag
-git checkout 790344c6ef035947caaaf1cd812ade8d862802aa
+git checkout bf862d4c4355eae4f18d89b3b6b98ed0a2c18e9c
 
 
 mkdir -p build
@@ -33,7 +33,7 @@ echo set\(USE_LLVM llvm-config-10\) >> build/config.cmake
 echo set\(USE_CUDA ON\) >> build/config.cmake
 echo set\(USE_CUDNN ON\) >> build/config.cmake
 echo set\(USE_CUBLAS ON\) >> build/config.cmake
-echo set\(USE_GRAPH_RUNTIME ON\) >> build/config.cmake
+echo set\(USE_GRAPH_EXECUTOR ON\) >> build/config.cmake
 echo set\(USE_BLAS openblas\) >> build/config.cmake
 
 cd build
