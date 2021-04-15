@@ -47,7 +47,7 @@ jobs:
                                           --saved-output coverage.xml \
                                           --save-path coverage.xml \
                                           --remote https://github.com/${{ github.repository }} \
-                                          --command "python3 -m pip install 'mxnet<2' flaky numpy==1.18.4 \
+                                          --command "python3 -m pip install 'mxnet==1.7.0.post2' flaky numpy==1.18.4 \
                                                     && python3 -m spacy download en && python -m spacy download de \
                                                     && python3 -m nltk.downloader all \
                                                     && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
@@ -65,7 +65,7 @@ jobs:
                                           --saved-output coverage.xml \
                                           --save-path coverage.xml \
                                           --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
-                                          --command "python3 -m pip install 'mxnet<2' flaky numpy==1.18.4 \
+                                          --command "python3 -m pip install 'mxnet==1.7.0.post2' flaky numpy==1.18.4 \
                                                     && python -m spacy download en && python -m spacy download de \
                                                     && python -m nltk.downloader all \
                                                     && pytest -m 'not (gpu or serial)' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
