@@ -58,9 +58,10 @@ class AdapterFusion(nn.HybridBlock):
         key = self.key_proj(key).transpose((0, 1, 3, 2))
         value = self.value_proj(value)
         scores = np.squeeze(npx.batch_dot(query, key), axis=2)
-        attn_weights = npx.softmax(scores, axis=-1)
-        output = np.squeeze(npx.batch_dot(npx.reshape(attn_weights, (-2, -2, 1, -1)),  value), axis=2)
 
+        attn_weights = npx.softmax(scores, axis=-1)
+
+        output = np.squeeze(npx.batch_dot(npx.reshape(attn_weights, (-2, -2, 1, -1)),  value), axis=2)
         return output
 
 @use_np
@@ -77,9 +78,11 @@ class AdapterModule(nn.HybridBlock):
         super().__init__()
         self._in_units = in_units
         self._adapter_config = adapter_config
+        self._basic_num = 0
         self.base_adapter_stacks = nn.HybridSequential()
         for name in adapter_config['task_names']:
             self.base_adapter_stacks.add(get_base_adapter(adapter_config[name], in_units))
+            self._basic_num += 1
         if adapter_config['adapter_fusion']:
             self.adapter_fusion = AdapterFusion(in_units)
         if adapter_config['pre_operator']:
@@ -94,8 +97,9 @@ class AdapterModule(nn.HybridBlock):
             data = self.pre_norm(data)
 
         output = []
-        for base_adapter in self.base_adapter_stacks:
-            output.append(base_adapter(data, new_residual))
+        for layer_idx in range(self._basic_num):
+            layer = self.base_adapter_stacks[layer_idx]
+            output.append(layer(data, new_residual))
 
         if  self._adapter_config['adapter_fusion']:
             output = np.stack(output, axis=2)
