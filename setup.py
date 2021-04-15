@@ -31,7 +31,7 @@ if VERSION.endswith('dev'):
 requirements = [
     'boto3',
     'numpy<1.20.0',
-    'sacremoses>=0.0.38',
+    'sacremoses>=0.0.38,<0.0.44',
     'yacs>=0.1.6',
     'sacrebleu',
     'flake8',

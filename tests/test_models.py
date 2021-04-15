@@ -73,11 +73,10 @@ def test_get_backbone(name, ctx):
 @pytest.mark.parametrize('layout', ['NT', 'TN'])
 @pytest.mark.skipif(not tvm_enabled(),
                     reason='TVM is not supported. So this test is skipped.')
-# @pytest.mark.skip('TVM issue https://github.com/dmlc/gluon-nlp/issues/1425.')
 def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
     tvm = try_import_tvm()
     from tvm import relay
-    from tvm.contrib import graph_runtime
+    from tvm.contrib import graph_executor
     from gluonnlp.utils.tvm_utils import get_ec2_tvm_flags, update_tvm_convert_map
     update_tvm_convert_map()
     tvm_recommended_flags = get_ec2_tvm_flags()
@@ -161,7 +160,7 @@ def test_tvm_integration(model_name, batch_size, seq_length, layout, ctx):
             ctx = tvm.gpu()
         else:
             ctx = tvm.cpu()
-        rt = graph_runtime.GraphModule(lib["default"](ctx))
+        rt = graph_executor.GraphModule(lib["default"](ctx))
         if 'bart' in model_name:
             rt.set_input(data0=token_ids.asnumpy(), data1=valid_length.asnumpy(), data2=token_ids.asnumpy(), data3=valid_length.asnumpy())
         elif 'roberta' in model_name:
