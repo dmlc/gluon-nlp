@@ -234,7 +234,7 @@ if __name__ == '__main__':
     parser.add_argument('--only_calibration', action='store_true',
                         help='quantize model')
 
-    parser.add_argument('--num_calib_batches', type=int, default=10,
+    parser.add_argument('--num_calib_batches', type=int, default=1,
                         help='number of batches for calibration')
 
     parser.add_argument('--quantized_dtype', type=str, default='auto',
@@ -359,7 +359,13 @@ if __name__ == '__main__':
     net = BertForQA(bert=bert)
     if model_parameters:
         # load complete BertForQA parameters
-        nlp.utils.load_parameters(net, model_parameters, ctx=ctx, cast_dtype=True)
+        from mxnet.gluon.model_zoo import model_store
+        #def download_qa_ckpt():
+        model_store._model_sha1['bert_qa'] = '7eb11865ecac2a412457a7c8312d37a1456af7fc'
+        result = model_store.get_model_file('bert_qa', root='./output_dir/downloaded')
+
+        #net.load_parameters(result, ctx=ctx)
+        nlp.utils.load_parameters(net, result, ctx=ctx, cast_dtype=True)
     elif pretrained_bert_parameters:
         # only load BertModel parameters
         nlp.utils.load_parameters(bert, pretrained_bert_parameters, ctx=ctx,
@@ -589,7 +595,7 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
     net = mx.contrib.quantization.quantize_net_v2(net, quantized_dtype=quantized_dtype,
                                                   exclude_layers=[],
                                                   quantize_mode='smart',
-                                                  quantize_granularity='channel-wise',
+                                                  quantize_granularity='tensor-wise',
                                                   calib_data=dev_dataloader,
                                                   calib_mode=calib_mode,
                                                   num_calib_examples=num_calib_examples,
@@ -597,6 +603,9 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
                                                   LayerOutputCollector=collector,
                                                   logger=log)
     # save params
+    net.hybridize()
+    out = net(mx.nd.zeros((24 ,177)).astype('int32'), mx.nd.zeros((24 ,177)).astype('int32'), mx.nd.zeros((24 ,)).as_in_context(ctx).astype('float32'))
+    out.wait_to_read()
     ckpt_name = 'model_bert_squad_quantized_{0}'.format(calib_mode)
     params_saved = os.path.join(output_dir, ckpt_name)
     net.export(params_saved, epoch=0)
@@ -849,14 +858,15 @@ def preprocess_dataset(tokenizer,
 
 if __name__ == '__main__':
     if only_calibration:
-        try:
-            calibration(net,
-                        num_calib_batches,
-                        quantized_dtype,
-                        calib_mode)
-        except AttributeError:
-            nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
-            warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
+        #try:
+        calibration(net,
+                    num_calib_batches,
+                    quantized_dtype,
+                    calib_mode)
+        #except AttributeError as err:
+        #print(err)
+        #nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
+        #warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
     elif not only_predict:
         train()
         evaluate()
