@@ -124,6 +124,8 @@ def load_adapters(model, config, ctx_l):
 
 #'cola': {'type': 'Basic', 'units': 64, 'activation': 'gelu',
 #         'backbone': '/home/ubuntu/gluon-nlp/scripts/continual_learning/cls_dir/cola/google_en_uncased_bert_base_cola_2680_adapter.params'},
+#'mrpc': {'type': 'Basic', 'units': 64, 'activation': 'gelu', 'backbone':'/home/ubuntu/gluon-nlp/scripts/continual_learning/cls_dir/mrpc/google_en_uncased_bert_base_mrpc_461_adapter.params'},
+
 
 def change_adapter_cfg(cfg):
     adapter_config = {
@@ -131,8 +133,7 @@ def change_adapter_cfg(cfg):
             'adapter_fusion': True,
             'pre_operator': True,
             'layer_norm_eps':1e-5,
-            'task_names': ['mrpc', 'cola'],
-            'mrpc': {'type': 'Basic', 'units': 64, 'activation': 'gelu', 'backbone':'/home/ubuntu/gluon-nlp/scripts/continual_learning/cls_dir/mrpc/google_en_uncased_bert_base_mrpc_461_adapter.params'},
+            'task_names': ['cola'],
             'cola': {'type': 'Basic', 'units': 64, 'activation': 'gelu',
                      'backbone': '/home/ubuntu/gluon-nlp/scripts/continual_learning/cls_dir/cola/google_en_uncased_bert_base_cola_2680_adapter.params'},
         }
