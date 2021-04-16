@@ -12,6 +12,7 @@ import numpy as _np
 import mxnet as mx
 from mxnet import np, npx
 from mxnet import use_np
+import functools
 from mxnet.gluon import nn, HybridBlock
 from typing import Optional, Tuple, List
 from ..utils.registry import Registry
@@ -225,29 +226,21 @@ class TransformerEncoderLayer(HybridBlock):
         self.layer_norm = nn.LayerNorm(epsilon=layer_norm_eps,
                                        in_channels=units)
         if self._use_adapter:
-            self.ffn = PositionwiseFFN_adapter(units=units,
-                                       hidden_size=hidden_size,
-                                       dropout=hidden_dropout_prob,
-                                       activation_dropout=activation_dropout_prob,
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       layer_norm_eps=layer_norm_eps,
-                                       activation=activation,
-                                       pre_norm=pre_norm,
-                                       dtype=self._dtype,
-                                       use_adapter=self._use_adapter,
+            get_ffn = functools.partial(PositionwiseFFN_adapter, use_adapter=self._use_adapter,
                                        adapter_config=self._adapter_config)
         else:
-            self.ffn = PositionwiseFFN(units=units,
-                                       hidden_size=hidden_size,
-                                       dropout=hidden_dropout_prob,
-                                       activation_dropout=activation_dropout_prob,
-                                       weight_initializer=weight_initializer,
-                                       bias_initializer=bias_initializer,
-                                       layer_norm_eps=layer_norm_eps,
-                                       activation=activation,
-                                       pre_norm=pre_norm,
-                                       dtype=self._dtype)
+            get_ffn = PositionwiseFFN
+        self.ffn = get_ffn(units=units,
+                           hidden_size=hidden_size,
+                           dropout=hidden_dropout_prob,
+                           activation_dropout=activation_dropout_prob,
+                           weight_initializer=weight_initializer,
+                           bias_initializer=bias_initializer,
+                           layer_norm_eps=layer_norm_eps,
+                           activation=activation,
+                           pre_norm=pre_norm,
+                           dtype=self._dtype)
+
 
     @property
     def layout(self) -> str:
