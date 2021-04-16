@@ -500,11 +500,232 @@ MXReturnValue mha_interleave(mxnet::ext::Graph *g,
   return MX_SUCCESS;
 }
 
+Node* AddNewNode(Graph* g, std::string node_name, std::string op_name) {
+#if MX_LIBRARY_VERSION <= 7
+      Node* new_node = new Node();
+      new_node->name = node_name;
+      new_node->op = op_name;
+      g->nodes.push_back(new_node);
+#else
+      Node* new_node = g->addNode(node_name, op_name);
+#endif
+  return new_node;
+}
+
+bool isStrEq(std::string a, std::string b) {
+  return a.compare(b) == 0;
+}
+bool CheckIfSoftmaxLengthPattern(Node *softmax_node) {
+  std::string softmax_using_length = softmax_node->attrs["use_length"];
+  if (isStrEq(softmax_using_length, "False"))
+    return false;
+
+  auto reshape_node = softmax_node->inputs[1].node;
+  if (isStrEq(reshape_node->op, "Reshape")) {
+    std::string required_shape = reshape_node->attrs["shape"];
+    std::string is_reverse = reshape_node->attrs["reverse"];
+    if (!(isStrEq(required_shape, "(-1, 0)") && isStrEq(is_reverse, "True"))) {
+      return false;
+    }
+  } else {
+    return false;
+  }
+  auto bcast_axis_node = reshape_node->inputs[0].node;
+  if (isStrEq(bcast_axis_node->op, "broadcast_axis")) {
+    std::string axis = bcast_axis_node->attrs["axis"];
+    if (!isStrEq(axis, "1")) {
+      return false;
+    }
+  } else {
+    return false;
+  }
+
+  auto expand_dims_node = bcast_axis_node->inputs[0].node;
+  if (isStrEq(expand_dims_node->op, "expand_dims")) {
+    std::string axis = expand_dims_node->attrs["axis"];
+    if (!isStrEq(axis, "1")) {
+      return false;
+    }
+  } else {
+    return false;
+  }
+
+  auto cast_node = expand_dims_node->inputs[0].node;
+  if (isStrEq(cast_node->op, "Cast")) {
+    std::string dtype = cast_node->attrs["dtype"];
+    if (!isStrEq(dtype, "int32")) {
+      return false;
+    }
+  } else {
+    return false;
+  }
+
+  auto bcast_add_node = cast_node->inputs[0].node;
+  if (!isStrEq(bcast_add_node->op, "broadcast_add"))
+    return false;
+
+  auto reshape_2_node = bcast_add_node->inputs[0].node;
+  if (isStrEq(reshape_2_node->op, "Reshape")) {
+    std::string required_shape = reshape_2_node->attrs["shape"];
+    if (!isStrEq(required_shape, "(-1, 1)")) {
+      return false;
+    }
+  } else {
+    return false;
+  }
+
+  return true;
+}
+
+void GroupSameSubgraphs(std::vector<std::vector<Node*>> &subgraph_groups, Node* softmax_node) {
+  auto CompareSg = [&](const Node* sg1, const Node* sg2) {
+    const auto sg1_reshape_node = sg1->inputs[1].node;
+    const auto sg1_bcast_axis_node = sg1_reshape_node->inputs[0].node;
+    const auto sg1_expand_dims_node = sg1_bcast_axis_node->inputs[0].node;
+    const auto sg1_cast_node = sg1_expand_dims_node->inputs[0].node;
+    auto &sg1_bcast_param = sg1_bcast_axis_node->attrs;
+
+    const auto sg2_reshape_node = sg2->inputs[1].node;
+    const auto sg2_bcast_axis_node = sg2_reshape_node->inputs[0].node;
+    const auto sg2_expand_dims_node = sg1_bcast_axis_node->inputs[0].node;
+    const auto sg2_cast_node = sg1_expand_dims_node->inputs[0].node;
+    auto &sg2_bcast_param = sg2_bcast_axis_node->attrs;
+
+    return isStrEq(sg2_bcast_param["size"], sg1_bcast_param["size"]) &&
+           isStrEq(sg2_bcast_param["axis"], sg1_bcast_param["axis"]) &&
+           sg1_cast_node == sg2_cast_node;
+  };
+
+  if (subgraph_groups.empty()) {
+    std::vector<Node*> newGroup{softmax_node};
+    subgraph_groups.emplace_back(newGroup);
+  } else {
+    for (auto& group : subgraph_groups) {
+      Node* sg = group[0];  // take first from group -- all of them are the same
+      if (CompareSg(softmax_node, sg)) {
+        group.emplace_back(softmax_node);
+        return;
+      }
+    }
+    std::vector<Node*> newGroup{softmax_node};
+    subgraph_groups.emplace_back(newGroup);
+  }
+}
+
+void ConnectInput(Node* source, Node* input, const int index = 0, int entry = 0) {
+  source->inputs[index].node = input;
+  source->inputs[index].entry = entry;
+}
+
+Node* CreateSoftmaxMask(Graph* g, const Node* softmax_node, int mask_id = 0) {
+  // original nodes - correctness checked before
+  const auto reshape_node = softmax_node->inputs[1].node;
+  const auto bcast_axis_node = reshape_node->inputs[0].node;
+  const auto expand_dims_node = bcast_axis_node->inputs[0].node;
+  const auto cast_node = expand_dims_node->inputs[0].node;
+  const auto bcast_add_node = cast_node->inputs[0].node;
+
+  const int num_heads = stoi(bcast_axis_node->attrs["size"]);
+
+  // create new mask
+  std::string mask_name = "_sg_mkldnn_softmaxmask_" + std::to_string(mask_id);
+  auto zeros_mask = AddNewNode(g, mask_name + "_zeros", "zeros_like");
+  zeros_mask->inputs.resize(1);
+  ConnectInput(zeros_mask, bcast_add_node, 0);
+
+  auto sequence_mask = AddNewNode(g, mask_name + "_sequence_mask", "SequenceMask");
+  sequence_mask->inputs.resize(2);
+  ConnectInput(sequence_mask, zeros_mask, 0);
+  ConnectInput(sequence_mask, bcast_add_node->inputs[0].node->inputs[0].node, 1);
+  sequence_mask->attrs["axis"] = "1";
+  sequence_mask->attrs["use_sequence_length"] = "True";
+  sequence_mask->attrs["value"] = "-1e12";
+
+  auto expdims_mask = AddNewNode(g, mask_name + "_exp_dims", "expand_dims");
+  expdims_mask->inputs.resize(1);
+  ConnectInput(expdims_mask, sequence_mask);
+  expdims_mask->attrs["axis"] = "1";
+
+  auto bcastaxis_mask = AddNewNode(g, mask_name + "_broadcast_axis", "broadcast_like");
+  bcastaxis_mask->inputs.resize(2);
+  ConnectInput(bcastaxis_mask, expdims_mask, 0);
+  ConnectInput(bcastaxis_mask, expdims_mask, 1);
+  bcastaxis_mask->attrs["lhs_axes"] = "1";
+  bcastaxis_mask->attrs["rhs_axes"] = "-1";
+
+  auto head_axis_mask = AddNewNode(g, mask_name + "_head_axis", "expand_dims");
+  head_axis_mask->inputs.resize(1);
+  ConnectInput(head_axis_mask, bcastaxis_mask);
+  head_axis_mask->attrs["axis"] = "1";
+
+  auto bcast_head_mask = AddNewNode(g, mask_name + "_broadcast_head", "broadcast_axis");
+  bcast_head_mask->inputs.resize(1);
+  ConnectInput(bcast_head_mask, head_axis_mask);
+  bcast_head_mask->attrs["axis"] = "1";
+  bcast_head_mask->attrs["size"] = std::to_string(num_heads);
+
+  auto bs_mul_head_shape = AddNewNode(g, mask_name + "_bs_mul_head_shape", "Reshape");
+  bs_mul_head_shape->inputs.resize(1);
+  ConnectInput(bs_mul_head_shape, bcast_head_mask);
+  bs_mul_head_shape->attrs["shape"] = "(-1, 0, 0)";
+  bs_mul_head_shape->attrs["reverse"] = "True";
+
+  return bs_mul_head_shape;
+}
+
+
+#if MX_LIBRARY_VERSION <= 7
+MXReturnValue mask_softmax(const std::string& in_graph, const std::string** out_graph,
+                           const std::unordered_map<std::string, std::string>& options,
+                           const std::unordered_map<std::string, MXTensor>& args,
+                           const std::unordered_map<std::string, MXTensor>& aux,
+                           const PassResource& res) {
+  Graph *g = Graph::fromString(in_graph);
+#else
+MXReturnValue mask_softmax(mxnet::ext::Graph *g,
+                           const std::unordered_map<std::string, std::string>& options) {
+#endif
+  std::vector<std::vector<Node*>> subgraph_groups;
+  g->DFS([&](Node* n) {
+      if (n->op.compare("softmax") == 0) {  // equal
+        if (CheckIfSoftmaxLengthPattern(n)) {
+          GroupSameSubgraphs(subgraph_groups, n);
+        }
+      }
+  });
+
+  int i = 0;
+  for (auto& group : subgraph_groups) {
+      const Node* sg = group[0];
+      auto mask_node = CreateSoftmaxMask(g, sg, i);
+      for (auto softmax_node : group) {
+          std::string name = softmax_node->name + "_mask_apply";
+          auto ew_add = AddNewNode(g, name, "elemwise_add");
+          ew_add->inputs.resize(2);
+          ConnectInput(ew_add, softmax_node->inputs[0].node, 0);
+          ConnectInput(ew_add, mask_node, 1);
+
+          softmax_node->attrs["use_length"] = "False";
+          softmax_node->inputs.pop_back();
+          ConnectInput(softmax_node, ew_add);
+      }
+  }
+
+#if MX_LIBRARY_VERSION <= 7
+  //convert back to JSON string from Graph/Node
+  *out_graph = new std::string(g->toString());
+#endif
+  return MX_SUCCESS;
+}
+
 REGISTER_PASS(addbias_gelu)
 .setBody(addbias_gelu);
 
 REGISTER_PASS(mha_interleave)
 .setBody(mha_interleave);
+
+REGISTER_PASS(mask_softmax)
+.setBody(mask_softmax);
 
 MXReturnValue initialize(int version) {
   if (version >= 10700) {
