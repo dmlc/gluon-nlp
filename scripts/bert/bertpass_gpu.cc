@@ -229,17 +229,17 @@ class Graph {
 #endif
 
 #if MX_LIBRARY_VERSION <= 7
-MXReturnValue custom_pass(const std::string& in_graph, const std::string** out_graph,
-                          const std::unordered_map<std::string, std::string>& options,
-                          const std::unordered_map<std::string, MXTensor>& args,
-                          const std::unordered_map<std::string, MXTensor>& aux,
-                          const PassResource& res) {
+MXReturnValue addbias_gelu(const std::string& in_graph, const std::string** out_graph,
+                           const std::unordered_map<std::string, std::string>& options,
+                           const std::unordered_map<std::string, MXTensor>& args,
+                           const std::unordered_map<std::string, MXTensor>& aux,
+                           const PassResource& res) {
   //convert graph from JSON string to Graph/Node data structure
   Graph *g = Graph::fromString(in_graph);
   for(Node* n : g->nodes) {
 #else
-MXReturnValue custom_pass(mxnet::ext::Graph *g,
-                          const std::unordered_map<std::string, std::string>& options) {
+MXReturnValue addbias_gelu(mxnet::ext::Graph *g,
+                           const std::unordered_map<std::string, std::string>& options) {
   for(int i=0; i < g->size(); i++) {
     mxnet::ext::Node* n = g->getNode(i);
 #endif
@@ -306,8 +306,26 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
       node_gelu->inputs[0].entry = 0;
     }
   }
-  /////////////////////////////////////////////////////////////////
+#if MX_LIBRARY_VERSION <= 7
+  //convert back to JSON string from Graph/Node
+  *out_graph = new std::string(g->toString());
+#endif
+  return MX_SUCCESS;
+}
 
+#if MX_LIBRARY_VERSION <= 7
+MXReturnValue mha_interleave(const std::string& in_graph, const std::string** out_graph,
+                             const std::unordered_map<std::string, std::string>& options,
+                             const std::unordered_map<std::string, MXTensor>& args,
+                             const std::unordered_map<std::string, MXTensor>& aux,
+                             const PassResource& res) {
+  //convert graph from JSON string to Graph/Node data structure
+  Graph *g = Graph::fromString(in_graph);
+#else
+MXReturnValue mha_interleave(mxnet::ext::Graph *g,
+                             const std::unordered_map<std::string, std::string>& options) {
+
+#endif
   /////// MHA prepare weight & bias for interleaved strategy //////
   // find shapes, number of heads, and count number of MHA layers
   std::string query0_weight = "bertencoder0_transformer0_dotproductselfattentioncell0_query_weight";
@@ -353,7 +371,7 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
 
       //////////////////// WEIGHTS ////////////////////
       // create new input node with interleaved weights
-      std::string name_qkv_weights_interleaved = base_name + "_qkv_weights_interleaved";
+      std::string name_qkv_weights_interleaved = base_name + "_qkv_interleaved_weight";
 #if MX_LIBRARY_VERSION <= 7
       // create a new input Node
       Node* node_qkv_weights = new Node();
@@ -373,7 +391,7 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
       g->nodes.push_back(node_qkv_weights);
       g->inputs.push_back(node_qkv_weights);
 #else
-      Node* node_qkv_weights = g->addNode(name_qkv_weights_interleaved + "_input", "null");
+      Node* node_qkv_weights = g->addNode(name_qkv_weights_interleaved, "null");
       node_qkv_weights->alloc_arg({3 * shape0, shape1}, MXContext::CPU(0), kFloat32);
       float* qkv_w_data = node_qkv_weights->tensor->data<float>();
       // look back for query, key, and value weights: original data
@@ -435,7 +453,7 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
       g->nodes.push_back(node_qkv_bias);
       g->inputs.push_back(node_qkv_bias);
 #else
-      Node* node_qkv_bias = g->addNode(name_qkv_bias + "_input", "null");
+      Node* node_qkv_bias = g->addNode(name_qkv_bias, "null");
       node_qkv_bias->alloc_arg({3 * shape0, }, MXContext::CPU(0), kFloat32);
       float* qkv_bias_data = node_qkv_bias->tensor->data<float>();
       // look back for query, key, and value bias: original data
@@ -482,8 +500,11 @@ MXReturnValue custom_pass(mxnet::ext::Graph *g,
   return MX_SUCCESS;
 }
 
-REGISTER_PASS(custom_pass)
-.setBody(custom_pass);
+REGISTER_PASS(addbias_gelu)
+.setBody(addbias_gelu);
+
+REGISTER_PASS(mha_interleave)
+.setBody(mha_interleave);
 
 MXReturnValue initialize(int version) {
   if (version >= 10700) {

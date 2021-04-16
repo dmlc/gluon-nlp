@@ -130,11 +130,18 @@ if __name__ == '__main__':
                         default='float32',
                         help='Data type used for training. Either float32 or float16')
 
-    parser.add_argument('--custom_pass',
+
+    parser.add_argument('--custom_pass_lib',
                         type=str,
                         default=None,
-                        help='Specify a custom graph pass for the network (library),'
+                        help='Specify a custom graph pass library for the network,'
                         'allowing to customize the graph')
+
+    parser.add_argument('--custom_passes',
+                        type=str,
+                        nargs='+',
+                        default=None,
+                        help='Specify a list of custom graph pass for the network to apply')
 
     parser.add_argument('--max_iters',
                         type=int,
@@ -312,34 +319,40 @@ def export(prefix):
     assert os.path.isfile(prefix + '-symbol.json')
     assert os.path.isfile(prefix + '-0000.params')
 
-    if args.custom_pass is not None:
+    if args.custom_pass_lib is not None \
+       and args.custom_passes is not None:
         # load library
-        libpath = os.path.abspath(args.custom_pass)
+        libpath = os.path.abspath(args.custom_pass_lib)
         mx.library.load(libpath)
-        sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, 0)
 
-        arg_array = arg_params
-        arg_array['data0'] = mx.nd.ones((test_batch_size, seq_length), dtype='float32')
-        arg_array['data1'] = mx.nd.ones((test_batch_size, seq_length), dtype='float32')
-        arg_array['data2'] = mx.nd.ones((test_batch_size, ), dtype='float32')
-        custom_sym = sym.optimize_for('custom_pass', arg_array, aux_params)
-        if (mx.__version__ <= '1.7.0'):
-            nheads = 12
-            if args.bert_model == 'bert_24_1024_16':
-                nheads = 24
-            for i in range(nheads):
-                basename = 'bertencoder0_transformer' + str(i) + '_dotproductselfattentioncell0'
-                arg_array.pop(basename + '_query_weight')
-                arg_array.pop(basename + '_key_weight')
-                arg_array.pop(basename + '_value_weight')
-                arg_array.pop(basename + '_query_bias')
-                arg_array.pop(basename + '_key_bias')
-                arg_array.pop(basename + '_value_bias')
-        arg_array.pop('data0')
-        arg_array.pop('data1')
-        arg_array.pop('data2')
+        for graphpass in args.custom_passes:
+            log.info('Applying custom graph pass %s', graphpass)
+            sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, 0)
 
-        mx.model.save_checkpoint(prefix, 0, custom_sym, arg_params, aux_params)
+            arg_array = arg_params
+            arg_array['data0'] = mx.nd.ones((test_batch_size, seq_length), dtype='float32')
+            arg_array['data1'] = mx.nd.ones((test_batch_size, seq_length), dtype='float32')
+            arg_array['data2'] = mx.nd.ones((test_batch_size, ), dtype='float32')
+            custom_sym = sym.optimize_for(graphpass, arg_array, aux_params)
+            if (graphpass == 'mha_interleave' and mx.__version__ <= '1.7.0'):
+                nheads = 12
+                if args.bert_model == 'bert_24_1024_16':
+                    nheads = 24
+                for i in range(nheads):
+                    basename = 'bertencoder0_transformer' + str(i) + '_dotproductselfattentioncell0'
+                    arg_array.pop(basename + '_query_weight')
+                    arg_array.pop(basename + '_key_weight')
+                    arg_array.pop(basename + '_value_weight')
+                    arg_array.pop(basename + '_query_bias')
+                    arg_array.pop(basename + '_key_bias')
+                    arg_array.pop(basename + '_value_bias')
+            arg_array.pop('data0')
+            arg_array.pop('data1')
+            arg_array.pop('data2')
+
+            mx.model.save_checkpoint(prefix, 0, custom_sym, arg_params, aux_params)
+    elif not (args.custom_pass_lib is None and args.custom_passes is None):
+        warnings.warn('Graph passes skipped! To apply custom pass provide both library path and pass names')
 
 # Function to preprocess dataset to test, which depends on the task
 def preprocess_data(tokenizer, task):

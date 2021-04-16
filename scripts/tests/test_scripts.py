@@ -424,7 +424,7 @@ def test_xlnet_finetune_squad():
 
 @pytest.mark.skipif(mx.__version__ < '1.7.0', reason="Requires MXNet 1.7 or higher")
 @pytest.mark.serial
-@pytest.mark.gpu
+#@pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
 @pytest.mark.parametrize('bert_model', ['bert_12_768_12'])
@@ -433,8 +433,10 @@ def test_xlnet_finetune_squad():
 def test_deploy_bert(bert_model, task, dtype):
     subprocess.check_call([sys.executable, './scripts/bert/setup.py', 'install'])
     arguments = ['--bert_model', bert_model, '--task', task, '--dtype', dtype,
-                 '--gpu', '0', '--seq_length', '128', '--test_batch_size', '300',
-                 '--custom_pass', 'scripts/bert/bertpass_lib.so', '--check_accuracy']
+                  '--seq_length', '128', '--test_batch_size', '300',
+                 '--custom_pass_lib', 'scripts/bert/bertpass_lib.so',
+                 '--custom_passes', 'addbias_gelu', 'mha_interleave',
+                 '--check_accuracy']
     if dtype == 'float16':
         os.environ['MXNET_FC_TRUE_FP16'] = '1'
         os.environ['MXNET_SAFE_ACCUMULATION'] = '1'
