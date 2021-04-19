@@ -48,8 +48,7 @@ jobs:
                                           --saved-output coverage.xml \
                                           --save-path coverage.xml \
                                           --remote https://github.com/${{ github.repository }} \
-                                          --command "python3 -m pip install 'mxnet-cu102<2' flaky numpy==1.18.4 \
-                                                    && pytest -m 'gpu and not serial' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
+                                          --command "python3 -m pytest -m 'gpu and not serial' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
                                           --wait | tee batch_job.log
 
       - name: Test project on AWS Batch(For pull request)
@@ -64,8 +63,7 @@ jobs:
                                           --saved-output coverage.xml \
                                           --save-path coverage.xml \
                                           --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
-                                          --command "python3 -m pip install 'mxnet-cu102<2' flaky numpy==1.18.4 \
-                                                    && pytest -m 'gpu and not serial' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
+                                          --command "python3 -m pytest -m 'gpu and not serial' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
                                           --wait | tee batch_job.log
 
       - name: Wait for job and copy files from AWS s3

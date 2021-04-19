@@ -28,7 +28,7 @@ readme = io.open('README.rst', encoding='utf-8').read()
 VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
 requirements = [
-    'numpy>=1.16.0',
+    'numpy>=1.16.0,<1.20.0',
     'cython',
     'packaging'
 ]
@@ -62,7 +62,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'extras': [
-            'spacy',
+            'spacy<2.4.0',
             'nltk>=3.2.5',
             'sacremoses',
             'scipy',
@@ -91,6 +91,8 @@ setup(
             'notedown',
             'matplotlib',
             'Image',
+            'pytest-forked',
+            'seaborn'
         ],
     },
     ext_modules=[

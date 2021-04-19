@@ -43,13 +43,10 @@ jobs:
                                           --work-dir . \
                                           --saved-output docs/tutorials \
                                           --save-path tutorials \
-                                          --command "pip install spacy==2.3.5 nltk notedown seaborn \
-                                                     && apt-get install -y zip pandoc \
+                                          --command "apt-get install -y zip pandoc \
                                                      && python -m spacy download en \
                                                      && python -m spacy download de \
                                                      && python -m nltk.downloader all \
-                                                     && pip uninstall mxnet-cu102 -y \
-                                                     && pip install 'mxnet-cu102<2' \
                                                      && ./ci/batch/compile_notebooks.sh \
                                                      'push' ${GITHUB_REF##*/}" \
                                           --wait | tee build_website.log
@@ -65,13 +62,10 @@ jobs:
                                           --work-dir . \
                                           --saved-output docs/tutorials \
                                           --save-path tutorials \
-                                          --command "pip install spacy==2.3.5 nltk notedown seaborn \
-                                                     && apt-get install -y zip pandoc \
+                                          --command "apt-get install -y zip pandoc \
                                                      && python -m spacy download en \
                                                      && python -m spacy download de \
                                                      && python -m nltk.downloader all \
-                                                     && pip uninstall mxnet-cu102 -y \
-                                                     && pip install 'mxnet-cu102<2' \
                                                      && ./ci/batch/compile_notebooks.sh \
                                                      ${{ github.event.number }} ${{ github.event.pull_request.head.sha }}" \
                                           --wait | tee build_website.log
