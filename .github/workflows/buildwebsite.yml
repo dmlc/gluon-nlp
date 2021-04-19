@@ -49,7 +49,7 @@ jobs:
                                                      && python -m spacy download de \
                                                      && python -m nltk.downloader all \
                                                      && pip uninstall mxnet-cu102 -y \
-                                                     && pip install mxnet-cu102==1.6.0.post0 \
+                                                     && pip install 'mxnet-cu102<2' \
                                                      && ./ci/batch/compile_notebooks.sh \
                                                      'push' ${GITHUB_REF##*/}" \
                                           --wait | tee build_website.log
@@ -71,7 +71,7 @@ jobs:
                                                      && python -m spacy download de \
                                                      && python -m nltk.downloader all \
                                                      && pip uninstall mxnet-cu102 -y \
-                                                     && pip install mxnet-cu102==1.6.0.post0 \
+                                                     && pip install 'mxnet-cu102<2' \
                                                      && ./ci/batch/compile_notebooks.sh \
                                                      ${{ github.event.number }} ${{ github.event.pull_request.head.sha }}" \
                                           --wait | tee build_website.log
