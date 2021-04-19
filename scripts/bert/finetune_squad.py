@@ -44,6 +44,7 @@ import itertools
 import pickle
 import multiprocessing as mp
 from functools import partial
+from tempfile import TemporaryDirectory
 
 import numpy as np
 import mxnet as mx
@@ -246,6 +247,18 @@ if __name__ == '__main__':
                         help='calibration mode used for generating calibration table '
                              'for the quantized symbol.')
 
+    parser.add_argument('--custom_pass_lib',
+                        type=str,
+                        default=None,
+                        help='Specify a custom graph pass library for the network,'
+                        'allowing to customize the graph')
+
+    parser.add_argument('--custom_passes',
+                        nargs='+',
+                        type=str,
+                        default=None,
+                        help='Specify a list of custom graph pass for the network to apply')
+
     args = parser.parse_args()
 
     output_dir = args.output_dir
@@ -359,13 +372,7 @@ if __name__ == '__main__':
     net = BertForQA(bert=bert)
     if model_parameters:
         # load complete BertForQA parameters
-        from mxnet.gluon.model_zoo import model_store
-        #def download_qa_ckpt():
-        model_store._model_sha1['bert_qa'] = '7eb11865ecac2a412457a7c8312d37a1456af7fc'
-        result = model_store.get_model_file('bert_qa', root='./output_dir/downloaded')
-
-        #net.load_parameters(result, ctx=ctx)
-        nlp.utils.load_parameters(net, result, ctx=ctx, cast_dtype=True)
+        nlp.utils.load_parameters(net, model_parameters, ctx=ctx, cast_dtype=True)
     elif pretrained_bert_parameters:
         # only load BertModel parameters
         nlp.utils.load_parameters(bert, pretrained_bert_parameters, ctx=ctx,
@@ -555,6 +562,47 @@ def train():
     if rank == 0:
         net.save_parameters(os.path.join(output_dir, 'net.params'))
 
+def run_pass(net, pass_name):
+    data0 = mx.nd.random.uniform(shape=(test_batch_size, max_seq_length))
+    data1 = mx.nd.random.uniform(shape=(test_batch_size, max_seq_length))
+    data2 = mx.nd.random.uniform(shape=(test_batch_size,))
+    net.hybridize()
+    net(data0, data1, data2)
+    with TemporaryDirectory() as tmpdirname:
+        tmp_name = 'tmp'
+        prefix = os.path.join(tmpdirname, tmp_name)
+        net.export(prefix, epoch=0)
+        assert os.path.isfile(prefix + '-symbol.json')
+        assert os.path.isfile(prefix + '-0000.params')
+
+        sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, 0)
+        arg_params['data0'] = data0
+        arg_params['data1'] = data1
+        arg_params['data2'] = data2
+        log.info('Applying custom graph pass %s', pass_name)
+        custom_sym = sym.optimize_for(pass_name, arg_params, aux_params)
+        if (pass_name == 'mha_interleave' and mx.__version__ <= '1.7.0'):
+            nheads = 12
+            if args.bert_model == 'bert_24_1024_16':
+                nheads = 24
+            for i in range(nheads):
+                basename = 'bertencoder0_transformer' + str(i) + '_dotproductselfattentioncell0'
+                arg_params.pop(basename + '_query_weight')
+                arg_params.pop(basename + '_key_weight')
+                arg_params.pop(basename + '_value_weight')
+                arg_params.pop(basename + '_query_bias')
+                arg_params.pop(basename + '_key_bias')
+                arg_params.pop(basename + '_value_bias')
+        arg_params.pop('data0')
+        arg_params.pop('data1')
+        arg_params.pop('data2')
+
+        mx.model.save_checkpoint(prefix, 0, custom_sym, arg_params, aux_params)
+        mx.nd.waitall()
+        net = mx.gluon.SymbolBlock.imports(prefix + "-symbol.json", ["data0", "data1", "data2"], prefix + "-0000.params")
+
+    return net
+
 def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
     """calibration function on the dev dataset."""
     log.info('Loading dev data...')
@@ -587,6 +635,21 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
         num_workers=4, batch_size=test_batch_size,
         shuffle=False, last_batch='keep')
 
+    run_softmax_pass = False
+    if args.custom_passes is None:
+        args.custom_passes = []
+
+    if 'softmax' in args.custom_passes:
+        run_softmax_pass = True
+        args.custom_passes.remove('mask_softmax')
+
+    if args.custom_pass_lib is not None:
+        # load library
+        libpath = os.path.abspath(args.custom_pass_lib)
+        mx.library.load(libpath)
+        for pass_name in args.custom_passes:
+            net = run_pass(net, pass_name)
+
     assert ctx == mx.cpu(), \
         'Currently only supports CPU with MKL-DNN backend.'
     log.info('Now we are doing calibration on dev with %s.', ctx)
@@ -602,6 +665,10 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
                                                   ctx=ctx,
                                                   LayerOutputCollector=collector,
                                                   logger=log)
+
+    if run_softmax_pass:
+        net = run_pass(net, 'mask_softmax')
+
     # save params
     net.hybridize()
     out = net(mx.nd.zeros((24 ,177)).astype('int32'), mx.nd.zeros((24 ,177)).astype('int32'), mx.nd.zeros((24 ,)).as_in_context(ctx).astype('float32'))
