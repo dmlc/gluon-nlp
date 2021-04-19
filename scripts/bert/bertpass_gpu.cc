@@ -478,14 +478,23 @@ MXReturnValue mha_interleave(mxnet::ext::Graph *g,
       }
 #endif
       // concatenate bias terms
-      for (int e =0; e < shape0; ++e) {
-        qkv_bias_data[e] = query_bias_data[e];
+      int counter = 0;
+      for(int e=0; e < num_heads*3; e+=3){
+          for(int h=e*head_dimension; h < e*head_dimension + head_dimension; h++) {
+            qkv_bias_data[h] = query_bias_data[counter++];
+          }
       }
-      for (int e=0; e < shape0; ++e) {
-        qkv_bias_data[shape0 + e] = key_bias_data[e];
+      counter = 0;
+      for(int e=1; e < num_heads*3; e+=3){
+          for(int h=e*head_dimension; h < e*head_dimension + head_dimension; h++) {
+            qkv_bias_data[h] = key_bias_data[counter++];
+          }
       }
-      for (int e=0; e < shape0; ++e) {
-        qkv_bias_data[2 * shape0 + e] = value_bias_data[e];
+      counter = 0;
+      for(int e=2; e < num_heads*3; e+=3){
+          for(int h=e*head_dimension; h < e*head_dimension + head_dimension; h++) {
+            qkv_bias_data[h] = value_bias_data[counter++];
+          }
       }
       // set connection with new input
       node_projection->inputs[2].node = node_qkv_bias;
