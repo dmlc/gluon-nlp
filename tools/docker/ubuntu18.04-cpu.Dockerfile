@@ -33,7 +33,7 @@ RUN bash /install/install_python_packages.sh
 RUN bash /install/install_tvm_cpu.sh
 
 # Install MXNet
-RUN python3 -m pip install -U --pre "mxnet>=2.0.0b20210121" -f https://dist.mxnet.io/python --user
+RUN python3 -m pip install -U --pre "mxnet>=2.0.0a" --user
 
 # Install PyTorch
 RUN python3 -m pip install "torch==1.7.1+cpu" torchvision -f https://download.pytorch.org/whl/torch_stable.html
