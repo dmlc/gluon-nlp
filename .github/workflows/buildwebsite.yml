@@ -41,8 +41,8 @@ jobs:
                                           --remote https://github.com/${{ github.repository }} \
                                           --source-ref ${{ github.ref }} \
                                           --work-dir . \
-                                          --saved-output docs/tutorials \
-                                          --save-path tutorials \
+                                          --saved-output docs/examples \
+                                          --save-path examples \
                                           --command "apt-get install -y zip pandoc \
                                                      && python -m spacy download en \
                                                      && python -m spacy download de \
@@ -60,8 +60,8 @@ jobs:
                                           --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
                                           --source-ref ${{ github.event.pull_request.head.sha }} \
                                           --work-dir . \
-                                          --saved-output docs/tutorials \
-                                          --save-path tutorials \
+                                          --saved-output docs/examples \
+                                          --save-path examples \
                                           --command "apt-get install -y zip pandoc \
                                                      && python -m spacy download en \
                                                      && python -m spacy download de \
@@ -69,6 +69,25 @@ jobs:
                                                      && ./ci/batch/compile_notebooks.sh \
                                                      ${{ github.event.number }} ${{ github.event.pull_request.head.sha }}" \
                                           --wait | tee build_website.log
+
+      - name: Wait for job and copy logs from AWS s3
+        if: ${{ failure() || success() }}
+        run: |
+          head -100 build_website.log | grep -oP -m 1 'jobId: \K(.*)' > jobid.log
+          
+          echo "Job ID is"
+          cat jobid.log
+          cat jobid.log | xargs -i python ./tools/batch/wait-job.py --job-id {}
+          echo "Copy Log file"
+          cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/examples/index.rst
+          cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/examples tutorials --recursive
+      
+      - name: Upload Notebook Compile Logs 
+        if: ${{ failure() || success() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Notebook_Logs
+          path: ./examples/**/*.stdout.log
 
       - name: Upload Website Build Log 
         if: ${{ failure() || success() }}
