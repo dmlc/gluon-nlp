@@ -10,16 +10,15 @@ compile_notebook () {
     DIR=$(dirname $MDFILE)
     BASENAME=$(basename $MDFILE)
     TARGETNAME=$(dirname $MDFILE)/${BASENAME%.md}.ipynb
-    LOGNAME=$(dirname $MDFILE)/${BASENAME%.md}.stdout.log
 
     echo Compiling $BASENAME ...
 
-    python3 docs/md2ipynb.py ${MDFILE} &> $LOGNAME
+    python3 docs/md2ipynb.py ${MDFILE}
 
     EXIT_CODE=$?
 
     if [ $EXIT_CODE -ne 0 ]; then
-        echo Compiling $BASENAME Failed, please download Notebook_Logs in build Artifacts for more details.
+        echo Compiling $BASENAME Failed
         exit $EXIT_CODE
     else
         echo Compiling $BASENAME Succeeded
