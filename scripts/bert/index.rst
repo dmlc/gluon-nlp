@@ -253,6 +253,15 @@ Question Answering
 
 For all model settings above, we use a subset of evaluation dataset for calibration.
 
+We recommend to use optimization graph passes which boost performance of inference even more. To deploy calibrated model optimized with graph passes use
+--custom_pass_lib [graph_pass_library_path] and --custom_passes [graph_passes_name] arguments. E.g.:
+
+.. code-block:: console
+
+     $ python3 finetune_squad.py --only_calibration --model_parameters ./output_dir/net.params --custom_pass_lib bertpass_lib.so --custom_passes mask_softmax mha_interleave
+
+Use setup.py script to build graph pass library
+
 Pre-training from Scratch
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -348,7 +357,7 @@ Once the model is exported, you can import the model by setting --only_infer, an
 The batch size can be specified via --test_batch_size option, and accuracy can be checked setting --check_accuracy.
 
 When using GPU and data type FP16 (--dtype float16), we recommend to use MXNET_FC_TRUE_FP16=1 for boosting performance.
-Moreover, you can use a custom graph pass for BERT, via --custom_pass [custom_pass_file], to improve the performance on GPU. To generate the pass you can run setup.py within the BERT scripts directory. These GPU optimizations require MXNet version 1.7 or higher.
+Moreover, you can use a custom graph pass for BERT, via --custom_pass_lib [custom_pass_library] and --custom_passes [name_of_passes_to_apply], to improve the performance on GPU. To generate the pass you can run setup.py within the BERT scripts directory. These GPU optimizations require MXNet version 1.7 or higher.
 
 
 BERT for Sentence or Tokens Embedding

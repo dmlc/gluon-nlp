@@ -424,7 +424,7 @@ def test_xlnet_finetune_squad():
 
 @pytest.mark.skipif(mx.__version__ < '1.7.0', reason="Requires MXNet 1.7 or higher")
 @pytest.mark.serial
-#@pytest.mark.gpu
+@pytest.mark.gpu
 @pytest.mark.remote_required
 @pytest.mark.integration
 @pytest.mark.parametrize('bert_model', ['bert_12_768_12'])
