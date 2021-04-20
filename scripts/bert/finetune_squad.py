@@ -562,6 +562,19 @@ def train():
     if rank == 0:
         net.save_parameters(os.path.join(output_dir, 'net.params'))
 
+class QuantizableNet(mx.gluon.nn.HybridBlock):
+    """
+    While quantizing SymbolBlock with incorrect number of inputs in
+    calibration dataloader ValueError exception is triggered instead of
+    TypeError - this class is workaround for such case
+    """
+    def __init__(self, original_net, **kwargs):
+        super(QuantizableNet, self).__init__(**kwargs)
+        self.original_net = original_net
+
+    def hybrid_forward(self, F, data0, data1, data2):
+        return self.original_net(data0, data1, data2)
+
 def run_pass(net, pass_name):
     data0 = mx.nd.random.uniform(shape=(test_batch_size, max_seq_length))
     data1 = mx.nd.random.uniform(shape=(test_batch_size, max_seq_length))
@@ -639,7 +652,7 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
     if args.custom_passes is None:
         args.custom_passes = []
 
-    if 'softmax' in args.custom_passes:
+    if 'mask_softmax' in args.custom_passes:
         run_softmax_pass = True
         args.custom_passes.remove('mask_softmax')
 
@@ -655,10 +668,11 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
     log.info('Now we are doing calibration on dev with %s.', ctx)
     collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=log)
     num_calib_examples = test_batch_size * num_calib_batches
+    net = QuantizableNet(net)
     net = mx.contrib.quantization.quantize_net_v2(net, quantized_dtype=quantized_dtype,
                                                   exclude_layers=[],
                                                   quantize_mode='smart',
-                                                  quantize_granularity='tensor-wise',
+                                                  quantize_granularity='channel-wise',
                                                   calib_data=dev_dataloader,
                                                   calib_mode=calib_mode,
                                                   num_calib_examples=num_calib_examples,
@@ -671,7 +685,9 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
 
     # save params
     net.hybridize()
-    out = net(mx.nd.zeros((24 ,177)).astype('int32'), mx.nd.zeros((24 ,177)).astype('int32'), mx.nd.zeros((24 ,)).as_in_context(ctx).astype('float32'))
+    out = net(mx.nd.ones((test_batch_size, max_seq_length)),
+              mx.nd.zeros((test_batch_size, max_seq_length)),
+              mx.nd.zeros((test_batch_size ,)))
     out.wait_to_read()
     ckpt_name = 'model_bert_squad_quantized_{0}'.format(calib_mode)
     params_saved = os.path.join(output_dir, ckpt_name)
@@ -925,15 +941,15 @@ def preprocess_dataset(tokenizer,
 
 if __name__ == '__main__':
     if only_calibration:
-        #try:
-        calibration(net,
-                    num_calib_batches,
-                    quantized_dtype,
-                    calib_mode)
-        #except AttributeError as err:
-        #print(err)
-        #nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
-        #warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
+        try:
+            calibration(net,
+                        num_calib_batches,
+                        quantized_dtype,
+                        calib_mode)
+        except AttributeError as e:
+            warnings.warn(e)
+            nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
+            warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
     elif not only_predict:
         train()
         evaluate()
