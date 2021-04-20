@@ -41,7 +41,7 @@ jobs:
                                              --work-dir . \
                                              --remote https://github.com/${{ github.repository }} \
                                              --command "python3 -m pip install pytest-forked \
-                                                        && python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b20210418" -f https://dist.mxnet.io/python/cu102 \
+                                                        && python3 -m pip install -U --pre 'mxnet-cu102>=2.0.0b20210418' -f https://dist.mxnet.io/python/cu102 \
                                                         && python3 -m pytest --forked --durations=50 --device="cpu" --device="gpu" --runslow ./tests/" \
                                              --wait | tee batch_job.log
 
