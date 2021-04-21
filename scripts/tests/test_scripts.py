@@ -445,3 +445,22 @@ def test_deploy_bert(bert_model, task, dtype):
     os.environ['MXNET_FC_TRUE_FP16'] = '0'
     os.environ['MXNET_SAFE_ACCUMULATION'] = '0'
     time.sleep(5)
+
+@pytest.mark.skipif(mx.__version__ < '1.7.0', reason="Requires MXNet 1.7 or higher")
+@pytest.mark.serial
+@pytest.mark.remote_required
+@pytest.mark.integration
+@pytest.mark.parametrize('script', ['finetune_squad.py', 'finetune_classifier.py'])
+def test_finetune_scripts(script):
+    subprocess.check_call([sys.executable, './scripts/bert/setup.py', 'install'])
+    arguments = ['--only_calibration', 
+                 '--custom_pass_lib', 'scripts/bert/bertpass_lib.so',
+                 '--custom_passes', 'MHAInterleave', 'MaskSoftmax']
+    if script == 'finetune_classifier.py':
+        arguments += ['--task_name', 'MRPC']
+
+    script_path = './scripts/bert/' + script
+    print(script_path)
+    process = subprocess.check_call([sys.executable, script_path]
+                                    + arguments)
+    time.sleep(5)
