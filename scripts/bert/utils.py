@@ -144,7 +144,7 @@ def run_graphpass(net, model_name, batch_size, seq_len, pass_name, use_roberta=F
             arg_params['data2'] = data2
 
         custom_sym = sym.optimize_for(pass_name, arg_params, aux_params)
-        if (pass_name == 'mha_interleave' and mx.__version__ <= '1.7.0'):
+        if (pass_name == 'MHAInterleave' and mx.__version__ <= '1.7.0'):
             nheads = 12
             if model_name == 'bert_24_1024_16':
                 nheads = 24

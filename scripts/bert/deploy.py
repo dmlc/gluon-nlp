@@ -334,7 +334,7 @@ def export(prefix):
             arg_array['data1'] = mx.nd.ones((test_batch_size, seq_length), dtype='float32')
             arg_array['data2'] = mx.nd.ones((test_batch_size, ), dtype='float32')
             custom_sym = sym.optimize_for(graphpass, arg_array, aux_params)
-            if (graphpass == 'mha_interleave' and mx.__version__ <= '1.7.0'):
+            if (graphpass == 'MHAInterleave' and mx.__version__ <= '1.7.0'):
                 nheads = 12
                 if args.bert_model == 'bert_24_1024_16':
                     nheads = 24

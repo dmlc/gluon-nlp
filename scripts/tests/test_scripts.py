@@ -433,9 +433,9 @@ def test_xlnet_finetune_squad():
 def test_deploy_bert(bert_model, task, dtype):
     subprocess.check_call([sys.executable, './scripts/bert/setup.py', 'install'])
     arguments = ['--bert_model', bert_model, '--task', task, '--dtype', dtype,
-                  '--seq_length', '128', '--test_batch_size', '300',
+                 '--gpu', '0', '--seq_length', '128', '--test_batch_size', '300',
                  '--custom_pass_lib', 'scripts/bert/bertpass_lib.so',
-                 '--custom_passes', 'addbias_gelu', 'mha_interleave',
+                 '--custom_passes', 'AddBiasGelu', 'MHAInterleave',
                  '--check_accuracy']
     if dtype == 'float16':
         os.environ['MXNET_FC_TRUE_FP16'] = '1'

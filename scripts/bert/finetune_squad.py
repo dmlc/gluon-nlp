@@ -600,9 +600,9 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
     if args.custom_passes is None:
         args.custom_passes = []
 
-    if 'mask_softmax' in args.custom_passes:
+    if 'MaskSoftmax' in args.custom_passes:
         run_softmax_pass = True
-        args.custom_passes.remove('mask_softmax')
+        args.custom_passes.remove('MaskSoftmax')
 
     if args.custom_pass_lib is not None:
         # load library
@@ -631,7 +631,7 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
                                                   logger=log)
 
     if run_softmax_pass:
-        net = run_graphpass(net, model_name, test_batch_size, max_seq_length, 'mask_softmax')
+        net = run_graphpass(net, model_name, test_batch_size, max_seq_length, 'MaskSoftmax')
 
     # save params
     net.hybridize()
@@ -897,9 +897,9 @@ if __name__ == '__main__':
                         quantized_dtype,
                         calib_mode)
         except AttributeError as e:
-            warnings.warn(e)
             nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
             warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
+            warnings.warn(e)
     elif not only_predict:
         train()
         evaluate()

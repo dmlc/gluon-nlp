@@ -439,9 +439,9 @@ def calibration(net, dev_data_list, num_calib_batches, quantized_dtype, calib_mo
     if args.custom_passes is None:
         args.custom_passes = []
 
-    if 'mask_softmax' in args.custom_passes:
+    if 'MaskSoftmax' in args.custom_passes:
         run_softmax_pass = True
-        args.custom_passes.remove('mask_softmax')
+        args.custom_passes.remove('MaskSoftmax')
 
     if args.custom_pass_lib is not None:
         # load library
@@ -472,7 +472,7 @@ def calibration(net, dev_data_list, num_calib_batches, quantized_dtype, calib_mo
                                                       logger=logging)
         if run_softmax_pass:
             net = run_graphpass(net, model_name, dev_batch_size, args.max_len,
-                                'mask_softmax', use_roberta=use_roberta)
+                                'MaskSoftmax', use_roberta=use_roberta)
         # save params
         net.hybridize()
         input_ids = mx.nd.zeros((dev_batch_size, args.max_len))

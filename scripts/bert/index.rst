@@ -258,7 +258,7 @@ We recommend to use optimization graph passes which boost performance of inferen
 
 .. code-block:: console
 
-     $ python3 finetune_squad.py --only_calibration --model_parameters ./output_dir/net.params --custom_pass_lib bertpass_lib.so --custom_passes mask_softmax mha_interleave
+     $ python3 finetune_squad.py --only_calibration --model_parameters ./output_dir/net.params --custom_pass_lib bertpass_lib.so --custom_passes MaskSoftmax MHAInterleave
 
 Use setup.py script to build graph pass library
 

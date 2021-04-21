@@ -247,17 +247,17 @@ class Graph {
 #endif
 
 #if MX_LIBRARY_VERSION <= 7
-MXReturnValue addbias_gelu(const std::string& in_graph, const std::string** out_graph,
-                           const std::unordered_map<std::string, std::string>& options,
-                           const std::unordered_map<std::string, MXTensor>& args,
-                           const std::unordered_map<std::string, MXTensor>& aux,
-                           const PassResource& res) {
+MXReturnValue AddBiasGelu(const std::string& in_graph, const std::string** out_graph,
+                          const std::unordered_map<std::string, std::string>& options,
+                          const std::unordered_map<std::string, MXTensor>& args,
+                          const std::unordered_map<std::string, MXTensor>& aux,
+                          const PassResource& res) {
   //convert graph from JSON string to Graph/Node data structure
   Graph *g = Graph::fromString(in_graph);
   for(Node* n : g->nodes) {
 #else
-MXReturnValue addbias_gelu(mxnet::ext::Graph *g,
-                           const std::unordered_map<std::string, std::string>& options) {
+MXReturnValue AddBiasGelu(mxnet::ext::Graph *g,
+                          const std::unordered_map<std::string, std::string>& options) {
   for(int i=0; i < g->size(); i++) {
     mxnet::ext::Node* n = g->getNode(i);
 #endif
@@ -332,16 +332,16 @@ MXReturnValue addbias_gelu(mxnet::ext::Graph *g,
 }
 
 #if MX_LIBRARY_VERSION <= 7
-MXReturnValue mha_interleave(const std::string& in_graph, const std::string** out_graph,
-                             const std::unordered_map<std::string, std::string>& options,
-                             const std::unordered_map<std::string, MXTensor>& args,
-                             const std::unordered_map<std::string, MXTensor>& aux,
-                             const PassResource& res) {
+MXReturnValue MHAInterleave(const std::string& in_graph, const std::string** out_graph,
+                            const std::unordered_map<std::string, std::string>& options,
+                            const std::unordered_map<std::string, MXTensor>& args,
+                            const std::unordered_map<std::string, MXTensor>& aux,
+                            const PassResource& res) {
   //convert graph from JSON string to Graph/Node data structure
   Graph *g = Graph::fromString(in_graph);
 #else
-MXReturnValue mha_interleave(mxnet::ext::Graph *g,
-                             const std::unordered_map<std::string, std::string>& options) {
+MXReturnValue MHAInterleave(mxnet::ext::Graph *g,
+                            const std::unordered_map<std::string, std::string>& options) {
 
 #endif
   /////// MHA prepare weight & bias for interleaved strategy //////
@@ -497,20 +497,20 @@ MXReturnValue mha_interleave(mxnet::ext::Graph *g,
 #endif
       // concatenate bias terms
       int counter = 0;
-      for(int e=0; e < num_heads*3; e+=3){
-          for(int h=e*head_dimension; h < e*head_dimension + head_dimension; h++) {
+      for (int e=0; e < num_heads*3; e+=3) {
+          for (int h=e*head_dimension; h < e*head_dimension + head_dimension; h++) {
             qkv_bias_data[h] = query_bias_data[counter++];
           }
       }
       counter = 0;
-      for(int e=1; e < num_heads*3; e+=3){
-          for(int h=e*head_dimension; h < e*head_dimension + head_dimension; h++) {
+      for (int e=1; e < num_heads*3; e+=3) {
+          for (int h=e*head_dimension; h < e*head_dimension + head_dimension; h++) {
             qkv_bias_data[h] = key_bias_data[counter++];
           }
       }
       counter = 0;
-      for(int e=2; e < num_heads*3; e+=3){
-          for(int h=e*head_dimension; h < e*head_dimension + head_dimension; h++) {
+      for (int e=2; e < num_heads*3; e+=3) {
+          for (int h=e*head_dimension; h < e*head_dimension + head_dimension; h++) {
             qkv_bias_data[h] = value_bias_data[counter++];
           }
       }
@@ -606,20 +606,20 @@ bool CheckIfSoftmaxLengthPattern(Node *softmax_node) {
 
 void GroupSameSubgraphs(std::vector<std::vector<Node*>> &subgraph_groups, Node* softmax_node) {
   auto CompareSg = [&](const Node* sg1, const Node* sg2) {
-    const auto sg1_reshape_node = sg1->inputs[1].node;
-    const auto sg1_bcast_axis_node = sg1_reshape_node->inputs[0].node;
-    const auto sg1_expand_dims_node = sg1_bcast_axis_node->inputs[0].node;
-    const auto sg1_cast_node = sg1_expand_dims_node->inputs[0].node;
-    auto &sg1_bcast_param = sg1_bcast_axis_node->attrs;
+    const Node* sg1_reshape_node = sg1->inputs[1].node;
+    const Node* sg1_bcast_axis_node = sg1_reshape_node->inputs[0].node;
+    const Node* sg1_expand_dims_node = sg1_bcast_axis_node->inputs[0].node;
+    const Node* sg1_cast_node = sg1_expand_dims_node->inputs[0].node;
+    const auto &sg1_bcast_param = sg1_bcast_axis_node->attrs;
 
-    const auto sg2_reshape_node = sg2->inputs[1].node;
-    const auto sg2_bcast_axis_node = sg2_reshape_node->inputs[0].node;
-    const auto sg2_expand_dims_node = sg1_bcast_axis_node->inputs[0].node;
-    const auto sg2_cast_node = sg1_expand_dims_node->inputs[0].node;
-    auto &sg2_bcast_param = sg2_bcast_axis_node->attrs;
+    const Node* sg2_reshape_node = sg2->inputs[1].node;
+    const Node* sg2_bcast_axis_node = sg2_reshape_node->inputs[0].node;
+    const Node* sg2_expand_dims_node = sg1_bcast_axis_node->inputs[0].node;
+    const Node* sg2_cast_node = sg1_expand_dims_node->inputs[0].node;
+    const auto &sg2_bcast_param = sg2_bcast_axis_node->attrs;
 
-    return isStrEq(sg2_bcast_param["size"], sg1_bcast_param["size"]) &&
-           isStrEq(sg2_bcast_param["axis"], sg1_bcast_param["axis"]) &&
+    return isStrEq(sg2_bcast_param.at("size"), sg1_bcast_param.at("size")) &&
+           isStrEq(sg2_bcast_param.at("axis"), sg1_bcast_param.at("axis")) &&
            sg1_cast_node == sg2_cast_node;
   };
 
@@ -658,7 +658,7 @@ Node* CreateSoftmaxMask(Graph* g, const Node* softmax_node, int mask_id = 0) {
   std::string mask_name = "_sg_mkldnn_softmaxmask_" + std::to_string(mask_id);
   auto zeros_mask = AddNewNode(g, mask_name + "_zeros", "zeros_like");
   zeros_mask->inputs.resize(1);
-  ConnectInput(zeros_mask, bcast_add_node, 0);
+  ConnectInput(zeros_mask, bcast_add_node);
 
   auto sequence_mask = AddNewNode(g, mask_name + "_sequence_mask", "SequenceMask");
   sequence_mask->inputs.resize(2);
@@ -702,15 +702,15 @@ Node* CreateSoftmaxMask(Graph* g, const Node* softmax_node, int mask_id = 0) {
 
 
 #if MX_LIBRARY_VERSION <= 7
-MXReturnValue mask_softmax(const std::string& in_graph, const std::string** out_graph,
-                           const std::unordered_map<std::string, std::string>& options,
-                           const std::unordered_map<std::string, MXTensor>& args,
-                           const std::unordered_map<std::string, MXTensor>& aux,
-                           const PassResource& res) {
+MXReturnValue MaskSoftmax(const std::string& in_graph, const std::string** out_graph,
+                          const std::unordered_map<std::string, std::string>& options,
+                          const std::unordered_map<std::string, MXTensor>& args,
+                          const std::unordered_map<std::string, MXTensor>& aux,
+                          const PassResource& res) {
   Graph *g = Graph::fromString(in_graph);
 #else
-MXReturnValue mask_softmax(mxnet::ext::Graph *g,
-                           const std::unordered_map<std::string, std::string>& options) {
+MXReturnValue MaskSoftmax(mxnet::ext::Graph *g,
+                          const std::unordered_map<std::string, std::string>& options) {
 #endif
   std::vector<std::vector<Node*>> subgraph_groups;
   g->DFS([&](Node* n) {
@@ -745,14 +745,14 @@ MXReturnValue mask_softmax(mxnet::ext::Graph *g,
   return MX_SUCCESS;
 }
 
-REGISTER_PASS(addbias_gelu)
-.setBody(addbias_gelu);
+REGISTER_PASS(AddBiasGelu)
+.setBody(AddBiasGelu);
 
-REGISTER_PASS(mha_interleave)
-.setBody(mha_interleave);
+REGISTER_PASS(MHAInterleave)
+.setBody(MHAInterleave);
 
-REGISTER_PASS(mask_softmax)
-.setBody(mask_softmax);
+REGISTER_PASS(MaskSoftmax)
+.setBody(MaskSoftmax);
 
 MXReturnValue initialize(int version) {
   if (version >= 10700) {
