@@ -28,7 +28,7 @@ readme = io.open('README.rst', encoding='utf-8').read()
 VERSION = find_version('src', 'gluonnlp', '__init__.py')
 
 requirements = [
-    'numpy>=1.16.0',
+    'numpy>=1.16.0,<1.19.0',
     'cython',
     'packaging'
 ]
@@ -91,6 +91,8 @@ setup(
             'notedown',
             'matplotlib',
             'Image',
+            'pytest-forked',
+            'seaborn'
         ],
     },
     ext_modules=[
