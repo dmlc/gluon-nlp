@@ -546,6 +546,7 @@ def test_save_load_big_rnn_models(tmp_path):
     eval_model.load_parameters(path)
 
 
+@pytest.mark.skip(reason='https://github.com/apache/incubator-mxnet/issues/20197')
 def test_big_rnn_model_share_params():
     ctx = mx.cpu()
     seq_len = 2
