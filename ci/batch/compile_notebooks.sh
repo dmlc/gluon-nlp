@@ -3,7 +3,15 @@
 event=$1
 ref=$2
 
-FAIL=0
+# Skip reason: https://github.com/apache/incubator-mxnet/issues/20197
+SkipCompute=("word_embedding_training.md")
+
+containFile () {
+    local e match="$1"
+    shift
+    for e; do [[ "$e" == "$match" ]] && return 0; done
+    return 1
+}
 
 compile_notebook () {
     local MDFILE=$1
@@ -12,8 +20,14 @@ compile_notebook () {
     TARGETNAME=$(dirname $MDFILE)/${BASENAME%.md}.ipynb
 
     echo Compiling $BASENAME ...
-
-    python3 docs/md2ipynb.py ${MDFILE}
+    
+    containFile $BASENAME "${SkipCompute[@]}"
+    FIND=$?
+    if [ $FIND -eq 0 ]; then
+        python3 docs/md2ipynb.py -d ${MDFILE}
+    else
+        python3 docs/md2ipynb.py ${MDFILE}
+    fi
 
     EXIT_CODE=$?
 
