@@ -62,7 +62,7 @@ setup(
     install_requires=requirements,
     extras_require={
         'extras': [
-            'spacy>3',
+            'spacy>=2.3.0,<3',
             'nltk>=3.2.5',
             'sacremoses',
             'scipy',
