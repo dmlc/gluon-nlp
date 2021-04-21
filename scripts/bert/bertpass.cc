@@ -32,6 +32,7 @@
 
 #if MX_LIBRARY_VERSION <= 7
 class Node;
+class Graph;
 struct NodeEntry {
   Node* node;
   int entry;
@@ -43,6 +44,7 @@ class Node {
   std::vector<NodeEntry> inputs;
   std::vector<NodeEntry> outputs;
   std::unordered_map<std::string, std::string> attrs;
+  std::vector<Graph*> subgraphs;
 };
 
 class Graph {
@@ -81,6 +83,14 @@ class Graph {
       JsonVal attributes = node.map[JsonVal("attrs")];
       for(auto& kv : attributes.map) {
         n->attrs[kv.first.str] = kv.second.str;
+      }
+
+      // set subgraphs, parsing each into a graph
+      if (node.map.count(JsonVal("subgraphs")) > 0) {
+        JsonVal subgraphs = node.map[JsonVal("subgraphs")];
+        for (auto &subgraph : subgraphs.list) {
+          n->subgraphs.push_back(fromJson(subgraph));
+        }
       }
 
       // set node inputs
@@ -169,6 +179,14 @@ class Graph {
         in.list.push_back(JsonVal(nodeMap[entry.node]));
         in.list.push_back(JsonVal(entry.entry));
         in.list.push_back(JsonVal(0));
+      }
+
+      if (n->subgraphs.size() > 0) {
+        n_.map[JsonVal("subgraphs")] = JsonVal(LIST);
+        JsonVal &subgraphs_ = n_.map[JsonVal("subgraphs")];
+        for (Graph *subgraph : n->subgraphs) {
+          subgraphs_.list.push_back(subgraph->toJson());
+        }
       }
 
       n_.map[JsonVal("attrs")] = JsonVal(MAP);
