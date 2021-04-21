@@ -41,15 +41,12 @@ jobs:
                                           --remote https://github.com/${{ github.repository }} \
                                           --source-ref ${{ github.ref }} \
                                           --work-dir . \
-                                          --saved-output docs/tutorials \
-                                          --save-path tutorials \
-                                          --command "pip install spacy==2.3.5 nltk notedown seaborn \
-                                                     && apt-get install -y zip pandoc \
+                                          --saved-output docs/examples \
+                                          --save-path examples \
+                                          --command "apt-get install -y zip pandoc \
                                                      && python -m spacy download en \
                                                      && python -m spacy download de \
                                                      && python -m nltk.downloader all \
-                                                     && pip uninstall mxnet-cu102 -y \
-                                                     && pip install mxnet-cu102==1.6.0.post0 \
                                                      && ./ci/batch/compile_notebooks.sh \
                                                      'push' ${GITHUB_REF##*/}" \
                                           --wait | tee build_website.log
@@ -63,15 +60,12 @@ jobs:
                                           --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
                                           --source-ref ${{ github.event.pull_request.head.sha }} \
                                           --work-dir . \
-                                          --saved-output docs/tutorials \
-                                          --save-path tutorials \
-                                          --command "pip install spacy==2.3.5 nltk notedown seaborn \
-                                                     && apt-get install -y zip pandoc \
+                                          --saved-output docs/examples \
+                                          --save-path examples \
+                                          --command "apt-get install -y zip pandoc \
                                                      && python -m spacy download en \
                                                      && python -m spacy download de \
                                                      && python -m nltk.downloader all \
-                                                     && pip uninstall mxnet-cu102 -y \
-                                                     && pip install mxnet-cu102==1.6.0.post0 \
                                                      && ./ci/batch/compile_notebooks.sh \
                                                      ${{ github.event.number }} ${{ github.event.pull_request.head.sha }}" \
                                           --wait | tee build_website.log

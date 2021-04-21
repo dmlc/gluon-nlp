@@ -54,6 +54,7 @@ def test_nce_loss(f, cls_dtype, count_dtype):
 @pytest.mark.parametrize('f', [nlp.model.ISDense, nlp.model.SparseISDense])
 @pytest.mark.parametrize('cls_dtype', ['float32', 'int32'])
 @pytest.mark.parametrize('count_dtype', ['float32', 'int32'])
+@pytest.mark.skip(reason='https://github.com/apache/incubator-mxnet/issues/20197')
 def test_is_softmax_loss(f, cls_dtype, count_dtype):
     ctx = mx.cpu()
     batch_size = 2
