@@ -83,6 +83,7 @@ def test_moses_tokenizer():
     assert len(ret) > 0
 
 
+@pytest.mark.filterwarnings("ignore::DeprecationWarning")
 def test_spacy_tokenizer():
     tokenizer = t.SpacyTokenizer()
     text = u"Introducing Gluon: An Easy-to-Use Programming Interface for Flexible Deep Learning."
