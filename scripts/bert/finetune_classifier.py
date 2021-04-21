@@ -50,6 +50,7 @@ from gluonnlp.data.classification import get_task
 from gluonnlp.data.bert.glue import truncate_seqs_equal, concat_sequences
 from gluonnlp.model import BERTClassifier, RoBERTaClassifier
 from gluonnlp.calibration import BertLayerCollector
+from utils import QuantizableNet, QuantizableRobertaNet, run_graphpass, RobertaCalibIter
 
 nlp.utils.check_version('0.9', warning_only=True)
 
@@ -185,6 +186,12 @@ if __name__ == '__main__':
                         choices=['none', 'naive', 'entropy', 'customize'],
                         help='calibration mode used for generating calibration table '
                              'for the quantized symbol.')
+    parser.add_argument('--custom_pass_lib', type=str, default=None,
+                        help='Specify a custom graph pass library for the network,'
+                        'allowing to customize the graph')
+
+    parser.add_argument('--custom_passes', nargs='+', type=str, default=None,
+                        help='Specify a list of custom graph pass for the network to apply')
 
     args = parser.parse_args()
 
@@ -426,7 +433,31 @@ def calibration(net, dev_data_list, num_calib_batches, quantized_dtype, calib_mo
     assert ctx == mx.cpu(), \
         'Currently only supports CPU with MKL-DNN backend.'
     logging.info('Now we are doing calibration on dev with %s.', ctx)
+
+    model_name = args.bert_model
+    run_softmax_pass = False
+    if args.custom_passes is None:
+        args.custom_passes = []
+
+    if 'mask_softmax' in args.custom_passes:
+        run_softmax_pass = True
+        args.custom_passes.remove('mask_softmax')
+
+    if args.custom_pass_lib is not None:
+        # load library
+        libpath = os.path.abspath(args.custom_pass_lib)
+        mx.library.load(libpath)
+        for pass_name in args.custom_passes:
+            net = run_graphpass(net, model_name, dev_batch_size, args.max_len,
+                                pass_name, use_roberta=use_roberta)
+        
     for _, dev_data in dev_data_list:
+        if use_roberta:
+           dev_data = RobertaCalibIter(dev_data)
+           net = QuantizableRobertaNet(net)
+        else:
+           net = QuantizableNet(net)
+
         collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=logging)
         num_calib_examples = dev_batch_size * num_calib_batches
         net = mx.contrib.quantization.quantize_net_v2(net, quantized_dtype=quantized_dtype,
@@ -439,7 +470,21 @@ def calibration(net, dev_data_list, num_calib_batches, quantized_dtype, calib_mo
                                                       ctx=ctx,
                                                       LayerOutputCollector=collector,
                                                       logger=logging)
+        if run_softmax_pass:
+            net = run_graphpass(net, model_name, dev_batch_size, args.max_len,
+                                'mask_softmax', use_roberta=use_roberta)
         # save params
+        net.hybridize()
+        input_ids = mx.nd.zeros((dev_batch_size, args.max_len))
+        segment_ids = mx.nd.zeros((dev_batch_size, args.max_len))
+        valid_length = mx.nd.zeros((dev_batch_size ,))
+        if use_roberta:
+            out = net(input_ids, valid_length)
+        else:
+            out = net(input_ids, segment_ids, valid_length)
+            
+        out.wait_to_read()
+
         ckpt_name = 'model_bert_{0}_quantized_{1}'.format(task_name, calib_mode)
         params_saved = os.path.join(output_dir, ckpt_name)
         net.export(params_saved, epoch=0)
@@ -698,7 +743,8 @@ if __name__ == '__main__':
                         num_calib_batches,
                         quantized_dtype,
                         calib_mode)
-        except AttributeError:
+        except AttributeError as e:
+            warnings.warn(e)
             nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
             warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
     else:

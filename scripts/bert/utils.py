@@ -21,6 +21,8 @@ import logging
 import collections
 import hashlib
 import io
+import os
+from tempfile import TemporaryDirectory
 
 import mxnet as mx
 import gluonnlp as nlp
@@ -88,3 +90,114 @@ def load_text_vocab(vocab_file):
             vocab[token] = index
             index += 1
     return vocab
+
+class QuantizableNet(mx.gluon.nn.HybridBlock):
+    """
+    While quantizing SymbolBlock with incorrect number of inputs in
+    calibration dataloader ValueError exception is triggered instead of
+    TypeError - this class is workaround for such case
+    """
+    def __init__(self, original_net, **kwargs):
+        super(QuantizableNet, self).__init__(**kwargs)
+        self.original_net = original_net
+
+    def hybrid_forward(self, F, data0, data1, data2):
+        return self.original_net(data0, data1, data2)
+
+class QuantizableRobertaNet(mx.gluon.nn.HybridBlock):
+    """
+    While quantizing SymbolBlock with incorrect number of inputs in
+    calibration dataloader ValueError exception is triggered instead of
+    TypeError - this class is workaround for such case
+    """
+    def __init__(self, original_net, **kwargs):
+        super(QuantizableRobertaNet, self).__init__(**kwargs)
+        self.original_net = original_net
+
+    def hybrid_forward(self, F, data0, data1):
+        return self.original_net(data0, data1)
+
+def run_graphpass(net, model_name, batch_size, seq_len, pass_name, use_roberta=False):
+    data0 = mx.nd.random.uniform(shape=(batch_size, seq_len))
+    data1 = mx.nd.random.uniform(shape=(batch_size, seq_len))
+    data2 = mx.nd.random.uniform(shape=(batch_size,))
+    net.hybridize()
+    if use_roberta:
+        net(data0, data2)
+    else:
+        net(data0, data1, data2)
+
+    with TemporaryDirectory() as tmpdirname:
+        tmp_name = 'tmp'
+        prefix = os.path.join(tmpdirname, tmp_name)
+        net.export(prefix, epoch=0)
+        assert os.path.isfile(prefix + '-symbol.json')
+        assert os.path.isfile(prefix + '-0000.params')
+
+        sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, 0)
+        if use_roberta:
+            arg_params['data0'] = data0
+            arg_params['data1'] = data2
+        else:
+            arg_params['data0'] = data0
+            arg_params['data1'] = data1
+            arg_params['data2'] = data2
+
+        custom_sym = sym.optimize_for(pass_name, arg_params, aux_params)
+        if (pass_name == 'mha_interleave' and mx.__version__ <= '1.7.0'):
+            nheads = 12
+            if model_name == 'bert_24_1024_16':
+                nheads = 24
+            for i in range(nheads):
+                basename = 'bertencoder0_transformer' + str(i) + '_dotproductselfattentioncell0'
+                arg_params.pop(basename + '_query_weight')
+                arg_params.pop(basename + '_key_weight')
+                arg_params.pop(basename + '_value_weight')
+                arg_params.pop(basename + '_query_bias')
+                arg_params.pop(basename + '_key_bias')
+                arg_params.pop(basename + '_value_bias')
+        if use_roberta:
+            arg_params.pop('data0')
+            arg_params.pop('data1')
+        else:
+            arg_params.pop('data0')
+            arg_params.pop('data1')
+            arg_params.pop('data2')
+
+        mx.model.save_checkpoint(prefix, 0, custom_sym, arg_params, aux_params)
+        mx.nd.waitall()
+        import_input_names = ["data0", "data1"]
+        if not use_roberta:
+            import_input_names += ["data2"]
+        net = mx.gluon.SymbolBlock.imports(prefix + "-symbol.json", import_input_names, prefix + "-0000.params")
+
+    return net
+
+class RobertaCalibIter(mx.io.DataIter):
+    """
+    DataIter wrapper for dataloader used with BERT - quantization
+    can handle more inputs to network than required, but not in
+    different order - standard BERT inputs are:
+    input_ids, segment_ids, valid_length, and for Roberta:
+    input_ids, valid_length
+    """
+    def __init__(self, calib_data):
+        self._data = calib_data
+        calib_iter = iter(calib_data)
+        data_example = next(calib_iter)
+        num_data = len(data_example)
+        assert num_data > 0
+
+        self.provide_data = [mx.io.DataDesc(name='data0', shape=(data_example[0].shape))]
+        self.provide_data +=  [mx.io.DataDesc(name='data1', shape=(data_example[2].shape))]
+
+        self.batch_size = data_example[0].shape[0]
+        self.reset()
+
+    def reset(self):
+        self._iter = iter(self._data)
+
+    def next(self):
+        next_data = next(self._iter)
+        next_data = [next_data[0], next_data[2]]
+        return mx.io.DataBatch(data=next_data)
