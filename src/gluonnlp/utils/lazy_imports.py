@@ -27,7 +27,9 @@ __all__ = ['try_import_sentencepiece',
            'try_import_boto3',
            'try_import_jieba',
            'try_import_tvm',
-           'try_import_wikiextractor']
+           'try_import_wikiextractor',
+           'try_import_torch',
+           'try_import_mxnet']
 
 
 def try_import_sentencepiece():
@@ -180,3 +182,19 @@ def try_import_wikiextractor():
                           'refer to the official guide in '
                           'https://github.com/attardi/wikiextractor.')
     return wikiextractor
+
+
+def try_import_torch():
+    try:
+        import torch
+    except ImportError:
+        raise ImportError('PyTorch is not installed. You may install PyTorch by referring to the '
+                          'official guide in https://pytorch.org/.')
+
+
+def try_import_mxnet():
+    try:
+        import mxnet
+    except ImportError:
+        raise ImportError('MXNet is not installed. You may install MXNet by referring to the '
+                          'official guide in https://mxnet.apache.org/.')
