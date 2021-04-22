@@ -464,3 +464,4 @@ def test_finetune_scripts(script):
     process = subprocess.check_call([sys.executable, script_path]
                                     + arguments)
     time.sleep(5)
+

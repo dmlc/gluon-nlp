@@ -497,20 +497,20 @@ MXReturnValue MHAInterleave(mxnet::ext::Graph *g,
 #endif
       // concatenate bias terms
       int counter = 0;
-      for (int e=0; e < num_heads*3; e+=3) {
-          for (int h=e*head_dimension; h < e*head_dimension + head_dimension; h++) {
+      for (int e = 0; e < num_heads * 3; e += 3) {
+          for (int h = e * head_dimension; h < e * head_dimension + head_dimension; h++) {
             qkv_bias_data[h] = query_bias_data[counter++];
           }
       }
       counter = 0;
-      for (int e=1; e < num_heads*3; e+=3) {
-          for (int h=e*head_dimension; h < e*head_dimension + head_dimension; h++) {
+      for (int e = 1; e < num_heads * 3; e += 3) {
+          for (int h = e * head_dimension; h < e * head_dimension + head_dimension; h++) {
             qkv_bias_data[h] = key_bias_data[counter++];
           }
       }
       counter = 0;
-      for (int e=2; e < num_heads*3; e+=3) {
-          for (int h=e*head_dimension; h < e*head_dimension + head_dimension; h++) {
+      for (int e = 2; e < num_heads * 3; e += 3) {
+          for (int h = e * head_dimension; h < e * head_dimension + head_dimension; h++) {
             qkv_bias_data[h] = value_bias_data[counter++];
           }
       }
@@ -539,28 +539,25 @@ Node* AddNewNode(Graph* g, std::string node_name, std::string op_name) {
   return new_node;
 }
 
-bool isStrEq(std::string a, std::string b) {
-  return a.compare(b) == 0;
-}
 bool CheckIfSoftmaxLengthPattern(Node *softmax_node) {
   std::string softmax_using_length = softmax_node->attrs["use_length"];
-  if (isStrEq(softmax_using_length, "False"))
+  if (softmax_using_length == "False")
     return false;
 
   auto reshape_node = softmax_node->inputs[1].node;
-  if (isStrEq(reshape_node->op, "Reshape")) {
+  if (reshape_node->op == "Reshape") {
     std::string required_shape = reshape_node->attrs["shape"];
     std::string is_reverse = reshape_node->attrs["reverse"];
-    if (!(isStrEq(required_shape, "(-1, 0)") && isStrEq(is_reverse, "True"))) {
+    if (required_shape != "(-1, 0)" || is_reverse != "True") {
       return false;
     }
   } else {
     return false;
   }
   auto bcast_axis_node = reshape_node->inputs[0].node;
-  if (isStrEq(bcast_axis_node->op, "broadcast_axis")) {
+  if (bcast_axis_node->op == "broadcast_axis") {
     std::string axis = bcast_axis_node->attrs["axis"];
-    if (!isStrEq(axis, "1")) {
+    if (axis != "1") {
       return false;
     }
   } else {
@@ -568,9 +565,9 @@ bool CheckIfSoftmaxLengthPattern(Node *softmax_node) {
   }
 
   auto expand_dims_node = bcast_axis_node->inputs[0].node;
-  if (isStrEq(expand_dims_node->op, "expand_dims")) {
+  if (expand_dims_node->op == "expand_dims") {
     std::string axis = expand_dims_node->attrs["axis"];
-    if (!isStrEq(axis, "1")) {
+    if (axis != "1") {
       return false;
     }
   } else {
@@ -578,9 +575,9 @@ bool CheckIfSoftmaxLengthPattern(Node *softmax_node) {
   }
 
   auto cast_node = expand_dims_node->inputs[0].node;
-  if (isStrEq(cast_node->op, "Cast")) {
+  if (cast_node->op == "Cast") {
     std::string dtype = cast_node->attrs["dtype"];
-    if (!isStrEq(dtype, "int32")) {
+    if (dtype != "int32") {
       return false;
     }
   } else {
@@ -588,13 +585,13 @@ bool CheckIfSoftmaxLengthPattern(Node *softmax_node) {
   }
 
   auto bcast_add_node = cast_node->inputs[0].node;
-  if (!isStrEq(bcast_add_node->op, "broadcast_add"))
+  if (bcast_add_node->op != "broadcast_add")
     return false;
 
   auto reshape_2_node = bcast_add_node->inputs[0].node;
-  if (isStrEq(reshape_2_node->op, "Reshape")) {
+  if (reshape_2_node->op == "Reshape") {
     std::string required_shape = reshape_2_node->attrs["shape"];
-    if (!isStrEq(required_shape, "(-1, 1)")) {
+    if (required_shape != "(-1, 1)") {
       return false;
     }
   } else {
@@ -618,8 +615,8 @@ void GroupSameSubgraphs(std::vector<std::vector<Node*>> &subgraph_groups, Node* 
     const Node* sg2_cast_node = sg1_expand_dims_node->inputs[0].node;
     const auto &sg2_bcast_param = sg2_bcast_axis_node->attrs;
 
-    return isStrEq(sg2_bcast_param.at("size"), sg1_bcast_param.at("size")) &&
-           isStrEq(sg2_bcast_param.at("axis"), sg1_bcast_param.at("axis")) &&
+    return sg2_bcast_param.at("size") == sg1_bcast_param.at("size") &&
+           sg2_bcast_param.at("axis") == sg1_bcast_param.at("axis") &&
            sg1_cast_node == sg2_cast_node;
   };
 
