@@ -325,16 +325,16 @@ def export(prefix):
         libpath = os.path.abspath(args.custom_pass_lib)
         mx.library.load(libpath)
 
-        for graphpass in args.custom_passes:
-            log.info('Applying custom graph pass %s', graphpass)
+        for graph_pass in args.custom_passes:
+            log.info('Applying custom graph pass %s', graph_pass)
             sym, arg_params, aux_params = mx.model.load_checkpoint(prefix, 0)
 
             arg_array = arg_params
             arg_array['data0'] = mx.nd.ones((test_batch_size, seq_length), dtype='float32')
             arg_array['data1'] = mx.nd.ones((test_batch_size, seq_length), dtype='float32')
             arg_array['data2'] = mx.nd.ones((test_batch_size, ), dtype='float32')
-            custom_sym = sym.optimize_for(graphpass, arg_array, aux_params)
-            if (graphpass == 'MHAInterleave' and mx.__version__ <= '1.7.0'):
+            custom_sym = sym.optimize_for(graph_pass, arg_array, aux_params)
+            if (graph_pass == 'MHAInterleave' and mx.__version__ <= '1.7.0'):
                 nheads = 12
                 if args.bert_model == 'bert_24_1024_16':
                     nheads = 24

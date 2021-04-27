@@ -191,7 +191,7 @@ if __name__ == '__main__':
                         'allowing to customize the graph')
 
     parser.add_argument('--custom_passes', nargs='+', type=str, default=None,
-                        help='Specify a list of custom graph pass for the network to apply')
+                        help='Specify names of custom graph passes for the network to apply from `custom_pass_lib`')
 
     args = parser.parse_args()
 
@@ -746,6 +746,6 @@ if __name__ == '__main__':
         except AttributeError as e:
             warnings.warn(e)
             nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
-            warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
+            warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115 or mxnet >= 1.7')
     else:
         train(task.metrics)

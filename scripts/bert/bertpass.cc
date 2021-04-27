@@ -99,11 +99,11 @@ class Graph {
       for(int j=0; j<node_inputs.list.size(); j++) {
         JsonVal input = node_inputs.list[j];
         NodeEntry& entry = n->inputs[j];
-        //get pointer to other node
+        // get pointer to other node
         entry.node = nodeMap[input.list[0].num];
-        //get the other node's output index
+        // get the other node's output index
         entry.entry = input.list[1].num;
-        //set other nodes output as connected to this node
+        // set other nodes output as connected to this node
         entry.node->outputs.push_back({n,j});
       }
       nodeMap[i] = n;
@@ -216,14 +216,14 @@ class Graph {
 
   void DFS(std::function<void(Node*)> handler) {
     std::unordered_set<Node*> to_visit;
-    //put all nodes in set to visit
+    // put all nodes in set to visit
     for(auto& n : nodes)
       to_visit.insert(n);
-    //visit all inputs first
+    // visit all inputs first
     for(auto& i : inputs)
       if(to_visit.count(i) != 0)
         _dfs_util(i, &to_visit, handler);
-    //visit any nodes left
+    // visit any nodes left
     while(to_visit.size() > 0)
       _dfs_util(*(to_visit.begin()), &to_visit, handler);
   }
@@ -252,7 +252,7 @@ MXReturnValue AddBiasGelu(const std::string& in_graph, const std::string** out_g
                           const std::unordered_map<std::string, MXTensor>& args,
                           const std::unordered_map<std::string, MXTensor>& aux,
                           const PassResource& res) {
-  //convert graph from JSON string to Graph/Node data structure
+  // convert graph from JSON string to Graph/Node data structure
   Graph *g = Graph::fromString(in_graph);
   for(Node* n : g->nodes) {
 #else
@@ -319,13 +319,13 @@ MXReturnValue AddBiasGelu(mxnet::ext::Graph *g,
       node_add_bias->inputs[0].entry = 0;
       node_add_bias->inputs[1].node = node_bcst_like;
       node_add_bias->inputs[1].entry = 0;
-      //set BiasAdd node as gelu input
+      // set BiasAdd node as gelu input
       node_gelu->inputs[0].node = node_add_bias;
       node_gelu->inputs[0].entry = 0;
     }
   }
 #if MX_LIBRARY_VERSION <= 7
-  //convert back to JSON string from Graph/Node
+  // convert back to JSON string from Graph/Node
   *out_graph = new std::string(g->toString());
 #endif
   return MX_SUCCESS;
@@ -337,7 +337,7 @@ MXReturnValue MHAInterleave(const std::string& in_graph, const std::string** out
                             const std::unordered_map<std::string, MXTensor>& args,
                             const std::unordered_map<std::string, MXTensor>& aux,
                             const PassResource& res) {
-  //convert graph from JSON string to Graph/Node data structure
+  // convert graph from JSON string to Graph/Node data structure
   Graph *g = Graph::fromString(in_graph);
 #else
 MXReturnValue MHAInterleave(mxnet::ext::Graph *g,
@@ -521,7 +521,7 @@ MXReturnValue MHAInterleave(mxnet::ext::Graph *g,
   }
 
 #if MX_LIBRARY_VERSION <= 7
-  //convert back to JSON string from Graph/Node
+  // convert back to JSON string from Graph/Node
   *out_graph = new std::string(g->toString());
 #endif
   return MX_SUCCESS;
@@ -611,8 +611,8 @@ void GroupSameSubgraphs(std::vector<std::vector<Node*>> &subgraph_groups, Node* 
 
     const Node* sg2_reshape_node = sg2->inputs[1].node;
     const Node* sg2_bcast_axis_node = sg2_reshape_node->inputs[0].node;
-    const Node* sg2_expand_dims_node = sg1_bcast_axis_node->inputs[0].node;
-    const Node* sg2_cast_node = sg1_expand_dims_node->inputs[0].node;
+    const Node* sg2_expand_dims_node = sg2_bcast_axis_node->inputs[0].node;
+    const Node* sg2_cast_node = sg2_expand_dims_node->inputs[0].node;
     const auto &sg2_bcast_param = sg2_bcast_axis_node->attrs;
 
     return sg2_bcast_param.at("size") == sg1_bcast_param.at("size") &&
@@ -736,7 +736,7 @@ MXReturnValue MaskSoftmax(mxnet::ext::Graph *g,
   }
 
 #if MX_LIBRARY_VERSION <= 7
-  //convert back to JSON string from Graph/Node
+  // convert back to JSON string from Graph/Node
   *out_graph = new std::string(g->toString());
 #endif
   return MX_SUCCESS;

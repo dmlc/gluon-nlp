@@ -257,7 +257,7 @@ if __name__ == '__main__':
                         nargs='+',
                         type=str,
                         default=None,
-                        help='Specify a list of custom graph pass for the network to apply')
+                        help='Specify names of custom graph passes for the network to apply from `custom_pass_lib`')
 
     args = parser.parse_args()
 
@@ -561,7 +561,6 @@ def train():
 
     if rank == 0:
         net.save_parameters(os.path.join(output_dir, 'net.params'))
-
 
 def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
     """calibration function on the dev dataset."""
@@ -898,7 +897,7 @@ if __name__ == '__main__':
                         calib_mode)
         except AttributeError as e:
             nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
-            warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
+            warnings.warn('INT8 Quantization for BERT needs mxnet-mkl >= 1.6.0b20200115 or mxnet >= 1.7')
             warnings.warn(e)
     elif not only_predict:
         train()
