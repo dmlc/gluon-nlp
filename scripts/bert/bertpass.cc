@@ -496,22 +496,22 @@ MXReturnValue MHAInterleave(mxnet::ext::Graph *g,
       }
 #endif
       // concatenate bias terms
-      int counter = 0;
-      for (int e = 0; e < num_heads * 3; e += 3) {
-          for (int h = e * head_dimension; h < e * head_dimension + head_dimension; h++) {
-            qkv_bias_data[h] = query_bias_data[counter++];
+      int query_cnt = 0;
+      int key_cnt = 0;
+      int value_cnt = 0;
+      const int qkv_heads = num_heads * 3;
+      for (int e = 0; e < qkv_heads; e += 3) {
+          const int query_head_offset = e * head_dimension;
+          for (int h = query_head_offset; h < query_head_offset + head_dimension; h++) {
+            qkv_bias_data[h] = query_bias_data[query_cnt++];
           }
-      }
-      counter = 0;
-      for (int e = 1; e < num_heads * 3; e += 3) {
-          for (int h = e * head_dimension; h < e * head_dimension + head_dimension; h++) {
-            qkv_bias_data[h] = key_bias_data[counter++];
+          const int key_head_offset = (e + 1) * head_dimension;
+          for (int h = key_head_offset; h < key_head_offset + head_dimension; h++) {
+            qkv_bias_data[h] = key_bias_data[key_cnt++];
           }
-      }
-      counter = 0;
-      for (int e = 2; e < num_heads * 3; e += 3) {
-          for (int h = e * head_dimension; h < e * head_dimension + head_dimension; h++) {
-            qkv_bias_data[h] = value_bias_data[counter++];
+          const int value_head_offset = (e + 2) * head_dimension;
+          for (int h = value_head_offset; h < value_head_offset + head_dimension; h++) {
+            qkv_bias_data[h] = value_bias_data[value_cnt++];
           }
       }
       // set connection with new input
@@ -554,6 +554,7 @@ bool CheckIfSoftmaxLengthPattern(Node *softmax_node) {
   } else {
     return false;
   }
+
   auto bcast_axis_node = reshape_node->inputs[0].node;
   if (bcast_axis_node->op == "broadcast_axis") {
     std::string axis = bcast_axis_node->attrs["axis"];
