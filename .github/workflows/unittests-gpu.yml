@@ -48,8 +48,7 @@ jobs:
                                           --saved-output coverage.xml \
                                           --save-path coverage.xml \
                                           --remote https://github.com/${{ github.repository }} \
-                                          --command "python3 -m pip install 'mxnet-cu102<2' flaky numpy==1.18.4 \
-                                                    && pytest -m 'gpu and not serial' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
+                                          --command "python3 -m pytest -m 'gpu and not serial' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
                                           --wait | tee batch_job.log
 
       - name: Test project on AWS Batch(For pull request)
@@ -64,8 +63,7 @@ jobs:
                                           --saved-output coverage.xml \
                                           --save-path coverage.xml \
                                           --remote https://github.com/${{ github.event.pull_request.head.repo.full_name }} \
-                                          --command "python3 -m pip install 'mxnet-cu102<2' flaky numpy==1.18.4 \
-                                                    && pytest -m 'gpu and not serial' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
+                                          --command "python3 -m pytest -m 'gpu and not serial' --durations=30 --cov=. --cov-config=./.coveragerc --cov-report=xml tests/unittest" \
                                           --wait | tee batch_job.log
 
       - name: Wait for job and copy files from AWS s3
@@ -78,17 +76,6 @@ jobs:
           echo "Copy Codecov file"
           cat jobid.log | xargs -i aws s3api wait object-exists --bucket gluon-nlp-dev --key batch/{}/coverage.xml
           cat jobid.log | xargs -i aws s3 cp s3://gluon-nlp-dev/batch/{}/coverage.xml ./coverage.xml
-
-      - name: Upload coverage to Codecov
-        run: |
-          curl -s https://codecov.io/bash -o codecov.sh
-          if [ "$EVENT_NAME" == "push" ]; then \
-              bash codecov.sh -f ./coverage.xml -n -F -B v0.x; \
-          else \
-              bash codecov.sh -f ./coverage.xml -n -F -B v0.x -C ${{ github.event.pull_request.head.sha }} -P ${{ github.event.pull_request.number }}; \
-          fi
-        env:
-          EVENT_NAME: ${{ github.event_name }}
 
       - name: Upload Cloud Watch Log Stream
         if: ${{ failure() || success() }}
