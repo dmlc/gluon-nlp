@@ -897,7 +897,7 @@ if __name__ == '__main__':
                         calib_mode)
         except AttributeError as e:
             nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
-            warnings.warn('INT8 Quantization for BERT needs mxnet-mkl >= 1.6.0b20200115 or mxnet >= 1.7')
+            warnings.warn('INT8 Quantization for BERT needs mxnet >= 1.7')
             warnings.warn(e)
     elif not only_predict:
         train()

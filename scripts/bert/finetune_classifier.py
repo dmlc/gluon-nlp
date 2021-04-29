@@ -746,6 +746,6 @@ if __name__ == '__main__':
         except AttributeError as e:
             warnings.warn(e)
             nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
-            warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115 or mxnet >= 1.7')
+            warnings.warn('INT8 Quantization for BERT need mxnet >= 1.7')
     else:
         train(task.metrics)
