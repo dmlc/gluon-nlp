@@ -104,13 +104,13 @@ GluonNLP also supports the "`DistilBERT <https://arxiv.org/abs/1910.01108>`_" mo
 +-----------------------------------------+----------------------+
 |                                         | distilbert_6_768_12  |
 +=========================================+======================+
-| distil_book_corpus_wiki_en_uncased      | ✓                    |
+| distilbert_book_corpus_wiki_en_uncased  | ✓                    |
 +-----------------------------------------+----------------------+
 
 .. code-block:: python
 
     import gluonnlp as nlp; import mxnet as mx;
-    model, vocab = nlp.model.get_model('distilbert_6_768_12', dataset_name='distil_book_corpus_wiki_en_uncased');
+    model, vocab = nlp.model.get_model('distilbert_6_768_12', dataset_name='distilbert_book_corpus_wiki_en_uncased');
     tokenizer = nlp.data.BERTTokenizer(vocab, lower=True);
     transform = nlp.data.BERTSentenceTransform(tokenizer, max_seq_length=512, pair=False, pad=False);
     sample = transform(['Hello world!']);
