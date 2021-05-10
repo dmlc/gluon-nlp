@@ -336,17 +336,6 @@ def calibration(net, dev_data, num_calib_batches, quantized_dtype, calib_mode):
                                                             logger=None)
     print('Calibration done with success.')
     return quantized_net
-
-# will remove until mxnet 1.7 release.
-try:
-    quantized_net = calibration(bert_classifier,
-                                dev_dataloader,
-                                num_calib_batches,
-                                quantized_dtype,
-                                calib_mode)
-except AttributeError:
-    nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
-    warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
 ```
 
 ## Deployment
@@ -378,13 +367,6 @@ def deployment(net, prefix, dataloader):
                             .format(batch_id + 1, len(bert_dataloader),
                                     metric.get()[1]))
     return metric
-
-# will remove until mxnet 1.7 release.
-try:
-    eval_metric = deployment(quantized_net, prefix, dev_dataloader)
-except NameError:
-    nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
-    warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
 ```
 
 ## Conclusion

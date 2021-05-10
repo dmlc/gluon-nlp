@@ -336,7 +336,7 @@ class BiaffineParser(nn.Block):
         arg_dict = {key: val._reduce() for key, val in params.items()}
         ndarray.save(filename, arg_dict)
 
-    def save(self, save_path):
+    def save(self, save_path):  # pylint: disable=arguments-differ
         """Save model
 
         Parameters
@@ -346,7 +346,7 @@ class BiaffineParser(nn.Block):
         """
         self.save_parameters(save_path)
 
-    def load(self, load_path):
+    def load(self, load_path):  # pylint: disable=arguments-differ
         """Load model
 
         Parameters
