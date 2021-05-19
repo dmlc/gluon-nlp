@@ -58,10 +58,14 @@ class AdapterFusion(nn.HybridBlock):
 
         key = self.key_proj(key).transpose((0, 1, 3, 2))
         value = self.value_proj(value)
+
+        #previous implementaion
         # query = npx.reshape(self.query_proj(query), (-2, -2, 1, -1))
+        # scores = np.squeeze(npx.batch_dot(query, key), axis=2)
+        # with einsum
         query = self.query_proj(query)
-        #scores = np.squeeze(npx.batch_dot(query, key), axis=2)
         scores = np.einsum('blu, blun -> bln', query, key)
+
         attn_weights = npx.softmax(scores, axis=-1)
         #attn batch size lenght, num
         #value bs l, num, u
