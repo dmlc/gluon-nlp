@@ -54,14 +54,19 @@ class AdapterFusion(nn.HybridBlock):
     def forward(self, query, key, value):
         #query bs, length, unit
         #key bs, length, num_adapters, unit
-        query = npx.reshape(self.query_proj(query), (-2, -2, 1, -1))
+
+
         key = self.key_proj(key).transpose((0, 1, 3, 2))
         value = self.value_proj(value)
-        scores = np.squeeze(npx.batch_dot(query, key), axis=2)
-
+        # query = npx.reshape(self.query_proj(query), (-2, -2, 1, -1))
+        query = self.query_proj(query)
+        #scores = np.squeeze(npx.batch_dot(query, key), axis=2)
+        scores = np.einsum('blu, blun -> bln', query, key)
         attn_weights = npx.softmax(scores, axis=-1)
-
-        output = np.squeeze(npx.batch_dot(npx.reshape(attn_weights, (-2, -2, 1, -1)),  value), axis=2)
+        #attn batch size lenght, num
+        #value bs l, num, u
+        output = np.einsum('bln, blnu -> blu', attn_weights, value)
+        #output = np.squeeze(npx.batch_dot(npx.reshape(attn_weights, (-2, -2, 1, -1)),  value), axis=2)
         return output
 
 @use_np
