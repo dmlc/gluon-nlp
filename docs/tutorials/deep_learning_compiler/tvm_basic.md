@@ -65,7 +65,7 @@ cls_embedding
 _TVM_RT_CACHE = dict()
 
 
-def compile_tvm_graph_runtime(model, model_name, cfg,
+def compile_tvm_graph_executor(model, model_name, cfg,
                               batch_size, seq_length, dtype, instance_type):
     layout = cfg.MODEL.layout
     compute_layout = cfg.MODEL.compute_layout
@@ -74,7 +74,7 @@ def compile_tvm_graph_runtime(model, model_name, cfg,
         return _TVM_RT_CACHE[key]
     tvm = try_import_tvm()
     from tvm import relay
-    from tvm.contrib import graph_runtime
+    from tvm.contrib import graph_executor
     from gluonnlp.utils.tvm_utils import get_ec2_tvm_flags, update_tvm_convert_map
     flags = get_ec2_tvm_flags()[instance_type]
     update_tvm_convert_map()
@@ -128,15 +128,15 @@ def compile_tvm_graph_runtime(model, model_name, cfg,
         ctx = tvm.gpu()
     else:
         ctx = tvm.cpu()
-    rt = graph_runtime.GraphModule(lib["default"](ctx))
+    rt = graph_executor.GraphModule(lib["default"](ctx))
     _TVM_RT_CACHE[key] = rt
     return rt
 ```
 
 
 ```{.python .input}
-rt = compile_tvm_graph_runtime(model, model_name, cfg, token_ids.shape[0],
-                               token_ids.shape[1], 'float32', 'g4')
+rt = compile_tvm_graph_executor(model, model_name, cfg, token_ids.shape[0],
+                                token_ids.shape[1], 'float32', 'g4')
 ```
 
 

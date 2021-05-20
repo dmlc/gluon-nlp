@@ -1,0 +1,53 @@
+name: nightly test
+
+on:
+  schedule:
+    - cron: '30 23 * * *'  # At UTC 23:30, everyday, use https://crontab.guru/
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ '3.7' ]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install Other Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install boto3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Test GluonNLP on MXNet nightly realse
+        run: |
+          echo "Start submitting job"
+          python ./tools/batch/submit-job.py --region us-east-1 \
+                                             --job-type g4dn.4x \
+                                             --name GluonNLP-Nightly-Test \
+                                             --source-ref ${{ github.ref }} \
+                                             --work-dir . \
+                                             --remote https://github.com/${{ github.repository }} \
+                                             --command "python3 -m pip install pytest-forked \
+                                                        && python3 -m pip install -U --pre 'mxnet-cu102>=2.0.0b20210418' -f https://dist.mxnet.io/python/cu102 \
+                                                        && python3 -m pytest --forked --durations=50 --device="cpu" --device="gpu" --runslow ./tests/" \
+                                             --wait | tee batch_job.log
+
+      - name: Upload Cloud Watch Log
+        if: ${{ failure() || success() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Test_Log
+          path: ./batch_job.log
