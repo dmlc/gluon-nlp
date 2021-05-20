@@ -167,17 +167,20 @@ def convert_params(fairseq_model,
                    gluon_cfg,
                    ctx):
     fairseq_params = fairseq_model.state_dict()
+    
     fairseq_prefix = 'model.encoder.'
     gluon_prefix = 'backbone_model.'
     print('converting {} params'.format(gluon_prefix))
 
     gluon_model = RobertaForMLM(backbone_cfg=gluon_cfg)
+
     # output all hidden states for testing
     gluon_model.backbone_model._output_all_encodings = True
     gluon_model.backbone_model.encoder._output_all_encodings = True
 
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
+
     gluon_params = gluon_model.collect_params()
     num_layers = gluon_cfg.MODEL.num_layers
     for layer_id in range(num_layers):
@@ -221,8 +224,8 @@ def convert_params(fairseq_model,
 
     for k, v in [
         ('sentence_encoder.embed_tokens.weight', 'word_embed.weight'),
-        ('sentence_encoder.emb_layer_norm.weight', 'embed_ln.gamma'),
-        ('sentence_encoder.emb_layer_norm.bias', 'embed_ln.beta'),
+        ('sentence_encoder.layernorm_embedding.weight', 'embed_ln.gamma'),
+        ('sentence_encoder.layernorm_embedding.bias', 'embed_ln.beta'),
     ]:
         fs_name = fairseq_prefix + k
         gl_name = gluon_prefix + v
@@ -295,7 +298,8 @@ def test_model(fairseq_model, gluon_model, gpu):
     fs_all_hiddens = fs_extra['inner_states']
 
     # checking all_encodings_outputs
-    num_layers = fairseq_model.args.encoder_layers
+
+    num_layers = fairseq_model.cfg['model'].encoder_layers
     for i in range(num_layers + 1):
         gl_hidden = gl_all_hiddens[i].asnumpy()
         fs_hidden = fs_all_hiddens[i]
@@ -345,6 +349,7 @@ def convert_fairseq_model(args):
 
     fairseq_roberta = fairseq_RobertaModel.from_pretrained(args.fairseq_model_path,
                                                            checkpoint_file='model.pt')
+    
     vocab_size = convert_vocab(args, fairseq_roberta)
 
     gluon_cfg = convert_config(fairseq_roberta.cfg.model, vocab_size,
