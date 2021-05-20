@@ -167,20 +167,17 @@ def convert_params(fairseq_model,
                    gluon_cfg,
                    ctx):
     fairseq_params = fairseq_model.state_dict()
-    
     fairseq_prefix = 'model.encoder.'
     gluon_prefix = 'backbone_model.'
     print('converting {} params'.format(gluon_prefix))
 
     gluon_model = RobertaForMLM(backbone_cfg=gluon_cfg)
-
     # output all hidden states for testing
     gluon_model.backbone_model._output_all_encodings = True
     gluon_model.backbone_model.encoder._output_all_encodings = True
 
     gluon_model.initialize(ctx=ctx)
     gluon_model.hybridize()
-
     gluon_params = gluon_model.collect_params()
     num_layers = gluon_cfg.MODEL.num_layers
     for layer_id in range(num_layers):
@@ -349,7 +346,6 @@ def convert_fairseq_model(args):
 
     fairseq_roberta = fairseq_RobertaModel.from_pretrained(args.fairseq_model_path,
                                                            checkpoint_file='model.pt')
-    
     vocab_size = convert_vocab(args, fairseq_roberta)
 
     gluon_cfg = convert_config(fairseq_roberta.cfg.model, vocab_size,
