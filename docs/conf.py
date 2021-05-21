@@ -234,10 +234,10 @@ def setup(app):
         'auto_doc_ref': True
             }, True)
     app.add_transform(AutoStructify)
-    app.add_javascript('google_analytics.js')
-    app.add_javascript('hidebib.js')
-    app.add_javascript('install-options.js')
-    app.add_stylesheet('custom.css')
+    app.add_js_file('google_analytics.js')
+    app.add_js_file('hidebib.js')
+    app.add_js_file('install-options.js')
+    app.add_css_file('custom.css')
 
 
 sphinx_gallery_conf = {
@@ -249,7 +249,7 @@ sphinx_gallery_conf = {
     'examples_dirs': [],
     'gallery_dirs': [],
     'subsection_order': ExplicitOrder([]),
-    'find_mayavi_figures': False,
+    'image_scrapers': ('matplotlib', 'mayavi'),
     'filename_pattern': '.py',
     'expected_failing_examples': []
 }
