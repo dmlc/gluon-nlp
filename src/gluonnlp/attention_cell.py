@@ -15,6 +15,12 @@
 # specific language governing permissions and limitations
 # under the License.
 """Attention cells."""
+
+__all__ = ['gen_self_attn_mask', 'gen_mem_attn_mask',
+           'masked_softmax', 'masked_logsoftmax', 'multi_head_dot_attn',
+           'MultiHeadAttentionCell', 'gen_rel_position',
+           'RelAttentionScoreCell']
+
 import math
 import mxnet as mx
 from mxnet import np, npx
