@@ -250,7 +250,7 @@ sphinx_gallery_conf = {
     'examples_dirs': [],
     'gallery_dirs': [],
     'subsection_order': ExplicitOrder([]),
-    'find_mayavi_figures': False,
+    'image_scrapers': ('matplotlib', 'mayavi'),
     'filename_pattern': '.py',
     'expected_failing_examples': []
 }
