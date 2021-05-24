@@ -87,7 +87,7 @@ def convert_fairseq_model(args):
                                                      checkpoint_file='model.pt')
     vocab_size = convert_vocab(args, fairseq_xlmr)
 
-    gluon_cfg = convert_config(fairseq_xlmr.cfg.model, vocab_size,
+    gluon_cfg = convert_config(fairseq_xlmr.args, vocab_size,
                                XLMRModel.get_cfg().clone())
     with open(os.path.join(args.save_dir, 'model.yml'), 'w') as of:
         of.write(gluon_cfg.dump())
