@@ -17,6 +17,7 @@
 
 """Various utility methods for Question Answering"""
 import math
+import os
 
 
 def warm_up_lr(base_lr, iteration, lr_warmup_steps):
@@ -43,3 +44,17 @@ def warm_up_lr(base_lr, iteration, lr_warmup_steps):
         Learning rate
     """
     return min(base_lr, base_lr * (math.log(iteration) / math.log(lr_warmup_steps)))
+
+
+def create_output_dir(path):
+    """Create directory to store execution outputs
+
+    Parameters
+    ----------
+    path : str
+        Directory path
+    """
+    path = os.path.expanduser(path)
+
+    if not os.path.isdir(path):
+        os.makedirs(path)

@@ -89,7 +89,8 @@ class SQuADDataPipeline:
         self._word_vocab_file_name = 'word_vocab.bin'
         self._char_vocab_file_name = 'char_vocab.bin'
 
-    def get_processed_data(self, use_spacy=True, shrink_word_vocab=True, squad_data_root=None):
+    def get_processed_data(self, use_spacy=True, shrink_word_vocab=True, squad_data_root=None,
+                           filter_train_examples=True):
         """Main method to start data processing
 
         Parameters
@@ -101,6 +102,8 @@ class SQuADDataPipeline:
             word_vocab. Otherwise tokens with no embedding also stay
         squad_data_root : str, default None
             Data path to store downloaded original SQuAD data
+        filter_train_examples : bool, default True
+            Filter training data based on commonsense heuristics
         Returns
         -------
         train_json_data : dict
@@ -135,10 +138,11 @@ class SQuADDataPipeline:
                                                                    shrink_word_vocab,
                                                                    pool)
 
-        filter_provider = SQuADDataFilter(self._train_para_limit,
-                                          self._train_ques_limit,
-                                          self._ans_limit)
-        train_examples = list(filter(filter_provider.filter, train_examples))
+        if filter_train_examples:
+            filter_provider = SQuADDataFilter(self._train_para_limit,
+                                              self._train_ques_limit,
+                                              self._ans_limit)
+            train_examples = list(filter(filter_provider.filter, train_examples))
 
         train_featurizer = SQuADDataFeaturizer(word_vocab,
                                                char_vocab,
@@ -307,19 +311,33 @@ class SQuADDataPipeline:
         embedding = nlp.embedding.create('glove', source=emb_file_name)
 
         if is_cased_embedding:
-            word_counts = itertools.chain(*[[(item[0], item[1]),
-                                             (item[0].lower(), item[1]),
-                                             (item[0].capitalize(), item[1]),
-                                             (item[0].upper(), item[1])] for item in word_counts])
+            updated_counter = {}
+            for item in word_counts:
+                if item[0] in embedding.token_to_idx:
+                    updated_counter[item[0]] = item[1]
+                else:
+                    for cased_item in [(item[0].lower(), item[1]),
+                                       (item[0].capitalize(), item[1]),
+                                       (item[0].upper(), item[1])]:
+                        if cased_item[0] in embedding.token_to_idx:
+                            updated_counter[cased_item[0]] = cased_item[1]
+                            break
+
+                    if not shrink_word_vocab:
+                        updated_counter[item[0]] = item[1]
+
+            word_vocab = Vocab(updated_counter, bos_token=None, eos_token=None)
+            char_vocab = Vocab({item[0]: item[1] for item in char_counts},
+                               bos_token=None, eos_token=None)
         else:
             word_counts = [(item[0].lower(), item[1]) for item in word_counts]
+            word_vocab = Vocab({item[0]: item[1] for item in word_counts if
+                                not shrink_word_vocab or item[0] in embedding.token_to_idx},
+                               bos_token=None, eos_token=None)
+            char_vocab = Vocab({item[0].lower(): item[1] for item in char_counts},
+                               bos_token=None, eos_token=None)
 
-        word_vocab = Vocab({item[0]: item[1] for item in word_counts if
-                            not shrink_word_vocab or item[0] in embedding.token_to_idx},
-                           bos_token=None, eos_token=None)
         word_vocab.set_embedding(embedding)
-        char_vocab = Vocab({item[0]: item[1] for item in char_counts},
-                           bos_token=None, eos_token=None)
 
         return word_vocab, char_vocab
 
@@ -766,6 +784,24 @@ class SQuADDataFeaturizer:
 
         return result
 
+    def _get_chars_emb(self, chars):
+        """Get embedding for the characters
+
+        Parameters
+        ----------
+        chars : list[str]
+            Words to embed
+
+        Returns
+        -------
+        ret : np.array
+            Array of embeddings for words
+        """
+        if not self._is_cased_embedding:
+            return self._char_vocab[[char.lower() for char in chars]]
+        else:
+            return self._char_vocab[chars]
+
     def build_features(self, example):
         """Generate features for a given example
 
@@ -806,11 +842,12 @@ class SQuADDataFeaturizer:
 
         for i in range(0, context_len):
             char_len = min(len(example['context_chars'][i]), self._char_limit)
-            ctx_chars_idxs[i, :char_len] = self._char_vocab[example['context_chars'][i][:char_len]]
+            ctx_chars_idxs[i, :char_len] = self._get_chars_emb(
+                example['context_chars'][i][:char_len])
 
         for i in range(0, ques_len):
             char_len = min(len(example['ques_chars'][i]), self._char_limit)
-            ques_char_idxs[i, :char_len] = self._char_vocab[example['ques_tokens'][i][:char_len]]
+            ques_char_idxs[i, :char_len] = self._get_chars_emb(example['ques_tokens'][i][:char_len])
 
         start, end = example['y1s'][-1], example['y2s'][-1]
 
