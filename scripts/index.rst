@@ -40,6 +40,12 @@ Model Zoo
       Dependency parsing.
 
    .. card::
+      :title: Named Entity Recognition
+      :link: named_entity_recognition/index.html
+
+      Extract named entities from unstructured text data  with deep learning.
+
+   .. card::
       :title: Natural Language Inference
       :link: natural_language_inference/index.html
 
@@ -86,6 +92,7 @@ Model Zoo
    machine_translation/index
    text_classification/index
    sentiment_analysis/index
+   named_entity_recognition/index
    natural_language_inference/index
    text_generation/index
    parsing/index
