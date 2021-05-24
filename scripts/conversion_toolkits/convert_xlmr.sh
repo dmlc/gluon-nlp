@@ -1,4 +1,4 @@
-python3 -m pip install git+https://github.com/pytorch/fairseq.git@master --upgrade --user
+python3 -m pip install fairseq==0.10.1 --upgrade --user
 for model in base large
 do
     mkdir xlmr_${model}
