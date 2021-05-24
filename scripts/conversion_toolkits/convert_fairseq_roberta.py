@@ -295,7 +295,6 @@ def test_model(fairseq_model, gluon_model, gpu):
     fs_all_hiddens = fs_extra['inner_states']
 
     # checking all_encodings_outputs
-
     num_layers = fairseq_model.args.encoder_layers
     for i in range(num_layers + 1):
         gl_hidden = gl_all_hiddens[i].asnumpy()
