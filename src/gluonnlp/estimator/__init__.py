@@ -14,38 +14,15 @@
 # KIND, either express or implied.  See the License for the
 # specific language governing permissions and limitations
 # under the License.
+# pylint: disable=eval-used, redefined-outer-name
 
-# pylint: disable=wildcard-import
-"""NLP toolkit."""
+""" Gluon NLP Estimator Module """
+from . import machine_translation_estimator, machine_translation_event_handler
+from . import machine_translation_batch_processor
 
-import warnings
-import mxnet
+from .machine_translation_estimator import *
+from .machine_translation_event_handler import *
+from .machine_translation_batch_processor import *
 
-from . import loss
-from . import data
-from . import embedding
-from . import model
-from . import metric
-from . import utils
-from . import vocab
-from . import optimizer
-from . import initializer
-from . import estimator
-from .vocab import Vocab
-
-__version__ = '0.10.0.dev'
-
-__all__ = ['data',
-           'model',
-           'embedding',
-           'Vocab',
-           'vocab',
-           'loss',
-           'initializer',
-           'optimizer',
-           'utils',
-           'metric',
-           'estimator']
-
-warnings.filterwarnings(module='gluonnlp', action='default', category=DeprecationWarning)
-utils.version.check_version('1.6.0', warning_only=True, library=mxnet)
+__all__ = (machine_translation_estimator.__all__ + machine_translation_event_handler.__all__
+           + machine_translation_batch_processor.__all__)
