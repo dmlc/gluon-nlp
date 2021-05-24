@@ -221,8 +221,8 @@ def convert_params(fairseq_model,
 
     for k, v in [
         ('sentence_encoder.embed_tokens.weight', 'word_embed.weight'),
-        ('sentence_encoder.layernorm_embedding.weight', 'embed_ln.gamma'),
-        ('sentence_encoder.layernorm_embedding.bias', 'embed_ln.beta'),
+        ('sentence_encoder.emb_layer_norm.weight', 'embed_ln.gamma'),
+        ('sentence_encoder.emb_layer_norm.bias', 'embed_ln.beta'),
     ]:
         fs_name = fairseq_prefix + k
         gl_name = gluon_prefix + v
@@ -296,7 +296,7 @@ def test_model(fairseq_model, gluon_model, gpu):
 
     # checking all_encodings_outputs
 
-    num_layers = fairseq_model.cfg['model'].encoder_layers
+    num_layers = fairseq_model.args.encoder_layers
     for i in range(num_layers + 1):
         gl_hidden = gl_all_hiddens[i].asnumpy()
         fs_hidden = fs_all_hiddens[i]
