@@ -57,6 +57,7 @@ from gluonnlp.data.bert.squad import improve_answer_span, \
 from gluonnlp.calibration import BertLayerCollector
 from model.qa import BertForQALoss, BertForQA
 from bert_qa_evaluate import get_F1_EM, predict, PredResult
+from utils import QuantizableNet, run_graphpass
 
 np.random.seed(6)
 random.seed(6)
@@ -234,7 +235,7 @@ if __name__ == '__main__':
     parser.add_argument('--only_calibration', action='store_true',
                         help='quantize model')
 
-    parser.add_argument('--num_calib_batches', type=int, default=10,
+    parser.add_argument('--num_calib_batches', type=int, default=1,
                         help='number of batches for calibration')
 
     parser.add_argument('--quantized_dtype', type=str, default='auto',
@@ -245,6 +246,18 @@ if __name__ == '__main__':
                         choices=['none', 'naive', 'entropy', 'customize'],
                         help='calibration mode used for generating calibration table '
                              'for the quantized symbol.')
+
+    parser.add_argument('--custom_pass_lib',
+                        type=str,
+                        default=None,
+                        help='Specify a custom graph pass library for the network,'
+                        'allowing to customize the graph')
+
+    parser.add_argument('--custom_passes',
+                        nargs='+',
+                        type=str,
+                        default=None,
+                        help='Specify names of custom graph passes for the network to apply from `custom_pass_lib`')
 
     args = parser.parse_args()
 
@@ -581,11 +594,30 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
         num_workers=4, batch_size=test_batch_size,
         shuffle=False, last_batch='keep')
 
+    model_name = args.bert_model
+    run_softmax_pass = False
+    if args.custom_passes is None:
+        args.custom_passes = []
+
+    if 'MaskSoftmax' in args.custom_passes:
+        run_softmax_pass = True
+        args.custom_passes.remove('MaskSoftmax')
+
+    if args.custom_pass_lib is not None:
+        # load library
+        libpath = os.path.abspath(args.custom_pass_lib)
+        mx.library.load(libpath)
+        for pass_name in args.custom_passes:
+            net = run_graphpass(net, model_name,
+                                test_batch_size, max_seq_length,
+                                pass_name)
+
     assert ctx == mx.cpu(), \
         'Currently only supports CPU with MKL-DNN backend.'
     log.info('Now we are doing calibration on dev with %s.', ctx)
     collector = BertLayerCollector(clip_min=-50, clip_max=10, logger=log)
     num_calib_examples = test_batch_size * num_calib_batches
+    net = QuantizableNet(net)
     net = mx.contrib.quantization.quantize_net_v2(net, quantized_dtype=quantized_dtype,
                                                   exclude_layers=[],
                                                   quantize_mode='smart',
@@ -596,7 +628,16 @@ def calibration(net, num_calib_batches, quantized_dtype, calib_mode):
                                                   ctx=ctx,
                                                   LayerOutputCollector=collector,
                                                   logger=log)
+
+    if run_softmax_pass:
+        net = run_graphpass(net, model_name, test_batch_size, max_seq_length, 'MaskSoftmax')
+
     # save params
+    net.hybridize()
+    out = net(mx.nd.ones((test_batch_size, max_seq_length)),
+              mx.nd.zeros((test_batch_size, max_seq_length)),
+              mx.nd.zeros((test_batch_size ,)))
+    out.wait_to_read()
     ckpt_name = 'model_bert_squad_quantized_{0}'.format(calib_mode)
     params_saved = os.path.join(output_dir, ckpt_name)
     net.export(params_saved, epoch=0)
@@ -854,9 +895,10 @@ if __name__ == '__main__':
                         num_calib_batches,
                         quantized_dtype,
                         calib_mode)
-        except AttributeError:
+        except AttributeError as e:
             nlp.utils.version.check_version('1.7.0', warning_only=True, library=mx)
-            warnings.warn('INT8 Quantization for BERT need mxnet-mkl >= 1.6.0b20200115')
+            warnings.warn('INT8 Quantization for BERT needs mxnet >= 1.7')
+            warnings.warn(e)
     elif not only_predict:
         train()
         evaluate()

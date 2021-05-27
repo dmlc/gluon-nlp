@@ -251,7 +251,16 @@ Question Answering
 | SQuAD 1.1 | bert_12_768_12    | 81.18   | 80.32   | 88.58   | 88.10   |`command <https://github.com/dmlc/web-data/blob/master/gluonnlp/logs/bert/calibration_squad1.1_base_mx1.6.0b20200125.sh>`__ |
 +-----------+-------------------+---------+---------+---------+---------+----------------------------------------------------------------------------------------------------------------------------+
 
-For all model settings above, we use a subset of evaluation dataset for calibration.
+For all model settings above, subset of evaluation dataset for calibration was used.
+
+Using optimization graph passes is recommended to boost performance of inference even more. To deploy calibrated model optimized with graph passes following arguments can be used
+--custom_pass_lib [graph_pass_library_path] and --custom_passes [graph_passes_name]. E.g.:
+
+.. code-block:: console
+
+     $ python3 finetune_squad.py --only_calibration --model_parameters ./output_dir/net.params --custom_pass_lib bertpass_lib.so --custom_passes MaskSoftmax MHAInterleave
+
+Graph pass library can be built with setup.py script.
 
 Pre-training from Scratch
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -348,7 +357,7 @@ Once the model is exported, you can import the model by setting --only_infer, an
 The batch size can be specified via --test_batch_size option, and accuracy can be checked setting --check_accuracy.
 
 When using GPU and data type FP16 (--dtype float16), we recommend to use MXNET_FC_TRUE_FP16=1 for boosting performance.
-Moreover, you can use a custom graph pass for BERT, via --custom_pass [custom_pass_file], to improve the performance on GPU. To generate the pass you can run setup.py within the BERT scripts directory. These GPU optimizations require MXNet version 1.7 or higher.
+Moreover, custom graph pass for BERT can be used via --custom_pass_lib [custom_pass_library] and --custom_passes [space_seperated_names_of_passes_to_apply], to improve the performance on GPU. To generate the pass library setup.py script can be run within the BERT scripts directory. These GPU optimizations require MXNet version 1.7 or higher.
 
 
 BERT for Sentence or Tokens Embedding
