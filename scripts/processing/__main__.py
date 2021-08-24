@@ -2,8 +2,7 @@ import argparse
 import textwrap
 
 from . import (
-    clean_tok_para_corpus,
-    clean_tok_mono_corpus,
+    clean_tok_corpus,
     learn_subword,
     apply_subword
 )
@@ -24,13 +23,13 @@ def cli_main():
                              'Choices are {}.'.format(SUBCOMMANDS))
     args, other_args = parser.parse_known_args()
     if args.command == 'clean_tok_para_corpus':
-        parser = clean_tok_para_corpus.get_parser()
+        parser = clean_tok_corpus.get_parser.para()
         sub_args = parser.parse_args(other_args)
-        clean_tok_para_corpus.main(sub_args)
+        clean_tok_corpus.main_para(sub_args)
     elif args.command == 'clean_tok_mono_corpus':
-        parser = clean_tok_mono_corpus.get_parser()
+        parser = clean_tok_corpus.get_parser.mono()
         sub_args = parser.parse_args(other_args)
-        clean_tok_mono_corpus.main(sub_args)
+        clean_tok_corpus.main_mono(sub_args)
     elif args.command == 'learn_subword':
         parser = learn_subword.get_parser()
         sub_args = parser.parse_args(other_args)
