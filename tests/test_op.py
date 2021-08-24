@@ -2,7 +2,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 import mxnet as mx
 from mxnet import gluon
-from scipy.stats import kstest
+from scipy.stats import ks_2samp
 import pytest
 from gluonnlp.op import *
 mx.npx.set_np()
@@ -103,7 +103,7 @@ def test_gumbel_softmax(shape):
     assume_allones = (ret == 1).sum(axis=-1).asnumpy()
     assert_allclose(assume_allones, np.ones_like(assume_allones))
 
-@pytest.mark.parametrize('shape', (100,))
+@pytest.mark.parametrize('shape', (50,))
 @pytest.mark.seed(1)
 def test_trunc_gumbel(shape):
     #  We first just verify that the samples are smaller than the provided threshold (i.e. they are truncated)
@@ -119,14 +119,20 @@ def test_trunc_gumbel(shape):
     pvalues = []
     for i in range(1000):    
         logits = mx.np.random.uniform(-2, -1, shape)
-        sampled_gumbels = np.random.gumbel(np.zeros_like(logits.asnumpy())) + logits.asnumpy() # sample a gumbel distribution
-        sampled_truncated_gumbels = trunc_gumbel(mx.np.zeros(shape), 0.5).asnumpy()            # sample a potential truncated gumbel distribution
-        reconstructed_sample = -np.log(np.exp(-sampled_truncated_gumbels) - np.exp(-0.5))      # remove the truncation
-        pvalue = kstest(reconstructed_sample, sampled_gumbels).pvalue                          
+        sampled_gumbels = mx.np.random.gumbel(mx.np.zeros_like(logits)) + logits # sample a gumbel distribution
+
+        # sample a potential truncated gumbel distribution
+        gumbels = mx.np.random.gumbel(mx.np.zeros_like(logits)) + logits
+        sampled_truncated_gumbels = trunc_gumbel(logits, 0.5)
+        
+        # remove the truncation
+        reconstructed_sample = -mx.np.log(mx.np.exp(-sampled_truncated_gumbels) - mx.np.exp(-0.5))
+
+        pvalue = ks_2samp(reconstructed_sample.asnumpy(), sampled_gumbels.asnumpy()).pvalue
         pvalues.append(pvalue)
     
     pvalues = np.array(pvalues)
     # Statistical inference condition: if out of all the tests, 90% of the resultant p-values > 0.05, 
     # accept the null hypothesis (i.e. the reconstructed_samples indeed arrive from a gumbel distribution) 
-    assert (len(pvalues > 0.05) > 900)
+    assert (len(pvalues[pvalues > 0.05]) > 900)
     
