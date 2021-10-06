@@ -849,13 +849,13 @@ def quantize_and_calibrate(net, dataloader):
         """Callback function for collecting min and max values from an NDArray."""
         if name not in self.include_layers:
             return
-        print(name)
         arr = arr.copyto(mx.cpu()).asnumpy()
         min_range = np.min(arr)
         max_range = np.max(arr)
 
         if (op_name.find("npi_copy") != -1 or op_name.find("LayerNorm") != -1) and max_range > self.clip_max:
            max_range = self.clip_max
+
         if op_name.find('Dropout') != -1 and min_range < self.clip_min:
             print(name, op_name)
             min_range = self.clip_min
@@ -893,9 +893,10 @@ def evaluate(args, last=True):
     logging.info(
         'Srarting inference without horovod on the first node on device {}'.format(
             str(ctx_l)))
+    network_dtype = args.dtype if args.dtype != 'int8' else 'float32'
 
     cfg, tokenizer, qa_net, use_segmentation = get_network(
-        args.model_name, ctx_l, args.classifier_dropout, dtype=args.dtype)
+        args.model_name, ctx_l, args.classifier_dropout, dtype=network_dtype)
     if args.dtype == 'float16':
         qa_net.cast('float16')
         qa_net.hybridize()
@@ -1067,6 +1068,11 @@ def evaluate(args, last=True):
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
     args = parse_args()
+    if args.dtype == 'int8':
+        ctx_l = parse_ctx(args.gpus)
+        if ctx_l[0] != mx.cpu() or len(ctx_l) != 1:
+            raise ValueError("Evaluation on int8 data type is supported only for CPU for now")
+
     if args.do_train:
         if args.dtype == 'float16':
             # Initialize amp if it's fp16 training
