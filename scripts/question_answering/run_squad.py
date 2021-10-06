@@ -147,9 +147,9 @@ def parse_args():
     parser.add_argument('--max_saved_ckpt', type=int, default=5,
                         help='The maximum number of saved checkpoints')
     parser.add_argument('--dtype', type=str, default='float32',
-                        help='Data type used for evaluation. Either float32 or float16. When you '
+                        help='Data type used for evaluation. Either float32, float16 or int8. When you '
                              'use --dtype float16, amp will be turned on in the training phase and '
-                             'fp16 will be used in evaluation.')
+                             'fp16 will be used in evaluation. For now int8 data type is supported on CPU only.')
     args = parser.parse_args()
     return args
 
@@ -815,6 +815,71 @@ def predict_extended(original_feature,
     assert len(nbest_json) >= 1
     return not_answerable_score, nbest[0][0], nbest_json
 
+def quantize_and_calibrate(net, dataloader): 
+  class QuantizationDataLoader(mx.gluon.data.DataLoader):
+    def __init__(self, dataloader, use_segmentation):
+      self._dataloader = dataloader
+      self._iter = None
+      self._use_segmentation = use_segmentation
+   
+    def __iter__(self):
+      self._iter = iter(self._dataloader)
+      return self
+  
+    def __next__(self):
+      batch = next(self._iter)
+      if self._use_segmentation:
+        return [batch.data, batch.segment_ids, batch.valid_length]
+      else:
+        return [batch.data, batch.valid_length]
+  
+    def __del__(self):
+      del(self._dataloader)
+
+  class BertLayerCollector(mx.contrib.quantization.CalibrationCollector):
+    """Saves layer output min and max values in a dict with layer names as keys.
+    The collected min and max values will be directly used as thresholds for quantization.
+    """
+    def __init__(self, clip_min, clip_max):
+        super(BertLayerCollector, self).__init__()
+        self.clip_min = clip_min
+        self.clip_max = clip_max
+
+    def collect(self, name, op_name, arr):
+        """Callback function for collecting min and max values from an NDArray."""
+        if name not in self.include_layers:
+            return
+        print(name)
+        arr = arr.copyto(mx.cpu()).asnumpy()
+        min_range = np.min(arr)
+        max_range = np.max(arr)
+
+        if (op_name.find("npi_copy") != -1 or op_name.find("LayerNorm") != -1) and max_range > self.clip_max:
+           max_range = self.clip_max
+        if op_name.find('Dropout') != -1 and min_range < self.clip_min:
+            print(name, op_name)
+            min_range = self.clip_min
+
+        if name in self.min_max_dict:
+            cur_min_max = self.min_max_dict[name]
+            self.min_max_dict[name] = (min(cur_min_max[0], min_range),
+                                       max(cur_min_max[1], max_range))
+        else:
+            self.min_max_dict[name] = (min_range, max_range)
+
+  calib_data = QuantizationDataLoader(dataloader, net.use_segmentation)
+  net.quantized_backbone = mx.contrib.quant.quantize_net(net.backbone, quantized_dtype='auto',
+                                        exclude_layers=None,
+                                        exclude_layers_match=None,
+                                        calib_data=calib_data,
+                                        calib_mode='custom',
+                                        LayerOutputCollector=BertLayerCollector(clip_min=-50, clip_max=10),
+                                        num_calib_batches=10,
+                                        ctx=mx.current_context(),
+                                        logger=logging.getLogger())
+  net.quantized = True
+  return net 
+
 
 def evaluate(args, last=True):
     store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
@@ -859,6 +924,9 @@ def evaluate(args, last=True):
             batch_size=args.eval_batch_size,
             num_workers=0,
             shuffle=False)
+
+        if args.dtype == 'int8':
+            quantize_and_calibrate(qa_net, dev_dataloader)
 
         log_interval = args.eval_log_interval
         all_results = []
