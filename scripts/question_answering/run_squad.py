@@ -869,15 +869,14 @@ def quantize_and_calibrate(net, dataloader):
 
   calib_data = QuantizationDataLoader(dataloader, net.use_segmentation)
   net.quantized_backbone = mx.contrib.quant.quantize_net(net.backbone, quantized_dtype='auto',
-                                        exclude_layers=None,
-                                        exclude_layers_match=None,
-                                        calib_data=calib_data,
-                                        calib_mode='custom',
-                                        LayerOutputCollector=BertLayerCollector(clip_min=-50, clip_max=10),
-                                        num_calib_batches=10,
-                                        ctx=mx.current_context(),
-                                        logger=logging.getLogger())
-  net.quantized = True
+                                                         exclude_layers=None,
+                                                         exclude_layers_match=None,
+                                                         calib_data=calib_data,
+                                                         calib_mode='custom',
+                                                         LayerOutputCollector=BertLayerCollector(clip_min=-50, clip_max=10),
+                                                         num_calib_batches=10,
+                                                         ctx=mx.current_context(),
+                                                         logger=logging.getLogger())
   return net 
 
 
@@ -891,7 +890,7 @@ def evaluate(args, last=True):
         return
     ctx_l = parse_ctx(args.gpus)
     logging.info(
-        'Srarting inference without horovod on the first node on device {}'.format(
+        'Starting inference without horovod on the first node on device {}'.format(
             str(ctx_l)))
     network_dtype = args.dtype if args.dtype != 'int8' else 'float32'
 

@@ -181,7 +181,6 @@ class ModelForQAConditionalV1(HybridBlock):
                                             weight_initializer=weight_initializer,
                                             bias_initializer=bias_initializer))
         self.quantized_backbone = None
-        self.quantized = False
 
     def get_start_logits(self, contextual_embedding, p_mask):
         """
@@ -290,7 +289,7 @@ class ModelForQAConditionalV1(HybridBlock):
         answerable_logits
         """
         backbone_net = self.backbone
-        if self.quantized:
+        if self.quantized_backbone != None:
            backbone_net = self.quantized_backbone
 
         if self.use_segmentation:
@@ -344,7 +343,7 @@ class ModelForQAConditionalV1(HybridBlock):
             Shape (batch_size, sequence_length, 2)
         """
         backbone_net = self.backbone
-        if self.quantized:
+        if self.quantized_backbone != None:
            backbone_net = self.quantized_backbone
 
         # Shape (batch_size, sequence_length, C)
