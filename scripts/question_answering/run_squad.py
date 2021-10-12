@@ -868,15 +868,29 @@ def quantize_and_calibrate(net, dataloader):
             self.min_max_dict[name] = (min_range, max_range)
 
   calib_data = QuantizationDataLoader(dataloader, net.use_segmentation)
+  model_name = args.model_name
+  # disable specific layers in some models for the sake of accuracy
+
+  if model_name == 'google_albert_base_v2':
+    logging.warn(f"Currently quantized {model_name} shows significant accuracy drop which is not fixed yet")
+
+  exclude_layers_map = {"google_electra_large":
+                            ["sg_mkldnn_fully_connected_eltwise_2", "sg_mkldnn_fully_connected_eltwise_14", 
+                             "sg_mkldnn_fully_connected_eltwise_18", "sg_mkldnn_fully_connected_eltwise_22",
+                             "sg_mkldnn_fully_connected_eltwise_26"
+                            ]}
+  exclude_layers = None
+  if model_name in exclude_layers_map.keys():
+      exclude_layers = exclude_layers_map[model_name]
+
   net.quantized_backbone = mx.contrib.quant.quantize_net(net.backbone, quantized_dtype='auto',
-                                                         exclude_layers=None,
+                                                         exclude_layers=exclude_layers,
                                                          exclude_layers_match=None,
                                                          calib_data=calib_data,
                                                          calib_mode='custom',
                                                          LayerOutputCollector=BertLayerCollector(clip_min=-50, clip_max=10),
                                                          num_calib_batches=10,
-                                                         ctx=mx.current_context(),
-                                                         logger=logging.getLogger())
+                                                         ctx=mx.cpu())
   return net 
 
 
