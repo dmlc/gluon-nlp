@@ -357,7 +357,7 @@ def get_squad_features(args, tokenizer, segment):
                                                        tokenizer=tokenizer,
                                                        is_training=is_training), data_examples)
         logging.info('Done! Time spent:{:.2f} seconds'.format(time.time() - start))
-        with open(data_cache_path, 'w') as f:
+        with open(data_cache_path, 'w', encoding='utf-8') as f:
             for feature in data_features:
                 f.write(feature.to_json() + '\n')
 
@@ -875,14 +875,13 @@ def quantize_and_calibrate(net, dataloader):
     logging.warn(f"Currently quantized {model_name} shows significant accuracy drop which is not fixed yet")
 
   exclude_layers_map = {"google_electra_large":
-                            ["sg_mkldnn_fully_connected_eltwise_2", "sg_mkldnn_fully_connected_eltwise_14", 
-                             "sg_mkldnn_fully_connected_eltwise_18", "sg_mkldnn_fully_connected_eltwise_22",
-                             "sg_mkldnn_fully_connected_eltwise_26"
+                            ["sg_onednn_fully_connected_eltwise_2", "sg_onednn_fully_connected_eltwise_14", 
+                             "sg_onednn_fully_connected_eltwise_18", "sg_onednn_fully_connected_eltwise_22",
+                             "sg_onednn_fully_connected_eltwise_26"
                             ]}
   exclude_layers = None
   if model_name in exclude_layers_map.keys():
       exclude_layers = exclude_layers_map[model_name]
-
   net.quantized_backbone = mx.contrib.quant.quantize_net(net.backbone, quantized_dtype='auto',
                                                          exclude_layers=exclude_layers,
                                                          exclude_layers_match=None,
