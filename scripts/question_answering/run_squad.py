@@ -853,10 +853,10 @@ def quantize_and_calibrate(net, dataloader):
         min_range = np.min(arr)
         max_range = np.max(arr)
 
-        if (op_name.find("npi_copy") != -1 or op_name.find("LayerNorm") != -1) and max_range > self.clip_max:
+        if (name.find("sg_onednn_fully_connected_eltwise") != -1 or op_name.find("LayerNorm") != -1) \
+            and max_range > self.clip_max:
            max_range = self.clip_max
-
-        if op_name.find('Dropout') != -1 and min_range < self.clip_min:
+        elif name.find('sg_onednn_fully_connected') != -1 and min_range < self.clip_min:
             print(name, op_name)
             min_range = self.clip_min
 
