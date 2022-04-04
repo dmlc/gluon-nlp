@@ -57,7 +57,7 @@ Select your preferences and run the install command.
            .. code-block:: bash
 
               # Install Apache MXNet (incubating) 2 Alhpa or newer.
-              python3 -m pip install -U --pre "mxnet>=2.0.0a"
+              python3 -m pip install -U --pre "mxnet>=2.0.0b"
 
               # Install GluonNLP
               git clone https://github.com/dmlc/gluon-nlp.git
@@ -71,7 +71,7 @@ Select your preferences and run the install command.
               # Install Apache MXNet (incubating) 2 Alhpa or newer.
               # Here we assume CUDA 10.2 is installed. You can change the number
               # according to your own CUDA version, e.g., cu101, cu110
-              python3 -m pip install -U --pre "mxnet-cu102>=2.0.0a"
+              python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b"
 
               # Install GluonNLP
               git clone https://github.com/dmlc/gluon-nlp.git
@@ -85,7 +85,7 @@ Select your preferences and run the install command.
            .. code-block:: bash
 
               # Install Apache MXNet (incubating) 2 Alhpa or newer.
-              python3 -m pip install -U --pre "mxnet>=2.0.0a"
+              python3 -m pip install -U --pre "mxnet>=2.0.0b"
 
               # Install GluonNLP
               git clone https://github.com/dmlc/gluon-nlp.git
@@ -99,7 +99,7 @@ Select your preferences and run the install command.
               # Install Apache MXNet (incubating) 2 Alhpa or newer.
               # Here we assume CUDA 10.2 is installed. You can change the number
               # according to your own CUDA version, e.g., cu100, cu101
-              python3 -m pip install -U --pre "mxnet-cu102>=2.0.0a"
+              python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b"
 
               # Install GluonNLP
               git clone https://github.com/dmlc/gluon-nlp.git

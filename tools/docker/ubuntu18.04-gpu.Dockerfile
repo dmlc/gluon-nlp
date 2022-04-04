@@ -32,7 +32,7 @@ RUN bash /install/install_python_packages.sh
 RUN bash /install/install_tvm_gpu.sh
 
 # Install MXNet
-RUN python3 -m pip install -U --pre "mxnet-cu102>=2.0.0a" --user
+RUN python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b" --user
 
 # Install PyTorch
 RUN python3 -m pip install "torch==1.8.1+cu102" torchvision -f https://download.pytorch.org/whl/torch_stable.html
