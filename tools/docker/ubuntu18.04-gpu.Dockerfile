@@ -1,4 +1,4 @@
-FROM nvidia/cuda:10.2-cudnn7-devel-ubuntu18.04 as base
+FROM nvidia/cuda:10.2-cudnn8-devel-ubuntu18.04 as base
 
 LABEL maintainer="GluonNLP Team"
 COPY install /install
@@ -35,10 +35,10 @@ RUN bash /install/install_tvm_gpu.sh
 RUN python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b" --user
 
 # Install PyTorch
-RUN python3 -m pip install "torch==1.8.1+cu102" torchvision -f https://download.pytorch.org/whl/torch_stable.html
+RUN python3 -m pip install "torch==1.9.1+cu102" torchvision -f https://download.pytorch.org/whl/torch_stable.html
 
 # Install Horovod
-RUN bash /install/install_horovod.sh
+# RUN bash /install/install_horovod.sh
 
 # Install Jupyter Lab
 RUN bash /install/install_jupyter_lab.sh
