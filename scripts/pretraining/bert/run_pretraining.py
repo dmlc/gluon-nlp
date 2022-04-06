@@ -117,7 +117,7 @@ def parse_args():
     return args
 
 
-def get_pretraining_model(model_name, ctx_l):
+def get_pretraining_model(model_name, device_l):
     cfg, tokenizer, _, _ = get_pretrained_bert(
         model_name, load_backbone=False, load_mlm=False)
     cfg = BertModel.get_cfg().clone_merge(cfg)
@@ -143,7 +143,7 @@ def final_save(model, save_dir, tokenizer, cfg):
         logging.info('\t{}/{} {} {}'.format(save_dir, new_name, long_hash, file_size))
 
 
-def parameters_option(step_num, model, ckpt_dir, option='Saving', ctx_l=None):
+def parameters_option(step_num, model, ckpt_dir, option='Saving', device_l=None):
     """Save or load the model parameter, marked by step_num."""
     param_path = os.path.join(
         ckpt_dir, '{}.params'.format(str(step_num).zfill(7)))
@@ -152,7 +152,7 @@ def parameters_option(step_num, model, ckpt_dir, option='Saving', ctx_l=None):
     if option == 'Saving':
         model.save_parameters(param_path)
     elif option == 'Loading':
-        model.load_parameters(param_path, ctx=ctx_l)
+        model.load_parameters(param_path, device=device_l)
     else:
         raise NotImplementedError('Unknown Option: {}'.format(option))
 
@@ -172,7 +172,7 @@ def states_option(step_num, trainer, ckpt_dir, local_rank=0, option='Saving'):
 
 
 def train(args):
-    _, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
+    _, num_workers, rank, local_rank, is_master_node, device_l = init_comm(
         args.comm_backend, args.gpus)
     level = logging.DEBUG if args.verbose else logging.INFO
     logging_config(args.ckpt_dir,
@@ -185,12 +185,12 @@ def train(args):
     logging.info('Training info: num_buckets: {}, '
                  'num_workers: {}, rank: {}'.format(
                      args.num_buckets, num_workers, rank))
-    cfg, tokenizer, model = get_pretraining_model(args.model_name, ctx_l)
+    cfg, tokenizer, model = get_pretraining_model(args.model_name, device_l)
     if args.start_step:
         logging.info('Restart training from {}'.format(args.start_step))
-        parameters_option(args.start_step, model, args.ckpt_dir, 'Loading', ctx_l)
+        parameters_option(args.start_step, model, args.ckpt_dir, 'Loading', device_l)
     else:
-        model.initialize(ctx=ctx_l)
+        model.initialize(device=device_l)
     model.hybridize()
 
     if args.raw:
@@ -237,7 +237,7 @@ def train(args):
     num_accumulated = args.num_accumulated
     if num_accumulated > 1:
         logging.info('Using gradient accumulation. Effective global batch size = {}'
-                     .format(num_accumulated * args.batch_size * len(ctx_l) * num_workers))
+                     .format(num_accumulated * args.batch_size * len(device_l) * num_workers))
         for p in params:
             p.grad_req = 'add'
 
@@ -297,7 +297,7 @@ def train(args):
     train_start_time = time.time()
     tic = time.time()
     # start training
-    train_loop_dataloader = grouper(repeat(data_train), len(ctx_l))
+    train_loop_dataloader = grouper(repeat(data_train), len(device_l))
     while step_num < num_steps:
         step_num += 1
         for _ in range(num_accumulated):
@@ -307,29 +307,29 @@ def train(args):
             loss_l = []
             ns_label_list, ns_pred_list = [], []
             mask_label_list, mask_pred_list, mask_weight_list = [], [], []
-            for sample, ctx in zip(sample_l, ctx_l):
+            for sample, device in zip(sample_l, device_l):
                 # prepare data
                 (input_id, masked_id, masked_position, masked_weight, \
                     next_sentence_label, segment_id, valid_length) = sample
-                input_id = input_id.as_in_ctx(ctx)
-                masked_id = masked_id.as_in_ctx(ctx)
-                masked_position = masked_position.as_in_ctx(ctx)
-                masked_weight = masked_weight.as_in_ctx(ctx)
-                next_sentence_label = next_sentence_label.as_in_ctx(ctx)
-                segment_id = segment_id.as_in_ctx(ctx)
-                valid_length = valid_length.as_in_ctx(ctx)
+                input_id = input_id.to_device(device)
+                masked_id = masked_id.to_device(device)
+                masked_position = masked_position.to_device(device)
+                masked_weight = masked_weight.to_device(device)
+                next_sentence_label = next_sentence_label.to_device(device)
+                segment_id = segment_id.to_device(device)
+                valid_length = valid_length.to_device(device)
 
                 with mx.autograd.record():
                     _, _, nsp_score, mlm_scores = model(input_id, segment_id,
                         valid_length, masked_position)
-                    denominator = (masked_weight.sum() + 1e-8) * num_accumulated * len(ctx_l)
+                    denominator = (masked_weight.sum() + 1e-8) * num_accumulated * len(device_l)
                     mlm_scores_r = mx.npx.reshape(mlm_scores, (-5, -1))
                     masked_id_r = masked_id.reshape((-1,))
                     mlm_loss = mlm_loss_fn(
                         mlm_scores_r,
                         masked_id_r,
                         masked_weight.reshape((-1, 1))).sum() / denominator
-                    denominator = num_accumulated * len(ctx_l)
+                    denominator = num_accumulated * len(device_l)
                     nsp_loss = nsp_loss_fn(
                         nsp_score, next_sentence_label).mean() / denominator
                     mlm_loss_l.append(mlm_loss)
@@ -341,7 +341,7 @@ def train(args):
                     ns_label_list.append(next_sentence_label)
                     ns_pred_list.append(nsp_score)
 
-                running_num_tks += valid_length.sum().as_in_ctx(mx.cpu())
+                running_num_tks += valid_length.sum().to_device(mx.cpu())
             if args.use_amp:
                 with mx.autograd.record():
                     with amp.scale_loss(loss_l, trainer) as loss_l:
@@ -353,9 +353,9 @@ def train(args):
                     for loss in loss_l:
                         loss.backward()
                 norm_clip_mult = num_workers
-            running_mlm_loss += sum([ele.as_in_ctx(mx.cpu())
+            running_mlm_loss += sum([ele.to_device(mx.cpu())
                                     for ele in mlm_loss_l]).asnumpy().item()
-            running_nsp_loss += sum([ele.as_in_ctx(mx.cpu())
+            running_nsp_loss += sum([ele.to_device(mx.cpu())
                                     for ele in nsp_loss_l]).asnumpy().item()
             mlm_metric.update(mask_label_list, mask_pred_list, mask_weight_list)
             nsp_metric.update(ns_label_list, ns_pred_list)

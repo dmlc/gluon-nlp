@@ -92,14 +92,14 @@ class AverageSGDTracker(object):
                 'All shapes of the tracked parameters must be given.' \
                 ' The shape of {} is {}, and it has not been fully initialized.' \
                 ' You should call step after the first forward of the model.'.format(k, v.shape)
-        ctx = next(iter(self._track_params.values())).list_ctx()[0]
+        device = next(iter(self._track_params.values())).list_device()[0]
         if self._average_params is None:
-            self._average_params = OrderedDict([(k, v.data(ctx).copy())
+            self._average_params = OrderedDict([(k, v.data(device).copy())
                                                 for k, v in self._track_params.items()])
         self._n_steps += 1
         decay = 1.0 / self._n_steps
         for name, average_param in self._average_params.items():
-            average_param += decay * (self._track_params[name].data(ctx) - average_param)
+            average_param += decay * (self._track_params[name].data(device) - average_param)
 
     def copy_back(self, params=None):
         """ Copy the average parameters back to the given parameters
@@ -155,7 +155,7 @@ def grad_global_norm(parameters: Iterable[Parameter]) -> float:
     idx = 0
     arrays = defaultdict(list)
     sum_norms = []
-    num_ctx = None
+    num_device = None
     param_uuid_set = set()
     for p in parameters:
         if p._uuid in param_uuid_set:
@@ -163,24 +163,24 @@ def grad_global_norm(parameters: Iterable[Parameter]) -> float:
         param_uuid_set.add(p._uuid)
         if p.grad_req != 'null':
             p_grads = p.list_grad()
-            if num_ctx is None:
-                num_ctx = len(p_grads)
+            if num_device is None:
+                num_device = len(p_grads)
             else:
-                assert num_ctx == len(p_grads)
-            arrays[idx % num_ctx].append(p_grads[idx % num_ctx])
+                assert num_device == len(p_grads)
+            arrays[idx % num_device].append(p_grads[idx % num_device])
             idx += 1
     assert len(arrays) > 0, 'No parameter found available for gradient norm.'
 
     # TODO(sxjscience)
     #  Investigate the float16 case.
     #  The inner computation accumulative type of norm should be float32.
-    ctx = arrays[0][0].context
+    device = arrays[0][0].context
     for idx, arr_l in enumerate(arrays.values()):
         sum_norm = mx.np.linalg.norm(mx.np.concatenate([mx.np.ravel(ele) for ele in arr_l]))
-        sum_norms.append(sum_norm.as_in_ctx(ctx))
+        sum_norms.append(sum_norm.to_device(device))
 
-    # Reduce over ctx
-    if num_ctx == 1:
+    # Reduce over device
+    if num_device == 1:
         total_norm = sum_norms[0]
     else:
         total_norm = mx.np.linalg.norm(mx.np.concatenate(sum_norms, axis=None))
@@ -256,27 +256,27 @@ def clip_grad_global_norm(parameters: Iterable[Parameter],
 
 
 @use_np
-def move_to_ctx(arr, ctx):
+def move_to_device(arr, device):
     """Move a nested structure of array to the given context
 
     Parameters
     ----------
     arr
         The input array
-    ctx
-        The MXNet context
+    device
+        The MXNet device
 
     Returns
     -------
     new_arr
-        The array that has been moved to context
+        The array that has been moved to device
     """
     if isinstance(arr, tuple):
-        return tuple(move_to_ctx(ele, ctx) for ele in arr)
+        return tuple(move_to_device(ele, device) for ele in arr)
     elif isinstance(arr, list):
-        return [move_to_ctx(ele, ctx) for ele in arr]
+        return [move_to_device(ele, device) for ele in arr]
     else:
-        return None if arr is None else arr.as_in_ctx(ctx)
+        return None if arr is None else arr.to_device(device)
 
 
 def deduplicate_param_dict(param_dict):

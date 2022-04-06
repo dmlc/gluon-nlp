@@ -79,13 +79,13 @@ def test_basic_dataloader():
         # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx
         args = [iter(iterable)] * n
         return itertools.zip_longest(*args, fillvalue=fillvalue)
-    ctx_l = [mx.cpu(i) for i in range(8)]
+    device_l = [mx.cpu(i) for i in range(8)]
     dataset = [mx.np.ones((2,)) * i for i in range(1000)]
     dataloader = DataLoader(dataset, 2, num_workers=4, prefetch=10)
 
-    for i, data_l in enumerate(grouper(dataloader, len(ctx_l))):
-        for data, ctx in zip(data_l, ctx_l):
+    for i, data_l in enumerate(grouper(dataloader, len(device_l))):
+        for data, device in zip(data_l, device_l):
             if data is None:
                 continue
-            data = data.as_in_ctx(ctx)
+            data = data.to_device(device)
             mx.npx.waitall()

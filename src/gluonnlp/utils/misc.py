@@ -1,6 +1,6 @@
 __all__ = ['glob', 'file_line_number', 'md5sum', 'sha1sum', 'naming_convention',
            'logging_config', 'set_seed', 'sizeof_fmt', 'grouper', 'repeat',
-           'parse_ctx', 'load_checksum_stats', 'download', 'check_version',
+           'parse_device', 'load_checksum_stats', 'download', 'check_version',
            'init_comm', 'get_mxnet_visible_ctx', 'logerror', 'BooleanOptionalAction']
 
 import argparse
@@ -254,13 +254,13 @@ def repeat(iterable, count=None):
                 yield sample
 
 
-def parse_ctx(data_str):
+def parse_device(data_str):
     import mxnet as mx
     if data_str == '-1' or data_str == '':
-        ctx_l = [mx.cpu()]
+        device_l = [mx.cpu()]
     else:
-        ctx_l = [mx.gpu(int(x)) for x in data_str.split(',')]
-    return ctx_l
+        device_l = [mx.gpu(int(x)) for x in data_str.split(',')]
+    return device_l
 
 
 def load_checksum_stats(path: str) -> dict:

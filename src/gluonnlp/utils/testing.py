@@ -4,7 +4,7 @@ import numpy.testing as npt
 import numpy as np
 import mxnet as mx
 from mxnet.util import use_np
-from .parameter import move_to_ctx
+from .parameter import move_to_device
 
 
 def is_match_states_batch_size(states, states_batch_axis, batch_size) -> bool:
@@ -205,7 +205,7 @@ def _cast_nested_to_fp16(nested_dat):
         raise NotImplementedError('Type is not supported!')
 
 
-def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
+def verify_backbone_fp16(model_cls, cfg, device, inputs,
                          atol=1E-2, rtol=1E-2, check_amp=True):
     """Test whether the backbone model has the comparable parameter gradient +
 
@@ -215,8 +215,8 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
         The modeling class
     cfg
         The configuration
-    ctx
-        The context
+    device
+        The device
     inputs
         The input tensors of the model. We will
     atol
@@ -229,10 +229,10 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
 
     """
     model_fp32 = model_cls.from_cfg(cfg, dtype='float32')
-    model_fp32.initialize(ctx=ctx)
+    model_fp32.initialize(device=device)
     model_fp32.hybridize()
     # Check forward
-    fp32_inputs = move_to_ctx(inputs, ctx=ctx)
+    fp32_inputs = move_to_device(inputs, device=device)
     outputs_fp32 = model_fp32(*fp32_inputs)
     mx.npx.waitall()
     # Check forward of fp16
@@ -242,7 +242,7 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
     model_fp16.hybridize()
     for param in model_fp16.collect_params().values():
         assert param.dtype == 'float16'
-    fp16_inputs = move_to_ctx(_cast_nested_to_fp16(inputs), ctx=ctx)
+    fp16_inputs = move_to_device(_cast_nested_to_fp16(inputs), device=device)
     outputs_fp16 = model_fp16(*fp16_inputs)
     mx.npx.waitall()
     _match_struct_output(outputs_fp16, outputs_fp32, atol=atol, rtol=rtol)
@@ -251,7 +251,7 @@ def verify_backbone_fp16(model_cls, cfg, ctx, inputs,
         amp.init()
         # Reconstruct the fp32 model
         model_fp32 = model_cls.from_cfg(cfg, dtype='float32')
-        model_fp32.initialize(ctx=ctx)
+        model_fp32.initialize(device=device)
         model_fp32.hybridize()
         trainer = mx.gluon.Trainer(model_fp32.collect_params(), 'adam',
                                    {'learning_rate': 1E-3, 'wd': 1E-4,

@@ -218,7 +218,7 @@ def get_parser():
 
 
 def validation(model, data_loader, inference_model, sequence_sampler,
-               tgt_tokenizer, ctx_l):
+               tgt_tokenizer, device_l):
     """Validate the model on the dataset
 
     Parameters
@@ -233,8 +233,8 @@ def validation(model, data_loader, inference_model, sequence_sampler,
         The sequence sampler for doing beam search
     tgt_tokenizer
         The target tokenizer
-    ctx_l : list
-        List of mx.ctx.Context
+    device_l : list
+        List of mx.device.Device
 
     Returns
     -------
@@ -249,23 +249,23 @@ def validation(model, data_loader, inference_model, sequence_sampler,
     sentence_ids
         IDs of the predicted sentences.
     """
-    avg_nll_loss = mx.np.array(0, dtype=np.float32, ctx=mx.cpu())
+    avg_nll_loss = mx.np.array(0, dtype=np.float32, device=mx.cpu())
     ntokens = 0
     pred_sentences = []
     sentence_ids = []
     pred_lengths = []
-    for sample_data_l in grouper(data_loader, len(ctx_l)):
+    for sample_data_l in grouper(data_loader, len(device_l)):
         loss_l = []
         ntokens += sum([ele[3].sum().asnumpy() - ele[0].shape[0] for ele in sample_data_l
                         if ele is not None])
-        for sample_data, ctx in zip(sample_data_l, ctx_l):
+        for sample_data, device in zip(sample_data_l, device_l):
             if sample_data is None:
                 continue
             src_token_ids, tgt_token_ids, src_valid_length, tgt_valid_length, sample_ids = sample_data
-            src_token_ids = src_token_ids.as_in_ctx(ctx)
-            tgt_token_ids = tgt_token_ids.as_in_ctx(ctx)
-            src_valid_length = src_valid_length.as_in_ctx(ctx)
-            tgt_valid_length = tgt_valid_length.as_in_ctx(ctx)
+            src_token_ids = src_token_ids.to_device(device)
+            tgt_token_ids = tgt_token_ids.to_device(device)
+            src_valid_length = src_valid_length.to_device(device)
+            tgt_valid_length = tgt_valid_length.to_device(device)
             if model.layout == 'NT':
                 tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
                                  tgt_valid_length - 1)
@@ -290,7 +290,7 @@ def validation(model, data_loader, inference_model, sequence_sampler,
                 loss_l.append(loss.sum())
             init_input = mx.np.array(
                 [tgt_tokenizer.vocab.bos_id for _ in range(src_token_ids.shape[0])],
-                ctx=ctx)
+                device=device)
 
             # Perform beam search
             if model.layout == 'NT':
@@ -307,7 +307,7 @@ def validation(model, data_loader, inference_model, sequence_sampler,
                 pred_sentences.append(samples[j, 0, 1:(valid_length - 1)])
                 pred_lengths.append(valid_length - 2)
             sentence_ids.append(sample_ids.asnumpy())
-        avg_nll_loss += sum([loss.as_in_ctx(mx.cpu()) for loss in loss_l])
+        avg_nll_loss += sum([loss.to_device(mx.cpu()) for loss in loss_l])
         mx.npx.waitall()
     avg_loss = avg_nll_loss.asnumpy() / ntokens
     pred_lengths = np.array(pred_lengths)
@@ -397,7 +397,7 @@ def create_tokenizer(tokenizer_type, model_path, vocab_path):
 
 
 def train(args):
-    _, num_parts, rank, local_rank, _, ctx_l = init_comm(
+    _, num_parts, rank, local_rank, _, device_l = init_comm(
         args.comm_backend, args.gpus)
     if args.comm_backend == 'horovod':
         logging_config(args.save_dir,
@@ -467,7 +467,7 @@ def train(args):
     cfg.freeze()
     model = TransformerModel.from_cfg(cfg)
     model.initialize(mx.init.Xavier(magnitude=args.magnitude),
-                     ctx=ctx_l)
+                     device=device_l)
     model.hybridize()
     for v in model.collect_params().values():
         if v.grad_req != 'null':
@@ -562,7 +562,7 @@ def train(args):
         raise NotImplementedError
 
     num_updates_per_epoch = int(math.ceil(len(train_batch_sampler)
-                                          / (num_parts * len(ctx_l) * args.num_accumulated)))
+                                          / (num_parts * len(device_l) * args.num_accumulated)))
     # Convert the batch sampler to multiple shards
     if num_parts > 1:
         train_batch_sampler = ShardedIterator(train_batch_sampler,
@@ -589,11 +589,11 @@ def train(args):
     num_params, num_fixed_params = None, None
 
     # TODO(sxjscience) Add a log metric class
-    log_avg_loss_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
+    log_avg_loss_l = [mx.np.array(0.0, device=device) for device in device_l]
     # Maintain the denominator of the loss.
-    log_avg_loss_denom_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
-    log_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
-    log_tgt_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
+    log_avg_loss_denom_l = [mx.np.array(0.0, device=device) for device in device_l]
+    log_wc_l = [mx.np.array(0, dtype=np.int64, device=device) for device in device_l]
+    log_tgt_wc_l = [mx.np.array(0, dtype=np.int64, device=device) for device in device_l]
     log_avg_grad_norm = 0
     log_iter_num = 0
 
@@ -601,7 +601,7 @@ def train(args):
         writer = SummaryWriter(logdir=os.path.join(args.save_dir, 'tensorboard'))
     if use_amp:
         amp.init_trainer(trainer)
-    train_multi_data_loader = grouper(repeat(train_data_loader), len(ctx_l))
+    train_multi_data_loader = grouper(repeat(train_data_loader), len(device_l))
     # when args.epochs < 0, the model will keep training
     if args.epochs < 0:
         if args.max_update > 0:
@@ -638,17 +638,17 @@ def train(args):
 
     for train_iter in range(total_train_iters):
         model.zero_grad()
-        loss_denom_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
+        loss_denom_l = [mx.np.array(0.0, device=device) for device in device_l]
         for i in range(args.num_accumulated):
             loss_l = []
             sample_data_l = next(train_multi_data_loader)
-            for j, (sample_data, ctx) in enumerate(zip(sample_data_l, ctx_l)):
+            for j, (sample_data, device) in enumerate(zip(sample_data_l, device_l)):
                 src_token_ids, tgt_token_ids, src_valid_length,\
                 tgt_valid_length, sample_ids = sample_data
-                src_token_ids = src_token_ids.as_in_ctx(ctx)
-                tgt_token_ids = tgt_token_ids.as_in_ctx(ctx)
-                src_valid_length = src_valid_length.as_in_ctx(ctx)
-                tgt_valid_length = tgt_valid_length.as_in_ctx(ctx)
+                src_token_ids = src_token_ids.to_device(device)
+                tgt_token_ids = tgt_token_ids.to_device(device)
+                src_valid_length = src_valid_length.to_device(device)
+                tgt_valid_length = tgt_valid_length.to_device(device)
                 src_wc, tgt_wc, bs = src_valid_length.sum(), \
                                      tgt_valid_length.sum(), src_token_ids.shape[0]
                 log_wc_l[j] += src_wc + tgt_wc
@@ -761,12 +761,12 @@ def train(args):
                 writer.add_scalar('grad_norm', log_avg_grad_norm, train_iter)
             # Reinitialize the log variables
             log_start_time = time.time()
-            log_avg_loss_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
-            log_avg_loss_denom_l = [mx.np.array(0.0, ctx=ctx) for ctx in ctx_l]
+            log_avg_loss_l = [mx.np.array(0.0, device=device) for device in device_l]
+            log_avg_loss_denom_l = [mx.np.array(0.0, device=device) for device in device_l]
             log_avg_grad_norm = 0
             log_iter_num = 0
-            log_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
-            log_tgt_wc_l = [mx.np.array(0, dtype=np.int64, ctx=ctx) for ctx in ctx_l]
+            log_wc_l = [mx.np.array(0, dtype=np.int64, device=device) for device in device_l]
+            log_tgt_wc_l = [mx.np.array(0, dtype=np.int64, device=device) for device in device_l]
 
         if (args.max_update > 0 and (train_iter + 1) % args.save_interval_update == 0) \
             or ((train_iter + 1) % num_updates_per_epoch == 0) \
@@ -784,22 +784,22 @@ def train(args):
 
             avg_val_loss, ntokens, pred_sentences, pred_lengths, sentence_ids\
                 = validation(model, val_data_loader, inference_model, beam_search_sampler,
-                             tgt_tokenizer, ctx_l)
+                             tgt_tokenizer, device_l)
             if args.comm_backend == 'horovod':
                 flatten_pred_sentences = np.concatenate(pred_sentences, axis=0)
                 all_val_loss = hvd.allgather(mx.np.array([avg_val_loss * ntokens],
                                                          dtype=np.float32,
-                                                         ctx=ctx_l[0]))
+                                                         device=device_l[0]))
                 all_ntokens = hvd.allgather(mx.np.array([ntokens],
                                                         dtype=np.int64,
-                                                        ctx=ctx_l[0]))
+                                                        device=device_l[0]))
                 flatten_pred_sentences = hvd.allgather(mx.np.array(flatten_pred_sentences,
                                                                    dtype=np.int32,
-                                                                   ctx=ctx_l[0]))
+                                                                   device=device_l[0]))
                 pred_lengths = hvd.allgather(mx.np.array(pred_lengths,
-                                                         dtype=np.int64, ctx=ctx_l[0]))
+                                                         dtype=np.int64, device=device_l[0]))
                 sentence_ids = hvd.allgather(mx.np.array(sentence_ids,
-                                                         dtype=np.int64, ctx=ctx_l[0]))
+                                                         dtype=np.int64, device=device_l[0]))
                 avg_val_loss = all_val_loss.asnumpy().sum() / all_ntokens.asnumpy().sum()
                 flatten_pred_sentences = flatten_pred_sentences.asnumpy()
                 pred_lengths = pred_lengths.asnumpy()

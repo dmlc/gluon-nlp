@@ -25,7 +25,7 @@ from mxnet.gluon.data import batchify as bf
 from mxnet.gluon.data import DataLoader
 from mxnet.lr_scheduler import PolyScheduler
 from gluonnlp.utils import set_seed
-from gluonnlp.utils.misc import init_comm, parse_ctx
+from gluonnlp.utils.misc import init_comm, parse_device
 try:
     import horovod.mxnet as hvd
 except ImportError:
@@ -404,7 +404,7 @@ def evaluate(args):
     if rank != 0:
         logging.info('Skipping node {}'.format(rank))
         return
-    ctx_l = parse_ctx(args.gpus)
+    ctx_l = parse_device(args.gpus)
     logging.info(
         'Srarting inference without horovod on the first node on device {}'.format(
             str(ctx_l)))
