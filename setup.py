@@ -142,7 +142,7 @@ setup(
         ],
         'web': [
             'ipython',
-            'sphinx>=1.5.5',
+            'sphinx>=1.5.5,<4.3.0',
             'sphinx-gallery',
             'nbsphinx',
             'sphinx_rtd_theme',
