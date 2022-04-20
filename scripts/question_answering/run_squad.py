@@ -849,7 +849,7 @@ def evaluate(args, last=True):
         chunk_features = dataset_processor.process_sample(feature)
         dev_all_chunk_features.extend(chunk_features)
         dev_chunk_feature_ptr.append(dev_chunk_feature_ptr[-1] + len(chunk_features))
-    dev_all_chunk_features.sort(key=lambda x: x.valid_length)
+    dev_all_chunk_features.sort(key=lambda x: x.valid_length, reverse=True)
 
     def eval_validation(ckpt_name, best_eval):
         """
