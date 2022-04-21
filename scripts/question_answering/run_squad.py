@@ -857,7 +857,6 @@ def quantize_and_calibrate(net, dataloader):
             and max_range > self.clip_max:
            max_range = self.clip_max
         elif name.find('sg_onednn_fully_connected') != -1 and min_range < self.clip_min:
-            print(name, op_name)
             min_range = self.clip_min
 
         if name in self.min_max_dict:
