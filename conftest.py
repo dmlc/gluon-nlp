@@ -231,5 +231,5 @@ def pytest_generate_tests(metafunc):
     devices = metafunc.config.option.device
     if not devices:
         devices = ['cpu']
-    if 'ctx' in metafunc.fixturenames:
-        metafunc.parametrize("ctx", [getattr(mx, device)() for device in devices])
+    if 'device' in metafunc.fixturenames:
+        metafunc.parametrize("device", [getattr(mx, device)() for device in devices])

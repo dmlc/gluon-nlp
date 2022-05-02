@@ -565,7 +565,7 @@ class GPT2Model(HybridBlock):
         embedding = self._embed_dropout(embedding)
         return embedding
 
-    def init_states(self, batch_size, ctx, dtype=None):
+    def init_states(self, batch_size, device, dtype=None):
         """Initialize the states required for incremental decoding
 
         Returns
@@ -580,9 +580,9 @@ class GPT2Model(HybridBlock):
         if dtype is None:
             dtype = self._dtype
         return mx.np.zeros(shape=(self._num_layers, 2, batch_size, 0,
-                                  self._units), ctx=ctx, dtype=dtype) if self.layout == 'NT' else \
+                                  self._units), device=device, dtype=dtype) if self.layout == 'NT' else \
                mx.np.zeros(shape=(self._num_layers, 2, 0, batch_size,
-                                  self._units), ctx=ctx, dtype=dtype)
+                                  self._units), device=device, dtype=dtype)
 
     @staticmethod
     def get_cfg(key=None):
@@ -673,8 +673,8 @@ class GPT2ForLM(HybridBlock):
         logits = self._lm_head(contextual_embeddings)
         return logits, new_states
 
-    def init_states(self, batch_size, ctx):
-        return self._backbone_model.init_states(batch_size, ctx)
+    def init_states(self, batch_size, device):
+        return self._backbone_model.init_states(batch_size, device)
 
 
 def list_pretrained_gpt2():

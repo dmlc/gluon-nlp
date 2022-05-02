@@ -5,7 +5,6 @@ import pandas as pd
 from benchmark_utils import GluonNLPBackboneBenchmark
 import multiprocessing as mp
 from multiprocessing import Process
-mx.npx.set_np()
 
 
 MODELS = [

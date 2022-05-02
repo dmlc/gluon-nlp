@@ -5,7 +5,7 @@ import mxnet as mx
 import tempfile
 from gluonnlp.models.albert import AlbertModel, AlbertForMLM, AlbertForPretrain,\
     list_pretrained_albert, get_pretrained_albert
-mx.npx.set_np()
+
 
 
 def get_test_cfg():

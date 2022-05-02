@@ -6,7 +6,7 @@ import tempfile
 from gluonnlp.models.mobilebert import MobileBertModel, MobileBertForMLM, MobileBertForPretrain,\
     list_pretrained_mobilebert, get_pretrained_mobilebert
 from gluonnlp.utils.testing import verify_backbone_fp16
-mx.npx.set_np()
+
 
 
 def test_list_pretrained_mobilebert():
@@ -14,8 +14,8 @@ def test_list_pretrained_mobilebert():
 
 
 @pytest.mark.parametrize('compute_layout', ['auto', 'TN', 'NT'])
-def test_mobilebert_model_small_cfg(compute_layout, ctx):
-    with ctx:
+def test_mobilebert_model_small_cfg(compute_layout, device):
+    with device:
         cfg = MobileBertModel.get_cfg()
         cfg.defrost()
         cfg.MODEL.vocab_size = 100
@@ -90,9 +90,9 @@ def test_mobilebert_model_small_cfg(compute_layout, ctx):
         assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-3, 1E-3)
 
         # Test for fp16
-        if ctx.device_type == 'gpu':
+        if device.device_type == 'gpu':
             pytest.skip('MobileBERT will have nan values in FP16 mode.')
-            verify_backbone_fp16(model_cls=MobileBertModel, cfg=cfg, ctx=ctx,
+            verify_backbone_fp16(model_cls=MobileBertModel, cfg=cfg, device=device,
                                  inputs=[inputs, token_types, valid_length])
 
 

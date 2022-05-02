@@ -9,7 +9,7 @@ from gluonnlp.loss import LabelSmoothCrossEntropyLoss
 from gluonnlp.utils.testing import verify_backbone_fp16
 
 
-mx.npx.set_np()
+
 
 
 def test_list_pretrained_roberta():
@@ -17,8 +17,8 @@ def test_list_pretrained_roberta():
 
 
 @pytest.mark.parametrize('compute_layout', ['auto', 'TN', 'NT'])
-def test_robert_small_config(compute_layout, ctx):
-    with ctx:
+def test_robert_small_config(compute_layout, device):
+    with device:
         cfg = RobertaModel.get_cfg()
         cfg.defrost()
         cfg.MODEL.vocab_size = 1000
@@ -70,8 +70,8 @@ def test_robert_small_config(compute_layout, ctx):
         assert_allclose(mlm_score_tn.asnumpy(), mlm_score.asnumpy(), 1E-3, 1E-3)
 
         # Test for fp16
-        if ctx.device_type == 'gpu':
-            verify_backbone_fp16(model_cls=RobertaModel, cfg=cfg, ctx=ctx,
+        if device.device_type == 'gpu':
+            verify_backbone_fp16(model_cls=RobertaModel, cfg=cfg, device=device,
                                  inputs=[inputs, valid_length])
 
 

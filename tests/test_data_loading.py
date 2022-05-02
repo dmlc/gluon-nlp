@@ -10,7 +10,7 @@ from numpy.testing import assert_almost_equal
 from gluonnlp.data.loading import NumpyDataset, DatasetLoader
 from gluonnlp.data.sampler import SplitSampler, FixedBucketSampler
 
-mx.npx.set_np()
+
 
 
 def prepare_dataset(filename, allow_pickle=False):

@@ -17,7 +17,7 @@ from mxnet.gluon.utils import download
 int_float_regex = re.compile('^\d+\.{0,1}\d*$')  # matches if a number is either integer or float
 
 import mxnet as mx
-mx.npx.set_np()
+
 
 
 def normalize_answer(s):

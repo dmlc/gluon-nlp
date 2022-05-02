@@ -23,7 +23,7 @@ try:
 except ImportError:
     pass
 
-mx.npx.set_np()
+
 
 
 def parse_args():

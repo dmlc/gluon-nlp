@@ -18,8 +18,7 @@ import tensorflow.compat.v1 as tf
 tf.disable_eager_execution()
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
-mx.npx.set_np()
-np.random.seed(1234)
+np.d(1234)
 mx.npx.random.seed(1234)
 
 
@@ -193,7 +192,7 @@ def get_name_map(tf_names, convert_type='backbone'):
 
 
 def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, electra_path):
-    ctx = mx.gpu(gpu) if gpu is not None else mx.cpu()
+    device = mx.gpu(gpu) if gpu is not None else mx.cpu()
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -274,11 +273,11 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
 
     # Build gluon model and initialize
     gluon_model = ElectraModel.from_cfg(cfg)
-    gluon_model.initialize(ctx=ctx)
+    gluon_model.initialize(device=device)
     gluon_model.hybridize()
 
     gluon_disc_model = ElectraDiscriminator(cfg)
-    gluon_disc_model.initialize(ctx=ctx)
+    gluon_disc_model.initialize(device=device)
     gluon_disc_model.hybridize()
 
     gen_cfg = get_generator_cfg(cfg)
@@ -288,14 +287,14 @@ def convert_tf_model(model_dir, save_dir, test_conversion, model_size, gpu, elec
                                    disc_backbone.token_type_embed.collect_params(),
                                    disc_backbone.token_pos_embed.collect_params(),
                                    disc_backbone.embed_layer_norm.collect_params())
-    gluon_gen_model.initialize(ctx=ctx)
+    gluon_gen_model.initialize(device=device)
     gluon_gen_model.hybridize()
 
     # pepare test data
-    mx_input_ids = mx.np.array(input_ids, dtype=np.int32, ctx=ctx)
-    mx_valid_length = mx.np.array(valid_length, dtype=np.int32, ctx=ctx)
-    mx_token_types = mx.np.array(segment_ids, dtype=np.int32, ctx=ctx)
-    mx_masked_positions = mx.np.array(mlm_positions, dtype=np.int32, ctx=ctx)
+    mx_input_ids = mx.np.array(input_ids, dtype=np.int32, device=device)
+    mx_valid_length = mx.np.array(valid_length, dtype=np.int32, device=device)
+    mx_token_types = mx.np.array(segment_ids, dtype=np.int32, device=device)
+    mx_masked_positions = mx.np.array(mlm_positions, dtype=np.int32, device=device)
 
     for convert_type in ['backbone', 'disc', 'gen']:
         name_map = get_name_map(tf_names, convert_type=convert_type)

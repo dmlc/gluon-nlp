@@ -5,9 +5,7 @@ from gluonnlp.utils import set_seed
 from gluonnlp.sequence_sampler import BeamSearchSampler, BaseStepDecoder
 from gluonnlp.models.gpt2 import GPT2ForLM, list_pretrained_gpt2, get_pretrained_gpt2
 
-mx.npx.set_np()
-
-def parse_args():
+defs():
     parser = argparse.ArgumentParser(
         description='GPT-2 unconditional sampler. Load a GPT-2 model and sample.')
     parser.add_argument('--model_name', type=str, default='gpt2_124M',
@@ -48,8 +46,8 @@ class GPT2Decoder(BaseStepDecoder):
     def data_batch_axis(self):
         return 0 if self._layout == 'NT' else 1
 
-    def init_states(self, batch_size, ctx):
-        return self._gpt2_lm_model.init_states(batch_size, ctx)
+    def init_states(self, batch_size, device):
+        return self._gpt2_lm_model.init_states(batch_size, device)
 
     def __call__(self, data, states):
         if len(data.shape) == 1:
@@ -65,7 +63,7 @@ class GPT2Decoder(BaseStepDecoder):
 
 
 def sample_gpt2(args):
-    ctx = mx.gpu(args.gpu) if args.gpu is not None else \
+    device = mx.gpu(args.gpu) if args.gpu is not None else \
           mx.cpu()
     
     cfg, tokenizer, _, lm_params_path = get_pretrained_gpt2(
@@ -83,7 +81,7 @@ def sample_gpt2(args):
     
     model = GPT2ForLM(cfg)
     model.hybridize()
-    model.load_parameters(lm_params_path, ctx=ctx)
+    model.load_parameters(lm_params_path, device=device)
     gpt2decoder = GPT2Decoder(model)
     
     sampler = BeamSearchSampler(
@@ -100,7 +98,7 @@ def sample_gpt2(args):
         sampling_topk=args.top_k,
         early_return=False
     )
-    start_states = gpt2decoder.init_states(args.batch_size, ctx)
+    start_states = gpt2decoder.init_states(args.batch_size, device)
     
     while True:
         raw_text = input('Model prompt >>> ')
@@ -112,7 +110,7 @@ def sample_gpt2(args):
         new_shape = (args.batch_size, len(context_tokens)) if args.layout == 'NT' else \
                     (len(context_tokens), args.batch_size)
         start_input = mx.np.broadcast_to(
-            mx.np.expand_dims(mx.np.array(context_tokens, ctx=ctx), batch_axis),
+            mx.np.expand_dims(mx.np.array(context_tokens, device=device), batch_axis),
             new_shape
         )
         generated = 0

@@ -4,7 +4,7 @@ import pytest
 from numpy.testing import assert_allclose
 import scipy.special as sspecial
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
-mx.npx.set_np()
+
 
 
 @pytest.mark.parametrize('label_shape', [(5, 3), (3,), (2, 3, 2)])

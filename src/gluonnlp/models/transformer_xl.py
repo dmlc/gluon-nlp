@@ -375,14 +375,14 @@ class TransformerXLForLM(Block):
         else:
             raise NotImplementedError
 
-    def init_states(self, batch_size, ctx):
+    def init_states(self, batch_size, device):
         """Initialize the states
 
         Parameters
         ----------
         batch_size
-        ctx
-            ctx of the initialized
+        device
+            device of the initialized
 
         Returns
         -------
@@ -396,10 +396,10 @@ class TransformerXLForLM(Block):
 
         """
         if self._layout == 'NT':
-            return [mx.np.zeros((batch_size, 0, self._units), ctx=ctx)
+            return [mx.np.zeros((batch_size, 0, self._units), device=device)
                     for _ in range(self._num_layers)]
         elif self._layout == 'TN':
-            return [mx.np.zeros((0, batch_size, self._units), ctx=ctx)
+            return [mx.np.zeros((0, batch_size, self._units), device=device)
                     for _ in range(self._num_layers)]
         else:
             raise NotImplementedError
@@ -523,9 +523,9 @@ class TransformerXLForLM(Block):
         query_length = data.shape[time_axis]
         curr_mem_length = mem_l[0].shape[time_axis]
         batch_size = mem_l[0].shape[batch_axis]
-        ctx = data.ctx
+        device = data.device
         local_attn_mask = mx.np.ones((batch_size, query_length, curr_mem_length + query_length),
-                                     dtype=np.int32, ctx=ctx)
+                                     dtype=np.int32, device=device)
         if not causal_only:
             # Generate the mask, we mask out the input outside the local self.mem_length window
             local_attn_mask = mx.np.triu(mx.np.tril(local_attn_mask, curr_mem_length),
@@ -538,9 +538,9 @@ class TransformerXLForLM(Block):
             data_mem_mask = data_mem_mask * local_attn_mask
         if rel_positions is None:
             query_ids = mx.np.arange(curr_mem_length, curr_mem_length + query_length,
-                                     dtype=np.int32, ctx=ctx)
+                                     dtype=np.int32, device=device)
             mem_ids = mx.np.arange(0, curr_mem_length + query_length,
-                                   dtype=np.int32, ctx=ctx)
+                                   dtype=np.int32, device=device)
             rel_positions = mx.np.expand_dims(query_ids, axis=1)\
                             - mx.np.expand_dims(mem_ids, axis=0)
         # Get word embeddings
@@ -601,10 +601,10 @@ class TransformerXLForLM(Block):
             curr_mem_length = mem_l[0].shape[0]
         else:
             raise NotImplementedError
-        ctx = step_data.ctx
-        mask = mx.np.ones((batch_size, 1, curr_mem_length + 1), dtype=np.int32, ctx=ctx)
+        device = step_data.device
+        mask = mx.np.ones((batch_size, 1, curr_mem_length + 1), dtype=np.int32, device=device)
         rel_positions = mx.np.expand_dims(mx.np.arange(curr_mem_length, -1, -1, dtype=np.int32,
-                                                       ctx=ctx), axis=0)
+                                                       device=device), axis=0)
         # Word embedding shape = (B, C)
         word_embeddings = self.dropout_layer(self.word_emb(step_data))
         if self._layout == 'NT':
@@ -644,8 +644,8 @@ class TransformerXLForLMGen(BaseStepDecoder):
     def __init__(self, net: TransformerXLForLM):
         self.net = net
 
-    def init_states(self, batch_size, ctx):
-        return self.net.init_states(batch_size=batch_size, ctx=ctx)
+    def init_states(self, batch_size, device):
+        return self.net.init_states(batch_size=batch_size, device=device)
 
     @property
     def state_batch_axis(self):

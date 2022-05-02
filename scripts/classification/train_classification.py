@@ -20,7 +20,7 @@ from mxnet.gluon import nn
 from gluonnlp.models import get_backbone
 from gluonnlp.utils.parameter import clip_grad_global_norm, count_parameters, deduplicate_param_dict
 from gluonnlp.utils.preprocessing import get_trimmed_lengths
-from gluonnlp.utils.misc import get_mxnet_visible_ctx, grouper, repeat, logging_config
+from gluonnlp.utils.misc import get_mxnet_visible_device, grouper, repeat, logging_config
 from mxnet.gluon.data import batchify as bf
 from mxnet.gluon.data import DataLoader
 from mxnet.lr_scheduler import PolyScheduler
@@ -31,8 +31,6 @@ try:
 except ImportError:
     pass
 from classification import TextPredictionNet
-
-mx.npx.set_np()
 
 
 
@@ -98,7 +96,7 @@ def parse_args():
     return args
 
 def get_network(model_name,
-                ctx_l,
+                device_l,
                 checkpoint_path=None,
                 backbone_path=None,
                 task=None):
@@ -116,7 +114,7 @@ def get_network(model_name,
     backbone_params_path = backbone_path if backbone_path else download_params_path
     if checkpoint_path is None:
         backbone.load_parameters(backbone_params_path, ignore_extra=True,
-                                 ctx=ctx_l, cast_dtype=True)
+                                 device=device_l, cast_dtype=True)
         num_params, num_fixed_params \
             = count_parameters(deduplicate_param_dict(backbone.collect_params()))
         logging.info(
@@ -126,9 +124,9 @@ def get_network(model_name,
     if checkpoint_path is None:
         # Ignore the UserWarning during initialization,
         # There is no need to re-initialize the parameters of backbone
-        classify_net.initialize(ctx=ctx_l)
+        classify_net.initialize(device=device_l)
     else:
-        classify_net.load_parameters(checkpoint_path, ctx=ctx_l, cast_dtype=True)
+        classify_net.load_parameters(checkpoint_path, device=device_l, cast_dtype=True)
     classify_net.hybridize()
 
     return cfg, tokenizer, classify_net, use_segmentation
@@ -212,7 +210,7 @@ def get_task_data(args, task, tokenizer, segment):
 
 
 def train(args):
-    store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
+    store, num_workers, rank, local_rank, is_master_node, device_l = init_comm(
         args.comm_backend, args.gpus)
     task = get_task(args.task_name, args.train_dir, args.eval_dir)
     #setup_logging(args, local_rank)
@@ -228,7 +226,7 @@ def train(args):
                    console=(local_rank == 0))
     logging.info(args)
     cfg, tokenizer, classify_net, use_segmentation = \
-        get_network(args.model_name, ctx_l,
+        get_network(args.model_name, device_l,
                     args.param_checkpoint,
                     args.backbone_path,
                     task)
@@ -263,7 +261,7 @@ def train(args):
     num_accumulated = args.num_accumulated
     if num_accumulated > 1:
         logging.info('Using gradient accumulation. Effective global batch size = {}'
-                     .format(num_accumulated * args.batch_size * len(ctx_l) * num_workers))
+                     .format(num_accumulated * args.batch_size * len(device_l) * num_workers))
         for p in params:
             p.grad_req = 'add'
     if local_rank == 0:
@@ -274,11 +272,11 @@ def train(args):
         # Horovod: fetch and broadcast parameters
         hvd.broadcast_parameters(param_dict, root_rank=0)
 
-    epoch_size = (len(dataloader) + len(ctx_l) - 1) // len(ctx_l)
+    epoch_size = (len(dataloader) + len(device_l) - 1) // len(device_l)
     max_update = epoch_size * args.epochs
     warmup_steps = int(np.ceil(max_update * args.warmup_ratio))
 
-    dataloader = grouper(repeat(dataloader), len(ctx_l))
+    dataloader = grouper(repeat(dataloader), len(device_l))
 
     lr_scheduler = PolyScheduler(max_update=max_update,
                                  base_lr=args.lr,
@@ -319,16 +317,16 @@ def train(args):
     for i in range(max_update):
         sample_l = next(dataloader)
         loss_l = []
-        for sample, ctx in zip(sample_l, ctx_l):
+        for sample, device in zip(sample_l, device_l):
             (token_ids, token_types, valid_length), label = sample
             # Move to the corresponding context
-            token_ids = mx.np.array(token_ids, ctx=ctx)
-            token_types = mx.np.array(token_types, ctx=ctx)
-            valid_length = mx.np.array(valid_length, ctx=ctx)
-            label = mx.np.array(label, ctx=ctx)
+            token_ids = mx.np.array(token_ids, device=device)
+            token_types = mx.np.array(token_types, device=device)
+            valid_length = mx.np.array(valid_length, device=device)
+            label = mx.np.array(label, device=device)
             with mx.autograd.record():
                 scores = classify_net(token_ids, token_types, valid_length)
-                loss = loss_function(scores, label).mean() / len(ctx_l)
+                loss = loss_function(scores, label).mean() / len(device_l)
                 loss_l.append(loss)
             if task.task_name == 'sts':
                 label = label.reshape((-1, 1))
@@ -389,7 +387,7 @@ def train(args):
 
 
 def evaluate(args):
-    store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
+    store, num_workers, rank, local_rank, is_master_node, device_l = init_comm(
         args.comm_backend, args.gpus)
     # setup_logging(args, local_rank)
     task = get_task(args.task_name, args.train_dir, args.eval_dir)
@@ -404,13 +402,13 @@ def evaluate(args):
     if rank != 0:
         logging.info('Skipping node {}'.format(rank))
         return
-    ctx_l = parse_device(args.gpus)
+    device_l = parse_device(args.gpus)
     logging.info(
         'Srarting inference without horovod on the first node on device {}'.format(
-            str(ctx_l)))
+            str(device_l)))
 
     cfg, tokenizer, classify_net, use_segmentation = \
-        get_network(args.model_name, ctx_l,
+        get_network(args.model_name, device_l,
                     args.param_checkpoint,
                     args.backbone_path,
                     task)
@@ -422,7 +420,7 @@ def evaluate(args):
     best_ckpt = {}
     metrics = task.metric
     def evaluate_by_ckpt(ckpt_name, best_ckpt):
-        classify_net.load_parameters(ckpt_name, ctx=ctx_l, cast_dtype=True)
+        classify_net.load_parameters(ckpt_name, device=device_l, cast_dtype=True)
         logging.info('Prepare dev data')
 
         dev_data, label = get_task_data(args, task, tokenizer, segment='eval')
@@ -432,14 +430,14 @@ def evaluate(args):
                                 batchify_fn=dev_batchify,
                                 shuffle=False)
 
-        for sample_l in grouper(dataloader, len(ctx_l)):
-            for sample, ctx in zip(sample_l, ctx_l):
+        for sample_l in grouper(dataloader, len(device_l)):
+            for sample, device in zip(sample_l, device_l):
                 if sample is None:
                     continue
                 (token_ids, token_types, valid_length), label = sample
-                token_ids = mx.np.array(token_ids, ctx=ctx)
-                token_types = mx.np.array(token_types, ctx=ctx)
-                valid_length = mx.np.array(valid_length, ctx=ctx)
+                token_ids = mx.np.array(token_ids, device=device)
+                token_types = mx.np.array(token_types, device=device)
+                valid_length = mx.np.array(valid_length, device=device)
                 scores = classify_net(token_ids, token_types, valid_length)
 
                 if task.task_name == 'sts':

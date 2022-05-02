@@ -18,8 +18,7 @@ import tensorflow.compat.v1 as tf
 tf.disable_eager_execution()
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
-mx.npx.set_np()
-np.random.seed(1234)
+np.d(1234)
 mx.npx.random.seed(1234)
 
 
@@ -194,7 +193,7 @@ def get_name_map(tf_names, num_stacked_ffn):
 
 
 def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
-    ctx = mx.gpu(gpu) if gpu is not None else mx.cpu()
+    device = mx.gpu(gpu) if gpu is not None else mx.cpu()
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
@@ -267,14 +266,14 @@ def convert_tf_model(model_dir, save_dir, test_conversion, gpu, mobilebert_dir):
 
     # Build gluon model and initialize
     gluon_pretrain_model = MobileBertForPretrain(cfg)
-    gluon_pretrain_model.initialize(ctx=ctx)
+    gluon_pretrain_model.initialize(device=device)
     gluon_pretrain_model.hybridize()
 
     # pepare test data
-    mx_input_ids = mx.np.array(input_ids, dtype=np.int32, ctx=ctx)
-    mx_valid_length = mx.np.array(valid_length, dtype=np.int32, ctx=ctx)
-    mx_token_types = mx.np.array(segment_ids, dtype=np.int32, ctx=ctx)
-    mx_masked_positions = mx.np.array(mlm_positions, dtype=np.int32, ctx=ctx)
+    mx_input_ids = mx.np.array(input_ids, dtype=np.int32, device=device)
+    mx_valid_length = mx.np.array(valid_length, dtype=np.int32, device=device)
+    mx_token_types = mx.np.array(segment_ids, dtype=np.int32, device=device)
+    mx_masked_positions = mx.np.array(mlm_positions, dtype=np.int32, device=device)
 
     has_mlm = True
     name_map = get_name_map(tf_names, cfg.MODEL.num_stacked_ffn)

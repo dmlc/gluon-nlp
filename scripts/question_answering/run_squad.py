@@ -36,7 +36,7 @@ try:
 except ImportError:
     pass
 
-mx.npx.set_np()
+
 
 CACHE_PATH = os.path.realpath(os.path.join(os.path.realpath(__file__), '..', 'cached'))
 if not os.path.exists(CACHE_PATH):

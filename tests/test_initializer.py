@@ -2,7 +2,7 @@ import pytest
 from gluonnlp import initializer
 import mxnet as mx
 from mxnet.gluon import nn
-mx.npx.set_np()
+
 
 
 def test_truncnorm_string_alias_works():

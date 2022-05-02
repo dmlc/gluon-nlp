@@ -16,7 +16,6 @@ from gluonnlp.data.tokenizers import huggingface
 from gluonnlp.sequence_sampler import BeamSearchSampler, BeamSearchScorer
 import sacrebleu
 from tqdm import tqdm
-mx.npx.set_np()
 
 
 def parse_args():
@@ -184,7 +183,7 @@ def get_base_tokenizer(method, lang):
 
 
 def evaluate(args):
-    ctx_l = [mx.cpu()] if args.gpus is None or args.gpus == '' else [mx.gpu(int(x)) for x in
+    device_l = [mx.cpu()] if args.gpus is None or args.gpus == '' else [mx.gpu(int(x)) for x in
                                                                      args.gpus.split(',')]
     src_normalizer = get_normalizer(args.src_normalizer, args.src_lang)
     tgt_normalizer = get_normalizer(args.src_normalizer, args.tgt_lang)
@@ -212,7 +211,7 @@ def evaluate(args):
     model = TransformerModel.from_cfg(cfg)
     model.cast('float16')
     model.hybridize()
-    model.load_parameters(args.param_path, ctx=ctx_l, cast_dtype=True)
+    model.load_parameters(args.param_path, device=device_l, cast_dtype=True)
     inference_model = TransformerInference(model=model)
     inference_model.hybridize()
     # Construct the BeamSearchSampler
@@ -264,7 +263,7 @@ def evaluate(args):
         batchify_fn=Tuple(Pad(), Stack(), Pad(), Stack()),
         shuffle=False)
 
-    ctx = ctx_l[0]
+    device = device_l[0]
     pred_sentences = []
     start_eval_time = time.time()
     # evaluate
@@ -273,10 +272,10 @@ def evaluate(args):
         ntokens = 0
         for i, (src_token_ids, src_valid_length, tgt_token_ids, tgt_valid_length)\
                 in enumerate(test_dataloader):
-            src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
-            src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
-            tgt_token_ids = mx.np.array(tgt_token_ids, ctx=ctx, dtype=np.int32)
-            tgt_valid_length = mx.np.array(tgt_valid_length, ctx=ctx, dtype=np.int32)
+            src_token_ids = mx.np.array(src_token_ids, device=device, dtype=np.int32)
+            src_valid_length = mx.np.array(src_valid_length, device=device, dtype=np.int32)
+            tgt_token_ids = mx.np.array(tgt_token_ids, device=device, dtype=np.int32)
+            tgt_valid_length = mx.np.array(tgt_valid_length, device=device, dtype=np.int32)
             if model.layout == 'NT':
                 tgt_pred = model(src_token_ids, src_valid_length, tgt_token_ids[:, :-1],
                                 tgt_valid_length - 1)
@@ -298,7 +297,7 @@ def evaluate(args):
             else:
                 raise NotImplementedError
             ntokens += int((tgt_valid_length - 1).sum().asnumpy())
-            init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
+            init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], device=device)
             if model.layout == 'NT':
                 states = inference_model.init_states(src_token_ids, src_valid_length)
             elif model.layout == 'TN':
@@ -344,9 +343,9 @@ def evaluate(args):
         with open(os.path.join(args.save_dir, 'pred_sentences.txt'), 'w', encoding='utf-8') as of:
             processed_sentences = 0
             for src_token_ids, src_valid_length, _, _ in tqdm(test_dataloader):
-                src_token_ids = mx.np.array(src_token_ids, ctx=ctx, dtype=np.int32)
-                src_valid_length = mx.np.array(src_valid_length, ctx=ctx, dtype=np.int32)
-                init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], ctx=ctx)
+                src_token_ids = mx.np.array(src_token_ids, device=device, dtype=np.int32)
+                src_valid_length = mx.np.array(src_valid_length, device=device, dtype=np.int32)
+                init_input = mx.np.array([tgt_vocab.bos_id for _ in range(src_token_ids.shape[0])], device=device)
                 if model.layout == 'NT':
                     states = inference_model.init_states(src_token_ids, src_valid_length)
                 elif model.layout == 'TN':

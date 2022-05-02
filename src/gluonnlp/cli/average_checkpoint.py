@@ -2,7 +2,7 @@ import argparse
 import mxnet as mx
 import os
 
-mx.npx.set_np()
+
 
 
 def get_parser():

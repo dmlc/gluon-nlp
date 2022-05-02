@@ -75,11 +75,11 @@ def _pad_arrs_to_max_length(arrs, pad_axis, pad_val, use_shared_mem, dtype, roun
                 slices = [slice(i, i + 1)] + slices
                 ret[tuple(slices)] = arr
 
-    ctx = mx.Context('cpu', 0) if use_shared_mem else mx.cpu()
+    device = mx.Context('cpu', 0) if use_shared_mem else mx.cpu()
     if is_np_array():
-        ret = mx.np.array(ret, ctx=ctx, dtype=dtype)
+        ret = mx.np.array(ret, device=device, dtype=dtype)
     else:
-        ret = mx.nd.array(ret, ctx=ctx, dtype=dtype)
+        ret = mx.nd.array(ret, device=device, dtype=dtype)
     return ret
 
 
@@ -89,11 +89,11 @@ def _stack_arrs(arrs, use_shared_mem, dtype):
         if use_shared_mem:
             if is_np_array():
                 out = mx.np.empty((len(arrs),) + arrs[0].shape, dtype=dtype,
-                                  ctx=mx.Context('cpu_shared', 0))
+                                  device=mx.Context('cpu_shared', 0))
                 return mx.np.stack(arrs, out=out)
             else:
                 out = mx.nd.empty((len(arrs),) + arrs[0].shape, dtype=dtype,
-                                  ctx=mx.Context('cpu_shared', 0))
+                                  device=mx.Context('cpu_shared', 0))
                 return mx.nd.stack(*arrs, out=out)
         else:
             if is_np_array():
@@ -105,9 +105,9 @@ def _stack_arrs(arrs, use_shared_mem, dtype):
         dtype = dtype or out.dtype
         if use_shared_mem:
             if is_np_array():
-                return mx.np.array(out, ctx=mx.Context('cpu_shared', 0), dtype=dtype)
+                return mx.np.array(out, device=mx.Context('cpu_shared', 0), dtype=dtype)
             else:
-                return mx.nd.array(out, ctx=mx.Context('cpu_shared', 0), dtype=dtype)
+                return mx.nd.array(out, device=mx.Context('cpu_shared', 0), dtype=dtype)
         else:
             if is_np_array():
                 return mx.np.array(out, dtype=dtype)

@@ -4,7 +4,7 @@ import mxnet as mx
 import numpy as np
 from numpy.testing import assert_allclose
 from gluonnlp.utils.parameter import grad_global_norm
-mx.npx.set_np()
+
 
 
 @pytest.mark.parametrize('cutoffs,div_val',
@@ -45,20 +45,20 @@ def test_transformer_xl_for_lm(cutoffs, div_val, mem_length, query_length):
     nt_model.set_mem_length(mem_length)
     tn_model.set_mem_length(mem_length)
 
-    ctx = mx.cpu()
+    device = mx.cpu()
 
-    data = mx.np.random.randint(0, vocab_size, (batch_size, query_length), ctx=ctx, dtype=np.int32)
-    target = mx.np.random.randint(0, vocab_size, (batch_size, query_length), ctx=ctx,
+    data = mx.np.random.randint(0, vocab_size, (batch_size, query_length), device=device, dtype=np.int32)
+    target = mx.np.random.randint(0, vocab_size, (batch_size, query_length), device=device,
                                   dtype=np.int32)
 
     # Check consistency of layout
-    nt_mem_l = nt_model.init_states(batch_size, ctx=ctx)
+    nt_mem_l = nt_model.init_states(batch_size, device=device)
     for _ in range(8):
         with mx.autograd.record():
             nt_logits, nt_mem_l = nt_model(data, target, nt_mem_l)
             loss = nt_logits.sum()
             loss.backward()
-    tn_mem_l = tn_model.init_states(batch_size, ctx=ctx)
+    tn_mem_l = tn_model.init_states(batch_size, device=device)
     for _ in range(8):
         with mx.autograd.record():
             tn_logits, tn_mem_l = tn_model(data.T, target.T, tn_mem_l)
@@ -71,7 +71,7 @@ def test_transformer_xl_for_lm(cutoffs, div_val, mem_length, query_length):
             assert_allclose(nt_param.grad().asnumpy(), tn_param.grad().asnumpy(), 1E-4, 1E-4)
 
     # Check step_forward consistency
-    mem_l = nt_model.init_states(batch_size, ctx=ctx)
+    mem_l = nt_model.init_states(batch_size, device=device)
     sel_logits, new_mem_l = nt_model(data, target, mem_l)
     ele_sel_logits_l = []
     step_new_mem_l = mem_l

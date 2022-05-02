@@ -5,7 +5,7 @@ from mxnet.test_utils import assert_allclose
 from mxnet.gluon import HybridBlock, Constant
 from mxnet.gluon.data import DataLoader
 import itertools
-mx.npx.set_np()
+
 
 
 def test_const():

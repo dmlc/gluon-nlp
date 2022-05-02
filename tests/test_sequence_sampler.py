@@ -7,7 +7,7 @@ import pytest
 from mxnet.gluon import nn, HybridBlock
 from numpy.testing import assert_allclose
 from gluonnlp.sequence_sampler import BeamSearchScorer, BeamSearchSampler
-mx.npx.set_np()
+
 
 
 @pytest.mark.parametrize('length', [False, True])

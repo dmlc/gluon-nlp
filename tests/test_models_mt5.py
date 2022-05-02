@@ -10,11 +10,11 @@ def test_list_pretrained_mt5():
 
 
 @pytest.mark.parametrize('cfg_key', mt5_cfg_reg.list_keys())
-def test_mt5_model_and_inference(cfg_key, ctx): 
+def test_mt5_model_and_inference(cfg_key, device): 
     # since MT5Model, MT5Inference simply inherits the T5Model, T5Inference, 
     # we just want to make sure the model can be properly loaded, and leave 
     # the correctness tests to test_model_t5.py
-    with ctx: 
+    with device: 
         cfg = MT5Model.get_cfg(cfg_key)
         if cfg_key != 'google_mt5_small': 
             cfg.defrost()
@@ -32,8 +32,8 @@ def test_mt5_model_and_inference(cfg_key, ctx):
             inference_model.hybridize()
 
 
-def test_mt5_get_pretrained(ctx): 
-    with tempfile.TemporaryDirectory() as root, ctx: 
+def test_mt5_get_pretrained(device): 
+    with tempfile.TemporaryDirectory() as root, device: 
         cfg, tokenizer, backbone_params_path, _ = get_pretrained_mt5('google_mt5_small')
         # we exclude <extra_id>s in the comparison below by avoiding len(tokenizer.vocab)
         assert cfg.MODEL.vocab_size >= len(tokenizer._sp_model)

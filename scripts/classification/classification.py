@@ -9,7 +9,7 @@ from mxnet.gluon import nn
 from gluonnlp.models import get_backbone
 from gluonnlp.utils.parameter import clip_grad_global_norm
 from gluonnlp.utils.preprocessing import get_trimmed_lengths
-from gluonnlp.utils.misc import get_mxnet_visible_ctx, grouper, repeat
+from gluonnlp.utils.misc import get_mxnet_visible_device, grouper, repeat
 from mxnet.gluon.data import batchify as bf
 from mxnet.gluon.data import DataLoader
 from mxnet.lr_scheduler import PolyScheduler
@@ -30,7 +30,7 @@ class TextPredictionNet(nn.HybridBlock):
         out = self.out_proj(pooled_out)
         return out
 
-    def initialize_with_pretrained_backbone(self, backbone_params_path, ctx=None):
-        self.backbone.load_parameters(backbone_params_path, ctx=ctx)
-        self.out_proj.initialize(ctx=ctx)
+    def initialize_with_pretrained_backbone(self, backbone_params_path, device=None):
+        self.backbone.load_parameters(backbone_params_path, device=device)
+        self.out_proj.initialize(device=device)
 

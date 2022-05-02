@@ -12,7 +12,7 @@ from gluonnlp.layers import\
     get_activation, \
     get_norm_layer
 from gluonnlp.op import relative_position_bucket
-mx.npx.set_np()
+
 
 
 def test_sinusoidal_positional_embedding():
@@ -225,7 +225,7 @@ def test_bucket_positional_embedding(units, num_buckets, bidirectional, max_dist
 
 
 @pytest.mark.parametrize('normalization', ['layer_norm', 'no_norm', 'identity', 'batch_norm'])
-def test_get_norm_layer(normalization, ctx):
+def test_get_norm_layer(normalization, device):
     class TestNet(mx.gluon.HybridBlock):
         def __init__(self):
             super().__init__()
@@ -236,7 +236,7 @@ def test_get_norm_layer(normalization, ctx):
 
         def forward(self, x):
             return self.pred(self.norm_layer(self.embed(x)))
-    with ctx:
+    with device:
         net = TestNet()
         net.hybridize()
         net.initialize()

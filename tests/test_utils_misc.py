@@ -8,8 +8,8 @@ from pathlib import Path
 import numpy as np
 import mxnet as mx
 from gluonnlp.utils.misc import download, sha1sum, logging_config,\
-    get_mxnet_visible_ctx, logerror
-mx.npx.set_np()
+    get_mxnet_visible_device, logerror
+
 
 
 def s3_enabled():
@@ -105,10 +105,10 @@ def test_logging_config():
         assert file_size_zoo1 > 0
 
 
-def test_get_mxnet_visible_ctx(ctx):
-    ctx_l = get_mxnet_visible_ctx()
-    for ele_ctx in ctx_l:
-        arr = mx.np.array(1.0, ctx=ele_ctx)
+def test_get_mxnet_visible_device(device):
+    device_l = get_mxnet_visible_device()
+    for ele_device in device_l:
+        arr = mx.np.array(1.0, device=ele_device)
         arr.asnumpy()
 
 

@@ -9,7 +9,7 @@ from gluonnlp.models.t5 import (
 )
 from gluonnlp.utils.testing import verify_nmt_model, verify_nmt_inference
 
-npx.set_np()
+()
 
 
 def test_list_pretrained_t5(): 
@@ -18,8 +18,8 @@ def test_list_pretrained_t5():
 
 @pytest.mark.parametrize('cfg_key', t5_cfg_reg.list_keys())
 @pytest.mark.parametrize('activation', ['relu', 'gated-gelu'])
-def test_t5_model(cfg_key, activation, ctx): 
-    with ctx: 
+def test_t5_model(cfg_key, activation, device): 
+    with device: 
         cfg = T5Model.get_cfg(cfg_key)
         cfg.defrost()
         cfg.MODEL.vocab_size = 256
@@ -69,8 +69,8 @@ def test_t5_model(cfg_key, activation, ctx):
 
 @pytest.mark.parametrize('layout', ['NT', 'TN'])
 @pytest.mark.parametrize('activation', ['relu', 'gated-gelu'])
-def test_t5_inference(layout, activation, ctx): 
-    with ctx: 
+def test_t5_inference(layout, activation, device): 
+    with device: 
         cfg = T5Model.get_cfg('google_t5_small')
         cfg.defrost()
         cfg.MODEL.layout = layout
@@ -112,8 +112,8 @@ def test_t5_inference(layout, activation, ctx):
         verify_nmt_inference(train_model=backbone, inference_model=inference_model)
 
 
-def test_t5_get_pretrained(ctx): 
-    with tempfile.TemporaryDirectory() as root, ctx: 
+def test_t5_get_pretrained(device): 
+    with tempfile.TemporaryDirectory() as root, device: 
         cfg, tokenizer, backbone_params_path, _ = get_pretrained_t5('google_t5_small')
         assert cfg.MODEL.vocab_size >= len(tokenizer._sp_model)
         t5_model = T5Model.from_cfg(cfg)

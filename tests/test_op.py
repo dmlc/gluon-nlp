@@ -5,7 +5,7 @@ from mxnet import gluon
 from scipy.stats import ks_2samp
 import pytest
 from gluonnlp.op import *
-mx.npx.set_np()
+
 
 
 @pytest.mark.parametrize('batch_size', [1, 4])

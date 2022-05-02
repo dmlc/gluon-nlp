@@ -17,8 +17,6 @@ from fairseq.models.roberta import RobertaModel as fairseq_RobertaModel
 from gluonnlp.models.roberta import RobertaModel, RobertaForMLM
 from gluonnlp.data.tokenizers import HuggingFaceByteBPETokenizer
 
-mx.npx.set_np()
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert the fairseq RoBERTa Model to Gluon.')
@@ -165,7 +163,7 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
 
 def convert_params(fairseq_model,
                    gluon_cfg,
-                   ctx):
+                   device):
     fairseq_params = fairseq_model.state_dict()
     fairseq_prefix = 'model.encoder.'
     gluon_prefix = 'backbone_model.'
@@ -176,7 +174,7 @@ def convert_params(fairseq_model,
     gluon_model.backbone_model._output_all_encodings = True
     gluon_model.backbone_model.encoder._output_all_encodings = True
 
-    gluon_model.initialize(ctx=ctx)
+    gluon_model.initialize(device=device)
     gluon_model.hybridize()
     gluon_params = gluon_model.collect_params()
     num_layers = gluon_cfg.MODEL.num_layers
@@ -256,7 +254,7 @@ def convert_params(fairseq_model,
 
 def test_model(fairseq_model, gluon_model, gpu):
     print('testing model')
-    ctx = mx.gpu(gpu) if gpu is not None else mx.cpu()
+    device = mx.gpu(gpu) if gpu is not None else mx.cpu()
     batch_size = 3
     seq_length = 32
     vocab_size = len(fairseq_model.task.dictionary)
@@ -275,8 +273,8 @@ def test_model(fairseq_model, gluon_model, gpu):
     for i in range(batch_size):  # add padding, for fairseq padding mask
         input_ids[i, valid_length[i]:] = padding_id
 
-    gl_input_ids = mx.np.array(input_ids, dtype=np.int32, ctx=ctx)
-    gl_valid_length = mx.np.array(valid_length, dtype=np.int32, ctx=ctx)
+    gl_input_ids = mx.np.array(input_ids, dtype=np.int32, device=device)
+    gl_valid_length = mx.np.array(valid_length, dtype=np.int32, device=device)
     # project the all tokens that is taking whole positions
     gl_masked_positions = mx.npx.arange_like(gl_input_ids, axis=1)
     gl_masked_positions = gl_masked_positions + mx.np.zeros_like(gl_input_ids)
@@ -352,10 +350,10 @@ def convert_fairseq_model(args):
     with open(os.path.join(args.save_dir, 'model.yml'), 'w') as of:
         of.write(gluon_cfg.dump())
 
-    ctx = mx.gpu(args.gpu) if args.gpu is not None else mx.cpu()
+    device = mx.gpu(args.gpu) if args.gpu is not None else mx.cpu()
     gluon_roberta = convert_params(fairseq_roberta,
                                    gluon_cfg,
-                                   ctx)
+                                   device)
     if args.test:
         test_model(fairseq_roberta, gluon_roberta, args.gpu)
 
