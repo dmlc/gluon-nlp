@@ -54,6 +54,7 @@ def test_download_s3(overwrite):
 
 @pytest.mark.remote_required
 @pytest.mark.parametrize('overwrite', [False, True])
+@pytest.mark.skip(reason="Access Deny error")
 def test_download_https(overwrite):
     verify_download(url='https://commoncrawl.s3.amazonaws.com/crawl-data/CC-MAIN-2014-41/'
                         'cc-index.paths.gz',

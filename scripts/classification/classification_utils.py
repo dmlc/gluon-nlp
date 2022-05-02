@@ -10,7 +10,7 @@ from mxnet.gluon.metric import Accuracy, F1, MCC, PearsonCorrelation, CompositeE
 from gluonnlp.models import get_backbone
 from gluonnlp.utils.parameter import clip_grad_global_norm
 from gluonnlp.utils.preprocessing import get_trimmed_lengths
-from gluonnlp.utils.misc import get_mxnet_visible_ctx, grouper, repeat
+from gluonnlp.utils.misc import get_mxnet_visible_device, grouper, repeat
 from mxnet.gluon.data import batchify as bf
 from mxnet.gluon.data import DataLoader
 from mxnet.lr_scheduler import PolyScheduler
