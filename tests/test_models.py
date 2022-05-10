@@ -27,6 +27,8 @@ def tvm_enabled():
 def test_get_backbone(name, device):
     with tempfile.TemporaryDirectory() as root, device:
         # Test for model download
+        if name in ['google_t5_11B', 'google_mt5_xxl']: 
+            pytest.skip('Skipping larger T5 (mT5) model test')
         model_cls, cfg, tokenizer, local_params_path, _ = get_backbone(name, root=root)
         net = model_cls.from_cfg(cfg)
         net.load_parameters(local_params_path)
