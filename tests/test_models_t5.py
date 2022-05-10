@@ -9,7 +9,6 @@ from gluonnlp.models.t5 import (
 )
 from gluonnlp.utils.testing import verify_nmt_model, verify_nmt_inference
 
-()
 
 
 def test_list_pretrained_t5(): 
