@@ -572,7 +572,7 @@ class ElectraMasker(HybridBlock):
         return masked_input
 
 
-def get_electra_pretraining_model(model_name, ctx_l,
+def get_electra_pretraining_model(model_name, device_l,
                                   max_seq_length=128,
                                   hidden_dropout_prob=0.1,
                                   attention_dropout_prob=0.1,
@@ -604,8 +604,8 @@ def get_electra_pretraining_model(model_name, ctx_l,
                                disallow_correct=False,
                                weight_initializer=TruncNorm(stdev=0.02))
     if not params_path:
-        model.initialize(ctx=ctx_l)
+        model.initialize(device=device_l)
     else:
-        model.load_parameters(params_path, ctx=ctx_l)
+        model.load_parameters(params_path, device=device_l)
     model.hybridize()
     return cfg, tokenizer, model

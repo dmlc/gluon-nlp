@@ -567,7 +567,7 @@ class BeamSearchSampler(HybridBlock):
             The valid length of the samples. Shape (batch_size, beam_size).
             DType is int32.
         """
-        ctx = inputs.ctx
+        device = inputs.device
         batch_size = inputs.shape[self._data_batch_axis]
         beam_size = self._beam_size
         if src_seq_lengths is not None:
@@ -590,14 +590,14 @@ class BeamSearchSampler(HybridBlock):
         # Generated samples are initialized to be the inputs
         # Except the first beam where the scores are set to be zero, all beams have -inf scores.
         # Valid length is initialized to be 1
-        beam_alive_mask = mx.np.ones(shape=(batch_size, beam_size), ctx=ctx, dtype=mx.np.float32)
-        valid_length = mx.np.ones(shape=(batch_size, beam_size), ctx=ctx, dtype=mx.np.int32)
-        scores = mx.np.zeros(shape=(batch_size, beam_size), ctx=ctx)
+        beam_alive_mask = mx.np.ones(shape=(batch_size, beam_size), device=device, dtype=mx.np.float32)
+        valid_length = mx.np.ones(shape=(batch_size, beam_size), device=device, dtype=mx.np.int32)
+        scores = mx.np.zeros(shape=(batch_size, beam_size), device=device)
         if beam_size > 1:
             scores[:, 1:beam_size] = LARGE_NEGATIVE_FLOAT
         samples = step_input.reshape((batch_size, beam_size, -1))
-        batch_shift = mx.np.arange(0, batch_size * beam_size, beam_size, ctx=ctx, dtype=mx.np.int32)
-        step = mx.np.array(0, ctx=ctx, dtype=mx.np.float32)
+        batch_shift = mx.np.arange(0, batch_size * beam_size, beam_size, device=device, dtype=mx.np.int32)
+        step = mx.np.array(0, device=device, dtype=mx.np.float32)
         for i in range(max_length):
             log_probs, new_states = self._decoder(step_input, states)
             assert log_probs.shape[1] == self._vocab_size
@@ -613,8 +613,8 @@ class BeamSearchSampler(HybridBlock):
         if self._eos_id is not None:
             final_word = mx.np.where(beam_alive_mask,
                                      mx.np.full((batch_size, beam_size), self._eos_id,
-                                                ctx=ctx, dtype=mx.np.int32),
-                                     mx.np.full((batch_size, beam_size), -1, ctx=ctx, dtype=mx.np.int32))
+                                                device=device, dtype=mx.np.int32),
+                                     mx.np.full((batch_size, beam_size), -1, device=device, dtype=mx.np.int32))
             samples = mx.np.concatenate([samples,
                                          final_word.reshape((final_word.shape[0],
                                                              final_word.shape[1], 1))],

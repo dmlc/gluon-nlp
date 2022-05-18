@@ -23,7 +23,7 @@ try:
 except ImportError:
     pass
 
-mx.npx.set_np()
+
 
 
 def parse_args():
@@ -191,7 +191,7 @@ def states_option(step_num, trainer, ckpt_dir, local_rank=0, option='Saving'):
 
 
 def train(args):
-    store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
+    store, num_workers, rank, local_rank, is_master_node, device_l = init_comm(
         args.comm_backend, args.gpus)
     logging_config(args.output_dir,
                    name='pretrain_owt_' + str(rank),  # avoid race
@@ -202,7 +202,7 @@ def train(args):
     logging.info('Training info: num_buckets: {}, '
                  'num_workers: {}, rank: {}'.format(
                      args.num_buckets, num_workers, rank))
-    cfg, tokenizer, model = get_electra_pretraining_model(args.model_name, ctx_l,
+    cfg, tokenizer, model = get_electra_pretraining_model(args.model_name, device_l,
                                                           args.max_seq_length,
                                                           args.hidden_dropout_prob,
                                                           args.attention_dropout_prob,
@@ -245,7 +245,7 @@ def train(args):
     num_accumulated = args.num_accumulated
     if num_accumulated > 1:
         logging.info('Using gradient accumulation. Effective global batch size = {}'
-                     .format(num_accumulated * args.batch_size * len(ctx_l) * num_workers))
+                     .format(num_accumulated * args.batch_size * len(device_l) * num_workers))
         for p in params:
             p.grad_req = 'add'
     # backend specific implementation
@@ -320,7 +320,7 @@ def train(args):
     train_start_time = time.time()
 
     # start training
-    train_loop_dataloader = grouper(repeat(data_train), len(ctx_l))
+    train_loop_dataloader = grouper(repeat(data_train), len(device_l))
     while step_num < num_train_steps:
         tic = time.time()
         for accum_idx in range(num_accumulated):
@@ -328,14 +328,14 @@ def train(args):
             loss_l = []
             mlm_loss_l = []
             rtd_loss_l = []
-            for sample, ctx in zip(sample_l, ctx_l):
+            for sample, device in zip(sample_l, device_l):
                 if sample is None:
                     continue
                 # prepare data
                 input_ids, segment_ids, valid_lengths = sample
-                input_ids = input_ids.as_in_ctx(ctx)
-                segment_ids = segment_ids.as_in_ctx(ctx)
-                valid_lengths = valid_lengths.as_in_ctx(ctx)
+                input_ids = input_ids.to_device(device)
+                segment_ids = segment_ids.to_device(device)
+                valid_lengths = valid_lengths.to_device(device)
                 masked_input = data_masker.dynamic_masking(input_ids, valid_lengths)
                 masked_input_ids = masked_input.input_ids
                 length_masks = masked_input.masks
@@ -348,12 +348,12 @@ def train(args):
                 with mx.autograd.record():
                     mlm_scores, rtd_scores, corrupted_tokens, labels = model(
                         masked_input_ids, segment_ids, valid_lengths, unmasked_tokens, masked_positions)
-                    denominator = (masked_weights.sum() + 1e-6) * num_accumulated * len(ctx_l)
+                    denominator = (masked_weights.sum() + 1e-6) * num_accumulated * len(device_l)
                     mlm_loss = mlm_loss_fn(
                         mx.npx.reshape(mlm_scores, (-5, -1)),
                         unmasked_tokens.reshape((-1,)),
                         masked_weights.reshape((-1, 1))).sum() / denominator
-                    denominator = (length_masks.sum() + 1e-6) * num_accumulated * len(ctx_l)
+                    denominator = (length_masks.sum() + 1e-6) * num_accumulated * len(device_l)
                     rtd_loss = rtd_loss_fn(
                         rtd_scores, labels, length_masks).sum() / denominator
                     output = ElectraOutput(mlm_scores=mlm_scores,
@@ -369,11 +369,11 @@ def train(args):
             for loss in loss_l:
                 loss.backward()
             # All Reduce the Step Loss
-            log_mlm_loss += sum([ele.as_in_ctx(ctx_l[0])
+            log_mlm_loss += sum([ele.to_device(device_l[0])
                                  for ele in mlm_loss_l]).asnumpy()
-            log_rtd_loss += sum([ele.as_in_ctx(ctx_l[0])
+            log_rtd_loss += sum([ele.to_device(device_l[0])
                                  for ele in rtd_loss_l]).asnumpy()
-            log_total_loss += sum([ele.as_in_ctx(ctx_l[0])
+            log_total_loss += sum([ele.to_device(device_l[0])
                                    for ele in loss_l]).asnumpy()
 
         # update

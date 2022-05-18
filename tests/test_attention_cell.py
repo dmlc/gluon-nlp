@@ -8,7 +8,7 @@ from gluonnlp.attention_cell import\
     MultiHeadAttentionCell,\
     RelAttentionScoreCell
 from gluonnlp.utils.parameter import grad_global_norm
-mx.npx.set_np()
+
 
 
 @pytest.mark.parametrize('num_heads', [1, 2, 3])
@@ -17,8 +17,8 @@ mx.npx.set_np()
 @pytest.mark.parametrize('hybridize', [True, False])
 @pytest.mark.parametrize('rel_score_type', ['share_head', 'no_share_head', 'no'])
 @pytest.mark.seed(123)
-def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize, rel_score_type, ctx):
-    with ctx:
+def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize, rel_score_type, device):
+    with device:
         batch_size = 5
         query_length, mem_length = 16, 32
         query_head_units = 8
@@ -154,8 +154,8 @@ def test_multi_head_dot_attention_cell(num_heads, scaled, normalized, hybridize,
 @pytest.mark.parametrize('scaled', [True, False])
 @pytest.mark.parametrize('normalized', [True, False])
 @pytest.mark.seed(123)
-def test_dot_product_attention(scaled, normalized, ctx):
-    with ctx:
+def test_dot_product_attention(scaled, normalized, device):
+    with device:
         num_heads = 4
         batch_size = 32
         query_length, mem_length = 16, 32
@@ -174,7 +174,7 @@ def test_dot_product_attention(scaled, normalized, ctx):
 
 
 @pytest.mark.seed(123)
-def test_gen_attn_mask(ctx):
+def test_gen_attn_mask(device):
     class GenSelfAttnMask(HybridBlock):
         def __init__(self, dtype, layout, attn_type):
             super().__init__()
@@ -198,7 +198,7 @@ def test_gen_attn_mask(ctx):
             return gen_mem_attn_mask(mem, mem_valid_length, data, valid_length,
                                      dtype=self._dtype, layout=self._layout)
 
-    with ctx:
+    with device:
         batch_size = 4
         query_length = 8
         mem_length = 6
@@ -274,7 +274,7 @@ def test_gen_attn_mask(ctx):
 @pytest.mark.parametrize('bidirectional', [False, True])
 @pytest.mark.parametrize('hybridize', [False, True])
 @pytest.mark.seed(123)
-def test_multi_head_rel_attn_score(num_heads, method, bidirectional, hybridize, ctx):
+def test_multi_head_rel_attn_score(num_heads, method, bidirectional, hybridize, device):
     batch_size = 6
     query_length = 25
     mem_length = 20

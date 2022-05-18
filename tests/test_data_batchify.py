@@ -5,7 +5,7 @@ import mxnet as mx
 from gluonnlp.data import batchify
 import pytest
 
-mx.npx.set_np()
+
 
 def test_list():
     data = [object() for _ in range(5)]

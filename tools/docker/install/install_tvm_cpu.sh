@@ -21,10 +21,11 @@ set -u
 set -o pipefail
 
 cd ${WORKDIR}
-git clone https://github.com/apache/incubator-tvm tvm --recursive
+git clone https://github.com/apache/tvm tvm --recursive
 cd ${WORKDIR}/tvm
 # checkout a hash-tag
 git checkout bf862d4c4355eae4f18d89b3b6b98ed0a2c18e9c
+git submodule update --init --recursive
 
 mkdir -p build
 cp cmake/config.cmake build

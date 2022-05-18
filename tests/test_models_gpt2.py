@@ -8,7 +8,7 @@ from gluonnlp.models.gpt2 import GPT2Model, GPT2ForLM, \
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
 from gluonnlp.utils.testing import verify_backbone_fp16
 
-mx.npx.set_np()
+
 
 
 def test_list_pretrained_gpt2():
@@ -16,7 +16,7 @@ def test_list_pretrained_gpt2():
 
 
 @pytest.mark.parametrize('compute_layout', ['auto', 'TN', 'NT'])
-def test_gpt2_small_config(compute_layout, ctx):
+def test_gpt2_small_config(compute_layout, device):
     cfg = GPT2Model.get_cfg()
     cfg.defrost()
     cfg.MODEL.vocab_size = 1000
@@ -32,17 +32,17 @@ def test_gpt2_small_config(compute_layout, ctx):
     cfg_tn.MODEL.layout = 'TN'
     cfg_tn.freeze()
 
-    with ctx:
+    with device:
         batch_size = 4
         sequence_length = 16
-        inputs = mx.np.random.randint(0, 1000, (batch_size, sequence_length), ctx=ctx)
+        inputs = mx.np.random.randint(0, 1000, (batch_size, sequence_length), device=device)
 
         gpt2_model = GPT2Model.from_cfg(cfg)
-        gpt2_model.initialize(ctx=ctx)
+        gpt2_model.initialize(device=device)
         gpt2_model.hybridize()
         hiddens, _ = gpt2_model(
             inputs,
-            gpt2_model.init_states(batch_size, ctx)
+            gpt2_model.init_states(batch_size, device)
         )
 
         gpt2_model_tn = GPT2Model.from_cfg(cfg_tn)
@@ -50,25 +50,25 @@ def test_gpt2_small_config(compute_layout, ctx):
         gpt2_model_tn.hybridize()
         hiddens_tn, _ = gpt2_model_tn(
             inputs.T,
-            gpt2_model_tn.init_states(batch_size, ctx)
+            gpt2_model_tn.init_states(batch_size, device)
         )
         assert_allclose(np.swapaxes(hiddens_tn.asnumpy(), 0, 1),
                         hiddens.asnumpy(), 1E-4, 1E-4)
 
         # Test for GPT2ForLM
         gpt2_lm_model = GPT2ForLM(cfg)
-        gpt2_lm_model.initialize(ctx=ctx)
+        gpt2_lm_model.initialize(device=device)
         gpt2_lm_model.hybridize()
         logits, states = gpt2_lm_model(
             inputs,
-            gpt2_lm_model.init_states(batch_size, ctx)
+            gpt2_lm_model.init_states(batch_size, device)
         )
         gpt2_lm_model_tn = GPT2ForLM(cfg_tn)
         gpt2_lm_model_tn.share_parameters(gpt2_lm_model.collect_params())
         gpt2_lm_model_tn.hybridize()
         logits_tn, states_tn = gpt2_lm_model_tn(
             inputs.T,
-            gpt2_lm_model_tn.init_states(batch_size, ctx)
+            gpt2_lm_model_tn.init_states(batch_size, device)
         )
         assert_allclose(np.swapaxes(logits_tn.asnumpy(), 0, 1),
                         logits.asnumpy(), 1E-4, 1E-4)
@@ -76,32 +76,32 @@ def test_gpt2_small_config(compute_layout, ctx):
                         states.asnumpy(), 1E-4, 1E-4)
 
         # Verify Float16
-        if ctx.device_type == 'gpu':
-            verify_backbone_fp16(model_cls=GPT2Model, cfg=cfg, ctx=ctx,
+        if device.device_type == 'gpu':
+            verify_backbone_fp16(model_cls=GPT2Model, cfg=cfg, device=device,
                                  inputs=[inputs,
-                                         gpt2_model.init_states(batch_size, ctx)],
+                                         gpt2_model.init_states(batch_size, device)],
                                  check_amp=False)
             pytest.skip('GPT-2 test has been turned off. '
                         'Issue: https://github.com/apache/incubator-mxnet/issues/19463')
 
 
-def test_gpt2_incremental_states(ctx):
-    with ctx:
+def test_gpt2_incremental_states(device):
+    with device:
         batch_size = 4
         sequence_length = 5
-        inputs = mx.np.random.randint(0, 1000, (batch_size, sequence_length), ctx=ctx)
+        inputs = mx.np.random.randint(0, 1000, (batch_size, sequence_length), device=device)
 
         cfg = GPT2Model.get_cfg()
         gpt2_model = GPT2Model.from_cfg(cfg)
-        gpt2_model.initialize(ctx=ctx)
+        gpt2_model.initialize(device=device)
         gpt2_model.hybridize()
 
         one_time_hiddens, one_time_states = gpt2_model(
             inputs,
-            gpt2_model.init_states(batch_size, ctx)
+            gpt2_model.init_states(batch_size, device)
         )
 
-        states = gpt2_model.init_states(batch_size, ctx)
+        states = gpt2_model.init_states(batch_size, device)
         hiddens_l = []
         for i in range(sequence_length):
             hiddens, states = gpt2_model(
@@ -120,10 +120,10 @@ def test_gpt2_incremental_states(ctx):
 @pytest.mark.remote_required
 # Just run forward test with the small model to reduce the time cost.
 @pytest.mark.parametrize('model_name', ['gpt2_124M'])
-def test_gpt2(model_name, ctx):
+def test_gpt2(model_name, device):
     # test from pretrained
     assert len(list_pretrained_gpt2()) > 0
-    with tempfile.TemporaryDirectory() as root, ctx:
+    with tempfile.TemporaryDirectory() as root, device:
         cfg, tokenizer, params_path, lm_params_path =\
             get_pretrained_gpt2(model_name, load_backbone=True, load_lm=True, root=root)
         assert cfg.MODEL.vocab_size == len(tokenizer.vocab)
@@ -145,11 +145,11 @@ def test_gpt2(model_name, ctx):
                 (batch_size, seq_length)
             ),
             dtype=np.int32,
-            ctx=ctx
+            device=device
         )
         logits, _ = gpt2_lm_model(
             input_ids,
-            gpt2_lm_model.init_states(batch_size, ctx)
+            gpt2_lm_model.init_states(batch_size, device)
         )
         mx.npx.waitall()
         # test backward
@@ -157,7 +157,7 @@ def test_gpt2(model_name, ctx):
         with mx.autograd.record():
             logits, _ = gpt2_lm_model(
                 input_ids,
-                gpt2_lm_model.init_states(batch_size, ctx)
+                gpt2_lm_model.init_states(batch_size, device)
             )
             loss = label_smooth_loss(logits, input_ids)
             loss.backward()

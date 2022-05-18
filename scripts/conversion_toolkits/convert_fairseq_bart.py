@@ -13,8 +13,6 @@ from gluonnlp.utils.misc import sha1sum, logging_config, naming_convention
 from gluonnlp.models.bart import BartModel
 from convert_fairseq_roberta import convert_vocab
 
-mx.npx.set_np()
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert the fairseq BART Model to Gluon.')
@@ -74,11 +72,11 @@ def convert_config(fairseq_cfg, vocab_size, cfg):
 
 def convert_params(fairseq_model,
                    gluon_cfg,
-                   ctx):
+                   device):
     fairseq_params = fairseq_model.state_dict()
     # apply a linear mapping to vocab dictionary
     gluon_model = BartModel.from_cfg(gluon_cfg, use_pooler=False)
-    gluon_model.initialize(ctx=ctx)
+    gluon_model.initialize(device=device)
     gluon_model.hybridize()
     gluon_params = gluon_model.collect_params()
     all_keys = set(gluon_params.keys())
@@ -215,7 +213,7 @@ def convert_params(fairseq_model,
 
 def test_model(fairseq_model, gluon_model, gpu):
     print('testing model')
-    ctx = mx.gpu(gpu) if gpu is not None else mx.cpu()
+    device = mx.gpu(gpu) if gpu is not None else mx.cpu()
     batch_size = 3
     seq_length = 32
     vocab_size = len(fairseq_model.task.dictionary)
@@ -234,8 +232,8 @@ def test_model(fairseq_model, gluon_model, gpu):
     for i in range(batch_size):  # add padding, for fairseq padding mask
         input_ids[i, valid_length[i]:] = padding_id
 
-    gl_input_ids = mx.np.array(input_ids, dtype=np.int32, ctx=ctx)
-    gl_valid_length = mx.np.array(valid_length, dtype=np.int32, ctx=ctx)
+    gl_input_ids = mx.np.array(input_ids, dtype=np.int32, device=device)
+    gl_valid_length = mx.np.array(valid_length, dtype=np.int32, device=device)
     gl_dec_out = \
         gluon_model(gl_input_ids, gl_valid_length, gl_input_ids, gl_valid_length)
 
@@ -291,10 +289,10 @@ def convert_fairseq_model(args):
     with open(os.path.join(args.save_dir, 'model.yml'), 'w') as of:
         of.write(gluon_cfg.dump())
 
-    ctx = mx.gpu(args.gpu) if args.gpu is not None else mx.cpu()
+    device = mx.gpu(args.gpu) if args.gpu is not None else mx.cpu()
     gluon_bart = convert_params(fairseq_bart,
                                 gluon_cfg,
-                                ctx)
+                                device)
     if args.test:
         test_model(fairseq_bart, gluon_bart, args.gpu)
 

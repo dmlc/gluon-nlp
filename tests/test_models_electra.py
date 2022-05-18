@@ -7,7 +7,7 @@ from gluonnlp.models.electra import ElectraModel, ElectraDiscriminator,\
     ElectraGenerator,\
     list_pretrained_electra, get_pretrained_electra, get_generator_cfg
 from gluonnlp.utils.testing import verify_backbone_fp16
-mx.npx.set_np()
+
 
 
 def test_list_pretrained_electra():
@@ -27,8 +27,8 @@ def get_test_cfg():
 
 
 @pytest.mark.parametrize('compute_layout', ['auto', 'NT', 'TN'])
-def test_electra_model(compute_layout, ctx):
-    with ctx:
+def test_electra_model(compute_layout, device):
+    with device:
         cfg = get_test_cfg()
         cfg.defrost()
         cfg.MODEL.compute_layout = compute_layout
@@ -65,8 +65,8 @@ def test_electra_model(compute_layout, ctx):
                         1E-4, 1E-4)
 
         # Verify Float16
-        if ctx.device_type == 'gpu':
-            verify_backbone_fp16(model_cls=ElectraModel, cfg=cfg, ctx=ctx,
+        if device.device_type == 'gpu':
+            verify_backbone_fp16(model_cls=ElectraModel, cfg=cfg, device=device,
                                  inputs=[inputs, token_types, valid_length])
 
 
@@ -74,9 +74,9 @@ def test_electra_model(compute_layout, ctx):
 @pytest.mark.slow
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_electra())
-def test_electra_get_pretrained(model_name, ctx):
+def test_electra_get_pretrained(model_name, device):
     assert len(list_pretrained_electra()) > 0
-    with tempfile.TemporaryDirectory() as root, ctx:
+    with tempfile.TemporaryDirectory() as root, device:
         cfg, tokenizer, backbone_params_path, (disc_params_path, gen_params_path) =\
             get_pretrained_electra(model_name, root=root,
                                    load_backbone=True, load_disc=True, load_gen=True)

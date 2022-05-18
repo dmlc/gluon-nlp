@@ -471,8 +471,8 @@ def start_memory_tracing(
         if log_gpu:
             # Clear GPU caches
             if is_mxnet_available():
-                for ctx in mx_all_contexts:
-                    ctx.empty_cache()
+                for device in mx_all_contexts:
+                    device.empty_cache()
             if is_torch_available():
                 torch_empty_cache()
             if is_tf_available():
@@ -665,10 +665,10 @@ def compile_tvm_graph_executor(model, model_name, layout, compute_layout,
     with tvm.transform.PassContext(opt_level=opt_level, required_pass=required_pass):
         lib = relay.build(mod, target, params=params)
     if use_gpu:
-        ctx = tvm.gpu()
+        device = tvm.gpu()
     else:
-        ctx = tvm.cpu()
-    rt = graph_executor.GraphModule(lib["default"](ctx))
+        device = tvm.cpu()
+    rt = graph_executor.GraphModule(lib["default"](device))
     _TVM_RT_CACHE[key] = rt
     return rt
 
@@ -767,9 +767,9 @@ class GluonNLPBackboneBenchmark:
         else:
             dtype = 'float32'
         if self._use_gpu:
-            ctx = mxnet.gpu()
+            device = mxnet.gpu()
         else:
-            ctx = mxnet.cpu()
+            device = mxnet.cpu()
         model_cls, cfg, tokenizer, backbone_param_path, _ = get_backbone(model_name)
         cfg.defrost()
         cfg.MODEL.layout = self._layout
@@ -780,22 +780,22 @@ class GluonNLPBackboneBenchmark:
             model = model_cls.from_cfg(cfg, extract_feature=True, dtype=dtype)
         else:
             model = model_cls.from_cfg(cfg, dtype=dtype)
-        model.load_parameters(backbone_param_path, ctx=ctx, cast_dtype=True)
+        model.load_parameters(backbone_param_path, device=device, cast_dtype=True)
         model.cast(dtype)
         model.hybridize(static_alloc=True, static_shape=True)
         vocab_size = cfg.MODEL.vocab_size
         if self._layout == 'NT':
             input_ids = mxnet.np.random.randint(0, vocab_size, (batch_size, sequence_length),
-                                                dtype=np.int32, ctx=ctx)
-            token_types = mxnet.np.zeros((batch_size, sequence_length), dtype=np.int32, ctx=ctx)
+                                                dtype=np.int32, device=device)
+            token_types = mxnet.np.zeros((batch_size, sequence_length), dtype=np.int32, device=device)
             valid_length = mxnet.np.full((batch_size,), sequence_length,
-                                         dtype=np.int32, ctx=ctx)
+                                         dtype=np.int32, device=device)
         elif self._layout == 'TN':
             input_ids = mxnet.np.random.randint(0, vocab_size, (sequence_length, batch_size),
-                                                dtype=np.int32, ctx=ctx)
-            token_types = mxnet.np.zeros((sequence_length, batch_size), dtype=np.int32, ctx=ctx)
+                                                dtype=np.int32, device=device)
+            token_types = mxnet.np.zeros((sequence_length, batch_size), dtype=np.int32, device=device)
             valid_length = mxnet.np.full((batch_size,), sequence_length,
-                                         dtype=np.int32, ctx=ctx)
+                                         dtype=np.int32, device=device)
         else:
             raise NotImplementedError
         mxnet.npx.waitall()
@@ -817,17 +817,17 @@ class GluonNLPBackboneBenchmark:
             tvm = try_import_tvm()
             run_forward()
             if self._use_gpu:
-                ctx = tvm.gpu()
+                device = tvm.gpu()
             else:
-                ctx = tvm.cpu()
+                device = tvm.cpu()
             rt = compile_tvm_graph_executor(model=model, model_name=model_name,
                                            layout=self._layout, compute_layout=self._compute_layout,
                                            batch_size=batch_size, seq_length=sequence_length,
                                            instance_type=self._instance_type,
                                            dtype='float32' if not self._use_fp16 else 'float16')
-            tvm_input_ids = tvm.nd.array(input_ids.asnumpy(), ctx=ctx)
-            tvm_token_types = tvm.nd.array(token_types.asnumpy(), ctx=ctx)
-            tvm_valid_length = tvm.nd.array(valid_length.asnumpy(), ctx=ctx)
+            tvm_input_ids = tvm.nd.array(input_ids.asnumpy(), device=device)
+            tvm_token_types = tvm.nd.array(token_types.asnumpy(), device=device)
+            tvm_valid_length = tvm.nd.array(valid_length.asnumpy(), device=device)
 
             if 'roberta' in model_name or 'xlmr' in model_name:
                 rt.set_input(data0=tvm_input_ids, data1=tvm_valid_length)
@@ -837,7 +837,7 @@ class GluonNLPBackboneBenchmark:
                 rt.set_input(data0=tvm_input_ids, data1=tvm_token_types,
                              data2=tvm_valid_length)
             # ftimer returns a ProfileResult
-            ftimer = rt.module.time_evaluator("run", ctx, number=3, repeat=self._repeat)
+            ftimer = rt.module.time_evaluator("run", device, number=3, repeat=self._repeat)
             runtimes = np.min(ftimer().results)
         else:
             timeit.repeat(run_forward, repeat=1, number=3)
@@ -867,9 +867,9 @@ class GluonNLPBackboneBenchmark:
             amp.init()
 
         if self._use_gpu:
-            ctx = mxnet.gpu()
+            device = mxnet.gpu()
         else:
-            ctx = mxnet.cpu()
+            device = mxnet.cpu()
         model_cls, cfg, tokenizer, backbone_param_path, _ = get_backbone(model_name)
         cfg.defrost()
         cfg.MODEL.layout = self._layout
@@ -880,7 +880,7 @@ class GluonNLPBackboneBenchmark:
             model = model_cls.from_cfg(cfg, extract_feature=True)
         else:
             model = model_cls.from_cfg(cfg)
-        model.load_parameters(backbone_param_path, ctx=ctx)
+        model.load_parameters(backbone_param_path, device=device)
         model.hybridize(static_alloc=True)
         vocab_size = cfg.MODEL.vocab_size
         if hasattr(cfg.MODEL, 'units'):
@@ -889,27 +889,27 @@ class GluonNLPBackboneBenchmark:
             out_units = cfg.MODEL.DECODER.units
         if self._layout == 'NT':
             input_ids = mxnet.np.random.randint(0, vocab_size, (batch_size, sequence_length),
-                                                dtype=np.int32, ctx=ctx)
-            token_types = mxnet.np.zeros((batch_size, sequence_length), dtype=np.int32, ctx=ctx)
+                                                dtype=np.int32, device=device)
+            token_types = mxnet.np.zeros((batch_size, sequence_length), dtype=np.int32, device=device)
             valid_length = mxnet.np.full((batch_size,), sequence_length,
-                                         dtype=np.int32, ctx=ctx)
+                                         dtype=np.int32, device=device)
             contextual_embedding_ograd = mxnet.np.random.normal(
                 0, 1, (batch_size, sequence_length, out_units),
-                dtype=np.float32, ctx=ctx)
+                dtype=np.float32, device=device)
             pooled_out_ograd = mxnet.np.random.normal(
-                0, 1, (batch_size, out_units), dtype=np.float32, ctx=ctx)
+                0, 1, (batch_size, out_units), dtype=np.float32, device=device)
         elif self._layout == 'TN':
             input_ids = mxnet.np.random.randint(0, vocab_size, (sequence_length, batch_size),
-                                                dtype=np.int32, ctx=ctx)
-            token_types = mxnet.np.zeros((sequence_length, batch_size), dtype=np.int32, ctx=ctx)
+                                                dtype=np.int32, device=device)
+            token_types = mxnet.np.zeros((sequence_length, batch_size), dtype=np.int32, device=device)
             valid_length = mxnet.np.full((batch_size,), sequence_length,
-                                         dtype=np.int32, ctx=ctx)
+                                         dtype=np.int32, device=device)
             contextual_embedding_ograd = mxnet.np.random.normal(
                 0, 1, (sequence_length, batch_size, out_units),
-                dtype=np.float32, ctx=ctx)
+                dtype=np.float32, device=device)
             pooled_out_ograd = mxnet.np.random.normal(0, 1, (batch_size, out_units),
                                                       dtype=np.float32,
-                                                      ctx=ctx)
+                                                      device=device)
         else:
             raise NotImplementedError
         if model_cls.__name__ in ['BertModel', 'AlbertModel', 'ElectraModel', 'MobileBertModel']:
@@ -939,7 +939,7 @@ class GluonNLPBackboneBenchmark:
         mxnet.npx.waitall()
         runtimes = timeit.repeat(train_step, repeat=self._repeat, number=3)
         mxnet.npx.waitall()
-        ctx.empty_cache()
+        device.empty_cache()
         mxnet.npx.waitall()
         # Profile memory
         if self._use_gpu:

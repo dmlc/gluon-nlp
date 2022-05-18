@@ -69,7 +69,7 @@ class TruncNorm(Initializer):
         """Abstract method to Initialize weight."""
         # Uniformly fill tensor with values from [l, u], then translate to
         # [2l-1, 2u-1].
-        arr[:] = mx.np.random.uniform(2 * self._l - 1, 2 * self._u - 1, size=arr.shape, ctx=arr.ctx)
+        arr[:] = mx.np.random.uniform(2 * self._l - 1, 2 * self._u - 1, size=arr.shape, device=arr.device)
         # Use inverse cdf transform for normal distribution to get truncated
         # standard normal
         arr[:] = mx.npx.erfinv(arr)

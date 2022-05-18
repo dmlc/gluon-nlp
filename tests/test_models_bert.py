@@ -5,15 +5,15 @@ import tempfile
 from gluonnlp.models.bert import BertModel, BertForMLM, BertForPretrain,\
     list_pretrained_bert, get_pretrained_bert
 from gluonnlp.utils.testing import verify_backbone_fp16
-mx.npx.set_np()
+
 
 
 def test_list_pretrained_bert():
     assert len(list_pretrained_bert()) > 0
 
 @pytest.mark.parametrize('compute_layout', ['auto', 'NT', 'TN'])
-def test_bert_small_cfg(compute_layout, ctx):
-    with ctx:
+def test_bert_small_cfg(compute_layout, device):
+    with device:
         cfg = BertModel.get_cfg()
         cfg.defrost()
         cfg.MODEL.vocab_size = 100
@@ -89,18 +89,18 @@ def test_bert_small_cfg(compute_layout, ctx):
         assert_allclose(mlm_score.asnumpy(), mlm_score_tn.asnumpy(), 1E-3, 1E-3)
 
         # Test BertModel FP16
-        device_type = ctx.device_type
+        device_type = device.device_type
         if device_type == 'gpu':
-            verify_backbone_fp16(model_cls=BertModel, cfg=cfg, ctx=ctx,
+            verify_backbone_fp16(model_cls=BertModel, cfg=cfg, device=device,
                                  inputs=[inputs, token_types, valid_length])
 
 
 @pytest.mark.slow
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_bert())
-def test_bert_get_pretrained(model_name, ctx):
+def test_bert_get_pretrained(model_name, device):
     assert len(list_pretrained_bert()) > 0
-    with tempfile.TemporaryDirectory() as root, ctx:
+    with tempfile.TemporaryDirectory() as root, device:
         cfg, tokenizer, backbone_params_path, mlm_params_path =\
             get_pretrained_bert(model_name, load_backbone=True, load_mlm=True, root=root)
         assert cfg.MODEL.vocab_size == len(tokenizer.vocab)

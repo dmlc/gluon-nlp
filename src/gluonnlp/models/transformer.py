@@ -604,7 +604,7 @@ class TransformerDecoderLayer(HybridBlock):
         else:
             return 1, 1
 
-    def init_states(self, batch_size, ctx, dtype='float32'):
+    def init_states(self, batch_size, device, dtype='float32'):
         """Initialize the states required for incremental decoding
 
         Returns
@@ -624,14 +624,14 @@ class TransformerDecoderLayer(HybridBlock):
         """
         if self.layout == 'NT':
             init_key = mx.np.zeros(shape=(batch_size, 0, self._num_heads,
-                                          self._units // self._num_heads), ctx=ctx, dtype=dtype)
+                                          self._units // self._num_heads), device=device, dtype=dtype)
             init_value = mx.np.zeros(shape=(batch_size, 0, self._num_heads,
-                                            self._units // self._num_heads), ctx=ctx, dtype=dtype)
+                                            self._units // self._num_heads), device=device, dtype=dtype)
         else:
             init_key = mx.np.zeros(shape=(0, batch_size, self._num_heads,
-                                          self._units // self._num_heads), ctx=ctx, dtype=dtype)
+                                          self._units // self._num_heads), device=device, dtype=dtype)
             init_value = mx.np.zeros(shape=(0, batch_size, self._num_heads,
-                                            self._units // self._num_heads), ctx=ctx, dtype=dtype)
+                                            self._units // self._num_heads), device=device, dtype=dtype)
         return init_key, init_value
 
     def incremental_decode(self, data, states, mem, mem_valid_length, mem_attn_mask=None):
@@ -849,7 +849,7 @@ class TransformerDecoder(HybridBlock):
             ret.append(layer.state_batch_axis)
         return ret
 
-    def init_states(self, batch_size, ctx, dtype='float32'):
+    def init_states(self, batch_size, device, dtype='float32'):
         """Initialize the states required for incremental decoding
 
         Returns
@@ -877,7 +877,7 @@ class TransformerDecoder(HybridBlock):
             else:
                 layer = self.layers[i]
             states.append(layer.init_states(batch_size=batch_size,
-                                            ctx=ctx,
+                                            device=device,
                                             dtype=dtype))
         return states
 
@@ -1422,11 +1422,11 @@ class TransformerInference(HybridBlock, BaseStepDecoder):
             batch_size = src_data.shape[0]
         else:
             batch_size = src_data.shape[1]
-        ctx = src_data.ctx
+        device = src_data.device
         enc_out = self.model.encode(src_data, src_valid_length)
-        position = mx.np.zeros((batch_size,), dtype=np.int32, ctx=ctx)
+        position = mx.np.zeros((batch_size,), dtype=np.int32, device=device)
         dtype = enc_out.dtype
-        dec_states = self.model.decoder.init_states(batch_size, ctx, dtype)
+        dec_states = self.model.decoder.init_states(batch_size, device, dtype)
         return enc_out, src_valid_length, position, dec_states
 
     def forward(self, step_data, states):

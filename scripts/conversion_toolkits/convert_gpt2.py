@@ -17,8 +17,6 @@ from gluonnlp.data.vocab import Vocab
 from gluonnlp.utils.misc import sha1sum, logging_config, naming_convention
 from gluonnlp.models.gpt2 import GPT2Model, GPT2ForLM
 
-mx.npx.set_np()
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Convert the tf GPT-2 Model to Gluon.')
@@ -61,7 +59,7 @@ def convert_config(tf_cfg, vocab_size):
     cfg.defrost()
     cfg.MODEL.vocab_size = tf_cfg['n_vocab']
     cfg.MODEL.units = tf_cfg['n_embd']
-    cfg.MODEL.max_length = tf_cfg['n_ctx']
+    cfg.MODEL.max_length = tf_cfg['n_device']
     cfg.MODEL.num_heads = tf_cfg['n_head']
     cfg.MODEL.num_layers = tf_cfg['n_layer']
     cfg.VERSION = 1
@@ -143,7 +141,7 @@ def rename(save_dir):
 
 def test_model(tf_model_path, gluon_model):
     # test data
-    ctx = mx.cpu()
+    device = mx.cpu()
 
     seed = 123
     batch_size = 3
@@ -160,16 +158,16 @@ def test_model(tf_model_path, gluon_model):
         tf_cfg = json.load(hf)
     hparams = HParams(
         n_vocab=tf_cfg['n_vocab'],
-        n_ctx=tf_cfg['n_ctx'],
+        n_device=tf_cfg['n_device'],
         n_embd=tf_cfg['n_embd'],
         n_head=tf_cfg['n_head'],
         n_layer=tf_cfg['n_layer'],
     )
     tf_start_states = np.zeros((batch_size, hparams.n_layer, 2, hparams.n_head, 0, hparams.n_embd // hparams.n_head))
-    gl_start_states = gluon_model.init_states(batch_size, ctx)
+    gl_start_states = gluon_model.init_states(batch_size, device)
 
     # gluon model
-    gl_input_ids = mx.np.array(input_ids, dtype=np.int32, ctx=ctx)
+    gl_input_ids = mx.np.array(input_ids, dtype=np.int32, device=device)
     gl_logits_1, gl_states = gluon_model(gl_input_ids, gl_start_states)
     gl_logits_2, _ = gluon_model(gl_input_ids, gl_states)
 
@@ -222,7 +220,7 @@ def convert_gpt2(args):
         of.write(gluon_backbone_cfg.dump())
 
     gluon_gpt2forlm_model = GPT2ForLM(gluon_backbone_cfg)
-    gluon_gpt2forlm_model.initialize(ctx=mx.cpu())
+    gluon_gpt2forlm_model.initialize(device=mx.cpu())
     gluon_gpt2forlm_model.hybridize()
     gluon_backbone_model = gluon_gpt2forlm_model._backbone_model
     convert_backbone_params(tf_params, gluon_backbone_model)

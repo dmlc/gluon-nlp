@@ -25,7 +25,7 @@ from eval_utils import squad_eval
 from squad_utils import SquadFeature, get_squad_examples, convert_squad_example_to_feature
 from gluonnlp.models import get_backbone
 from gluonnlp.utils.misc import repeat, grouper, set_seed, init_comm, \
-    logging_config, parse_ctx
+    logging_config, parse_device
 from gluonnlp.initializer import TruncNorm
 from gluonnlp.data.sampler import SplitSampler
 from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm, count_parameters,\
@@ -36,7 +36,7 @@ try:
 except ImportError:
     pass
 
-mx.npx.set_np()
+
 
 CACHE_PATH = os.path.realpath(os.path.join(os.path.realpath(__file__), '..', 'cached'))
 if not os.path.exists(CACHE_PATH):
@@ -365,7 +365,7 @@ def get_squad_features(args, tokenizer, segment):
 
 
 def get_network(model_name,
-                ctx_l,
+                device_l,
                 dropout=0.1,
                 checkpoint_path=None,
                 backbone_path=None,
@@ -377,8 +377,8 @@ def get_network(model_name,
     ----------
     model_name : str
         The model name of the backbone model
-    ctx_l :
-        Context list of training device like [mx.gpu(0), mx.gpu(1)]
+    device_l :
+        Device list of training device like [mx.gpu(0), mx.gpu(1)]
     dropout : float
         Dropout probability of the task specified layer
     checkpoint_path: str
@@ -404,7 +404,7 @@ def get_network(model_name,
     backbone_params_path = backbone_path if backbone_path else download_params_path
     if checkpoint_path is None:
         backbone.load_parameters(backbone_params_path, ignore_extra=True,
-                                 ctx=ctx_l, cast_dtype=True)
+                                 device=device_l, cast_dtype=True)
         num_params, num_fixed_params\
             = count_parameters(deduplicate_param_dict(backbone.collect_params()))
         logging.info(
@@ -417,9 +417,9 @@ def get_network(model_name,
     if checkpoint_path is None:
         # Ignore the UserWarning during initialization,
         # There is no need to re-initialize the parameters of backbone
-        qa_net.initialize(ctx=ctx_l)
+        qa_net.initialize(device=device_l)
     else:
-        qa_net.load_parameters(checkpoint_path, ctx=ctx_l, cast_dtype=True)
+        qa_net.load_parameters(checkpoint_path, device=device_l, cast_dtype=True)
     qa_net.hybridize()
 
     return cfg, tokenizer, qa_net, use_segmentation
@@ -439,11 +439,11 @@ def setup_logging(args, local_rank):
 
 def train(args):
     use_amp = args.dtype == 'float16'
-    store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
+    store, num_workers, rank, local_rank, is_master_node, device_l = init_comm(
         args.comm_backend, args.gpus)
     setup_logging(args, local_rank)
     cfg, tokenizer, qa_net, use_segmentation = \
-        get_network(args.model_name, ctx_l,
+        get_network(args.model_name, device_l,
                     args.classifier_dropout,
                     args.param_checkpoint,
                     args.backbone_path)
@@ -502,7 +502,7 @@ def train(args):
     num_accumulated = args.num_accumulated
     if num_accumulated > 1:
         logging.info('Using gradient accumulation. Effective global batch size = {}'
-                     .format(num_accumulated * args.batch_size * len(ctx_l) * num_workers))
+                     .format(num_accumulated * args.batch_size * len(device_l) * num_workers))
         for p in params:
             p.grad_req = 'add'
     # backend specific implementation
@@ -510,7 +510,7 @@ def train(args):
         # Horovod: fetch and broadcast parameters
         hvd.broadcast_parameters(param_dict, root_rank=0)
 
-    epoch_size = (len(train_dataloader) + len(ctx_l) - 1) // len(ctx_l)
+    epoch_size = (len(train_dataloader) + len(device_l) - 1) // len(device_l)
     if args.num_train_steps is not None:
         num_train_steps = args.num_train_steps
     else:
@@ -567,24 +567,24 @@ def train(args):
     global_tic = time.time()
     tic = time.time()
     for step_num, batch_data in enumerate(
-            grouper(repeat(train_dataloader), len(ctx_l) * num_accumulated)):
-        for sample_l in grouper(batch_data, len(ctx_l)):
+            grouper(repeat(train_dataloader), len(device_l) * num_accumulated)):
+        for sample_l in grouper(batch_data, len(device_l)):
             loss_l = []
             span_loss_l = []
             answerable_loss_l = []
-            for sample, ctx in zip(sample_l, ctx_l):
+            for sample, device in zip(sample_l, device_l):
                 if sample is None:
                     continue
                 # Copy the data to device
-                tokens = sample.data.as_in_ctx(ctx)
+                tokens = sample.data.to_device(device)
                 log_sample_num += len(tokens)
-                segment_ids = sample.segment_ids.as_in_ctx(ctx) if use_segmentation else None
-                valid_length = sample.valid_length.as_in_ctx(ctx)
-                p_mask = sample.masks.as_in_ctx(ctx)
-                gt_start = sample.gt_start.as_in_ctx(ctx).astype(np.int32)
-                gt_end = sample.gt_end.as_in_ctx(ctx).astype(np.int32)
-                is_impossible = sample.is_impossible.as_in_ctx(ctx).astype(np.int32)
-                batch_idx = mx.np.arange(tokens.shape[0], dtype=np.int32, ctx=ctx)
+                segment_ids = sample.segment_ids.to_device(device) if use_segmentation else None
+                valid_length = sample.valid_length.to_device(device)
+                p_mask = sample.masks.to_device(device)
+                gt_start = sample.gt_start.to_device(device).astype(np.int32)
+                gt_end = sample.gt_end.to_device(device).astype(np.int32)
+                is_impossible = sample.is_impossible.to_device(device).astype(np.int32)
+                batch_idx = mx.np.arange(tokens.shape[0], dtype=np.int32, device=device)
                 p_mask = 1 - p_mask  # In the network, we use 1 --> no_mask, 0 --> mask
                 with mx.autograd.record():
                     start_logits, end_logits, answerable_logits \
@@ -594,7 +594,7 @@ def train(args):
                     sel_answerable_logits = answerable_logits[batch_idx, is_impossible]
                     span_loss = - 0.5 * (sel_start_logits + sel_end_logits).mean()
                     answerable_loss = -0.5 * sel_answerable_logits.mean()
-                    loss = (span_loss + answerable_loss) / (len(ctx_l) * num_accumulated)
+                    loss = (span_loss + answerable_loss) / (len(device_l) * num_accumulated)
                     loss_l.append(loss)
                     span_loss_l.append(span_loss)
                     answerable_loss_l.append(answerable_loss)
@@ -611,10 +611,10 @@ def train(args):
                 norm_clip_mult = num_workers
 
             # All Reduce the Step Loss
-            log_span_loss += sum([ele.as_in_ctx(ctx_l[0]) for ele in span_loss_l]).asnumpy()
-            log_total_loss += sum([ele.as_in_ctx(ctx_l[0])
+            log_span_loss += sum([ele.to_device(device_l[0]) for ele in span_loss_l]).asnumpy()
+            log_total_loss += sum([ele.to_device(device_l[0])
                                    for ele in loss_l]).asnumpy()
-            log_answerable_loss += sum([ele.as_in_ctx(ctx_l[0])
+            log_answerable_loss += sum([ele.to_device(device_l[0])
                                         for ele in answerable_loss_l]).asnumpy()
         # update
         trainer.allreduce_grads()
@@ -817,20 +817,20 @@ def predict_extended(original_feature,
 
 
 def evaluate(args, last=True):
-    store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
+    store, num_workers, rank, local_rank, is_master_node, device_l = init_comm(
         args.comm_backend, args.gpus)
     setup_logging(args, local_rank)
     # only evaluate once
     if rank != 0:
         logging.info('Skipping node {}'.format(rank))
         return
-    ctx_l = parse_ctx(args.gpus)
+    device_l = parse_device(args.gpus)
     logging.info(
         'Srarting inference without horovod on the first node on device {}'.format(
-            str(ctx_l)))
+            str(device_l)))
 
     cfg, tokenizer, qa_net, use_segmentation = get_network(
-        args.model_name, ctx_l, args.classifier_dropout, dtype=args.dtype)
+        args.model_name, device_l, args.classifier_dropout, dtype=args.dtype)
     if args.dtype == 'float16':
         qa_net.cast('float16')
         qa_net.hybridize()
@@ -867,18 +867,18 @@ def evaluate(args, last=True):
         epoch_size = len(dev_features)
         total_num = 0
         log_num = 0
-        for batch_idx, dev_batch in enumerate(grouper(dev_dataloader, len(ctx_l))):
+        for batch_idx, dev_batch in enumerate(grouper(dev_dataloader, len(device_l))):
             # Predict for each chunk
-            for sample, ctx in zip(dev_batch, ctx_l):
+            for sample, device in zip(dev_batch, device_l):
                 if sample is None:
                     continue
                 # Copy the data to device
-                tokens = sample.data.as_in_ctx(ctx)
+                tokens = sample.data.to_device(device)
                 total_num += len(tokens)
                 log_num += len(tokens)
-                segment_ids = sample.segment_ids.as_in_ctx(ctx) if use_segmentation else None
-                valid_length = sample.valid_length.as_in_ctx(ctx)
-                p_mask = sample.masks.as_in_ctx(ctx)
+                segment_ids = sample.segment_ids.to_device(device) if use_segmentation else None
+                valid_length = sample.valid_length.to_device(device)
+                p_mask = sample.masks.to_device(device)
                 p_mask = 1 - p_mask  # In the network, we use 1 --> no_mask, 0 --> mask
                 start_top_logits, start_top_index, end_top_logits, end_top_index, answerable_logits \
                     = qa_net.inference(tokens, segment_ids, valid_length, p_mask,
@@ -986,7 +986,7 @@ def evaluate(args, last=True):
     best_eval = {}
     for ckpt_path in ckpt_candidates:
         logging.info('Starting evaluate the checkpoint {}'.format(ckpt_path))
-        qa_net.load_parameters(ckpt_path, ctx=ctx_l, cast_dtype=True)
+        qa_net.load_parameters(ckpt_path, device=device_l, cast_dtype=True)
         best_eval = eval_validation(ckpt_path, best_eval)
 
     logging.info('The best evaluated results are {}'.format(json.dumps(best_eval)))

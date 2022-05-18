@@ -35,13 +35,13 @@ following commands:
 
 ```bash
 # Install the version with CUDA 10.2
-python3 -m pip install -U --pre "mxnet-cu102>=2.0.0a"
+python3 -m pip install -U --pre "mxnet-cu102>=2.0.0b"
 
 # Install the version with CUDA 11
-python3 -m pip install -U --pre "mxnet-cu110>=2.0.0a"
+python3 -m pip install -U --pre "mxnet-cu110>=2.0.0b"
 
 # Install the cpu-only version
-python3 -m pip install -U --pre "mxnet>=2.0.0a"
+python3 -m pip install -U --pre "mxnet>=2.0.0b"
 ```
 
 

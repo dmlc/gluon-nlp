@@ -27,7 +27,7 @@ if [ $DEVICE == "cpu" ]; then
   python3 -m pip install -U --quiet --pre "mxnet>=2.0.0b20210121" -f https://dist.mxnet.io/python
 else
   python3 -m pip uninstall --quiet mxnet-cu102 -y
-  python3 -m pip install -U --quiet --pre "mxnet-cu102>=2.0.0a" --user
+  python3 -m pip install -U --quiet --pre "mxnet-cu102>=2.0.0b" --user
 fi
 
 python3 -m pip install --quiet -e .[extras,dev]

@@ -6,7 +6,7 @@ from gluonnlp.models.xlmr import XLMRModel, \
     list_pretrained_xlmr, get_pretrained_xlmr
 from gluonnlp.loss import LabelSmoothCrossEntropyLoss
 
-mx.npx.set_np()
+
 
 
 def test_list_pretrained_xlmr():
@@ -17,10 +17,10 @@ def test_list_pretrained_xlmr():
 @pytest.mark.slow
 @pytest.mark.remote_required
 @pytest.mark.parametrize('model_name', list_pretrained_xlmr())
-def test_xlmr(model_name, ctx):
+def test_xlmr(model_name, device):
     # test from pretrained
     assert len(list_pretrained_xlmr()) > 0
-    with ctx:
+    with device:
         with tempfile.TemporaryDirectory() as root:
             cfg, tokenizer, params_path, mlm_params_path =\
                 get_pretrained_xlmr(model_name, load_backbone=True, load_mlm=False, root=root)

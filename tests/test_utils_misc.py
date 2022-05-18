@@ -8,8 +8,8 @@ from pathlib import Path
 import numpy as np
 import mxnet as mx
 from gluonnlp.utils.misc import download, sha1sum, logging_config,\
-    get_mxnet_visible_ctx, logerror
-mx.npx.set_np()
+    get_mxnet_visible_device, logerror
+
 
 
 def s3_enabled():
@@ -42,6 +42,7 @@ def verify_download(url, sha1_hash, overwrite):
         os.remove(download_path)
 
 
+@pytest.mark.skip(reason="An error occurred (403) when calling the HeadObject operation: Forbidden")
 @pytest.mark.skipif(not s3_enabled(),
                     reason='S3 is not supported. So this test is skipped.')
 @pytest.mark.parametrize('overwrite', [False, True])
@@ -54,6 +55,7 @@ def test_download_s3(overwrite):
 
 @pytest.mark.remote_required
 @pytest.mark.parametrize('overwrite', [False, True])
+@pytest.mark.skip(reason="Access Deny error")
 def test_download_https(overwrite):
     verify_download(url='https://commoncrawl.s3.amazonaws.com/crawl-data/CC-MAIN-2014-41/'
                         'cc-index.paths.gz',
@@ -105,10 +107,10 @@ def test_logging_config():
         assert file_size_zoo1 > 0
 
 
-def test_get_mxnet_visible_ctx(ctx):
-    ctx_l = get_mxnet_visible_ctx()
-    for ele_ctx in ctx_l:
-        arr = mx.np.array(1.0, ctx=ele_ctx)
+def test_get_mxnet_visible_device(device):
+    device_l = get_mxnet_visible_device()
+    for ele_device in device_l:
+        arr = mx.np.array(1.0, device=ele_device)
         arr.asnumpy()
 
 

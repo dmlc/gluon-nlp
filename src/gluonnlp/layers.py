@@ -117,7 +117,7 @@ class NoNorm(HybridBlock):
     >>> x = mx.np.array([[1, 2, 3, 4, 5], [1, 1, 2, 2, 2]])
     >>> # Layer normalization is calculated with the above formula
     >>> layer = NoNorm(in_channels=5)
-    >>> layer.initialize(ctx=mx.cpu(0))
+    >>> layer.initialize(device=mx.cpu(0))
     >>> layer(x)
     array([[1., 2., 3., 4., 5.],
        [1., 1., 2., 2., 2.]])

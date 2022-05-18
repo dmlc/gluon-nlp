@@ -371,13 +371,13 @@ class T5Block(HybridBlock):
             return 1, 1
 
     @_assert_decoder_method
-    def _init_key_value(self, batch_size, ctx, dtype='float32'): 
+    def _init_key_value(self, batch_size, device, dtype='float32'): 
         if self.layout == 'NT': 
             shape = (batch_size, 0, self._num_heads, self._d_kv)
         else: 
             shape = (0, batch_size, self._num_heads, self._d_kv)
-        init_key = np.zeros(shape, ctx=ctx, dtype=dtype)
-        init_value = np.zeros(shape, ctx=ctx, dtype=dtype)
+        init_key = np.zeros(shape, device=device, dtype=dtype)
+        init_value = np.zeros(shape, device=device, dtype=dtype)
         return init_key, init_value
 
     def transpose_for_scores(self, x): 
@@ -806,8 +806,8 @@ class T5Decoder(HybridBlock):
     def state_batch_axis(self): 
         return list(layer.state_batch_axis for layer in self.layers)
 
-    def _init_key_values(self, batch_size, ctx, dtype='float32'): 
-        return list(layer._init_key_value(batch_size, ctx, dtype) for layer in self.layers)
+    def _init_key_values(self, batch_size, device, dtype='float32'): 
+        return list(layer._init_key_value(batch_size, device, dtype) for layer in self.layers)
 
     def incremental_decode(
         self, 
@@ -1320,10 +1320,10 @@ class T5Inference(HybridBlock, BaseStepDecoder):
             A list of `past_key_value` for incremental decoding. 
         """
         batch_size = src_data.shape[1 - self.model._time_axis] # NT: 0; TN: 1
-        ctx = src_data.ctx
+        device = src_data.device
         enc_out = self.model.encode(src_data, src_valid_length)
-        position = np.zeros((batch_size,), dtype=np.int32, ctx=ctx)
-        key_values = self.model.decoder._init_key_values(batch_size, ctx, dtype=enc_out.dtype)
+        position = np.zeros((batch_size,), dtype=np.int32, device=device)
+        key_values = self.model.decoder._init_key_values(batch_size, device, dtype=enc_out.dtype)
         return enc_out, src_valid_length, position, key_values
 
     def forward(self, step_data, past_states): 

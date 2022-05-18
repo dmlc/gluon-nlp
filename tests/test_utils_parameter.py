@@ -5,7 +5,7 @@ from numpy.testing import assert_allclose
 from mxnet.gluon import nn
 from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm, AverageSGDTracker
 from mxnet.test_utils import assert_almost_equal
-mx.npx.set_np()
+
 
 
 def test_average_sgd_tracker():
@@ -69,17 +69,17 @@ def test_clip_grad_norm(max_norm, check_isfinite):
             ret += (grads[0].asnumpy() ** 2).sum()
         return np.sqrt(ret)
 
-    contexts = [mx.cpu(0), mx.cpu(1)]
+    devices = [mx.cpu(0), mx.cpu(1)]
     net = mx.gluon.nn.HybridSequential()
     # Create a network with 8 layers
     for _ in range(8):
         net.add(mx.gluon.nn.Dense(1, weight_initializer='ones', bias_initializer='ones'))
-    net.initialize(ctx=contexts)
+    net.initialize(device=devices)
     net.hybridize()
     trainer = mx.gluon.Trainer(net.collect_params(), 'sgd', update_on_kvstore=False)
-    for ctx in contexts:
+    for device in devices:
         with mx.autograd.record():
-            out = net(mx.np.ones((1, 1), ctx=ctx))
+            out = net(mx.np.ones((1, 1), device=device))
         out.backward()
     trainer.allreduce_grads()
     # Cache the original gradient for checking
@@ -92,9 +92,9 @@ def test_clip_grad_norm(max_norm, check_isfinite):
                                                        check_isfinite)
     assert_almost_equal(norm, gt_norm, atol=1e-5)
     for p, orig_grad in zip(net.collect_params().values(), original_grad_l):
-        for ctx in contexts:
+        for device in devices:
             if max_norm > norm:
-                assert_almost_equal(p.grad(ctx).asnumpy(), orig_grad)
+                assert_almost_equal(p.grad(device).asnumpy(), orig_grad)
             else:
                 ratio = max_norm / norm
-                assert_almost_equal(p.grad(ctx).asnumpy(), orig_grad * ratio)
+                assert_almost_equal(p.grad(device).asnumpy(), orig_grad * ratio)

@@ -8,8 +8,6 @@ from gluonnlp.models.bart import BartModel, \
 from gluonnlp.utils.testing import verify_backbone_fp16
 
 
-mx.npx.set_np()
-
 
 def test_list_pretrained_bart():
     assert len(list_pretrained_bart()) > 0
@@ -39,7 +37,7 @@ def test_bart_cfg_registry():
 
 
 @pytest.mark.parametrize('cfg_key', ['fairseq_bart_base'])
-def test_bart_cfg(cfg_key, ctx):
+def test_bart_cfg(cfg_key, device):
     cfg = BartModel.get_cfg(cfg_key)
     cfg.defrost()
     cfg.MODEL.vocab_size = 32
@@ -54,7 +52,7 @@ def test_bart_cfg(cfg_key, ctx):
     src_length = 32
     tgt_length = 16
 
-    with ctx:
+    with device:
         src_data = mx.np.random.randint(0, cfg.MODEL.vocab_size, (batch_size, src_length),
                                         dtype=np.int32)
         src_valid_length = mx.np.random.randint(src_length // 2, src_length, (batch_size,),
@@ -80,6 +78,6 @@ def test_bart_cfg(cfg_key, ctx):
         mx.npx.waitall()
 
         # Verify Float16
-        if ctx.device_type == 'gpu':
-            verify_backbone_fp16(model_cls=BartModel, cfg=cfg, ctx=ctx,
+        if device.device_type == 'gpu':
+            verify_backbone_fp16(model_cls=BartModel, cfg=cfg, device=device,
                                  inputs=[src_data, src_valid_length, tgt_data, tgt_valid_length])

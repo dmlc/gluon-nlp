@@ -1,7 +1,7 @@
 __all__ = ['glob', 'file_line_number', 'md5sum', 'sha1sum', 'naming_convention',
            'logging_config', 'set_seed', 'sizeof_fmt', 'grouper', 'repeat',
-           'parse_ctx', 'load_checksum_stats', 'download', 'check_version',
-           'init_comm', 'get_mxnet_visible_ctx', 'logerror', 'BooleanOptionalAction']
+           'parse_device', 'load_checksum_stats', 'download', 'check_version',
+           'init_comm', 'get_mxnet_visible_device', 'logerror', 'BooleanOptionalAction']
 
 import argparse
 import os
@@ -254,13 +254,13 @@ def repeat(iterable, count=None):
                 yield sample
 
 
-def parse_ctx(data_str):
+def parse_device(data_str):
     import mxnet as mx
     if data_str == '-1' or data_str == '':
-        ctx_l = [mx.cpu()]
+        device_l = [mx.cpu()]
     else:
-        ctx_l = [mx.gpu(int(x)) for x in data_str.split(',')]
-    return ctx_l
+        device_l = [mx.gpu(int(x)) for x in data_str.split(',')]
+    return device_l
 
 
 def load_checksum_stats(path: str) -> dict:
@@ -555,7 +555,7 @@ def init_comm(backend, gpus):
     rank
     local_rank
     is_master_node
-    ctx_l
+    device_l
     """
     # backend specific implementation
     import mxnet as mx
@@ -571,7 +571,7 @@ def init_comm(backend, gpus):
         rank = hvd.rank()
         local_rank = hvd.local_rank()
         is_master_node = rank == local_rank
-        ctx_l = [mx.gpu(local_rank)]
+        device_l = [mx.gpu(local_rank)]
         logging.info('GPU communication supported by horovod')
     else:
         store = mx.kv.create(backend)
@@ -580,16 +580,16 @@ def init_comm(backend, gpus):
         local_rank = 0
         is_master_node = rank == local_rank
         if gpus == '-1' or gpus == '':
-            ctx_l = [mx.cpu()]
+            device_l = [mx.cpu()]
             logging.info('Runing on CPU')
         else:
-            ctx_l = [mx.gpu(int(x)) for x in gpus.split(',')]
+            device_l = [mx.gpu(int(x)) for x in gpus.split(',')]
             logging.info('GPU communication supported by KVStore')
 
-    return store, num_workers, rank, local_rank, is_master_node, ctx_l
+    return store, num_workers, rank, local_rank, is_master_node, device_l
 
 
-def get_mxnet_visible_ctx():
+def get_mxnet_visible_device():
     """Get the visible contexts in MXNet.
 
     - If GPU is available
@@ -599,16 +599,16 @@ def get_mxnet_visible_ctx():
 
     Returns
     -------
-    ctx_l
+    device_l
         The recommended contexts to use for MXNet
     """
     import mxnet as mx
     num_gpus = mx.context.num_gpus()
     if num_gpus == 0:
-        ctx_l = [mx.cpu()]
+        device_l = [mx.cpu()]
     else:
-        ctx_l = [mx.gpu(i) for i in range(num_gpus)]
-    return ctx_l
+        device_l = [mx.gpu(i) for i in range(num_gpus)]
+    return device_l
 
 
 # Python 3.9 feature backport https://github.com/python/cpython/pull/11478

@@ -29,8 +29,7 @@ if not USE_TF_V1:
     for device in visible_devices:
         assert device.device_type != 'GPU'
 
-mx.npx.set_np()
-np.random.seed(1234)
+np.d(1234)
 mx.npx.random.seed(1234)
 
 
@@ -55,7 +54,7 @@ def parse_args():
         else:
             args.device = th.device("cpu")
     else:
-        args.ctx = mx.gpu() if args.cuda else mx.cpu()
+        args.device = mx.gpu() if args.cuda else mx.cpu()
 
     return args
 
@@ -370,7 +369,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type):
         gluon_model = gluon_model.to(args.device)
         gluon_model.eval()
     else:
-        gluon_model.initialize(ctx=args.ctx)
+        gluon_model.initialize(device=args.device)
         gluon_model.hybridize()
     gluon_mlm_model = PretrainedMLMModel(backbone_cfg=cfg)
     if args.torch:
@@ -378,7 +377,7 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type):
         gluon_mlm_model.backbone_model.to(args.device)
         gluon_mlm_model.eval()
     else:
-        gluon_mlm_model.initialize(ctx=args.ctx)
+        gluon_mlm_model.initialize(device=args.device)
         gluon_mlm_model.hybridize()
 
     # Pepare test data
@@ -388,10 +387,10 @@ def convert_tf_model(hub_model_dir, save_dir, test_conversion, model_type):
         token_types = th.from_numpy(segment_ids).to(args.device)
         masked_positions = th.from_numpy(mlm_positions).to(args.device)
     else:
-        input_ids = mx.np.array(input_ids, dtype=np.int32, ctx=args.ctx)
-        valid_length = mx.np.array(valid_length, dtype=np.int32, ctx=args.ctx)
-        token_types = mx.np.array(segment_ids, dtype=np.int32, ctx=args.ctx)
-        masked_positions = mx.np.array(mlm_positions, dtype=np.int32, ctx=args.ctx)
+        input_ids = mx.np.array(input_ids, dtype=np.int32, device=args.device)
+        valid_length = mx.np.array(valid_length, dtype=np.int32, device=args.device)
+        token_types = mx.np.array(segment_ids, dtype=np.int32, device=args.device)
+        masked_positions = mx.np.array(mlm_positions, dtype=np.int32, device=args.device)
 
     # start converting for 'backbone' and 'mlm' model.
     # However sometimes there is no mlm parameter in Tf2 SavedModels like bert wmm large
