@@ -42,6 +42,7 @@ def verify_download(url, sha1_hash, overwrite):
         os.remove(download_path)
 
 
+@pytest.mark.skip(reason="An error occurred (403) when calling the HeadObject operation: Forbidden")
 @pytest.mark.skipif(not s3_enabled(),
                     reason='S3 is not supported. So this test is skipped.')
 @pytest.mark.parametrize('overwrite', [False, True])
