@@ -22,7 +22,7 @@ RUN_SQUAD_PATH=$(dirname "$0")/../run_squad.py
 # Run the script
 if [ ${USE_HOROVOD} -eq 0 ];
 then
-  RUN_COMMAND="python3 ${RUN_SQUAD_PATH} --gpus 0,1,2,3"
+  RUN_COMMAND="python3 ${RUN_SQUAD_PATH} --gpus -1"
 else
   RUN_COMMAND="horovodrun -np 4 -H localhost:4 python3 ${RUN_SQUAD_PATH} --comm_backend horovod"
 fi
@@ -32,7 +32,6 @@ ${RUN_COMMAND} \
     --output_dir fintune_${MODEL_NAME}_squad_${VERSION} \
     --version ${VERSION} \
     --do_eval \
-    --do_train \
     --batch_size ${BATCH_SIZE} \
     --num_accumulated ${NUM_ACCUMULATED} \
     --layerwise_decay ${LAYERWISE_DECAY} \
