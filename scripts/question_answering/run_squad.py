@@ -152,7 +152,10 @@ def parse_args():
                              'use --dtype float16, amp will be turned on in the training phase and '
                              'fp16 will be used in evaluation.')
     args = parser.parse_args()
-    assert args.doc_stride <= args.max_seq_length - args.max_query_length - SEPARATORS, 'Possible loss of data while chunking input features'
+
+    assert args.doc_stride <= args.max_seq_length - args.max_query_length - SEPARATORS, \
+                             'Possible loss of data while chunking input features'
+
     return args
 
 
