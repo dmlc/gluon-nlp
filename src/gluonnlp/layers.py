@@ -32,6 +32,7 @@ from .op import relative_position_bucket
 
 InitializerType = Optional[Union[mx.init.Initializer, str]]
 
+GELU_TANH_SUPPORT = 'gelu_tanh' in mx.symbol.LeakyReLU.__doc__
 
 @use_np
 def get_norm_layer(normalization: str = 'layer_norm',
@@ -322,8 +323,11 @@ class GELU(HybridBlock):
         if self._mode == 'erf':
             return npx.leaky_relu(x, act_type='gelu')
         elif self._mode == 'tanh':
-            return 0.5 * x\
-                   * (1.0 + np.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * (x ** 3))))
+            if GELU_TANH_SUPPORT:
+                return npx.leaky_relu(x, act_type='gelu_tanh')
+            else:
+                return 0.5 * x\
+                    * (1.0 + np.tanh(math.sqrt(2.0 / math.pi) * (x + 0.044715 * (x ** 3))))
         elif self._mode == 'sigmoid':
             return x * npx.sigmoid(1.702 * x)
         else:
