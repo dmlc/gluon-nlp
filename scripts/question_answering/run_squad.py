@@ -120,7 +120,7 @@ def parse_args():
                              'this will be truncated to this length. default is 64')
     parser.add_argument('--pre_shuffle_seed', type=int, default=100,
                         help='Random seed for pre split shuffle')
-    parser.add_argument('--round_to', type=int, default=None,
+    parser.add_argument('--round_to', type=int, default=8,
                         help='The length of padded sequences will be rounded up to be multiple'
                              ' of this argument. When round to is set to 8, training throughput '
                              'may increase for mixed precision training on GPUs with TensorCores.')
@@ -195,13 +195,12 @@ class SquadDatasetProcessor:
         self.sep_id = vocab.eos_id if 'sep_token' not in vocab.special_token_keys else vocab.sep_id
 
         # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
-        # Here, we use round_to=8 to improve the throughput.
         self.BatchifyFunction = bf.NamedTuple(ChunkFeature,
                                          {'qas_id': bf.List(),
-                                          'data': bf.Pad(val=self.pad_id, round_to=8),
+                                          'data': bf.Pad(val=self.pad_id, round_to=args.round_to),
                                           'valid_length': bf.Stack(),
-                                          'segment_ids': bf.Pad(round_to=8),
-                                          'masks': bf.Pad(val=1, round_to=8),
+                                          'segment_ids': bf.Pad(round_to=args.round_to),
+                                          'masks': bf.Pad(val=1, round_to=args.round_to),
                                           'is_impossible': bf.Stack(),
                                           'gt_start': bf.Stack(),
                                           'gt_end': bf.Stack(),
