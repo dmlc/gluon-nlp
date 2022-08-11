@@ -882,6 +882,7 @@ def quantize_and_calibrate(net, dataloader):
   if model_name in exclude_layers_map.keys():
       exclude_layers = exclude_layers_map[model_name]
   net.quantized_backbone = mx.contrib.quant.quantize_net(net.backbone, quantized_dtype='auto',
+                                                         quantize_mode='smart',
                                                          exclude_layers=exclude_layers,
                                                          exclude_layers_match=None,
                                                          calib_data=calib_data,
