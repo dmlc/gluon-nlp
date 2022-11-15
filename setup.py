@@ -40,7 +40,7 @@ requirements = [
     'contextvars',
     'pyarrow',
     'sentencepiece==0.1.95',
-    'protobuf',
+    'protobuf<=3.20.1',
     'pandas',
     'tokenizers==0.9.4',
     'dataclasses;python_version<"3.7"',  # Dataclass for python <= 3.6
