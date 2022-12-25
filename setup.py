@@ -133,6 +133,7 @@ setup(
             'pylint_quotes',
             'flake8',
             'recommonmark',
+            'sphinx>=1.5.5',
             'sphinx-gallery',
             'sphinx_rtd_theme',
             'mxtheme',

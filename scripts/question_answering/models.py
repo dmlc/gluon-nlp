@@ -180,6 +180,7 @@ class ModelForQAConditionalV1(HybridBlock):
         self.answerable_scores.add(nn.Dense(2, flatten=False,
                                             weight_initializer=weight_initializer,
                                             bias_initializer=bias_initializer))
+        self.quantized_backbone = None
 
     def get_start_logits(self, contextual_embedding, p_mask):
         """
@@ -287,10 +288,14 @@ class ModelForQAConditionalV1(HybridBlock):
             Shape (batch_size, sequence_length)
         answerable_logits
         """
+        backbone_net = self.backbone
+        if self.quantized_backbone != None:
+           backbone_net = self.quantized_backbone
+
         if self.use_segmentation:
-            contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+            contextual_embeddings = backbone_net(tokens, token_types, valid_length)
         else:
-            contextual_embeddings = self.backbone(tokens, valid_length)
+            contextual_embeddings = backbone_net(tokens, valid_length)
         start_logits = self.get_start_logits(contextual_embeddings, p_mask)
         end_logits = self.get_end_logits(contextual_embeddings,
                                          np.expand_dims(start_position, axis=1),
@@ -337,11 +342,16 @@ class ModelForQAConditionalV1(HybridBlock):
             The answerable logits. Here 0 --> answerable and 1 --> not answerable.
             Shape (batch_size, sequence_length, 2)
         """
+        backbone_net = self.backbone
+        if self.quantized_backbone != None:
+           backbone_net = self.quantized_backbone
+
         # Shape (batch_size, sequence_length, C)
         if self.use_segmentation:
-            contextual_embeddings = self.backbone(tokens, token_types, valid_length)
+            contextual_embeddings = backbone_net(tokens, token_types, valid_length)
         else:
-            contextual_embeddings = self.backbone(tokens, valid_length)
+            contextual_embeddings = backbone_net(tokens, valid_length)
+
         start_logits = self.get_start_logits(contextual_embeddings, p_mask)
         # The shape of start_top_index will be (..., start_top_n)
         start_top_logits, start_top_index = mx.npx.topk(start_logits, k=start_top_n, axis=-1,

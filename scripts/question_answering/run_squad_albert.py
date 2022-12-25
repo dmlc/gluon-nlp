@@ -14,15 +14,17 @@ import collections
 import dataclasses
 from dataclasses import dataclass
 from multiprocessing import Pool, cpu_count
+from neural_compressor.experimental import Quantization
 
 import mxnet as mx
 import numpy as np
+#from mxnet import amp
 from mxnet.lr_scheduler import PolyScheduler
 
 import gluonnlp.data.batchify as bf
 from models import ModelForQABasic, ModelForQAConditionalV1
 from eval_utils import squad_eval
-from squad_utils import SquadFeature, get_squad_examples, convert_squad_example_to_feature
+from squad_utils import SquadFeature, get_squad_examples, convert_squad_example_to_feature, get_squad_examples_from_json
 from gluonnlp.models import get_backbone
 from gluonnlp.utils.misc import repeat, grouper, set_seed, init_comm, \
     logging_config, parse_ctx
@@ -30,6 +32,8 @@ from gluonnlp.initializer import TruncNorm
 from gluonnlp.data.sampler import SplitSampler
 from gluonnlp.utils.parameter import grad_global_norm, clip_grad_global_norm, count_parameters,\
     deduplicate_param_dict
+
+import custom_strategy
 
 try:
     import horovod.mxnet as hvd
@@ -51,7 +55,7 @@ def parse_args():
                         help='Name of the pretrained model.')
     parser.add_argument('--do_train', action='store_true',
                         help='Whether to train the model')
-    parser.add_argument('--do_eval', action='store_true',
+    parser.add_argument('--do_eval', action='store_true', default=True,
                         help='Whether to evaluate the model')
     parser.add_argument('--data_dir', type=str, default='squad')
     parser.add_argument('--version', default='2.0', choices=['1.1', '2.0'],
@@ -63,7 +67,7 @@ def parse_args():
     parser.add_argument('--comm_backend', type=str, default='device',
                         choices=['horovod', 'dist_sync_device', 'device'],
                         help='Communication backend.')
-    parser.add_argument('--gpus', type=str, default='0',
+    parser.add_argument('--gpus', type=str, default='-1',
                         help='list of gpus to run, e.g. 0 or 0,2,5. -1 means using cpu.')
     # Training hyperparameters
     parser.add_argument('--seed', type=int, default=100, help='Random seed')
@@ -81,7 +85,7 @@ def parse_args():
                              'if training steps are set')
     parser.add_argument('--batch_size', type=int, default=8,
                         help='Batch size. Number of examples per gpu in a minibatch. default is 32')
-    parser.add_argument('--eval_batch_size', type=int, default=16,
+    parser.add_argument('--eval_batch_size', type=int, default=8,
                         help='Evaluate batch size. Number of examples per gpu in a minibatch for '
                              'evaluation.')
     parser.add_argument('--max_grad_norm', type=float, default=1.0,
@@ -92,7 +96,7 @@ def parse_args():
                         help='epsilon of AdamW optimizer')
     parser.add_argument('--adam_betas', default='(0.9, 0.999)', metavar='B',
                         help='betas for Adam optimizer')
-    parser.add_argument('--num_accumulated', type=int, default=1,
+    parser.add_argument('--num_accumulated', type=int, default=3,
                         help='The number of batches for gradients accumulation to '
                              'simulate large batch size.')
     parser.add_argument('--lr', type=float, default=2e-5,
@@ -120,11 +124,11 @@ def parse_args():
                              'this will be truncated to this length. default is 64')
     parser.add_argument('--pre_shuffle_seed', type=int, default=100,
                         help='Random seed for pre split shuffle')
-    parser.add_argument('--round_to', type=int, default=8,
+    parser.add_argument('--round_to', type=int, default=None,
                         help='The length of padded sequences will be rounded up to be multiple'
                              ' of this argument. When round to is set to 8, training throughput '
                              'may increase for mixed precision training on GPUs with TensorCores.')
-    parser.add_argument('--overwrite_cache', action='store_true',
+    parser.add_argument('--overwrite_cache', action='store_true', default=True,
                         help='Whether to overwrite the feature cache.')
     # Evaluation hyperparameters
     parser.add_argument('--start_top_n', type=int, default=5,
@@ -137,7 +141,7 @@ def parse_args():
                         help='The maximum length of an answer that can be generated. This is '
                              'needed because the start and end predictions are not conditioned '
                              'on one another. default is 30')
-    parser.add_argument('--param_checkpoint', type=str, default=None,
+    parser.add_argument('--param_checkpoint', type=str, default='fintune_google_albert_base_v2_squad_2.0/google_albert_base_v2_squad2.0_8163.params',#'google_electra_base_squad2.0_8160.params',#'google_en_uncased_bert_large_squad2.0_8159.params',
                         help='The parameter checkpoint for evaluating the model')
     parser.add_argument('--backbone_path', type=str, default=None,
                         help='The parameter checkpoint of backbone model')
@@ -195,18 +199,19 @@ class SquadDatasetProcessor:
         self.sep_id = vocab.eos_id if 'sep_token' not in vocab.special_token_keys else vocab.sep_id
 
         # TODO(sxjscience) Consider to combine the NamedTuple and batchify functionality.
+        # Here, we use round_to=8 to improve the throughput.
         self.BatchifyFunction = bf.NamedTuple(ChunkFeature,
-                                         {'qas_id': bf.List(),
-                                          'data': bf.Pad(val=self.pad_id, round_to=args.round_to),
-                                          'valid_length': bf.Stack(),
-                                          'segment_ids': bf.Pad(round_to=args.round_to),
-                                          'masks': bf.Pad(val=1, round_to=args.round_to),
-                                          'is_impossible': bf.Stack(),
-                                          'gt_start': bf.Stack(),
-                                          'gt_end': bf.Stack(),
-                                          'context_offset': bf.Stack(),
-                                          'chunk_start': bf.Stack(),
-                                          'chunk_length': bf.Stack()})
+                                              {'qas_id': bf.List(),
+                                               'data': bf.Pad(val=self.pad_id, round_to=8),
+                                               'valid_length': bf.Stack(),
+                                               'segment_ids': bf.Pad(round_to=8),
+                                               'masks': bf.Pad(val=1, round_to=8),
+                                               'is_impossible': bf.Stack(),
+                                               'gt_start': bf.Stack(),
+                                               'gt_end': bf.Stack(),
+                                               'context_offset': bf.Stack(),
+                                               'chunk_start': bf.Stack(),
+                                               'chunk_length': bf.Stack()})
 
     def process_sample(self, feature: SquadFeature):
         """Process the data to the following format.
@@ -356,7 +361,7 @@ def get_squad_features(args, tokenizer, segment):
                                                        tokenizer=tokenizer,
                                                        is_training=is_training), data_examples)
         logging.info('Done! Time spent:{:.2f} seconds'.format(time.time() - start))
-        with open(data_cache_path, 'w', encoding='utf-8') as f:
+        with open(data_cache_path, 'w') as f:
             for feature in data_features:
                 f.write(feature.to_json() + '\n')
 
@@ -423,265 +428,18 @@ def get_network(model_name,
 
     return cfg, tokenizer, qa_net, use_segmentation
 
+
 def setup_logging(args, local_rank):
     """
     Setup logging configuration as well as random seed
     """
     logging_config(args.output_dir,
-                   name='finetune_squad{}'.format(args.version),# avoid race
+                   name='finetune_squad{}'.format(args.version),  # avoid race
                    overwrite_handler=True,
                    console=(local_rank == 0))
     logging.info(args)
     set_seed(args.seed)
     logging.debug('Random seed set to {}'.format(args.seed))
-
-
-def train(args):
-    use_amp = args.dtype == 'float16'
-    store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
-        args.comm_backend, args.gpus)
-    setup_logging(args, local_rank)
-    cfg, tokenizer, qa_net, use_segmentation = \
-        get_network(args.model_name, ctx_l,
-                    args.classifier_dropout,
-                    args.param_checkpoint,
-                    args.backbone_path)
-
-    logging.info('Prepare training data')
-    train_features = get_squad_features(args, tokenizer, segment='train')
-    dataset_processor = SquadDatasetProcessor(tokenizer=tokenizer,
-                                              doc_stride=args.doc_stride,
-                                              max_seq_length=args.max_seq_length,
-                                              max_query_length=args.max_query_length)
-    logging.info('Processing the Training data:')
-    train_dataset, num_answer_mismatch, num_unreliable \
-        = dataset_processor.get_train(train_features, skip_unreliable=True)
-    logging.info('Done! #Unreliable Span={} / #Mismatched Answer={} / #Total={}'
-                 .format(num_unreliable, num_answer_mismatch, len(train_features)))
-
-    # Get dataset statistics
-    num_impossible = 0
-    for sample in train_dataset:
-        num_impossible += sample.is_impossible
-    logging.info('Before Chunking, #Train/Is Impossible = {}/{}'
-                 .format(len(train_features),
-                         sum([ele.is_impossible for ele in train_features])))
-    logging.info('After Chunking, #Train Sample/Is Impossible = {}/{}'
-                 .format(len(train_dataset), num_impossible))
-
-    # Shuffle the dataset using a fixed seed across all workers
-    rs = np.random.RandomState(args.pre_shuffle_seed)
-    rs.shuffle(train_dataset)
-    sampler = SplitSampler(
-        len(train_dataset),
-        num_parts=num_workers,
-        part_index=rank,
-        even_size=True)
-    train_dataloader = mx.gluon.data.DataLoader(
-        train_dataset,
-        batchify_fn=dataset_processor.BatchifyFunction,
-        batch_size=args.batch_size,
-        num_workers=0,
-        sampler=sampler)
-    if 'electra' in args.model_name:
-        # Froze parameters, does not work for albert model since parameters in all layers are shared
-        if args.untunable_depth > 0:
-            qa_net.backbone.frozen_params(args.untunable_depth)
-        if args.layerwise_decay > 0:
-            qa_net.backbone.apply_layerwise_decay(args.layerwise_decay)
-
-    logging.info('Creating distributed trainer...')
-    # Collect differentiable parameters
-    param_dict = deduplicate_param_dict(qa_net.collect_params())
-    # Do not apply weight decay to all the LayerNorm and bias
-    for _, v in qa_net.collect_params('.*beta|.*gamma|.*bias').items():
-        v.wd_mult = 0.0
-    params = [p for p in param_dict.values() if p.grad_req != 'null']
-    # Set grad_req if gradient accumulation is required
-    num_accumulated = args.num_accumulated
-    if num_accumulated > 1:
-        logging.info('Using gradient accumulation. Effective global batch size = {}'
-                     .format(num_accumulated * args.batch_size * len(ctx_l) * num_workers))
-        for p in params:
-            p.grad_req = 'add'
-    # backend specific implementation
-    if args.comm_backend == 'horovod':
-        # Horovod: fetch and broadcast parameters
-        hvd.broadcast_parameters(param_dict, root_rank=0)
-
-    epoch_size = (len(train_dataloader) + len(ctx_l) - 1) // len(ctx_l)
-    if args.num_train_steps is not None:
-        num_train_steps = args.num_train_steps
-    else:
-        num_train_steps = int(args.epochs * epoch_size / args.num_accumulated)
-    if args.warmup_steps is not None:
-        warmup_steps = args.warmup_steps
-    else:
-        warmup_steps = int(num_train_steps * args.warmup_ratio)
-    assert warmup_steps is not None, 'Must specify either warmup_steps or warmup_ratio'
-    log_interval = args.log_interval
-    save_interval = args.save_interval if args.save_interval is not None\
-        else epoch_size // args.num_accumulated
-    logging.info('#Total Training Steps={}, Warmup={}, Save Interval={}'
-                 .format(num_train_steps, warmup_steps, save_interval))
-
-    # set up optimization
-    lr_scheduler = PolyScheduler(max_update=num_train_steps,
-                                 base_lr=args.lr,
-                                 warmup_begin_lr=0,
-                                 pwr=1,
-                                 final_lr=0,
-                                 warmup_steps=warmup_steps,
-                                 warmup_mode='linear')
-    optimizer_params = {'learning_rate': args.lr,
-                        'wd': args.wd,
-                        'lr_scheduler': lr_scheduler,
-                        }
-    adam_betas = ast.literal_eval(args.adam_betas)
-    if args.optimizer == 'adamw':
-        optimizer_params.update({'beta1': adam_betas[0],
-                                 'beta2': adam_betas[1],
-                                 'epsilon': args.adam_epsilon,
-                                 'correct_bias': False,
-                                 })
-    elif args.optimizer == 'adam':
-        optimizer_params.update({'beta1': adam_betas[0],
-                                 'beta2': adam_betas[1],
-                                 'epsilon': args.adam_epsilon,
-                                 })
-    if use_amp:
-        optimizer_params.update({'multi_precision': True})
-    if args.comm_backend == 'horovod':
-        trainer = hvd.DistributedTrainer(param_dict, args.optimizer, optimizer_params)
-    else:
-        trainer = mx.gluon.Trainer(param_dict, args.optimizer, optimizer_params,
-                                   update_on_kvstore=False)
-    if use_amp:
-        amp.init_trainer(trainer)
-    log_span_loss = 0
-    log_answerable_loss = 0
-    log_total_loss = 0
-    log_sample_num = 0
-
-    global_tic = time.time()
-    tic = time.time()
-    for step_num, batch_data in enumerate(
-            grouper(repeat(train_dataloader), len(ctx_l) * num_accumulated)):
-        for sample_l in grouper(batch_data, len(ctx_l)):
-            loss_l = []
-            span_loss_l = []
-            answerable_loss_l = []
-            for sample, ctx in zip(sample_l, ctx_l):
-                if sample is None:
-                    continue
-                # Copy the data to device
-                tokens = sample.data.as_in_ctx(ctx)
-                log_sample_num += len(tokens)
-                segment_ids = sample.segment_ids.as_in_ctx(ctx) if use_segmentation else None
-                valid_length = sample.valid_length.as_in_ctx(ctx)
-                p_mask = sample.masks.as_in_ctx(ctx)
-                gt_start = sample.gt_start.as_in_ctx(ctx).astype(np.int32)
-                gt_end = sample.gt_end.as_in_ctx(ctx).astype(np.int32)
-                is_impossible = sample.is_impossible.as_in_ctx(ctx).astype(np.int32)
-                batch_idx = mx.np.arange(tokens.shape[0], dtype=np.int32, ctx=ctx)
-                p_mask = 1 - p_mask  # In the network, we use 1 --> no_mask, 0 --> mask
-                with mx.autograd.record():
-                    start_logits, end_logits, answerable_logits \
-                        = qa_net(tokens, segment_ids, valid_length, p_mask, gt_start)
-                    sel_start_logits = start_logits[batch_idx, gt_start]
-                    sel_end_logits = end_logits[batch_idx, gt_end]
-                    sel_answerable_logits = answerable_logits[batch_idx, is_impossible]
-                    span_loss = - 0.5 * (sel_start_logits + sel_end_logits).mean()
-                    answerable_loss = -0.5 * sel_answerable_logits.mean()
-                    loss = (span_loss + answerable_loss) / (len(ctx_l) * num_accumulated)
-                    loss_l.append(loss)
-                    span_loss_l.append(span_loss)
-                    answerable_loss_l.append(answerable_loss)
-            if use_amp:
-                with mx.autograd.record():
-                    with amp.scale_loss(loss_l, trainer) as amp_loss_l:
-                        for loss in amp_loss_l:
-                            loss.backward()
-                norm_clip_mult = num_workers * trainer.amp_loss_scale
-            else:
-                with mx.autograd.record():
-                    for loss in loss_l:
-                        loss.backward()
-                norm_clip_mult = num_workers
-
-            # All Reduce the Step Loss
-            log_span_loss += sum([ele.as_in_ctx(ctx_l[0]) for ele in span_loss_l]).asnumpy()
-            log_total_loss += sum([ele.as_in_ctx(ctx_l[0])
-                                   for ele in loss_l]).asnumpy()
-            log_answerable_loss += sum([ele.as_in_ctx(ctx_l[0])
-                                        for ele in answerable_loss_l]).asnumpy()
-        # update
-        trainer.allreduce_grads()
-
-        if args.max_grad_norm > 0:
-            total_norm, ratio, is_finite = clip_grad_global_norm(
-                params, args.max_grad_norm * norm_clip_mult)
-        else:
-            total_norm = grad_global_norm(params)
-
-        if args.comm_backend == 'horovod':
-            # Note that horovod.trainer._scale is default to num_workers,
-            # thus trainer.update(1) will scale the gradients by 1./num_workers
-            trainer.update(1, ignore_stale_grad=True)
-        else:
-            # gluon.trainer._scale is default to 1
-            trainer.update(num_workers, ignore_stale_grad=True)
-
-        total_norm = total_norm / norm_clip_mult
-        if args.num_accumulated > 1:
-            # set grad to zero for gradient accumulation
-            qa_net.zero_grad()
-
-        # saving
-        if local_rank == 0 and (step_num + 1) % save_interval == 0 or (
-                step_num + 1) >= num_train_steps:
-            version_prefix = 'squad' + args.version
-            ckpt_name = '{}_{}_{}.params'.format(args.model_name,
-                                                 version_prefix,
-                                                 (step_num + 1))
-            params_saved = os.path.join(args.output_dir, ckpt_name)
-            qa_net.save_parameters(params_saved)
-            ckpt_candidates = [
-                f for f in os.listdir(
-                    args.output_dir) if f.endswith('.params')]
-            # keep last `max_saved_ckpt` checkpoints
-            if len(ckpt_candidates) > args.max_saved_ckpt:
-                ckpt_candidates.sort(key=lambda ele: (len(ele), ele))
-                os.remove(os.path.join(args.output_dir, ckpt_candidates[0]))
-            logging.info('Params saved in: {}'.format(params_saved))
-
-        # logging
-        if (step_num + 1) % log_interval == 0:
-            log_span_loss /= log_sample_num
-            log_answerable_loss /= log_sample_num
-            log_total_loss /= log_sample_num
-            toc = time.time()
-            logging.info(
-                'Step: {}/{}, Loss span/answer/total={:.4f}/{:.4f}/{:.4f},'
-                ' LR={:.8f}, grad_norm={:.4f}. Time cost={:.2f}, Throughput={:.2f} samples/s'
-                ' ETA={:.2f}h'.format((step_num + 1), num_train_steps, log_span_loss,
-                                      log_answerable_loss, log_total_loss, trainer.learning_rate,
-                                      total_norm, toc - tic, log_sample_num / (toc - tic),
-                                      (num_train_steps - (step_num + 1)) / ((step_num + 1) / (toc - global_tic)) / 3600))
-            tic = time.time()
-            log_span_loss = 0
-            log_answerable_loss = 0
-            log_total_loss = 0
-            log_sample_num = 0
-
-        if (step_num + 1) >= num_train_steps:
-            toc = time.time()
-            logging.info(
-                'Finish training step: {} within {} hours'.format(
-                    step_num + 1, (toc - global_tic) / 3600))
-            break
-
-    return params_saved
 
 
 RawResultExtended = collections.namedtuple(
@@ -814,107 +572,35 @@ def predict_extended(original_feature,
     assert len(nbest_json) >= 1
     return not_answerable_score, nbest[0][0], nbest_json
 
-def quantize_and_calibrate(net, dataloader): 
-  class QuantizationDataLoader(mx.gluon.data.DataLoader):
-    def __init__(self, dataloader, use_segmentation):
-      self._dataloader = dataloader
-      self._iter = None
-      self._use_segmentation = use_segmentation
-   
-    def __iter__(self):
-      self._iter = iter(self._dataloader)
-      return self
-  
-    def __next__(self):
-      batch = next(self._iter)
-      if self._use_segmentation:
-        return [batch.data, batch.segment_ids, batch.valid_length]
-      else:
-        return [batch.data, batch.valid_length]
-  
-    def __del__(self):
-      del(self._dataloader)
-
-  class BertLayerCollector(mx.contrib.quantization.CalibrationCollector):
-    """Saves layer output min and max values in a dict with layer names as keys.
-    The collected min and max values will be directly used as thresholds for quantization.
-    """
-    def __init__(self, clip_min, clip_max):
-        super(BertLayerCollector, self).__init__()
-        self.clip_min = clip_min
-        self.clip_max = clip_max
-
-    def collect(self, name, op_name, arr):
-        """Callback function for collecting min and max values from an NDArray."""
-        if name not in self.include_layers:
-            return
-        arr = arr.copyto(mx.cpu()).asnumpy()
-        min_range = np.min(arr)
-        max_range = np.max(arr)
-
-        if (name.find("sg_onednn_fully_connected_eltwise") != -1 or op_name.find("LayerNorm") != -1) \
-            and max_range > self.clip_max:
-           max_range = self.clip_max
-        elif name.find('sg_onednn_fully_connected') != -1 and min_range < self.clip_min:
-            min_range = self.clip_min
-
-        if name in self.min_max_dict:
-            cur_min_max = self.min_max_dict[name]
-            self.min_max_dict[name] = (min(cur_min_max[0], min_range),
-                                       max(cur_min_max[1], max_range))
-        else:
-            self.min_max_dict[name] = (min_range, max_range)
-
-  calib_data = QuantizationDataLoader(dataloader, net.use_segmentation)
-  model_name = args.model_name
-  # disable specific layers in some models for the sake of accuracy
-
-  if model_name == 'google_albert_base_v2':
-    logging.warn(f"Currently quantized {model_name} shows significant accuracy drop which is not fixed yet")
-
-  exclude_layers_map = {"google_electra_large":
-                            ["sg_onednn_fully_connected_eltwise_2", "sg_onednn_fully_connected_eltwise_14", 
-                             "sg_onednn_fully_connected_eltwise_18", "sg_onednn_fully_connected_eltwise_22",
-                             "sg_onednn_fully_connected_eltwise_26"
-                            ]}
-  exclude_layers = None
-  if model_name in exclude_layers_map.keys():
-      exclude_layers = exclude_layers_map[model_name]
-  net.quantized_backbone = mx.contrib.quant.quantize_net(net.backbone, quantized_dtype='auto',
-                                                         quantize_mode='smart',
-                                                         exclude_layers=exclude_layers,
-                                                         exclude_layers_match=None,
-                                                         calib_data=calib_data,
-                                                         calib_mode='custom',
-                                                         LayerOutputCollector=BertLayerCollector(clip_min=-50, clip_max=10),
-                                                         num_calib_batches=10,
-                                                         ctx=mx.cpu())
-  return net 
-
 
 def evaluate(args, last=True):
-    store, num_workers, rank, local_rank, is_master_node, ctx_l = init_comm(
-        args.comm_backend, args.gpus)
-    setup_logging(args, local_rank)
-    # only evaluate once
-    if rank != 0:
-        logging.info('Skipping node {}'.format(rank))
-        return
     ctx_l = parse_ctx(args.gpus)
-    logging.info(
-        'Starting inference without horovod on the first node on device {}'.format(
-            str(ctx_l)))
-    network_dtype = args.dtype if args.dtype != 'int8' else 'float32'
+    setup_logging(args, 0)
 
     cfg, tokenizer, qa_net, use_segmentation = get_network(
-        args.model_name, ctx_l, args.classifier_dropout, dtype=network_dtype)
-    if args.dtype == 'float16':
-        qa_net.cast('float16')
-        qa_net.hybridize()
+        args.model_name, ctx_l, args.classifier_dropout, dtype='float32')
 
-    logging.info('Prepare dev data')
-    dev_features = get_squad_features(args, tokenizer, segment='dev')
     dev_data_path = os.path.join(args.data_dir, 'dev-v{}.json'.format(args.version))
+    with open(dev_data_path, 'r') as f:
+        dev_dataset = json.load(f)['data']
+    expl = get_squad_examples_from_json(dev_data_path, is_training=False)
+    import random
+    random.shuffle(expl)
+    expl = expl[:512+256]
+    eval_qa_ids = {qa.qas_id for qa in expl}
+    for article in dev_dataset:
+        for paragraph in article['paragraphs']:
+            new_qas = []
+            for qa in paragraph['qas']:
+                if qa['id'] in eval_qa_ids:
+                    new_qas.append(qa)
+            paragraph['qas'] = new_qas
+
+    num_process = min(cpu_count(), 8)
+    with Pool(num_process) as pool:
+        dev_features = pool.map(functools.partial(convert_squad_example_to_feature,
+                                                  tokenizer=tokenizer,
+                                                  is_training=False), expl)
     dataset_processor = SquadDatasetProcessor(tokenizer=tokenizer,
                                               doc_stride=args.doc_stride,
                                               max_seq_length=args.max_seq_length,
@@ -926,19 +612,58 @@ def evaluate(args, last=True):
         dev_all_chunk_features.extend(chunk_features)
         dev_chunk_feature_ptr.append(dev_chunk_feature_ptr[-1] + len(chunk_features))
 
-    def eval_validation(ckpt_name, best_eval):
+    class QuantizationDataLoader(mx.gluon.data.DataLoader):
+        def __init__(self, dataloader, use_segmentation):
+            self._dataloader = dataloader
+            self._iter = None
+            self._use_segmentation = use_segmentation
+            self.batch_size = args.eval_batch_size
+            self._batch_sampler = dataloader._batch_sampler
+
+        def __iter__(self):
+            self._iter = iter(self._dataloader)
+            return self
+
+        def __next__(self):
+            batch = next(self._iter)
+            if self._use_segmentation:
+                return [batch.data, batch.segment_ids, batch.valid_length]
+            else:
+                return [batch.data, batch.valid_length]
+
+        def __del__(self):
+            del(self._dataloader)
+
+    dev_dataloader = QuantizationDataLoader(mx.gluon.data.DataLoader(
+        dev_all_chunk_features,
+        batchify_fn=dataset_processor.BatchifyFunction,
+        batch_size=args.eval_batch_size,
+        num_workers=0,
+        shuffle=False), qa_net.use_segmentation)
+
+    def quantize_and_calibrate(net):
+        from neural_compressor.experimental import Quantization, common
+        quantizer = Quantization('albert_custom.yaml')
+        quantizer.model = common.Model(net.backbone)
+        quantizer.calib_dataloader = dev_dataloader
+        quantizer.eval_func = eval_validation
+        net.quantized_backbone = quantizer().model
+        net.quantized_backbone.export("best_conf_inc_model")
+        return net
+
+    def eval_validation(backbone):
         """
         Model inference during validation or final evaluation.
         """
+        del qa_net.quantized_backbone
+        qa_net.quantized_backbone = backbone
+        
         dev_dataloader = mx.gluon.data.DataLoader(
             dev_all_chunk_features,
             batchify_fn=dataset_processor.BatchifyFunction,
             batch_size=args.eval_batch_size,
             num_workers=0,
             shuffle=False)
-
-        if args.dtype == 'int8':
-            quantize_and_calibrate(qa_net, dev_dataloader)
 
         log_interval = args.eval_log_interval
         all_results = []
@@ -947,6 +672,7 @@ def evaluate(args, last=True):
         epoch_size = len(dev_features)
         total_num = 0
         log_num = 0
+        best_eval = {}
         for batch_idx, dev_batch in enumerate(grouper(dev_dataloader, len(ctx_l))):
             # Predict for each chunk
             for sample, ctx in zip(dev_batch, ctx_l):
@@ -1025,7 +751,7 @@ def evaluate(args, last=True):
             na_prob = None
 
         cur_eval, revised_predictions = squad_eval(
-            dev_data_path, all_predictions, na_prob, revise=na_prob is not None)
+            dev_dataset, all_predictions, na_prob, revise=na_prob is not None)
         logging.info('The evaluated results are {}'.format(json.dumps(cur_eval)))
 
         cur_metrics = 0.5 * (cur_eval[exact] + cur_eval[f1])
@@ -1051,23 +777,15 @@ def evaluate(args, last=True):
                 of.write(json.dumps(revised_predictions, indent=4) + '\n')
 
             best_eval = cur_eval
-            best_eval.update({'best_ckpt': ckpt_name})
-        return best_eval
+            best_eval.update({'best_ckpt': 'mybest'})
+        return best_eval['best_f1']/100
 
-    if args.param_checkpoint and args.param_checkpoint.endswith('.params'):
-        ckpt_candidates = [args.param_checkpoint]
-    else:
-        ckpt_candidates = [f for f in os.listdir(args.output_dir) if f.endswith('.params')]
-        ckpt_candidates.sort(key=lambda ele: (len(ele), ele))
-        ckpt_candidates = [os.path.join(args.output_dir, ele) for ele in ckpt_candidates]
-    if last:
-        ckpt_candidates = ckpt_candidates[-1:]
-
-    best_eval = {}
-    for ckpt_path in ckpt_candidates:
-        logging.info('Starting evaluate the checkpoint {}'.format(ckpt_path))
-        qa_net.load_parameters(ckpt_path, ctx=ctx_l, cast_dtype=True)
-        best_eval = eval_validation(ckpt_path, best_eval)
+    qa_net.load_parameters(args.param_checkpoint, ctx=ctx_l, cast_dtype=True)
+    data_example = next(iter(dev_dataloader))
+    
+    qa_net.backbone.optimize_for(*data_example, backend='ONEDNN')
+    quantized_backbone = quantize_and_calibrate(qa_net)
+    best_eval = eval_validation(quantized_backbone)
 
     logging.info('The best evaluated results are {}'.format(json.dumps(best_eval)))
     output_eval_results_file = os.path.join(args.output_dir, 'best_results.json')
@@ -1079,16 +797,6 @@ def evaluate(args, last=True):
 if __name__ == '__main__':
     os.environ['MXNET_GPU_MEM_POOL_TYPE'] = 'Round'
     args = parse_args()
-    if args.dtype == 'int8':
-        ctx_l = parse_ctx(args.gpus)
-        if ctx_l[0] != mx.cpu() or len(ctx_l) != 1:
-            raise ValueError("Evaluation on int8 data type is supported only for CPU for now")
+    evaluate(args, last=not args.all_evaluate)
 
-    if args.do_train:
-        if args.dtype == 'float16':
-            # Initialize amp if it's fp16 training
-            from mxnet import amp
-            amp.init()
-        train(args)
-    if args.do_eval:
-        evaluate(args, last=not args.all_evaluate)
+

@@ -1,0 +1,15 @@
+version: 1.0
+
+model:
+  name: albert_base_v2
+  framework: mxnet
+
+tuning:
+  strategy:
+    name: mycustom
+  accuracy_criterion:
+    relative:  0.02
+  exit_policy:
+    timeout: 0
+    max_trials: 1000
+  random_seed: 9527
