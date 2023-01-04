@@ -33,11 +33,11 @@ To begin, let's first import a few packages that we'll need for this example:
 import warnings
 warnings.filterwarnings('ignore')
 
-from mxnet import gluon, nd
+from mxnet import gluon, np
 import gluonnlp as nlp
 import re
 import collections
-import numpy as np
+import numpy as onp
 
 ```
 
@@ -160,7 +160,7 @@ For example,
 
 ```{.python .input}
 def simple(words):
-    return np.ones((len(words), 300))
+    return onp.ones((len(words), 300))
 matrix = nlp.embedding.load_embeddings(vocab, 'wiki.simple', unk_method=simple)
 ```
 
@@ -217,7 +217,7 @@ input_dim, output_dim = matrix.shape
 layer = gluon.nn.Embedding(input_dim, output_dim)
 layer.initialize()
 layer.weight.set_data(matrix)
-layer(nd.array([5, 4]))[:, :5]
+layer(np.array([5, 4]))[:, :5]
 ```
 
 ### Creating Vocabulary from Pre-trained Word Embeddings
@@ -257,18 +257,17 @@ To apply word embeddings, we need to define
 cosine similarity. Cosine similarity determines the similarity between two vectors.
 
 ```{.python .input}
-import numpy as np
 def cos_sim(x, y):
-    return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
+    return onp.dot(x, y) / (onp.linalg.norm(x) * onp.linalg.norm(y))
 ```
 
 The range of cosine similarity between two vectors can be between -1 and 1. The
 larger the value, the larger the similarity between the two vectors.
 
 ```{.python .input}
-x = np.array([1, 2])
-y = np.array([10, 20])
-z = np.array([-1, -2])
+x = onp.array([1, 2])
+y = onp.array([10, 20])
+z = onp.array([-1, -2])
 
 print(cos_sim(x, y))
 print(cos_sim(x, z))
@@ -287,16 +286,16 @@ We can then find the indices for which the dot product is greatest (`topk`), whi
 
 ```{.python .input}
 def norm_vecs_by_row(x):
-    return x / np.sqrt(np.sum(x * x, axis=1) + 1E-10).reshape((-1,1))
+    return x / onp.sqrt(onp.sum(x * x, axis=1) + 1E-10).reshape((-1,1))
 
 def topk(res, k):
-    part = np.argpartition(res, -k)[-k:]
-    return part[np.argsort(res[part])].tolist()[::-1]
+    part = onp.argpartition(res, -k)[-k:]
+    return part[onp.argsort(res[part])].tolist()[::-1]
 
 def get_knn(vocab, matrix, k, word):
     word_vec = matrix[vocab[word]].reshape((-1, 1))
     vocab_vecs = norm_vecs_by_row(matrix)
-    dot_prod = np.dot(vocab_vecs, word_vec)
+    dot_prod = onp.dot(vocab_vecs, word_vec)
     indices = topk(dot_prod.reshape((len(vocab), )), k=k+1)
     # Remove unknown and input tokens.
     return vocab.to_tokens(indices[1:])
@@ -351,7 +350,7 @@ def get_top_k_by_analogy(vocab, matrix, k, word1, word2, word3):
     word_vecs = [matrix[vocab[word]] for word in [word1, word2, word3]]
     word_diff = (word_vecs[1] - word_vecs[0] + word_vecs[2]).reshape((-1, 1))
     vocab_vecs = norm_vecs_by_row(matrix)
-    dot_prod = np.dot(vocab_vecs, word_diff)
+    dot_prod = onp.dot(vocab_vecs, word_diff)
     indices = topk(dot_prod.reshape((len(vocab), )), k=k)
     return vocab.to_tokens(indices)
 ```

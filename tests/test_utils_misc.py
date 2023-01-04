@@ -52,6 +52,7 @@ def test_download_s3(overwrite):
                     overwrite=overwrite)
 
 
+@pytest.mark.skip("RuntimeError: Failed downloading url https://commoncrawl.s3.amazonaws.com/crawl-data/CC-MAIN-2014-41/cc-index.paths.gz")
 @pytest.mark.remote_required
 @pytest.mark.parametrize('overwrite', [False, True])
 def test_download_https(overwrite):
