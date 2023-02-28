@@ -944,7 +944,7 @@ def evaluate(args, last=True):
         all_results = []
         epoch_tic = time.time()
         tic = time.time()
-        epoch_size = len(dev_features)
+        epoch_size = len(dev_all_chunk_features)
         total_num = 0
         log_num = 0
         for batch_idx, dev_batch in enumerate(grouper(dev_dataloader, len(ctx_l))):
