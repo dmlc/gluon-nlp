@@ -30,6 +30,7 @@ from typing import Union, Optional, List, Dict
 from .op import relative_position_bucket
 
 
+
 InitializerType = Optional[Union[mx.init.Initializer, str]]
 
 GELU_TANH_SUPPORT = 'gelu_tanh' in mx.symbol.LeakyReLU.__doc__
@@ -480,6 +481,8 @@ class LearnedPositionalEmbedding(HybridBlock):
 
     def forward(self, positions):
         return np.take(self.weight.data(), positions, axis=0, mode=self._mode)
+
+
 
 
 @use_np
@@ -1011,3 +1014,6 @@ class ProjectedAdaptiveLogSoftmaxWithLoss(HybridBlock):
 
     def __repr__(self):
         return _gen_repr_with_kwargs(self._kwargs, self.__class__.__name__)
+
+
+

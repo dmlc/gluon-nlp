@@ -16,7 +16,6 @@
 # under the License.
 """
 Bert Model
-
 @article{devlin2018bert,
   title={BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding},
   author={Devlin, Jacob and Chang, Ming-Wei and Lee, Kenton and Toutanova, Kristina},
@@ -30,6 +29,7 @@ __all__ = ['BertModel', 'BertForMLM', 'BertForPretrain',
 
 import os
 from typing import Tuple
+import json
 
 import mxnet as mx
 from mxnet import use_np, np, npx
@@ -69,6 +69,8 @@ def google_en_uncased_bert_base():
     cfg.MODEL.dtype = 'float32'
     cfg.MODEL.layout = 'NT'
     cfg.MODEL.compute_layout = 'auto'
+    cfg.MODEL.use_adapter = False
+    cfg.MODEL.adapter_config = None
     # Hyper-parameters of the Initializers
     cfg.INITIALIZER = CN()
     cfg.INITIALIZER.embed = ['truncnorm', 0, 0.02]
@@ -79,6 +81,7 @@ def google_en_uncased_bert_base():
     cfg.VERSION = 1
     cfg.freeze()
     return cfg
+
 
 
 @bert_cfg_reg.register()
@@ -161,6 +164,7 @@ PRETRAINED_URL = {
         'mlm_params': 'google_en_cased_bert_large/model_mlm-59ff3f6a.params',
         'lowercase': False,
     },
+
     'google_en_uncased_bert_large': {
         'cfg': google_en_uncased_bert_large(),
         'vocab': 'google_en_uncased_bert_large/vocab-e6d2b21d.json',
@@ -224,7 +228,9 @@ class BertTransformer(HybridBlock):
                  weight_initializer: InitializerType = TruncNorm(stdev=0.02),
                  bias_initializer: InitializerType = 'zeros',
                  activation='gelu',
-                 layout='NT'):
+                 layout='NT',
+                 use_adapter='False',
+                 adapter_config='{}'):
         super().__init__()
         assert units % num_heads == 0,\
             'In BertTransformer, The units should be divided exactly ' \
@@ -236,8 +242,11 @@ class BertTransformer(HybridBlock):
         self._output_attention = output_attention
         self._output_all_encodings = output_all_encodings
         self._layout = layout
+        self._use_adapter = use_adapter
+        self._adapter_config = adapter_config
 
         self.all_layers = nn.HybridSequential()
+
         for layer_idx in range(num_layers):
             self.all_layers.add(
               TransformerEncoderLayer(units=units,
@@ -250,7 +259,9 @@ class BertTransformer(HybridBlock):
                                       bias_initializer=bias_initializer,
                                       activation=activation,
                                       layout=layout,
-                                      dtype=dtype))
+                                      dtype=dtype,
+                                      use_adapter=use_adapter,
+                                      adapter_config=adapter_config))
 
     @property
     def layout(self):
@@ -259,9 +270,7 @@ class BertTransformer(HybridBlock):
     def forward(self, data, valid_length):
         """
         Generate the representation given the inputs.
-
         This is used in training or fine-tuning a bert model.
-
         Parameters
         ----------
         data
@@ -269,10 +278,8 @@ class BertTransformer(HybridBlock):
                 Shape (batch_size, seq_length, C)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C)
-
         valid_length
             Shape (batch_size,)
-
         Returns
         -------
         out
@@ -280,7 +287,6 @@ class BertTransformer(HybridBlock):
                 Shape (batch_size, seq_length, C_out)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_out)
-
         """
         if self.layout == 'NT':
             time_axis, batch_axis = 1, 0
@@ -336,7 +342,9 @@ class BertModel(HybridBlock):
                  dtype='float32',
                  use_pooler=True,
                  layout='NT',
-                 compute_layout='auto'):
+                 compute_layout='auto',
+                 use_adapter=False,
+                 adapter_config={}):
         super().__init__()
         self._dtype = dtype
         self.use_pooler = use_pooler
@@ -351,6 +359,10 @@ class BertModel(HybridBlock):
         self.bias_initializer = bias_initializer
         self.layer_norm_eps = layer_norm_eps
         self._layout = layout
+        self._use_adapter = use_adapter
+        self._adapter_config = adapter_config
+        if self._use_adapter:
+            self._adapter_config = json.loads(adapter_config)
         if compute_layout is None or compute_layout == 'auto':
             self._compute_layout = layout
         else:
@@ -370,7 +382,9 @@ class BertModel(HybridBlock):
             weight_initializer=weight_initializer,
             bias_initializer=bias_initializer,
             dtype=dtype,
-            layout=self._compute_layout
+            layout=self._compute_layout,
+            use_adapter=self._use_adapter,
+            adapter_config=self._adapter_config
         )
         # Construct word embedding
         self.word_embed = nn.Embedding(input_dim=vocab_size,
@@ -404,9 +418,7 @@ class BertModel(HybridBlock):
     def forward(self, inputs, token_types, valid_length):
         # pylint: disable=arguments-differ
         """Generate the representation given the inputs.
-
         This is used in training or fine-tuning a bert model.
-
         Parameters
         ----------
         inputs
@@ -414,20 +426,16 @@ class BertModel(HybridBlock):
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-
         token_types
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
-
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (batch_size, seq_length)
-
         valid_length :
             The valid length of each sequence
             Shape (batch_size,)
-
         Returns
         -------
         contextual_embedding
@@ -435,7 +443,6 @@ class BertModel(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units).
-
         pooled_output
             This is optional. Shape (batch_size, units)
         """
@@ -457,7 +464,6 @@ class BertModel(HybridBlock):
 
     def get_initial_embedding(self, inputs, token_types=None):
         """Get the initial token embeddings that considers the token type and positional embeddings
-
         Parameters
         ----------
         inputs
@@ -465,25 +471,20 @@ class BertModel(HybridBlock):
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-
         token_types
             The type of tokens. If None, it will be initialized as all zero.
-
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-
         Returns
         -------
         embedding
             The initial embedding that will be fed into the encoder
-
             - layout = 'NT'
                 Shape (batch_size, seq_length, C_emb)
             - layout = 'TN'
                 Shape (seq_length, batch_size, C_emb)
-
         """
         if self.layout == 'NT':
             time_axis, batch_axis = 1, 0
@@ -505,10 +506,8 @@ class BertModel(HybridBlock):
 
     def apply_pooling(self, sequence):
         """Generate the representation given the inputs.
-
         This is used for pre-training or fine-tuning a bert model.
         Get the first token of the whole sequence which is [CLS].
-
         Parameters
         ----------
         sequence
@@ -516,7 +515,6 @@ class BertModel(HybridBlock):
                 Shape (batch_size, sequence_length, units)
             - layout = 'TN'
                 Shape (sequence_length, batch_size, units)
-
         Returns
         -------
         outputs
@@ -538,7 +536,6 @@ class BertModel(HybridBlock):
     @classmethod
     def from_cfg(cls, cfg, use_pooler=True, dtype=None) -> 'BertModel':
         """
-
         Parameters
         ----------
         cfg
@@ -547,7 +544,6 @@ class BertModel(HybridBlock):
             Whether to output the pooled feature
         dtype
             data type of the model
-
         Returns
         -------
         ret
@@ -578,7 +574,9 @@ class BertModel(HybridBlock):
                    bias_initializer=bias_initializer,
                    use_pooler=use_pooler,
                    layout=cfg.MODEL.layout,
-                   compute_layout=cfg.MODEL.compute_layout)
+                   compute_layout=cfg.MODEL.compute_layout,
+                   use_adapter=cfg.MODEL.use_adapter,
+                   adapter_config=cfg.MODEL.adapter_config)
 
 
 @use_np
@@ -587,7 +585,6 @@ class BertForMLM(HybridBlock):
                  weight_initializer=None,
                  bias_initializer=None):
         """
-
         Parameters
         ----------
         backbone_cfg
@@ -626,7 +623,6 @@ class BertForMLM(HybridBlock):
     def forward(self, inputs, token_types, valid_length,
                        masked_positions):
         """Getting the scores of the masked positions.
-
         Parameters
         ----------
         inputs
@@ -634,23 +630,19 @@ class BertForMLM(HybridBlock):
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-
         token_types
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
-
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-
         valid_length :
             The valid length of each sequence
             Shape (batch_size,)
         masked_positions :
             The masked position of the sequence
             Shape (batch_size, num_masked_positions).
-
         Returns
         -------
         contextual_embedding
@@ -658,7 +650,6 @@ class BertForMLM(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units)
-
         pooled_out
             Shape (batch_size, units)
         mlm_scores :
@@ -680,7 +671,6 @@ class BertForPretrain(HybridBlock):
                  weight_initializer=None,
                  bias_initializer=None):
         """
-
         Parameters
         ----------
         backbone_cfg
@@ -724,9 +714,7 @@ class BertForPretrain(HybridBlock):
     def forward(self, inputs, token_types, valid_length,
                        masked_positions):
         """Generate the representation given the inputs.
-
         This is used in training or fine-tuning a bert model.
-
         Parameters
         ----------
         inputs
@@ -734,23 +722,19 @@ class BertForPretrain(HybridBlock):
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-
         token_types
             If the inputs contain two sequences, we will set different token types for the first
              sentence and the second sentence.
-
             - layout = 'NT'
                 Shape (batch_size, seq_length)
             - layout = 'TN'
                 Shape (seq_length, batch_size)
-
         valid_length
             The valid length of each sequence
             Shape (batch_size,)
         masked_positions
             The masked position of the sequence
             Shape (batch_size, num_masked_positions).
-
         Returns
         -------
         contextual_embedding
@@ -758,7 +742,6 @@ class BertForPretrain(HybridBlock):
                 Shape (batch_size, seq_length, units).
             - layout = 'TN'
                 Shape (seq_length, batch_size, units).
-
         pooled_out
             Shape (batch_size, units)
         nsp_score :
@@ -787,7 +770,6 @@ def get_pretrained_bert(model_name: str = 'google_en_cased_bert_base',
                         load_mlm: str = False)\
         -> Tuple[CN, HuggingFaceWordPieceTokenizer, str, str]:
     """Get the pretrained bert weights
-
     Parameters
     ----------
     model_name
@@ -798,7 +780,6 @@ def get_pretrained_bert(model_name: str = 'google_en_cased_bert_base',
         Whether to load the weights of the backbone network
     load_mlm
         Whether to load the weights of MLM
-
     Returns
     -------
     cfg

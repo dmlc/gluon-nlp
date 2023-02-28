@@ -94,26 +94,59 @@ def parse_args():
                         help='the path to training dataset')
     parser.add_argument('--warmup_ratio', type=float, default=0.1,
                         help='Ratio of warmup steps in the learning rate scheduler.')
-    parser.add_argument('--method', type=str, default='full', choices=['full', 'bias', 'adapter', 'last_layer'],
+    parser.add_argument('--method', type=str, default='adapter', choices=['full', 'bias', 'adapter', 'last_layer'],
                         help='different finetune method')
 
 
     args = parser.parse_args()
     return args
 
+def load_adapters(model, config, ctx_l):
+    config = config['location_0'] if 'location_0' in config else config['location_1']
+    index = 0
+    new_loaded = {}
 
-def change_adapter_cfg(cfg, task):
+    for task in config['task_names']:
+        ckpt_name = config[task]['backbone']
+        loaded = _mx_npx.load(ckpt_name)
+        
+        for key in loaded:
+            if 'base_adapter_stacks' in key:
+                new_key = '.'.join(key.split('.')[0:-3] + [str(index)] + key.split('.')[-2:])
+                new_loaded.update({new_key:loaded[key]})
+
+        #print(loaded['backbone.encoder.all_layers.11.ffn.adapter_layer_ffn.base_adapter_stacks.0.down_proj.weight'])
+        #print(index, ckpt_name)
+
+        index += 1
+        full_dict = {'params': new_loaded, 'filename': ckpt_name}
+        model.load_dict(full_dict, ctx_l, allow_missing=True,
+                               ignore_extra=True, cast_dtype=True)
+        #print(model.collect_params()['backbone.encoder.all_layers.11.ffn.adapter_layer_ffn.base_adapter_stacks.1.down_proj.weight']._reduce())
+    #exit()
+    return model
+
+
+
+#'cola': {'type': 'Basic', 'units': 64, 'activation': 'gelu',
+#         'backbone': '/home/ubuntu/gluon-nlp/scripts/continual_learning/cls_dir/cola/google_en_uncased_bert_base_cola_2680_adapter.params'},
+#'mrpc': {'type': 'Basic', 'units': 64, 'activation': 'gelu', 'backbone':'/home/ubuntu/gluon-nlp/scripts/continual_learning/cls_dir/mrpc/google_en_uncased_bert_base_mrpc_461_adapter.params'},
+
+
+def change_adapter_cfg(cfg):
     adapter_config = {
-        'location_0':{
-                      'adapter_fusion':False,
-                      'pre_operator':False,
-                      'task_names':[task.task_name],
-                      task.task_name:{'type':'Basic','units':64, 'activation':'gelu'}},
-        'location_1':{
-                      'adapter_fusion':False,
-                      'pre_operator':False,
-                      'task_names':[task.task_name],
-                      task.task_name:{'type':'Basic','units':64, 'activation':'gelu'}}
+        'location_1': {
+            'adapter_fusion': True,
+            'pre_operator': True,
+            'layer_norm_eps':1e-5,
+            'task_names': ['mrpc', 'mnli', 'qqp'],
+            'mrpc': {'type': 'Basic', 'units': 64, 'activation': 'gelu', 'backbone':'/home/ubuntu/gluon-nlp/scripts/continual_learning/cls_dir/mrpc/google_en_uncased_bert_base_mrpc_461_adapter.params'},
+            'qqp':{'type':'Basic', 'units':64, 'activation':'gelu', 'backbone':'/home/ubuntu/gluon-nlp/scripts/continual_learning/cls_dir/qqp/google_en_uncased_bert_base_qqp_102340_adapter_continual.params'},
+            'mnli': {'type': 'Basic', 'units': 64, 'activation': 'gelu',
+                    'backbone': '/home/ubuntu/gluon-nlp/scripts/continual_learning/cls_dir/mnli/google_en_uncased_bert_base_mnli_24547_adapter.params'}
+            #'cola': {'type': 'Basic', 'units': 64, 'activation': 'gelu',
+            #         'backbone': '/home/ubuntu/gluon-nlp/scripts/continual_learning/cls_dir/cola/google_en_uncased_bert_base_cola_2680_adapter.params'},
+        }
     }
     cfg.defrost()
     cfg.MODEL.use_adapter = True
@@ -130,19 +163,19 @@ def get_network(model_name,
     """
     Get the network that fine-tune the Question Answering Task
     """
-
     use_segmentation = 'roberta' not in model_name and 'xlmr' not in model_name
     Model, cfg, tokenizer, download_params_path, _ = \
         get_backbone(model_name, load_backbone=not backbone_path)
 
     if method == 'adapter':
-        cfg = change_adapter_cfg(cfg, task)
+        cfg = change_adapter_cfg(cfg)
     backbone = Model.from_cfg(cfg)
     # Load local backbone parameters if backbone_path provided.
     # Otherwise, download backbone parameters from gluon zoo.
+    backbone.initialize(ctx=ctx_l)
     backbone_params_path = backbone_path if backbone_path else download_params_path
     if checkpoint_path is None:
-        backbone.load_parameters(backbone_params_path, ignore_extra=True, allow_missing=(args.method != 'full'),
+        backbone.load_parameters(backbone_params_path, ignore_extra=True, allow_missing=True,
                                  ctx=ctx_l, cast_dtype=True)
         num_params, num_fixed_params \
             = count_parameters(deduplicate_param_dict(backbone.collect_params()))
@@ -150,6 +183,10 @@ def get_network(model_name,
             'Loading Backbone Model from {}, with total/fixd parameters={}/{}'.format(
                 backbone_params_path, num_params, num_fixed_params))
     classify_net = TextPredictionNet(backbone, task.class_num)
+    classify_net = load_adapters(classify_net, json.loads(cfg.MODEL.adapter_config), ctx_l)
+    #full_dict = {'params': new_loaded, 'filename': ckpt_name}
+    #classify_net.load_dict(full_dict, ctx_l, allow_missing=True,
+    #                       ignore_extra=True, cast_dtype=True)
     if checkpoint_path is None:
         # Ignore the UserWarning during initialization,
         # There is no need to re-initialize the parameters of backbone
@@ -261,8 +298,7 @@ def train(args):
                     args.param_checkpoint,
                     args.backbone_path,
                     task)
-
-
+    #print(classify_net.backbone)
     logging.info('Prepare training data')
     train_data, _ = get_task_data(args, task, tokenizer, segment='train')
     train_batchify = bf.Group(bf.Group(bf.Pad(), bf.Pad(), bf.Stack()),
@@ -285,25 +321,20 @@ def train(args):
 
     if args.method == 'full':
         target_params_name = classify_net.collect_params().keys()
-    elif args.method == 'bias':
-        target_params_name = [key
-                              for key in classify_net.collect_params() if
-                              key.endswith('bias') or key.endswith('beta') or 'out_proj' in key]
     elif args.method == 'adapter':
         target_params_name = [key
                               for key in classify_net.collect_params() if
-                             'adapter' in key or 'out_proj' in key]
-    elif args.method == 'last_layer':
-        target_params_name = [key
-                              for key in classify_net.collect_params() if
-                              'out_proj' in key]
+                             'fusion' in key or 'out_proj' in key or ('adapter' in key and 'norm' in key)]
+
     for name in classify_net.collect_params():
         if name not in target_params_name:
             classify_net.collect_params()[name].grad_req = 'null'
-
+    #print(classify_net.collect_params())
+    #print(classify_net.collect_params()['backbone.encoder.all_layers.11.ffn.adapter_layer_ffn.base_adapter_stacks.0.down_proj.weight']._reduce())
+    #exit()
+    store_names = [key for key in classify_net.collect_params() if
+                            'adapter' in key or 'out_proj' in key]
     target_params = {name:classify_net.collect_params()[name] for name in target_params_name}
-
-
     param_dict = classify_net.collect_params()
     # Do not apply weight decay to all the LayerNorm and bias
     for _, v in classify_net.collect_params('.*beta|.*gamma|.*bias').items():
@@ -353,7 +384,6 @@ def train(args):
         loss_function = gluon.loss.L2Loss()
     else:
         loss_function = gluon.loss.SoftmaxCELoss()
-
     metrics = task.metric
     #prepare loss function
     log_loss = 0
@@ -428,16 +458,19 @@ def train(args):
             log_gnorm = 0
             log_step = 0
         if local_rank == 0 and (i == max_update - 1 or i%(max_update//args.epochs) == 0 and i>0):
-            ckpt_name = '{}_{}_{}_{}.params'.format(args.model_name,
+            ckpt_name = '{}_{}_{}_{}_continual.params'.format(args.model_name,
                                                       args.task_name,
                                                       (i + 1),
                                                     args.method)
 
             tmp_params = classify_net._collect_params_with_prefix()
             params_saved = os.path.join(detail_dir, ckpt_name)
-            arg_dict = {key: tmp_params[key]._reduce() for key in target_params}
+            arg_dict = {key: tmp_params[key]._reduce() for key in store_names}
             _mx_npx.savez(params_saved, **arg_dict)
             logging.info('Params saved in: {}'.format(params_saved))
+            #print(tmp_params['backbone.encoder.all_layers.6.ffn.adapter_layer_ffn.adapter_fusion.key_proj.weight']._reduce())
+            #print(tmp_params[
+            #          'backbone.encoder.all_layers.6.ffn.adapter_layer_ffn.pre_norm.gamma']._reduce())
             for metric in metrics:
                 metric.reset()
 
@@ -476,16 +509,19 @@ def evaluate(args):
     candidate_ckpt = []
     detail_dir = os.path.join(args.output_dir, args.task_name)
     for name in os.listdir(detail_dir):
-        if name.endswith(args.method + '.params') and args.task_name in name and args.model_name in name:
+        if name.endswith(args.method + '_continual.params') and args.task_name in name and args.model_name in name:
             candidate_ckpt.append(os.path.join(detail_dir, name))
     candidate_ckpt.sort(reverse=False)
     best_ckpt = {}
     metrics = task.metric
     def evaluate_by_ckpt(ckpt_name, best_ckpt):
+
         loaded = _mx_npx.load(ckpt_name)
         full_dict = {'params': loaded, 'filename': ckpt_name}
         classify_net.load_dict(full_dict, ctx_l, allow_missing=True,
                                ignore_extra=True, cast_dtype=True)
+        #print(loaded['backbone.encoder.all_layers.6.ffn.adapter_layer_ffn.adapter_fusion.key_proj.weight'])
+        #print(loaded['backbone.encoder.all_layers.6.ffn.adapter_layer_ffn.pre_norm.gamma'])
         logging.info('Prepare dev data')
 
         dev_data, label = get_task_data(args, task, tokenizer, segment='eval')
