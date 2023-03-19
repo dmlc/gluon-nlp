@@ -542,7 +542,7 @@ def train(args):
         optimizer_params.update({'beta1': adam_betas[0],
                                  'beta2': adam_betas[1],
                                  'epsilon': args.adam_epsilon,
-                                 'correct_bias': False,
+                                 'correct_bias': True,
                                  })
     elif args.optimizer == 'adam':
         optimizer_params.update({'beta1': adam_betas[0],
