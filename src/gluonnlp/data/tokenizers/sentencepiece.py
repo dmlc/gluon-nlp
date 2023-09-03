@@ -100,13 +100,13 @@ class SentencepieceTokenizer(BaseTokenizerWithVocab):
             if k in special_tokens_kv:
                 if v != special_tokens_kv[k]:
                     raise ValueError(
-                        '"vocab.{}" is already set to "{}" in the sentencepiece model. '
-                        'Cannot reset it to "{}"'.format(k, special_tokens_kv[k], v))
+                        '"vocab.{}" expects "{}" as a valid argument in the sentencepiece model. '
+                        '"{}" is an invalid/unexpected argument'.format(k, special_tokens_kv[k], v))
                 continue
             if v in existing_control_tokens:
                 if k != token_id_to_token_name[v]:
-                    raise ValueError('"{}" is already registered as "vocab.{}". '
-                                     'We cannot rename it to "vocab.{}".'
+                    raise ValueError('"{}" is registered to "vocab.{}". '
+                                     '"vocab.{}" is an invalid argument. '
                                      .format(v, token_id_to_token_name[v], k))
                 continue
             if v in other_control_tokens:
